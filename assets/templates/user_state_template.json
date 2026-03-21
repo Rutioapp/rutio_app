@@ -1,0 +1,66 @@
+{
+  "userState": {
+    "userId": "user_123",
+    "meta": {
+      "schemaVersion": 1,
+      "lastSavedAt": "2025-12-29T14:38:53.857331Z"
+    },
+
+    "progression": {
+      "level": 1,
+      "xp": 0,
+      "prestige": 0
+    },
+
+    "wallet": {
+      "coins": 0
+    },
+
+    "inventory": {
+      "items": []
+    },
+
+    "profile": {
+      "equipped": {
+        "avatar_skin": null,
+        "aura": null,
+        "badge": null,
+        "title": null,
+        "animation": null
+      },
+      "badges": {
+        "owned": [],
+        "shown": null
+      },
+      "achievements": {
+        "unlocked": [],
+        "progress": {}
+      }
+    },
+
+    "claims": {
+      "milestonesClaimed": [],
+      "achievementRewardsClaimed": [],
+      "prestigeClaimed": []
+    },
+
+    "daily": {
+      "lastResetDate": "2025-12-29",
+      "xpEarnedToday": 0,
+      "coinsEarnedToday": 0,
+      "habitsCompletedToday": {}
+    },
+
+    "familyXp": {
+      "mind": 0,
+      "spirit": 0,
+      "body": 0,
+      "emotional": 0,
+      "social": 0,
+      "discipline": 0,
+      "professional": 0
+    },
+
+    "activeHabits": []
+  }
+}

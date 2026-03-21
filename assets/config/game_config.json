@@ -1,0 +1,96 @@
+{
+  "level_system": {
+    "type": "soft_cap",
+    "max_content_level": 100,
+    "base_formula": "xp_next = 100 + (level * 25)",
+    "late_game_formula": "xp_next = 120 + (level ** 1.2 * 20)"
+  },
+  "xp_rules": {
+    "check_habit_xp": 10,
+    "count_habit_xp": 15,
+    "daily_xp_cap": 200
+  },
+  "milestones": [
+    {
+      "level": 1,
+      "reward": "Inicio del viaje"
+    },
+    {
+      "level": 5,
+      "reward": "Primer logro"
+    },
+    {
+      "level": 10,
+      "reward": "Skin básica del avatar"
+    },
+    {
+      "level": 15,
+      "reward": "Desbloqueo de rachas"
+    },
+    {
+      "level": 20,
+      "reward": "Badge Bronce"
+    },
+    {
+      "level": 25,
+      "reward": "Slot extra de hábitos"
+    },
+    {
+      "level": 30,
+      "reward": "Evolución visual I"
+    },
+    {
+      "level": 40,
+      "reward": "Badge Plata"
+    },
+    {
+      "level": 50,
+      "reward": "Evolución visual II"
+    },
+    {
+      "level": 60,
+      "reward": "Título especial"
+    },
+    {
+      "level": 70,
+      "reward": "Aura del avatar"
+    },
+    {
+      "level": 80,
+      "reward": "Badge Oro"
+    },
+    {
+      "level": 90,
+      "reward": "Preparación para prestigio"
+    },
+    {
+      "level": 100,
+      "reward": "Prestigio disponible + logro épico"
+    }
+  ],
+  "prestige_system": {
+    "max_prestige": 5,
+    "prestiges": [
+      {
+        "prestige": 1,
+        "reward": "Badge Prestigio I + aura especial"
+      },
+      {
+        "prestige": 2,
+        "reward": "Skin exclusiva del avatar"
+      },
+      {
+        "prestige": 3,
+        "reward": "Título legendario"
+      },
+      {
+        "prestige": 4,
+        "reward": "Animación única"
+      },
+      {
+        "prestige": 5,
+        "reward": "Badge mítico + color permanente"
+      }
+    ]
+  }
+}

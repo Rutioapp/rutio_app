@@ -1,0 +1,893 @@
+{
+  "families": [
+    {
+      "id": "mind",
+      "name": "Inteligencia / Mente",
+      "emoji": "🧠",
+      "habits": [
+        {
+          "id": "leer_x_minutos",
+          "emoji": "📖",
+          "name": "Leer",
+          "type": "count",
+          "metric": {
+            "unit": "minutes",
+            "alt": [
+              "pages"
+            ]
+          },
+          "nameTemplate": "Leer {target} minutos"
+        },
+        {
+          "id": "resolver_problema_logico",
+          "emoji": "🧩",
+          "name": "Resolver un problema lógico",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "escribir_ideas_reflexiones",
+          "emoji": "✍️",
+          "name": "Escribir ideas o reflexiones",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "estudiar_x_tiempo",
+          "emoji": "🎓",
+          "name": "Estudiar",
+          "type": "count",
+          "metric": {
+            "unit": "hours",
+            "alt": [
+              "minutes"
+            ]
+          },
+          "nameTemplate": "Estudiar {target} horas"
+        },
+        {
+          "id": "aprender_idioma",
+          "emoji": "🌍",
+          "name": "Practicar un idioma",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "escuchar_podcast_educativo",
+          "emoji": "🎧",
+          "name": "Escuchar podcast educativo",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "tomar_notas",
+          "emoji": "📝",
+          "name": "Tomar notas del día",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "juego_mental",
+          "emoji": "♟️",
+          "name": "Juego mental o rompecabezas",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "practicar_escritura_creativa",
+          "emoji": "🖊️",
+          "name": "Escritura creativa",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "repasar_notas",
+          "emoji": "🔁",
+          "name": "Repasar notas del día",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "ver_documental",
+          "emoji": "🎬",
+          "name": "Ver un documental o vídeo educativo",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "spirit",
+      "name": "Espiritualidad / Interior",
+      "emoji": "🧘",
+      "habits": [
+        {
+          "id": "meditar",
+          "emoji": "🧘",
+          "name": "Meditar",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "practicar_gratitud",
+          "emoji": "🙏",
+          "name": "Practicar gratitud",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "respiracion_consciente",
+          "emoji": "🌬️",
+          "name": "Respiración consciente",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "reflexion_personal",
+          "emoji": "💭",
+          "name": "Reflexión personal",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "oracion_conexion_espiritual",
+          "emoji": "✨",
+          "name": "Oración o conexión espiritual",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "revisar_aprendizajes_dia",
+          "emoji": "🔍",
+          "name": "Revisar aprendizajes del día",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "visualizacion_positiva",
+          "emoji": "🌅",
+          "name": "Visualización positiva",
+          "type": "count",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "lectura_espiritual",
+          "emoji": "📿",
+          "name": "Lectura espiritual",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "desconexion_digital",
+          "emoji": "📵",
+          "name": "Desconexión digital",
+          "type": "count",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "contacto_naturaleza",
+          "emoji": "🌿",
+          "name": "Tiempo en la naturaleza",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "tres_cosas_buenas",
+          "emoji": "⭐",
+          "name": "Escribir 3 cosas buenas del día",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "paseo_sin_movil",
+          "emoji": "🚶",
+          "name": "Paseo sin móvil",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "momento_para_ti",
+          "emoji": "🕯️",
+          "name": "Momento para ti",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          }
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "name": "Salud / Cuerpo",
+      "emoji": "💪",
+      "habits": [
+        {
+          "id": "hacer_ejercicio",
+          "emoji": "🏋️",
+          "name": "Hacer ejercicio",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "ir_gimnasio",
+          "emoji": "🏟️",
+          "name": "Ir al gimnasio",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "caminar_pasos_km",
+          "emoji": "👟",
+          "name": "Caminar",
+          "type": "count",
+          "metric": {
+            "unit": "steps",
+            "alt": [
+              "km"
+            ]
+          },
+          "nameTemplate": "Caminar {target} pasos"
+        },
+        {
+          "id": "comer_saludable",
+          "emoji": "🥗",
+          "name": "Comer saludable",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "beber_x_l_agua",
+          "emoji": "💧",
+          "name": "Beber agua",
+          "type": "count",
+          "metric": {
+            "unit": "liters"
+          },
+          "nameTemplate": "Beber {target} L de agua"
+        },
+        {
+          "id": "dormir_X_horas",
+          "emoji": "😴",
+          "name": "Dormir bien",
+          "type": "count",
+          "metric": {
+            "unit": "hours"
+          },
+          "nameTemplate": "Dormir {target} horas"
+        },
+        {
+          "id": "estiramientos",
+          "emoji": "🤸",
+          "name": "Estiramientos",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "evitar_ultraprocesados",
+          "emoji": "🚫",
+          "name": "Evitar ultraprocesados",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "cuidar_postura",
+          "emoji": "🪑",
+          "name": "Cuidar la postura",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "rutina_manana",
+          "emoji": "🌄",
+          "name": "Rutina de mañana",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "rutina_noche",
+          "emoji": "🌙",
+          "name": "Rutina de noche",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "sin_alcohol",
+          "emoji": "🚱",
+          "name": "Sin alcohol",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "cardio",
+          "emoji": "🏃",
+          "name": "Cardio",
+          "type": "count",
+          "metric": {
+            "unit": "minutes"
+          },
+          "nameTemplate": "Cardio {target} minutos"
+        },
+        {
+          "id": "tomar_el_sol",
+          "emoji": "☀️",
+          "name": "Tomar el sol",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "no_picar",
+          "emoji": "🍽️",
+          "name": "No picar entre horas",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "ducha_fria",
+          "emoji": "🚿",
+          "name": "Ducha fría",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "hacer_cama",
+          "emoji": "🛏️",
+          "name": "Hacer la cama",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "skincare",
+          "emoji": "🧴",
+          "name": "Skincare",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "higiene_bucal",
+          "emoji": "🦷",
+          "name": "Higiene bucal completa",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "tomar_suplementos",
+          "emoji": "💊",
+          "name": "Tomar suplementos o medicación",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "hidratar_piel",
+          "emoji": "🫧",
+          "name": "Hidratarse la piel",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "emotional",
+      "name": "Emocional",
+      "emoji": "❤️",
+      "habits": [
+        {
+          "id": "diario_emocional",
+          "emoji": "📔",
+          "name": "Diario emocional",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "identificar_emociones",
+          "emoji": "🪞",
+          "name": "Identificar mis emociones",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "gestionar_estres",
+          "emoji": "🌊",
+          "name": "Gestionar el estrés",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "autocompasion",
+          "emoji": "🤍",
+          "name": "Practicar autocompasión",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "hablar_sentimientos",
+          "emoji": "💬",
+          "name": "Expresar mis sentimientos",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "reducir_pensamientos_negativos",
+          "emoji": "🧹",
+          "name": "Reducir pensamientos negativos",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "practicar_paciencia",
+          "emoji": "⏳",
+          "name": "Practicar paciencia",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "momento_alegria",
+          "emoji": "😊",
+          "name": "Hacer algo que me alegre",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "celebrar_logro",
+          "emoji": "🎉",
+          "name": "Celebrar un logro",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "nota_animo",
+          "emoji": "📊",
+          "name": "Nota de ánimo del día",
+          "type": "count",
+          "metric": {
+            "unit": null
+          },
+          "nameTemplate": "Ánimo: {target}/10"
+        },
+        {
+          "id": "sin_pantallas_noche",
+          "emoji": "🌛",
+          "name": "Sin pantallas antes de dormir",
+          "type": "count",
+          "metric": {
+            "unit": "minutes"
+          },
+          "nameTemplate": "Sin pantallas {target} min antes de dormir"
+        }
+      ]
+    },
+    {
+      "id": "social",
+      "name": "Social / Relaciones",
+      "emoji": "🤝",
+      "habits": [
+        {
+          "id": "hablar_ser_querido",
+          "emoji": "❤️",
+          "name": "Hablar con alguien querido",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "escuchar_activamente",
+          "emoji": "👂",
+          "name": "Escuchar activamente",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "expresar_gratitud",
+          "emoji": "🙌",
+          "name": "Expresar gratitud a alguien",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "ayudar_alguien",
+          "emoji": "🤲",
+          "name": "Ayudar a alguien",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "mantener_contacto",
+          "emoji": "📱",
+          "name": "Mantener el contacto",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "compartir_experiencias",
+          "emoji": "🗣️",
+          "name": "Compartir una experiencia",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "practicar_empatia",
+          "emoji": "💛",
+          "name": "Practicar empatía",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "plan_social",
+          "emoji": "🗓️",
+          "name": "Quedar con alguien",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "desconectar_redes",
+          "emoji": "🔕",
+          "name": "Desconectarse de redes sociales",
+          "type": "count",
+          "metric": {
+            "unit": "hours"
+          }
+        },
+        {
+          "id": "mensaje_animo",
+          "emoji": "💌",
+          "name": "Enviar un mensaje de ánimo",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "llamada_familia_amigo",
+          "emoji": "📞",
+          "name": "Llamada con familia o amigo",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "discipline",
+      "name": "Disciplina",
+      "emoji": "🎯",
+      "habits": [
+        {
+          "id": "planificar_dia",
+          "emoji": "📋",
+          "name": "Planificar el día",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "cumplir_rutina",
+          "emoji": "✅",
+          "name": "Cumplir la rutina",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "revisar_objetivos",
+          "emoji": "🎯",
+          "name": "Revisar objetivos",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "evitar_procrastinacion",
+          "emoji": "⚡",
+          "name": "Vencer la procrastinación",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "tarea_dificil",
+          "emoji": "🪨",
+          "name": "Hacer la tarea más difícil primero",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "priorizar_importante",
+          "emoji": "🔝",
+          "name": "Priorizar lo importante",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "dejar_fumar",
+          "emoji": "🚭",
+          "name": "Sin tabaco",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "sin_redes_sociales",
+          "emoji": "📴",
+          "name": "Sin redes sociales",
+          "type": "count",
+          "metric": {
+            "unit": "hours"
+          },
+          "nameTemplate": "Sin redes sociales {target} horas"
+        },
+        {
+          "id": "madrugar",
+          "emoji": "⏰",
+          "name": "Madrugar",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "revisar_fin_dia",
+          "emoji": "🌆",
+          "name": "Revisar el día al terminar",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "apagar_movil",
+          "emoji": "📵",
+          "name": "Apagar el móvil a una hora fija",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "sin_compras_impulsivas",
+          "emoji": "💳",
+          "name": "Sin compras impulsivas",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "preparar_ropa",
+          "emoji": "👔",
+          "name": "Preparar la ropa del día siguiente",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        }
+      ]
+    },
+    {
+      "id": "professional",
+      "name": "Profesional / Productividad",
+      "emoji": "💼",
+      "habits": [
+        {
+          "id": "trabajo_profundo",
+          "emoji": "🔬",
+          "name": "Sesión de trabajo profundo",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          },
+          "nameTemplate": "Trabajo profundo {target} min"
+        },
+        {
+          "id": "habilidad_laboral",
+          "emoji": "🛠️",
+          "name": "Desarrollar habilidad laboral",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "organizar_tareas",
+          "emoji": "🗂️",
+          "name": "Organizar tareas del día",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "revisar_rendimiento",
+          "emoji": "📈",
+          "name": "Revisar rendimiento",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "networking",
+          "emoji": "🤝",
+          "name": "Networking",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "formacion_profesional",
+          "emoji": "📚",
+          "name": "Formación profesional",
+          "type": "count",
+          "metric": {
+            "unit": "hours"
+          },
+          "nameTemplate": "Formación {target} horas"
+        },
+        {
+          "id": "responder_emails",
+          "emoji": "📥",
+          "name": "Bandeja de entrada a cero",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "proyecto_personal",
+          "emoji": "🚀",
+          "name": "Avanzar en proyecto personal",
+          "type": "count_or_check",
+          "metric": {
+            "unit": "minutes"
+          }
+        },
+        {
+          "id": "leer_sector",
+          "emoji": "🗞️",
+          "name": "Leer sobre mi sector",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        },
+        {
+          "id": "pomodoro",
+          "emoji": "🍅",
+          "name": "Bloque Pomodoro completado",
+          "type": "count",
+          "metric": {
+            "unit": null
+          },
+          "nameTemplate": "{target} pomodoros"
+        },
+        {
+          "id": "truco_nuevo",
+          "emoji": "💡",
+          "name": "Aprender un atajo o truco nuevo",
+          "type": "check",
+          "metric": {
+            "unit": null
+          }
+        }
+      ]
+    }
+  ]
+}

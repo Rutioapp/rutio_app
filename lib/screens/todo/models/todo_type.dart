@@ -1,0 +1,4 @@
+enum TodoType {
+  free,
+  linkedHabit,
+}

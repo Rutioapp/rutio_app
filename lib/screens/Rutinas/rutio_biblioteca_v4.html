@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Rutio — Biblioteca</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --crema: #f7f0e6; --crema-mid: #efe4d2; --crema-dark: #e5d5bc;
+  --sand: #d4bc98; --camel: #b8895a; --camel-soft: #cca878;
+  --brown-dark: #3d2010; --brown-mid: #7a5030; --brown-light: #a07050;
+  --sage: #8aab8e; --glass: rgba(255,250,242,0.65);
+  --glass-mid: rgba(247,240,230,0.82); --glass-border: rgba(184,137,90,0.14);
+  --text-main: #3a2410; --text-mid: #7a5535; --text-soft: #a07858;
+}
+html, body {
+  min-height: 100vh; background: #d0c0a0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+}
+.phone {
+  width: 390px; height: 844px; border-radius: 50px; overflow: hidden;
+  position: relative;
+  box-shadow: 0 40px 80px rgba(80,50,20,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
+  background: var(--crema);
+}
+.bg {
+  position: absolute; inset: 0; z-index: 0;
+  background: linear-gradient(170deg, #f7f0e6 0%, #f0e4d0 30%, #e8d5b8 60%, #ddc8a0 100%);
+  overflow: hidden;
+}
+.bg-glow {
+  position: absolute; top: -60px; right: -60px;
+  width: 320px; height: 320px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,225,160,0.35) 0%, transparent 65%);
+}
+.bg svg { position: absolute; bottom: 0; width: 100%; opacity: 0.18; }
+.status-bar {
+  position: relative; z-index: 10;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 28px 0; font-size: 12px; font-weight: 600;
+  color: var(--text-main); opacity: .6;
+}
+
+/* ── BIBLIOTECA ── */
+#screen-biblioteca {
+  position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column;
+}
+.lib-header { position: relative; z-index: 10; flex-shrink: 0; padding: 8px 22px 0; }
+.lib-header h1 { font-family: 'DM Serif Display', serif; font-size: 27px; color: var(--text-main); line-height: 1.1; }
+.lib-header p { font-size: 12.5px; color: var(--text-mid); opacity: .7; margin-top: 2px; }
+.search-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--glass-mid); backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border); border-radius: 14px;
+  padding: 9px 14px; margin: 10px 0 10px;
+}
+.search-bar svg { opacity: .35; flex-shrink: 0; }
+.search-bar span { font-size: 13px; color: var(--text-main); opacity: .35; }
+.tabs { display: flex; background: rgba(180,140,90,0.1); border-radius: 12px; padding: 3px; }
+.tab {
+  flex: 1; text-align: center; padding: 7px 4px; font-size: 12px; font-weight: 500;
+  color: var(--text-mid); opacity: .5; border-radius: 9px; cursor: pointer; transition: all .2s; white-space: nowrap;
+}
+.tab.active { background: var(--crema); color: var(--text-main); opacity: 1; box-shadow: 0 1px 6px rgba(180,130,60,0.13); }
+.lib-scroll { position: relative; z-index: 10; flex: 1; overflow-y: auto; padding: 14px 20px 90px; scrollbar-width: none; }
+.lib-scroll::-webkit-scrollbar { display: none; }
+.sec-hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 11px; margin-top: 4px; }
+.sec-title { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--text-main); }
+.sec-more { font-size: 11px; color: var(--camel-soft); font-weight: 500; cursor: pointer; }
+.hscroll { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; margin-bottom: 20px; margin-left: -2px; padding-left: 2px; }
+.hscroll::-webkit-scrollbar { display: none; }
+.feat-card {
+  flex-shrink: 0; width: 210px; border-radius: 20px; overflow: hidden;
+  position: relative; cursor: pointer; transition: transform .18s;
+  box-shadow: 0 4px 16px rgba(180,130,60,0.14);
+}
+.feat-card:active { transform: scale(0.97); }
+.feat-content {
+  position: relative; z-index: 2; padding: 14px 16px 14px;
+  display: flex; flex-direction: column; height: 148px; justify-content: space-between;
+}
+.feat-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,0.3); backdrop-filter: blur(8px);
+  border-radius: 20px; padding: 3px 10px; font-size: 10.5px; font-weight: 500; width: fit-content;
+}
+.feat-title { font-family: 'DM Serif Display', serif; font-size: 16px; line-height: 1.2; margin-top: 7px; }
+.feat-meta { font-size: 11px; margin-top: 2px; opacity: .65; }
+.feat-bottom { display: flex; justify-content: space-between; align-items: center; }
+.feat-stats { font-size: 11px; opacity: .7; }
+.feat-btn {
+  background: rgba(255,255,255,0.32); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.4); border-radius: 20px;
+  padding: 5px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
+}
+.list-card {
+  background: var(--glass); backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border); border-radius: 18px;
+  padding: 13px 15px; margin-bottom: 9px; cursor: pointer;
+  display: flex; gap: 11px; align-items: center; transition: transform .15s;
+  box-shadow: 0 1px 6px rgba(180,130,60,0.06);
+}
+.list-card:active { transform: scale(0.98); }
+.lc-icon { width: 42px; height: 42px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+.lc-body { flex: 1; min-width: 0; }
+.lc-name { font-size: 13.5px; font-weight: 600; color: var(--text-main); margin-bottom: 3px; }
+.lc-pills { display: flex; gap: 4px; margin-bottom: 5px; overflow: hidden; }
+.lc-pill { font-size: 10.5px; padding: 2px 8px; border-radius: 20px; background: rgba(180,130,60,0.1); color: var(--text-mid); white-space: nowrap; font-weight: 500; }
+.lc-meta { font-size: 10.5px; color: var(--text-soft); display: flex; gap: 10px; }
+.lc-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.diff { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+.diff-easy { background: rgba(138,171,142,0.2); color: #4a7a50; }
+.diff-med  { background: rgba(200,168,100,0.2); color: #7a5a10; }
+.diff-hard { background: rgba(193,105,79,0.18); color: #8a3020; }
+.copy-btn { width: 31px; height: 31px; border-radius: 10px; background: var(--sand); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.pscroll { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; margin-bottom: 20px; }
+.pscroll::-webkit-scrollbar { display: none; }
+.p-card {
+  flex-shrink: 0; width: 148px; background: var(--glass); backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px 12px; cursor: pointer; transition: transform .15s;
+}
+.p-card:active { transform: scale(0.97); }
+.p-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; background: rgba(180,140,90,0.12); margin-bottom: 9px; }
+.p-name { font-size: 13px; font-weight: 600; color: var(--text-main); line-height: 1.2; margin-bottom: 2px; }
+.p-role { font-size: 10.5px; color: var(--text-mid); opacity: .6; margin-bottom: 8px; }
+.p-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 600; margin-bottom: 8px; }
+.p-count { font-size: 11px; color: var(--text-soft); }
+.p-copy-btn { width: 100%; margin-top: 10px; padding: 7px; border-radius: 10px; background: var(--sand); color: var(--text-main); font-size: 11.5px; font-weight: 600; text-align: center; cursor: pointer; }
+.coming-soon { margin: 20px 0; background: rgba(255,248,236,0.5); border: 1.5px dashed rgba(184,137,90,0.25); border-radius: 20px; padding: 32px 20px; text-align: center; }
+.coming-soon h3 { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text-main); margin-bottom: 6px; }
+.coming-soon p { font-size: 12.5px; color: var(--text-mid); opacity: .65; line-height: 1.5; max-width: 240px; margin: 0 auto 16px; }
+.cs-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--sand); color: var(--text-main); font-size: 11px; font-weight: 600; padding: 6px 16px; border-radius: 20px; opacity: .8; }
+.bottom-nav {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+  background: rgba(247,240,230,0.92); backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(180,140,90,0.12); padding: 10px 0 22px;
+  display: flex; justify-content: space-around;
+}
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 14px; }
+.nav-item svg { opacity: .3; }
+.nav-item.active svg { opacity: .85; }
+.nav-label { font-size: 10px; font-weight: 500; color: var(--text-main); opacity: .3; }
+.nav-item.active .nav-label { opacity: .85; }
+.nav-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--camel); opacity: 0; margin-top: 1px; }
+.nav-item.active .nav-dot { opacity: 1; }
+
+/* ── DETALLE ── */
+#screen-detalle {
+  position: absolute; inset: 0; z-index: 15; display: flex; flex-direction: column;
+  transform: translateY(100%); transition: transform 0.42s cubic-bezier(.32,.72,0,1);
+  background: var(--crema); overflow: hidden;
+}
+#screen-detalle.open { transform: translateY(0); }
+.det-hero { position: relative; flex-shrink: 0; height: 256px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+.det-hero-bg { position: absolute; inset: 0; }
+.det-hero-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.det-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(30,15,5,0.32) 0%, transparent 50%); }
+.det-back {
+  position: absolute; top: 52px; left: 20px; z-index: 5;
+  width: 34px; height: 34px; border-radius: 11px;
+  background: rgba(255,248,236,0.45); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.35);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.det-share {
+  position: absolute; top: 52px; right: 20px; z-index: 5;
+  width: 34px; height: 34px; border-radius: 11px;
+  background: rgba(255,248,236,0.45); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.35);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.det-hero-content { position: relative; z-index: 2; padding: 0 22px 18px; }
+.det-tag { display: inline-flex; align-items: center; background: rgba(255,248,236,0.35); backdrop-filter: blur(8px); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 500; margin-bottom: 7px; }
+.det-title { font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1.15; margin-bottom: 4px; }
+.det-author { font-size: 12px; opacity: .7; }
+.det-stats { display: flex; background: var(--glass-mid); backdrop-filter: blur(14px); border-bottom: 1px solid var(--glass-border); flex-shrink: 0; }
+.det-stat { flex: 1; padding: 12px 0; text-align: center; border-right: 1px solid rgba(180,140,90,0.1); }
+.det-stat:last-child { border-right: none; }
+.det-stat-val { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text-main); line-height: 1; }
+.det-stat-lbl { font-size: 10px; color: var(--text-soft); margin-top: 3px; font-weight: 500; }
+.det-scroll { flex: 1; overflow-y: auto; padding: 18px 20px 110px; scrollbar-width: none; }
+.det-scroll::-webkit-scrollbar { display: none; }
+.det-desc { font-size: 13.5px; color: var(--text-mid); line-height: 1.65; margin-bottom: 20px; }
+.det-sec-title { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--text-main); margin-bottom: 11px; }
+.habit-row { display: flex; align-items: center; gap: 11px; background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 15px; padding: 11px 13px; margin-bottom: 7px; }
+.habit-num { width: 26px; height: 26px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.habit-info { flex: 1; }
+.habit-name { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.habit-detail { font-size: 11px; color: var(--text-soft); margin-top: 2px; }
+.habit-dur { font-size: 11px; font-weight: 600; color: var(--camel); background: rgba(184,137,90,0.1); padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
+.tip-card { background: rgba(255,248,236,0.7); border-left: 3px solid var(--camel-soft); border-radius: 0 12px 12px 0; padding: 11px 13px; margin-bottom: 8px; }
+.tip-label { font-size: 10px; font-weight: 700; color: var(--camel); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+.tip-text { font-size: 12.5px; color: var(--text-mid); line-height: 1.5; }
+.review-card { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 15px; padding: 12px 13px; margin-bottom: 8px; }
+.review-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.review-name { font-size: 12.5px; font-weight: 600; color: var(--text-main); }
+.review-stars { font-size: 11px; color: #d4a050; }
+.review-text { font-size: 12px; color: var(--text-mid); line-height: 1.5; }
+.det-cta {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+  background: rgba(247,240,230,0.94); backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(180,140,90,0.12); padding: 13px 20px 30px;
+  display: flex; gap: 12px; align-items: center;
+}
+.cta-info { flex: 0 0 auto; }
+.cta-rating { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.cta-copies { font-size: 11px; color: var(--text-soft); margin-top: 1px; }
+.cta-btn {
+  flex: 1; background: linear-gradient(135deg, var(--camel), var(--camel-soft));
+  color: #fff; border-radius: 15px; padding: 14px; font-size: 14px; font-weight: 700;
+  text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+  box-shadow: 0 4px 16px rgba(184,137,90,0.35); transition: transform .15s;
+}
+.cta-btn:active { transform: scale(0.97); }
+.cta-btn.copied { background: linear-gradient(135deg, #8aab8e, #6a9e70); box-shadow: 0 4px 16px rgba(138,171,142,0.35); }
+.toast {
+  position: absolute; bottom: 96px; left: 50%; z-index: 30;
+  transform: translateX(-50%) translateY(12px);
+  background: rgba(60,35,12,0.88); backdrop-filter: blur(12px);
+  color: var(--crema); font-size: 13px; font-weight: 500;
+  padding: 10px 18px; border-radius: 20px; white-space: nowrap;
+  opacity: 0; pointer-events: none; display: flex; align-items: center; gap: 7px;
+  transition: all .3s ease; border: 1px solid rgba(255,240,200,0.15);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.au { animation: fadeUp .35s ease both; }
+.d1{animation-delay:.04s}.d2{animation-delay:.09s}.d3{animation-delay:.14s}
+.d4{animation-delay:.19s}.d5{animation-delay:.24s}.d6{animation-delay:.29s}
+.d7{animation-delay:.34s}.d8{animation-delay:.39s}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="bg"><div class="bg-glow"></div>
+    <svg viewBox="0 0 390 260" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,190 Q80,145 160,172 Q240,198 320,158 Q360,138 390,150 L390,260 L0,260 Z" fill="#c8a878"/>
+      <path d="M0,220 Q100,192 200,210 Q300,228 390,205 L390,260 L0,260 Z" fill="#b89060"/>
+    </svg>
+  </div>
+
+  <!-- BIBLIOTECA -->
+  <div id="screen-biblioteca">
+    <div class="status-bar"><span>9:41</span><span style="letter-spacing:2px">●●●</span></div>
+    <div class="lib-header">
+      <h1>Biblioteca</h1>
+      <p>Descubre y copia rutinas a tu perfil</p>
+      <div class="search-bar">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7a5030" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Buscar rutinas...</span>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab(0)">Rutio Picks</div>
+        <div class="tab" onclick="switchTab(1)">Inspiradas en</div>
+        <div class="tab" onclick="switchTab(2)">Comunidad</div>
+      </div>
+    </div>
+    <div class="lib-scroll">
+      <div id="tab-rutio">
+        <div class="sec-hd au d1" style="margin-top:14px"><div class="sec-title">✦ Destacadas</div><div class="sec-more">Ver todas</div></div>
+        <div class="hscroll au d2">
+          <div class="feat-card" style="background:linear-gradient(140deg,#f0d8a8,#d4a868)" onclick="openDetail('amanecer')">
+            <div class="feat-content" style="color:#3a1a08">
+              <div><div class="feat-tag" style="color:#5a2a08">☀️ Mañana</div><div class="feat-title">Ritual de<br>amanecer</div><div class="feat-meta">por Rutio · 5 hábitos · 30 min</div></div>
+              <div class="feat-bottom"><div class="feat-stats">⭐ 4.9 · 2.3k copias</div><div class="feat-btn" style="color:#3a1a08">Ver más</div></div>
+            </div>
+          </div>
+          <div class="feat-card" style="background:linear-gradient(140deg,#b8d4bc,#7aaa80)" onclick="openDetail('deepwork')">
+            <div class="feat-content" style="color:#1a3a20">
+              <div><div class="feat-tag" style="color:#1a3a20">🎯 Enfoque</div><div class="feat-title">Deep Work<br>Protocol</div><div class="feat-meta">por Rutio · 4 hábitos · 90 min</div></div>
+              <div class="feat-bottom"><div class="feat-stats">⭐ 4.8 · 1.8k copias</div><div class="feat-btn" style="color:#1a3a20">Ver más</div></div>
+            </div>
+          </div>
+          <div class="feat-card" style="background:linear-gradient(140deg,#c8d4e0,#8aa8c0)" onclick="openDetail('noche')">
+            <div class="feat-content" style="color:#1a2838">
+              <div><div class="feat-tag" style="color:#1a2838">🌙 Noche</div><div class="feat-title">Cierre<br>nocturno</div><div class="feat-meta">por Rutio · 3 hábitos · 20 min</div></div>
+              <div class="feat-bottom"><div class="feat-stats">⭐ 4.7 · 1.2k copias</div><div class="feat-btn" style="color:#1a2838">Ver más</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="sec-hd au d3"><div class="sec-title">Salud & Bienestar</div><div class="sec-more">Ver más</div></div>
+        <div class="list-card au d4" onclick="openDetail('calma')">
+          <div class="lc-icon" style="background:rgba(138,171,142,0.2)">🧘</div>
+          <div class="lc-body"><div class="lc-name">Calma diaria</div><div class="lc-pills"><div class="lc-pill">Meditación</div><div class="lc-pill">Respiración</div><div class="lc-pill">Diario</div></div><div class="lc-meta"><span>⏱ 20 min</span><span>★ 4.8</span><span>↓ 980</span></div></div>
+          <div class="lc-right"><div class="diff diff-easy">Fácil</div><div class="copy-btn" onclick="event.stopPropagation();showToast('Calma diaria')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5a3818" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div></div>
+        </div>
+        <div class="list-card au d5" onclick="openDetail('fitness')">
+          <div class="lc-icon" style="background:rgba(200,168,100,0.2)">💪</div>
+          <div class="lc-body"><div class="lc-name">Fitness matutino</div><div class="lc-pills"><div class="lc-pill">Ejercicio</div><div class="lc-pill">Proteína</div><div class="lc-pill">Pasos</div></div><div class="lc-meta"><span>⏱ 45 min</span><span>★ 4.6</span><span>↓ 740</span></div></div>
+          <div class="lc-right"><div class="diff diff-med">Medio</div><div class="copy-btn" onclick="event.stopPropagation();showToast('Fitness matutino')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5a3818" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div></div>
+        </div>
+        <div class="sec-hd au d6" style="margin-top:6px"><div class="sec-title">Productividad</div><div class="sec-more">Ver más</div></div>
+        <div class="list-card au d7" onclick="openDetail('semanal')">
+          <div class="lc-icon" style="background:rgba(138,168,200,0.2)">📋</div>
+          <div class="lc-body"><div class="lc-name">Planificación semanal</div><div class="lc-pills"><div class="lc-pill">Review</div><div class="lc-pill">Objetivos</div><div class="lc-pill">Agenda</div></div><div class="lc-meta"><span>⏱ 30 min</span><span>★ 4.9</span><span>↓ 1.1k</span></div></div>
+          <div class="lc-right"><div class="diff diff-easy">Fácil</div><div class="copy-btn" onclick="event.stopPropagation();showToast('Planificación semanal')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5a3818" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div></div>
+        </div>
+        <div class="list-card au d8" onclick="openDetail('noexcuses')">
+          <div class="lc-icon" style="background:rgba(193,105,79,0.15)">🔥</div>
+          <div class="lc-body"><div class="lc-name">No-excuses system</div><div class="lc-pills"><div class="lc-pill">Cold shower</div><div class="lc-pill">Gym</div><div class="lc-pill">Lectura</div></div><div class="lc-meta"><span>⏱ 2h</span><span>★ 4.5</span><span>↓ 560</span></div></div>
+          <div class="lc-right"><div class="diff diff-hard">Difícil</div><div class="copy-btn" onclick="event.stopPropagation();showToast('No-excuses system')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5a3818" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div></div>
+        </div>
+      </div>
+      <div id="tab-inspiradas" style="display:none">
+        <div class="sec-hd" style="margin-top:14px"><div class="sec-title">Personas notables</div><div class="sec-more" style="opacity:.5;color:var(--text-soft);font-size:11px">Adaptadas por Rutio</div></div>
+        <div class="pscroll">
+          <div class="p-card" onclick="openDetail('goggins')"><div class="p-avatar">🏃</div><div class="p-name">David<br>Goggins</div><div class="p-role">Atleta & autor</div><div class="p-tag" style="background:rgba(193,105,79,0.15);color:#8a3020">🔥 Extrema</div><div class="p-count">6 hábitos · 3h</div><div class="p-copy-btn">Ver rutina →</div></div>
+          <div class="p-card" onclick="openDetail('huberman')"><div class="p-avatar">🧠</div><div class="p-name">Andrew<br>Huberman</div><div class="p-role">Neurocientífico</div><div class="p-tag" style="background:rgba(138,171,142,0.2);color:#3a6a40">🔬 Ciencia</div><div class="p-count">8 hábitos · 2h</div><div class="p-copy-btn">Ver rutina →</div></div>
+          <div class="p-card" onclick="openDetail('naval')"><div class="p-avatar">📖</div><div class="p-name">Naval<br>Ravikant</div><div class="p-role">Inversor & filósofo</div><div class="p-tag" style="background:rgba(138,168,200,0.2);color:#2a5a7a">🧘 Mindset</div><div class="p-count">5 hábitos · 1h</div><div class="p-copy-btn">Ver rutina →</div></div>
+          <div class="p-card" onclick="openDetail('ferriss')"><div class="p-avatar">💼</div><div class="p-name">Tim<br>Ferriss</div><div class="p-role">Emprendedor & autor</div><div class="p-tag" style="background:rgba(200,168,100,0.2);color:#7a5010">⚡ Eficiencia</div><div class="p-count">7 hábitos · 90 min</div><div class="p-copy-btn">Ver rutina →</div></div>
+        </div>
+        <div class="sec-hd"><div class="sec-title">Más populares</div></div>
+        <div class="list-card" onclick="openDetail('goggins')"><div class="lc-icon" style="background:rgba(193,105,79,0.15)">🏃</div><div class="lc-body"><div class="lc-name">Morning Hell — Goggins</div><div class="lc-pills"><div class="lc-pill">Correr 10k</div><div class="lc-pill">Pull-ups</div><div class="lc-pill">Diario</div></div><div class="lc-meta"><span>⏱ 3h</span><span>★ 4.7</span><span>↓ 3.2k</span></div></div><div class="lc-right"><div class="diff diff-hard">Difícil</div><div class="copy-btn" onclick="event.stopPropagation();showToast('Morning Hell')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5a3818" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div></div></div>
+        <div class="list-card" onclick="openDetail('huberman')"><div class="lc-icon" style="background:rgba(138,171,142,0.18)">🧠</div><div class="lc-body"><div class="lc-name">Huberman Morning Protocol</div><div class="lc-pills"><div class="lc-pill">Luz solar</div><div class="lc-pill">Ejercicio</div><div class="lc-pill">Ayuno</div></div><div class="lc-meta"><span>⏱ 2h</span><span>★ 4.9</span><span>↓ 5.1k</span></div></div><div class="lc-right"><div class="diff diff-med">Medio</div><div class="copy-btn" onclick="event.stopPropagation();showToast('Huberman')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5a3818" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div></div></div>
+        <div class="list-card" onclick="openDetail('naval')"><div class="lc-icon" style="background:rgba(138,168,200,0.18)">📖</div><div class="lc-body"><div class="lc-name">Naval — Mente tranquila</div><div class="lc-pills"><div class="lc-pill">Meditación</div><div class="lc-pill">Lectura</div><div class="lc-pill">Caminar</div></div><div class="lc-meta"><span>⏱ 1h</span><span>★ 4.8</span><span>↓ 2.4k</span></div></div><div class="lc-right"><div class="diff diff-easy">Fácil</div><div class="copy-btn" onclick="event.stopPropagation();showToast('Naval')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5a3818" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div></div></div>
+      </div>
+      <div id="tab-comunidad" style="display:none">
+        <div class="coming-soon" style="margin-top:24px"><div style="font-size:36px;margin-bottom:10px">🌱</div><h3>Comunidad en camino</h3><p>Pronto podrás descubrir y compartir rutinas creadas por otros usuarios de Rutio.</p><div class="cs-badge"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Próximamente</div></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3a2410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="nav-label">Inicio</span><div class="nav-dot"></div></div>
+      <div class="nav-item active"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3a2410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><span class="nav-label">Biblioteca</span><div class="nav-dot"></div></div>
+      <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3a2410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="nav-label">Stats</span><div class="nav-dot"></div></div>
+      <div class="nav-item"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3a2410" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Perfil</span><div class="nav-dot"></div></div>
+    </div>
+  </div>
+
+  <!-- DETALLE -->
+  <div id="screen-detalle">
+    <div class="det-hero">
+      <div class="det-hero-bg" id="det-hero-bg"></div>
+      <svg class="det-hero-svg" id="det-hero-svg" viewBox="0 0 390 256" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="det-hero-overlay"></div>
+      <div class="det-back" onclick="closeDetail()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3a2410" stroke-width="2.2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+      <div class="det-share"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a2410" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+      <div class="det-hero-content">
+        <div class="det-tag" id="det-tag"></div>
+        <div class="det-title" id="det-title"></div>
+        <div class="det-author" id="det-author"></div>
+      </div>
+    </div>
+    <div class="det-stats">
+      <div class="det-stat"><div class="det-stat-val" id="det-s1"></div><div class="det-stat-lbl">hábitos</div></div>
+      <div class="det-stat"><div class="det-stat-val" id="det-s2"></div><div class="det-stat-lbl">minutos</div></div>
+      <div class="det-stat"><div class="det-stat-val" id="det-s3"></div><div class="det-stat-lbl">rating</div></div>
+      <div class="det-stat"><div class="det-stat-val" id="det-s4"></div><div class="det-stat-lbl">copias</div></div>
+    </div>
+    <div class="det-scroll">
+      <p class="det-desc" id="det-desc"></p>
+      <div class="det-sec-title">Hábitos incluidos</div>
+      <div id="det-habits"></div>
+      <div class="det-sec-title" style="margin-top:18px">Consejos</div>
+      <div id="det-tips"></div>
+      <div class="det-sec-title" style="margin-top:18px">Reseñas</div>
+      <div id="det-reviews"></div>
+    </div>
+    <div class="det-cta">
+      <div class="cta-info">
+        <div class="cta-rating" id="cta-rating"></div>
+        <div class="cta-copies" id="cta-copies"></div>
+      </div>
+      <div class="cta-btn" id="cta-btn" onclick="copiarRutina()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copiar rutina
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f7f0e6" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toast-text"></span>
+  </div>
+</div>
+
+<script>
+// ── SVG ILLUSTRATIONS ─────────────────────────────────────────
+const ILLUSTRATIONS = {
+
+  // ☀️ Amanecer — colinas suaves, sol naciente, pájaros
+  amanecer: `
+    <defs>
+      <radialGradient id="sun-am" cx="68%" cy="38%" r="30%">
+        <stop offset="0%" stop-color="#ffe090" stop-opacity="0.9"/>
+        <stop offset="40%" stop-color="#ffcc60" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#ffd070" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- sky rays -->
+    <line x1="265" y1="95" x2="160" y2="256" stroke="#ffdd88" stroke-width="28" stroke-opacity="0.08"/>
+    <line x1="265" y1="95" x2="280" y2="256" stroke="#ffdd88" stroke-width="20" stroke-opacity="0.07"/>
+    <line x1="265" y1="95" x2="390" y2="200" stroke="#ffdd88" stroke-width="16" stroke-opacity="0.06"/>
+    <!-- sun glow -->
+    <circle cx="265" cy="95" r="62" fill="url(#sun-am)"/>
+    <!-- sun disc -->
+    <circle cx="265" cy="95" r="28" fill="#ffdc70" fill-opacity="0.7"/>
+    <!-- horizon line -->
+    <line x1="0" y1="170" x2="390" y2="170" stroke="#c8983a" stroke-width="1" stroke-opacity="0.25"/>
+    <!-- rolling hills back -->
+    <path d="M-10,170 Q60,120 130,155 Q200,185 280,140 Q340,108 400,135 L400,256 L-10,256 Z" fill="#c8a060" fill-opacity="0.28"/>
+    <!-- hills mid -->
+    <path d="M-10,195 Q80,160 170,185 Q260,208 360,175 Q380,168 400,172 L400,256 L-10,256 Z" fill="#b89050" fill-opacity="0.32"/>
+    <!-- hills front -->
+    <path d="M-10,222 Q100,200 210,215 Q310,228 400,210 L400,256 L-10,256 Z" fill="#a07840" fill-opacity="0.35"/>
+    <!-- small tree left -->
+    <line x1="55" y1="210" x2="55" y2="235" stroke="#7a5828" stroke-width="2" stroke-opacity="0.5"/>
+    <ellipse cx="55" cy="205" rx="10" ry="13" fill="#8a7040" fill-opacity="0.4"/>
+    <!-- small tree right -->
+    <line x1="330" y1="195" x2="330" y2="215" stroke="#7a5828" stroke-width="2" stroke-opacity="0.5"/>
+    <ellipse cx="330" cy="190" rx="8" ry="11" fill="#8a7040" fill-opacity="0.4"/>
+    <!-- birds (3 simple curves) -->
+    <path d="M180,75 Q185,70 190,75" stroke="#c8882a" stroke-width="1.5" fill="none" stroke-opacity="0.6"/>
+    <path d="M198,68 Q204,63 210,68" stroke="#c8882a" stroke-width="1.5" fill="none" stroke-opacity="0.6"/>
+    <path d="M215,78 Q220,73 226,78" stroke="#c8882a" stroke-width="1.5" fill="none" stroke-opacity="0.5"/>
+    <!-- dew dots -->
+    <circle cx="100" cy="230" r="2" fill="#ffdd88" fill-opacity="0.4"/>
+    <circle cx="160" cy="240" r="1.5" fill="#ffdd88" fill-opacity="0.35"/>
+    <circle cx="240" cy="235" r="2" fill="#ffdd88" fill-opacity="0.3"/>
+  `,
+
+  // 🎯 Deep Work — escritorio minimalista, ondas de concentración, lápiz
+  deepwork: `
+    <defs>
+      <radialGradient id="glow-dw" cx="50%" cy="45%" r="40%">
+        <stop offset="0%" stop-color="#a0d8a8" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#a0d8a8" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- focus glow -->
+    <ellipse cx="195" cy="118" rx="110" ry="80" fill="url(#glow-dw)"/>
+    <!-- concentric focus rings -->
+    <circle cx="195" cy="118" r="95" stroke="#7aaa80" stroke-width="1" fill="none" stroke-opacity="0.2" stroke-dasharray="6 5"/>
+    <circle cx="195" cy="118" r="70" stroke="#7aaa80" stroke-width="1" fill="none" stroke-opacity="0.25" stroke-dasharray="5 5"/>
+    <circle cx="195" cy="118" r="46" stroke="#7aaa80" stroke-width="1.2" fill="none" stroke-opacity="0.3" stroke-dasharray="4 4"/>
+    <circle cx="195" cy="118" r="24" stroke="#7aaa80" stroke-width="1.5" fill="none" stroke-opacity="0.4"/>
+    <!-- desk surface -->
+    <path d="M0,200 Q195,185 390,200 L390,256 L0,256 Z" fill="#8aaa70" fill-opacity="0.2"/>
+    <line x1="0" y1="200" x2="390" y2="200" stroke="#7aaa60" stroke-width="1.2" stroke-opacity="0.3"/>
+    <!-- notebook -->
+    <rect x="110" y="165" width="80" height="52" rx="4" fill="#e8d8b0" fill-opacity="0.55"/>
+    <rect x="114" y="165" width="8" height="52" rx="2" fill="#c8a870" fill-opacity="0.4"/>
+    <!-- notebook lines -->
+    <line x1="127" y1="178" x2="182" y2="178" stroke="#a08850" stroke-width="1" stroke-opacity="0.35"/>
+    <line x1="127" y1="186" x2="182" y2="186" stroke="#a08850" stroke-width="1" stroke-opacity="0.35"/>
+    <line x1="127" y1="194" x2="165" y2="194" stroke="#a08850" stroke-width="1" stroke-opacity="0.35"/>
+    <!-- pencil -->
+    <g transform="rotate(-25, 215, 175)">
+      <rect x="210" y="163" width="8" height="36" rx="2" fill="#e8c870" fill-opacity="0.7"/>
+      <polygon points="210,163 218,163 214,155" fill="#d4a840" fill-opacity="0.7"/>
+      <rect x="210" y="197" width="8" height="5" rx="1" fill="#e0a890" fill-opacity="0.6"/>
+    </g>
+    <!-- coffee cup -->
+    <ellipse cx="272" cy="190" rx="14" ry="5" fill="#c8a870" fill-opacity="0.3"/>
+    <path d="M258,175 Q258,190 272,190 Q286,190 286,175 Z" fill="#d4b880" fill-opacity="0.4"/>
+    <path d="M286,180 Q294,178 294,185 Q294,192 286,188" stroke="#c8a870" stroke-width="2" fill="none" stroke-opacity="0.4"/>
+    <!-- steam lines -->
+    <path d="M267,170 Q269,163 267,157" stroke="#c8d8c0" stroke-width="1.5" fill="none" stroke-opacity="0.5" stroke-linecap="round"/>
+    <path d="M273,168 Q275,161 273,155" stroke="#c8d8c0" stroke-width="1.5" fill="none" stroke-opacity="0.4" stroke-linecap="round"/>
+    <!-- dot in center of rings -->
+    <circle cx="195" cy="118" r="5" fill="#7aaa80" fill-opacity="0.6"/>
+  `,
+
+  // 🌙 Cierre nocturno — luna, estrellas, silueta leyendo
+  noche: `
+    <defs>
+      <radialGradient id="moon-glow" cx="70%" cy="28%" r="25%">
+        <stop offset="0%" stop-color="#c8d8f0" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#c8d8f0" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- moon glow -->
+    <circle cx="272" cy="72" r="70" fill="url(#moon-glow)"/>
+    <!-- moon crescent -->
+    <circle cx="272" cy="72" r="34" fill="#d8e8f8" fill-opacity="0.55"/>
+    <circle cx="289" cy="64" r="28" fill="#b0c8e0" fill-opacity="0.55"/>
+    <!-- stars -->
+    <circle cx="80"  cy="45"  r="2"   fill="#d0e4f8" fill-opacity="0.7"/>
+    <circle cx="140" cy="32"  r="1.5" fill="#d0e4f8" fill-opacity="0.6"/>
+    <circle cx="110" cy="72"  r="1.5" fill="#d0e4f8" fill-opacity="0.5"/>
+    <circle cx="165" cy="55"  r="2.5" fill="#d0e4f8" fill-opacity="0.65"/>
+    <circle cx="55"  cy="88"  r="1.5" fill="#d0e4f8" fill-opacity="0.45"/>
+    <circle cx="200" cy="40"  r="1.5" fill="#d0e4f8" fill-opacity="0.5"/>
+    <circle cx="330" cy="45"  r="1.5" fill="#d0e4f8" fill-opacity="0.45"/>
+    <circle cx="350" cy="100" r="2"   fill="#d0e4f8" fill-opacity="0.4"/>
+    <!-- 4-pointed star sparkle -->
+    <path d="M165,55 L166.5,58 L170,59.5 L166.5,61 L165,64 L163.5,61 L160,59.5 L163.5,58 Z" fill="#d8ecff" fill-opacity="0.7"/>
+    <!-- hills silhouette -->
+    <path d="M-10,185 Q70,140 150,168 Q230,195 310,155 Q360,132 400,148 L400,256 L-10,256 Z" fill="#90a8c0" fill-opacity="0.22"/>
+    <path d="M-10,210 Q100,182 200,200 Q300,218 400,195 L400,256 L-10,256 Z" fill="#7a98b0" fill-opacity="0.25"/>
+    <!-- house silhouette -->
+    <rect x="58" y="195" width="38" height="28" fill="#5a7890" fill-opacity="0.3"/>
+    <polygon points="52,195 96,195 74,175" fill="#4a6880" fill-opacity="0.35"/>
+    <!-- window lit -->
+    <rect x="64" y="200" width="10" height="10" rx="1" fill="#f0d890" fill-opacity="0.5"/>
+    <rect x="80" y="200" width="10" height="10" rx="1" fill="#f0d890" fill-opacity="0.35"/>
+    <!-- person sitting reading (right side) -->
+    <circle cx="305" cy="192" r="9" fill="#7090a8" fill-opacity="0.4"/>
+    <path d="M296,200 Q296,225 314,225 Q332,225 332,200 Z" fill="#6080a0" fill-opacity="0.35"/>
+    <!-- book in lap -->
+    <path d="M290,218 Q305,210 314,218" stroke="#d8e8f8" stroke-width="2" fill="#e8f0f8" fill-opacity="0.4" stroke-opacity="0.5"/>
+    <!-- ground -->
+    <path d="M-10,235 Q195,225 400,235 L400,256 L-10,256 Z" fill="#6888a0" fill-opacity="0.22"/>
+  `,
+
+  // 🧘 Calma — ondas concéntricas de agua, flor de loto simplificada
+  calma: `
+    <defs>
+      <radialGradient id="water-calm" cx="45%" cy="60%" r="45%">
+        <stop offset="0%" stop-color="#90c8a0" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#90c8a0" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- water surface glow -->
+    <ellipse cx="175" cy="165" rx="155" ry="60" fill="url(#water-calm)"/>
+    <!-- ripple waves (concentric ellipses) -->
+    <ellipse cx="175" cy="168" rx="25"  ry="9"  stroke="#8ab898" stroke-width="1.2" fill="none" stroke-opacity="0.5"/>
+    <ellipse cx="175" cy="168" rx="50"  ry="18" stroke="#8ab898" stroke-width="1"   fill="none" stroke-opacity="0.4"/>
+    <ellipse cx="175" cy="168" rx="78"  ry="28" stroke="#8ab898" stroke-width="1"   fill="none" stroke-opacity="0.3"/>
+    <ellipse cx="175" cy="168" rx="108" ry="38" stroke="#8ab898" stroke-width="0.8" fill="none" stroke-opacity="0.22"/>
+    <ellipse cx="175" cy="168" rx="140" ry="50" stroke="#8ab898" stroke-width="0.7" fill="none" stroke-opacity="0.15"/>
+    <!-- lotus stem -->
+    <path d="M175,168 Q172,145 175,125" stroke="#7aaa80" stroke-width="2" fill="none" stroke-opacity="0.5" stroke-linecap="round"/>
+    <!-- lotus petals (simplified) -->
+    <ellipse cx="175" cy="118" rx="8"  ry="14" fill="#c8e0c8" fill-opacity="0.55" transform="rotate(0,175,118)"/>
+    <ellipse cx="163" cy="122" rx="8"  ry="13" fill="#b8d8b8" fill-opacity="0.5"  transform="rotate(-30,163,122)"/>
+    <ellipse cx="187" cy="122" rx="8"  ry="13" fill="#b8d8b8" fill-opacity="0.5"  transform="rotate(30,187,122)"/>
+    <ellipse cx="158" cy="130" rx="7"  ry="12" fill="#a8c8a8" fill-opacity="0.45" transform="rotate(-55,158,130)"/>
+    <ellipse cx="192" cy="130" rx="7"  ry="12" fill="#a8c8a8" fill-opacity="0.45" transform="rotate(55,192,130)"/>
+    <!-- lotus center -->
+    <circle cx="175" cy="118" r="7" fill="#e8d890" fill-opacity="0.55"/>
+    <!-- lily pad left -->
+    <ellipse cx="100" cy="178" rx="22" ry="8" fill="#7aaa70" fill-opacity="0.3" transform="rotate(-10,100,178)"/>
+    <!-- lily pad right -->
+    <ellipse cx="255" cy="175" rx="18" ry="7" fill="#7aaa70" fill-opacity="0.28" transform="rotate(12,255,175)"/>
+    <!-- floating petals -->
+    <ellipse cx="135" cy="182" rx="6" ry="3" fill="#e8c8d8" fill-opacity="0.4" transform="rotate(-20,135,182)"/>
+    <ellipse cx="220" cy="178" rx="5" ry="2.5" fill="#e8c8d8" fill-opacity="0.35" transform="rotate(15,220,178)"/>
+    <!-- soft horizon mist -->
+    <path d="M0,210 Q195,198 390,210 L390,256 L0,256 Z" fill="#88b898" fill-opacity="0.15"/>
+    <!-- small dragonfly -->
+    <circle cx="310" cy="105" r="3" fill="#6a9878" fill-opacity="0.45"/>
+    <ellipse cx="303" cy="103" rx="9" ry="3" fill="#a8d0b8" fill-opacity="0.4" transform="rotate(-15,303,103)"/>
+    <ellipse cx="317" cy="103" rx="9" ry="3" fill="#a8d0b8" fill-opacity="0.4" transform="rotate(15,317,103)"/>
+  `,
+
+  // 💪 Fitness — silueta corriendo, ondas de energía, sol
+  fitness: `
+    <defs>
+      <radialGradient id="energy-fit" cx="50%" cy="30%" r="40%">
+        <stop offset="0%" stop-color="#f0c870" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#f0c870" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- energy burst -->
+    <circle cx="195" cy="78" r="80" fill="url(#energy-fit)"/>
+    <!-- speed lines -->
+    <line x1="30"  y1="140" x2="110" y2="138" stroke="#e0b060" stroke-width="1.5" stroke-opacity="0.25" stroke-linecap="round"/>
+    <line x1="20"  y1="153" x2="105" y2="152" stroke="#e0b060" stroke-width="2"   stroke-opacity="0.2"  stroke-linecap="round"/>
+    <line x1="30"  y1="166" x2="108" y2="164" stroke="#e0b060" stroke-width="1.5" stroke-opacity="0.18" stroke-linecap="round"/>
+    <line x1="45"  y1="178" x2="115" y2="177" stroke="#e0b060" stroke-width="1"   stroke-opacity="0.15" stroke-linecap="round"/>
+    <!-- running figure (stick-ish but expressive) -->
+    <!-- head -->
+    <circle cx="210" cy="95" r="14" fill="#c89858" fill-opacity="0.55"/>
+    <!-- body -->
+    <line x1="210" y1="109" x2="208" y2="148" stroke="#c89858" stroke-width="5" stroke-opacity="0.5" stroke-linecap="round"/>
+    <!-- forward arm -->
+    <line x1="210" y1="120" x2="240" y2="108" stroke="#c89858" stroke-width="4" stroke-opacity="0.5" stroke-linecap="round"/>
+    <!-- back arm -->
+    <line x1="210" y1="120" x2="185" y2="140" stroke="#c89858" stroke-width="4" stroke-opacity="0.45" stroke-linecap="round"/>
+    <!-- forward leg -->
+    <line x1="208" y1="148" x2="240" y2="172" stroke="#c89858" stroke-width="4.5" stroke-opacity="0.5" stroke-linecap="round"/>
+    <line x1="240" y1="172" x2="262" y2="162" stroke="#c89858" stroke-width="4"   stroke-opacity="0.45" stroke-linecap="round"/>
+    <!-- back leg -->
+    <line x1="208" y1="148" x2="188" y2="170" stroke="#c89858" stroke-width="4.5" stroke-opacity="0.5" stroke-linecap="round"/>
+    <line x1="188" y1="170" x2="175" y2="158" stroke="#c89858" stroke-width="4"   stroke-opacity="0.45" stroke-linecap="round"/>
+    <!-- ground -->
+    <path d="M0,210 Q195,200 390,210 L390,256 L0,256 Z" fill="#c8a060" fill-opacity="0.2"/>
+    <line x1="0" y1="210" x2="390" y2="210" stroke="#c8a050" stroke-width="1" stroke-opacity="0.25"/>
+    <!-- path/track marks -->
+    <line x1="140" y1="214" x2="165" y2="214" stroke="#b88840" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="4 6"/>
+    <line x1="175" y1="214" x2="200" y2="214" stroke="#b88840" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="4 6"/>
+    <line x1="210" y1="214" x2="235" y2="214" stroke="#b88840" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="4 6"/>
+    <!-- sun arc lines -->
+    <line x1="195" y1="20" x2="195" y2="38" stroke="#f0c860" stroke-width="2" stroke-opacity="0.4" stroke-linecap="round"/>
+    <line x1="228" y1="28" x2="220" y2="43" stroke="#f0c860" stroke-width="2" stroke-opacity="0.35" stroke-linecap="round"/>
+    <line x1="162" y1="28" x2="170" y2="43" stroke="#f0c860" stroke-width="2" stroke-opacity="0.35" stroke-linecap="round"/>
+    <circle cx="195" cy="55" r="18" fill="#f0c860" fill-opacity="0.45"/>
+  `,
+
+  // 📋 Semanal — calendario, checkmarks, flechas
+  semanal: `
+    <defs>
+      <radialGradient id="glow-sem" cx="50%" cy="50%" r="45%">
+        <stop offset="0%" stop-color="#90b8e0" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="#90b8e0" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect x="0" y="0" width="390" height="256" fill="url(#glow-sem)"/>
+    <!-- big calendar -->
+    <rect x="88" y="55" width="214" height="165" rx="12" fill="#d8e8f4" fill-opacity="0.45"/>
+    <!-- calendar header -->
+    <rect x="88" y="55" width="214" height="36" rx="12" fill="#a0c0d8" fill-opacity="0.4"/>
+    <rect x="88" y="79" width="214" height="12" fill="#a0c0d8" fill-opacity="0.4"/>
+    <!-- header text dots -->
+    <circle cx="152" cy="73" r="3" fill="#e8f4ff" fill-opacity="0.6"/>
+    <circle cx="195" cy="73" r="3" fill="#e8f4ff" fill-opacity="0.6"/>
+    <circle cx="238" cy="73" r="3" fill="#e8f4ff" fill-opacity="0.6"/>
+    <!-- day grid lines vertical -->
+    <line x1="118" y1="91" x2="118" y2="220" stroke="#90a8c0" stroke-width="0.8" stroke-opacity="0.3"/>
+    <line x1="148" y1="91" x2="148" y2="220" stroke="#90a8c0" stroke-width="0.8" stroke-opacity="0.3"/>
+    <line x1="178" y1="91" x2="178" y2="220" stroke="#90a8c0" stroke-width="0.8" stroke-opacity="0.3"/>
+    <line x1="208" y1="91" x2="208" y2="220" stroke="#90a8c0" stroke-width="0.8" stroke-opacity="0.3"/>
+    <line x1="238" y1="91" x2="238" y2="220" stroke="#90a8c0" stroke-width="0.8" stroke-opacity="0.3"/>
+    <line x1="268" y1="91" x2="268" y2="220" stroke="#90a8c0" stroke-width="0.8" stroke-opacity="0.3"/>
+    <!-- day grid horizontal -->
+    <line x1="88" y1="120" x2="302" y2="120" stroke="#90a8c0" stroke-width="0.8" stroke-opacity="0.25"/>
+    <line x1="88" y1="150" x2="302" y2="150" stroke="#90a8c0" stroke-width="0.8" stroke-opacity="0.25"/>
+    <line x1="88" y1="180" x2="302" y2="180" stroke="#90a8c0" stroke-width="0.8" stroke-opacity="0.25"/>
+    <!-- checked cells -->
+    <rect x="92"  y="94"  width="22" height="22" rx="4" fill="#a0c0e0" fill-opacity="0.4"/>
+    <rect x="122" y="94"  width="22" height="22" rx="4" fill="#a0c0e0" fill-opacity="0.4"/>
+    <rect x="152" y="94"  width="22" height="22" rx="4" fill="#a0c0e0" fill-opacity="0.4"/>
+    <rect x="182" y="94"  width="22" height="22" rx="4" fill="#a0c0e0" fill-opacity="0.4"/>
+    <rect x="212" y="94"  width="22" height="22" rx="4" fill="#f0d070" fill-opacity="0.5"/>
+    <!-- checkmarks in cells -->
+    <path d="M97,105 L101,110 L110,100"  stroke="#e8f4ff" stroke-width="2" fill="none" stroke-opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M127,105 L131,110 L140,100" stroke="#e8f4ff" stroke-width="2" fill="none" stroke-opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M157,105 L161,110 L170,100" stroke="#e8f4ff" stroke-width="2" fill="none" stroke-opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M187,105 L191,110 L200,100" stroke="#e8f4ff" stroke-width="2" fill="none" stroke-opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- star on target day -->
+    <path d="M223,99 L224.5,103.5 L229,103.5 L225.5,106 L227,110.5 L223,108 L219,110.5 L220.5,106 L217,103.5 L221.5,103.5 Z" fill="#e8c040" fill-opacity="0.7"/>
+    <!-- row 2: some blocks -->
+    <rect x="92"  y="124" width="22" height="22" rx="4" fill="#90b8d8" fill-opacity="0.3"/>
+    <rect x="152" y="124" width="22" height="22" rx="4" fill="#90b8d8" fill-opacity="0.3"/>
+    <rect x="212" y="124" width="22" height="22" rx="4" fill="#90b8d8" fill-opacity="0.3"/>
+    <!-- arrow indicating forward / plan -->
+    <path d="M320,128 L350,128" stroke="#90b0d0" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
+    <path d="M344,122 L352,128 L344,134" stroke="#90b0d0" stroke-width="2" fill="none" stroke-opacity="0.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- small pencil top right -->
+    <g transform="rotate(-40, 338, 75)">
+      <rect x="334" y="60" width="7" height="28" rx="2" fill="#e8d890" fill-opacity="0.55"/>
+      <polygon points="334,60 341,60 337.5,53" fill="#d4b840" fill-opacity="0.55"/>
+    </g>
+  `,
+
+  // 🔥 No-excuses — llamas, pesas, trazo crudo
+  noexcuses: `
+    <defs>
+      <radialGradient id="fire-glow" cx="50%" cy="65%" r="45%">
+        <stop offset="0%" stop-color="#e8b060" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#e8b060" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="195" cy="180" rx="150" ry="60" fill="url(#fire-glow)"/>
+    <!-- flame 1 center -->
+    <path d="M195,55 Q180,90 185,115 Q170,95 175,130 Q160,110 168,148 Q155,135 162,165 Q170,180 195,185 Q220,180 228,165 Q235,135 222,148 Q230,110 215,130 Q220,95 205,115 Q210,90 195,55 Z" fill="#e8b060" fill-opacity="0.4"/>
+    <!-- flame 2 left -->
+    <path d="M155,105 Q144,128 148,148 Q138,132 142,158 Q148,172 165,175 Q175,165 170,148 Q180,135 172,118 Q168,108 155,105 Z" fill="#d89848" fill-opacity="0.32"/>
+    <!-- flame 3 right -->
+    <path d="M235,105 Q246,128 242,148 Q252,132 248,158 Q242,172 225,175 Q215,165 220,148 Q210,135 218,118 Q222,108 235,105 Z" fill="#d89848" fill-opacity="0.32"/>
+    <!-- barbell -->
+    <line x1="80" y1="210" x2="310" y2="210" stroke="#a88050" stroke-width="5" stroke-opacity="0.4" stroke-linecap="round"/>
+    <!-- left weight -->
+    <rect x="68" y="196" width="28" height="28" rx="5" fill="#c09060" fill-opacity="0.45"/>
+    <rect x="56" y="200" width="16" height="20" rx="4" fill="#b08050" fill-opacity="0.4"/>
+    <!-- right weight -->
+    <rect x="294" y="196" width="28" height="28" rx="5" fill="#c09060" fill-opacity="0.45"/>
+    <rect x="318" y="200" width="16" height="20" rx="4" fill="#b08050" fill-opacity="0.4"/>
+    <!-- central knurl marks on bar -->
+    <line x1="170" y1="205" x2="170" y2="215" stroke="#d0a868" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="180" y1="205" x2="180" y2="215" stroke="#d0a868" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="190" y1="205" x2="190" y2="215" stroke="#d0a868" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="200" y1="205" x2="200" y2="215" stroke="#d0a868" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="210" y1="205" x2="210" y2="215" stroke="#d0a868" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="220" y1="205" x2="220" y2="215" stroke="#d0a868" stroke-width="1.5" stroke-opacity="0.4"/>
+  `,
+
+  // 🏃 Goggins — carretera al amanecer, figura solitaria, cielo dramático
+  goggins: `
+    <defs>
+      <radialGradient id="dawn-g" cx="50%" cy="40%" r="40%">
+        <stop offset="0%" stop-color="#f0c060" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#f0c060" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- dramatic sky -->
+    <rect x="0" y="0" width="390" height="256" fill="#e0c898" fill-opacity="0.05"/>
+    <circle cx="195" cy="105" r="90" fill="url(#dawn-g)"/>
+    <!-- horizon glow band -->
+    <rect x="0" y="148" width="390" height="18" fill="#f0c060" fill-opacity="0.12"/>
+    <!-- sun barely rising -->
+    <circle cx="195" cy="152" r="20" fill="#f0c858" fill-opacity="0.5"/>
+    <circle cx="195" cy="152" r="12" fill="#f8d870" fill-opacity="0.5"/>
+    <!-- road perspective -->
+    <path d="M130,256 L195,152 L260,256 Z" fill="#b09060" fill-opacity="0.22"/>
+    <!-- road lines -->
+    <line x1="195" y1="152" x2="195" y2="256" stroke="#d0b060" stroke-width="2" stroke-opacity="0.3" stroke-dasharray="8 10"/>
+    <!-- road edges -->
+    <line x1="130" y1="256" x2="195" y2="152" stroke="#c0a050" stroke-width="1" stroke-opacity="0.3"/>
+    <line x1="260" y1="256" x2="195" y2="152" stroke="#c0a050" stroke-width="1" stroke-opacity="0.3"/>
+    <!-- running figure far (small, on road) -->
+    <circle cx="195" cy="165" r="5" fill="#c09050" fill-opacity="0.65"/>
+    <line x1="195" y1="170" x2="194" y2="182" stroke="#c09050" stroke-width="3" stroke-opacity="0.6" stroke-linecap="round"/>
+    <line x1="194" y1="175" x2="200" y2="170" stroke="#c09050" stroke-width="2.5" stroke-opacity="0.55" stroke-linecap="round"/>
+    <line x1="194" y1="175" x2="189" y2="172" stroke="#c09050" stroke-width="2.5" stroke-opacity="0.5" stroke-linecap="round"/>
+    <line x1="194" y1="182" x2="199" y2="191" stroke="#c09050" stroke-width="3" stroke-opacity="0.6" stroke-linecap="round"/>
+    <line x1="194" y1="182" x2="190" y2="190" stroke="#c09050" stroke-width="3" stroke-opacity="0.55" stroke-linecap="round"/>
+    <!-- dark hills silhouette left -->
+    <path d="M-10,180 Q50,145 110,168 Q140,178 160,165 L160,256 L-10,256 Z" fill="#a08050" fill-opacity="0.25"/>
+    <!-- dark hills right -->
+    <path d="M230,165 Q260,152 310,162 Q355,170 400,155 L400,256 L230,256 Z" fill="#a08050" fill-opacity="0.22"/>
+    <!-- cloud streaks -->
+    <path d="M40,60 Q90,52 130,60"  stroke="#e8d8a0" stroke-width="6"  fill="none" stroke-opacity="0.2" stroke-linecap="round"/>
+    <path d="M60,80 Q120,70 170,78" stroke="#e8d8a0" stroke-width="4"  fill="none" stroke-opacity="0.18" stroke-linecap="round"/>
+    <path d="M250,55 Q300,47 355,54" stroke="#e8d8a0" stroke-width="5" fill="none" stroke-opacity="0.18" stroke-linecap="round"/>
+  `,
+
+  // 🧠 Huberman — sol, ondas cerebrales / circadianas, silueta meditando
+  huberman: `
+    <defs>
+      <radialGradient id="sun-hub" cx="50%" cy="35%" r="35%">
+        <stop offset="0%" stop-color="#d8e8a8" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="#d8e8a8" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- bg glow -->
+    <circle cx="195" cy="90" r="100" fill="url(#sun-hub)"/>
+    <!-- sun -->
+    <circle cx="195" cy="90" r="26" fill="#d0e090" fill-opacity="0.6"/>
+    <circle cx="195" cy="90" r="18" fill="#e0ec98" fill-opacity="0.6"/>
+    <!-- sun rays -->
+    <line x1="195" y1="52" x2="195" y2="38" stroke="#c8dc80" stroke-width="2.5" stroke-opacity="0.45" stroke-linecap="round"/>
+    <line x1="227" y1="62" x2="237" y2="52" stroke="#c8dc80" stroke-width="2.5" stroke-opacity="0.4"  stroke-linecap="round"/>
+    <line x1="163" y1="62" x2="153" y2="52" stroke="#c8dc80" stroke-width="2.5" stroke-opacity="0.4"  stroke-linecap="round"/>
+    <line x1="237" y1="90" x2="252" y2="90" stroke="#c8dc80" stroke-width="2.5" stroke-opacity="0.4"  stroke-linecap="round"/>
+    <line x1="153" y1="90" x2="138" y2="90" stroke="#c8dc80" stroke-width="2.5" stroke-opacity="0.4"  stroke-linecap="round"/>
+    <line x1="227" y1="118" x2="237" y2="128" stroke="#c8dc80" stroke-width="2" stroke-opacity="0.35" stroke-linecap="round"/>
+    <line x1="163" y1="118" x2="153" y2="128" stroke="#c8dc80" stroke-width="2" stroke-opacity="0.35" stroke-linecap="round"/>
+    <!-- circadian / brain wave curves -->
+    <path d="M20,155 Q55,130 90,155 Q125,180 160,155 Q195,130 230,155 Q265,180 300,155 Q335,130 370,155" stroke="#a0c870" stroke-width="2" fill="none" stroke-opacity="0.4" stroke-linecap="round"/>
+    <path d="M20,170 Q60,152 100,170 Q140,188 180,170 Q220,152 260,170 Q300,188 340,170 Q365,162 390,170" stroke="#90b860" stroke-width="1.5" fill="none" stroke-opacity="0.3" stroke-linecap="round"/>
+    <!-- sitting figure (meditating, ground) -->
+    <ellipse cx="195" cy="228" rx="38" ry="8" fill="#a0b870" fill-opacity="0.25"/>
+    <!-- crossed legs -->
+    <path d="M165,228 Q175,215 195,220 Q215,215 225,228" stroke="#a0b868" stroke-width="5" fill="none" stroke-opacity="0.45" stroke-linecap="round"/>
+    <!-- torso -->
+    <line x1="195" y1="220" x2="195" y2="196" stroke="#a0b868" stroke-width="5" stroke-opacity="0.45" stroke-linecap="round"/>
+    <!-- arms resting on knees -->
+    <line x1="195" y1="212" x2="172" y2="222" stroke="#a0b868" stroke-width="4" stroke-opacity="0.4" stroke-linecap="round"/>
+    <line x1="195" y1="212" x2="218" y2="222" stroke="#a0b868" stroke-width="4" stroke-opacity="0.4" stroke-linecap="round"/>
+    <!-- head -->
+    <circle cx="195" cy="188" r="12" fill="#a0b868" fill-opacity="0.45"/>
+    <!-- small light rays from head (insight) -->
+    <line x1="195" y1="174" x2="195" y2="168" stroke="#c8dc80" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round"/>
+    <line x1="204" y1="176" x2="208" y2="171" stroke="#c8dc80" stroke-width="1.5" stroke-opacity="0.35" stroke-linecap="round"/>
+    <line x1="186" y1="176" x2="182" y2="171" stroke="#c8dc80" stroke-width="1.5" stroke-opacity="0.35" stroke-linecap="round"/>
+  `,
+
+  // 📖 Naval — libro abierto, lago en calma, luna
+  naval: `
+    <defs>
+      <linearGradient id="lake-nav" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#9ab8d8" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#7898b8" stop-opacity="0.15"/>
+      </linearGradient>
+    </defs>
+    <!-- sky -->
+    <circle cx="195" cy="65" r="32" fill="#c8d8f0" fill-opacity="0.45"/>
+    <circle cx="210" cy="57" r="26" fill="#a8b8d0" fill-opacity="0.4"/>
+    <!-- stars scattered -->
+    <circle cx="80"  cy="35"  r="2"   fill="#d0e4f8" fill-opacity="0.6"/>
+    <circle cx="130" cy="22"  r="1.5" fill="#d0e4f8" fill-opacity="0.55"/>
+    <circle cx="158" cy="42"  r="2"   fill="#d0e4f8" fill-opacity="0.5"/>
+    <circle cx="55"  cy="62"  r="1.5" fill="#d0e4f8" fill-opacity="0.45"/>
+    <circle cx="310" cy="30"  r="2"   fill="#d0e4f8" fill-opacity="0.55"/>
+    <circle cx="345" cy="55"  r="1.5" fill="#d0e4f8" fill-opacity="0.45"/>
+    <circle cx="295" cy="65"  r="1.5" fill="#d0e4f8" fill-opacity="0.4"/>
+    <!-- 4-pointed sparkle -->
+    <path d="M158,42 L159.5,46 L163,47.5 L159.5,49 L158,52.5 L156.5,49 L153,47.5 L156.5,46 Z" fill="#d8ecff" fill-opacity="0.6"/>
+    <!-- calm lake -->
+    <ellipse cx="195" cy="195" rx="175" ry="45" fill="url(#lake-nav)"/>
+    <!-- lake surface reflection line -->
+    <line x1="20" y1="175" x2="370" y2="175" stroke="#88a8c8" stroke-width="0.8" stroke-opacity="0.3"/>
+    <!-- subtle ripples -->
+    <ellipse cx="195" cy="195" rx="80" ry="12" stroke="#88a8c8" stroke-width="0.8" fill="none" stroke-opacity="0.2"/>
+    <ellipse cx="195" cy="195" rx="130" ry="20" stroke="#88a8c8" stroke-width="0.6" fill="none" stroke-opacity="0.15"/>
+    <!-- moon reflection on water -->
+    <ellipse cx="195" cy="200" rx="15" ry="5" fill="#c8d8f0" fill-opacity="0.3"/>
+    <!-- open book (center, resting on shore) -->
+    <path d="M130,173 Q162,158 195,165 L195,215 Q162,208 130,220 Z" fill="#e8dcc8" fill-opacity="0.55"/>
+    <path d="M260,173 Q228,158 195,165 L195,215 Q228,208 260,220 Z" fill="#ddd0b8" fill-opacity="0.5"/>
+    <!-- book spine -->
+    <line x1="195" y1="165" x2="195" y2="215" stroke="#c8b898" stroke-width="2" stroke-opacity="0.5"/>
+    <!-- book text lines left -->
+    <line x1="145" y1="180" x2="185" y2="177" stroke="#a09070" stroke-width="1" stroke-opacity="0.3"/>
+    <line x1="143" y1="188" x2="183" y2="185" stroke="#a09070" stroke-width="1" stroke-opacity="0.3"/>
+    <line x1="142" y1="196" x2="182" y2="193" stroke="#a09070" stroke-width="1" stroke-opacity="0.3"/>
+    <line x1="141" y1="204" x2="181" y2="201" stroke="#a09070" stroke-width="1" stroke-opacity="0.3"/>
+    <!-- book text lines right -->
+    <line x1="205" y1="177" x2="245" y2="180" stroke="#a09070" stroke-width="1" stroke-opacity="0.3"/>
+    <line x1="207" y1="185" x2="247" y2="188" stroke="#a09070" stroke-width="1" stroke-opacity="0.3"/>
+    <line x1="208" y1="193" x2="248" y2="196" stroke="#a09070" stroke-width="1" stroke-opacity="0.3"/>
+    <!-- tree silhouette left shore -->
+    <line x1="52" y1="175" x2="52" y2="215" stroke="#7888a8" stroke-width="2.5" stroke-opacity="0.35"/>
+    <ellipse cx="52" cy="165" rx="16" ry="18" fill="#7888a8" fill-opacity="0.28"/>
+    <!-- tree right -->
+    <line x1="340" y1="175" x2="340" y2="210" stroke="#7888a8" stroke-width="2" stroke-opacity="0.3"/>
+    <ellipse cx="340" cy="165" rx="13" ry="15" fill="#7888a8" fill-opacity="0.25"/>
+  `,
+
+  // ⚡ Ferriss — gráfica 80/20, flechas, reloj
+  ferriss: `
+    <defs>
+      <radialGradient id="glow-fer" cx="50%" cy="45%" r="40%">
+        <stop offset="0%" stop-color="#e8d080" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="#e8d080" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="195" cy="128" rx="150" ry="100" fill="url(#glow-fer)"/>
+    <!-- large pareto chart -->
+    <!-- axes -->
+    <line x1="88" y1="55" x2="88"  y2="210" stroke="#c0a858" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round"/>
+    <line x1="88" y1="210" x2="310" y2="210" stroke="#c0a858" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round"/>
+    <!-- bars (pareto) -->
+    <rect x="100" y="85"  width="32" height="125" rx="4" fill="#c8a848" fill-opacity="0.45"/>
+    <rect x="138" y="118" width="32" height="92"  rx="4" fill="#b89840" fill-opacity="0.38"/>
+    <rect x="176" y="155" width="32" height="55"  rx="4" fill="#a88838" fill-opacity="0.3"/>
+    <rect x="214" y="175" width="32" height="35"  rx="4" fill="#988030" fill-opacity="0.25"/>
+    <rect x="252" y="188" width="32" height="22"  rx="4" fill="#887828" fill-opacity="0.2"/>
+    <!-- cumulative curve (80/20 pareto curve) -->
+    <path d="M116,85 Q154,80 170,110 Q192,150 230,165 Q265,175 284,180" stroke="#e0b848" stroke-width="2" fill="none" stroke-opacity="0.55" stroke-linecap="round"/>
+    <!-- 80% dotted line -->
+    <line x1="88" y1="120" x2="310" y2="120" stroke="#d0a840" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="5 5"/>
+    <text x="314" y="124" font-size="11" fill="#c0a040" fill-opacity="0.6" font-family="DM Sans, sans-serif" font-weight="600">80%</text>
+    <!-- 20% mark -->
+    <line x1="138" y1="210" x2="138" y2="218" stroke="#d0a840" stroke-width="1" stroke-opacity="0.35"/>
+    <text x="121" y="228" font-size="11" fill="#c0a040" fill-opacity="0.6" font-family="DM Sans, sans-serif" font-weight="600">20%</text>
+    <!-- arrow pointing to first bar (the vital few) -->
+    <path d="M68,100 L90,100" stroke="#d8b040" stroke-width="1.5" stroke-opacity="0.4" stroke-linecap="round"/>
+    <path d="M84,95 L91,100 L84,105" stroke="#d8b040" stroke-width="1.5" fill="none" stroke-opacity="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- small clock top right -->
+    <circle cx="348" cy="80" r="24" stroke="#c8a848" stroke-width="2" fill="rgba(232,218,168,0.2)" stroke-opacity="0.4"/>
+    <circle cx="348" cy="80" r="3" fill="#c8a848" fill-opacity="0.5"/>
+    <!-- clock hands -->
+    <line x1="348" y1="80" x2="348" y2="62" stroke="#c8a848" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
+    <line x1="348" y1="80" x2="362" y2="85" stroke="#c8a848" stroke-width="1.5" stroke-opacity="0.45" stroke-linecap="round"/>
+    <!-- clock ticks -->
+    <line x1="348" y1="58" x2="348" y2="62" stroke="#c8a848" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="348" y1="98" x2="348" y2="102" stroke="#c8a848" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="326" y1="80" x2="330" y2="80" stroke="#c8a848" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="366" y1="80" x2="370" y2="80" stroke="#c8a848" stroke-width="1.5" stroke-opacity="0.4"/>
+  `,
+};
+
+// ── ROUTINE DATA ───────────────────────────────────────────────
+const ROUTINES = {
+  amanecer: { tag:'☀️ Mañana', title:'Ritual de amanecer', author:'por Rutio · curada', bg:'linear-gradient(140deg,#f0d8a8,#d4a868)', tc:'#3a1a08', habits:5, mins:30, rating:'4.9', copies:'2.3k', desc:'Una rutina diseñada para empezar el día con intención. Combina movimiento, silencio y nutrición para activar cuerpo y mente antes de que el mundo te interrumpa.', habitList:[{n:'Agua con limón',d:'En ayunas, nada más despertar',dur:'2 min',col:'#c89848'},{n:'Luz solar',d:'Sal o asómate a la ventana',dur:'5 min',col:'#c89848'},{n:'Meditación',d:'Respiración o body scan',dur:'10 min',col:'#b8895a'},{n:'Movimiento',d:'Stretching o yoga suave',dur:'10 min',col:'#b8895a'},{n:'Diario de gratitud',d:'3 cosas por las que estar agradecido',dur:'5 min',col:'#8aab8e'}], tips:[{lbl:'Clave',txt:'Prepara todo la noche anterior para eliminar fricción al despertar.'},{lbl:'Adapta',txt:'Si tienes poco tiempo, empieza con solo 2 hábitos e incrementa semana a semana.'}], reviews:[{name:'Marta G.',stars:'★★★★★',txt:'Llevo 3 semanas y noto la diferencia en mi energía por las mañanas.'},{name:'Carlos P.',stars:'★★★★☆',txt:'Simple pero muy efectiva. El truco de prepararlo la noche antes es clave.'}] },
+  deepwork: { tag:'🎯 Enfoque', title:'Deep Work Protocol', author:'por Rutio · curada', bg:'linear-gradient(140deg,#b8d4bc,#7aaa80)', tc:'#1a3a20', habits:4, mins:90, rating:'4.8', copies:'1.8k', desc:'Para crear trabajo profundo y de alto impacto. Elimina distracciones, activa el estado de flow y protege tu energía cognitiva en las horas pico.', habitList:[{n:'Bloquear notificaciones',d:'Modo avión o Do Not Disturb',dur:'—',col:'#7aaa80'},{n:'Definir la tarea',d:'Una sola tarea profunda escrita en papel',dur:'5 min',col:'#7aaa80'},{n:'Sesión Pomodoro ×3',d:'25 min trabajo + 5 min descanso ×3',dur:'90 min',col:'#5a8a60'},{n:'Review de logros',d:'Qué avancé, qué bloqueos hubo',dur:'5 min',col:'#b8895a'}], tips:[{lbl:'Flow',txt:'Los primeros 20 minutos son los más difíciles. Si aguantas, el estado de flow llega solo.'},{lbl:'Entorno',txt:'Mismo lugar, misma hora. El cerebro aprende a entrar en modo focus por asociación.'}], reviews:[{name:'Ana L.',stars:'★★★★★',txt:'Triplicé mi producción real. La clave es defender ese bloque sin excepciones.'},{name:'Miquel B.',stars:'★★★★☆',txt:'Simple y brutal. El truco de escribir la tarea en papel antes funciona muy bien.'}] },
+  noche: { tag:'🌙 Noche', title:'Cierre nocturno', author:'por Rutio · curada', bg:'linear-gradient(140deg,#c8d4e0,#8aa8c0)', tc:'#1a2838', habits:3, mins:20, rating:'4.7', copies:'1.2k', desc:'Un ritual de desconexión para cerrar el día con calma y preparar el cuerpo y la mente para un descanso profundo.', habitList:[{n:'Sin pantallas 1h antes',d:'Libro, conversación o música tranquila',dur:'60 min',col:'#8aa8c0'},{n:'Reflexión del día',d:'3 cosas buenas + 1 aprendizaje',dur:'5 min',col:'#9ab8d0'},{n:'Stretching nocturno',d:'10 posturas suaves para liberar tensión',dur:'10 min',col:'#8aab8e'}], tips:[{lbl:'Sueño',txt:'La temperatura corporal baja cuando nos preparamos para dormir. El stretching acelera ese proceso.'},{lbl:'Consistencia',txt:'La hora de acostarse es más importante que la de despertar para regular el ciclo circadiano.'}], reviews:[{name:'Raquel M.',stars:'★★★★★',txt:'Duermo mucho mejor desde que implementé el cierre. Sin pantallas es lo que más noto.'},{name:'Joan P.',stars:'★★★★★',txt:'La reflexión del día parece simple pero te da mucha claridad sobre lo que importa.'}] },
+  calma: { tag:'🧘 Bienestar', title:'Calma diaria', author:'por Rutio · curada', bg:'linear-gradient(140deg,#c8dcc8,#a8c8a8)', tc:'#1a3a20', habits:3, mins:20, rating:'4.8', copies:'980', desc:'Una rutina accesible para cultivar presencia y reducir el estrés. Perfecta como primer paso hacia una práctica de bienestar consistente.', habitList:[{n:'Meditación guiada',d:'App o YouTube, cualquier estilo',dur:'10 min',col:'#8aab8e'},{n:'Respiración 4-7-8',d:'Inhala 4s, aguanta 7s, exhala 8s. ×5',dur:'5 min',col:'#8aab8e'},{n:'Diario libre',d:'Escribe lo que sea. Sin estructura.',dur:'5 min',col:'#b8895a'}], tips:[{lbl:'Inicio',txt:'No necesitas hacerlo perfecto. 5 minutos de atención real valen más que 20 distraídos.'}], reviews:[{name:'Sofia R.',stars:'★★★★★',txt:'La respiración 4-7-8 es mágica para la ansiedad. Funciona en cualquier momento del día.'}] },
+  fitness: { tag:'💪 Salud', title:'Fitness matutino', author:'por Rutio · curada', bg:'linear-gradient(140deg,#e8d4a8,#c8a868)', tc:'#3a2008', habits:3, mins:45, rating:'4.6', copies:'740', desc:'Combina movimiento, nutrición y pasos para crear una base sólida de salud física. Adaptable a cualquier nivel.', habitList:[{n:'Ejercicio 30min',d:'Gym, carrera, calistenia o HIIT',dur:'30 min',col:'#c89848'},{n:'Proteína en desayuno',d:'30g+ de proteína en la primera comida',dur:'—',col:'#b8895a'},{n:'8.000 pasos',d:'Meta diaria acumulada, no seguida',dur:'—',col:'#8aab8e'}], tips:[{lbl:'Consistencia',txt:'El mejor entrenamiento es el que haces. Prefiere 3 días mediocres a 1 día perfecto.'}], reviews:[{name:'Marco V.',stars:'★★★★☆',txt:'Simple y efectiva. El objetivo de pasos lo integré en mi vida sin darme cuenta.'}] },
+  semanal: { tag:'📋 Productividad', title:'Planificación semanal', author:'por Rutio · curada', bg:'linear-gradient(140deg,#c8d8e8,#90a8c0)', tc:'#1a2838', habits:3, mins:30, rating:'4.9', copies:'1.1k', desc:'Un ritual de 30 minutos los domingos para empezar la semana con claridad. Define prioridades, revisa pendientes y construye momentum.', habitList:[{n:'Review de la semana',d:'¿Qué funcionó? ¿Qué no?',dur:'10 min',col:'#8aa8c0'},{n:'Definir 3 objetivos',d:'No más de 3 prioridades para la semana',dur:'10 min',col:'#8aa8c0'},{n:'Agenda bloqueada',d:'Pon en el calendario los bloques clave',dur:'10 min',col:'#8aa8c0'}], tips:[{lbl:'Timing',txt:'Domingos tarde, cuando la semana no ha empezado y tienes perspectiva de la anterior.'}], reviews:[{name:'Patricia N.',stars:'★★★★★',txt:'Esta rutina cambió mi relación con el lunes.'},{name:'Oriol F.',stars:'★★★★★',txt:'Lo de bloquear el calendario antes es la clave. Si no lo pones, no existe.'}] },
+  noexcuses: { tag:'🔥 Disciplina', title:'No-excuses system', author:'por Rutio · curada', bg:'linear-gradient(140deg,#e8c8b8,#c89878)', tc:'#3a1808', habits:3, mins:120, rating:'4.5', copies:'560', desc:'Para los que necesitan un sistema que no permita negociación. Cada día, sin excepciones.', habitList:[{n:'Ducha fría',d:'Completa. Sin graduar.',dur:'5 min',col:'#c8a888'},{n:'Gym o entrenamiento',d:'Sin importar cómo te sientas',dur:'60 min',col:'#b8895a'},{n:'Lectura 30min',d:'Un libro real. Sin teléfono.',dur:'30 min',col:'#b8895a'}], tips:[{lbl:'Regla',txt:'La primera repetición del hábito es la más importante. El resto viene solo.'}], reviews:[{name:'Dani A.',stars:'★★★★★',txt:'La ducha fría al principio es una barrera mental. Cuando la superas, todo lo demás es más fácil.'}] },
+  goggins: { tag:'🔥 Extrema', title:'Morning Hell Protocol', author:'Inspirada en David Goggins', bg:'linear-gradient(140deg,#e8c8a0,#c09060)', tc:'#2a1408', habits:6, mins:180, rating:'4.7', copies:'3.2k', desc:'No hay excusas. Esta rutina está diseñada para forjar disciplina mental y resistencia física. No es para todos — pero si la completas, el resto del día es fácil.', habitList:[{n:'Despertar 4:30am',d:'Sin alarma de repetición. Levantarse.',dur:'—',col:'#c09060'},{n:'Correr 10km',d:'Sin importar clima ni estado de ánimo',dur:'60 min',col:'#c09060'},{n:'100 pull-ups',d:'Divididos en series hasta completar',dur:'30 min',col:'#a07850'},{n:'Ducha fría total',d:'Solo agua fría, sin graduar',dur:'5 min',col:'#8aa8c0'},{n:'Diario de adversidad',d:'Escribe algo difícil que harás hoy',dur:'5 min',col:'#b8895a'},{n:'Accountability mirror',d:'Di en voz alta tus objetivos reales',dur:'5 min',col:'#a07850'}], tips:[{lbl:'Mentalidad',txt:'El propósito no es la rutina. El propósito es demostrar que puedes hacer lo que dices.'},{lbl:'Adaptación',txt:'Si no puedes correr 10km, empieza con 3. Sube 1km por semana.'}], reviews:[{name:'Iván R.',stars:'★★★★★',txt:'Cambió mi forma de ver la dificultad. Ahora cuando algo es difícil, sonrío.'},{name:'Pablo T.',stars:'★★★★☆',txt:'Brutal. La adapté al 60% pero ya noto un nivel de disciplina que no tenía.'}] },
+  huberman: { tag:'🔬 Ciencia', title:'Huberman Morning Protocol', author:'Inspirada en Andrew Huberman', bg:'linear-gradient(140deg,#c8dcc0,#90b890)', tc:'#1a3020', habits:8, mins:120, rating:'4.9', copies:'5.1k', desc:'Basada en la investigación del Dr. Andrew Huberman (Stanford). Optimiza cortisol, dopamina y foco mediante estímulos naturales.', habitList:[{n:'Luz solar directa',d:'Primeros 30min tras despertar, sin gafas',dur:'10 min',col:'#c8b848'},{n:'Ejercicio en ayunas',d:'Alta intensidad o cardio moderado',dur:'45 min',col:'#8aab8e'},{n:'Ducha fría',d:'2-3 min agua fría al final',dur:'5 min',col:'#8aa8c0'},{n:'Ayuno hasta mediodía',d:'Solo agua, café o té negro',dur:'—',col:'#b8895a'},{n:'NSDR / Yoga Nidra',d:'Protocolo de recuperación no-sueño',dur:'20 min',col:'#8aab8e'},{n:'Sin cafeína antes 90min',d:'Espera para no bloquear adenosina',dur:'—',col:'#b8895a'},{n:'Suplementos AM',d:'Omega-3, vitamina D, magnesio',dur:'2 min',col:'#9aab8e'},{n:'Diario de objetivos',d:'3 prioridades del día',dur:'5 min',col:'#c8a868'}], tips:[{lbl:'Ciencia',txt:'La luz solar matutina activa el reloj circadiano y eleva el cortisol en el momento óptimo.'},{lbl:'Nivel',txt:'Empieza por luz solar + ejercicio. El resto añádelo cuando los primeros sean automáticos.'}], reviews:[{name:'Álvaro M.',stars:'★★★★★',txt:'El protocolo más respaldado científicamente que he probado.'},{name:'Laura S.',stars:'★★★★★',txt:'Difícil al inicio pero después se vuelve adictivo.'}] },
+  naval: { tag:'🧘 Mindset', title:'Mente tranquila — Naval', author:'Inspirada en Naval Ravikant', bg:'linear-gradient(140deg,#c8d8e8,#98b8d0)', tc:'#1a2838', habits:5, mins:60, rating:'4.8', copies:'2.4k', desc:'Naval cree que la paz mental es el activo más valioso. Esta rutina no es sobre hacer más, sino sobre pensar mejor y estar más presente.', habitList:[{n:'Meditación silenciosa',d:'Sin app, sin guía. Solo silencio.',dur:'60 min',col:'#88a8c0'},{n:'Lectura lenta',d:'Un libro físico. Sin subrayar.',dur:'30 min',col:'#8aab8e'},{n:'Caminar solo',d:'Sin teléfono, sin auriculares',dur:'20 min',col:'#b8895a'},{n:'Sin redes sociales AM',d:'No abrir hasta mediodía',dur:'—',col:'#9aab8e'},{n:'Una sola prioridad',d:'Definir la única cosa importante del día',dur:'5 min',col:'#c8a868'}], tips:[{lbl:'Filosofía',txt:'Naval medita 1h diaria sin guía. Dice que si no tienes tiempo, medita 2 horas.'},{lbl:'Empieza',txt:'5 minutos de silencio real tiene más valor que 30 min de app de meditación.'}], reviews:[{name:'Elena V.',stars:'★★★★★',txt:'La rutina más simple y transformadora.'},{name:'Sergio A.',stars:'★★★★★',txt:'Sin redes hasta mediodía cambió mi relación con el teléfono por completo.'}] },
+  ferriss: { tag:'⚡ Eficiencia', title:'Tim Ferriss 5-bullet', author:'Inspirada en Tim Ferriss', bg:'linear-gradient(140deg,#e8d8b8,#c8a870)', tc:'#3a2008', habits:5, mins:90, rating:'4.6', copies:'890', desc:'Ferriss prioriza el output sobre el input. Esta rutina maximiza la claridad mental y la eficiencia usando el principio 80/20 y herramientas de high-performers.', habitList:[{n:'Diario matutino',d:'2 páginas escritas a mano, sin filtro',dur:'15 min',col:'#b8895a'},{n:'Una tarea imposible',d:'La más importante y difícil, primero',dur:'60 min',col:'#c8a848'},{n:'Ejercicio mínimo viable',d:'20 min de algo. Lo que sea.',dur:'20 min',col:'#8aab8e'},{n:'Sin email antes de 10am',d:'No entres al modo reactivo nada más despertar',dur:'—',col:'#b8895a'},{n:'Revisión semanal 80/20',d:'¿Qué 20% genera el 80% de resultados?',dur:'10 min',col:'#88a8c0'}], tips:[{lbl:'80/20',txt:'Antes de hacer algo, pregúntate si es de las pocas cosas que realmente mueven la aguja.'}], reviews:[{name:'Noa B.',stars:'★★★★★',txt:'Lo de no abrir el email antes de las 10 fue lo que más me aportó.'},{name:'Xavi M.',stars:'★★★★☆',txt:'La tarea imposible primero es contraintuitivo pero funciona.'}] },
+};
+
+let current = null;
+
+function openDetail(id) {
+  const r = ROUTINES[id]; if (!r) return;
+  current = id;
+  document.getElementById('det-hero-bg').style.background = r.bg;
+  // inject illustration
+  document.getElementById('det-hero-svg').innerHTML = ILLUSTRATIONS[id] || '';
+  const tc = r.tc || '#3a2410';
+  ['det-tag','det-title','det-author'].forEach(el => document.getElementById(el).style.color = tc);
+  document.getElementById('det-tag').textContent = r.tag;
+  document.getElementById('det-title').textContent = r.title;
+  document.getElementById('det-author').textContent = r.author;
+  document.getElementById('det-s1').textContent = r.habits;
+  document.getElementById('det-s2').textContent = r.mins;
+  document.getElementById('det-s3').textContent = r.rating;
+  document.getElementById('det-s4').textContent = r.copies;
+  document.getElementById('det-desc').textContent = r.desc;
+  document.getElementById('det-habits').innerHTML = r.habitList.map((h,i)=>`
+    <div class="habit-row">
+      <div class="habit-num" style="background:${h.col}">${i+1}</div>
+      <div class="habit-info"><div class="habit-name">${h.n}</div><div class="habit-detail">${h.d}</div></div>
+      ${h.dur!=='—'?`<div class="habit-dur">${h.dur}</div>`:''}
+    </div>`).join('');
+  document.getElementById('det-tips').innerHTML = r.tips.map(t=>`
+    <div class="tip-card"><div class="tip-label">${t.lbl}</div><div class="tip-text">${t.txt}</div></div>`).join('');
+  document.getElementById('det-reviews').innerHTML = r.reviews.map(rv=>`
+    <div class="review-card"><div class="review-top"><div class="review-name">${rv.name}</div><div class="review-stars">${rv.stars}</div></div><div class="review-text">${rv.txt}</div></div>`).join('');
+  document.getElementById('cta-rating').textContent = `⭐ ${r.rating} de valoración`;
+  document.getElementById('cta-copies').textContent = `${r.copies} personas la usan`;
+  const btn = document.getElementById('cta-btn');
+  btn.classList.remove('copied');
+  btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar rutina`;
+  document.getElementById('screen-detalle').classList.add('open');
+  document.getElementById('screen-detalle').querySelector('.det-scroll').scrollTop = 0;
+}
+function closeDetail() { document.getElementById('screen-detalle').classList.remove('open'); }
+function copiarRutina() {
+  const r = ROUTINES[current];
+  const btn = document.getElementById('cta-btn');
+  btn.classList.add('copied');
+  btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Añadida a tu perfil!`;
+  showToast(r.title);
+}
+function switchTab(i) {
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  ['tab-rutio','tab-inspiradas','tab-comunidad'].forEach((p,j)=>document.getElementById(p).style.display=j===i?'block':'none');
+  document.querySelector('.lib-scroll').scrollTop=0;
+}
+let tt;
+function showToast(name) {
+  const t=document.getElementById('toast');
+  document.getElementById('toast-text').textContent=`"${name}" añadida a tu perfil`;
+  t.classList.add('show'); clearTimeout(tt);
+  tt=setTimeout(()=>t.classList.remove('show'),2600);
+}
+</script>
+</body>
+</html>
