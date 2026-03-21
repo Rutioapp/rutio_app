@@ -43,3 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+.dart_tool/
+.codex_tmp/
+lib/.dart-tool/
+lib/.codex_tmp/
+build/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+macos/Pods/
+macos/Flutter/ephemeral/
+android/.gradle/
