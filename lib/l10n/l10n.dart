@@ -196,6 +196,19 @@ extension AppLocalizationsProfileX on AppLocalizations {
       : 'A gentle reminder after 3 days without opening the app';
 }
 
+extension AppLocalizationsDrawerSupportX on AppLocalizations {
+  bool get _isSpanishDrawerSupport => localeName.toLowerCase().startsWith('es');
+
+  String get drawerSectionSupport =>
+      _isSpanishDrawerSupport ? 'AYUDA' : 'SUPPORT';
+
+  String get drawerReportIssue => 'Report an issue';
+
+  String get drawerReportIssueLaunchError => _isSpanishDrawerSupport
+      ? 'No se pudo abrir el formulario. Inténtalo de nuevo en un momento.'
+      : 'Could not open the form. Please try again in a moment.';
+}
+
 extension AppLocalizationsEditProfileX on AppLocalizations {
   bool get _isSpanishEditProfile => localeName.toLowerCase().startsWith('es');
 

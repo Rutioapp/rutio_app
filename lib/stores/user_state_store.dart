@@ -115,6 +115,29 @@ class UserStateStore extends ChangeNotifier {
   String? get bioText => profile['bio']?.toString();
   String? get goalText => profile['goal']?.toString();
   String? get avatarUrl => profile['avatarUrl']?.toString();
+  String? get userId {
+    final root = _state;
+    if (root == null) return null;
+
+    final userState = _ensureUserStateRoot(root);
+    final value =
+        (userState['userId'] ?? userState['id'] ?? '').toString().trim();
+    return value.isEmpty ? null : value;
+  }
+
+  String? get authEmail {
+    final root = _state;
+    if (root == null) return null;
+
+    final userState = _ensureUserStateRoot(root);
+    final meta = _map(userState['meta']);
+    final profile = _map(userState['profile']);
+    final value =
+        (meta['authEmail'] ?? profile['email'] ?? profile['mail'] ?? '')
+            .toString()
+            .trim();
+    return value.isEmpty ? null : value;
+  }
 
   Future<void> updateProfileFields({
     String? displayName,

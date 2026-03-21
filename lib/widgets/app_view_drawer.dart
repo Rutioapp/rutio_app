@@ -1,6 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../core/services/feedback_form_service.dart';
 import '../l10n/l10n.dart';
+import '../stores/user_state_store.dart';
 import '../utils/app_theme.dart';
 
 /// Drawer unificado con look iOS-first inspirado en la referencia visual.
@@ -49,8 +53,12 @@ class AppViewDrawer extends StatelessWidget {
   static const Color _divider = Color(0x1F6A5E4A);
   static const Color _activeTile = Color(0xFFF2F4F5);
   static const Color _icon = Color(0xFF7B6447);
+  static const Color _supportTileBg = Color(0x1AF05A5A);
+  static const Color _supportIconBg = Color(0x26F05A5A);
+  static const Color _supportIcon = Color(0xFFC44747);
   static const Color _proBg = Color(0xFFF0DEC1);
   static const Color _proText = Color(0xFF9E7A3D);
+  static final FeedbackFormService _feedbackFormService = FeedbackFormService();
 
   @override
   Widget build(BuildContext context) {
@@ -169,6 +177,17 @@ class AppViewDrawer extends StatelessWidget {
                       ),
                       onTap: () => _go(context, onGoShop),
                     ),
+                    const SizedBox(height: 18),
+                    _DrawerSectionLabel(context.l10n.drawerSectionSupport),
+                    const SizedBox(height: 8),
+                    _DrawerTile(
+                      icon: CupertinoIcons.exclamationmark_bubble,
+                      label: context.l10n.drawerReportIssue,
+                      backgroundColor: _supportTileBg,
+                      iconBackgroundColor: _supportIconBg,
+                      iconColor: _supportIcon,
+                      onTap: () => _handleReportIssueTap(context),
+                    ),
                     SizedBox(height: 18 + bottomInset),
                   ],
                 ),
@@ -191,6 +210,35 @@ class AppViewDrawer extends StatelessWidget {
   void _go(BuildContext context, VoidCallback onTap) {
     Navigator.of(context).pop();
     onTap();
+  }
+
+  Future<void> _handleReportIssueTap(BuildContext context) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final store = context.read<UserStateStore>();
+    final reporterName = (store.displayName ?? '').trim();
+    final userId = (store.userId ?? '').trim();
+    final email = store.authEmail ?? '';
+    final reportIdentity = reporterName.isNotEmpty ? reporterName : userId;
+
+    Navigator.of(context).pop();
+
+    bool didLaunch = false;
+    try {
+      didLaunch = await _feedbackFormService.launchReportIssueForm(
+        userId: reportIdentity,
+        email: email,
+      );
+    } catch (_) {
+      didLaunch = false;
+    }
+    if (!didLaunch && messenger != null) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(l10n.drawerReportIssueLaunchError)),
+        );
+    }
   }
 }
 
@@ -265,6 +313,9 @@ class _DrawerTile extends StatelessWidget {
     required this.onTap,
     this.isSelected = false,
     this.trailing,
+    this.backgroundColor,
+    this.iconColor,
+    this.iconBackgroundColor,
   });
 
   final IconData icon;
@@ -272,11 +323,18 @@ class _DrawerTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool isSelected;
   final Widget? trailing;
+  final Color? backgroundColor;
+  final Color? iconColor;
+  final Color? iconBackgroundColor;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedBackgroundColor = isSelected
+        ? AppViewDrawer._activeTile
+        : backgroundColor ?? Colors.transparent;
+
     return Material(
-      color: isSelected ? AppViewDrawer._activeTile : Colors.transparent,
+      color: resolvedBackgroundColor,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -287,12 +345,17 @@ class _DrawerTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
-                SizedBox(
+                Container(
                   width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: iconBackgroundColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Icon(
                     icon,
                     size: 20,
-                    color: AppViewDrawer._icon,
+                    color: iconColor ?? AppViewDrawer._icon,
                   ),
                 ),
                 const SizedBox(width: 14),
