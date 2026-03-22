@@ -19,6 +19,8 @@ class NotificationService {
   NotificationService._();
 
   static final NotificationService instance = NotificationService._();
+  static const MethodChannel _appleNotificationChannel =
+      MethodChannel('rutio/notification_permission');
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -33,10 +35,9 @@ class NotificationService {
 
   Future<void> init() async {
     if (_initialized) return;
-    _initialized = true;
 
     tzdata.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation('Europe/Madrid'));
+    tz.setLocalLocation(await _resolveLocalLocation());
 
     const androidInit = AndroidInitializationSettings(
       RutioNotificationChannel.androidSmallIcon,
@@ -48,17 +49,20 @@ class NotificationService {
       defaultPresentAlert: true,
       defaultPresentBadge: true,
       defaultPresentSound: true,
+      defaultPresentBanner: true,
+      defaultPresentList: true,
     );
 
     try {
       await _plugin.initialize(
         InitializationSettings(android: androidInit, iOS: iosInit),
       );
+      await _scheduler.createChannel();
+      _initialized = true;
     } on PlatformException catch (error) {
       logNotification('Notification init error: $error');
+      rethrow;
     }
-
-    await _scheduler.createChannel();
   }
 
   Future<bool> requestPermissions() async {
@@ -96,6 +100,28 @@ class NotificationService {
 
   Future<bool> openSettings() {
     return _permissionService.openSettings();
+  }
+
+  Future<tz.Location> _resolveLocalLocation() async {
+    const fallbackName = 'Europe/Madrid';
+
+    if (!Platform.isIOS) {
+      return tz.getLocation(fallbackName);
+    }
+
+    try {
+      final timeZoneName =
+          await _appleNotificationChannel.invokeMethod<String>('getLocalTimeZone');
+      if (timeZoneName != null && timeZoneName.trim().isNotEmpty) {
+        return tz.getLocation(timeZoneName.trim());
+      }
+    } on PlatformException catch (error) {
+      logNotification('Timezone lookup error: $error');
+    } catch (error) {
+      logNotification('Timezone lookup error: $error');
+    }
+
+    return tz.getLocation(fallbackName);
   }
 
   Future<void> syncPhaseOne({
