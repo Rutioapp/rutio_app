@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../core/notifications/notification_permission_service.dart';
 import '../stores/user_state_store.dart';
 import 'notification_copy.dart';
-import 'notification_debug_helpers.dart';
 import 'notification_models.dart';
 import 'notification_preferences.dart';
 import 'notification_rules.dart';
@@ -19,49 +19,59 @@ class NotificationService {
   NotificationService._();
 
   static final NotificationService instance = NotificationService._();
-  static const MethodChannel _appleNotificationChannel =
+  static const MethodChannel _platformNotificationChannel =
       MethodChannel('rutio/notification_permission');
+  static const String _productionCleanupKey =
+      'rutio.notifications.production_cleanup_v1';
+  static const NotificationPermissionResult _unavailablePermissionResult =
+      NotificationPermissionResult(
+    status: NotificationPermissionStatus.unknown,
+  );
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   late final NotificationPermissionService _permissionService =
       NotificationPermissionService(plugin: _plugin);
 
-  late final NotificationScheduler _scheduler = NotificationScheduler(_plugin);
-  late final NotificationDebugHelpers _debugHelpers =
-      NotificationDebugHelpers(_scheduler);
+  late final NotificationScheduler _scheduler = NotificationScheduler(
+    _plugin,
+    androidSmallIcon: () => _androidNotificationIcon,
+    onRecoverablePluginError: _recoverFromAndroidPluginCacheError,
+  );
 
   bool _initialized = false;
+  bool _initializationFailed = false;
+  bool _recoveringAndroidPluginCache = false;
+  String _androidNotificationIcon = RutioNotificationChannel.androidSmallIcon;
 
   Future<void> init() async {
-    if (_initialized) return;
-
-    tzdata.initializeTimeZones();
-    tz.setLocalLocation(await _resolveLocalLocation());
-
-    const androidInit = AndroidInitializationSettings(
-      RutioNotificationChannel.androidSmallIcon,
-    );
-    const iosInit = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-      defaultPresentAlert: true,
-      defaultPresentBadge: true,
-      defaultPresentSound: true,
-      defaultPresentBanner: true,
-      defaultPresentList: true,
-    );
+    if (_initialized || _initializationFailed) return;
 
     try {
-      await _plugin.initialize(
-        InitializationSettings(android: androidInit, iOS: iosInit),
-      );
+      tzdata.initializeTimeZones();
+      final localLocation = await _resolveLocalLocation();
+      tz.setLocalLocation(localLocation);
+      logNotification('Timezone initialized: ${localLocation.name}');
+
+      await _initializePlugin();
       await _scheduler.createChannel();
+      await _runOneTimeProductionCleanup();
       _initialized = true;
-    } on PlatformException catch (error) {
-      logNotification('Notification init error: $error');
-      rethrow;
+      logNotification(
+        'Notifications initialized. Android icon=$_androidNotificationIcon',
+      );
+    } on PlatformException catch (error, stackTrace) {
+      _initializationFailed = true;
+      logNotificationError(
+        'Notification init error: $error',
+        stackTrace: stackTrace,
+      );
+    } catch (error, stackTrace) {
+      _initializationFailed = true;
+      logNotificationError(
+        'Notification init error: $error',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -71,14 +81,20 @@ class NotificationService {
   }
 
   Future<NotificationPermissionResult> checkPermissionStatus() async {
-    await init();
+    if (!await _ensureInitialized()) {
+      return _unavailablePermissionResult;
+    }
     return _permissionService.checkStatus();
   }
 
   Future<NotificationPermissionResult> requestPermissionFlow() async {
-    await init();
+    if (!await _ensureInitialized()) {
+      return _unavailablePermissionResult;
+    }
 
+    logNotification('Requesting notification permission flow');
     var result = await _permissionService.ensurePermission();
+    logNotification('Notification permission status: ${result.status.name}');
 
     if (Platform.isAndroid) {
       final android = _plugin.resolvePlatformSpecificImplementation<
@@ -86,15 +102,21 @@ class NotificationService {
 
       try {
         final exact = await android?.canScheduleExactNotifications();
-        if (exact == false && result.isAuthorized) {
-          await android?.requestExactAlarmsPermission();
-        }
-      } catch (_) {
+        logNotification(
+          'Exact alarm permission granted: ${exact == true}',
+        );
+      } catch (error, stackTrace) {
         // Ignore plugin/platform combinations without exact-alarm APIs.
+        logNotificationError(
+          'Exact alarm permission flow error: $error',
+          stackTrace: stackTrace,
+        );
       }
     }
 
     result = await _permissionService.checkStatus();
+    logNotification(
+        'Final notification permission status: ${result.status.name}');
     return result;
   }
 
@@ -105,13 +127,9 @@ class NotificationService {
   Future<tz.Location> _resolveLocalLocation() async {
     const fallbackName = 'Europe/Madrid';
 
-    if (!Platform.isIOS) {
-      return tz.getLocation(fallbackName);
-    }
-
     try {
-      final timeZoneName =
-          await _appleNotificationChannel.invokeMethod<String>('getLocalTimeZone');
+      final timeZoneName = await _platformNotificationChannel
+          .invokeMethod<String>('getLocalTimeZone');
       if (timeZoneName != null && timeZoneName.trim().isNotEmpty) {
         return tz.getLocation(timeZoneName.trim());
       }
@@ -124,12 +142,113 @@ class NotificationService {
     return tz.getLocation(fallbackName);
   }
 
+  Future<bool> _ensureInitialized() async {
+    await init();
+    return _initialized;
+  }
+
+  Future<void> _recoverFromAndroidPluginCacheError(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) async {
+    if (!Platform.isAndroid || _recoveringAndroidPluginCache) return;
+
+    _recoveringAndroidPluginCache = true;
+    try {
+      logNotificationError(
+        'Recovering Android notification cache after plugin failure during '
+        '$operation: $error',
+        stackTrace: stackTrace,
+      );
+      await _platformNotificationChannel
+          .invokeMethod<void>('clearScheduledNotificationsCache');
+      logNotification(
+        'Android scheduled notification cache cleared successfully.',
+      );
+    } on PlatformException catch (recoveryError, recoveryStackTrace) {
+      logNotificationError(
+        'Failed to clear Android scheduled notification cache: $recoveryError',
+        stackTrace: recoveryStackTrace,
+      );
+    } catch (recoveryError, recoveryStackTrace) {
+      logNotificationError(
+        'Failed to clear Android scheduled notification cache: $recoveryError',
+        stackTrace: recoveryStackTrace,
+      );
+    } finally {
+      _recoveringAndroidPluginCache = false;
+    }
+  }
+
+  Future<void> _initializePlugin() async {
+    const iosInit = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+      defaultPresentAlert: true,
+      defaultPresentBadge: true,
+      defaultPresentSound: true,
+      defaultPresentBanner: true,
+      defaultPresentList: true,
+    );
+
+    if (!Platform.isAndroid) {
+      await _plugin.initialize(
+        const InitializationSettings(iOS: iosInit),
+      );
+      return;
+    }
+
+    final androidIcons = <String>[
+      RutioNotificationChannel.androidSmallIcon,
+      if (RutioNotificationChannel.androidFallbackSmallIcon !=
+          RutioNotificationChannel.androidSmallIcon)
+        RutioNotificationChannel.androidFallbackSmallIcon,
+    ];
+
+    for (var index = 0; index < androidIcons.length; index++) {
+      final icon = androidIcons[index];
+
+      try {
+        await _plugin.initialize(
+          InitializationSettings(
+            android: AndroidInitializationSettings(icon),
+            iOS: iosInit,
+          ),
+        );
+        _androidNotificationIcon = icon;
+
+        if (icon != RutioNotificationChannel.androidSmallIcon) {
+          logNotificationError(
+            'Android notification icon "${RutioNotificationChannel.androidSmallIcon}" '
+            'was unavailable. Using fallback "$icon".',
+          );
+        }
+        return;
+      } on PlatformException catch (error, stackTrace) {
+        final isInvalidIcon = error.code == 'invalid_icon';
+        final isLastAttempt = index == androidIcons.length - 1;
+
+        if (!isInvalidIcon || isLastAttempt) {
+          rethrow;
+        }
+
+        logNotificationError(
+          'Android notification icon "$icon" was not available. '
+          'Retrying with "${androidIcons[index + 1]}".',
+          stackTrace: stackTrace,
+        );
+      }
+    }
+  }
+
   Future<void> syncPhaseOne({
     required UserStateStore store,
     JsonMap? previousState,
     bool recordAppOpen = false,
   }) async {
-    await init();
+    if (!await _ensureInitialized()) return;
 
     final currentState = mapCast(store.state);
     if (currentState.isEmpty) return;
@@ -140,6 +259,14 @@ class NotificationService {
     }
 
     final snapshot = preferences.snapshot;
+    final permissionStatus = await checkPermissionStatus();
+    if (!permissionStatus.isAuthorized) {
+      logNotification(
+        'Skipping notification sync because permission is ${permissionStatus.status.name}',
+      );
+      return;
+    }
+
     final previousHabitIds = previousState == null
         ? const <String>[]
         : NotificationRules.activeHabitIds(previousState);
@@ -149,6 +276,8 @@ class NotificationService {
         .toList(growable: false);
 
     if (!snapshot.notificationsEnabled) {
+      logNotification(
+          'Notifications disabled in preferences. Cancelling scheduled items.');
       await _cancelPhaseOneNotifications(
         habitIds: <String>{...currentHabitIds, ...removedHabitIds},
       );
@@ -185,6 +314,10 @@ class NotificationService {
       previousState: previousState,
       currentState: currentState,
     );
+    logNotification(
+      'Notification sync complete. habits=${currentHabitIds.length} '
+      'removed=${removedHabitIds.length}',
+    );
   }
 
   Future<void> scheduleHabitDailyReminder({
@@ -194,18 +327,32 @@ class NotificationService {
     String title = 'Rutio',
     required String body,
   }) async {
-    await init();
-    await _scheduler.scheduleDaily(
-      id: RutioNotificationIds.habitReminder(habitId),
-      copy: NotificationCopy(title: title, body: body),
-      time: NotificationTime(hour: hour, minute: minute),
-      payload: RutioNotificationPayloads.habitReminder(habitId),
-    );
+    if (!await _ensureInitialized()) return;
+    try {
+      await _scheduler.scheduleDaily(
+        id: RutioNotificationIds.habitReminder(habitId),
+        copy: NotificationCopy(title: title, body: body),
+        time: NotificationTime(hour: hour, minute: minute),
+        payload: RutioNotificationPayloads.habitReminder(habitId),
+      );
+    } catch (error, stackTrace) {
+      logNotificationError(
+        'Schedule habit reminder failed for $habitId: $error',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> cancelHabitDailyReminder(String habitId) async {
-    await init();
-    await _scheduler.cancelHabitReminder(habitId);
+    if (!await _ensureInitialized()) return;
+    try {
+      await _scheduler.cancelHabitReminder(habitId);
+    } catch (error, stackTrace) {
+      logNotificationError(
+        'Cancel habit reminder failed for $habitId: $error',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> scheduleDailyMotivation({
@@ -214,33 +361,44 @@ class NotificationService {
     String title = 'Rutio',
     String body = 'Hoy es un buen dia para mantener tu ritmo.',
   }) async {
-    await init();
-    await _scheduler.scheduleDaily(
-      id: RutioNotificationIds.dailyMotivation,
-      copy: NotificationCopy(title: title, body: body),
-      time: NotificationTime(hour: hour, minute: minute),
-      payload: RutioNotificationPayloads.dailyMotivation,
-    );
+    if (!await _ensureInitialized()) return;
+    try {
+      await _scheduler.scheduleDaily(
+        id: RutioNotificationIds.dailyMotivation,
+        copy: NotificationCopy(title: title, body: body),
+        time: NotificationTime(hour: hour, minute: minute),
+        payload: RutioNotificationPayloads.dailyMotivation,
+      );
+    } catch (error, stackTrace) {
+      logNotificationError(
+        'Schedule daily motivation failed: $error',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> cancelDailyMotivation() async {
-    await init();
-    await _scheduler.cancel(RutioNotificationIds.dailyMotivation);
+    if (!await _ensureInitialized()) return;
+    try {
+      await _scheduler.cancel(RutioNotificationIds.dailyMotivation);
+    } catch (error, stackTrace) {
+      logNotificationError(
+        'Cancel daily motivation failed: $error',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
-  Future<void> debugShowIn3Seconds() {
-    return _debugHelpers.showIn3Seconds();
-  }
-
-  Future<void> debugScheduleInSeconds(int seconds) {
-    return _debugHelpers.scheduleInSeconds(seconds);
-  }
-
-  Future<void> debugPrintPending() async {
-    final pending = await _debugHelpers.pendingSummary();
-    logNotification('Pending notifications: ${pending.length}');
-    for (final line in pending) {
-      logNotification(line);
+  Future<void> cancelAllNotifications() async {
+    if (!await _ensureInitialized()) return;
+    try {
+      await _scheduler.cancelAll();
+      logNotification('All notifications cancelled successfully.');
+    } catch (error, stackTrace) {
+      logNotificationError(
+        'Cancel all notifications failed: $error',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -397,6 +555,31 @@ class NotificationService {
 
     for (final habitId in habitIds) {
       await _scheduler.cancelHabitReminder(habitId);
+    }
+  }
+
+  Future<void> _runOneTimeProductionCleanup() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_productionCleanupKey) == true) {
+      return;
+    }
+
+    try {
+      logNotification(
+        'Running one-time notification cleanup for production release.',
+      );
+      await _scheduler.cancelAll();
+      if (Platform.isAndroid) {
+        await _platformNotificationChannel
+            .invokeMethod<void>('clearScheduledNotificationsCache');
+      }
+    } catch (error, stackTrace) {
+      logNotificationError(
+        'One-time notification cleanup failed: $error',
+        stackTrace: stackTrace,
+      );
+    } finally {
+      await prefs.setBool(_productionCleanupKey, true);
     }
   }
 }

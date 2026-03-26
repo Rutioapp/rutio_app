@@ -8,23 +8,39 @@ import 'notification_models.dart';
 import 'notification_types.dart';
 
 class NotificationScheduler {
-  NotificationScheduler(this._plugin);
+  NotificationScheduler(
+    this._plugin, {
+    String Function()? androidSmallIcon,
+    Future<void> Function(
+      String operation,
+      Object error,
+      StackTrace stackTrace,
+    )? onRecoverablePluginError,
+  })  : _androidSmallIcon = androidSmallIcon ??
+            (() => RutioNotificationChannel.androidSmallIcon),
+        _onRecoverablePluginError = onRecoverablePluginError;
 
   final FlutterLocalNotificationsPlugin _plugin;
+  final String Function() _androidSmallIcon;
+  final Future<void> Function(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  )? _onRecoverablePluginError;
 
   NotificationDetails buildDetails() {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       RutioNotificationChannel.id,
       RutioNotificationChannel.name,
       channelDescription: RutioNotificationChannel.description,
       importance: Importance.high,
       priority: Priority.high,
-      icon: RutioNotificationChannel.androidSmallIcon,
+      icon: _androidSmallIcon(),
     );
 
     const iosDetails = DarwinNotificationDetails();
 
-    return const NotificationDetails(
+    return NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -43,6 +59,9 @@ class NotificationScheduler {
         enableVibration: true,
         showBadge: true,
       ),
+    );
+    logNotification(
+      'Android channel ready: ${RutioNotificationChannel.id}',
     );
   }
 
@@ -92,42 +111,66 @@ class NotificationScheduler {
     required int id,
     required NotificationCopy copy,
     required String payload,
-  }) {
-    return _plugin.show(
-      id,
-      copy.title,
-      copy.body,
-      buildDetails(),
-      payload: payload,
+  }) async {
+    await _runPluginVoidOperation(
+      'showNow($id)',
+      () => _plugin.show(
+        id,
+        copy.title,
+        copy.body,
+        buildDetails(),
+        payload: payload,
+      ),
+      retryAfterRecovery: true,
     );
   }
 
-  Future<void> cancel(int id) => _plugin.cancel(id);
+  Future<void> cancel(int id) async {
+    await _runPluginVoidOperation(
+      'cancel($id)',
+      () => _plugin.cancel(id),
+      retryAfterRecovery: true,
+      swallowAfterRecoveryFailure: true,
+    );
+  }
+
+  Future<void> cancelAll() async {
+    await _runPluginVoidOperation(
+      'cancelAll()',
+      () => _plugin.cancelAll(),
+      retryAfterRecovery: true,
+      swallowAfterRecoveryFailure: true,
+    );
+  }
 
   Future<void> cancelMany(Iterable<int> ids) async {
     for (final id in ids.toSet()) {
-      await _plugin.cancel(id);
+      await cancel(id);
     }
   }
 
   Future<void> cancelHabitReminder(String habitId) async {
     final baseId = RutioNotificationIds.habitReminder(habitId);
     for (var index = 0; index < 64; index++) {
-      await _plugin.cancel(baseId + index);
+      await cancel(baseId + index);
     }
   }
 
   Future<void> cancelByPayloadPrefix(String prefix) async {
-    final pending = await _plugin.pendingNotificationRequests();
+    final pending = await pendingRequests();
     for (final request in pending) {
       if ((request.payload ?? '').startsWith(prefix)) {
-        await _plugin.cancel(request.id);
+        await cancel(request.id);
       }
     }
   }
 
-  Future<List<PendingNotificationRequest>> pendingRequests() {
-    return _plugin.pendingNotificationRequests();
+  Future<List<PendingNotificationRequest>> pendingRequests() async {
+    return _runPluginListOperation(
+      'pendingNotificationRequests()',
+      () => _plugin.pendingNotificationRequests(),
+      retryAfterRecovery: true,
+    );
   }
 
   Future<void> _safeZonedSchedule({
@@ -150,21 +193,30 @@ class NotificationScheduler {
     }
 
     final scheduleMode = (Platform.isAndroid && canExact == true)
-        ? AndroidScheduleMode.alarmClock
-        : AndroidScheduleMode.inexact;
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
+    logNotification(
+      'Scheduling notification id=$id at ${when.toIso8601String()} '
+      'mode=$scheduleMode exactGranted=${canExact == true}',
+    );
 
     try {
-      await _plugin.zonedSchedule(
-        id,
-        title,
-        body,
-        when,
-        buildDetails(),
-        payload: payload,
-        androidScheduleMode: scheduleMode,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: matchTime ? DateTimeComponents.time : null,
+      await _runPluginVoidOperation(
+        'zonedSchedule($id)',
+        () => _plugin.zonedSchedule(
+          id,
+          title,
+          body,
+          when,
+          buildDetails(),
+          payload: payload,
+          androidScheduleMode: scheduleMode,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: matchTime ? DateTimeComponents.time : null,
+        ),
+        retryAfterRecovery: true,
       );
     } on PlatformException catch (error) {
       final message = (error.message ?? '').toLowerCase();
@@ -176,18 +228,108 @@ class NotificationScheduler {
         rethrow;
       }
 
-      await _plugin.zonedSchedule(
-        id,
-        title,
-        body,
-        when,
-        buildDetails(),
-        payload: payload,
-        androidScheduleMode: AndroidScheduleMode.inexact,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: matchTime ? DateTimeComponents.time : null,
+      logNotificationError(
+        'Exact alarm permission unavailable for notification id=$id. '
+        'Retrying with inexactAllowWhileIdle.',
+      );
+
+      await _runPluginVoidOperation(
+        'zonedScheduleFallback($id)',
+        () => _plugin.zonedSchedule(
+          id,
+          title,
+          body,
+          when,
+          buildDetails(),
+          payload: payload,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: matchTime ? DateTimeComponents.time : null,
+        ),
+        retryAfterRecovery: true,
       );
     }
+  }
+
+  Future<void> _runPluginVoidOperation(
+    String operation,
+    Future<void> Function() action, {
+    bool retryAfterRecovery = false,
+    bool swallowAfterRecoveryFailure = false,
+  }) async {
+    try {
+      await action();
+    } catch (error, stackTrace) {
+      final recovered = await _attemptRecovery(operation, error, stackTrace);
+      if (recovered && retryAfterRecovery) {
+        try {
+          await action();
+          return;
+        } catch (retryError, retryStackTrace) {
+          logNotificationError(
+            'Notification plugin operation failed after recovery: '
+            '$operation -> $retryError',
+            stackTrace: retryStackTrace,
+          );
+          if (swallowAfterRecoveryFailure) {
+            return;
+          }
+          rethrow;
+        }
+      }
+
+      if (swallowAfterRecoveryFailure && recovered) {
+        return;
+      }
+      rethrow;
+    }
+  }
+
+  Future<List<PendingNotificationRequest>> _runPluginListOperation(
+    String operation,
+    Future<List<PendingNotificationRequest>> Function() action, {
+    bool retryAfterRecovery = false,
+  }) async {
+    try {
+      return await action();
+    } catch (error, stackTrace) {
+      final recovered = await _attemptRecovery(operation, error, stackTrace);
+      if (recovered && retryAfterRecovery) {
+        try {
+          return await action();
+        } catch (retryError, retryStackTrace) {
+          logNotificationError(
+            'Notification plugin list operation failed after recovery: '
+            '$operation -> $retryError',
+            stackTrace: retryStackTrace,
+          );
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> _attemptRecovery(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) async {
+    if (_onRecoverablePluginError == null) return false;
+
+    final normalized = error.toString().toLowerCase();
+    final isRecoverableCacheError =
+        normalized.contains('missing type parameter') ||
+            normalized.contains('loadschedulednotifications') ||
+            normalized.contains('removenotificationfromcache') ||
+            normalized.contains('failed to handle method call') ||
+            normalized.contains('flutter/local_notifications');
+
+    if (!isRecoverableCacheError) {
+      return false;
+    }
+
+    await _onRecoverablePluginError!(operation, error, stackTrace);
+    return true;
   }
 }

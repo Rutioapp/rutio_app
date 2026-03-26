@@ -29,7 +29,15 @@ import 'screens/auth/auth_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.instance.init();
+  try {
+    await NotificationService.instance.init();
+  } catch (error, stackTrace) {
+    debugPrint('[main] Notification init failed: $error');
+    debugPrintStack(
+      label: '[main]',
+      stackTrace: stackTrace,
+    );
+  }
   runApp(const MyApp());
 }
 

@@ -15,6 +15,7 @@ class RutioNotificationChannel {
   static const String description =
       'Habit reminders, streaks and phase 1 local notifications';
   static const String androidSmallIcon = 'ic_notification';
+  static const String androidFallbackSmallIcon = 'ic_notification_fallback';
 }
 
 class RutioNotificationIds {
@@ -22,10 +23,6 @@ class RutioNotificationIds {
   static const int streakRisk = 51002;
   static const int inactivityReengagement = 51003;
   static const int dailyMotivation = 90001;
-
-  static const int debugImmediate = 99999;
-  static const int debugScheduled = 99998;
-  static const int debugAlarmBase = 99990;
 
   static int habitReminder(String habitId) {
     final hash = habitId.hashCode & 0x7fffffff;
@@ -73,5 +70,18 @@ List<JsonMap> habitListCast(dynamic value) {
 void logNotification(String message) {
   if (kDebugMode) {
     debugPrint('[NotificationService] $message');
+  }
+}
+
+void logNotificationError(
+  String message, {
+  StackTrace? stackTrace,
+}) {
+  debugPrint('[NotificationService] ERROR: $message');
+  if (stackTrace != null) {
+    debugPrintStack(
+      label: '[NotificationService]',
+      stackTrace: stackTrace,
+    );
   }
 }

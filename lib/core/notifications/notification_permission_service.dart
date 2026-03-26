@@ -58,6 +58,10 @@ class NotificationPermissionService {
       }
     }
 
+    if (Platform.isAndroid) {
+      return _checkAndroidStatus();
+    }
+
     final permissionResult =
         await _permissionService.check(AppPermission.notifications);
     return _mapFromAppPermission(permissionResult);
@@ -79,6 +83,26 @@ class NotificationPermissionService {
       return checkStatus();
     }
 
+    if (Platform.isAndroid) {
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+      try {
+        await android?.requestNotificationsPermission();
+      } on PlatformException {
+        // Fall back to permission_handler below.
+      }
+
+      final permissionResult =
+          await _permissionService.request(AppPermission.notifications);
+      final mapped = _mapFromAppPermission(permissionResult);
+      if (mapped.isAuthorized) {
+        return mapped;
+      }
+
+      return checkStatus();
+    }
+
     final permissionResult =
         await _permissionService.request(AppPermission.notifications);
     return _mapFromAppPermission(permissionResult);
@@ -97,10 +121,40 @@ class NotificationPermissionService {
     return _permissionService.openSettings();
   }
 
+  Future<NotificationPermissionResult> _checkAndroidStatus() async {
+    final permissionResult =
+        await _permissionService.check(AppPermission.notifications);
+    final mapped = _mapFromAppPermission(permissionResult);
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+
+    try {
+      final enabled = await android?.areNotificationsEnabled();
+      if (enabled == null) {
+        return mapped;
+      }
+      if (enabled) {
+        return const NotificationPermissionResult(
+          status: NotificationPermissionStatus.authorized,
+        );
+      }
+    } on PlatformException {
+      return mapped;
+    }
+
+    if (mapped.status == NotificationPermissionStatus.permanentlyDenied) {
+      return mapped;
+    }
+
+    return const NotificationPermissionResult(
+      status: NotificationPermissionStatus.denied,
+    );
+  }
+
   Future<NotificationPermissionStatus?> _getNativeAppleStatus() async {
     try {
-      final rawStatus =
-          await _channel.invokeMethod<String>('getNotificationPermissionStatus');
+      final rawStatus = await _channel
+          .invokeMethod<String>('getNotificationPermissionStatus');
       return _mapFromNative(rawStatus);
     } on PlatformException {
       return null;
