@@ -1,3 +1,5 @@
+import 'package:rutio/core/assets/app_assets.dart';
+
 import '../../models/user_state.dart';
 import '../local/asset_json_loader.dart';
 import '../local/user_state_storage.dart';
@@ -29,8 +31,7 @@ class UserStateRepository {
     final existing = await _storage.read();
     if (existing != null) return existing;
 
-    final template =
-        await _assets.loadJsonMap('assets/templates/user_state_template.json');
+    final template = await _assets.loadJsonMap(AppAssets.userStateTemplate);
 
     await _storage.write(template);
     return template;
@@ -41,8 +42,7 @@ class UserStateRepository {
   }
 
   Future<void> resetToTemplate() async {
-    final template =
-        await _assets.loadJsonMap('assets/templates/user_state_template.json');
+    final template = await _assets.loadJsonMap(AppAssets.userStateTemplate);
     await _storage.write(template);
   }
 }

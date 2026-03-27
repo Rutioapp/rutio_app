@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/core/assets/app_assets.dart';
 
 import 'package:rutio/constants/color_palette.dart';
 import 'package:rutio/l10n/l10n.dart';

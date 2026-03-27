@@ -1,9 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:rutio/core/assets/app_assets.dart';
 
 class HomeCatalogService {
-  HomeCatalogService({this.assetPath = 'assets/data/habits_catalog.json'});
+  HomeCatalogService({this.assetPath = AppAssets.habitsCatalog});
 
   final String assetPath;
 

@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version:  1.0.0+3
+version:  1.0.0+4
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -72,35 +72,30 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-  
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   generate: true
   uses-material-design: true
- 
- 
+
   assets:
-    - assets/images/Logo/
-    - assets/images/rutio-logo-512.png
     - assets/config/game_config.json
     - assets/templates/user_state_template.json
     - assets/data/habits_catalog.json
-    - assets/fonts/
 
   fonts:
     - family: DMSerifDisplay
       fonts:
-        - asset: assets/fonts/DMSerifDisplay-Regular.ttf
+        - asset: assets/fonts/dm_serif_display_regular.ttf
 
     - family: DMSans
       fonts:
-        - asset: assets/fonts/DMSans-Regular.ttf
-        - asset: assets/fonts/DMSans-Medium.ttf
+        - asset: assets/fonts/dm_sans_regular.ttf
+        - asset: assets/fonts/dm_sans_medium.ttf
           weight: 500
-        - asset: assets/fonts/DMSans-SemiBold.ttf
+        - asset: assets/fonts/dm_sans_semibold.ttf
           weight: 600
-        - asset: assets/fonts/DMSans-Bold.ttf
+        - asset: assets/fonts/dm_sans_bold.ttf
           weight: 700
 
   # To add assets to your application, add an assets section, like this:
@@ -137,9 +132,9 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path_android: assets/images/Logo/rutio-launcher-android.png
+  image_path_android: design/branding/app_icons/android/rutio_launcher_android.png
   adaptive_icon_background: "#F5EDE0"
-  adaptive_icon_foreground: assets/images/Logo/rutio-launcher-android-foreground.png
+  adaptive_icon_foreground: design/branding/app_icons/android/rutio_launcher_android_foreground.png
   min_sdk_android: 21
 
 

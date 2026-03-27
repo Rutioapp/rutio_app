@@ -1,3 +1,5 @@
+import 'package:rutio/core/assets/app_assets.dart';
+
 import '../data/local/asset_json_loader.dart';
 import '../data/local/user_state_storage.dart';
 
@@ -8,8 +10,7 @@ class UserStateService {
   final UserStateStorage _storage = UserStateStorage();
   final AssetJsonLoader _loader = AssetJsonLoader();
 
-  static const String _templatePath =
-      'assets/templates/user_state_template.json';
+  static const String _templatePath = AppAssets.userStateTemplate;
 
   /// Carga el UserState si existe, si no lo crea desde el template
   Future<Map<String, dynamic>> loadOrCreate() async {

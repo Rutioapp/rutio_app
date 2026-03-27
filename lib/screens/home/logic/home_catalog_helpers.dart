@@ -6,7 +6,7 @@ part of 'package:rutio/screens/home/home_screen.dart';
 /// used by pickers and chips in the Home flows.
 extension _HomeScreenCatalogHelpers on _HomeScreenState {
   Future<Map<String, dynamic>> _loadCatalog() async {
-    final raw = await rootBundle.loadString('assets/data/habits_catalog.json');
+    final raw = await rootBundle.loadString(AppAssets.habitsCatalog);
     final decoded = jsonDecode(raw);
     return (decoded as Map).cast<String, dynamic>();
   }
