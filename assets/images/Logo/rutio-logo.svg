@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" shape-rendering="geometricPrecision">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@700&amp;display=swap');
+    </style>
+    <!-- Squircle clip -->
+    <clipPath id="squircle-clip">
+      <rect x="0" y="0" width="200" height="200" rx="48" ry="48"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fondo crema plano -->
+  <rect x="0" y="0" width="200" height="200" rx="48" ry="48" fill="#f5ede0"/>
+
+  <!-- Letra R en DM Sans Bold, camel oscuro -->
+  <text
+    x="100"
+    y="138"
+    font-family="'DM Sans', 'DejaVu Sans', sans-serif"
+    font-weight="700"
+    font-size="118"
+    fill="#b8895a"
+    text-anchor="middle"
+    dominant-baseline="auto"
+    letter-spacing="-2"
+  >R</text>
+</svg>
