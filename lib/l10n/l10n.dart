@@ -202,7 +202,8 @@ extension AppLocalizationsDrawerSupportX on AppLocalizations {
   String get drawerSectionSupport =>
       _isSpanishDrawerSupport ? 'AYUDA' : 'SUPPORT';
 
-  String get drawerReportIssue => 'Report an issue';
+  String get drawerReportIssue =>
+      _isSpanishDrawerSupport ? 'Reportar incidencia' : 'Report an issue';
 
   String get drawerReportIssueLaunchError => _isSpanishDrawerSupport
       ? 'No se pudo abrir el formulario. Inténtalo de nuevo en un momento.'
