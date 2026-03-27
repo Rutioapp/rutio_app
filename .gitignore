@@ -54,3 +54,6 @@ ios/Flutter/ephemeral/
 macos/Pods/
 macos/Flutter/ephemeral/
 android/.gradle/
+android/key.properties
+android/key.properties.properties
+upload-keystore.jks
