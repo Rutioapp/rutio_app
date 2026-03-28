@@ -16,12 +16,10 @@ import '../habit_monthly_screen.dart';
 import '../habit_stats_overview_screen.dart';
 import '../habit_weekly_screen.dart';
 import '../home/home_screen.dart';
-import '../shop_screen.dart';
 import 'models/family_color_ref.dart';
 import 'notification_settings_screen.dart';
 import 'settings_screen.dart';
 import 'utils/profile_levels_from_history.dart';
-import 'widgets/danger_zone.dart';
 import 'widgets/family_radar_section.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_option_tile.dart';
@@ -52,13 +50,6 @@ class ProfileScreen extends StatefulWidget {
   final Color Function(FamilyColorRef ref)? familyColorResolver;
   final String Function(FamilyColorRef ref)? titleResolver;
   final VoidCallback? onEditProfile;
-  final VoidCallback? onOpenSettings;
-  final VoidCallback? onLogout;
-  final VoidCallback? onManageData;
-  final VoidCallback? onChangeTheme;
-  final VoidCallback? onManageNotifications;
-  final VoidCallback? onOpenHelp;
-  final VoidCallback? onOpenAbout;
   final bool openEditProfileOnLoad;
 
   const ProfileScreen({
@@ -72,13 +63,6 @@ class ProfileScreen extends StatefulWidget {
     this.familyColorResolver,
     this.titleResolver,
     this.onEditProfile,
-    this.onOpenSettings,
-    this.onLogout,
-    this.onManageData,
-    this.onChangeTheme,
-    this.onManageNotifications,
-    this.onOpenHelp,
-    this.onOpenAbout,
     this.openEditProfileOnLoad = false,
   });
 
@@ -116,12 +100,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _openSettings() {
-    final onOpenSettings = widget.onOpenSettings;
-    if (onOpenSettings != null) {
-      onOpenSettings();
-      return;
-    }
-
     Navigator.push(
       context,
       CupertinoPageRoute(builder: (_) => const SettingsScreen()),
@@ -129,12 +107,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _openNotificationSettings() {
-    final onManageNotifications = widget.onManageNotifications;
-    if (onManageNotifications != null) {
-      onManageNotifications();
-      return;
-    }
-
     Navigator.push(
       context,
       CupertinoPageRoute(builder: (_) => const NotificationSettingsScreen()),
@@ -243,7 +215,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onGoDiary: () => _navReplace(context, const DiaryScreen()),
         onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
         onGoStats: () => _navReplace(context, const HabitStatsOverviewHost()),
-        onGoShop: () => _navReplace(context, const ShopScreen()),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),
       ),
       backgroundColor: bg,
@@ -316,64 +287,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               children: [
                 ProfileOptionTile(
-                  icon: Icons.palette_outlined,
-                  title: l10n.profileThemeTitle,
-                  subtitle: l10n.profileThemeSubtitle,
-                  onTap: widget.onChangeTheme ??
-                      () => _snack(context, l10n.profileThemeTodo),
-                ),
-                const SizedBox(height: 10),
-                ProfileOptionTile(
                   icon: Icons.settings_outlined,
                   title: context.l10n.profileSettingsTitle,
                   subtitle: context.l10n.profileSettingsSubtitle,
                   onTap: _openSettings,
                 ),
-                const SizedBox(height: 10),
-                ProfileOptionTile(
-                  icon: Icons.help_outline,
-                  title: l10n.profileHelpTitle,
-                  subtitle: l10n.profileHelpSubtitle,
-                  onTap: widget.onOpenHelp ??
-                      () => _snack(context, l10n.profileHelpTodo),
-                ),
-                const SizedBox(height: 10),
-                ProfileOptionTile(
-                  icon: Icons.info_outline,
-                  title: l10n.profileAboutTitle,
-                  subtitle: l10n.profileAboutSubtitle,
-                  onTap: widget.onOpenAbout ??
-                      () => _snack(context, l10n.profileAboutTodo),
-                ),
               ],
             ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            l10n.profileDangerSectionTitle,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          SectionCard(
-            child: ProfileOptionTile(
-              icon: Icons.delete_outline,
-              title: l10n.profileManageDataTitle,
-              subtitle: l10n.profileManageDataSubtitle,
-              onTap: widget.onManageData ??
-                  () => _snack(context, l10n.profileManageDataTodo),
-            ),
-          ),
-          const SizedBox(height: 10),
-          DangerZone(
-            onLogout: widget.onLogout ??
-                () => _snack(context, l10n.profileLogoutTodo),
           ),
         ],
       ),
     );
-  }
-
-  void _snack(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 }

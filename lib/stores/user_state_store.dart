@@ -102,6 +102,12 @@ class UserStateStore extends ChangeNotifier {
   Future<void> setPreferredLanguageCode(String languageCode) =>
       _setPreferredLanguageCode(this, languageCode);
 
+  Future<void> clearLocalAccountData({bool preserveLanguageCode = true}) =>
+      _clearLocalAccountData(
+        this,
+        preserveLanguageCode: preserveLanguageCode,
+      );
+
   Map<String, dynamic> get profile => _profile(this);
 
   String? get displayName {

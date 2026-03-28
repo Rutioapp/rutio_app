@@ -16,7 +16,6 @@ class DiaryEntriesSection extends StatelessWidget {
     required this.onEntryTap,
     required this.onEntryEdit,
     required this.onEntryDelete,
-    required this.onEntryPin,
     required this.onEntryDismiss,
   });
 
@@ -26,7 +25,6 @@ class DiaryEntriesSection extends StatelessWidget {
   final ValueChanged<DiaryEntryUi> onEntryTap;
   final ValueChanged<DiaryEntryUi> onEntryEdit;
   final ValueChanged<DiaryEntryUi> onEntryDelete;
-  final VoidCallback onEntryPin;
   final Future<bool> Function(
     DiaryEntryUi entry,
     DismissDirection direction,
@@ -82,7 +80,6 @@ class DiaryEntriesSection extends StatelessWidget {
                   onTap: () => onEntryTap(entry),
                   onEdit: () => onEntryEdit(entry),
                   onDelete: () => onEntryDelete(entry),
-                  onPin: onEntryPin,
                 ),
               ),
             ),

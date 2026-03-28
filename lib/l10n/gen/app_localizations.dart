@@ -266,24 +266,6 @@ abstract class AppLocalizations {
   /// **'Contraseña'**
   String get fieldPasswordLabel;
 
-  /// No description provided for @authOrContinueWith.
-  ///
-  /// In es, this message translates to:
-  /// **'o continúa con'**
-  String get authOrContinueWith;
-
-  /// No description provided for @authContinueWithGoogle.
-  ///
-  /// In es, this message translates to:
-  /// **'Continuar con Google'**
-  String get authContinueWithGoogle;
-
-  /// No description provided for @authContinueWithApple.
-  ///
-  /// In es, this message translates to:
-  /// **'Continuar con Apple'**
-  String get authContinueWithApple;
-
   /// No description provided for @homeErrorMessage.
   ///
   /// In es, this message translates to:
@@ -1316,6 +1298,54 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Inglés'**
   String get settingsLanguageOptionEnglish;
+
+  /// No description provided for @settingsAccountSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta'**
+  String get settingsAccountSectionTitle;
+
+  /// No description provided for @settingsDeleteAccountTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar cuenta'**
+  String get settingsDeleteAccountTitle;
+
+  /// No description provided for @settingsDeleteAccountHelperText.
+  ///
+  /// In es, this message translates to:
+  /// **'Elimina los datos de la cuenta almacenados en este dispositivo.'**
+  String get settingsDeleteAccountHelperText;
+
+  /// No description provided for @settingsDeleteAccountConfirmationTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar cuenta?'**
+  String get settingsDeleteAccountConfirmationTitle;
+
+  /// No description provided for @settingsDeleteAccountConfirmationBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta y los datos asociados almacenados en este dispositivo se eliminarán de forma permanente. Esta acción no se puede deshacer.'**
+  String get settingsDeleteAccountConfirmationBody;
+
+  /// No description provided for @settingsDeleteAccountConfirmAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar permanentemente'**
+  String get settingsDeleteAccountConfirmAction;
+
+  /// No description provided for @settingsDeleteAccountError.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido eliminar los datos de tu cuenta en este dispositivo. Inténtalo de nuevo.'**
+  String get settingsDeleteAccountError;
+
+  /// No description provided for @settingsDeleteAccountSuccess.
+  ///
+  /// In es, this message translates to:
+  /// **'Los datos de tu cuenta se han eliminado de este dispositivo.'**
+  String get settingsDeleteAccountSuccess;
 
   /// No description provided for @profileSettingsTitle.
   ///
@@ -3122,18 +3152,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'CUENTA'**
   String get drawerSectionAccount;
-
-  /// No description provided for @drawerShop.
-  ///
-  /// In es, this message translates to:
-  /// **'Tienda'**
-  String get drawerShop;
-
-  /// No description provided for @drawerProBadge.
-  ///
-  /// In es, this message translates to:
-  /// **'PRO'**
-  String get drawerProBadge;
 
   /// No description provided for @drawerProfile.
   ///

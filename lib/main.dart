@@ -14,7 +14,6 @@ import 'stores/user_state_store.dart';
 import 'utils/app_theme.dart';
 
 import 'screens/home/home_screen.dart';
-import 'screens/shop_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/root_gate.dart';
 
@@ -84,7 +83,6 @@ class MyApp extends StatelessWidget {
               '/auth-signup': (_) => const AuthScreen(isLogin: false),
               '/root': (_) => const RootGate(),
               '/home': (_) => const HomeScreen(),
-              '/shop': (_) => const ShopScreen(),
               TodoScreen.route: (_) => const TodoScreen(),
               ProfileScreen.route: (_) => const ProfileScreen(),
               '/diary': (_) => DiaryScreen(),

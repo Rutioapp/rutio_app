@@ -23,7 +23,6 @@ class AppViewDrawer extends StatelessWidget {
     required this.onGoDiary,
     required this.onGoArchived,
     required this.onGoStats,
-    required this.onGoShop,
     required this.onGoProfile,
     this.selected,
   });
@@ -35,11 +34,10 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoDiary;
   final VoidCallback onGoArchived;
   final VoidCallback onGoStats;
-  final VoidCallback onGoShop;
   final VoidCallback onGoProfile;
 
   /// Valores sugeridos:
-  /// 'daily'|'weekly'|'monthly'|'todo'|'diary'|'archived'|'stats'|'shop'|'profile'
+  /// 'daily'|'weekly'|'monthly'|'todo'|'diary'|'archived'|'stats'|'profile'
   final String? selected;
 
   static const Color _skyTop = Color(0xFFEAF3FB);
@@ -56,8 +54,6 @@ class AppViewDrawer extends StatelessWidget {
   static const Color _supportTileBg = Color(0x1AF05A5A);
   static const Color _supportIconBg = Color(0x26F05A5A);
   static const Color _supportIcon = Color(0xFFC44747);
-  static const Color _proBg = Color(0xFFF0DEC1);
-  static const Color _proText = Color(0xFF9E7A3D);
   static final FeedbackFormService _feedbackFormService = FeedbackFormService();
 
   @override
@@ -153,31 +149,6 @@ class AppViewDrawer extends StatelessWidget {
                     const SizedBox(height: 18),
                     _DrawerSectionLabel(context.l10n.drawerSectionAccount),
                     const SizedBox(height: 8),
-                    _DrawerTile(
-                      icon: Icons.storefront_outlined,
-                      label: context.l10n.drawerShop,
-                      isSelected: selected == 'shop',
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: _proBg,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: const Color(0x33A17E42)),
-                        ),
-                        child: Text(
-                          context.l10n.drawerProBadge,
-                          style: AppTextStyles.drawerSection.copyWith(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
-                            color: _proText,
-                          ),
-                        ),
-                      ),
-                      onTap: () => _go(context, onGoShop),
-                    ),
-                    const SizedBox(height: 18),
                     _DrawerSectionLabel(context.l10n.drawerSectionSupport),
                     const SizedBox(height: 8),
                     _DrawerTile(
@@ -312,7 +283,6 @@ class _DrawerTile extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isSelected = false,
-    this.trailing,
     this.backgroundColor,
     this.iconColor,
     this.iconBackgroundColor,
@@ -322,7 +292,6 @@ class _DrawerTile extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool isSelected;
-  final Widget? trailing;
   final Color? backgroundColor;
   final Color? iconColor;
   final Color? iconBackgroundColor;
@@ -367,7 +336,6 @@ class _DrawerTile extends StatelessWidget {
                         : AppTextStyles.drawerItem,
                   ),
                 ),
-                if (trailing != null) trailing!,
               ],
             ),
           ),

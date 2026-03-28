@@ -1,5 +1,38 @@
 part of 'user_state_store.dart';
 
+Future<void> _clearLocalAccountData(
+  UserStateStore store, {
+  bool preserveLanguageCode = true,
+}) async {
+  final preservedLanguageCode =
+      preserveLanguageCode ? _preferredLanguageCode(store) : null;
+
+  await store._repo.resetToTemplate();
+  final resetRoot = await store._repo.loadOrCreate();
+  final userState = _ensureUserStateRoot(resetRoot);
+  final meta = _map(userState['meta']);
+
+  meta['onboardingDone'] = false;
+  meta.remove('authEmail');
+  userState['meta'] = meta;
+
+  if (preservedLanguageCode != null) {
+    final settings = _ensureSettingsRoot(userState);
+    final localeSettings = _map(settings['locale']);
+    localeSettings['languageCode'] = preservedLanguageCode;
+    settings['locale'] = localeSettings;
+    userState['settings'] = settings;
+  }
+
+  resetRoot['userState'] = userState;
+  await store._repo.save(resetRoot);
+
+  store._state = resetRoot;
+  store._loading = false;
+  store._error = null;
+  store._emitChanged();
+}
+
 Map<String, dynamic> _ensureSettingsRoot(Map<String, dynamic> userState) {
   final settings = _map(userState['settings']);
   userState['settings'] = settings;

@@ -16,7 +16,6 @@ import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/diary/diary_screen.dart';
 import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/habit_stats_overview_screen.dart';
-import 'package:rutio/screens/shop_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
 
 import 'package:rutio/screens/habit_monthly/utils/month_utils.dart';
@@ -169,7 +168,6 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
                 _navReplace(context, const ArchivedHabitsScreen()),
             onGoStats: () =>
                 _navReplace(context, const HabitStatsOverviewHost()),
-            onGoShop: () => _navReplace(context, const ShopScreen()),
             onGoProfile: () => _navReplace(context, const ProfileScreen()),
           ),
           body: SafeArea(

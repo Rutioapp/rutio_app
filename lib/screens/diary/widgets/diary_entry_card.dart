@@ -15,7 +15,6 @@ class DiaryEntryCard extends StatefulWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
-    required this.onPin,
   });
 
   final UserStateStore store;
@@ -23,7 +22,6 @@ class DiaryEntryCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final VoidCallback onPin;
 
   @override
   State<DiaryEntryCard> createState() => _DiaryEntryCardState();

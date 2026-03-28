@@ -55,7 +55,6 @@ class _ShopScreenState extends State<ShopScreen> {
         onGoDiary: () => _navReplace(context, const DiaryScreen()),
         onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
         onGoStats: () => _navReplace(context, const HabitStatsOverviewHost()),
-        onGoShop: () => _navReplace(context, const ShopScreen()),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),
       ),
       backgroundColor: const Color(0xFFD9CCF3),

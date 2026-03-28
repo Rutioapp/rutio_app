@@ -30,7 +30,6 @@ void main() {
             onGoDiary: () {},
             onGoArchived: () {},
             onGoStats: () {},
-            onGoShop: () {},
             onGoProfile: () {},
           ),
           body: const SizedBox.shrink(),

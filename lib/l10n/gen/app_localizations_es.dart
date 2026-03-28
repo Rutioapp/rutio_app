@@ -93,15 +93,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get fieldPasswordLabel => 'Contraseña';
 
   @override
-  String get authOrContinueWith => 'o continúa con';
-
-  @override
-  String get authContinueWithGoogle => 'Continuar con Google';
-
-  @override
-  String get authContinueWithApple => 'Continuar con Apple';
-
-  @override
   String homeErrorMessage(String error) {
     return 'Error: $error';
   }
@@ -663,6 +654,34 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsLanguageOptionEnglish => 'Inglés';
+
+  @override
+  String get settingsAccountSectionTitle => 'Cuenta';
+
+  @override
+  String get settingsDeleteAccountTitle => 'Eliminar cuenta';
+
+  @override
+  String get settingsDeleteAccountHelperText =>
+      'Elimina los datos de la cuenta almacenados en este dispositivo.';
+
+  @override
+  String get settingsDeleteAccountConfirmationTitle => '¿Eliminar cuenta?';
+
+  @override
+  String get settingsDeleteAccountConfirmationBody =>
+      'Tu cuenta y los datos asociados almacenados en este dispositivo se eliminarán de forma permanente. Esta acción no se puede deshacer.';
+
+  @override
+  String get settingsDeleteAccountConfirmAction => 'Eliminar permanentemente';
+
+  @override
+  String get settingsDeleteAccountError =>
+      'No hemos podido eliminar los datos de tu cuenta en este dispositivo. Inténtalo de nuevo.';
+
+  @override
+  String get settingsDeleteAccountSuccess =>
+      'Los datos de tu cuenta se han eliminado de este dispositivo.';
 
   @override
   String get profileSettingsTitle => 'Ajustes';
@@ -1651,12 +1670,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get drawerSectionAccount => 'CUENTA';
-
-  @override
-  String get drawerShop => 'Tienda';
-
-  @override
-  String get drawerProBadge => 'PRO';
 
   @override
   String get drawerProfile => 'Mi perfil';

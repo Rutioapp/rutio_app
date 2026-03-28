@@ -20,7 +20,6 @@ import 'package:rutio/screens/home/home_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/diary/diary_screen.dart';
-import 'package:rutio/screens/shop_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
 
@@ -107,7 +106,6 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
       onGoDiary: () => _navReplace(context, const DiaryScreen()),
       onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
       onGoStats: () => _navReplace(context, const HabitStatsOverviewHost()),
-      onGoShop: () => _navReplace(context, const ShopScreen()),
       onGoProfile: () => _navReplace(context, const ProfileScreen()),
     );
 

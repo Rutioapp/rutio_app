@@ -319,13 +319,6 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
             value: timeValue,
             onTap: _pickTime,
           ),
-          _rowDivider(),
-          _CreateTodoInfoRow(
-            icon: CupertinoIcons.bell,
-            label: _isSpanish(context) ? 'Recordatorio' : 'Reminder',
-            value: _isSpanish(context) ? 'Ninguno' : 'None',
-            onTap: _showReminderSoon,
-          ),
         ],
       ),
     );
@@ -560,16 +553,6 @@ class _CreateTodoScreenState extends State<CreateTodoScreen> {
           ),
         );
       },
-    );
-  }
-
-  void _showReminderSoon() {
-    final message = _isSpanish(context)
-        ? 'Los recordatorios de tareas llegarán pronto.'
-        : 'Task reminders are coming soon.';
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
     );
   }
 

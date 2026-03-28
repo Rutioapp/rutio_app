@@ -32,4 +32,9 @@ class SessionService {
 
     return email.toLowerCase() == savedEmail && pass == savedPass;
   }
+
+  Future<void> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kUserKey);
+  }
 }

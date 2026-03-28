@@ -6,7 +6,6 @@ import '../../stores/user_state_store.dart';
 import '../../utils/app_theme.dart';
 import 'widgets/auth_field.dart';
 import 'widgets/auth_primary_button.dart';
-import 'widgets/auth_social_buttons.dart';
 import 'widgets/auth_switch_link.dart';
 import 'widgets/rutio_backdrop.dart';
 
@@ -93,16 +92,6 @@ class _AuthScreenState extends State<AuthScreen>
         ),
       ),
     );
-  }
-
-  void _google() {
-    // ✅ UI preparado. Hook Firebase aquí más adelante.
-    debugPrint('Google Sign-In tapped');
-  }
-
-  void _apple() {
-    // ✅ UI preparado. Hook Firebase aquí más adelante.
-    debugPrint('Apple Sign-In tapped');
   }
 
   @override
@@ -197,40 +186,14 @@ class _AuthScreenState extends State<AuthScreen>
                             obscure: true,
                             controller: _passwordCtrl,
                           ),
-                          const SizedBox(height: 6),
-
-                          if (isLogin)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: GestureDetector(
-                                onTap: () {},
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.only(top: 6, bottom: 18),
-                                  child: Text(l10n.loginForgotPassword,
-                                      style: AppTextStyles.forgot),
-                                ),
-                              ),
-                            )
-                          else
-                            const SizedBox(height: 18),
+                          const SizedBox(height: 18),
 
                           AuthPrimaryButton(
                             label: buttonLabel,
                             onTap: _submit,
                           ),
 
-                          const SizedBox(height: 16),
-
-                          AuthSocialButtons(
-                            dividerLabel: l10n.authOrContinueWith,
-                            appleLabel: l10n.authContinueWithApple,
-                            googleLabel: l10n.authContinueWithGoogle,
-                            onApple: _apple,
-                            onGoogle: _google,
-                          ),
-
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 22),
 
                           AuthSwitchLink(
                             prefix: isLogin

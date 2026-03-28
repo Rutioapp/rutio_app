@@ -29,7 +29,6 @@ class DiaryScreenBody extends StatelessWidget {
     required this.onEntryTap,
     required this.onEntryEdit,
     required this.onEntryDelete,
-    required this.onEntryPin,
     required this.onEntryDismiss,
   });
 
@@ -50,7 +49,6 @@ class DiaryScreenBody extends StatelessWidget {
   final ValueChanged<DiaryEntryUi> onEntryTap;
   final ValueChanged<DiaryEntryUi> onEntryEdit;
   final ValueChanged<DiaryEntryUi> onEntryDelete;
-  final VoidCallback onEntryPin;
   final Future<bool> Function(
     DiaryEntryUi entry,
     DismissDirection direction,
@@ -94,7 +92,6 @@ class DiaryScreenBody extends StatelessWidget {
             onEntryTap: onEntryTap,
             onEntryEdit: onEntryEdit,
             onEntryDelete: onEntryDelete,
-            onEntryPin: onEntryPin,
             onEntryDismiss: onEntryDismiss,
           ),
         ],

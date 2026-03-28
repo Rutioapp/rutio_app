@@ -81,20 +81,16 @@ class MonthGrid extends StatelessWidget {
             ? Colors.black.withValues(alpha: 0.25)
             : (done ? Colors.white : Colors.black.withValues(alpha: 0.65));
 
-        return InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {},
-          child: Container(
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-            ),
-            child: Center(
-              child: Text(
-                '$day',
-                style: TextStyle(fontWeight: FontWeight.w800, color: fg),
-              ),
+        return Container(
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+          ),
+          child: Center(
+            child: Text(
+              '$day',
+              style: TextStyle(fontWeight: FontWeight.w800, color: fg),
             ),
           ),
         );

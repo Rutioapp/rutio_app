@@ -9,7 +9,6 @@ import 'package:rutio/screens/habit_stats_overview_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/home/home_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
-import 'package:rutio/screens/shop_screen.dart';
 import 'package:rutio/widgets/app_view_drawer.dart';
 
 import '../../l10n/l10n.dart';
@@ -158,12 +157,6 @@ class _DiaryScreenState extends State<DiaryScreen> {
     );
   }
 
-  void _showPinPlaceholder() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.diaryPinSoon)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final store = context.watch<UserStateStore>();
@@ -178,7 +171,6 @@ class _DiaryScreenState extends State<DiaryScreen> {
         onGoDiary: () => _navReplace(context, const DiaryScreen()),
         onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
         onGoStats: () => _navReplace(context, const HabitStatsOverviewHost()),
-        onGoShop: () => _navReplace(context, const ShopScreen()),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),
       ),
       backgroundColor: Colors.transparent,
@@ -208,7 +200,6 @@ class _DiaryScreenState extends State<DiaryScreen> {
           onEntryTap: _openEntryDetail,
           onEntryEdit: (entry) => _openCreateEntrySheet(editing: entry),
           onEntryDelete: _confirmDelete,
-          onEntryPin: _showPinPlaceholder,
           onEntryDismiss: _handleEntryDismiss,
         ),
       ),
