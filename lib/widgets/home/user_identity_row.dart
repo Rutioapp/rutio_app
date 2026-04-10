@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
 import 'package:rutio/constants/color_palette.dart';
@@ -89,7 +90,7 @@ class UserIdentityRow extends StatelessWidget {
                           color: palette.separator,
                         ),
                         const SizedBox(width: 8),
-                        _CoinGlyph(palette: palette),
+                        const _CoinGlyph(),
                         const SizedBox(width: 6),
                         Text(
                           numberFormat.format(coins),
@@ -116,49 +117,25 @@ class UserIdentityRow extends StatelessWidget {
 }
 
 class _CoinGlyph extends StatelessWidget {
-  final _UserIdentityPalette palette;
+  static const String _lightAsset =
+      'lib/assets/icons/currency/rutio_moneda_bicolor_light.svg';
+  static const String _darkAsset =
+      'lib/assets/icons/currency/rutio_moneda_bicolor_dark.svg';
 
-  const _CoinGlyph({required this.palette});
+  const _CoinGlyph();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final brightness = Theme.of(context).brightness;
+    final assetPath =
+        brightness == Brightness.dark ? _lightAsset : _darkAsset;
+
+    return SvgPicture.asset(
+      assetPath,
       width: 16,
       height: 16,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          center: const Alignment(-0.24, -0.34),
-          radius: 0.96,
-          colors: [
-            palette.coinHighlight,
-            palette.coinBase,
-            palette.coinEdge,
-          ],
-          stops: const [0.0, 0.66, 1.0],
-        ),
-        border: Border.all(
-          color: palette.coinStroke,
-          width: 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: palette.coinShadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        'R',
-        style: TextStyle(
-          fontFamily: 'DMSerifDisplay',
-          fontSize: 9.5,
-          height: 1.0,
-          color: palette.coinLetter,
-        ),
-      ),
+      fit: BoxFit.contain,
+      excludeFromSemantics: true,
     );
   }
 }
@@ -167,23 +144,11 @@ class _UserIdentityPalette {
   final Color textPrimary;
   final Color textSecondary;
   final Color separator;
-  final Color coinHighlight;
-  final Color coinBase;
-  final Color coinEdge;
-  final Color coinStroke;
-  final Color coinLetter;
-  final Color coinShadow;
 
   const _UserIdentityPalette({
     required this.textPrimary,
     required this.textSecondary,
     required this.separator,
-    required this.coinHighlight,
-    required this.coinBase,
-    required this.coinEdge,
-    required this.coinStroke,
-    required this.coinLetter,
-    required this.coinShadow,
   });
 
   factory _UserIdentityPalette.resolve(BuildContext context) {
@@ -193,12 +158,6 @@ class _UserIdentityPalette {
         textPrimary: ColorPalette.textPrimaryDark.withValues(alpha: 0.96),
         textSecondary: ColorPalette.textSecondaryDark.withValues(alpha: 0.86),
         separator: ColorPalette.textPrimaryDark.withValues(alpha: 0.18),
-        coinHighlight: Colors.white,
-        coinBase: AppColors.cream,
-        coinEdge: AppColors.cream2,
-        coinStroke: AppColors.earth.withValues(alpha: 0.52),
-        coinLetter: AppColors.ink,
-        coinShadow: AppColors.flowerYellow.withValues(alpha: 0.16),
       );
     }
 
@@ -206,12 +165,6 @@ class _UserIdentityPalette {
       textPrimary: Color.lerp(AppColors.ink, AppColors.earth, 0.72)!,
       textSecondary: AppColors.earth.withValues(alpha: 0.88),
       separator: AppColors.earth.withValues(alpha: 0.24),
-      coinHighlight: AppColors.ink,
-      coinBase: const Color(0xFF2A1408),
-      coinEdge: const Color(0xFF1A0C04),
-      coinStroke: AppColors.earth.withValues(alpha: 0.62),
-      coinLetter: AppColors.cream,
-      coinShadow: AppColors.earth.withValues(alpha: 0.16),
     );
   }
 }

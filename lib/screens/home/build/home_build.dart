@@ -55,6 +55,7 @@ extension _HomeScreenBuild on _HomeScreenState {
     }
 
     final homeData = buildHomeViewData(root, _selectedDay);
+    _scheduleHomeOnboardingSync(store, homeData);
 
     final args = ModalRoute.of(context)?.settings.arguments;
     final argsMap = (args is Map) ? args : const <String, dynamic>{};
@@ -76,55 +77,60 @@ extension _HomeScreenBuild on _HomeScreenState {
                 ? profileUsername
                 : context.l10n.homeFallbackUsername;
 
-    return _HomeLoadedView(
-      scaffoldKey: _scaffoldKey,
-      username: username,
-      homeData: homeData,
-      showCompleted: _showCompleted,
-      showSkipped: _showSkipped,
-      onOpenDrawer: () => _buildViewDrawer(context),
-      onOpenAddHabit: () => showHomeAddHabitSheet(context),
-      statsHeader: _statsHeader(
-        context: context,
+    return ChangeNotifierProvider<OnboardingController>.value(
+      value: _onboardingController,
+      child: _HomeLoadedView(
+        scaffoldKey: _scaffoldKey,
         username: username,
-        level: homeData.level,
-        xp: homeData.xpInLevel,
-        coins: homeData.coins,
-        xpToNext: homeData.xpToNext,
-        avatarUrl: store.avatarUrl,
-      ),
-      weekStrip: _weekStrip(),
-      dayProgress: _dayProgressMini(
-        label: MaterialLocalizations.of(context).formatMediumDate(
-          _selectedDay,
+        homeData: homeData,
+        showCompleted: _showCompleted,
+        showSkipped: _showSkipped,
+        onOpenDrawer: () => _buildViewDrawer(context),
+        onOpenAddHabit: () => _handleHomeAddHabitPressed(),
+        onOnboardingDismiss: _handleHomeOnboardingDismiss,
+        onOnboardingContinue: _handleHomeOnboardingContinue,
+        statsHeader: _statsHeader(
+          context: context,
+          username: username,
+          level: homeData.level,
+          xp: homeData.xpInLevel,
+          coins: homeData.coins,
+          xpToNext: homeData.xpToNext,
+          avatarUrl: store.avatarUrl,
         ),
-        done: homeData.doneCount,
-        total: homeData.totalCount,
-      ),
-      habitCardBuilder: (ctx, h, {bool compact = false}) =>
-          _habitCard(context: ctx, habit: h, compact: compact),
-      completedHeaderBuilder: (count) => _completedHeader(count: count),
-      skippedHeaderBuilder: (count) => _skippedHeader(count: count),
-      onPendingReorder: (oldIndex, newIndex) => _reorderHabitSection(
-        context,
-        sectionHabits: homeData.pendingHabits,
-        viewHabits: homeData.viewHabits,
-        oldIndex: oldIndex,
-        newIndex: newIndex,
-      ),
-      onCompletedReorder: (oldIndex, newIndex) => _reorderHabitSection(
-        context,
-        sectionHabits: homeData.completedHabits,
-        viewHabits: homeData.viewHabits,
-        oldIndex: oldIndex,
-        newIndex: newIndex,
-      ),
-      onSkippedReorder: (oldIndex, newIndex) => _reorderHabitSection(
-        context,
-        sectionHabits: homeData.skippedHabits,
-        viewHabits: homeData.viewHabits,
-        oldIndex: oldIndex,
-        newIndex: newIndex,
+        weekStrip: _weekStrip(),
+        dayProgress: _dayProgressMini(
+          label: MaterialLocalizations.of(context).formatMediumDate(
+            _selectedDay,
+          ),
+          done: homeData.doneCount,
+          total: homeData.totalCount,
+        ),
+        habitCardBuilder: (ctx, h, {bool compact = false}) =>
+            _habitCard(context: ctx, habit: h, compact: compact),
+        completedHeaderBuilder: (count) => _completedHeader(count: count),
+        skippedHeaderBuilder: (count) => _skippedHeader(count: count),
+        onPendingReorder: (oldIndex, newIndex) => _reorderHabitSection(
+          context,
+          sectionHabits: homeData.pendingHabits,
+          viewHabits: homeData.viewHabits,
+          oldIndex: oldIndex,
+          newIndex: newIndex,
+        ),
+        onCompletedReorder: (oldIndex, newIndex) => _reorderHabitSection(
+          context,
+          sectionHabits: homeData.completedHabits,
+          viewHabits: homeData.viewHabits,
+          oldIndex: oldIndex,
+          newIndex: newIndex,
+        ),
+        onSkippedReorder: (oldIndex, newIndex) => _reorderHabitSection(
+          context,
+          sectionHabits: homeData.skippedHabits,
+          viewHabits: homeData.viewHabits,
+          oldIndex: oldIndex,
+          newIndex: newIndex,
+        ),
       ),
     );
   }
@@ -141,6 +147,8 @@ class _HomeLoadedView extends StatelessWidget {
   final bool showSkipped;
   final Widget Function() onOpenDrawer;
   final VoidCallback onOpenAddHabit;
+  final Future<void> Function(OnboardingStep step) onOnboardingDismiss;
+  final Future<void> Function(OnboardingStep step) onOnboardingContinue;
   final Widget statsHeader;
   final Widget weekStrip;
   final Widget dayProgress;
@@ -160,6 +168,8 @@ class _HomeLoadedView extends StatelessWidget {
     required this.showSkipped,
     required this.onOpenDrawer,
     required this.onOpenAddHabit,
+    required this.onOnboardingDismiss,
+    required this.onOnboardingContinue,
     required this.statsHeader,
     required this.weekStrip,
     required this.dayProgress,
@@ -182,8 +192,15 @@ class _HomeLoadedView extends StatelessWidget {
         key: scaffoldKey,
         backgroundColor: Colors.transparent,
         drawer: onOpenDrawer(),
-        floatingActionButton: HomeAddFab(
-          onPressed: onOpenAddHabit,
+        floatingActionButton: Consumer<OnboardingController>(
+          builder: (context, onboarding, _) {
+            return HomeAddFab(
+              onPressed: onOpenAddHabit,
+              isHighlighted: onboarding.shouldEmphasizeTarget(
+                OnboardingTargetIds.homeAddHabitFab,
+              ),
+            );
+          },
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: Stack(
@@ -241,14 +258,18 @@ class _HomeLoadedView extends StatelessWidget {
                           onPendingReorder: onPendingReorder,
                           onCompletedReorder: onCompletedReorder,
                           onSkippedReorder: onSkippedReorder,
-                          onOpenAddHabit: onOpenAddHabit,
-                          bottomPadding: bottomInset + 112,
+                          bottomPadding: bottomInset +
+                              OnboardingOverlay.homeReservedScrollPadding,
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
+            ),
+            OnboardingOverlay(
+              onContinue: onOnboardingContinue,
+              onDismiss: onOnboardingDismiss,
             ),
           ],
         ),

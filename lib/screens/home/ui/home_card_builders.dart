@@ -98,150 +98,179 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       }
     }
 
-    final card = HabitCardWidget(
-      title: title,
-      description: description,
-      emoji: resolvedEmoji.isEmpty ? null : resolvedEmoji,
-      onEmojiTap: resolvedEmoji.isEmpty
-          ? null
-          : () async {
-              final selectedEmoji = await showEmojiPickerBottomSheet(
-                context,
-                currentEmoji: resolvedEmoji,
-                accentColor: familyColor,
-              );
-              if (!context.mounted) return;
-              final nextEmoji = selectedEmoji?.trim();
-              if (nextEmoji == null ||
-                  nextEmoji.isEmpty ||
-                  nextEmoji == resolvedEmoji) {
-                return;
-              }
+    final card = Selector<OnboardingController, bool>(
+      selector: (_, onboarding) => onboarding.isTargetActive(
+        isCounting
+            ? OnboardingTargetIds.homeFirstHabitCountControls
+            : OnboardingTargetIds.homeFirstHabitCheckControl,
+        targetEntityId: id,
+      ),
+      builder: (context, isTargetActive, _) {
+        return HabitCardWidget(
+          title: title,
+          description: description,
+          emoji: resolvedEmoji.isEmpty ? null : resolvedEmoji,
+          onEmojiTap: resolvedEmoji.isEmpty
+              ? null
+              : () async {
+                  final selectedEmoji = await showEmojiPickerBottomSheet(
+                    context,
+                    currentEmoji: resolvedEmoji,
+                    accentColor: familyColor,
+                  );
+                  if (!context.mounted) return;
+                  final nextEmoji = selectedEmoji?.trim();
+                  if (nextEmoji == null ||
+                      nextEmoji.isEmpty ||
+                      nextEmoji == resolvedEmoji) {
+                    return;
+                  }
 
-              final store = context.read<UserStateStore>();
-              await store.updateHabitDetailsFromEdit({
-                'id': id,
-                'emoji': nextEmoji,
-                'habitEmoji': nextEmoji,
-              });
-            },
-      familyColor: familyColor,
-      progress: progress01,
-      isCompleted: doneToday && !skippedToday,
-      isCounting: isCounting,
-      completionBurstText: completionBurstText,
-      onCheckTap: () async {
-        // IOS-FIRST IMPROVEMENT START
-        await IosFeedback.success();
-        if (!context.mounted) return;
+                  final store = context.read<UserStateStore>();
+                  await store.updateHabitDetailsFromEdit({
+                    'id': id,
+                    'emoji': nextEmoji,
+                    'habitEmoji': nextEmoji,
+                  });
+                },
+          familyColor: familyColor,
+          progress: progress01,
+          isCompleted: doneToday && !skippedToday,
+          isCounting: isCounting,
+          completionBurstText: completionBurstText,
+          highlightCheckControl: !isCounting && isTargetActive,
+          highlightCountControls: isCounting && isTargetActive,
+          onCheckTap: () async {
+            await IosFeedback.success();
+            if (!context.mounted) return;
 
-        context.read<UserStateStore>().setHabitCompletionForKey(
+            await context.read<UserStateStore>().setHabitCompletionForKey(
+                  habitId: id,
+                  dateKey: _dateKey(_selectedDay),
+                  done: !(doneToday && !skippedToday),
+                );
+
+            await _maybeCompleteOnboardingFromTargetInteraction(
+              targetId: OnboardingTargetIds.homeFirstHabitCheckControl,
               habitId: id,
-              dateKey: _dateKey(_selectedDay),
-              done: !(doneToday && !skippedToday),
             );
-      },
-      currentCount: current,
-      targetCount: target,
-      unitLabel: unitLabel.isEmpty ? null : unitLabel,
-      reminderLabel: reminderLabel,
-      onIncrement: isCounting
-          ? () {
-              final step = toPositiveNum(
-                habit['counterStep'] ?? habit['step'] ?? 1,
-                fallback: 1,
-              ).toDouble();
-              final next = current + step;
-              context.read<UserStateStore>().setCountHabitValueForDate(
-                    habitId: id,
-                    date: _selectedDay,
-                    value: next,
-                  );
-            }
-          : null,
-      onDecrement: isCounting
-          ? () {
-              final step = toPositiveNum(
-                habit['counterStep'] ?? habit['step'] ?? 1,
-                fallback: 1,
-              ).toDouble();
-              final next = current - step;
-              context.read<UserStateStore>().setCountHabitValueForDate(
-                    habitId: id,
-                    date: _selectedDay,
-                    value: next < 0 ? 0 : next,
-                  );
-            }
-          : null,
-      onCountTap: isCounting
-          ? () => _editCountValueDialog(
-                context: context,
-                habitId: id,
-                date: _selectedDay,
-                currentValue: current.toInt(),
-                unitLabel: unitLabel.isEmpty ? null : unitLabel,
-              )
-          : null,
-      compact: compact,
-      onOpenDetails: compact
-          ? null
-          : (initialTab) {
-              Navigator.push(
-                context,
-                CupertinoPageRoute(
-                  builder: (_) => HabitDetailScreen(
-                    habit: habit,
-                    familyColor: familyColor,
-                    initialTab: initialTab,
-                    onSaveHabit: (updatedHabit) {
-                      if (updatedHabit is Map) {
-                        final updates = <String, dynamic>{};
+          },
+          currentCount: current,
+          targetCount: target,
+          unitLabel: unitLabel.isEmpty ? null : unitLabel,
+          reminderLabel: reminderLabel,
+          onIncrement: isCounting
+              ? () async {
+                  final step = toPositiveNum(
+                    habit['counterStep'] ?? habit['step'] ?? 1,
+                    fallback: 1,
+                  ).toDouble();
+                  final next = current + step;
+                  await context.read<UserStateStore>().setCountHabitValueForDate(
+                        habitId: id,
+                        date: _selectedDay,
+                        value: next,
+                      );
 
-                        for (final k in [
-                          'title',
-                          'name',
-                          'description',
-                          'desc',
-                          'emoji',
-                          'habitEmoji',
-                          'notes',
-                          'frequency',
-                          'cadence',
-                          'targetCount',
-                          'target',
-                          'goal',
-                          'times',
-                          'type',
-                          'trackingType',
-                          'habitType',
-                          'unit',
-                          'unitLabel',
-                          'counterUnit',
-                          'counterStep',
-                          'step',
-                          'remindersEnabled',
-                          'reminderEnabled',
-                          'reminderTime',
-                          'archived',
-                          'isArchived',
-                        ]) {
-                          if (updatedHabit.containsKey(k)) {
-                            updates[k] = updatedHabit[k];
+                  await _maybeCompleteOnboardingFromTargetInteraction(
+                    targetId: OnboardingTargetIds.homeFirstHabitCountControls,
+                    habitId: id,
+                  );
+                }
+              : null,
+          onDecrement: isCounting
+              ? () async {
+                  final step = toPositiveNum(
+                    habit['counterStep'] ?? habit['step'] ?? 1,
+                    fallback: 1,
+                  ).toDouble();
+                  final next = current - step;
+                  await context.read<UserStateStore>().setCountHabitValueForDate(
+                        habitId: id,
+                        date: _selectedDay,
+                        value: next < 0 ? 0 : next,
+                      );
+
+                  await _maybeCompleteOnboardingFromTargetInteraction(
+                    targetId: OnboardingTargetIds.homeFirstHabitCountControls,
+                    habitId: id,
+                  );
+                }
+              : null,
+          onCountTap: isCounting
+              ? () => _editCountValueDialog(
+                    context: context,
+                    habitId: id,
+                    date: _selectedDay,
+                    currentValue: current.toInt(),
+                    unitLabel: unitLabel.isEmpty ? null : unitLabel,
+                  )
+              : null,
+          compact: compact,
+          onOpenDetails: compact
+              ? null
+              : (initialTab) {
+                  Navigator.push(
+                    context,
+                    CupertinoPageRoute(
+                      builder: (_) => HabitDetailScreen(
+                        habit: habit,
+                        familyColor: familyColor,
+                        initialTab: initialTab,
+                        onSaveHabit: (updatedHabit) {
+                          if (updatedHabit is Map) {
+                            final updates = <String, dynamic>{};
+
+                            for (final k in [
+                              'title',
+                              'name',
+                              'description',
+                              'desc',
+                              'emoji',
+                              'habitEmoji',
+                              'notes',
+                              'frequency',
+                              'cadence',
+                              'targetCount',
+                              'target',
+                              'goal',
+                              'times',
+                              'type',
+                              'trackingType',
+                              'habitType',
+                              'unit',
+                              'unitLabel',
+                              'counterUnit',
+                              'counterStep',
+                              'step',
+                              'remindersEnabled',
+                              'reminderEnabled',
+                              'reminderTime',
+                              'archived',
+                              'isArchived',
+                            ]) {
+                              if (updatedHabit.containsKey(k)) {
+                                updates[k] = updatedHabit[k];
+                              }
+                            }
+
+                            _tryUpdateHabit(
+                              context,
+                              habitId: id,
+                              updates: updates,
+                            );
                           }
-                        }
-
-                        _tryUpdateHabit(context, habitId: id, updates: updates);
-                      }
-                    },
-                    onOpenStats: (ctx) {
-                      _openMonthlyOverview(ctx);
-                    },
-                  ),
-                ),
-              );
-              // IOS-FIRST IMPROVEMENT END
-            },
-      onTap: null,
+                        },
+                        onOpenStats: (ctx) {
+                          _openMonthlyOverview(ctx);
+                        },
+                      ),
+                    ),
+                  );
+                },
+          onTap: null,
+        );
+      },
     );
 
     if (!isCounting) {

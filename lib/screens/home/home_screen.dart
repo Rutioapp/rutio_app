@@ -7,6 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/core/assets/app_assets.dart';
+import 'package:rutio/features/onboarding/controllers/onboarding_controller.dart';
+import 'package:rutio/features/onboarding/models/onboarding_step.dart';
+import 'package:rutio/features/onboarding/services/onboarding_persistence_service.dart';
+import 'package:rutio/features/onboarding/widgets/onboarding_overlay.dart';
 
 import 'package:rutio/constants/color_palette.dart';
 import 'package:rutio/l10n/l10n.dart';
@@ -38,7 +42,6 @@ part 'state/home_state.dart';
 part 'build/home_build.dart';
 part 'build/sections/home_pinned_header_sliver.dart';
 part 'build/sections/home_habits_sliver.dart';
-part 'build/sections/home_empty_state_card.dart';
 part 'build/sections/home_scrollable_content_sliver.dart';
 
 part 'logic/home_helpers.dart';
@@ -103,3 +106,11 @@ class HomeScreen extends StatefulWidget {
 
 final ConfettiController _confettiController =
     ConfettiController(duration: const Duration(seconds: 1));
+
+bool _shouldShowHomeFirstHabitOnboarding(OnboardingDisplayContext context) {
+  return !context.hasAnyHabits;
+}
+
+bool _shouldShowHomeHabitUsageOnboarding(OnboardingDisplayContext context) {
+  return context.hasAnyHabits;
+}

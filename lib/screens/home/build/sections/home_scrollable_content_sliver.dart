@@ -19,7 +19,6 @@ class HomeScrollableContentSliver extends StatelessWidget {
     required this.onPendingReorder,
     required this.onCompletedReorder,
     required this.onSkippedReorder,
-    required this.onOpenAddHabit,
     required this.bottomPadding,
   });
 
@@ -36,7 +35,6 @@ class HomeScrollableContentSliver extends StatelessWidget {
   final Future<void> Function(int oldIndex, int newIndex) onPendingReorder;
   final Future<void> Function(int oldIndex, int newIndex) onCompletedReorder;
   final Future<void> Function(int oldIndex, int newIndex) onSkippedReorder;
-  final VoidCallback onOpenAddHabit;
   final double bottomPadding;
 
   @override
@@ -50,10 +48,8 @@ class HomeScrollableContentSliver extends StatelessWidget {
         bottomPadding,
       ),
       sliver: viewHabits.isEmpty
-          ? SliverToBoxAdapter(
-              child: HomeEmptyStateCard(
-                onPrimaryAction: onOpenAddHabit,
-              ),
+          ? const SliverToBoxAdapter(
+              child: SizedBox.shrink(),
             )
           : HomeHabitsSliver(
               viewHabits: viewHabits,

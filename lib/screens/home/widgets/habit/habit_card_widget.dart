@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ class HabitCardWidget extends StatefulWidget {
 
   final bool isCompleted;
   final VoidCallback? onCheckTap;
+  final bool highlightCheckControl;
 
   final bool isCounting;
   final bool compact;
@@ -38,6 +40,7 @@ class HabitCardWidget extends StatefulWidget {
   final VoidCallback? onIncrement;
   final VoidCallback? onDecrement;
   final VoidCallback? onCountTap;
+  final bool highlightCountControls;
 
   final String completionBurstText;
 
@@ -51,6 +54,7 @@ class HabitCardWidget extends StatefulWidget {
     this.onEmojiTap,
     this.isCompleted = false,
     this.onCheckTap,
+    this.highlightCheckControl = false,
     this.isCounting = false,
     this.compact = false,
     this.onMenuTap,
@@ -65,6 +69,7 @@ class HabitCardWidget extends StatefulWidget {
     this.onIncrement,
     this.onDecrement,
     this.onCountTap,
+    this.highlightCountControls = false,
     this.completionBurstText = '+XP',
   });
 
@@ -73,8 +78,9 @@ class HabitCardWidget extends StatefulWidget {
 }
 
 class _HabitCardWidgetState extends State<HabitCardWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _fxController;
+  late final AnimationController _hintController;
   late final Animation<double> _scaleAnim;
   late final Animation<double> _burstOpacity;
   late final Animation<Offset> _burstOffset;
@@ -85,6 +91,9 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     if (value is double && !value.isFinite) return '0';
     return value % 1 == 0 ? value.toInt().toString() : value.toString();
   }
+
+  bool get _isTargetHighlighted =>
+      widget.highlightCheckControl || widget.highlightCountControls;
 
   bool get _logicalCompleted =>
       widget.isCompleted || (widget.isCounting && widget.progress >= 1.0);
@@ -118,6 +127,10 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     _fxController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
+    );
+    _hintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2100),
     );
 
     _scaleAnim = TweenSequence<double>([
@@ -159,6 +172,10 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
         setState(() => _showBurst = false);
       }
     });
+
+    if (_isTargetHighlighted) {
+      _hintController.repeat();
+    }
   }
 
   @override
@@ -172,6 +189,23 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     if (!oldDone && newDone) {
       _playCompleteFx();
     }
+
+    final wasHighlighted =
+        oldWidget.highlightCheckControl || oldWidget.highlightCountControls;
+    if (_isTargetHighlighted == wasHighlighted) {
+      return;
+    }
+
+    if (_isTargetHighlighted) {
+      _hintController
+        ..reset()
+        ..repeat();
+      return;
+    }
+
+    _hintController
+      ..stop()
+      ..reset();
   }
 
   void _playCompleteFx() {
@@ -181,7 +215,109 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
   @override
   void dispose() {
     _fxController.dispose();
+    _hintController.dispose();
     super.dispose();
+  }
+
+  Widget _buildCheckControl() {
+    return AnimatedBuilder(
+      animation: _hintController,
+      builder: (context, child) {
+        final curve = Curves.easeOutCubic;
+        final pulseValue = curve.transform(_hintController.value);
+        final haloScale = lerpDouble(0.96, 1.16, pulseValue) ?? 1.0;
+        final haloOpacity = lerpDouble(0.18, 0.0, pulseValue) ?? 0.0;
+        final shouldHighlight = widget.highlightCheckControl;
+
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onCheckTap,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Center(
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  if (shouldHighlight)
+                    IgnorePointer(
+                      child: Transform.scale(
+                        scale: haloScale,
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: widget.familyColor.withValues(alpha: 0.08),
+                            border: Border.all(
+                              color: widget.familyColor.withValues(
+                                alpha: haloOpacity,
+                              ),
+                              width: 1.15,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: widget.familyColor.withValues(alpha: 0.12),
+                                blurRadius: 16,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  AnimatedScale(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    scale: shouldHighlight ? 1.04 : 1.0,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: widget.familyColor,
+                          width: shouldHighlight ? 1.8 : 1.6,
+                        ),
+                        color: widget.isCompleted
+                            ? widget.familyColor
+                            : shouldHighlight
+                                ? widget.familyColor.withValues(alpha: 0.06)
+                                : Colors.transparent,
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        transitionBuilder: (child, animation) {
+                          return ScaleTransition(
+                            scale: animation,
+                            child: FadeTransition(opacity: animation, child: child),
+                          );
+                        },
+                        child: widget.isCompleted
+                            ? const Icon(
+                                CupertinoIcons.check_mark,
+                                key: ValueKey('done'),
+                                size: 17,
+                                color: Colors.white,
+                              )
+                            : const SizedBox(
+                                key: ValueKey('empty'),
+                                width: 18,
+                                height: 18,
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -270,50 +406,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
               ],
             ),
           ),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: widget.onCheckTap,
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Center(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOut,
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: widget.familyColor, width: 1.6),
-                    color: widget.isCompleted
-                        ? widget.familyColor
-                        : Colors.transparent,
-                  ),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    transitionBuilder: (child, animation) {
-                      return ScaleTransition(
-                        scale: animation,
-                        child: FadeTransition(opacity: animation, child: child),
-                      );
-                    },
-                    child: widget.isCompleted
-                        ? const Icon(
-                            CupertinoIcons.check_mark,
-                            key: ValueKey('done'),
-                            size: 17,
-                            color: Colors.white,
-                          )
-                        : const SizedBox(
-                            key: ValueKey('empty'),
-                            width: 18,
-                            height: 18,
-                          ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          _buildCheckControl(),
           const SizedBox(width: 10),
         ],
       );
@@ -365,6 +458,9 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
           _CircleButton(
             icon: CupertinoIcons.minus,
             onTap: widget.onDecrement,
+            isHighlighted: widget.highlightCountControls,
+            highlightColor: widget.familyColor,
+            pulseController: _hintController,
           ),
           const SizedBox(width: IosSpacing.xs),
           GestureDetector(
@@ -394,6 +490,9 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
           _CircleButton(
             icon: CupertinoIcons.add,
             onTap: widget.onIncrement,
+            isHighlighted: widget.highlightCountControls,
+            highlightColor: widget.familyColor,
+            pulseController: _hintController,
           ),
           const SizedBox(width: 12),
         ],
@@ -502,42 +601,106 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
 class _CircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
+  final bool isHighlighted;
+  final Color highlightColor;
+  final AnimationController pulseController;
 
   const _CircleButton({
     required this.icon,
     required this.onTap,
+    required this.isHighlighted,
+    required this.highlightColor,
+    required this.pulseController,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap == null
-          ? null
-          : () {
-              IosFeedback.selection();
-              onTap!.call();
-            },
-      borderRadius: BorderRadius.circular(30),
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Center(
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.72),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-            ),
-            child: Icon(
-              icon,
-              size: 17,
-              color: Colors.black.withValues(alpha: 0.6),
+    return AnimatedBuilder(
+      animation: pulseController,
+      builder: (context, child) {
+        final curve = Curves.easeOutCubic;
+        final pulseValue = curve.transform(pulseController.value);
+        final haloScale = lerpDouble(0.96, 1.14, pulseValue) ?? 1.0;
+        final haloOpacity = lerpDouble(0.16, 0.0, pulseValue) ?? 0.0;
+
+        return InkWell(
+          onTap: onTap == null
+              ? null
+              : () {
+                  IosFeedback.selection();
+                  onTap!.call();
+                },
+          borderRadius: BorderRadius.circular(30),
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Center(
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  if (isHighlighted)
+                    IgnorePointer(
+                      child: Transform.scale(
+                        scale: haloScale,
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: highlightColor.withValues(alpha: 0.08),
+                            border: Border.all(
+                              color: highlightColor.withValues(
+                                alpha: haloOpacity,
+                              ),
+                              width: 1.1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: highlightColor.withValues(alpha: 0.10),
+                                blurRadius: 14,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  AnimatedScale(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    scale: isHighlighted ? 1.03 : 1.0,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isHighlighted
+                            ? Colors.white.withValues(alpha: 0.84)
+                            : Colors.white.withValues(alpha: 0.72),
+                        border: Border.all(
+                          color: isHighlighted
+                              ? highlightColor.withValues(alpha: 0.24)
+                              : Colors.black.withValues(alpha: 0.08),
+                        ),
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 17,
+                        color: isHighlighted
+                            ? highlightColor.withValues(alpha: 0.86)
+                            : Colors.black.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
