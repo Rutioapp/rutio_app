@@ -83,6 +83,7 @@ flutter:
     - assets/config/game_config.json
     - assets/templates/user_state_template.json
     - assets/data/habits_catalog.json
+    - design/badges/
 
   fonts:
     - family: DMSerifDisplay
