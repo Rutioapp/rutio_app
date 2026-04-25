@@ -1,5 +1,50 @@
 part of 'user_state_store.dart';
 
+Future<void> _deleteAccount(UserStateStore store) async {
+  if (store._isDeletingAccount) return;
+
+  store._isDeletingAccount = true;
+  store._accountDeletionError = null;
+  store._loading = true;
+  store._emitChanged();
+
+  final deletionService = AccountDeletionService();
+
+  try {
+    final result = await deletionService.launchDeletionFlow(store: store);
+    if (!result.isSuccess) {
+      throw result.error ?? StateError('Account deletion failed.');
+    }
+
+    // After the server confirms deletion, invalidate any local auth session.
+    await _signOutSupabaseSessionIfPresent();
+    store._accountDeletionError = null;
+  } catch (error) {
+    store._accountDeletionError = error;
+    rethrow;
+  } finally {
+    store._isDeletingAccount = false;
+    store._loading = false;
+    store._emitChanged();
+  }
+}
+
+void _clearDeleteAccountError(UserStateStore store) {
+  if (store._accountDeletionError == null) return;
+  store._accountDeletionError = null;
+  store._emitChanged();
+}
+
+Future<void> _signOutSupabaseSessionIfPresent() async {
+  try {
+    final client = Supabase.instance.client;
+    if (client.auth.currentSession == null) return;
+    await client.auth.signOut();
+  } catch (_) {
+    // Keep local deletion successful even if session invalidation fails silently.
+  }
+}
+
 Future<void> _clearLocalAccountData(
   UserStateStore store, {
   bool preserveLanguageCode = true,

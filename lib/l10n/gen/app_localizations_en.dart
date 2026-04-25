@@ -680,25 +680,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDeleteAccountHelperText =>
-      'Delete the account data stored on this device.';
+      'Delete your account and associated data permanently.';
 
   @override
   String get settingsDeleteAccountConfirmationTitle => 'Delete account?';
 
   @override
   String get settingsDeleteAccountConfirmationBody =>
-      'Your account and associated data stored on this device will be permanently deleted. This action cannot be undone.';
+      'This will delete your account and associated data. This action cannot be undone.';
 
   @override
-  String get settingsDeleteAccountConfirmAction => 'Delete permanently';
+  String get settingsDeleteAccountConfirmAction => 'Delete account';
+
+  @override
+  String get settingsDeleteAccountMessage =>
+      'This will delete your account and associated data. This action cannot be undone.';
+
+  @override
+  String get settingsDeleteAccountConfirm => 'Delete account';
+
+  @override
+  String get settingsDeleteAccountTypeToConfirm => 'Type DELETE to confirm.';
 
   @override
   String get settingsDeleteAccountError =>
-      'We couldn\'t delete your account data on this device. Please try again.';
+      'Could not delete your account. Please try again.';
+
+  @override
+  String get settingsDeleteAccountDeleting => 'Deleting account...';
 
   @override
   String get settingsDeleteAccountSuccess =>
-      'Your account data has been deleted from this device.';
+      'Your account was deleted successfully.';
 
   @override
   String get profileSettingsTitle => 'Settings';

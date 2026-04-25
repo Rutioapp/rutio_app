@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/gen/app_localizations.dart';
+import 'core/supabase/rutio_supabase_client.dart';
 
 import 'services/notification_runtime.dart';
 import 'services/notification_service.dart';
@@ -30,6 +31,7 @@ import 'screens/auth/auth_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await RutioSupabaseClient.initializeIfConfigured();
   try {
     await NotificationService.instance.init();
   } catch (error, stackTrace) {

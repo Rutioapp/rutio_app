@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/services/account_deletion_service.dart';
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
 import 'widgets/account_action_settings_row.dart';
@@ -13,9 +12,6 @@ import 'widgets/settings_language_section.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  static const AccountDeletionService _accountDeletionService =
-      AccountDeletionService();
 
   @override
   Widget build(BuildContext context) {
@@ -102,77 +98,146 @@ class SettingsScreen extends StatelessWidget {
     if (!confirmed || !context.mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
-    final store = context.read<UserStateStore>();
-    final result =
-        await _accountDeletionService.launchDeletionFlow(store: store);
+    final l10n = context.l10n;
 
-    if (!context.mounted) return;
-
-    if (!result.isSuccess) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.settingsDeleteAccountError),
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(l10n.settingsDeleteAccountDeleting)),
+            ],
+          ),
         ),
-      );
+      ),
+    );
+
+    try {
+      await context.read<UserStateStore>().deleteAccount();
+    } catch (_) {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.settingsDeleteAccountError)),
+        );
+      }
       return;
     }
 
-    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
     messenger.showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.settingsDeleteAccountSuccess),
-      ),
-    );
+        SnackBar(content: Text(l10n.settingsDeleteAccountSuccess)));
+
+    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
 
   Future<bool> _showDeleteAccountConfirmation(BuildContext context) async {
     final l10n = context.l10n;
     final platform = Theme.of(context).platform;
+    final requiredConfirmationWord =
+        Localizations.localeOf(context).languageCode == 'es'
+            ? 'ELIMINAR'
+            : 'DELETE';
+    final textController = TextEditingController();
 
-    if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
-      final result = await showCupertinoModalPopup<bool>(
-        context: context,
-        builder: (sheetContext) => CupertinoActionSheet(
-          title: Text(l10n.settingsDeleteAccountConfirmationTitle),
-          message: Text(l10n.settingsDeleteAccountConfirmationBody),
-          actions: [
-            CupertinoActionSheetAction(
-              isDestructiveAction: true,
-              onPressed: () => Navigator.of(sheetContext).pop(true),
-              child: Text(l10n.settingsDeleteAccountConfirmAction),
+    bool matchesConfirmation() =>
+        textController.text.trim().toUpperCase() == requiredConfirmationWord;
+
+    try {
+      if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
+        final result = await showCupertinoDialog<bool>(
+          context: context,
+          builder: (dialogContext) => StatefulBuilder(
+            builder: (modalContext, setModalState) => CupertinoAlertDialog(
+              title: Text(l10n.settingsDeleteAccountConfirmationTitle),
+              content: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  Text(l10n.settingsDeleteAccountMessage),
+                  const SizedBox(height: 12),
+                  Text(l10n.settingsDeleteAccountTypeToConfirm),
+                  const SizedBox(height: 8),
+                  CupertinoTextField(
+                    controller: textController,
+                    autocorrect: false,
+                    textCapitalization: TextCapitalization.characters,
+                    onChanged: (_) => setModalState(() {}),
+                  ),
+                ],
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: Text(l10n.commonCancel),
+                ),
+                CupertinoDialogAction(
+                  isDestructiveAction: true,
+                  onPressed: matchesConfirmation()
+                      ? () => Navigator.of(dialogContext).pop(true)
+                      : null,
+                  child: Text(l10n.settingsDeleteAccountConfirm),
+                ),
+              ],
             ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.of(sheetContext).pop(false),
-            child: Text(l10n.commonCancel),
+          ),
+        );
+        return result == true;
+      }
+
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (modalContext, setModalState) => AlertDialog(
+            title: Text(l10n.settingsDeleteAccountConfirmationTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.settingsDeleteAccountMessage),
+                const SizedBox(height: 12),
+                Text(l10n.settingsDeleteAccountTypeToConfirm),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: textController,
+                  autocorrect: false,
+                  textCapitalization: TextCapitalization.characters,
+                  onChanged: (_) => setModalState(() {}),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(l10n.commonCancel),
+              ),
+              TextButton(
+                onPressed: matchesConfirmation()
+                    ? () => Navigator.of(dialogContext).pop(true)
+                    : null,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFC43C3C),
+                ),
+                child: Text(l10n.settingsDeleteAccountConfirm),
+              ),
+            ],
           ),
         ),
       );
+
       return result == true;
+    } finally {
+      textController.dispose();
     }
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.settingsDeleteAccountConfirmationTitle),
-        content: Text(l10n.settingsDeleteAccountConfirmationBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFC43C3C),
-            ),
-            child: Text(l10n.settingsDeleteAccountConfirmAction),
-          ),
-        ],
-      ),
-    );
-
-    return result == true;
   }
 
   Future<bool> _showLogOutConfirmation(BuildContext context) async {

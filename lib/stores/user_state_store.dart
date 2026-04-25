@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/services/account_deletion_service.dart';
 import '../data/repositories/user_state_repository.dart';
 import '../features/achievements/application/achievement_catalog.dart';
 import '../features/achievements/domain/models/achievement.dart';
@@ -28,12 +30,16 @@ class UserStateStore extends ChangeNotifier {
   Map<String, dynamic>? _state;
   bool _loading = false;
   Object? _error;
+  bool _isDeletingAccount = false;
+  Object? _accountDeletionError;
   final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
       <UnlockedAchievementRecord>[];
 
   Map<String, dynamic>? get state => _state;
   bool get isLoading => _loading;
   Object? get error => _error;
+  bool get isDeletingAccount => _isDeletingAccount;
+  Object? get accountDeletionError => _accountDeletionError;
 
   void _emitChanged() => notifyListeners();
 
@@ -115,6 +121,8 @@ class UserStateStore extends ChangeNotifier {
         preserveLanguageCode: preserveLanguageCode,
       );
   Future<void> clearAuthSessionState() => _clearAuthSessionState(this);
+  Future<void> deleteAccount() => _deleteAccount(this);
+  void clearDeleteAccountError() => _clearDeleteAccountError(this);
 
   Map<String, dynamic> get profile => _profile(this);
 
