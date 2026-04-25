@@ -10,11 +10,13 @@ class AchievementAssetImage extends StatelessWidget {
     required this.assetPath,
     this.fit = BoxFit.contain,
     this.tintColor,
+    this.fallback,
   });
 
   final String assetPath;
   final BoxFit fit;
   final Color? tintColor;
+  final Widget? fallback;
 
   static final RegExp _embeddedPngPattern = RegExp(
     r'data:image/png;base64,([^"]+)',
@@ -46,7 +48,7 @@ class AchievementAssetImage extends StatelessWidget {
               return SvgPicture.asset(
                 assetPath,
                 fit: fit,
-                placeholderBuilder: (_) => _buildPlainPlaceholder(),
+                placeholderBuilder: (_) => _buildFallback(),
               );
             },
           );
@@ -64,8 +66,12 @@ class AchievementAssetImage extends StatelessWidget {
       assetPath,
       fit: fit,
       gaplessPlayback: true,
-      errorBuilder: (_, __, ___) => _buildPlainPlaceholder(),
+      errorBuilder: (_, __, ___) => _buildFallback(),
     );
+  }
+
+  Widget _buildFallback() {
+    return fallback ?? _buildPlainPlaceholder();
   }
 
   Widget _buildPlainPlaceholder() {

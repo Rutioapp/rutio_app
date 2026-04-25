@@ -2,6 +2,7 @@ import '../../../utils/family_theme.dart';
 import '../domain/models/achievement.dart';
 import '../domain/models/unlocked_achievement_record.dart';
 import 'achievement_asset_mapper.dart';
+import 'achievement_rewards.dart';
 
 class AchievementMilestone {
   const AchievementMilestone({
@@ -318,8 +319,8 @@ class AchievementCatalog {
     UnlockedAchievementRecord record, {
     List<UnlockedAchievementRecord> unlockedRecords =
         const <UnlockedAchievementRecord>[],
-    int xpReward = 0,
-    int ambarReward = 0,
+    int? xpReward,
+    int? ambarReward,
   }) {
     final baseAchievement =
         achievementForId(
@@ -343,6 +344,11 @@ class AchievementCatalog {
           habitName: record.habitName,
           familyId: record.familyId,
         );
+    final rewards = AchievementRewards.resolveForAchievement(
+      baseAchievement.id,
+      xpReward: xpReward ?? _nullableReward(baseAchievement.xpReward),
+      ambarReward: ambarReward ?? _nullableReward(baseAchievement.ambarReward),
+    );
 
     return Achievement(
       id: baseAchievement.id,
@@ -357,8 +363,8 @@ class AchievementCatalog {
       habitId: baseAchievement.habitId,
       habitName: baseAchievement.habitName,
       familyId: baseAchievement.familyId,
-      xpReward: xpReward,
-      ambarReward: ambarReward,
+      xpReward: rewards.xp,
+      ambarReward: rewards.ambar,
       collection: collectionForAchievement(
         baseAchievement,
         unlockedRecords: unlockedRecords,
@@ -405,7 +411,7 @@ class AchievementCatalog {
       final familyId = FamilyTheme.order[familyIndex];
 
       for (final milestone in streakMilestones) {
-        final achievement = Achievement(
+        final achievement = AchievementRewards.applyDefaults(Achievement(
           id: familyConsistencyAchievementId(
             familyId: familyId,
             tier: milestone.tier,
@@ -433,7 +439,7 @@ class AchievementCatalog {
             tier: milestone.tier,
           ),
           familyId: familyId,
-        );
+        ));
         achievements.add(achievement);
         existingIds.add(achievement.id);
       }
@@ -456,7 +462,7 @@ class AchievementCatalog {
       final safeFamilyIndex =
           familyIndex == -1 ? FamilyTheme.order.length : familyIndex;
 
-      final achievement = Achievement(
+      final achievement = AchievementRewards.applyDefaults(Achievement(
         id: record.id,
         type: record.type,
         tier: record.tier,
@@ -481,7 +487,7 @@ class AchievementCatalog {
           tier: record.tier,
         ),
         familyId: record.familyId,
-      );
+      ));
       achievements.add(achievement);
       existingIds.add(achievement.id);
     }
@@ -496,6 +502,8 @@ class AchievementCatalog {
     return achievements;
   }
 }
+
+int? _nullableReward(int reward) => reward > 0 ? reward : null;
 
 class _SpecialAchievementDefinition {
   const _SpecialAchievementDefinition({
@@ -517,7 +525,7 @@ class _SpecialAchievementDefinition {
   final AchievementTier tier;
 
   Achievement toAchievement({required String assetPath}) {
-    return Achievement(
+    return AchievementRewards.applyDefaults(Achievement(
       id: id,
       type: AchievementType.special,
       tier: tier,
@@ -530,6 +538,6 @@ class _SpecialAchievementDefinition {
       habitId: id,
       habitName: title,
       familyId: AchievementCatalog.specialSectionId,
-    );
+    ));
   }
 }

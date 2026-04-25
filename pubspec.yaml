@@ -83,7 +83,14 @@ flutter:
     - assets/config/game_config.json
     - assets/templates/user_state_template.json
     - assets/data/habits_catalog.json
-    - design/badges/
+    - "design/badges/Figma Icons/Bronce/"
+    - "design/badges/Figma Icons/Diamante/"
+    - "design/badges/Figma Icons/Diamante Prismatico/"
+    - "design/badges/Figma Icons/Logros/"
+    - "design/badges/Figma Icons/Madera/"
+    - "design/badges/Figma Icons/Oro/"
+    - "design/badges/Figma Icons/Piedra/"
+    - "design/badges/Figma Icons/Plata/"
 
   fonts:
     - family: DMSerifDisplay
