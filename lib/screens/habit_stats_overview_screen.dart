@@ -443,14 +443,15 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
         scheduledN == 0 ? 0 : ((doneN / scheduledN) * 100).round();
 
     // Streak actual y best streak (desde history, no solo rango)
-    final allCounts = _extractCountsByDayFromStore(
-        store: store, habit: habit, habitId: habitId);
-    final currentStreak = _currentStreak(allCounts, today);
-    final bestStreak = _bestStreak(allCounts);
+    final streakSnapshot = store.habitStreakSnapshotForHabitId(
+      habitId,
+      today: today,
+    );
+    final currentStreak = streakSnapshot.currentStreak;
+    final bestStreak = streakSnapshot.bestStreak;
 
     // TotalDone histórico
-    final totalDone =
-        allCounts.values.fold<int>(0, (a, b) => a + (b > 0 ? 1 : 0));
+    final totalDone = streakSnapshot.totalCompletedDays;
 
     // Next milestone
     final milestones = <int>[3, 7, 14, 21, 30, 45, 60, 90, 120, 180, 365];
@@ -737,58 +738,6 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
 
     final done = (dayDoneMap[habitId] == true);
     return done ? 1 : 0;
-  }
-
-  // =====================
-  // Streak helpers
-  // =====================
-
-  int _currentStreak(Map<DateTime, int> countsByDay, DateTime today) {
-    int streak = 0;
-    DateTime d = _dateOnly(today);
-
-    while (true) {
-      final v = countsByDay[d] ?? 0;
-      if (v > 0) {
-        streak++;
-        d = d.subtract(const Duration(days: 1));
-        continue;
-      }
-      break;
-    }
-    return streak;
-  }
-
-  int _bestStreak(Map<DateTime, int> countsByDay) {
-    if (countsByDay.isEmpty) return 0;
-
-    final days = countsByDay.keys.toList()..sort();
-    int best = 0;
-    int current = 0;
-    DateTime? prev;
-
-    for (final d in days) {
-      final v = countsByDay[d] ?? 0;
-      if (v <= 0) {
-        current = 0;
-        prev = d;
-        continue;
-      }
-
-      if (prev == null) {
-        current = 1;
-      } else {
-        final diff = d.difference(prev).inDays;
-        if (diff == 1) {
-          current += 1;
-        } else {
-          current = 1;
-        }
-      }
-      if (current > best) best = current;
-      prev = d;
-    }
-    return best;
   }
 
   // =====================
