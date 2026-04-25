@@ -185,7 +185,7 @@ class _AchievementHeader extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '“${achievement.name}”',
+          '"${achievement.name}"',
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -333,7 +333,7 @@ class _RewardPill extends StatelessWidget {
 
   factory _RewardPill.ambar({required int value}) {
     return _RewardPill._(
-      label: '+$value Ámbar',
+      label: '+$value \u00c1mbar',
       textColor: const Color(0xFFA07820),
       backgroundColor: _amber.withValues(alpha: 0.10),
       borderColor: _amber.withValues(alpha: 0.32),
@@ -345,7 +345,7 @@ class _RewardPill extends StatelessWidget {
           shape: BoxShape.circle,
         ),
       ),
-      semanticsLabel: 'Recompensa de ámbar: +$value Ámbar',
+      semanticsLabel: 'Recompensa de \u00e1mbar: +$value \u00c1mbar',
     );
   }
 
@@ -424,7 +424,7 @@ class _CollectionProgressCard extends StatelessWidget {
     return Semantics(
       container: true,
       label:
-          'Progreso de colección: $safeUnlocked de $safeTotal logros desbloqueados',
+          'Progreso de colecci\u00f3n: $safeUnlocked de $safeTotal logros desbloqueados',
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
@@ -529,7 +529,8 @@ class _CollectionDotsRow extends StatelessWidget {
       child: Row(
         children: List.generate(totalCount, (index) {
           final isUnlocked = index < unlockedCount;
-          final isLatestUnlocked = unlockedCount > 0 && index == unlockedCount - 1;
+          final isLatestUnlocked =
+              unlockedCount > 0 && index == unlockedCount - 1;
           final size = isLatestUnlocked ? 22.0 : 20.0;
 
           return Padding(
@@ -586,6 +587,7 @@ class _AchievementActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isShareEnabled = onShare != null;
     final secondaryShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(999),
     );
@@ -619,27 +621,35 @@ class _AchievementActions extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Semantics(
-                button: true,
-                label: 'Compartir logro',
-                child: OutlinedButton(
-                  onPressed: onShare,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                    foregroundColor: _camel,
-                    disabledForegroundColor: _camel.withValues(alpha: 0.45),
-                    side: BorderSide(
-                      color: _camel.withValues(alpha: 0.35),
-                      width: 0.7,
+              child: Opacity(
+                opacity: isShareEnabled ? 1 : 0.6,
+                child: Semantics(
+                  button: true,
+                  label: 'Compartir logro',
+                  child: OutlinedButton(
+                    // TODO: Connect this action to the future achievements
+                    // social share flow (internal feed / Instagram stories).
+                    onPressed: onShare,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      foregroundColor: _camel,
+                      disabledForegroundColor: _camel.withValues(alpha: 0.58),
+                      backgroundColor: _darkBrown.withValues(alpha: 0.025),
+                      disabledBackgroundColor: _darkBrown.withValues(alpha: 0.025),
+                      side: BorderSide(
+                        color: _camel.withValues(
+                          alpha: isShareEnabled ? 0.35 : 0.2,
+                        ),
+                        width: 0.7,
+                      ),
+                      shape: secondaryShape,
+                      textStyle: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    shape: secondaryShape,
-                    backgroundColor: Colors.transparent,
-                    textStyle: GoogleFonts.dmSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    child: const Text('Compartir'),
                   ),
-                  child: const Text('Compartir'),
                 ),
               ),
             ),
@@ -652,7 +662,8 @@ class _AchievementActions extends StatelessWidget {
                   onPressed: onContinue,
                   style: TextButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
-                    foregroundColor: _darkBrown.withValues(alpha: 0.35),
+                    backgroundColor: _darkBrown.withValues(alpha: 0.05),
+                    foregroundColor: _darkBrown.withValues(alpha: 0.72),
                     shape: secondaryShape,
                     textStyle: GoogleFonts.dmSans(
                       fontSize: 14,

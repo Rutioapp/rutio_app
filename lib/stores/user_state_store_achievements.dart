@@ -926,7 +926,11 @@ void _syncAchievementsFromCurrentHabits(
 
       unlockedById[achievementId] = record.toJson();
 
-      if (enqueueVisualTrigger && snapshot.currentStreak == milestone.targetValue) {
+      if (enqueueVisualTrigger &&
+          _shouldQueueFamilyConsistencyUnlock(
+            snapshot,
+            targetValue: milestone.targetValue,
+          )) {
         store._pendingAchievementUnlocks.add(record);
       }
     }
@@ -970,4 +974,17 @@ void _syncAchievementsFromCurrentHabits(
 
   achievements['unlocked'] = unlocked;
   _sanitizeFeaturedAchievements(userState);
+}
+
+bool _shouldQueueFamilyConsistencyUnlock(
+  HabitStreakSnapshot snapshot, {
+  required int targetValue,
+}) {
+  if (snapshot.currentStreak < targetValue) return false;
+  if (snapshot.bestStreak < targetValue) return false;
+
+  // Only surface the sheet when the active streak is also the best known
+  // streak. This catches the fresh day-7 unlock while avoiding retroactive
+  // sheets for old historical streaks that were imported later.
+  return snapshot.currentStreak == snapshot.bestStreak;
 }
