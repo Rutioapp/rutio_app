@@ -4,11 +4,16 @@ import 'dart:ui' show Locale;
 import 'package:flutter/foundation.dart';
 
 import '../data/repositories/user_state_repository.dart';
+import '../features/achievements/application/achievement_catalog.dart';
+import '../features/achievements/domain/models/achievement.dart';
+import '../features/achievements/domain/models/habit_streak_snapshot.dart';
+import '../features/achievements/domain/models/unlocked_achievement_record.dart';
 import '../models/diary_entry.dart';
 import '../screens/todo/models/todo_item.dart';
 import '../utils/family_theme.dart';
 
 part 'user_state_store_account.dart';
+part 'user_state_store_achievements.dart';
 part 'user_state_store_core.dart';
 part 'user_state_store_diary.dart';
 part 'user_state_store_habits.dart';
@@ -23,6 +28,8 @@ class UserStateStore extends ChangeNotifier {
   Map<String, dynamic>? _state;
   bool _loading = false;
   Object? _error;
+  final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
+      <UnlockedAchievementRecord>[];
 
   Map<String, dynamic>? get state => _state;
   bool get isLoading => _loading;
@@ -341,4 +348,39 @@ class UserStateStore extends ChangeNotifier {
   dynamic getActiveHabitById(String id) => _getActiveHabitById(this, id);
 
   List<Map<String, dynamic>> get activeHabits => _activeHabits(this);
+
+  List<UnlockedAchievementRecord> get unlockedAchievementRecords =>
+      _unlockedAchievementRecords(this);
+
+  Map<String, UnlockedAchievementRecord> get unlockedAchievementsById =>
+      {for (final record in unlockedAchievementRecords) record.id: record};
+
+  List<String> get featuredAchievementIds => _featuredAchievementIds(this);
+
+  Future<void> setFeaturedAchievementIds(List<String> achievementIds) =>
+      _setFeaturedAchievementIds(this, achievementIds);
+
+  HabitStreakSnapshot habitStreakSnapshotForHabitId(
+    String habitId, {
+    DateTime? today,
+  }) =>
+      _habitStreakSnapshotForHabitId(this, habitId: habitId, today: today);
+
+  Map<String, HabitStreakSnapshot> get habitStreakSnapshots =>
+      _habitStreakSnapshots(this);
+
+  Map<String, HabitStreakSnapshot> get familyConsistencySnapshots =>
+      _familyConsistencySnapshots(this);
+
+  Map<String, HabitStreakSnapshot> get achievementMetricSnapshots =>
+      _achievementMetricSnapshots(this);
+
+  int get pendingAchievementUnlockCount => _pendingAchievementUnlocks.length;
+
+  UnlockedAchievementRecord? consumeNextPendingAchievementUnlock() {
+    if (_pendingAchievementUnlocks.isEmpty) return null;
+    final next = _pendingAchievementUnlocks.removeAt(0);
+    _emitChanged();
+    return next;
+  }
 }

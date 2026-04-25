@@ -4,6 +4,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../features/achievements/application/achievement_catalog.dart';
+import '../../features/achievements/application/achievement_progress_service.dart';
+import '../../features/achievements/domain/models/achievement.dart';
+import '../../features/achievements/domain/models/achievement_progress.dart';
+import '../../features/achievements/presentation/screens/achievements_screen.dart';
+import '../../features/achievements/presentation/widgets/featured_achievement_picker_sheet.dart';
+import '../../features/achievements/presentation/widgets/featured_achievements_section.dart';
 import '../../l10n/l10n.dart';
 import '../../services/notification_preferences.dart';
 import '../../services/notification_service.dart';
@@ -113,6 +120,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _openAchievementsScreen() {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(builder: (_) => const AchievementsScreen()),
+    );
+  }
+
+  Future<void> _handleFeaturedAchievementsTap() async {
+    final store = context.read<UserStateStore>();
+    final data = _ProfileAchievementsData.fromStore(store);
+
+    if (data.unlockedItems.isEmpty) {
+      _openAchievementsScreen();
+      return;
+    }
+
+    await showFeaturedAchievementPickerSheet(
+      context,
+      unlockedAchievements: data.unlockedItems,
+      selectedIds: data.featuredIds,
+      onSave: (selectedIds) async {
+        await store.setFeaturedAchievementIds(selectedIds);
+      },
+    );
+  }
+
   Future<void> _setNotificationsEnabled(bool enabled) async {
     final store = context.read<UserStateStore>();
     final preferences = NotificationPreferences(store);
@@ -204,6 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       notificationPreferences.streakCelebrationEnabled,
       notificationPreferences.inactivityReengagementEnabled,
     ].where((value) => value).length;
+    final achievementData = _ProfileAchievementsData.fromStore(store);
 
     return Scaffold(
       drawer: AppViewDrawer(
@@ -250,6 +284,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             familyColorResolver: widget.familyColorResolver,
           ),
           const SizedBox(height: 14),
+          FeaturedAchievementsSection(
+            featuredAchievements: achievementData.featuredItems,
+            onTap: _handleFeaturedAchievementsTap,
+          ),
+          const SizedBox(height: 14),
           Text(
             l10n.profileNotificationsTitle,
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
@@ -292,11 +331,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   subtitle: context.l10n.profileSettingsSubtitle,
                   onTap: _openSettings,
                 ),
+                const SizedBox(height: 12),
+                ProfileOptionTile(
+                  icon: CupertinoIcons.rosette,
+                  title: l10n.profileAchievementsTitle,
+                  subtitle: l10n.profileAchievementsSubtitle,
+                  onTap: _openAchievementsScreen,
+                  iconColor: const Color(0xFFB48842),
+                ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileAchievementsData {
+  const _ProfileAchievementsData({
+    required this.featuredItems,
+    required this.unlockedItems,
+    required this.featuredIds,
+  });
+
+  final List<AchievementProgress> featuredItems;
+  final List<AchievementProgress> unlockedItems;
+  final List<String> featuredIds;
+
+  factory _ProfileAchievementsData.fromStore(UserStateStore store) {
+    final achievements = AchievementCatalog.buildAchievements(
+      unlockedRecords: store.unlockedAchievementRecords,
+    );
+    final progressItems = AchievementProgressService.resolve(
+      achievements: achievements,
+      snapshotsBySourceId: store.achievementMetricSnapshots,
+      unlockedById: store.unlockedAchievementsById,
+    );
+    final unlockedItems = progressItems
+        .where((item) => item.status == AchievementStatus.unlocked)
+        .toList(growable: false);
+    final featuredIds = store.featuredAchievementIds;
+    final featuredItems = featuredIds
+        .map(
+          (id) => unlockedItems.where((item) => item.achievement.id == id),
+        )
+        .where((matches) => matches.isNotEmpty)
+        .map((matches) => matches.first)
+        .toList(growable: false);
+
+    return _ProfileAchievementsData(
+      featuredItems: featuredItems,
+      unlockedItems: unlockedItems,
+      featuredIds: featuredIds,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import '../features/achievements/domain/models/achievement.dart';
 import '../core/notifications/notification_permission_service.dart';
 import '../core/permissions/app_permission.dart';
 import 'gen/app_localizations.dart';
@@ -194,6 +195,196 @@ extension AppLocalizationsProfileX on AppLocalizations {
   String get profileNotificationInactivitySubtitle => _isSpanish
       ? 'Un recordatorio amable tras 3 d\u00edas sin abrir la app'
       : 'A gentle reminder after 3 days without opening the app';
+}
+
+extension AppLocalizationsAchievementsX on AppLocalizations {
+  bool get _isSpanishAchievements =>
+      localeName.toLowerCase().startsWith('es');
+
+  String get profileFeaturedAchievementsTitle =>
+      _isSpanishAchievements ? 'Logros destacados' : 'Featured achievements';
+
+  String get profileFeaturedAchievementsSubtitle => _isSpanishAchievements
+      ? 'Tus badges favoritos desbloqueados'
+      : 'Your favorite unlocked badges';
+
+  String get profileFeaturedAchievementsHint => _isSpanishAchievements
+      ? 'Toca para elegir hasta 3 logros destacados'
+      : 'Tap to choose up to 3 featured achievements';
+
+  String get profileFeaturedAchievementsEmptyTitle => _isSpanishAchievements
+      ? 'A\u00fan no tienes destacados'
+      : 'You have no featured achievements yet';
+
+  String get profileFeaturedAchievementsEmptySubtitle => _isSpanishAchievements
+      ? 'Desbloquea badges y elige los que quieras mostrar en tu perfil'
+      : 'Unlock badges and choose the ones you want to show on your profile';
+
+  String get profileAchievementsTitle =>
+      _isSpanishAchievements ? 'Logros' : 'Achievements';
+
+  String get profileAchievementsSubtitle => _isSpanishAchievements
+      ? 'Consulta tu progreso y badges desbloqueados'
+      : 'Review your progress and unlocked badges';
+
+  String get achievementsTitle =>
+      _isSpanishAchievements ? 'Logros' : 'Achievements';
+
+  String get achievementsSpecialLabel =>
+      _isSpanishAchievements ? 'Especial' : 'Special';
+
+  String get achievementsSpecialSectionTitle =>
+      _isSpanishAchievements ? 'ESPECIALES' : 'SPECIAL';
+
+  String get achievementsFilterAll => _isSpanishAchievements ? 'Todos' : 'All';
+
+  String get achievementsFilterUnlocked =>
+      _isSpanishAchievements ? 'Desbloqueados' : 'Unlocked';
+
+  String get achievementsFilterInProgress =>
+      _isSpanishAchievements ? 'En progreso' : 'In progress';
+
+  String get achievementsEmptyAll => _isSpanishAchievements
+      ? 'Tus logros aparecer\u00e1n aqu\u00ed a medida que avances con tus h\u00e1bitos.'
+      : 'Your achievements will appear here as you progress with your habits.';
+
+  String get achievementsEmptyUnlocked => _isSpanishAchievements
+      ? 'Todav\u00eda no has desbloqueado logros.'
+      : 'You have not unlocked any achievements yet.';
+
+  String get achievementsEmptyInProgress => _isSpanishAchievements
+      ? 'A\u00fan no hay logros con progreso activo.'
+      : 'There are no achievements with active progress yet.';
+
+  String achievementsSectionUnlockedCount(int unlockedCount, int totalCount) =>
+      _isSpanishAchievements
+          ? '$unlockedCount / $totalCount desbloqueados'
+          : '$unlockedCount / $totalCount unlocked';
+
+  String achievementsSummaryUnlockedOf(int totalCount) => _isSpanishAchievements
+      ? 'desbloqueados\nde $totalCount'
+      : 'unlocked\nof $totalCount';
+
+  String get achievementsSummaryProgressTitle =>
+      _isSpanishAchievements ? 'Progreso total' : 'Total progress';
+
+  String get achievementsFeaturedPickerTitle =>
+      _isSpanishAchievements ? 'Destacar logros' : 'Feature achievements';
+
+  String achievementsFeaturedPickerSubtitle(int selectedCount) =>
+      _isSpanishAchievements
+          ? '$selectedCount de 3 seleccionados'
+          : '$selectedCount of 3 selected';
+
+  String get achievementsFeaturedPickerEmpty => _isSpanishAchievements
+      ? 'Necesitas desbloquear al menos un logro para destacarlo.'
+      : 'You need to unlock at least one achievement before featuring it.';
+
+  String achievementsFeaturedPickerFamilySubtitle(
+    String familyName,
+    int targetValue,
+  ) =>
+      _isSpanishAchievements
+          ? '$familyName \u00b7 $targetValue d\u00edas'
+          : '$familyName \u00b7 $targetValue days';
+
+  String get achievementsHiddenDescription => _isSpanishAchievements
+      ? 'Este logro sigue siendo un misterio.'
+      : 'This achievement is still a mystery.';
+
+  String get achievementsMysteryTitle =>
+      _isSpanishAchievements ? 'Logro oculto' : 'Hidden achievement';
+
+  String get achievementsMysterySubtitle => _isSpanishAchievements
+      ? 'Su m\u00e9todo de desbloqueo se revelar\u00e1 cuando llegue el momento.'
+      : 'Its unlock method will be revealed when the time comes.';
+
+  String get achievementsUnlockedCalloutTitle =>
+      _isSpanishAchievements ? 'Logro conseguido' : 'Achievement earned';
+
+  String get achievementsUnlockedDateTitle =>
+      _isSpanishAchievements ? 'Fecha de desbloqueo' : 'Unlocked on';
+
+  String achievementsUnlockedOnDate(String dateLabel) => _isSpanishAchievements
+      ? 'Desbloqueado el $dateLabel.'
+      : 'Unlocked on $dateLabel.';
+
+  String get achievementsCurrentStreakTitle =>
+      _isSpanishAchievements ? 'Racha actual' : 'Current streak';
+
+  String achievementsCurrentStreakValue(int days) => _isSpanishAchievements
+      ? '$days d\u00edas seguidos'
+      : '$days days in a row';
+
+  String get achievementsHowToUnlockTitle =>
+      _isSpanishAchievements ? 'C\u00f3mo conseguirlo' : 'How to unlock';
+
+  String get achievementsProgressTitle =>
+      _isSpanishAchievements ? 'Progreso actual' : 'Current progress';
+
+  String achievementsProgressValue(int current, int target) =>
+      '$current / $target';
+
+  String get achievementsOverlayTitle => _isSpanishAchievements
+      ? 'Nuevo logro desbloqueado'
+      : 'New achievement unlocked';
+
+  String achievementsLatestUnlockedEyebrow(String familyName) =>
+      _isSpanishAchievements
+          ? '\u00daLTIMO DESBLOQUEADO \u00b7 ${familyName.toUpperCase()}'
+          : 'LATEST UNLOCKED \u00b7 ${familyName.toUpperCase()}';
+
+  String achievementsFamilyConsistencySummary(String familyName, int days) =>
+      _isSpanishAchievements
+          ? '$days d\u00edas de constancia en $familyName.'
+          : '$days days of consistency in $familyName.';
+
+  String get achievementsDetailSpecialChipTitle =>
+      _isSpanishAchievements ? 'LOGRO ESPECIAL' : 'SPECIAL ACHIEVEMENT';
+
+  String get achievementsCloseButton =>
+      _isSpanishAchievements ? 'Cerrar' : 'Close';
+
+  String get achievementsRevealProgressHint => _isSpanishAchievements
+      ? 'Desc\u00fabr\u00edalo para revelar su progreso'
+      : 'Unlock it to reveal its progress';
+
+  String achievementUnlockedMessage(String habitName, int days) =>
+      _isSpanishAchievements
+          ? 'Has alcanzado $days d\u00edas seguidos en $habitName'
+          : 'You reached $days consecutive days in $habitName';
+
+  String achievementFamilyUnlockedMessage(String familyName, int days) =>
+      _isSpanishAchievements
+          ? 'Has alcanzado $days d\u00edas de constancia en $familyName'
+          : 'You reached $days days of consistency in $familyName';
+
+  String achievementHabitStreakDescription(int days) => _isSpanishAchievements
+      ? 'Mant\u00e9n $days d\u00edas seguidos con este h\u00e1bito.'
+      : 'Keep this habit going for $days consecutive days.';
+
+  String achievementTierLabel(AchievementTier tier) {
+    switch (tier) {
+      case AchievementTier.oldWood:
+        return _isSpanishAchievements ? 'Madera vieja' : 'Old wood';
+      case AchievementTier.wood:
+        return _isSpanishAchievements ? 'Madera' : 'Wood';
+      case AchievementTier.stone:
+        return _isSpanishAchievements ? 'Piedra' : 'Stone';
+      case AchievementTier.bronze:
+        return _isSpanishAchievements ? 'Bronce' : 'Bronze';
+      case AchievementTier.silver:
+        return _isSpanishAchievements ? 'Plata' : 'Silver';
+      case AchievementTier.gold:
+        return _isSpanishAchievements ? 'Oro' : 'Gold';
+      case AchievementTier.diamond:
+        return _isSpanishAchievements ? 'Diamante' : 'Diamond';
+      case AchievementTier.prismaticDiamond:
+        return _isSpanishAchievements
+            ? 'Diamante prism\u00e1tico'
+            : 'Prismatic diamond';
+    }
+  }
 }
 
 extension AppLocalizationsDrawerSupportX on AppLocalizations {

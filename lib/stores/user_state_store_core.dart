@@ -388,6 +388,8 @@ Future<void> _loadStore(UserStateStore store) async {
       _ensureActiveHabitIds(userState);
       _ensureDiaryEntriesRoot(userState);
       _ensureTodosRoot(userState);
+      _ensureAchievementsRoot(userState);
+      _syncAchievementsFromCurrentHabits(store, userState);
 
       final viewKey = _activeViewDateKey(userState);
       if (viewKey != _today()) {
@@ -415,6 +417,8 @@ Future<void> _saveStore(
   _ensureDailyReset(userState);
   _ensureActiveHabitIds(userState);
   _ensureTodosRoot(userState);
+  _ensureAchievementsRoot(userState);
+  _sanitizeFeaturedAchievements(userState);
 
   final viewKey = _activeViewDateKey(userState);
   if (viewKey != _today()) {
