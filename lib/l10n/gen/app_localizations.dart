@@ -1347,6 +1347,24 @@ abstract class AppLocalizations {
   /// **'Los datos de tu cuenta se han eliminado de este dispositivo.'**
   String get settingsDeleteAccountSuccess;
 
+  /// No description provided for @deleteAccountGenericError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido eliminar la cuenta. Inténtalo de nuevo.'**
+  String get deleteAccountGenericError;
+
+  /// No description provided for @deleteAccountNetworkError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido conectar para eliminar la cuenta. Revisa tu conexión e inténtalo de nuevo.'**
+  String get deleteAccountNetworkError;
+
+  /// No description provided for @deleteAccountSuccess.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta se ha eliminado correctamente.'**
+  String get deleteAccountSuccess;
+
   /// No description provided for @profileSettingsTitle.
   ///
   /// In es, this message translates to:

@@ -685,6 +685,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account data has been deleted from this device.';
 
   @override
+  String get deleteAccountGenericError =>
+      'Could not delete your account. Please try again.';
+
+  @override
+  String get deleteAccountNetworkError =>
+      'Could not connect to delete your account. Please check your connection and try again.';
+
+  @override
+  String get deleteAccountSuccess => 'Your account has been deleted.';
+
+  @override
   String get profileSettingsTitle => 'Settings';
 
   @override

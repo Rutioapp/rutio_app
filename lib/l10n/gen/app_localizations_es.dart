@@ -684,6 +684,17 @@ class AppLocalizationsEs extends AppLocalizations {
       'Los datos de tu cuenta se han eliminado de este dispositivo.';
 
   @override
+  String get deleteAccountGenericError =>
+      'No se ha podido eliminar la cuenta. Inténtalo de nuevo.';
+
+  @override
+  String get deleteAccountNetworkError =>
+      'No se ha podido conectar para eliminar la cuenta. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get deleteAccountSuccess => 'Tu cuenta se ha eliminado correctamente.';
+
+  @override
   String get profileSettingsTitle => 'Ajustes';
 
   @override

@@ -12,7 +12,7 @@ import 'widgets/settings_language_section.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  static const AccountDeletionService _accountDeletionService =
+  static final AccountDeletionService _accountDeletionService =
       AccountDeletionService();
 
   @override
@@ -72,14 +72,31 @@ class SettingsScreen extends StatelessWidget {
 
     final messenger = ScaffoldMessenger.of(context);
     final store = context.read<UserStateStore>();
-    final result = await _accountDeletionService.launchDeletionFlow(store: store);
+    final l10n = context.l10n;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CupertinoActivityIndicator()),
+      ),
+    );
+
+    final result =
+        await _accountDeletionService.launchDeletionFlow(store: store);
 
     if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
 
     if (!result.isSuccess) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(context.l10n.settingsDeleteAccountError),
+          content: Text(
+            result.isNetworkError
+                ? l10n.deleteAccountNetworkError
+                : l10n.deleteAccountGenericError,
+          ),
         ),
       );
       return;
@@ -88,7 +105,7 @@ class SettingsScreen extends StatelessWidget {
     Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
     messenger.showSnackBar(
       SnackBar(
-        content: Text(context.l10n.settingsDeleteAccountSuccess),
+        content: Text(l10n.deleteAccountSuccess),
       ),
     );
   }

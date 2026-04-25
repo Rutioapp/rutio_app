@@ -1,32 +1,113 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
-// Setup type definitions for built-in Supabase Runtime APIs
-import "@supabase/functions-js/edge-runtime.d.ts"
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
-console.log("Hello from Functions!")
+const jsonHeaders = {
+  ...corsHeaders,
+  'Content-Type': 'application/json',
+};
+
+function jsonResponse(
+  body: Record<string, unknown>,
+  status: number,
+): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: jsonHeaders,
+  });
+}
 
 Deno.serve(async (req) => {
-  const { name } = await req.json()
-  const data = {
-    message: `Hello ${name}!`,
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  return new Response(
-    JSON.stringify(data),
-    { headers: { "Content-Type": "application/json" } },
-  )
-})
+  if (req.method !== 'POST') {
+    return jsonResponse(
+      { success: false, error: 'method_not_allowed' },
+      405,
+    );
+  }
 
-/* To invoke locally:
+  try {
+    const authHeader = req.headers.get('Authorization');
 
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
+    if (!authHeader?.toLowerCase().startsWith('bearer ')) {
+      return jsonResponse({ success: false, error: 'unauthorized' }, 401);
+    }
 
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/delete-account' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-*/
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+      console.error('delete-account missing server configuration');
+      return jsonResponse(
+        { success: false, error: 'server_not_configured' },
+        500,
+      );
+    }
+
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    });
+
+    const {
+      data: { user },
+      error: userError,
+    } = await userClient.auth.getUser();
+
+    if (userError || !user) {
+      return jsonResponse({ success: false, error: 'unauthorized' }, 401);
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
+    // Delete user-owned data here in dependency order.
+    // Current code references profiles.id and user_progress.user_id.
+    // Future user-owned tables should be added here before deleting auth.users.
+    const userOwnedDeletes = [
+      adminClient.from('user_progress').delete().eq('user_id', user.id),
+      adminClient.from('profiles').delete().eq('id', user.id),
+    ];
+
+    for (const deleteRequest of userOwnedDeletes) {
+      const { error } = await deleteRequest;
+      if (error) {
+        console.error('delete-account data cleanup failed', error.message);
+        return jsonResponse({ success: false, error: 'delete_failed' }, 500);
+      }
+    }
+
+    const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(
+      user.id,
+    );
+
+    if (deleteUserError) {
+      console.error(
+        'delete-account auth user delete failed',
+        deleteUserError.message,
+      );
+      return jsonResponse({ success: false, error: 'delete_failed' }, 500);
+    }
+
+    return jsonResponse({ success: true }, 200);
+  } catch (error) {
+    console.error('delete-account unexpected error', error);
+    return jsonResponse({ success: false, error: 'unexpected_error' }, 500);
+  }
+});
