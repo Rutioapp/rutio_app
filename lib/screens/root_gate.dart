@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../l10n/l10n.dart';
 import '../stores/user_state_store.dart';
 import 'home/home_screen.dart';
-import 'welcome_screen.dart';
 
 class RootGate extends StatelessWidget {
   const RootGate({super.key});
@@ -30,11 +29,7 @@ class RootGate extends StatelessWidget {
           );
         }
 
-        if (store.hasSession) {
-          return const HomeScreen();
-        }
-
-        return const WelcomeScreen();
+        return const HomeScreen();
       },
     );
   }

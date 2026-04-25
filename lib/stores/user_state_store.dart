@@ -115,6 +115,22 @@ class UserStateStore extends ChangeNotifier {
         preserveLanguageCode: preserveLanguageCode,
       );
 
+  Future<void> applySupabaseIdentity({
+    required String userId,
+    String? email,
+    String? displayName,
+    String? avatarUrl,
+  }) =>
+      _applySupabaseIdentity(
+        this,
+        userId: userId,
+        email: email,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+      );
+
+  Future<void> clearSupabaseIdentity() => _clearSupabaseIdentity(this);
+
   Map<String, dynamic> get profile => _profile(this);
 
   String? get displayName {
