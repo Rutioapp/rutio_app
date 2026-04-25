@@ -79,16 +79,27 @@ Future<void> _clearLocalAccountData(
 }
 
 Future<void> _clearAuthSessionState(UserStateStore store) async {
-  final currentState = store._state;
-  if (currentState == null) return;
+  await _signOutSupabaseSessionIfPresent();
 
-  final root = Map<String, dynamic>.from(currentState);
+  if (store._state == null) {
+    if (!store._loading) {
+      await store.load();
+    }
+    if (store._state == null) return;
+  }
+
+  final root = Map<String, dynamic>.from(store._state!);
   final userState = _ensureUserStateRoot(root);
   final meta = _map(userState['meta']);
+  final profile = _map(userState['profile']);
 
+  userState.remove('userId');
   meta['onboardingDone'] = false;
   meta.remove('authEmail');
+  profile.remove('email');
+
   userState['meta'] = meta;
+  userState['profile'] = profile;
   root['userState'] = userState;
 
   await store._repo.save(root);
@@ -96,6 +107,83 @@ Future<void> _clearAuthSessionState(UserStateStore store) async {
   store._loading = false;
   store._error = null;
   store._emitChanged();
+}
+
+Future<void> _applySupabaseIdentity(
+  UserStateStore store, {
+  required String userId,
+  String? email,
+  String? displayName,
+  String? avatarUrl,
+}) async {
+  if (store._state == null) {
+    if (!store._loading) {
+      await store.load();
+    }
+    if (store._state == null) return;
+  }
+
+  final root = Map<String, dynamic>.from(store._state!);
+  final userState = _ensureUserStateRoot(root);
+  final meta = _map(userState['meta']);
+  final profile = _map(userState['profile']);
+
+  userState['userId'] = userId;
+
+  final normalizedEmail = (email ?? '').trim().toLowerCase();
+  if (normalizedEmail.isNotEmpty) {
+    meta['authEmail'] = normalizedEmail;
+    profile['email'] = normalizedEmail;
+  }
+
+  final normalizedDisplayName = (displayName ?? '').trim();
+  if (normalizedDisplayName.isNotEmpty) {
+    profile['displayName'] = normalizedDisplayName;
+  }
+
+  final normalizedAvatarUrl = (avatarUrl ?? '').trim();
+  if (normalizedAvatarUrl.isNotEmpty) {
+    profile['avatarUrl'] = normalizedAvatarUrl;
+  }
+
+  userState['meta'] = meta;
+  userState['profile'] = profile;
+  _touchLastSavedAt(userState);
+
+  root['userState'] = userState;
+  store._state = root;
+
+  store._emitChanged();
+  await store._repo.save(root);
+}
+
+Future<void> _clearSupabaseIdentity(UserStateStore store) async {
+  if (store._state == null) {
+    if (!store._loading) {
+      await store.load();
+    }
+    if (store._state == null) return;
+  }
+
+  final root = Map<String, dynamic>.from(store._state!);
+  final userState = _ensureUserStateRoot(root);
+  final meta = _map(userState['meta']);
+  final profile = _map(userState['profile']);
+
+  userState.remove('userId');
+  meta.remove('authEmail');
+  profile.remove('email');
+  profile.remove('displayName');
+
+  userState['meta'] = meta;
+  userState['profile'] = profile;
+  _touchLastSavedAt(userState);
+
+  root['userState'] = userState;
+  store._state = root;
+
+  store._emitChanged();
+  await store._repo.save(root);
 }
 
 Map<String, dynamic> _ensureSettingsRoot(Map<String, dynamic> userState) {

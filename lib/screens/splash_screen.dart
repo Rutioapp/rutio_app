@@ -6,10 +6,14 @@ import '../utils/app_theme.dart';
 import '../utils/rutio_responsive.dart';
 import '../widgets/backgrounds/rutio_sky_background.dart';
 import '../widgets/scene_painters.dart';
-import 'root_gate.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  const SplashScreen({
+    super.key,
+    this.onFinished,
+  });
+
+  final VoidCallback? onFinished;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -54,7 +58,6 @@ class _SplashScreenState extends State<SplashScreen>
 
     _ctrl.forward();
 
-    // ✅ Tiempo mínimo de splash: 1.3s
     Future.delayed(const Duration(milliseconds: 1300), () {
       if (!mounted) return;
       _goNext();
@@ -71,14 +74,13 @@ class _SplashScreenState extends State<SplashScreen>
     if (_revealingRoot) return;
     setState(() => _revealingRoot = true);
 
-    // ✅ Pre-render real: RootGate se construye por debajo y el Splash hace fade-out.
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        opaque: true,
-        transitionDuration: Duration.zero, // la animación la hacemos dentro
-        pageBuilder: (_, __, ___) => const _RootReveal(),
-      ),
-    );
+    final onFinished = widget.onFinished;
+    if (onFinished != null) {
+      onFinished();
+      return;
+    }
+
+    Navigator.of(context).pushReplacementNamed('/root');
   }
 
   @override
@@ -90,112 +92,6 @@ class _SplashScreenState extends State<SplashScreen>
         tagOpacity: _tagOpacity,
         hintOpacity: _hintOpacity,
       ),
-    );
-  }
-}
-
-/// Pantalla “puente” que PRE-RENDERIZA RootGate por debajo
-/// y hace fade-out del Splash por encima.
-class _RootReveal extends StatefulWidget {
-  const _RootReveal();
-
-  @override
-  State<_RootReveal> createState() => _RootRevealState();
-}
-
-class _RootRevealState extends State<_RootReveal> {
-  double _overlayOpacity = 1.0;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Dejamos 1 frame para que RootGate se construya y pinte por debajo,
-    // y entonces comenzamos el fade-out del overlay.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      setState(() => _overlayOpacity = 0.0);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const RootGate(), // ✅ ya está renderizando debajo
-
-        IgnorePointer(
-          child: AnimatedOpacity(
-            opacity: _overlayOpacity,
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeOut,
-            child: const _SplashOverlayStatic(),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Overlay del splash (estático) para que el fade sea limpio.
-/// Si quieres que siga animando durante el fade, se puede,
-/// pero este método suele ser el más “premium” y estable.
-class _SplashOverlayStatic extends StatelessWidget {
-  const _SplashOverlayStatic();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          RutioSkyBackground(showBottomFade: false),
-          // Suelo
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _SplashGround(),
-          ),
-          // Logo + textos (estático)
-          Center(child: _SplashCenterStatic()),
-        ],
-      ),
-    );
-  }
-}
-
-class _SplashGround extends StatelessWidget {
-  const _SplashGround();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(MediaQuery.of(context).size.width, R.h(context, 340)),
-      painter: SplashScenePainter(),
-    );
-  }
-}
-
-class _SplashCenterStatic extends StatelessWidget {
-  const _SplashCenterStatic();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const _SplashWordmark(),
-        SizedBox(height: R.h(context, 18)),
-        Opacity(
-          opacity: 0.6,
-          child: Text(
-            context.l10n.splashTagline,
-            style: AppTextStyles.tagline,
-          ),
-        ),
-      ],
     );
   }
 }

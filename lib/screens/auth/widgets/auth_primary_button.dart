@@ -5,11 +5,13 @@ import '../../../utils/app_theme.dart';
 class AuthPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
+  final bool isLoading;
 
   const AuthPrimaryButton({
     super.key,
     required this.label,
     this.onTap,
+    this.isLoading = false,
   });
 
   @override
@@ -18,7 +20,7 @@ class AuthPrimaryButton extends StatelessWidget {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: onTap,
+        onPressed: isLoading ? null : onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.ink,
           foregroundColor: AppColors.cream,
@@ -30,7 +32,16 @@ class AuthPrimaryButton extends StatelessWidget {
           overlayColor:
               WidgetStateProperty.all(Colors.white.withValues(alpha: 0.08)),
         ),
-        child: Text(label),
+        child: isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.cream),
+                ),
+              )
+            : Text(label),
       ),
     );
   }
