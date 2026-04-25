@@ -1305,6 +1305,36 @@ abstract class AppLocalizations {
   /// **'Cuenta'**
   String get settingsAccountSectionTitle;
 
+  /// No description provided for @settingsLogOut.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar sesión'**
+  String get settingsLogOut;
+
+  /// No description provided for @settingsLogOutTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cerrar sesión?'**
+  String get settingsLogOutTitle;
+
+  /// No description provided for @settingsLogOutMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Podrás volver a entrar con tu email y contraseña cuando quieras.'**
+  String get settingsLogOutMessage;
+
+  /// No description provided for @settingsLogOutConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar sesión'**
+  String get settingsLogOutConfirm;
+
+  /// No description provided for @settingsLogOutError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido cerrar sesión. Inténtalo de nuevo.'**
+  String get settingsLogOutError;
+
   /// No description provided for @settingsDeleteAccountTitle.
   ///
   /// In es, this message translates to:

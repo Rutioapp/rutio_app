@@ -114,6 +114,7 @@ class UserStateStore extends ChangeNotifier {
         this,
         preserveLanguageCode: preserveLanguageCode,
       );
+  Future<void> clearAuthSessionState() => _clearAuthSessionState(this);
 
   Map<String, dynamic> get profile => _profile(this);
 

@@ -33,6 +33,26 @@ Future<void> _clearLocalAccountData(
   store._emitChanged();
 }
 
+Future<void> _clearAuthSessionState(UserStateStore store) async {
+  final currentState = store._state;
+  if (currentState == null) return;
+
+  final root = Map<String, dynamic>.from(currentState);
+  final userState = _ensureUserStateRoot(root);
+  final meta = _map(userState['meta']);
+
+  meta['onboardingDone'] = false;
+  meta.remove('authEmail');
+  userState['meta'] = meta;
+  root['userState'] = userState;
+
+  await store._repo.save(root);
+  store._state = root;
+  store._loading = false;
+  store._error = null;
+  store._emitChanged();
+}
+
 Map<String, dynamic> _ensureSettingsRoot(Map<String, dynamic> userState) {
   final settings = _map(userState['settings']);
   userState['settings'] = settings;
