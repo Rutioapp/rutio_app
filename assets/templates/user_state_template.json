@@ -34,6 +34,7 @@
       },
       "achievements": {
         "unlocked": [],
+        "featured": [],
         "progress": {}
       }
     },

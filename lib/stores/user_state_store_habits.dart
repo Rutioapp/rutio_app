@@ -624,6 +624,11 @@ Future<void> _setCountHabitValue(
     habitId: habitId,
     habit: habit,
   );
+  _syncAchievementsFromCurrentHabits(
+    store,
+    userState,
+    enqueueVisualTrigger: true,
+  );
 
   await store.save(root);
 }
@@ -686,6 +691,11 @@ Future<void> _completeHabit(
     dateKey: dayKey,
     habitId: habitId,
     habit: habit,
+  );
+  _syncAchievementsFromCurrentHabits(
+    store,
+    userState,
+    enqueueVisualTrigger: true,
   );
 
   await store.save(root);
