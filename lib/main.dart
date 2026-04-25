@@ -9,6 +9,8 @@ import 'services/notification_service.dart';
 import 'data/repositories/user_state_repository.dart';
 import 'data/local/user_state_storage.dart';
 import 'data/local/asset_json_loader.dart';
+import 'features/achievements/presentation/screens/achievements_screen.dart';
+import 'features/achievements/presentation/widgets/achievement_unlock_overlay_host.dart';
 import 'stores/user_state_store.dart';
 
 import 'utils/app_theme.dart';
@@ -43,6 +45,9 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final GlobalKey<NavigatorState> _navigatorKey =
+      GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -68,6 +73,11 @@ class MyApp extends StatelessWidget {
             title: 'Rutio',
             theme: AppTheme.theme,
             locale: store.preferredLocale,
+            navigatorKey: _navigatorKey,
+            builder: (context, child) => AchievementUnlockOverlayHost(
+              navigatorKey: _navigatorKey,
+              child: child ?? const SizedBox.shrink(),
+            ),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
@@ -85,6 +95,7 @@ class MyApp extends StatelessWidget {
               '/home': (_) => const HomeScreen(),
               TodoScreen.route: (_) => const TodoScreen(),
               ProfileScreen.route: (_) => const ProfileScreen(),
+              AchievementsScreen.route: (_) => const AchievementsScreen(),
               '/diary': (_) => DiaryScreen(),
               '/archived': (_) => ArchivedHabitsScreen(),
               '/stats': (_) => HabitStatsOverviewHost(),

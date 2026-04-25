@@ -643,6 +643,7 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     return min;
   }
 
+  // ignore: unused_element
   Map<DateTime, int> _extractCountsByDayFromStore({
     required UserStateStore store,
     required dynamic habit,
