@@ -175,10 +175,11 @@ Future<void> _deleteHabitById(
   final activeHabits = _mutableActiveHabits(userState);
   final normalizedId = id.trim();
 
-  final before = activeHabits.length;
-  activeHabits.removeWhere((habit) => _habitIdValue(habit) == normalizedId);
+  final index = _activeHabitIndex(activeHabits, normalizedId);
+  if (index == -1) return;
 
-  if (activeHabits.length == before) return;
+  final removedHabit = Map<String, dynamic>.from(activeHabits[index]);
+  activeHabits.removeAt(index);
 
   userState['activeHabits'] = activeHabits;
 
@@ -187,6 +188,13 @@ Future<void> _deleteHabitById(
   }
 
   await store.save(root);
+  unawaited(
+    store._habitSyncService.syncHabitDeleted(
+      localHabitId: normalizedId,
+      localHabitSnapshot: removedHabit,
+      expectedLocalUserId: store.userId,
+    ),
+  );
 }
 
 Future<void> _addHabitFromCatalog(
@@ -240,6 +248,15 @@ Future<void> _addHabitFromCatalog(
 
   userState['activeHabits'] = activeHabits;
   await store.save(root);
+
+  final createdHabit = Map<String, dynamic>.from(activeHabits.last);
+  unawaited(
+    store._habitSyncService.syncHabitCreated(
+      localHabit: createdHabit,
+      sortOrder: activeHabits.length - 1,
+      expectedLocalUserId: store.userId,
+    ),
+  );
 }
 
 Future<void> _addCustomHabit(
@@ -302,6 +319,15 @@ Future<void> _addCustomHabit(
 
   userState['activeHabits'] = activeHabits;
   await store.save(root);
+
+  final createdHabit = Map<String, dynamic>.from(activeHabits.last);
+  unawaited(
+    store._habitSyncService.syncHabitCreated(
+      localHabit: createdHabit,
+      sortOrder: activeHabits.length - 1,
+      expectedLocalUserId: store.userId,
+    ),
+  );
 }
 
 Future<void> _reorderVisibleHabits(
@@ -455,6 +481,8 @@ Future<void> _updateHabitDetailsFromEdit(
   if (index == -1) return;
 
   final current = Map<String, dynamic>.from(activeHabits[index]);
+  final wasArchived =
+      current['archived'] == true || current['isArchived'] == true;
 
   final newName = (patch['name'] ?? patch['title'])?.toString();
   if (newName != null && newName.trim().isNotEmpty) {
@@ -566,6 +594,28 @@ Future<void> _updateHabitDetailsFromEdit(
   userState['activeHabits'] = activeHabits;
 
   await store.save(root);
+
+  final nowArchived =
+      current['archived'] == true || current['isArchived'] == true;
+  final syncedHabit = Map<String, dynamic>.from(current);
+  if (nowArchived != wasArchived) {
+    unawaited(
+      store._habitSyncService.syncHabitArchived(
+        localHabit: syncedHabit,
+        sortOrder: index,
+        expectedLocalUserId: store.userId,
+      ),
+    );
+    return;
+  }
+
+  unawaited(
+    store._habitSyncService.syncHabitUpdated(
+      localHabit: syncedHabit,
+      sortOrder: index,
+      expectedLocalUserId: store.userId,
+    ),
+  );
 }
 
 Future<void> _setCountHabitValue(
