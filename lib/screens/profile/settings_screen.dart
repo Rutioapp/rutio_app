@@ -2,18 +2,26 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../application/auth/auth_controller.dart';
 import '../../core/services/account_deletion_service.dart';
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
 import 'widgets/destructive_settings_row.dart';
+import 'widgets/secondary_settings_row.dart';
 import 'widgets/section_card.dart';
 import 'widgets/settings_language_section.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
   static final AccountDeletionService _accountDeletionService =
       AccountDeletionService();
+  bool _isSigningOut = false;
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +52,22 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           SectionCard(
-            child: DestructiveSettingsRow(
-              title: context.l10n.settingsDeleteAccountTitle,
-              onTap: () => _handleDeleteAccount(context),
+            child: AbsorbPointer(
+              absorbing: _isSigningOut,
+              child: Column(
+                children: [
+                  SecondarySettingsRow(
+                    title: context.l10n.settingsLogoutTitle,
+                    onTap: _isSigningOut ? null : _handleSignOut,
+                    isLoading: _isSigningOut,
+                  ),
+                  const SizedBox(height: 10),
+                  DestructiveSettingsRow(
+                    title: context.l10n.settingsDeleteAccountTitle,
+                    onTap: () => _handleDeleteAccount(context),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -64,6 +85,45 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _handleSignOut() async {
+    if (_isSigningOut) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final authController = context.read<AuthController>();
+    final l10n = context.l10n;
+    final confirmed = await _showSignOutConfirmation(context);
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isSigningOut = true);
+
+    try {
+      await authController.signOut();
+      if (!mounted) return;
+
+      if (authController.isAuthenticated) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(l10n.settingsLogoutError),
+          ),
+        );
+        return;
+      }
+
+      Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.settingsLogoutError),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSigningOut = false);
+      }
+    }
   }
 
   Future<void> _handleDeleteAccount(BuildContext context) async {
@@ -152,6 +212,52 @@ class SettingsScreen extends StatelessWidget {
               foregroundColor: const Color(0xFFC43C3C),
             ),
             child: Text(l10n.settingsDeleteAccountConfirmAction),
+          ),
+        ],
+      ),
+    );
+
+    return result == true;
+  }
+
+  Future<bool> _showSignOutConfirmation(BuildContext context) async {
+    final l10n = context.l10n;
+    final platform = Theme.of(context).platform;
+
+    if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
+      final result = await showCupertinoModalPopup<bool>(
+        context: context,
+        builder: (sheetContext) => CupertinoActionSheet(
+          title: Text(l10n.settingsLogoutTitle),
+          message: Text(l10n.settingsLogoutConfirmationBody),
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.of(sheetContext).pop(true),
+              child: Text(l10n.settingsLogoutConfirmAction),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(sheetContext).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+        ),
+      );
+      return result == true;
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.settingsLogoutTitle),
+        content: Text(l10n.settingsLogoutConfirmationBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.settingsLogoutConfirmAction),
           ),
         ],
       ),
