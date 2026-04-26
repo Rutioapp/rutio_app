@@ -2,9 +2,9 @@ part of 'package:rutio/screens/home/home_screen.dart';
 
 /// Habit card builders for Home.
 ///
-/// Mantiene en un ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºnico sitio la transformaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de un hÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡bito raw del store a
+/// Mantiene en un único sitio la transformación de un hábito raw del store a
 /// la UI final de `HabitCardWidget`, incluyendo swipe de check y accesos a
-/// ediciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n/contador.
+/// edición/contador.
 extension _HomeScreenCardBuilders on _HomeScreenState {
   Widget _habitCard({
     required BuildContext context,

@@ -663,11 +663,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLogOut => 'Log out';
 
   @override
-  String get settingsLogOutTitle => 'Log out?';
+  String get settingsLogOutTitle => 'Log out';
 
   @override
   String get settingsLogOutMessage =>
-      'You can sign back in with your email and password anytime.';
+      'Are you sure you want to log out? You can sign in again at any time.';
 
   @override
   String get settingsLogOutConfirm => 'Log out';

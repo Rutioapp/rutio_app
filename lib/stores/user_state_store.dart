@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/services/account_deletion_service.dart';
+import '../core/supabase/rutio_supabase_config.dart';
 import '../data/repositories/user_state_repository.dart';
 import '../features/achievements/application/achievement_catalog.dart';
 import '../features/achievements/domain/models/achievement.dart';

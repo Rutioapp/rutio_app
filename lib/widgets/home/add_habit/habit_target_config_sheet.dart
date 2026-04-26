@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/l10n/l10n.dart';
 
-/// Resultado del configurador de hÃ¡bito.
+/// Resultado del configurador de hábito.
 /// - type: 'check' o 'count'
 /// - target: num? (solo si type == 'count')
 /// - scheduleType: 'daily' | 'weekly' | 'once'
@@ -40,7 +40,7 @@ class HabitTargetConfigResult {
       };
 }
 
-/// Abre un bottom sheet minimalista para configurar hÃ¡bitos de tipo contador/tiempo.
+/// Abre un bottom sheet minimalista para configurar hábitos de tipo contador/tiempo.
 /// Devuelve null si el usuario cancela.
 Future<HabitTargetConfigResult?> showHabitTargetConfigSheet({
   required BuildContext context,

@@ -79,6 +79,8 @@ Future<void> _clearLocalAccountData(
 }
 
 Future<void> _clearAuthSessionState(UserStateStore store) async {
+  await _signOutSupabaseSessionForLogoutIfPresent();
+
   final currentState = store._state;
   if (currentState == null) return;
 
@@ -96,6 +98,14 @@ Future<void> _clearAuthSessionState(UserStateStore store) async {
   store._loading = false;
   store._error = null;
   store._emitChanged();
+}
+
+Future<void> _signOutSupabaseSessionForLogoutIfPresent() async {
+  if (!RutioSupabaseConfig.isConfigured) return;
+
+  final client = Supabase.instance.client;
+  if (client.auth.currentSession == null) return;
+  await client.auth.signOut();
 }
 
 Map<String, dynamic> _ensureSettingsRoot(Map<String, dynamic> userState) {

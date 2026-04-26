@@ -71,7 +71,7 @@ Future<void> showHomeAddHabitSheet(BuildContext context) async {
   );
 }
 
-/// ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ ALIAS (compatibilidad)
+/// ✅ ALIAS (compatibilidad)
 /// Tu Home antigua usa `bg`, `primaryDark`, etc. sin prefijo.
 /// Estos alias conectan esos nombres con ColorPalette.
 const Color bg = ColorPalette.bg;

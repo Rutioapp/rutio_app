@@ -1292,7 +1292,7 @@ extension AppLocalizationsDiaryX on AppLocalizations {
   String get diaryActionDelete => _isSpanishDiary ? 'Eliminar' : 'Delete';
 
   String get diaryComposerCancel =>
-      _isSpanishDiary ? 'â† Cancelar' : 'â† Cancel';
+      _isSpanishDiary ? '← Cancelar' : '← Cancel';
 
   String get diaryComposerEditEntryUpper =>
       _isSpanishDiary ? 'EDITAR ENTRADA' : 'EDIT ENTRY';
@@ -1301,7 +1301,7 @@ extension AppLocalizationsDiaryX on AppLocalizations {
       _isSpanishDiary ? 'NUEVA ENTRADA' : 'NEW ENTRY';
 
   String get diaryComposerMoodSectionUpper =>
-      _isSpanishDiary ? 'Â¿COMO TE SENTISTE?' : 'HOW DID YOU FEEL?';
+      _isSpanishDiary ? '¿COMO TE SENTISTE?' : 'HOW DID YOU FEEL?';
 
   String get diaryComposerTitleUpper => _isSpanishDiary ? 'TITULO' : 'TITLE';
 

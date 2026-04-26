@@ -131,13 +131,13 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'PequeÃ±os pasos,\ngrandes cambios.'**
+  /// **'Pequeños pasos,\ngrandes cambios.'**
   String get welcomeSubtitle;
 
   /// No description provided for @welcomeLoginButton.
   ///
   /// In es, this message translates to:
-  /// **'Iniciar sesiÃ³n'**
+  /// **'Iniciar sesión'**
   String get welcomeLoginButton;
 
   /// No description provided for @welcomeSignupButton.
@@ -155,43 +155,43 @@ abstract class AppLocalizations {
   /// No description provided for @loginTitle.
   ///
   /// In es, this message translates to:
-  /// **'Iniciar sesiÃ³n'**
+  /// **'Iniciar sesión'**
   String get loginTitle;
 
   /// No description provided for @loginSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'ContinÃºa donde lo dejaste'**
+  /// **'Continúa donde lo dejaste'**
   String get loginSubtitle;
 
   /// No description provided for @loginPasswordHint.
   ///
   /// In es, this message translates to:
-  /// **'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢'**
+  /// **'••••••••'**
   String get loginPasswordHint;
 
   /// No description provided for @loginForgotPassword.
   ///
   /// In es, this message translates to:
-  /// **'Â¿Olvidaste tu contraseÃ±a?'**
+  /// **'¿Olvidaste tu contraseña?'**
   String get loginForgotPassword;
 
   /// No description provided for @loginPrimaryCta.
   ///
   /// In es, this message translates to:
-  /// **'Continuar â†’'**
+  /// **'Continuar →'**
   String get loginPrimaryCta;
 
   /// No description provided for @loginSwitchPrefix.
   ///
   /// In es, this message translates to:
-  /// **'Â¿No tienes cuenta?  '**
+  /// **'¿No tienes cuenta?  '**
   String get loginSwitchPrefix;
 
   /// No description provided for @loginSwitchLink.
   ///
   /// In es, this message translates to:
-  /// **'RegÃ­strate'**
+  /// **'Regístrate'**
   String get loginSwitchLink;
 
   /// No description provided for @signupHeaderSubtitle.
@@ -209,7 +209,7 @@ abstract class AppLocalizations {
   /// No description provided for @signupSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Un pequeÃ±o paso hacia tus metas'**
+  /// **'Un pequeño paso hacia tus metas'**
   String get signupSubtitle;
 
   /// No description provided for @signupNameLabel.
@@ -221,31 +221,31 @@ abstract class AppLocalizations {
   /// No description provided for @signupNameHint.
   ///
   /// In es, this message translates to:
-  /// **'Â¿CÃ³mo te llamas?'**
+  /// **'¿Cómo te llamas?'**
   String get signupNameHint;
 
   /// No description provided for @signupPasswordHint.
   ///
   /// In es, this message translates to:
-  /// **'MÃ­n. 8 caracteres'**
+  /// **'Mín. 8 caracteres'**
   String get signupPasswordHint;
 
   /// No description provided for @signupPrimaryCta.
   ///
   /// In es, this message translates to:
-  /// **'Comenzar â†’'**
+  /// **'Comenzar →'**
   String get signupPrimaryCta;
 
   /// No description provided for @signupSwitchPrefix.
   ///
   /// In es, this message translates to:
-  /// **'Â¿Ya tienes cuenta?  '**
+  /// **'¿Ya tienes cuenta?  '**
   String get signupSwitchPrefix;
 
   /// No description provided for @signupSwitchLink.
   ///
   /// In es, this message translates to:
-  /// **'Inicia sesiÃ³n'**
+  /// **'Inicia sesión'**
   String get signupSwitchLink;
 
   /// No description provided for @fieldEmailLabel.
@@ -263,7 +263,7 @@ abstract class AppLocalizations {
   /// No description provided for @fieldPasswordLabel.
   ///
   /// In es, this message translates to:
-  /// **'ContraseÃ±a'**
+  /// **'Contraseña'**
   String get fieldPasswordLabel;
 
   /// No description provided for @homeErrorMessage.
@@ -281,7 +281,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeFallbackHabitTitle.
   ///
   /// In es, this message translates to:
-  /// **'HÃ¡bito'**
+  /// **'Hábito'**
   String get homeFallbackHabitTitle;
 
   /// No description provided for @homeHabitCompletionBurstDefault.
@@ -311,13 +311,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeEmptyStateMultiline.
   ///
   /// In es, this message translates to:
-  /// **'AÃºn no tienes hÃ¡bitos activos.`nPulsa â€œNuevoâ€ para aÃ±adir el primero.'**
+  /// **'Aún no tienes hábitos activos.`nPulsa “Nuevo” para añadir el primero.'**
   String get homeEmptyStateMultiline;
 
   /// No description provided for @homeEmptyStateSingleLine.
   ///
   /// In es, this message translates to:
-  /// **'AÃºn no tienes hÃ¡bitos activos. Pulsa â€œNuevoâ€ para aÃ±adir el primero.'**
+  /// **'Aún no tienes hábitos activos. Pulsa “Nuevo” para añadir el primero.'**
   String get homeEmptyStateSingleLine;
 
   /// No description provided for @homeEditCounterTitle.
@@ -329,7 +329,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeEditCounterHint.
   ///
   /// In es, this message translates to:
-  /// **'Introduce un nÃºmero'**
+  /// **'Introduce un número'**
   String get homeEditCounterHint;
 
   /// No description provided for @homeInputValueHint.
@@ -359,7 +359,7 @@ abstract class AppLocalizations {
   /// No description provided for @commonAdd.
   ///
   /// In es, this message translates to:
-  /// **'AÃ±adir'**
+  /// **'Añadir'**
   String get commonAdd;
 
   /// No description provided for @homeHabitCountProgress.
@@ -378,7 +378,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeAddHabitLoadError.
   ///
   /// In es, this message translates to:
-  /// **'No se pudo cargar el catÃ¡logo'**
+  /// **'No se pudo cargar el catálogo'**
   String get homeAddHabitLoadError;
 
   /// No description provided for @homeAddHabitCreated.
@@ -390,13 +390,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeAddHabitCreatedGeneric.
   ///
   /// In es, this message translates to:
-  /// **'HÃ¡bito creado'**
+  /// **'Hábito creado'**
   String get homeAddHabitCreatedGeneric;
 
   /// No description provided for @homeAddHabitCreateFromScratch.
   ///
   /// In es, this message translates to:
-  /// **'Crear hÃ¡bito desde cero'**
+  /// **'Crear hábito desde cero'**
   String get homeAddHabitCreateFromScratch;
 
   /// No description provided for @habitConfigTypeSection.
@@ -456,7 +456,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitConfigDaysSection.
   ///
   /// In es, this message translates to:
-  /// **'DÃ­as'**
+  /// **'Días'**
   String get habitConfigDaysSection;
 
   /// No description provided for @habitConfigDateSection.
@@ -474,13 +474,13 @@ abstract class AppLocalizations {
   /// No description provided for @habitConfigInvalidGoal.
   ///
   /// In es, this message translates to:
-  /// **'Pon un objetivo vÃ¡lido (mayor que 0).'**
+  /// **'Pon un objetivo válido (mayor que 0).'**
   String get habitConfigInvalidGoal;
 
   /// No description provided for @habitConfigSelectDay.
   ///
   /// In es, this message translates to:
-  /// **'Selecciona al menos un dÃ­a.'**
+  /// **'Selecciona al menos un día.'**
   String get habitConfigSelectDay;
 
   /// No description provided for @habitConfigSelectDate.
@@ -504,7 +504,7 @@ abstract class AppLocalizations {
   /// No description provided for @weekdayShortWed.
   ///
   /// In es, this message translates to:
-  /// **'MiÃ©'**
+  /// **'Mié'**
   String get weekdayShortWed;
 
   /// No description provided for @weekdayShortThu.
@@ -522,7 +522,7 @@ abstract class AppLocalizations {
   /// No description provided for @weekdayShortSat.
   ///
   /// In es, this message translates to:
-  /// **'SÃ¡b'**
+  /// **'Sáb'**
   String get weekdayShortSat;
 
   /// No description provided for @weekdayShortSun.
@@ -594,7 +594,7 @@ abstract class AppLocalizations {
   /// No description provided for @unitPagesShort.
   ///
   /// In es, this message translates to:
-  /// **'pÃ¡ginas'**
+  /// **'páginas'**
   String get unitPagesShort;
 
   /// No description provided for @unitStepsShort.
@@ -624,7 +624,7 @@ abstract class AppLocalizations {
   /// No description provided for @familySpiritName.
   ///
   /// In es, this message translates to:
-  /// **'EspÃ­ritu'**
+  /// **'Espíritu'**
   String get familySpiritName;
 
   /// No description provided for @familyBodyName.
@@ -672,7 +672,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitResolverProblemaLogico.
   ///
   /// In es, this message translates to:
-  /// **'Resolver un problema lÃ³gico'**
+  /// **'Resolver un problema lógico'**
   String get catalogHabitResolverProblemaLogico;
 
   /// No description provided for @catalogHabitEscribirIdeasReflexiones.
@@ -708,7 +708,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitTomarNotas.
   ///
   /// In es, this message translates to:
-  /// **'Tomar notas del dÃ­a'**
+  /// **'Tomar notas del día'**
   String get catalogHabitTomarNotas;
 
   /// No description provided for @catalogHabitJuegoMental.
@@ -726,13 +726,13 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitRepasarNotas.
   ///
   /// In es, this message translates to:
-  /// **'Repasar notas del dÃ­a'**
+  /// **'Repasar notas del día'**
   String get catalogHabitRepasarNotas;
 
   /// No description provided for @catalogHabitVerDocumental.
   ///
   /// In es, this message translates to:
-  /// **'Ver un documental o vÃ­deo educativo'**
+  /// **'Ver un documental o vídeo educativo'**
   String get catalogHabitVerDocumental;
 
   /// No description provided for @catalogHabitMeditar.
@@ -750,31 +750,31 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitRespiracionConsciente.
   ///
   /// In es, this message translates to:
-  /// **'RespiraciÃ³n consciente'**
+  /// **'Respiración consciente'**
   String get catalogHabitRespiracionConsciente;
 
   /// No description provided for @catalogHabitReflexionPersonal.
   ///
   /// In es, this message translates to:
-  /// **'ReflexiÃ³n personal'**
+  /// **'Reflexión personal'**
   String get catalogHabitReflexionPersonal;
 
   /// No description provided for @catalogHabitOracionConexionEspiritual.
   ///
   /// In es, this message translates to:
-  /// **'OraciÃ³n o conexiÃ³n espiritual'**
+  /// **'Oración o conexión espiritual'**
   String get catalogHabitOracionConexionEspiritual;
 
   /// No description provided for @catalogHabitRevisarAprendizajesDia.
   ///
   /// In es, this message translates to:
-  /// **'Revisar aprendizajes del dÃ­a'**
+  /// **'Revisar aprendizajes del día'**
   String get catalogHabitRevisarAprendizajesDia;
 
   /// No description provided for @catalogHabitVisualizacionPositiva.
   ///
   /// In es, this message translates to:
-  /// **'VisualizaciÃ³n positiva'**
+  /// **'Visualización positiva'**
   String get catalogHabitVisualizacionPositiva;
 
   /// No description provided for @catalogHabitLecturaEspiritual.
@@ -786,7 +786,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitDesconexionDigital.
   ///
   /// In es, this message translates to:
-  /// **'DesconexiÃ³n digital'**
+  /// **'Desconexión digital'**
   String get catalogHabitDesconexionDigital;
 
   /// No description provided for @catalogHabitContactoNaturaleza.
@@ -798,13 +798,13 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitTresCosasBuenas.
   ///
   /// In es, this message translates to:
-  /// **'Escribir 3 cosas buenas del dÃ­a'**
+  /// **'Escribir 3 cosas buenas del día'**
   String get catalogHabitTresCosasBuenas;
 
   /// No description provided for @catalogHabitPaseoSinMovil.
   ///
   /// In es, this message translates to:
-  /// **'Paseo sin mÃ³vil'**
+  /// **'Paseo sin móvil'**
   String get catalogHabitPaseoSinMovil;
 
   /// No description provided for @catalogHabitMomentoParaTi.
@@ -888,7 +888,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitRutinaManana.
   ///
   /// In es, this message translates to:
-  /// **'Rutina de maÃ±ana'**
+  /// **'Rutina de mañana'**
   String get catalogHabitRutinaManana;
 
   /// No description provided for @catalogHabitRutinaNoche.
@@ -930,7 +930,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitDuchaFria.
   ///
   /// In es, this message translates to:
-  /// **'Ducha frÃ­a'**
+  /// **'Ducha fría'**
   String get catalogHabitDuchaFria;
 
   /// No description provided for @catalogHabitHacerCama.
@@ -954,7 +954,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitTomarSuplementos.
   ///
   /// In es, this message translates to:
-  /// **'Tomar suplementos o medicaciÃ³n'**
+  /// **'Tomar suplementos o medicación'**
   String get catalogHabitTomarSuplementos;
 
   /// No description provided for @catalogHabitHidratarPiel.
@@ -978,13 +978,13 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitGestionarEstres.
   ///
   /// In es, this message translates to:
-  /// **'Gestionar el estrÃ©s'**
+  /// **'Gestionar el estrés'**
   String get catalogHabitGestionarEstres;
 
   /// No description provided for @catalogHabitAutocompasion.
   ///
   /// In es, this message translates to:
-  /// **'Practicar autocompasiÃ³n'**
+  /// **'Practicar autocompasión'**
   String get catalogHabitAutocompasion;
 
   /// No description provided for @catalogHabitHablarSentimientos.
@@ -1020,13 +1020,13 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitNotaAnimo.
   ///
   /// In es, this message translates to:
-  /// **'Nota de Ã¡nimo del dÃ­a'**
+  /// **'Nota de ánimo del día'**
   String get catalogHabitNotaAnimo;
 
   /// No description provided for @catalogHabitNotaAnimoTarget.
   ///
   /// In es, this message translates to:
-  /// **'Ãnimo: {target}/10'**
+  /// **'Ánimo: {target}/10'**
   String catalogHabitNotaAnimoTarget(String target);
 
   /// No description provided for @catalogHabitSinPantallasNoche.
@@ -1080,7 +1080,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitPracticarEmpatia.
   ///
   /// In es, this message translates to:
-  /// **'Practicar empatÃ­a'**
+  /// **'Practicar empatía'**
   String get catalogHabitPracticarEmpatia;
 
   /// No description provided for @catalogHabitPlanSocial.
@@ -1098,7 +1098,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitMensajeAnimo.
   ///
   /// In es, this message translates to:
-  /// **'Enviar un mensaje de Ã¡nimo'**
+  /// **'Enviar un mensaje de ánimo'**
   String get catalogHabitMensajeAnimo;
 
   /// No description provided for @catalogHabitLlamadaFamiliaAmigo.
@@ -1110,7 +1110,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitPlanificarDia.
   ///
   /// In es, this message translates to:
-  /// **'Planificar el dÃ­a'**
+  /// **'Planificar el día'**
   String get catalogHabitPlanificarDia;
 
   /// No description provided for @catalogHabitCumplirRutina.
@@ -1128,13 +1128,13 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitEvitarProcrastinacion.
   ///
   /// In es, this message translates to:
-  /// **'Vencer la procrastinaciÃ³n'**
+  /// **'Vencer la procrastinación'**
   String get catalogHabitEvitarProcrastinacion;
 
   /// No description provided for @catalogHabitTareaDificil.
   ///
   /// In es, this message translates to:
-  /// **'Hacer la tarea mÃ¡s difÃ­cil primero'**
+  /// **'Hacer la tarea más difícil primero'**
   String get catalogHabitTareaDificil;
 
   /// No description provided for @catalogHabitPriorizarImportante.
@@ -1170,13 +1170,13 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitRevisarFinDia.
   ///
   /// In es, this message translates to:
-  /// **'Revisar el dÃ­a al terminar'**
+  /// **'Revisar el día al terminar'**
   String get catalogHabitRevisarFinDia;
 
   /// No description provided for @catalogHabitApagarMovil.
   ///
   /// In es, this message translates to:
-  /// **'Apagar el mÃ³vil a una hora fija'**
+  /// **'Apagar el móvil a una hora fija'**
   String get catalogHabitApagarMovil;
 
   /// No description provided for @catalogHabitSinComprasImpulsivas.
@@ -1188,13 +1188,13 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitPrepararRopa.
   ///
   /// In es, this message translates to:
-  /// **'Preparar la ropa del dÃ­a siguiente'**
+  /// **'Preparar la ropa del día siguiente'**
   String get catalogHabitPrepararRopa;
 
   /// No description provided for @catalogHabitTrabajoProfundo.
   ///
   /// In es, this message translates to:
-  /// **'SesiÃ³n de trabajo profundo'**
+  /// **'Sesión de trabajo profundo'**
   String get catalogHabitTrabajoProfundo;
 
   /// No description provided for @catalogHabitTrabajoProfundoTarget.
@@ -1212,7 +1212,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitOrganizarTareas.
   ///
   /// In es, this message translates to:
-  /// **'Organizar tareas del dÃ­a'**
+  /// **'Organizar tareas del día'**
   String get catalogHabitOrganizarTareas;
 
   /// No description provided for @catalogHabitRevisarRendimiento.
@@ -1230,13 +1230,13 @@ abstract class AppLocalizations {
   /// No description provided for @catalogHabitFormacionProfesional.
   ///
   /// In es, this message translates to:
-  /// **'FormaciÃ³n profesional'**
+  /// **'Formación profesional'**
   String get catalogHabitFormacionProfesional;
 
   /// No description provided for @catalogHabitFormacionProfesionalTarget.
   ///
   /// In es, this message translates to:
-  /// **'FormaciÃ³n {target} horas'**
+  /// **'Formación {target} horas'**
   String catalogHabitFormacionProfesionalTarget(String target);
 
   /// No description provided for @catalogHabitResponderEmails.
@@ -1290,13 +1290,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLanguageOptionSpanish.
   ///
   /// In es, this message translates to:
-  /// **'EspaÃ±ol'**
+  /// **'Español'**
   String get settingsLanguageOptionSpanish;
 
   /// No description provided for @settingsLanguageOptionEnglish.
   ///
   /// In es, this message translates to:
-  /// **'InglÃ©s'**
+  /// **'Inglés'**
   String get settingsLanguageOptionEnglish;
 
   /// No description provided for @settingsAccountSectionTitle.
@@ -1308,31 +1308,31 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLogOut.
   ///
   /// In es, this message translates to:
-  /// **'Cerrar sesiÃ³n'**
+  /// **'Cerrar sesión'**
   String get settingsLogOut;
 
   /// No description provided for @settingsLogOutTitle.
   ///
   /// In es, this message translates to:
-  /// **'Â¿Cerrar sesiÃ³n?'**
+  /// **'Cerrar sesión'**
   String get settingsLogOutTitle;
 
   /// No description provided for @settingsLogOutMessage.
   ///
   /// In es, this message translates to:
-  /// **'PodrÃ¡s volver a entrar con tu email y contraseÃ±a cuando quieras.'**
+  /// **'¿Seguro que quieres cerrar sesión? Podrás volver a entrar cuando quieras.'**
   String get settingsLogOutMessage;
 
   /// No description provided for @settingsLogOutConfirm.
   ///
   /// In es, this message translates to:
-  /// **'Cerrar sesiÃ³n'**
+  /// **'Cerrar sesión'**
   String get settingsLogOutConfirm;
 
   /// No description provided for @settingsLogOutError.
   ///
   /// In es, this message translates to:
-  /// **'No se ha podido cerrar sesiÃ³n. IntÃ©ntalo de nuevo.'**
+  /// **'No se ha podido cerrar sesión. Inténtalo de nuevo.'**
   String get settingsLogOutError;
 
   /// No description provided for @settingsDeleteAccountTitle.
@@ -1410,7 +1410,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSettingsSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Idioma, privacidad y mÃ¡s'**
+  /// **'Idioma, privacidad y más'**
   String get profileSettingsSubtitle;
 
   /// No description provided for @profileTitle.
@@ -2442,7 +2442,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryComposerCancel.
   ///
   /// In es, this message translates to:
-  /// **'â† Cancelar'**
+  /// **'← Cancelar'**
   String get diaryComposerCancel;
 
   /// No description provided for @diaryComposerEditEntryUpper.
@@ -2460,7 +2460,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryComposerMoodSectionUpper.
   ///
   /// In es, this message translates to:
-  /// **'Â¿COMO TE SENTISTE?'**
+  /// **'¿COMO TE SENTISTE?'**
   String get diaryComposerMoodSectionUpper;
 
   /// No description provided for @diaryComposerTitleUpper.
@@ -3180,7 +3180,7 @@ abstract class AppLocalizations {
   /// No description provided for @drawerStatistics.
   ///
   /// In es, this message translates to:
-  /// **'EstadÃ­sticas'**
+  /// **'Estadísticas'**
   String get drawerStatistics;
 
   /// No description provided for @drawerDiary.
@@ -3222,7 +3222,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyScreenUnavailableSoon.
   ///
   /// In es, this message translates to:
-  /// **'Pantalla no disponible todavÃ­a.'**
+  /// **'Pantalla no disponible todavía.'**
   String get weeklyScreenUnavailableSoon;
 
   /// No description provided for @weeklyScreenUnavailable.
@@ -3264,7 +3264,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyViewMenuDailySubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Ver hÃ¡bitos de hoy'**
+  /// **'Ver hábitos de hoy'**
   String get weeklyViewMenuDailySubtitle;
 
   /// No description provided for @weeklyViewMenuWeeklyTitle.
@@ -3630,7 +3630,7 @@ abstract class AppLocalizations {
   /// No description provided for @todoEmptyStateTitle.
   ///
   /// In es, this message translates to:
-  /// **'TodavÃ­a no tienes tareas'**
+  /// **'Todavía no tienes tareas'**
   String get todoEmptyStateTitle;
 
   /// No description provided for @todoEmptyStateBody.
@@ -3882,7 +3882,7 @@ abstract class AppLocalizations {
   /// No description provided for @monthlyElapsedDaysWeek.
   ///
   /// In es, this message translates to:
-  /// **'{elapsed} dias transcurridos Â· semana {week}'**
+  /// **'{elapsed} dias transcurridos · semana {week}'**
   String monthlyElapsedDaysWeek(int elapsed, int week);
 
   /// No description provided for @monthlyFilterSummaryFamily.
@@ -4050,7 +4050,7 @@ abstract class AppLocalizations {
   /// No description provided for @monthlySelectionLabel.
   ///
   /// In es, this message translates to:
-  /// **'{day}/{month} Â· {state}'**
+  /// **'{day}/{month} · {state}'**
   String monthlySelectionLabel(int day, int month, String state);
 
   /// No description provided for @monthlyCurrentMonthTooltip.

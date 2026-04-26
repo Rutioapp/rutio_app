@@ -278,8 +278,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
     try {
       final store = context.read<UserStateStore>();
 
-      // Ã¢Å“â€¦ Si el hÃƒÂ¡bito NO existe todavÃƒÂ­a en activeHabits, lo creamos (nuevo hÃƒÂ¡bito).
-      // Si ya existe, lo actualizamos (ediciÃƒÂ³n).
+      // ✅ Si el hábito NO existe todavía en activeHabits, lo creamos (nuevo hábito).
+      // Si ya existe, lo actualizamos (edición).
       final id = _habitId(updatedHabit);
       bool exists = false;
 
@@ -294,7 +294,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
       }
 
       if (!exists) {
-        // Creamos como hÃƒÂ¡bito custom (tambiÃƒÂ©n sirve para hÃƒÂ¡bitos de catÃƒÂ¡logo si traen 'id').
+        // Creamos como hábito custom (también sirve para hábitos de catálogo si traen 'id').
         if (updatedHabit is Map) {
           final map = Map<String, dynamic>.from(updatedHabit);
           await (store as dynamic).addCustomHabit(map);
@@ -459,7 +459,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Ã¢Å“â€¦ Fuente de verdad: si el store tiene el hÃƒÂ¡bito, usamos ese (evita volver a la versiÃƒÂ³n vieja al navegar)
+    // ✅ Fuente de verdad: si el store tiene el hábito, usamos ese (evita volver a la versión vieja al navegar)
     final String? id = _habitId(_habit);
     final storeHabit = (id == null || id.isEmpty)
         ? null
