@@ -31,6 +31,9 @@ class AccountRepository {
       final response = await _client.functions.invoke(
         'delete-account',
         method: HttpMethod.post,
+        headers: <String, String>{
+          'Authorization': 'Bearer ${session.accessToken}',
+        },
       );
 
       final data = response.data;
@@ -49,6 +52,11 @@ class AccountRepository {
     } on AccountDeletionException {
       rethrow;
     } on FunctionException catch (error) {
+      if (error.status == null) {
+        throw const AccountDeletionException(
+          AccountDeletionFailureReason.network,
+        );
+      }
       throw AccountDeletionException(
         error.status == 401
             ? AccountDeletionFailureReason.unauthenticated

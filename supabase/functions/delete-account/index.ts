@@ -81,14 +81,25 @@ Deno.serve(async (req) => {
     // Current code references profiles.id and user_progress.user_id.
     // Future user-owned tables should be added here before deleting auth.users.
     const userOwnedDeletes = [
-      adminClient.from('user_progress').delete().eq('user_id', user.id),
-      adminClient.from('profiles').delete().eq('id', user.id),
+      {
+        stage: 'user_progress',
+        request: () =>
+          adminClient.from('user_progress').delete().eq('user_id', user.id),
+      },
+      {
+        stage: 'profiles',
+        request: () =>
+          adminClient.from('profiles').delete().eq('id', user.id),
+      },
     ];
 
     for (const deleteRequest of userOwnedDeletes) {
-      const { error } = await deleteRequest;
+      const { error } = await deleteRequest.request();
       if (error) {
-        console.error('delete-account data cleanup failed', error.message);
+        console.error(
+          'delete-account data cleanup failed',
+          { stage: deleteRequest.stage, code: error.code ?? 'unknown' },
+        );
         return jsonResponse({ success: false, error: 'delete_failed' }, 500);
       }
     }
@@ -100,14 +111,17 @@ Deno.serve(async (req) => {
     if (deleteUserError) {
       console.error(
         'delete-account auth user delete failed',
-        deleteUserError.message,
+        { code: deleteUserError.code ?? 'unknown' },
       );
       return jsonResponse({ success: false, error: 'delete_failed' }, 500);
     }
 
     return jsonResponse({ success: true }, 200);
   } catch (error) {
-    console.error('delete-account unexpected error', error);
+    console.error(
+      'delete-account unexpected error',
+      error instanceof Error ? error.message : 'unknown',
+    );
     return jsonResponse({ success: false, error: 'unexpected_error' }, 500);
   }
 });

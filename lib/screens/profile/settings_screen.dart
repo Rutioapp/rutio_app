@@ -102,7 +102,7 @@ class SettingsScreen extends StatelessWidget {
       return;
     }
 
-    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
+    Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
     messenger.showSnackBar(
       SnackBar(
         content: Text(l10n.deleteAccountSuccess),
