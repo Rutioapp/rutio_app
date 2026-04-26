@@ -215,28 +215,47 @@ class AuthController extends ChangeNotifier {
 
   Future<void> _verifyProfileBootstrapRows() async {
     final profileRepository = _profileRepository;
-    if (profileRepository == null || !kDebugMode) return;
+    if (profileRepository == null) return;
+
+    final user = _currentUser ?? _authRepository.currentUser;
+    if (user == null) return;
 
     try {
-      final profile = await profileRepository.fetchCurrentUserProfile();
-      if (profile == null) {
-        debugPrint(
-          '[auth] Profile row not found for current Supabase user.',
-        );
-      } else {
-        debugPrint('[auth] profile verification succeeded');
+      final ensured = await profileRepository.ensureCurrentProfile(
+        email: user.email,
+        displayName: _firstNonEmpty(<String?>[
+          _normalizedValue(user.userMetadata?['display_name']),
+          _normalizedValue(user.userMetadata?['name']),
+        ]),
+        avatarUrl: _firstNonEmpty(<String?>[
+          _normalizedValue(user.userMetadata?['avatar_url']),
+          _normalizedValue(user.userMetadata?['avatarUrl']),
+        ]),
+      );
+
+      if (!ensured.isSuccess) {
+        if (kDebugMode) {
+          debugPrint(
+            '[auth] profile ensure failed: ${ensured.error?.message}',
+          );
+        }
+        return;
       }
 
-      final progress = await profileRepository.fetchCurrentUserProgress();
-      if (progress == null) {
-        debugPrint(
-          '[auth] warning: Supabase user created but user_progress row was not found. Check database trigger.',
-        );
-      } else {
-        debugPrint('[auth] user_progress verification succeeded');
+      if (ensured.data == null) {
+        if (kDebugMode) {
+          debugPrint('[auth] profile ensure returned no profile row.');
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        debugPrint('[auth] profile ensure succeeded');
       }
     } catch (error) {
-      debugPrint('[auth] warning: profile trigger verification failed: $error');
+      if (kDebugMode) {
+        debugPrint('[auth] warning: profile ensure failed: $error');
+      }
     }
   }
 
@@ -278,9 +297,24 @@ class AuthController extends ChangeNotifier {
         await _userStateStore.load();
       }
 
-      profile = await _profileRepository?.fetchCurrentUserProfile();
-      if (profile == null && kDebugMode) {
-        debugPrint('[auth] Profile row not found for current Supabase user.');
+      final profileResult = await _profileRepository?.fetchCurrentProfile();
+      if (profileResult != null && !profileResult.isSuccess) {
+        if (kDebugMode) {
+          debugPrint(
+            '[auth] profile fetch warning: ${profileResult.error?.message}',
+          );
+        }
+      }
+
+      final remoteProfile = profileResult?.data;
+      if (remoteProfile == null && kDebugMode) {
+        debugPrint(
+          '[auth] Profile row not found for current Supabase user.',
+        );
+      }
+
+      if (remoteProfile != null) {
+        profile = remoteProfile.toMap();
       }
 
       final remoteDisplayName = _normalizedValue(profile?['display_name']);
