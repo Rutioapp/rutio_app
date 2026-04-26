@@ -5,6 +5,11 @@ import '../mappers/habit_remote_mapper.dart';
 import '../repositories/habit_repository.dart';
 import '../repositories/repository_result.dart';
 
+typedef HabitRemoteIdAssignedCallback = Future<void> Function({
+  required String localHabitId,
+  required String remoteHabitId,
+});
+
 /// Best-effort remote mirroring for local habit mutations.
 ///
 /// This service must never throw into UI/store mutation flows.
@@ -19,6 +24,7 @@ class HabitSyncService {
     required Map<String, dynamic> localHabit,
     required int sortOrder,
     String? expectedLocalUserId,
+    HabitRemoteIdAssignedCallback? onRemoteIdAssigned,
   }) async {
     await _syncUpsert(
       operation: 'create',
@@ -26,6 +32,7 @@ class HabitSyncService {
       sortOrder: sortOrder,
       expectedLocalUserId: expectedLocalUserId,
       allowInsertWithoutRemoteId: true,
+      onRemoteIdAssigned: onRemoteIdAssigned,
     );
   }
 
@@ -129,6 +136,7 @@ class HabitSyncService {
     required int sortOrder,
     required String? expectedLocalUserId,
     required bool allowInsertWithoutRemoteId,
+    HabitRemoteIdAssignedCallback? onRemoteIdAssigned,
   }) async {
     try {
       final userId = _currentAuthenticatedUserId();
@@ -182,8 +190,29 @@ class HabitSyncService {
         return;
       }
 
+      final syncedRemoteHabitId = (syncedHabit.id ?? '').trim();
+      if (syncedRemoteHabitId.isEmpty) {
+        _debugWarn(
+          'habit sync $operation ignored response: missing remote UUID in payload',
+        );
+        return;
+      }
+
       if (localId != null && localId.isNotEmpty) {
-        _sessionRemoteIdByLocalId[localId] = syncedHabit.id;
+        _sessionRemoteIdByLocalId[localId] = syncedRemoteHabitId;
+
+        if (onRemoteIdAssigned != null) {
+          try {
+            await onRemoteIdAssigned(
+              localHabitId: localId,
+              remoteHabitId: syncedRemoteHabitId,
+            );
+          } catch (error) {
+            _debugWarn(
+              'habit sync $operation failed to persist remoteId locally: $error',
+            );
+          }
+        }
       }
     } catch (error) {
       _debugWarn('habit sync $operation unexpected error: $error');

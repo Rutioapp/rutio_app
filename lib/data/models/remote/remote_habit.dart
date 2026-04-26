@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 @immutable
 class RemoteHabit {
   const RemoteHabit({
-    required this.id,
+    this.id,
     required this.userId,
     required this.name,
     this.familyId,
@@ -21,7 +21,7 @@ class RemoteHabit {
     this.raw = const <String, dynamic>{},
   });
 
-  final String id;
+  final String? id;
   final String userId;
   final String name;
   final String? familyId;
@@ -42,7 +42,7 @@ class RemoteHabit {
     final normalizedHabitType = _normalizeHabitType(map['habit_type']);
 
     return RemoteHabit(
-      id: (map['id'] ?? '').toString().trim(),
+      id: _nullableTrim(map['id']),
       userId: (map['user_id'] ?? map['userId'] ?? '').toString().trim(),
       name: (map['name'] ?? 'Habit').toString().trim(),
       familyId: _nullableTrim(map['family_id'] ?? map['familyId']),
@@ -79,8 +79,9 @@ class RemoteHabit {
       'emoji': emoji,
     };
 
-    if (id.isNotEmpty) {
-      payload['id'] = id;
+    final remoteId = _nullableTrim(id);
+    if (remoteId != null) {
+      payload['id'] = remoteId;
     }
 
     payload.removeWhere((_, value) => value == null);
@@ -93,9 +94,16 @@ class RemoteHabit {
     Map<String, dynamic> local, {
     required String userId,
   }) {
-    final rawId =
-        (local['id'] ?? local['habitId'] ?? '').toString().trim().toLowerCase();
-    final normalizedId = _isUuid(rawId) ? rawId : '';
+    final rawRemoteId = (local['remoteId'] ??
+            local['remoteHabitId'] ??
+            local['supabaseHabitId'] ??
+            local['id'] ??
+            local['habitId'] ??
+            '')
+        .toString()
+        .trim()
+        .toLowerCase();
+    final normalizedId = _isUuid(rawRemoteId) ? rawRemoteId : null;
 
     final rawType = (local['type'] ?? '').toString().trim().toLowerCase();
 

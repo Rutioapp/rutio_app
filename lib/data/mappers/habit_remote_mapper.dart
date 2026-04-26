@@ -26,10 +26,9 @@ class HabitRemoteMapper {
 
     return RemoteHabit(
       id: extractRemoteHabitId(
-            localHabit,
-            remoteHabitIdOverride: remoteHabitIdOverride,
-          ) ??
-          '',
+        localHabit,
+        remoteHabitIdOverride: remoteHabitIdOverride,
+      ),
       userId: userId,
       name: _requiredName(localHabit),
       familyId: _nullableTrim(localHabit['familyId']),
@@ -78,9 +77,21 @@ class HabitRemoteMapper {
       return override.toLowerCase();
     }
 
+    final persistedRemoteId = _nullableTrim(
+      localHabit['remoteId'] ??
+          localHabit['remoteHabitId'] ??
+          localHabit['supabaseHabitId'],
+    );
+    if (persistedRemoteId != null && _isUuid(persistedRemoteId)) {
+      return persistedRemoteId.toLowerCase();
+    }
+
     final localId = extractLocalHabitId(localHabit);
-    if (localId == null || !_isUuid(localId)) return null;
-    return localId.toLowerCase();
+    if (localId != null && _isUuid(localId)) {
+      return localId.toLowerCase();
+    }
+
+    return null;
   }
 
   static bool isUuid(String value) => _isUuid(value.trim());

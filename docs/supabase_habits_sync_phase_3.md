@@ -1,100 +1,74 @@
-# Supabase Habits Sync - Phase 3A (Best-Effort Local Mirroring)
+# Supabase Habits Sync - Phase 3B (Persistent Remote Habit ID)
 
 Date: April 26, 2026  
-Branch: `feature/supabase-habits-sync`
+Branch: `feature/supabase-habit-remote-id`
 
-## What Is Synced Now
+## What Changed In Phase 3B
 
-When a user is authenticated in Supabase, local habit mutations in `UserStateStore` now trigger best-effort remote writes to `public.habits`:
+Rutio now persists the Supabase habit UUID in local habit maps using `remoteId`.
 
-- Create habit locally -> remote insert/upsert attempt.
-- Edit habit locally -> remote upsert attempt (only when a safe remote UUID mapping exists).
-- Archive/unarchive habit locally -> remote upsert attempt (only when a safe remote UUID mapping exists).
-- Delete habit locally -> remote delete attempt (only when a safe remote UUID mapping exists).
+- Local create still happens first.
+- Remote create still runs as best-effort.
+- When remote create succeeds, returned `public.habits.id` is saved into the matching local habit as `remoteId`.
+- Update/archive/delete now read the persisted `remoteId`, so remote mirroring continues working after app restarts.
 
-All remote writes remain scoped by authenticated Supabase session user.
+All remote writes remain scoped to the authenticated Supabase user.
 
-## Local-First Behavior (Still Preserved)
+## Local-First Behavior (Preserved)
 
-- Local mutation is the source of truth.
-- Local save succeeds even if Supabase write fails.
-- Remote sync failures are debug warnings only (`kDebugMode`), with no new user-facing error UI.
-- Offline behavior remains usable.
+- Local mutation remains the source of truth.
+- Local save succeeds even when Supabase write fails.
+- Remote failures are debug warnings only in `kDebugMode`.
+- No new user-facing sync error UI is introduced.
 
-## Current Local Habit Model Reality
+## Local Habit Identity Rules
 
-Rutio still uses map-based habits (`List<Map<String, dynamic>> activeHabits`), not a single typed `Habit` entity.
+Rutio still keeps its existing local habit `id` unchanged.
 
-Common keys observed in create/edit/store flows:
+- `id` remains local identity (catalog/custom/non-UUID values are still valid).
+- `remoteId` stores the Supabase UUID when available.
+- Missing `remoteId` means "not synced yet" and is valid.
 
-- `id` (fallback aliases read: `habitId`, `uuid`, `key`)
-- `name` / `title`
-- `familyId`
-- `emoji` / `habitEmoji`
-- `type` (normalized to `check`/`count`; alternate edit aliases: `trackingType`, `habitType`, `tracking`)
-- `target` / `targetCount` / `goal` / `times` / `timesPerWeekTarget`
-- `unit` / `unitLabel` / `counterUnit`
-- `colorId` (optional, not broadly present yet)
-- `reminderEnabled` / `remindersEnabled`
-- `reminderTime`
-- `archived` / `isArchived`
-- `sortOrder` (usually absent; list index is used as fallback for remote `sort_order`)
-- `createdAt` / `updatedAt` (optional and inconsistent in local maps)
+No startup migration is required; existing local habits without `remoteId` continue working locally.
 
-## Local -> Remote Mapping Used
+## Local -> Remote Mapping
 
-`HabitRemoteMapper` maps local habit maps to `RemoteHabit`:
+`HabitRemoteMapper` now resolves remote habit identity in this order:
 
-- `name/title` -> `name`
-- `familyId` -> `family_id`
-- `emoji/habitEmoji` -> `emoji`
-- normalized local type -> `habit_type` (`check` or `count`)
-- local target fields -> `target_count` (count habits always get a positive target; check habits keep only meaningful values)
-- `unit/unitLabel/counterUnit` -> `unit` (count habits)
-- `colorId/familyColorId` -> `color_id`
-- reminder flags -> `reminder_enabled`
-- `reminderTime` (normalized to `HH:mm:ss`) -> `reminder_time`
-- `archived/isArchived` -> `is_archived`
-- `sortOrder` or active list index -> `sort_order`
+1. Explicit override (session/runtime).
+2. Persisted local `remoteId` (plus accepted aliases).
+3. Local `id` only if it is already a UUID.
 
-## Local ID vs Supabase UUID Limitation
+Write mapping to `public.habits` columns is unchanged (`name`, `family_id`, `emoji`, `habit_type`, `target_count`, `unit`, `color_id`, `reminder_enabled`, `reminder_time`, `is_archived`, `sort_order`).
 
-Supabase `habits.id` is UUID, while many local habit IDs are non-UUID strings (for example `custom_...` or catalog IDs).
+## Repository Write Behavior
 
-Current safe strategy:
+`HabitRepository` now handles write intent explicitly:
 
-- On create, if local ID is not UUID, remote write inserts without forcing `id` (DB generates UUID).
-- No risky local schema migration is done in this phase.
-- No persistent `localId <-> remoteId` mapping is stored yet.
-- An in-memory session map is used only to continue syncing updates/deletes for habits created during the same app session.
+- No remote id provided -> insert row and let Supabase generate `id`.
+- Remote id provided -> update by `user_id + id`; if no row updated, insert with that id.
 
-Consequence:
+Repository always forces `user_id` from current auth session and never trusts local `user_id`.
 
-- Updates/archive/delete for older non-UUID local habits can be skipped remotely after app restart (no safe UUID mapping available yet).
+## Existing Habits Without `remoteId`
 
-## What Remains Local-Only
+Existing habits created before Phase 3B may not have `remoteId`.
 
-- Habit logs (`habit_logs`) are not connected yet.
-- XP, coins, progression, achievement unlock state, diary/journal data remain local-first and unchanged in this phase.
-- No remote-to-local pull, startup download, or two-way sync is enabled yet.
+- They remain fully usable locally.
+- Remote update/archive/delete is safely skipped until a future backfill phase assigns remote IDs.
+- No crash or blocking behavior is introduced.
 
-## Why `habit_logs` Is Not Connected Yet
+## What Remains Intentionally Not Synced
 
-Habit logs require durable habit identity mapping and conflict-safe replay rules (`user_id`, `habit_id`, `log_date` uniqueness). Without persistent habit ID mapping first, log sync can produce orphaned or duplicated remote data.
+- No two-way sync.
+- No startup remote habit download.
+- No startup bulk upload of all local habits.
+- No `habit_logs` sync yet.
+- No XP/coins/achievements/journal/diary remote wiring in this phase.
 
-## Phase 3B Plan
+## Next: Phase 3C
 
-1. Add persistent local `remoteId` mapping (or equivalent local-to-remote identity table).
-2. Run a one-time, guarded backfill upload of existing local habits.
-3. Add remote habit fetch for clean-device sign-in bootstrap.
-4. After identity is stable, wire `habit_logs` with conflict-safe upserts.
-
-## Manual Test Checklist
-
-1. Sign in (or create account) with Supabase-enabled config.
-2. Create a habit and confirm local UI updates immediately.
-3. Confirm row appears in `public.habits` for current user.
-4. Edit/archive/delete and verify local UI still works with no red screen.
-5. Verify logout still works.
-6. Verify achievements behavior is unchanged.
-7. Repeat with network disabled to confirm local-first behavior remains usable.
+1. Explicit one-time upload/backfill for existing local habits without `remoteId`.
+2. Guarded duplicate prevention during backfill.
+3. Remote habit fetch/bootstrap for clean-device sign-in.
+4. After habit identity is stable, connect `habit_logs` sync.

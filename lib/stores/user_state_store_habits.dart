@@ -94,6 +94,48 @@ int _activeHabitIndex(
   );
 }
 
+String? _normalizedRemoteHabitId(dynamic value) {
+  final normalized = (value ?? '').toString().trim();
+  if (normalized.isEmpty) return null;
+  return normalized;
+}
+
+String? _habitRemoteIdValue(Map<String, dynamic> habit) {
+  return _normalizedRemoteHabitId(
+    habit['remoteId'] ?? habit['remoteHabitId'] ?? habit['supabaseHabitId'],
+  );
+}
+
+Future<void> _persistHabitRemoteId(
+  UserStateStore store, {
+  required String localHabitId,
+  required String remoteHabitId,
+}) async {
+  final normalizedLocalId = localHabitId.trim();
+  final normalizedRemoteId = remoteHabitId.trim();
+  if (normalizedLocalId.isEmpty || normalizedRemoteId.isEmpty) return;
+
+  final root = store._state;
+  if (root == null) return;
+
+  final userState = _ensureUserStateRoot(root);
+  _ensureDailyReset(userState);
+  _ensureActiveHabitIds(userState);
+
+  final activeHabits = _mutableActiveHabits(userState);
+  final index = _activeHabitIndex(activeHabits, normalizedLocalId);
+  if (index == -1) return;
+
+  final current = Map<String, dynamic>.from(activeHabits[index]);
+  final existingRemoteId = _habitRemoteIdValue(current);
+  if (existingRemoteId == normalizedRemoteId) return;
+
+  current['remoteId'] = normalizedRemoteId;
+  activeHabits[index] = current;
+  userState['activeHabits'] = activeHabits;
+  await store.save(root);
+}
+
 String _normalizedHabitType(dynamic rawType) {
   final value = (rawType ?? 'check').toString().trim().toLowerCase();
   return value == 'count' || value == 'counter' || value == 'number'
@@ -225,6 +267,7 @@ Future<void> _addHabitFromCatalog(
 
   final normalizedRoutine =
       routine == null || routine.trim().isEmpty ? null : routine.trim();
+  final initialRemoteId = _habitRemoteIdValue(habitDef);
 
   activeHabits.add(<String, dynamic>{
     'id': id,
@@ -244,6 +287,7 @@ Future<void> _addHabitFromCatalog(
       weekdays: weekdays,
     ),
     'routine': normalizedRoutine,
+    if (initialRemoteId != null) 'remoteId': initialRemoteId,
   });
 
   userState['activeHabits'] = activeHabits;
@@ -255,6 +299,15 @@ Future<void> _addHabitFromCatalog(
       localHabit: createdHabit,
       sortOrder: activeHabits.length - 1,
       expectedLocalUserId: store.userId,
+      onRemoteIdAssigned: ({
+        required String localHabitId,
+        required String remoteHabitId,
+      }) =>
+          _persistHabitRemoteId(
+            store,
+            localHabitId: localHabitId,
+            remoteHabitId: remoteHabitId,
+          ),
     ),
   );
 }
@@ -295,6 +348,7 @@ Future<void> _addCustomHabit(
       (habit['emoji'] ?? habit['habitEmoji'] ?? '').toString().trim();
   final resolvedEmoji =
       rawEmoji.isNotEmpty ? rawEmoji : FamilyTheme.emojiOf(resolvedFamilyId);
+  final initialRemoteId = _habitRemoteIdValue(habit);
 
   activeHabits.add(<String, dynamic>{
     'id': id,
@@ -315,6 +369,7 @@ Future<void> _addCustomHabit(
     'reminderEnabled':
         habit['reminderEnabled'] == true || habit['remindersEnabled'] == true,
     'reminderTime': habit['reminderTime'],
+    if (initialRemoteId != null) 'remoteId': initialRemoteId,
   });
 
   userState['activeHabits'] = activeHabits;
@@ -326,6 +381,15 @@ Future<void> _addCustomHabit(
       localHabit: createdHabit,
       sortOrder: activeHabits.length - 1,
       expectedLocalUserId: store.userId,
+      onRemoteIdAssigned: ({
+        required String localHabitId,
+        required String remoteHabitId,
+      }) =>
+          _persistHabitRemoteId(
+            store,
+            localHabitId: localHabitId,
+            remoteHabitId: remoteHabitId,
+          ),
     ),
   );
 }
@@ -498,6 +562,11 @@ Future<void> _updateHabitDetailsFromEdit(
   final newEmoji = (patch['emoji'] ?? patch['habitEmoji'])?.toString();
   if (newEmoji != null && newEmoji.trim().isNotEmpty) {
     current['emoji'] = newEmoji.trim();
+  }
+
+  final patchRemoteId = _habitRemoteIdValue(patch);
+  if (patchRemoteId != null) {
+    current['remoteId'] = patchRemoteId;
   }
 
   if (patch.containsKey('notes')) current['notes'] = patch['notes'];

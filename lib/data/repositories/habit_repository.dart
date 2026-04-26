@@ -84,27 +84,20 @@ updated_at
 
     final payload = Map<String, dynamic>.from(habit.toUpsertMap());
     payload['user_id'] = userId;
+    final remoteHabitId = (habit.id ?? '').trim();
 
     try {
-      final row = await _client
-          .from(_habitsTable)
-          .upsert(payload, onConflict: 'id')
-          .select(_habitColumns)
-          .single();
-      final remoteHabit = RemoteHabit.fromMap(Map<String, dynamic>.from(row));
-      final expectedId = habit.id.trim();
-      if (remoteHabit.userId != userId ||
-          (expectedId.isNotEmpty && remoteHabit.id != expectedId)) {
-        return RepositoryResult<RemoteHabit>.failure(
-          const RepositoryError(
-            code: RepositoryErrorCode.invalidResponse,
-            message: 'Habit upsert response did not match current user.',
-          ),
+      if (remoteHabitId.isEmpty) {
+        return await _insertHabitForCurrentUser(
+          payload: payload,
+          userId: userId,
         );
       }
 
-      return RepositoryResult<RemoteHabit>.success(
-        data: remoteHabit,
+      return await _updateOrInsertHabitForCurrentUser(
+        payload: payload,
+        userId: userId,
+        remoteHabitId: remoteHabitId,
       );
     } on PostgrestException catch (error) {
       return RepositoryResult<RemoteHabit>.failure(
@@ -125,6 +118,85 @@ updated_at
         ),
       );
     }
+  }
+
+  Future<RepositoryResult<RemoteHabit>> _insertHabitForCurrentUser({
+    required Map<String, dynamic> payload,
+    required String userId,
+  }) async {
+    final row = await _client
+        .from(_habitsTable)
+        .insert(payload)
+        .select(_habitColumns)
+        .single();
+
+    final remoteHabit = RemoteHabit.fromMap(Map<String, dynamic>.from(row));
+    return _validateScopedHabit(
+      remoteHabit: remoteHabit,
+      userId: userId,
+      expectedHabitId: null,
+    );
+  }
+
+  Future<RepositoryResult<RemoteHabit>> _updateOrInsertHabitForCurrentUser({
+    required Map<String, dynamic> payload,
+    required String userId,
+    required String remoteHabitId,
+  }) async {
+    final updatePayload = Map<String, dynamic>.from(payload)..remove('id');
+
+    final updatedRows = await _client
+        .from(_habitsTable)
+        .update(updatePayload)
+        .eq('user_id', userId)
+        .eq('id', remoteHabitId)
+        .select(_habitColumns);
+
+    if (updatedRows.isNotEmpty) {
+      final remoteHabit = RemoteHabit.fromMap(
+        Map<String, dynamic>.from(updatedRows.first as Map),
+      );
+      return _validateScopedHabit(
+        remoteHabit: remoteHabit,
+        userId: userId,
+        expectedHabitId: remoteHabitId,
+      );
+    }
+
+    final row = await _client
+        .from(_habitsTable)
+        .insert(payload)
+        .select(_habitColumns)
+        .single();
+
+    final remoteHabit = RemoteHabit.fromMap(Map<String, dynamic>.from(row));
+    return _validateScopedHabit(
+      remoteHabit: remoteHabit,
+      userId: userId,
+      expectedHabitId: remoteHabitId,
+    );
+  }
+
+  RepositoryResult<RemoteHabit> _validateScopedHabit({
+    required RemoteHabit remoteHabit,
+    required String userId,
+    required String? expectedHabitId,
+  }) {
+    final actualHabitId = (remoteHabit.id ?? '').trim();
+    final expectedId = (expectedHabitId ?? '').trim();
+
+    if (remoteHabit.userId != userId ||
+        actualHabitId.isEmpty ||
+        (expectedId.isNotEmpty && actualHabitId != expectedId)) {
+      return RepositoryResult<RemoteHabit>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Habit upsert response did not match current user.',
+        ),
+      );
+    }
+
+    return RepositoryResult<RemoteHabit>.success(data: remoteHabit);
   }
 
   Future<RepositoryResult<void>> deleteHabitForCurrentUser({
