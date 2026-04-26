@@ -11,15 +11,37 @@ The app expects compile-time Dart defines:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 
-Run example:
+## Recommended local run setup
+
+Use a local Dart define file for daily development instead of typing both
+values every run.
+
+1. Copy the example file:
 
 ```bash
-flutter run \
-  --dart-define=SUPABASE_URL=https://xxxxx.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=sb_publishable_xxxxx
+cp .env/dev.example.json .env/dev.json
 ```
 
-Do not commit real project keys.
+PowerShell equivalent:
+
+```powershell
+Copy-Item .env/dev.example.json .env/dev.json
+```
+
+2. Fill `.env/dev.json` with your real project values.
+3. Run the app with:
+
+```bash
+flutter run --dart-define-from-file=.env/dev.json
+```
+
+Real Supabase credentials must never be committed to Git.
+
+### Why `SUPABASE_ANON_KEY`
+
+Supabase currently calls this key "publishable" in some places, but this app
+still reads it from `SUPABASE_ANON_KEY`. Keep using that variable name in your
+local define file so no runtime code changes are needed.
 
 ## Current behavior
 

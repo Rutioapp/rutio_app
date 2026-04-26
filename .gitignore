@@ -57,3 +57,7 @@ android/.gradle/
 android/key.properties
 android/key.properties.properties
 upload-keystore.jks
+
+# Local environment files (keep only safe examples tracked)
+.env/*.json
+!.env/dev.example.json
