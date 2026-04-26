@@ -116,11 +116,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await _showDeleteAccountConfirmation(context);
     if (!confirmed || !context.mounted) return;
 
+    final navigator = Navigator.of(context);
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
+    var isLoadingDialogOpen = false;
+
+    void closeLoadingDialog() {
+      if (!isLoadingDialogOpen) return;
+      if (rootNavigator.mounted && rootNavigator.canPop()) {
+        rootNavigator.pop();
+      }
+      isLoadingDialogOpen = false;
+    }
 
     showDialog<void>(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
       builder: (_) => PopScope(
         canPop: false,
@@ -139,25 +151,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+    isLoadingDialogOpen = true;
 
     try {
       await context.read<UserStateStore>().deleteAccount();
+      closeLoadingDialog();
+      if (!context.mounted) return;
+      navigator.pushNamedAndRemoveUntil('/welcome', (_) => false);
     } catch (_) {
+      closeLoadingDialog();
       if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
         messenger.showSnackBar(
           SnackBar(content: Text(l10n.settingsDeleteAccountError)),
         );
       }
-      return;
+    } finally {
+      closeLoadingDialog();
     }
-
-    if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pop();
-    messenger.showSnackBar(
-        SnackBar(content: Text(l10n.settingsDeleteAccountSuccess)));
-
-    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
 
   Future<bool> _showDeleteAccountConfirmation(BuildContext context) async {
@@ -167,96 +177,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Localizations.localeOf(context).languageCode == 'es'
             ? 'ELIMINAR'
             : 'DELETE';
-    final textController = TextEditingController();
+    var confirmationInput = '';
 
     bool matchesConfirmation() =>
-        textController.text.trim().toUpperCase() == requiredConfirmationWord;
+        confirmationInput.trim().toUpperCase() == requiredConfirmationWord;
 
-    try {
-      if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
-        final result = await showCupertinoDialog<bool>(
-          context: context,
-          builder: (dialogContext) => StatefulBuilder(
-            builder: (modalContext, setModalState) => CupertinoAlertDialog(
-              title: Text(l10n.settingsDeleteAccountConfirmationTitle),
-              content: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  Text(l10n.settingsDeleteAccountMessage),
-                  const SizedBox(height: 12),
-                  Text(l10n.settingsDeleteAccountTypeToConfirm),
-                  const SizedBox(height: 8),
-                  CupertinoTextField(
-                    controller: textController,
-                    autocorrect: false,
-                    textCapitalization: TextCapitalization.characters,
-                    onChanged: (_) => setModalState(() {}),
-                  ),
-                ],
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
-                  child: Text(l10n.commonCancel),
-                ),
-                CupertinoDialogAction(
-                  isDestructiveAction: true,
-                  onPressed: matchesConfirmation()
-                      ? () => Navigator.of(dialogContext).pop(true)
-                      : null,
-                  child: Text(l10n.settingsDeleteAccountConfirm),
-                ),
-              ],
-            ),
-          ),
-        );
-        return result == true;
-      }
-
-      final result = await showDialog<bool>(
+    if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
+      final result = await showCupertinoDialog<bool>(
         context: context,
         builder: (dialogContext) => StatefulBuilder(
-          builder: (modalContext, setModalState) => AlertDialog(
+          builder: (modalContext, setModalState) => CupertinoAlertDialog(
             title: Text(l10n.settingsDeleteAccountConfirmationTitle),
             content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 8),
                 Text(l10n.settingsDeleteAccountMessage),
                 const SizedBox(height: 12),
                 Text(l10n.settingsDeleteAccountTypeToConfirm),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: textController,
+                CupertinoTextField(
                   autocorrect: false,
                   textCapitalization: TextCapitalization.characters,
-                  onChanged: (_) => setModalState(() {}),
+                  onChanged: (value) {
+                    confirmationInput = value;
+                    setModalState(() {});
+                  },
                 ),
               ],
             ),
             actions: [
-              TextButton(
+              CupertinoDialogAction(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
                 child: Text(l10n.commonCancel),
               ),
-              TextButton(
+              CupertinoDialogAction(
+                isDestructiveAction: true,
                 onPressed: matchesConfirmation()
                     ? () => Navigator.of(dialogContext).pop(true)
                     : null,
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFC43C3C),
-                ),
                 child: Text(l10n.settingsDeleteAccountConfirm),
               ),
             ],
           ),
         ),
       );
-
       return result == true;
-    } finally {
-      textController.dispose();
     }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (modalContext, setModalState) => AlertDialog(
+          title: Text(l10n.settingsDeleteAccountConfirmationTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.settingsDeleteAccountMessage),
+              const SizedBox(height: 12),
+              Text(l10n.settingsDeleteAccountTypeToConfirm),
+              const SizedBox(height: 8),
+              TextField(
+                autocorrect: false,
+                textCapitalization: TextCapitalization.characters,
+                onChanged: (value) {
+                  confirmationInput = value;
+                  setModalState(() {});
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.commonCancel),
+            ),
+            TextButton(
+              onPressed: matchesConfirmation()
+                  ? () => Navigator.of(dialogContext).pop(true)
+                  : null,
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFC43C3C),
+              ),
+              child: Text(l10n.settingsDeleteAccountConfirm),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return result == true;
   }
 
   Future<bool> _showLogoutConfirmation(BuildContext context) async {
