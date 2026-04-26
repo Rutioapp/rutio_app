@@ -121,7 +121,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeEmptyStateMultiline =>
-      'You still have no active habits.`nTap “New” to add your first one.';
+      'You still have no active habits.\nTap “New” to add your first one.';
 
   @override
   String get homeEmptyStateSingleLine =>

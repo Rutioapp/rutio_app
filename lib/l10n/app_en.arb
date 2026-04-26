@@ -55,7 +55,7 @@
                                                              }
                                                }
                           },
-    "homeEmptyStateMultiline":  "You still have no active habits.`nTap “New” to add your first one.",
+    "homeEmptyStateMultiline":  "You still have no active habits.\nTap “New” to add your first one.",
     "homeEmptyStateSingleLine":  "You still have no active habits. Tap “New” to add your first one.",
     "homeEditCounterTitle":  "Edit counter",
     "homeEditCounterHint":  "Enter a number",

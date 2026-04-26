@@ -1,1149 +1,1147 @@
-﻿{
-    "splashTagline":  "CONSTRUYE TU CAMINO",
-    "splashTapToStart":  "TOCA PARA COMENZAR",
-    "welcomeBrand":  "RUTIO",
-    "welcomeTitleLine1":  "Tu camino\n",
-    "welcomeTitleLine2":  "empieza hoy.",
-    "welcomeSubtitle":  "PequeÃ±os pasos,\ngrandes cambios.",
-    "welcomeLoginButton":  "Iniciar sesiÃ³n",
-    "welcomeSignupButton":  "Crear cuenta",
-    "loginHeaderSubtitle":  "Bienvenido de vuelta",
-    "loginTitle":  "Iniciar sesiÃ³n",
-    "loginSubtitle":  "ContinÃºa donde lo dejaste",
-    "loginPasswordHint":  "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢",
-    "loginForgotPassword":  "Â¿Olvidaste tu contraseÃ±a?",
-    "loginPrimaryCta":  "Continuar â†’",
-    "loginSwitchPrefix":  "Â¿No tienes cuenta?  ",
-    "loginSwitchLink":  "RegÃ­strate",
-    "signupHeaderSubtitle":  "Empieza tu camino",
-    "signupTitle":  "Crear cuenta",
-    "signupSubtitle":  "Un pequeÃ±o paso hacia tus metas",
-    "signupNameLabel":  "Nombre",
-    "signupNameHint":  "Â¿CÃ³mo te llamas?",
-    "signupPasswordHint":  "MÃ­n. 8 caracteres",
-    "signupPrimaryCta":  "Comenzar â†’",
-    "signupSwitchPrefix":  "Â¿Ya tienes cuenta?  ",
-    "signupSwitchLink":  "Inicia sesiÃ³n",
-    "fieldEmailLabel":  "Email",
-    "fieldEmailHint":  "tu@email.com",
-    "fieldPasswordLabel":  "ContraseÃ±a",
-    "homeErrorMessage":  "Error: {error}",
-    "@homeErrorMessage":  {
-                              "placeholders":  {
-                                                   "error":  {
-                                                                 "type":  "String"
-                                                             }
-                                               }
-                          },
-    "homeFallbackUsername":  "Usuario",
-    "homeFallbackHabitTitle":  "HÃ¡bito",
-    "homeHabitCompletionBurstDefault":  "+XP",
-    "homeCompletedLabel":  "Completados ",
-    "homeCompletedCount":  "Completados ({count})",
-    "@homeCompletedCount":  {
-                                "placeholders":  {
-                                                     "count":  {
-                                                                   "type":  "String"
-                                                               }
-                                                 }
-                            },
-    "homeSkippedCount":  "Skipeados ({count})",
-    "@homeSkippedCount":  {
-                              "placeholders":  {
-                                                   "count":  {
-                                                                 "type":  "String"
-                                                             }
-                                               }
-                          },
-    "homeEmptyStateMultiline":  "AÃºn no tienes hÃ¡bitos activos.`nPulsa â€œNuevoâ€ para aÃ±adir el primero.",
-    "homeEmptyStateSingleLine":  "AÃºn no tienes hÃ¡bitos activos. Pulsa â€œNuevoâ€ para aÃ±adir el primero.",
-    "homeEditCounterTitle":  "Editar contador",
-    "homeEditCounterHint":  "Introduce un nÃºmero",
-    "homeInputValueHint":  "Introduce un valor",
-    "commonCancel":  "Cancelar",
-    "commonSave":  "Guardar",
-    "commonClose":  "Cerrar",
-    "commonAdd":  "AÃ±adir",
-    "homeHabitCountProgress":  "{current} de {target}",
-    "@homeHabitCountProgress":  {
-                                    "placeholders":  {
-                                                         "current":  {
-                                                                         "type":  "String"
-                                                                     },
-                                                         "target":  {
-                                                                        "type":  "String"
-                                                                    }
-                                                     }
-                                },
-    "homeHabitCountProgressWithUnit":  "{current} de {target} {unit}",
-    "@homeHabitCountProgressWithUnit":  {
-                                            "placeholders":  {
-                                                                 "current":  {
-                                                                                 "type":  "String"
-                                                                             },
-                                                                 "target":  {
-                                                                                "type":  "String"
-                                                                            },
-                                                                 "unit":  {
-                                                                              "type":  "String"
-                                                                          }
-                                                             }
-                                        },
-    "homeAddHabitLoadError":  "No se pudo cargar el catÃ¡logo",
-    "homeAddHabitCreated":  "Se ha creado \"{name}\"",
-    "@homeAddHabitCreated":  {
-                                 "placeholders":  {
-                                                      "name":  {
-                                                                   "type":  "String"
-                                                               }
-                                                  }
-                             },
-    "homeAddHabitCreatedGeneric":  "HÃ¡bito creado",
-    "homeAddHabitCreateFromScratch":  "Crear hÃ¡bito desde cero",
-    "habitConfigTypeSection":  "Tipo",
-    "habitConfigCheckOption":  "Check",
-    "habitConfigCounterOption":  "Contador",
-    "habitConfigGoalSection":  "Objetivo",
-    "habitConfigGoalSectionWithUnit":  "Objetivo ({unit})",
-    "@habitConfigGoalSectionWithUnit":  {
-                                            "placeholders":  {
-                                                                 "unit":  {
-                                                                              "type":  "String"
-                                                                          }
-                                                             }
-                                        },
-    "habitConfigFrequencySection":  "Frecuencia",
-    "habitConfigDailyOption":  "Diario",
-    "habitConfigWeeklyOption":  "Semanal",
-    "habitConfigOnceOption":  "Una vez",
-    "habitConfigDaysSection":  "DÃ­as",
-    "habitConfigDateSection":  "Fecha",
-    "habitConfigChooseDate":  "Elegir fecha",
-    "habitConfigInvalidGoal":  "Pon un objetivo vÃ¡lido (mayor que 0).",
-    "habitConfigSelectDay":  "Selecciona al menos un dÃ­a.",
-    "habitConfigSelectDate":  "Selecciona una fecha.",
-    "weekdayShortMon":  "Lun",
-    "weekdayShortTue":  "Mar",
-    "weekdayShortWed":  "MiÃ©",
-    "weekdayShortThu":  "Jue",
-    "weekdayShortFri":  "Vie",
-    "weekdayShortSat":  "SÃ¡b",
-    "weekdayShortSun":  "Dom",
-    "weekdayLetterMon":  "L",
-    "weekdayLetterTue":  "M",
-    "weekdayLetterWed":  "X",
-    "weekdayLetterThu":  "J",
-    "weekdayLetterFri":  "V",
-    "weekdayLetterSat":  "S",
-    "weekdayLetterSun":  "D",
-    "unitTimesShort":  "veces",
-    "unitMinutesShort":  "min",
-    "unitHoursShort":  "h",
-    "unitPagesShort":  "pÃ¡ginas",
-    "unitStepsShort":  "pasos",
-    "unitKilometersShort":  "km",
-    "unitLitersShort":  "L",
-    "familyMindName":  "Mente",
-    "familySpiritName":  "EspÃ­ritu",
-    "familyBodyName":  "Cuerpo",
-    "familyEmotionalName":  "Emocional",
-    "familySocialName":  "Social",
-    "familyDisciplineName":  "Disciplina",
-    "familyProfessionalName":  "Profesional",
-    "catalogHabitLeerXMinutos":  "Leer",
-    "catalogHabitLeerXMinutosTarget":  "Leer {target} minutos",
-    "@catalogHabitLeerXMinutosTarget":  {
-                                            "placeholders":  {
-                                                                 "target":  {
-                                                                                "type":  "String"
-                                                                            }
-                                                             }
-                                        },
-    "catalogHabitResolverProblemaLogico":  "Resolver un problema lÃ³gico",
-    "catalogHabitEscribirIdeasReflexiones":  "Escribir ideas o reflexiones",
-    "catalogHabitEstudiarXTiempo":  "Estudiar",
-    "catalogHabitEstudiarXTiempoTarget":  "Estudiar {target} horas",
-    "@catalogHabitEstudiarXTiempoTarget":  {
-                                               "placeholders":  {
-                                                                    "target":  {
-                                                                                   "type":  "String"
-                                                                               }
-                                                                }
-                                           },
-    "catalogHabitAprenderIdioma":  "Practicar un idioma",
-    "catalogHabitEscucharPodcastEducativo":  "Escuchar podcast educativo",
-    "catalogHabitTomarNotas":  "Tomar notas del dÃ­a",
-    "catalogHabitJuegoMental":  "Juego mental o rompecabezas",
-    "catalogHabitPracticarEscrituraCreativa":  "Escritura creativa",
-    "catalogHabitRepasarNotas":  "Repasar notas del dÃ­a",
-    "catalogHabitVerDocumental":  "Ver un documental o vÃ­deo educativo",
-    "catalogHabitMeditar":  "Meditar",
-    "catalogHabitPracticarGratitud":  "Practicar gratitud",
-    "catalogHabitRespiracionConsciente":  "RespiraciÃ³n consciente",
-    "catalogHabitReflexionPersonal":  "ReflexiÃ³n personal",
-    "catalogHabitOracionConexionEspiritual":  "OraciÃ³n o conexiÃ³n espiritual",
-    "catalogHabitRevisarAprendizajesDia":  "Revisar aprendizajes del dÃ­a",
-    "catalogHabitVisualizacionPositiva":  "VisualizaciÃ³n positiva",
-    "catalogHabitLecturaEspiritual":  "Lectura espiritual",
-    "catalogHabitDesconexionDigital":  "DesconexiÃ³n digital",
-    "catalogHabitContactoNaturaleza":  "Tiempo en la naturaleza",
-    "catalogHabitTresCosasBuenas":  "Escribir 3 cosas buenas del dÃ­a",
-    "catalogHabitPaseoSinMovil":  "Paseo sin mÃ³vil",
-    "catalogHabitMomentoParaTi":  "Momento para ti",
-    "catalogHabitHacerEjercicio":  "Hacer ejercicio",
-    "catalogHabitIrGimnasio":  "Ir al gimnasio",
-    "catalogHabitCaminarPasosKm":  "Caminar",
-    "catalogHabitCaminarPasosKmTarget":  "Caminar {target} pasos",
-    "@catalogHabitCaminarPasosKmTarget":  {
-                                              "placeholders":  {
-                                                                   "target":  {
-                                                                                  "type":  "String"
-                                                                              }
-                                                               }
-                                          },
-    "catalogHabitComerSaludable":  "Comer saludable",
-    "catalogHabitBeberXLAgua":  "Beber agua",
-    "catalogHabitBeberXLAguaTarget":  "Beber {target} L de agua",
-    "@catalogHabitBeberXLAguaTarget":  {
-                                           "placeholders":  {
-                                                                "target":  {
-                                                                               "type":  "String"
-                                                                           }
-                                                            }
-                                       },
-    "catalogHabitDormirXHoras":  "Dormir bien",
-    "catalogHabitDormirXHorasTarget":  "Dormir {target} horas",
-    "@catalogHabitDormirXHorasTarget":  {
-                                            "placeholders":  {
-                                                                 "target":  {
-                                                                                "type":  "String"
-                                                                            }
-                                                             }
-                                        },
-    "catalogHabitEstiramientos":  "Estiramientos",
-    "catalogHabitEvitarUltraprocesados":  "Evitar ultraprocesados",
-    "catalogHabitCuidarPostura":  "Cuidar la postura",
-    "catalogHabitRutinaManana":  "Rutina de maÃ±ana",
-    "catalogHabitRutinaNoche":  "Rutina de noche",
-    "catalogHabitSinAlcohol":  "Sin alcohol",
-    "catalogHabitCardio":  "Cardio",
-    "catalogHabitCardioTarget":  "Cardio {target} minutos",
-    "@catalogHabitCardioTarget":  {
-                                      "placeholders":  {
-                                                           "target":  {
-                                                                          "type":  "String"
-                                                                      }
-                                                       }
-                                  },
-    "catalogHabitTomarElSol":  "Tomar el sol",
-    "catalogHabitNoPicar":  "No picar entre horas",
-    "catalogHabitDuchaFria":  "Ducha frÃ­a",
-    "catalogHabitHacerCama":  "Hacer la cama",
-    "catalogHabitSkincare":  "Skincare",
-    "catalogHabitHigieneBucal":  "Higiene bucal completa",
-    "catalogHabitTomarSuplementos":  "Tomar suplementos o medicaciÃ³n",
-    "catalogHabitHidratarPiel":  "Hidratarse la piel",
-    "catalogHabitDiarioEmocional":  "Diario emocional",
-    "catalogHabitIdentificarEmociones":  "Identificar mis emociones",
-    "catalogHabitGestionarEstres":  "Gestionar el estrÃ©s",
-    "catalogHabitAutocompasion":  "Practicar autocompasiÃ³n",
-    "catalogHabitHablarSentimientos":  "Expresar mis sentimientos",
-    "catalogHabitReducirPensamientosNegativos":  "Reducir pensamientos negativos",
-    "catalogHabitPracticarPaciencia":  "Practicar paciencia",
-    "catalogHabitMomentoAlegria":  "Hacer algo que me alegre",
-    "catalogHabitCelebrarLogro":  "Celebrar un logro",
-    "catalogHabitNotaAnimo":  "Nota de Ã¡nimo del dÃ­a",
-    "catalogHabitNotaAnimoTarget":  "Ãnimo: {target}/10",
-    "@catalogHabitNotaAnimoTarget":  {
-                                         "placeholders":  {
-                                                              "target":  {
-                                                                             "type":  "String"
-                                                                         }
-                                                          }
-                                     },
-    "catalogHabitSinPantallasNoche":  "Sin pantallas antes de dormir",
-    "catalogHabitSinPantallasNocheTarget":  "Sin pantallas {target} min antes de dormir",
-    "@catalogHabitSinPantallasNocheTarget":  {
-                                                 "placeholders":  {
-                                                                      "target":  {
-                                                                                     "type":  "String"
-                                                                                 }
-                                                                  }
-                                             },
-    "catalogHabitHablarSerQuerido":  "Hablar con alguien querido",
-    "catalogHabitEscucharActivamente":  "Escuchar activamente",
-    "catalogHabitExpresarGratitud":  "Expresar gratitud a alguien",
-    "catalogHabitAyudarAlguien":  "Ayudar a alguien",
-    "catalogHabitMantenerContacto":  "Mantener el contacto",
-    "catalogHabitCompartirExperiencias":  "Compartir una experiencia",
-    "catalogHabitPracticarEmpatia":  "Practicar empatÃ­a",
-    "catalogHabitPlanSocial":  "Quedar con alguien",
-    "catalogHabitDesconectarRedes":  "Desconectarse de redes sociales",
-    "catalogHabitMensajeAnimo":  "Enviar un mensaje de Ã¡nimo",
-    "catalogHabitLlamadaFamiliaAmigo":  "Llamada con familia o amigo",
-    "catalogHabitPlanificarDia":  "Planificar el dÃ­a",
-    "catalogHabitCumplirRutina":  "Cumplir la rutina",
-    "catalogHabitRevisarObjetivos":  "Revisar objetivos",
-    "catalogHabitEvitarProcrastinacion":  "Vencer la procrastinaciÃ³n",
-    "catalogHabitTareaDificil":  "Hacer la tarea mÃ¡s difÃ­cil primero",
-    "catalogHabitPriorizarImportante":  "Priorizar lo importante",
-    "catalogHabitDejarFumar":  "Sin tabaco",
-    "catalogHabitSinRedesSociales":  "Sin redes sociales",
-    "catalogHabitSinRedesSocialesTarget":  "Sin redes sociales {target} horas",
-    "@catalogHabitSinRedesSocialesTarget":  {
-                                                "placeholders":  {
-                                                                     "target":  {
-                                                                                    "type":  "String"
-                                                                                }
-                                                                 }
-                                            },
-    "catalogHabitMadrugar":  "Madrugar",
-    "catalogHabitRevisarFinDia":  "Revisar el dÃ­a al terminar",
-    "catalogHabitApagarMovil":  "Apagar el mÃ³vil a una hora fija",
-    "catalogHabitSinComprasImpulsivas":  "Sin compras impulsivas",
-    "catalogHabitPrepararRopa":  "Preparar la ropa del dÃ­a siguiente",
-    "catalogHabitTrabajoProfundo":  "SesiÃ³n de trabajo profundo",
-    "catalogHabitTrabajoProfundoTarget":  "Trabajo profundo {target} min",
-    "@catalogHabitTrabajoProfundoTarget":  {
-                                               "placeholders":  {
-                                                                    "target":  {
-                                                                                   "type":  "String"
-                                                                               }
-                                                                }
-                                           },
-    "catalogHabitHabilidadLaboral":  "Desarrollar habilidad laboral",
-    "catalogHabitOrganizarTareas":  "Organizar tareas del dÃ­a",
-    "catalogHabitRevisarRendimiento":  "Revisar rendimiento",
-    "catalogHabitNetworking":  "Networking",
-    "catalogHabitFormacionProfesional":  "FormaciÃ³n profesional",
-    "catalogHabitFormacionProfesionalTarget":  "FormaciÃ³n {target} horas",
-    "@catalogHabitFormacionProfesionalTarget":  {
-                                                    "placeholders":  {
-                                                                         "target":  {
-                                                                                        "type":  "String"
-                                                                                    }
-                                                                     }
-                                                },
-    "catalogHabitResponderEmails":  "Bandeja de entrada a cero",
-    "catalogHabitProyectoPersonal":  "Avanzar en proyecto personal",
-    "catalogHabitLeerSector":  "Leer sobre mi sector",
-    "catalogHabitPomodoro":  "Bloque Pomodoro completado",
-    "catalogHabitPomodoroTarget":  "{target} pomodoros",
-    "@catalogHabitPomodoroTarget":  {
-                                        "placeholders":  {
-                                                             "target":  {
-                                                                            "type":  "String"
-                                                                        }
-                                                         }
-                                    },
-    "catalogHabitTrucoNuevo":  "Aprender un atajo o truco nuevo",
-    "settingsTitle":  "Ajustes",
-    "settingsLanguageSectionTitle":  "Idioma",
-    "settingsLanguageOptionSpanish":  "EspaÃ±ol",
-    "settingsLanguageOptionEnglish":  "InglÃ©s",
-    "settingsAccountSectionTitle": "Cuenta",
-    "settingsLogOut": "Cerrar sesiÃ³n",
-    "settingsLogOutTitle": "Â¿Cerrar sesiÃ³n?",
-    "settingsLogOutMessage": "PodrÃ¡s volver a entrar con tu email y contraseÃ±a cuando quieras.",
-    "settingsLogOutConfirm": "Cerrar sesiÃ³n",
-    "settingsLogOutError": "No se ha podido cerrar sesiÃ³n. IntÃ©ntalo de nuevo.",
-    "settingsLogoutTitle": "Cerrar sesi\u00f3n",
-    "settingsLogoutConfirmationBody": "\u00bfSeguro que quieres cerrar sesi\u00f3n? Podr\u00e1s volver a entrar cuando quieras.",
-    "settingsLogoutConfirmAction": "Cerrar sesi\u00f3n",
-    "settingsLogoutError": "No se ha podido cerrar sesi\u00f3n. Int\u00e9ntalo de nuevo.",
-    "settingsDeleteAccountTitle": "Eliminar cuenta",
-    "settingsDeleteAccountHelperText": "Elimina tu cuenta y los datos asociados de forma permanente.",
-    "settingsDeleteAccountConfirmationTitle": "¿Eliminar cuenta?",
-    "settingsDeleteAccountConfirmationBody": "Esta acción eliminará tu cuenta y tus datos asociados. No se puede deshacer.",
-    "settingsDeleteAccountConfirmAction": "Eliminar cuenta",
-    "settingsDeleteAccountMessage": "Esta acción eliminará tu cuenta y tus datos asociados. No se puede deshacer.",
-    "settingsDeleteAccountConfirm": "Eliminar cuenta",
-    "settingsDeleteAccountTypeToConfirm": "Escribe ELIMINAR para confirmar.",
-    "settingsDeleteAccountError": "No se ha podido eliminar la cuenta. Inténtalo de nuevo.",
-    "settingsDeleteAccountDeleting": "Eliminando cuenta...",
-    "settingsDeleteAccountSuccess": "Tu cuenta se ha eliminado correctamente.",
-    "profileSettingsTitle":  "Ajustes",
-    "profileSettingsSubtitle":  "Idioma, privacidad y mÃ¡s",
-    "profileTitle": "Perfil",
-    "profileDefaultName": "Tu perfil",
-    "profileDefaultSubtitle": "Tu progreso, ajustes y cuenta",
-    "profileNotificationsTitle": "Notificaciones",
-    "profileEnableNotificationsTitle": "Activar notificaciones",
-    "profileEnableNotificationsSubtitle": "Recordatorios, cierre del d\u00eda y rachas",
-    "profileNotificationSettingsTitle": "Ajustes de notificaciones",
-    "profileNotificationCategoriesActive": "{count} de {total} categor\u00edas activas",
-    "@profileNotificationCategoriesActive": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "total": {
-                "type": "int"
-            }
-        }
-    },
-    "profileAccountSectionTitle": "Cuenta y ajustes",
-    "profileThemeTitle": "Tema",
-    "profileThemeSubtitle": "Claro / Oscuro / Autom\u00e1tico",
-    "profileThemeTodo": "Tema (TODO)",
-    "profileHelpTitle": "Ayuda",
-    "profileHelpSubtitle": "FAQ y soporte",
-    "profileHelpTodo": "Ayuda (TODO)",
-    "profileAboutTitle": "Acerca de",
-    "profileAboutSubtitle": "Versi\u00f3n y legal",
-    "profileAboutTodo": "Acerca de (TODO)",
-    "profileDangerSectionTitle": "Zona peligrosa",
-    "profileManageDataTitle": "Gestionar datos",
-    "profileManageDataSubtitle": "Exportar o borrar tu informaci\u00f3n",
-    "profileManageDataTodo": "Gestionar datos (TODO)",
-    "profileLogoutTodo": "Cerrar sesi\u00f3n (TODO)",
-    "profileNotificationPermissionDenied": "Permiso de notificaciones no concedido.",
-    "profileEditButton": "Editar",
-    "profileDangerZoneTitle": "Zona de peligro",
-    "profileLogoutTitle": "Cerrar sesi\u00f3n",
-    "profileLogoutSubtitle": "Se cerrar\u00e1 tu sesi\u00f3n en este dispositivo",
-    "profileDeleteDataTitle": "Borrar datos",
-    "profileDeleteDataSubtitle": "Elimina todos tus datos y progreso (irreversible)",
-    "profileFamiliesProgressTitle": "Progreso por familias",
-    "profileFamilyLevelShort": "Lvl {level}",
-    "@profileFamilyLevelShort": {
-        "placeholders": {
-            "level": {
-                "type": "int"
-            }
-        }
-    },
-    "profileFamilyLevelLabel": "Nivel {level}",
-    "@profileFamilyLevelLabel": {
-        "placeholders": {
-            "level": {
-                "type": "int"
-            }
-        }
-    },
-    "profileNotificationsPhaseOneTitle": "Fase 1",
-    "profileNotificationHabitRemindersTitle": "Recordatorios de h\u00e1bitos",
-    "profileNotificationHabitRemindersSubtitle": "Respeta la hora configurada en cada h\u00e1bito",
-    "profileNotificationDayClosureTitle": "Cierre del d\u00eda",
-    "profileNotificationDayClosureSubtitle": "Solo si a\u00fan quedan h\u00e1bitos pendientes hoy",
-    "profileNotificationDayClosureTimeTitle": "Hora de cierre del d\u00eda",
-    "profileNotificationDayClosureTimeSubtitle": "Momento para recordar lo que a\u00fan queda pendiente",
-    "profileNotificationStreakRiskTitle": "Racha en riesgo",
-    "profileNotificationStreakRiskSubtitle": "Avisa cuando a\u00fan puedes salvar una racha relevante",
-    "profileNotificationStreakCelebrationTitle": "Celebraciones de racha",
-    "profileNotificationStreakCelebrationSubtitle": "Celebra hitos b\u00e1sicos como 1, 3, 7, 14 y 30 d\u00edas",
-    "profileNotificationInactivityTitle": "Reactivaci\u00f3n por inactividad",
-    "profileNotificationInactivitySubtitle": "Un recordatorio amable tras 3 d\u00edas sin abrir la app",
-    "editProfileTitle": "Editar perfil",
-    "editProfileSave": "Guardar",
-    "editProfileSaveChanges": "Guardar cambios",
-    "editProfileSaving": "Guardando...",
-    "editProfileTakePhoto": "Tomar foto",
-    "editProfileGallery": "Galer\u00eda",
-    "editProfileRemovePhoto": "Eliminar foto",
-    "editProfilePersonalInfoTitle": "Informaci\u00f3n personal",
-    "editProfileGoalSectionTitle": "Tu objetivo",
-    "editProfileImageSelectionError": "Error al seleccionar imagen: {error}",
-    "@editProfileImageSelectionError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "editProfileSaveSuccess": "Perfil actualizado correctamente",
-    "editProfileSaveError": "Error al guardar: {error}",
-    "@editProfileSaveError": {
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "editProfileDiscardChangesTitle": "\u00bfDescartar cambios?",
-    "editProfileDiscardChangesBody": "Tienes cambios sin guardar. \u00bfEst\u00e1s seguro de que quieres salir?",
-    "editProfileDiscardChangesAction": "Descartar",
-    "editProfileCropTitle": "Recortar",
-    "editProfileStatLevel": "Nivel",
-    "editProfileStatXp": "XP",
-    "editProfileStatCoins": "Monedas",
-    "editProfileNameLabel": "Nombre",
-    "editProfileNameHint": "C\u00f3mo quieres que te vean",
-    "editProfileNameRequired": "El nombre es obligatorio",
-    "editProfileNameMinLength": "M\u00ednimo 2 caracteres",
-    "editProfileBioLabel": "Bio",
-    "editProfileBioHint": "Cu\u00e9ntanos un poco sobre ti...",
-    "editProfileGoalLabel": "Objetivo",
-    "editProfileGoalHint": "Qu\u00e9 quieres conseguir con Rutio",
-    "editProfileChangePhoto": "Cambiar foto de perfil",
-    "editProfileAddPhoto": "A\u00f1adir foto de perfil",
-    "archivedHabitsTitle": "H\u00e1bitos archivados",
-    "archivedHabitsEmpty": "No tienes h\u00e1bitos archivados.",
-    "archivedHabitsFamilyLabel": "Familia: {family}",
-    "@archivedHabitsFamilyLabel": {
-        "placeholders": {
-            "family": {
-                "type": "String"
-            }
-        }
-    },
-    "archivedHabitsRestoreTooltip": "Restaurar",
-    "archivedHabitsDeleteTooltip": "Eliminar",
-    "archivedHabitsDeleteTitle": "Eliminar h\u00e1bito",
-    "archivedHabitsDeleteBody": "\u00bfSeguro que quieres eliminar este h\u00e1bito?\n\nSe eliminar\u00e1 tambi\u00e9n su historial.",
-    "habitDetailFallbackTitle": "H\u00e1bito",
-    "habitDetailSaved": "Cambios guardados",
-    "habitDetailDeleteTitle": "Eliminar h\u00e1bito",
-    "habitDetailDeleteBody": "Se borrar\u00e1 el h\u00e1bito y su historial. Esta acci\u00f3n no se puede deshacer.",
-    "habitDetailArchiveAction": "Archivar h\u00e1bito",
-    "habitDetailDeleteAction": "Eliminar h\u00e1bito",
-    "habitDetailMoreOptionsTooltip": "M\u00e1s opciones",
-    "habitDetailEditTab": "Editar",
-    "habitDetailStatsTab": "Estad\u00edsticas",
-    "archiveHabitTileTitle": "Archivar h\u00e1bito",
-    "archiveHabitTileArchivedSubtitle": "Este h\u00e1bito est\u00e1 archivado (no aparecer\u00e1 en la lista principal).",
-    "archiveHabitTileActiveSubtitle": "Oculta este h\u00e1bito de la lista principal sin borrarlo.",
-    "archiveHabitTileConfirmTitle": "Archivar h\u00e1bito",
-    "archiveHabitTileConfirmBody": "\u00bfQuieres archivar este h\u00e1bito? Podr\u00e1s recuperarlo m\u00e1s adelante.",
-    "archiveHabitTileConfirmAction": "Archivar",
-    "habitStatsTitle": "Estadisticas",
-    "habitStatsEmpty": "No hay habitos para mostrar.",
-    "habitStatsMetricCompleted": "Completado",
-    "habitStatsMetricCompletionDescription": "{done}/{total} dias",
-    "@habitStatsMetricCompletionDescription": {
-        "placeholders": {
-            "done": {
-                "type": "int"
-            },
-            "total": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsMetricConsistency": "Consistencia",
-    "habitStatsMetricConsistencyDescription": "Ultimos {window} dias",
-    "@habitStatsMetricConsistencyDescription": {
-        "placeholders": {
-            "window": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsMetricBestStreak": "Mejor racha",
-    "habitStatsMetricPersonalBest": "Record personal",
-    "habitStatsMetricTotalDone": "Total hechos",
-    "habitStatsMetricHistoricRecords": "Historico (registros)",
-    "habitStatsChartWeekTitle": "Semana",
-    "habitStatsChartLastFourWeeksTitle": "Ultimas 4 semanas",
-    "habitStatsChartWeekSubtitle": "Completado por dia",
-    "habitStatsChartWeeksSubtitle": "Completado agregado por semana",
-    "habitStatsNextMilestone": "Siguiente hito",
-    "habitStatsWeeklyComparisonTitle": "Comparacion semanal",
-    "habitStatsWeeklyComparisonSubtitle": "Esta semana vs la anterior",
-    "habitStatsBestTimeSectionTitle": "Cuando lo cumples mejor?",
-    "habitStatsBestTimeSectionSubtitle": "Basado en tus registros, tus momentos mas consistentes",
-    "habitStatsMonthCalendarTitle": "Calendario del mes",
-    "habitStatsTabSummaryTitle": "Resumen",
-    "habitStatsTabLastDaysTitle": "Ultimos {days} dias",
-    "@habitStatsTabLastDaysTitle": {
-        "placeholders": {
-            "days": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsTabAchievementsUnlocked": "Logros desbloqueados",
-    "habitStatsTabCurrentStreakTitle": "Racha actual",
-    "habitStatsTabDayUnit": "{count} dia",
-    "@habitStatsTabDayUnit": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsTabTotalLabel": "total",
-    "habitStatsTabCompletionWindow": "{done} / {total} dias",
-    "@habitStatsTabCompletionWindow": {
-        "placeholders": {
-            "done": {
-                "type": "int"
-            },
-            "total": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsTabCounterHint": "Cuenta el numero de veces completado cada dia",
-    "habitStatsTabCheckHint": "Dias en los que completaste este habito",
-    "habitStatsTabFireStreakTitle": "Racha de fuego",
-    "habitStatsTabStreakInARow": "{days} dias seguidos",
-    "@habitStatsTabStreakInARow": {
-        "placeholders": {
-            "days": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsTabCentennialTitle": "Centenario!",
-    "habitStatsTabHalfCenturyTitle": "Medio centenar",
-    "habitStatsTabCompletedCount": "{count} completados",
-    "@habitStatsTabCompletedCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsTabMaxConsistencyTitle": "Consistencia maxima",
-    "habitStatsTabLast30DaysPercent": "{percent}% ultimos 30 dias",
-    "@habitStatsTabLast30DaysPercent": {
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsTabLegendaryRecordTitle": "Record legendario",
-    "habitStatsTabRecordStreak": "{days} dias de racha",
-    "@habitStatsTabRecordStreak": {
-        "placeholders": {
-            "days": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsTabWeeklyDelta": "{delta} vs semana anterior",
-    "@habitStatsTabWeeklyDelta": {
-        "placeholders": {
-            "delta": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsTabWeeklyDeltaEqual": "Igual que semana anterior",
-    "diaryTitle": "Diario",
-    "diaryMenuTooltip": "Menu",
-    "diaryCloseSearchTooltip": "Cerrar busqueda",
-    "diarySearchTooltip": "Buscar",
-    "diaryFiltersTooltip": "Filtros",
-    "diaryNewEntry": "Nueva entrada",
-    "diaryEntryDeleted": "Entrada eliminada",
-    "diaryEntrySaved": "Entrada guardada",
-    "diaryNoteSaved": "Nota guardada",
-    "diaryPinSoon": "Fijar: proximamente",
-    "diaryDeleteEntryTitle": "Eliminar entrada",
-    "diaryDeleteEntryBody": "Seguro que quieres eliminar esta entrada?",
-    "diaryEntriesCount": "{count} entradas",
-    "@diaryEntriesCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "diaryPeriodAll": "Todo",
-    "diaryPeriodDays": "Dias",
-    "diaryPeriodWeeks": "Semanas",
-    "diaryPeriodMonths": "Meses",
-    "diarySearchHint": "Buscar en tu diario...",
-    "diaryClearTooltip": "Borrar",
-    "diarySearchScopeAll": "Todo",
-    "diarySearchScopeHabits": "Habitos",
-    "diarySearchScopePersonal": "Personal",
-    "diaryWrittenEntriesToday": "Hoy escribiste {count} entradas",
-    "@diaryWrittenEntriesToday": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "diaryEmotionalXp": "+{xp} XP emocional",
-    "@diaryEmotionalXp": {
-        "placeholders": {
-            "xp": {
-                "type": "int"
-            }
-        }
-    },
-    "diarySummaryEmptyTitle": "Hoy aun no has escrito",
-    "diarySummaryEmptySubtitle": "Un minuto puede cambiar tu dia",
-    "diarySummaryOneTitle": "Buen comienzo",
-    "diarySummaryOneSubtitle": "Has dado espacio a tu mente",
-    "diarySummaryFewTitle": "Estas cuidando tu mundo interior",
-    "diarySummaryFewSubtitle": "Sigue asi",
-    "diarySummaryManyTitle": "Dia muy consciente",
-    "diarySummaryManySubtitle": "Gran trabajo emocional",
-    "diaryActionEdit": "Editar",
-    "diaryActionDelete": "Eliminar",
-    "diaryComposerCancel": "â† Cancelar",
-    "diaryComposerEditEntryUpper": "EDITAR ENTRADA",
-    "diaryComposerNewEntryUpper": "NUEVA ENTRADA",
-    "diaryComposerMoodSectionUpper": "Â¿COMO TE SENTISTE?",
-    "diaryComposerTitleUpper": "TITULO",
-    "diaryComposerReflectionUpper": "REFLEXION",
-    "diaryComposerTitleHint": "Como resumirias hoy?",
-    "diaryComposerHabitReflectionHint": "Que paso hoy con tu habito? Que sentiste? Que aprendiste?",
-    "diaryComposerPersonalReflectionHint": "Que tienes en mente? Que quieres dejar por escrito hoy?",
-    "diaryComposerSaveChanges": "Guardar cambios",
-    "diaryComposerSaveEntry": "Guardar entrada",
-    "diaryComposerTypeHabit": "Ligada a habito",
-    "diaryComposerTypePersonal": "Personal",
-    "diaryComposerSelectHabit": "Seleccionar habito",
-    "diaryComposerTapToChooseHabit": "Toca para elegir un habito",
-    "diaryComposerWriteSomethingError": "Escribe algo para guardar la entrada",
-    "diaryComposerSelectHabitError": "Selecciona un habito",
-    "diaryComposerNoActiveHabits": "No hay habitos activos para seleccionar",
-    "diaryComposerSelectHabitSheetTitle": "Seleccionar habito",
-    "diaryDetailScreenTitle": "Entrada",
-    "diaryDetailTopHabitUpper": "ENTRADA DE HABITO",
-    "diaryDetailTopPersonalUpper": "ENTRADA PERSONAL",
-    "diaryDetailFallbackHabitTitle": "Entrada de habito",
-    "diaryDetailFallbackPersonalTitle": "Entrada personal",
-    "diaryDetailLeadingPersonal": "Escrito personal",
-    "diaryDetailFamilyPersonal": "Personal",
-    "diaryDetailTypeHabit": "Dia de habito",
-    "diaryDetailTypePersonal": "Nota personal",
-    "diaryDetailNotesUpper": "NOTAS",
-    "diaryDetailLoggedAt": "Registrado a las {time}",
-    "@diaryDetailLoggedAt": {
-        "placeholders": {
-            "time": {
-                "type": "String"
-            }
-        }
-    },
-    "diaryDetailThisWeekUpper": "ESTA SEMANA",
-    "diaryTodayUpper": "HOY",
-    "habitStatsWeekShort": "S{weekNumber}",
-    "@habitStatsWeekShort": {
-        "placeholders": {
-            "weekNumber": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsHabitFallbackTitle": "Habito",
-    "habitStatsPeriodWeek": "Semana",
-    "habitStatsPeriodMonth": "Mes",
-    "habitStatsPeriodThreeMonths": "3 meses",
-    "habitStatsPeriodAll": "Todo",
-    "habitStatsDaysLabel": "{count} dia",
-    "@habitStatsDaysLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsCurrentStreakUpper": "RACHA ACTUAL",
-    "habitStatsHeadlineStartToday": "Empezamos hoy!",
-    "habitStatsHeadlineGoodStart": "Buen inicio!",
-    "habitStatsHeadlineOnStreak": "En racha!",
-    "habitStatsMilestoneProgress": "{label}: {next} dias",
-    "@habitStatsMilestoneProgress": {
-        "placeholders": {
-            "label": {
-                "type": "String"
-            },
-            "next": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsThisWeek": "Esta semana",
-    "habitStatsLastWeek": "Semana pasada",
-    "habitStatsTimeSlotMorning": "manana",
-    "habitStatsTimeSlotAfternoon": "tarde",
-    "habitStatsTimeSlotEvening": "noche",
-    "habitStatsTimeSlotNight": "madrugada",
-    "habitStatsLegendLess": "Menos",
-    "habitStatsLegendMore": "Mas",
-    "habitStatsDayTooltip": "Dia {day}",
-    "@habitStatsDayTooltip": {
-        "placeholders": {
-            "day": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsThisHabitFallback": "este habito",
-    "habitStatsMotivationLead": "Llevas ",
-    "habitStatsMotivationWith": " con ",
-    "habitStatsMotivationAboveLead": "estas ",
-    "habitStatsMotivationAboveKeyword": "por encima",
-    "habitStatsMotivationAboveTail": " de la semana pasada. ",
-    "habitStatsMotivationBelowLead": "esta semana vas un poco ",
-    "habitStatsMotivationBelowKeyword": "por debajo",
-    "habitStatsMotivationBelowTail": " de la anterior. ",
-    "habitStatsMotivationEqual": "mantienes el ritmo de la semana pasada. ",
-    "habitStatsMotivationStart": "buen comienzo. ",
-    "habitStatsMotivationGoalLead": "Anticiparte te ayudara a ",
-    "habitStatsMotivationGoalKeyword": "llegar a los {days} dias",
-    "@habitStatsMotivationGoalKeyword": {
-        "placeholders": {
-            "days": {
-                "type": "int"
-            }
-        }
-    },
-    "habitStatsMotivationKeepLead": "Ahora toca ",
-    "habitStatsMotivationKeepKeyword": "mantener la racha",
-    "habitStatsMotivationKeepTail": " y consolidarlo.",
-    "habitStatsMotivationBestTimeLead": " Prueba a hacerlo en la ",
-    "habitStatsMotivationBestTimeTail": ", cuando sueles ser mas constante.",
-    "editHabitSaveChanges": "Guardar cambios",
-    "editHabitSaving": "Guardando...",
-    "editHabitNotificationPermissionDenied": "Permisos de notificacion denegados.",
-    "editHabitDailyGoalDialogTitle": "Meta diaria",
-    "editHabitDailyGoalDialogSubtitle": "Escribe el numero objetivo.",
-    "editHabitCounterStepDialogTitle": "Incremento",
-    "editHabitCounterStepDialogSubtitle": "Cada cuanto aumenta el contador.",
-    "editHabitTimesPerWeekDialogTitle": "Veces por semana",
-    "editHabitTimesPerWeekDialogSubtitle": "Puedes superarlo durante la semana.",
-    "editHabitSectionIdentity": "Identidad",
-    "editHabitSectionCategory": "Categoria",
-    "editHabitSectionTracking": "Como lo mides?",
-    "editHabitSectionFrequency": "Frecuencia",
-    "editHabitSectionReminder": "Recordatorio",
-    "editHabitSectionDetails": "Detalles",
-    "editHabitTitleHint": "Ej: Meditar cada manana",
-    "editHabitTrackingCheckTitle": "Si o no",
-    "editHabitTrackingCheckSubtitle": "Lo hice o no lo hice",
-    "editHabitTrackingCountTitle": "Contador",
-    "editHabitTrackingCountSubtitle": "Vasos, minutos, paginas...",
-    "editHabitDailyGoalSection": "Meta diaria",
-    "editHabitRepetitionsTitle": "Repeticiones",
-    "editHabitRepetitionsSubtitle": "Cuantas veces al dia?",
-    "editHabitUnitHint": "Unidad (ej: vasos, km...)",
-    "editHabitCounterStepTitle": "Incremento",
-    "editHabitCounterStepSubtitle": "Cuanto aumenta cada toque.",
-    "editHabitFrequencyDaily": "Cada dia",
-    "editHabitFrequencySpecificDays": "Dias concretos",
-    "editHabitFrequencyTimesPerWeek": "X veces / semana",
-    "editHabitWeeklyGoalTitle": "Objetivo semanal",
-    "editHabitWeeklyGoalSubtitle": "Marca cuantas veces quieres completarlo.",
-    "editHabitReminderDailyTitle": "Notificacion diaria",
-    "editHabitReminderDailySubtitle": "Elige cuando quieres que te avise",
-    "editHabitDescriptionHint": "Descripcion breve",
-    "editHabitNotesHint": "Notas o contexto adicional",
-    "editHabitUnitPickerTitle": "Unidad",
-    "editHabitUnitPickerSubtitle": "Elige una sugerencia o escribe una personalizada.",
-    "editHabitUnitPickerAction": "Usar unidad",
-    "editHabitSuggestedUnitGlasses": "vasos",
-    "editHabitSuggestedUnitMinutes": "minutos",
-    "editHabitSuggestedUnitKilometers": "km",
-    "editHabitSuggestedUnitPages": "paginas",
-    "editHabitSuggestedUnitSteps": "pasos",
-    "editHabitSuggestedUnitRepetitions": "repeticiones",
-    "editHabitSuggestedUnitHours": "horas",
-    "drawerBrandName":  "rutio",
-    "drawerBrandTagline":  "CONSTRUYE TU CAMINO",
-    "drawerSectionViews":  "VISTAS",
-    "drawerDaily":  "Diario",
-    "drawerWeekly":  "Semanal",
-    "drawerMonthly":  "Mensual",
-    "drawerSectionTracking":  "SEGUIMIENTO",
-    "drawerStatistics":  "EstadÃ­sticas",
-    "drawerDiary":  "Diario (Journal)",
-    "drawerSectionArchive":  "ARCHIVO",
-    "drawerArchived":  "Archivados",
-    "drawerSectionAccount":  "CUENTA",
-    "drawerProfile":  "Mi perfil",
-    "drawerProfileVersion":  "v0.1 alpha",
-    "weeklyScreenUnavailableSoon":  "Pantalla no disponible todavÃ­a.",
-    "weeklyScreenUnavailable":  "Pantalla no disponible",
-    "weeklyWeekPrefix":  "Semana",
-    "weeklyActiveHabitsCount":  "{count} HABITOS ACTIVOS",
-    "@weeklyActiveHabitsCount":  {
-                                     "placeholders":  {
-                                                          "count":  {
-                                                                        "type":  "String"
-                                                                    }
-                                                      }
-                                 },
-    "weeklyShowHabitNameHint":  "\u003c- toca el emoji para ver el nombre",
-    "weeklyViewMenuTitle": "Cambiar vista",
-    "weeklyViewMenuDailyTitle": "Vista diaria",
-    "weeklyViewMenuDailySubtitle": "Ver hÃ¡bitos de hoy",
-    "weeklyViewMenuWeeklyTitle": "Vista semanal",
-    "weeklyViewMenuWeeklySubtitle": "Actual",
-    "weeklyViewMenuMonthlyTitle": "Vista mensual",
-    "weeklyViewMenuMonthlySubtitle": "Ver progreso del mes",
-    "drawerTodo": "To-do",
-    "familyPersonalName": "Personal",
-    "todoTitle": "To-dos",
-    "todoDateTodayFormatLabel": "Hoy",
-    "todoFilterAll": "Todos",
-    "todoFilterPending": "Pendientes",
-    "todoFilterToday": "Hoy",
-    "todoFilterThisWeek": "Esta semana",
-    "todoFilterCompleted": "Completadas",
-    "todoProgressToday": "PROGRESO HOY",
-    "todoTasksCount": " / {total} tareas",
-    "@todoTasksCount": {
-        "placeholders": {
-            "total": {
-                "type": "String"
-            }
-        }
-    },
-    "todoPendingCount": "{count} pendientes",
-    "@todoPendingCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "todoOverdueCount": "{count} vencida",
-    "@todoOverdueCount": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "todoSectionPending": "PENDIENTES \u00b7 {count}",
-    "@todoSectionPending": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "todoSectionCompleted": "COMPLETADOS \u00b7 {count}",
-    "@todoSectionCompleted": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "todoCreateTitle": "Nueva tarea",
-    "todoEditTitle": "Editar tarea",
-    "todoCancel": "Cancelar",
-    "todoSave": "Guardar",
-    "todoTypeFree": "Tarea libre",
-    "todoTypeLinkedHabit": "Vinculada a h\u00e1bito",
-    "todoWhatNeedToDo": "\u00bfQu\u00e9 tienes que hacer?",
-    "todoDescriptionOptional": "Descripci\u00f3n (opcional)",
-    "todoWhen": "CU\u00c1NDO",
-    "todoDate": "Fecha",
-    "todoSelect": "Seleccionar",
-    "todoTime": "Hora",
-    "todoNoTime": "Sin hora",
-    "todoCategory": "CATEGOR\u00cdA",
-    "todoPriority": "PRIORIDAD",
-    "todoNotes": "NOTAS",
-    "todoAddNote": "A\u00f1ade una nota...",
-    "todoPriorityNone": "\u2014",
-    "todoPriorityNormal": "Normal",
-    "todoPriorityHigh": "Alta",
-    "todoPriorityUrgent": "Urgente",
-    "todoPriorityHighBadge": "Prioritaria",
-    "todoPriorityUrgentBadge": "Urgente",
-    "todoXpReward": "+{xp} XP",
-    "@todoXpReward": {
-        "placeholders": {
-            "xp": {
-                "type": "int"
-            }
-        }
-    },
-    "todoStatusOverdueYesterday": "Vencida ayer",
-    "todoStatusOverdueDate": "Vencida {date}",
-    "@todoStatusOverdueDate": {
-        "placeholders": {
-            "date": {
-                "type": "String"
-            }
-        }
-    },
-    "todoStatusTodayAt": "Hoy \u00b7 {time}",
-    "@todoStatusTodayAt": {
-        "placeholders": {
-            "time": {
-                "type": "String"
-            }
-        }
-    },
-    "todoStatusDueToday": "Hoy",
-    "todoStatusThisWeek": "Esta semana",
-    "todoStatusOnDate": "{date}",
-    "@todoStatusOnDate": {
-        "placeholders": {
-            "date": {
-                "type": "String"
-            }
-        }
-    },
-    "todoMockMeditateTitle": "Meditar 10 minutos antes de dormir",
-    "todoMockReadTitle": "Leer 20 p\u00e1ginas del libro actual",
-    "todoMockGroceriesTitle": "Preparar la lista de la compra semanal",
-    "todoMockDoctorTitle": "Llamar al m\u00e9dico para pedir cita",
-    "todoMockCardioTitle": "Ejercicio matutino: 30 min cardio",
-    "todoMockWaterTitle": "Preparar botella de agua y mochila",
-    "todoMockReviewGoalsTitle": "Revisar prioridades clave del d\u00eda",
-    "todoMockEncouragementTitle": "Enviar un mensaje de \u00e1nimo",
-    "todoMockPrayerTitle": "Momento breve de oraci\u00f3n",
-    "todoMockInboxTitle": "Vaciar correos importantes",
-    "todoMockJournalTitle": "Journaling emocional de 5 minutos",
-    "todoEmptyStateTitle": "TodavÃ­a no tienes tareas",
-    "todoEmptyStateBody": "Crea tu primera tarea para empezar a organizar este espacio.",
-    "todoCreateFirstTask": "Crear primera tarea",
-    "diaryFiltersTitle": "Filtros",
-    "diaryFiltersType": "Tipo",
-    "diaryFiltersPinnedOnly": "Solo fijadas",
-    "diaryFiltersFamily": "Familia",
-    "diaryFiltersApply": "Aplicar",
-    "diaryAfterCompleteTitle": "Habito completado: {habitName}",
-    "@diaryAfterCompleteTitle": {
-        "placeholders": {
-            "habitName": {
-                "type": "String"
-            }
-        }
-    },
-    "diaryAfterCompletePrompt": "Quieres anadir una nota rapida?",
-    "diaryAfterCompleteSkip": "Ahora no",
-    "diaryAfterCompleteWrite": "Escribir",
-    "diaryGeneralFamilyName": "General",
-    "diaryCardTypeHabitShort": "DIA",
-    "diaryCardTypePersonalShort": "NOTA",
-    "diaryShowMore": "Ver mas",
-    "diaryShowLess": "Ver menos",
-    "diaryStreakLabel": "Racha: {count} dia{sufix}",
-    "@diaryStreakLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "sufix": {
-                "type": "String"
-            }
-        }
-    },
-    "diaryEmotionalStreakTitle": "Racha emocional",
-    "diaryDaysLabel": "{count} dia{sufix}",
-    "@diaryDaysLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "sufix": {
-                "type": "String"
-            }
-        }
-    },
-    "monthShortJan": "Ene",
-    "monthShortFeb": "Feb",
-    "monthShortMar": "Mar",
-    "monthShortApr": "Abr",
-    "monthShortMay": "May",
-    "monthShortJun": "Jun",
-    "monthShortJul": "Jul",
-    "monthShortAug": "Ago",
-    "monthShortSep": "Sep",
-    "monthShortOct": "Oct",
-    "monthShortNov": "Nov",
-    "monthShortDec": "Dic",
-    "createHabitNewHabitTitle": "Nuevo habito",
-    "createHabitSaveHabit": "Guardar habito",
-    "createHabitSaved": "Guardado",
-    "emojiPickerTitle": "Selecciona un emoji",
-    "emojiPickerCurrent": "Actual: {emoji}",
-    "@emojiPickerCurrent": {
-        "placeholders": {
-            "emoji": {
-                "type": "String"
-            }
-        }
-    },
-    "emojiPickerBrowseSubtitle": "Catalogo completo con categorias y busqueda",
-    "emojiPickerNoRecents": "Tus emojis recientes apareceran aqui",
-    "emojiPickerSearchHint": "Buscar emoji",
-    "monthlyDefaultUsername": "Usuario",
-    "monthlyEmptyFilteredMessage": "No hay habitos para mostrar en este filtro.",
-    "monthlyElapsedDaysWeek": "{elapsed} dias transcurridos Â· semana {week}",
-    "@monthlyElapsedDaysWeek": {
-        "placeholders": {
-            "elapsed": {
-                "type": "int"
-            },
-            "week": {
-                "type": "int"
-            }
-        }
-    },
-    "monthlyFilterSummaryFamily": "Familia: {family}",
-    "@monthlyFilterSummaryFamily": {
-        "placeholders": {
-            "family": {
-                "type": "String"
-            }
-        }
-    },
-    "monthlyFilterSummaryHabit": "Habito: {habit}",
-    "@monthlyFilterSummaryHabit": {
-        "placeholders": {
-            "habit": {
-                "type": "String"
-            }
-        }
-    },
-    "monthlyFilterSummaryAll": "Todos los habitos",
-    "monthlyFiltersTooltip": "Filtros",
-    "monthlyResetTooltip": "Restablecer",
-    "monthlyFiltersTitle": "Filtros",
-    "monthlyResetAction": "Restablecer",
-    "monthlyFilterModeAll": "Todos",
-    "monthlyFilterModeFamily": "Familia",
-    "monthlyFilterModeHabit": "Habito",
-    "monthlyApplyAction": "Aplicar",
-    "monthlySelectHabitLabel": "Selecciona un habito",
-    "monthlyHabitSelectorTitle": "VER HABITO",
-    "monthlyHabitFallbackTitle": "Habito",
-    "monthlyStatMonthLabel": "MES",
-    "monthlyStatStreakLabel": "RACHA",
-    "monthlyStatHabitsLabel": "HABITOS",
-    "monthlyDaysLabel": "{count} dia{sufix}",
-    "@monthlyDaysLabel": {
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "sufix": {
-                "type": "String"
-            }
-        }
-    },
-    "monthlyCurrentStreakSoft": "racha actual",
-    "monthlyBestStreakSoft": "mejor racha",
-    "monthlySelectionToday": "Hoy",
-    "monthlySelectionDone": "Completado",
-    "monthlySelectionSkipped": "Saltado",
-    "monthlySelectionPending": "Pendiente",
-    "monthlySelectionFuture": "Futuro",
-    "monthlySelectionUnscheduled": "Sin programar",
-    "monthlySelectionSelected": "Seleccionado",
-    "monthlySelectionLabel": "{day}/{month} Â· {state}",
-    "@monthlySelectionLabel": {
-        "placeholders": {
-            "day": {
-                "type": "int"
-            },
-            "month": {
-                "type": "int"
-            },
-            "state": {
-                "type": "String"
-            }
-        }
-    },
-    "monthlyCurrentMonthTooltip": "Ir a este mes",
-    "monthlyMenuTooltip": "Menu"
+{
+  "splashTagline": "CONSTRUYE TU CAMINO",
+  "splashTapToStart": "TOCA PARA COMENZAR",
+  "welcomeBrand": "RUTIO",
+  "welcomeTitleLine1": "Tu camino\n",
+  "welcomeTitleLine2": "empieza hoy.",
+  "welcomeSubtitle": "Peque\u00f1os pasos,\ngrandes cambios.",
+  "welcomeLoginButton": "Iniciar sesi\u00f3n",
+  "welcomeSignupButton": "Crear cuenta",
+  "loginHeaderSubtitle": "Bienvenido de vuelta",
+  "loginTitle": "Iniciar sesi\u00f3n",
+  "loginSubtitle": "Contin\u00faa donde lo dejaste",
+  "loginPasswordHint": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+  "loginForgotPassword": "\u00bfOlvidaste tu contrase\u00f1a?",
+  "loginPrimaryCta": "Continuar \u2192",
+  "loginSwitchPrefix": "\u00bfNo tienes cuenta?  ",
+  "loginSwitchLink": "Reg\u00edstrate",
+  "signupHeaderSubtitle": "Empieza tu camino",
+  "signupTitle": "Crear cuenta",
+  "signupSubtitle": "Un peque\u00f1o paso hacia tus metas",
+  "signupNameLabel": "Nombre",
+  "signupNameHint": "\u00bfC\u00f3mo te llamas?",
+  "signupPasswordHint": "M\u00edn. 8 caracteres",
+  "signupPrimaryCta": "Comenzar \u2192",
+  "signupSwitchPrefix": "\u00bfYa tienes cuenta?  ",
+  "signupSwitchLink": "Inicia sesi\u00f3n",
+  "fieldEmailLabel": "Email",
+  "fieldEmailHint": "tu@email.com",
+  "fieldPasswordLabel": "Contrase\u00f1a",
+  "homeErrorMessage": "Error: {error}",
+  "@homeErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFallbackUsername": "Usuario",
+  "homeFallbackHabitTitle": "H\u00e1bito",
+  "homeHabitCompletionBurstDefault": "+XP",
+  "homeCompletedLabel": "Completados ",
+  "homeCompletedCount": "Completados ({count})",
+  "@homeCompletedCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSkippedCount": "Skipeados ({count})",
+  "@homeSkippedCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "homeEmptyStateMultiline": "A\u00fan no tienes h\u00e1bitos activos.\nPulsa \u201cNuevo\u201d para a\u00f1adir el primero.",
+  "homeEmptyStateSingleLine": "A\u00fan no tienes h\u00e1bitos activos. Pulsa \u201cNuevo\u201d para a\u00f1adir el primero.",
+  "homeEditCounterTitle": "Editar contador",
+  "homeEditCounterHint": "Introduce un n\u00famero",
+  "homeInputValueHint": "Introduce un valor",
+  "commonCancel": "Cancelar",
+  "commonSave": "Guardar",
+  "commonClose": "Cerrar",
+  "commonAdd": "A\u00f1adir",
+  "homeHabitCountProgress": "{current} de {target}",
+  "@homeHabitCountProgress": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHabitCountProgressWithUnit": "{current} de {target} {unit}",
+  "@homeHabitCountProgressWithUnit": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAddHabitLoadError": "No se pudo cargar el cat\u00e1logo",
+  "homeAddHabitCreated": "Se ha creado \"{name}\"",
+  "@homeAddHabitCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAddHabitCreatedGeneric": "H\u00e1bito creado",
+  "homeAddHabitCreateFromScratch": "Crear h\u00e1bito desde cero",
+  "habitConfigTypeSection": "Tipo",
+  "habitConfigCheckOption": "Check",
+  "habitConfigCounterOption": "Contador",
+  "habitConfigGoalSection": "Objetivo",
+  "habitConfigGoalSectionWithUnit": "Objetivo ({unit})",
+  "@habitConfigGoalSectionWithUnit": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "habitConfigFrequencySection": "Frecuencia",
+  "habitConfigDailyOption": "Diario",
+  "habitConfigWeeklyOption": "Semanal",
+  "habitConfigOnceOption": "Una vez",
+  "habitConfigDaysSection": "D\u00edas",
+  "habitConfigDateSection": "Fecha",
+  "habitConfigChooseDate": "Elegir fecha",
+  "habitConfigInvalidGoal": "Pon un objetivo v\u00e1lido (mayor que 0).",
+  "habitConfigSelectDay": "Selecciona al menos un d\u00eda.",
+  "habitConfigSelectDate": "Selecciona una fecha.",
+  "weekdayShortMon": "Lun",
+  "weekdayShortTue": "Mar",
+  "weekdayShortWed": "Mi\u00e9",
+  "weekdayShortThu": "Jue",
+  "weekdayShortFri": "Vie",
+  "weekdayShortSat": "S\u00e1b",
+  "weekdayShortSun": "Dom",
+  "weekdayLetterMon": "L",
+  "weekdayLetterTue": "M",
+  "weekdayLetterWed": "X",
+  "weekdayLetterThu": "J",
+  "weekdayLetterFri": "V",
+  "weekdayLetterSat": "S",
+  "weekdayLetterSun": "D",
+  "unitTimesShort": "veces",
+  "unitMinutesShort": "min",
+  "unitHoursShort": "h",
+  "unitPagesShort": "p\u00e1ginas",
+  "unitStepsShort": "pasos",
+  "unitKilometersShort": "km",
+  "unitLitersShort": "L",
+  "familyMindName": "Mente",
+  "familySpiritName": "Esp\u00edritu",
+  "familyBodyName": "Cuerpo",
+  "familyEmotionalName": "Emocional",
+  "familySocialName": "Social",
+  "familyDisciplineName": "Disciplina",
+  "familyProfessionalName": "Profesional",
+  "catalogHabitLeerXMinutos": "Leer",
+  "catalogHabitLeerXMinutosTarget": "Leer {target} minutos",
+  "@catalogHabitLeerXMinutosTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitResolverProblemaLogico": "Resolver un problema l\u00f3gico",
+  "catalogHabitEscribirIdeasReflexiones": "Escribir ideas o reflexiones",
+  "catalogHabitEstudiarXTiempo": "Estudiar",
+  "catalogHabitEstudiarXTiempoTarget": "Estudiar {target} horas",
+  "@catalogHabitEstudiarXTiempoTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitAprenderIdioma": "Practicar un idioma",
+  "catalogHabitEscucharPodcastEducativo": "Escuchar podcast educativo",
+  "catalogHabitTomarNotas": "Tomar notas del d\u00eda",
+  "catalogHabitJuegoMental": "Juego mental o rompecabezas",
+  "catalogHabitPracticarEscrituraCreativa": "Escritura creativa",
+  "catalogHabitRepasarNotas": "Repasar notas del d\u00eda",
+  "catalogHabitVerDocumental": "Ver un documental o v\u00eddeo educativo",
+  "catalogHabitMeditar": "Meditar",
+  "catalogHabitPracticarGratitud": "Practicar gratitud",
+  "catalogHabitRespiracionConsciente": "Respiraci\u00f3n consciente",
+  "catalogHabitReflexionPersonal": "Reflexi\u00f3n personal",
+  "catalogHabitOracionConexionEspiritual": "Oraci\u00f3n o conexi\u00f3n espiritual",
+  "catalogHabitRevisarAprendizajesDia": "Revisar aprendizajes del d\u00eda",
+  "catalogHabitVisualizacionPositiva": "Visualizaci\u00f3n positiva",
+  "catalogHabitLecturaEspiritual": "Lectura espiritual",
+  "catalogHabitDesconexionDigital": "Desconexi\u00f3n digital",
+  "catalogHabitContactoNaturaleza": "Tiempo en la naturaleza",
+  "catalogHabitTresCosasBuenas": "Escribir 3 cosas buenas del d\u00eda",
+  "catalogHabitPaseoSinMovil": "Paseo sin m\u00f3vil",
+  "catalogHabitMomentoParaTi": "Momento para ti",
+  "catalogHabitHacerEjercicio": "Hacer ejercicio",
+  "catalogHabitIrGimnasio": "Ir al gimnasio",
+  "catalogHabitCaminarPasosKm": "Caminar",
+  "catalogHabitCaminarPasosKmTarget": "Caminar {target} pasos",
+  "@catalogHabitCaminarPasosKmTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitComerSaludable": "Comer saludable",
+  "catalogHabitBeberXLAgua": "Beber agua",
+  "catalogHabitBeberXLAguaTarget": "Beber {target} L de agua",
+  "@catalogHabitBeberXLAguaTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitDormirXHoras": "Dormir bien",
+  "catalogHabitDormirXHorasTarget": "Dormir {target} horas",
+  "@catalogHabitDormirXHorasTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitEstiramientos": "Estiramientos",
+  "catalogHabitEvitarUltraprocesados": "Evitar ultraprocesados",
+  "catalogHabitCuidarPostura": "Cuidar la postura",
+  "catalogHabitRutinaManana": "Rutina de ma\u00f1ana",
+  "catalogHabitRutinaNoche": "Rutina de noche",
+  "catalogHabitSinAlcohol": "Sin alcohol",
+  "catalogHabitCardio": "Cardio",
+  "catalogHabitCardioTarget": "Cardio {target} minutos",
+  "@catalogHabitCardioTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitTomarElSol": "Tomar el sol",
+  "catalogHabitNoPicar": "No picar entre horas",
+  "catalogHabitDuchaFria": "Ducha fr\u00eda",
+  "catalogHabitHacerCama": "Hacer la cama",
+  "catalogHabitSkincare": "Skincare",
+  "catalogHabitHigieneBucal": "Higiene bucal completa",
+  "catalogHabitTomarSuplementos": "Tomar suplementos o medicaci\u00f3n",
+  "catalogHabitHidratarPiel": "Hidratarse la piel",
+  "catalogHabitDiarioEmocional": "Diario emocional",
+  "catalogHabitIdentificarEmociones": "Identificar mis emociones",
+  "catalogHabitGestionarEstres": "Gestionar el estr\u00e9s",
+  "catalogHabitAutocompasion": "Practicar autocompasi\u00f3n",
+  "catalogHabitHablarSentimientos": "Expresar mis sentimientos",
+  "catalogHabitReducirPensamientosNegativos": "Reducir pensamientos negativos",
+  "catalogHabitPracticarPaciencia": "Practicar paciencia",
+  "catalogHabitMomentoAlegria": "Hacer algo que me alegre",
+  "catalogHabitCelebrarLogro": "Celebrar un logro",
+  "catalogHabitNotaAnimo": "Nota de \u00e1nimo del d\u00eda",
+  "catalogHabitNotaAnimoTarget": "\u00c1nimo: {target}/10",
+  "@catalogHabitNotaAnimoTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitSinPantallasNoche": "Sin pantallas antes de dormir",
+  "catalogHabitSinPantallasNocheTarget": "Sin pantallas {target} min antes de dormir",
+  "@catalogHabitSinPantallasNocheTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitHablarSerQuerido": "Hablar con alguien querido",
+  "catalogHabitEscucharActivamente": "Escuchar activamente",
+  "catalogHabitExpresarGratitud": "Expresar gratitud a alguien",
+  "catalogHabitAyudarAlguien": "Ayudar a alguien",
+  "catalogHabitMantenerContacto": "Mantener el contacto",
+  "catalogHabitCompartirExperiencias": "Compartir una experiencia",
+  "catalogHabitPracticarEmpatia": "Practicar empat\u00eda",
+  "catalogHabitPlanSocial": "Quedar con alguien",
+  "catalogHabitDesconectarRedes": "Desconectarse de redes sociales",
+  "catalogHabitMensajeAnimo": "Enviar un mensaje de \u00e1nimo",
+  "catalogHabitLlamadaFamiliaAmigo": "Llamada con familia o amigo",
+  "catalogHabitPlanificarDia": "Planificar el d\u00eda",
+  "catalogHabitCumplirRutina": "Cumplir la rutina",
+  "catalogHabitRevisarObjetivos": "Revisar objetivos",
+  "catalogHabitEvitarProcrastinacion": "Vencer la procrastinaci\u00f3n",
+  "catalogHabitTareaDificil": "Hacer la tarea m\u00e1s dif\u00edcil primero",
+  "catalogHabitPriorizarImportante": "Priorizar lo importante",
+  "catalogHabitDejarFumar": "Sin tabaco",
+  "catalogHabitSinRedesSociales": "Sin redes sociales",
+  "catalogHabitSinRedesSocialesTarget": "Sin redes sociales {target} horas",
+  "@catalogHabitSinRedesSocialesTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitMadrugar": "Madrugar",
+  "catalogHabitRevisarFinDia": "Revisar el d\u00eda al terminar",
+  "catalogHabitApagarMovil": "Apagar el m\u00f3vil a una hora fija",
+  "catalogHabitSinComprasImpulsivas": "Sin compras impulsivas",
+  "catalogHabitPrepararRopa": "Preparar la ropa del d\u00eda siguiente",
+  "catalogHabitTrabajoProfundo": "Sesi\u00f3n de trabajo profundo",
+  "catalogHabitTrabajoProfundoTarget": "Trabajo profundo {target} min",
+  "@catalogHabitTrabajoProfundoTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitHabilidadLaboral": "Desarrollar habilidad laboral",
+  "catalogHabitOrganizarTareas": "Organizar tareas del d\u00eda",
+  "catalogHabitRevisarRendimiento": "Revisar rendimiento",
+  "catalogHabitNetworking": "Networking",
+  "catalogHabitFormacionProfesional": "Formaci\u00f3n profesional",
+  "catalogHabitFormacionProfesionalTarget": "Formaci\u00f3n {target} horas",
+  "@catalogHabitFormacionProfesionalTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitResponderEmails": "Bandeja de entrada a cero",
+  "catalogHabitProyectoPersonal": "Avanzar en proyecto personal",
+  "catalogHabitLeerSector": "Leer sobre mi sector",
+  "catalogHabitPomodoro": "Bloque Pomodoro completado",
+  "catalogHabitPomodoroTarget": "{target} pomodoros",
+  "@catalogHabitPomodoroTarget": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogHabitTrucoNuevo": "Aprender un atajo o truco nuevo",
+  "settingsTitle": "Ajustes",
+  "settingsLanguageSectionTitle": "Idioma",
+  "settingsLanguageOptionSpanish": "Espa\u00f1ol",
+  "settingsLanguageOptionEnglish": "Ingl\u00e9s",
+  "settingsAccountSectionTitle": "Cuenta",
+  "settingsLogOut": "Cerrar sesi\u00f3n",
+  "settingsLogOutTitle": "\u00bfCerrar sesi\u00f3n?",
+  "settingsLogOutMessage": "Podr\u00e1s volver a entrar con tu email y contrase\u00f1a cuando quieras.",
+  "settingsLogOutConfirm": "Cerrar sesi\u00f3n",
+  "settingsLogOutError": "No se ha podido cerrar sesi\u00f3n. Int\u00e9ntalo de nuevo.",
+  "settingsLogoutTitle": "Cerrar sesi\u00f3n",
+  "settingsLogoutConfirmationBody": "\u00bfSeguro que quieres cerrar sesi\u00f3n? Podr\u00e1s volver a entrar cuando quieras.",
+  "settingsLogoutConfirmAction": "Cerrar sesi\u00f3n",
+  "settingsLogoutError": "No se ha podido cerrar sesi\u00f3n. Int\u00e9ntalo de nuevo.",
+  "settingsDeleteAccountTitle": "Eliminar cuenta",
+  "settingsDeleteAccountHelperText": "Elimina tu cuenta y los datos asociados de forma permanente.",
+  "settingsDeleteAccountConfirmationTitle": "\u00bfEliminar cuenta?",
+  "settingsDeleteAccountConfirmationBody": "Esta acci\u00f3n eliminar\u00e1 tu cuenta y tus datos asociados. No se puede deshacer.",
+  "settingsDeleteAccountConfirmAction": "Eliminar cuenta",
+  "settingsDeleteAccountMessage": "Esta acci\u00f3n eliminar\u00e1 tu cuenta y tus datos asociados. No se puede deshacer.",
+  "settingsDeleteAccountConfirm": "Eliminar cuenta",
+  "settingsDeleteAccountTypeToConfirm": "Escribe ELIMINAR para confirmar.",
+  "settingsDeleteAccountError": "No se ha podido eliminar la cuenta. Int\u00e9ntalo de nuevo.",
+  "settingsDeleteAccountDeleting": "Eliminando cuenta...",
+  "settingsDeleteAccountSuccess": "Tu cuenta se ha eliminado correctamente.",
+  "profileSettingsTitle": "Ajustes",
+  "profileSettingsSubtitle": "Idioma, privacidad y m\u00e1s",
+  "profileTitle": "Perfil",
+  "profileDefaultName": "Tu perfil",
+  "profileDefaultSubtitle": "Tu progreso, ajustes y cuenta",
+  "profileNotificationsTitle": "Notificaciones",
+  "profileEnableNotificationsTitle": "Activar notificaciones",
+  "profileEnableNotificationsSubtitle": "Recordatorios, cierre del d\u00eda y rachas",
+  "profileNotificationSettingsTitle": "Ajustes de notificaciones",
+  "profileNotificationCategoriesActive": "{count} de {total} categor\u00edas activas",
+  "@profileNotificationCategoriesActive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "profileAccountSectionTitle": "Cuenta y ajustes",
+  "profileThemeTitle": "Tema",
+  "profileThemeSubtitle": "Claro / Oscuro / Autom\u00e1tico",
+  "profileThemeTodo": "Tema (TODO)",
+  "profileHelpTitle": "Ayuda",
+  "profileHelpSubtitle": "FAQ y soporte",
+  "profileHelpTodo": "Ayuda (TODO)",
+  "profileAboutTitle": "Acerca de",
+  "profileAboutSubtitle": "Versi\u00f3n y legal",
+  "profileAboutTodo": "Acerca de (TODO)",
+  "profileDangerSectionTitle": "Zona peligrosa",
+  "profileManageDataTitle": "Gestionar datos",
+  "profileManageDataSubtitle": "Exportar o borrar tu informaci\u00f3n",
+  "profileManageDataTodo": "Gestionar datos (TODO)",
+  "profileLogoutTodo": "Cerrar sesi\u00f3n (TODO)",
+  "profileNotificationPermissionDenied": "Permiso de notificaciones no concedido.",
+  "profileEditButton": "Editar",
+  "profileDangerZoneTitle": "Zona de peligro",
+  "profileLogoutTitle": "Cerrar sesi\u00f3n",
+  "profileLogoutSubtitle": "Se cerrar\u00e1 tu sesi\u00f3n en este dispositivo",
+  "profileDeleteDataTitle": "Borrar datos",
+  "profileDeleteDataSubtitle": "Elimina todos tus datos y progreso (irreversible)",
+  "profileFamiliesProgressTitle": "Progreso por familias",
+  "profileFamilyLevelShort": "Lvl {level}",
+  "@profileFamilyLevelShort": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "profileFamilyLevelLabel": "Nivel {level}",
+  "@profileFamilyLevelLabel": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "profileNotificationsPhaseOneTitle": "Fase 1",
+  "profileNotificationHabitRemindersTitle": "Recordatorios de h\u00e1bitos",
+  "profileNotificationHabitRemindersSubtitle": "Respeta la hora configurada en cada h\u00e1bito",
+  "profileNotificationDayClosureTitle": "Cierre del d\u00eda",
+  "profileNotificationDayClosureSubtitle": "Solo si a\u00fan quedan h\u00e1bitos pendientes hoy",
+  "profileNotificationDayClosureTimeTitle": "Hora de cierre del d\u00eda",
+  "profileNotificationDayClosureTimeSubtitle": "Momento para recordar lo que a\u00fan queda pendiente",
+  "profileNotificationStreakRiskTitle": "Racha en riesgo",
+  "profileNotificationStreakRiskSubtitle": "Avisa cuando a\u00fan puedes salvar una racha relevante",
+  "profileNotificationStreakCelebrationTitle": "Celebraciones de racha",
+  "profileNotificationStreakCelebrationSubtitle": "Celebra hitos b\u00e1sicos como 1, 3, 7, 14 y 30 d\u00edas",
+  "profileNotificationInactivityTitle": "Reactivaci\u00f3n por inactividad",
+  "profileNotificationInactivitySubtitle": "Un recordatorio amable tras 3 d\u00edas sin abrir la app",
+  "editProfileTitle": "Editar perfil",
+  "editProfileSave": "Guardar",
+  "editProfileSaveChanges": "Guardar cambios",
+  "editProfileSaving": "Guardando...",
+  "editProfileTakePhoto": "Tomar foto",
+  "editProfileGallery": "Galer\u00eda",
+  "editProfileRemovePhoto": "Eliminar foto",
+  "editProfilePersonalInfoTitle": "Informaci\u00f3n personal",
+  "editProfileGoalSectionTitle": "Tu objetivo",
+  "editProfileImageSelectionError": "Error al seleccionar imagen: {error}",
+  "@editProfileImageSelectionError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "editProfileSaveSuccess": "Perfil actualizado correctamente",
+  "editProfileSaveError": "Error al guardar: {error}",
+  "@editProfileSaveError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "editProfileDiscardChangesTitle": "\u00bfDescartar cambios?",
+  "editProfileDiscardChangesBody": "Tienes cambios sin guardar. \u00bfEst\u00e1s seguro de que quieres salir?",
+  "editProfileDiscardChangesAction": "Descartar",
+  "editProfileCropTitle": "Recortar",
+  "editProfileStatLevel": "Nivel",
+  "editProfileStatXp": "XP",
+  "editProfileStatCoins": "Monedas",
+  "editProfileNameLabel": "Nombre",
+  "editProfileNameHint": "C\u00f3mo quieres que te vean",
+  "editProfileNameRequired": "El nombre es obligatorio",
+  "editProfileNameMinLength": "M\u00ednimo 2 caracteres",
+  "editProfileBioLabel": "Bio",
+  "editProfileBioHint": "Cu\u00e9ntanos un poco sobre ti...",
+  "editProfileGoalLabel": "Objetivo",
+  "editProfileGoalHint": "Qu\u00e9 quieres conseguir con Rutio",
+  "editProfileChangePhoto": "Cambiar foto de perfil",
+  "editProfileAddPhoto": "A\u00f1adir foto de perfil",
+  "archivedHabitsTitle": "H\u00e1bitos archivados",
+  "archivedHabitsEmpty": "No tienes h\u00e1bitos archivados.",
+  "archivedHabitsFamilyLabel": "Familia: {family}",
+  "@archivedHabitsFamilyLabel": {
+    "placeholders": {
+      "family": {
+        "type": "String"
+      }
+    }
+  },
+  "archivedHabitsRestoreTooltip": "Restaurar",
+  "archivedHabitsDeleteTooltip": "Eliminar",
+  "archivedHabitsDeleteTitle": "Eliminar h\u00e1bito",
+  "archivedHabitsDeleteBody": "\u00bfSeguro que quieres eliminar este h\u00e1bito?\n\nSe eliminar\u00e1 tambi\u00e9n su historial.",
+  "habitDetailFallbackTitle": "H\u00e1bito",
+  "habitDetailSaved": "Cambios guardados",
+  "habitDetailDeleteTitle": "Eliminar h\u00e1bito",
+  "habitDetailDeleteBody": "Se borrar\u00e1 el h\u00e1bito y su historial. Esta acci\u00f3n no se puede deshacer.",
+  "habitDetailArchiveAction": "Archivar h\u00e1bito",
+  "habitDetailDeleteAction": "Eliminar h\u00e1bito",
+  "habitDetailMoreOptionsTooltip": "M\u00e1s opciones",
+  "habitDetailEditTab": "Editar",
+  "habitDetailStatsTab": "Estad\u00edsticas",
+  "archiveHabitTileTitle": "Archivar h\u00e1bito",
+  "archiveHabitTileArchivedSubtitle": "Este h\u00e1bito est\u00e1 archivado (no aparecer\u00e1 en la lista principal).",
+  "archiveHabitTileActiveSubtitle": "Oculta este h\u00e1bito de la lista principal sin borrarlo.",
+  "archiveHabitTileConfirmTitle": "Archivar h\u00e1bito",
+  "archiveHabitTileConfirmBody": "\u00bfQuieres archivar este h\u00e1bito? Podr\u00e1s recuperarlo m\u00e1s adelante.",
+  "archiveHabitTileConfirmAction": "Archivar",
+  "habitStatsTitle": "Estadisticas",
+  "habitStatsEmpty": "No hay habitos para mostrar.",
+  "habitStatsMetricCompleted": "Completado",
+  "habitStatsMetricCompletionDescription": "{done}/{total} dias",
+  "@habitStatsMetricCompletionDescription": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsMetricConsistency": "Consistencia",
+  "habitStatsMetricConsistencyDescription": "Ultimos {window} dias",
+  "@habitStatsMetricConsistencyDescription": {
+    "placeholders": {
+      "window": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsMetricBestStreak": "Mejor racha",
+  "habitStatsMetricPersonalBest": "Record personal",
+  "habitStatsMetricTotalDone": "Total hechos",
+  "habitStatsMetricHistoricRecords": "Historico (registros)",
+  "habitStatsChartWeekTitle": "Semana",
+  "habitStatsChartLastFourWeeksTitle": "Ultimas 4 semanas",
+  "habitStatsChartWeekSubtitle": "Completado por dia",
+  "habitStatsChartWeeksSubtitle": "Completado agregado por semana",
+  "habitStatsNextMilestone": "Siguiente hito",
+  "habitStatsWeeklyComparisonTitle": "Comparacion semanal",
+  "habitStatsWeeklyComparisonSubtitle": "Esta semana vs la anterior",
+  "habitStatsBestTimeSectionTitle": "Cuando lo cumples mejor?",
+  "habitStatsBestTimeSectionSubtitle": "Basado en tus registros, tus momentos mas consistentes",
+  "habitStatsMonthCalendarTitle": "Calendario del mes",
+  "habitStatsTabSummaryTitle": "Resumen",
+  "habitStatsTabLastDaysTitle": "Ultimos {days} dias",
+  "@habitStatsTabLastDaysTitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsTabAchievementsUnlocked": "Logros desbloqueados",
+  "habitStatsTabCurrentStreakTitle": "Racha actual",
+  "habitStatsTabDayUnit": "{count} dia",
+  "@habitStatsTabDayUnit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsTabTotalLabel": "total",
+  "habitStatsTabCompletionWindow": "{done} / {total} dias",
+  "@habitStatsTabCompletionWindow": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsTabCounterHint": "Cuenta el numero de veces completado cada dia",
+  "habitStatsTabCheckHint": "Dias en los que completaste este habito",
+  "habitStatsTabFireStreakTitle": "Racha de fuego",
+  "habitStatsTabStreakInARow": "{days} dias seguidos",
+  "@habitStatsTabStreakInARow": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsTabCentennialTitle": "Centenario!",
+  "habitStatsTabHalfCenturyTitle": "Medio centenar",
+  "habitStatsTabCompletedCount": "{count} completados",
+  "@habitStatsTabCompletedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsTabMaxConsistencyTitle": "Consistencia maxima",
+  "habitStatsTabLast30DaysPercent": "{percent}% ultimos 30 dias",
+  "@habitStatsTabLast30DaysPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsTabLegendaryRecordTitle": "Record legendario",
+  "habitStatsTabRecordStreak": "{days} dias de racha",
+  "@habitStatsTabRecordStreak": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsTabWeeklyDelta": "{delta} vs semana anterior",
+  "@habitStatsTabWeeklyDelta": {
+    "placeholders": {
+      "delta": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsTabWeeklyDeltaEqual": "Igual que semana anterior",
+  "diaryTitle": "Diario",
+  "diaryMenuTooltip": "Menu",
+  "diaryCloseSearchTooltip": "Cerrar busqueda",
+  "diarySearchTooltip": "Buscar",
+  "diaryFiltersTooltip": "Filtros",
+  "diaryNewEntry": "Nueva entrada",
+  "diaryEntryDeleted": "Entrada eliminada",
+  "diaryEntrySaved": "Entrada guardada",
+  "diaryNoteSaved": "Nota guardada",
+  "diaryPinSoon": "Fijar: proximamente",
+  "diaryDeleteEntryTitle": "Eliminar entrada",
+  "diaryDeleteEntryBody": "Seguro que quieres eliminar esta entrada?",
+  "diaryEntriesCount": "{count} entradas",
+  "@diaryEntriesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "diaryPeriodAll": "Todo",
+  "diaryPeriodDays": "Dias",
+  "diaryPeriodWeeks": "Semanas",
+  "diaryPeriodMonths": "Meses",
+  "diarySearchHint": "Buscar en tu diario...",
+  "diaryClearTooltip": "Borrar",
+  "diarySearchScopeAll": "Todo",
+  "diarySearchScopeHabits": "Habitos",
+  "diarySearchScopePersonal": "Personal",
+  "diaryWrittenEntriesToday": "Hoy escribiste {count} entradas",
+  "@diaryWrittenEntriesToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "diaryEmotionalXp": "+{xp} XP emocional",
+  "@diaryEmotionalXp": {
+    "placeholders": {
+      "xp": {
+        "type": "int"
+      }
+    }
+  },
+  "diarySummaryEmptyTitle": "Hoy aun no has escrito",
+  "diarySummaryEmptySubtitle": "Un minuto puede cambiar tu dia",
+  "diarySummaryOneTitle": "Buen comienzo",
+  "diarySummaryOneSubtitle": "Has dado espacio a tu mente",
+  "diarySummaryFewTitle": "Estas cuidando tu mundo interior",
+  "diarySummaryFewSubtitle": "Sigue asi",
+  "diarySummaryManyTitle": "Dia muy consciente",
+  "diarySummaryManySubtitle": "Gran trabajo emocional",
+  "diaryActionEdit": "Editar",
+  "diaryActionDelete": "Eliminar",
+  "diaryComposerCancel": "\u2190 Cancelar",
+  "diaryComposerEditEntryUpper": "EDITAR ENTRADA",
+  "diaryComposerNewEntryUpper": "NUEVA ENTRADA",
+  "diaryComposerMoodSectionUpper": "\u00bfCOMO TE SENTISTE?",
+  "diaryComposerTitleUpper": "TITULO",
+  "diaryComposerReflectionUpper": "REFLEXION",
+  "diaryComposerTitleHint": "Como resumirias hoy?",
+  "diaryComposerHabitReflectionHint": "Que paso hoy con tu habito? Que sentiste? Que aprendiste?",
+  "diaryComposerPersonalReflectionHint": "Que tienes en mente? Que quieres dejar por escrito hoy?",
+  "diaryComposerSaveChanges": "Guardar cambios",
+  "diaryComposerSaveEntry": "Guardar entrada",
+  "diaryComposerTypeHabit": "Ligada a habito",
+  "diaryComposerTypePersonal": "Personal",
+  "diaryComposerSelectHabit": "Seleccionar habito",
+  "diaryComposerTapToChooseHabit": "Toca para elegir un habito",
+  "diaryComposerWriteSomethingError": "Escribe algo para guardar la entrada",
+  "diaryComposerSelectHabitError": "Selecciona un habito",
+  "diaryComposerNoActiveHabits": "No hay habitos activos para seleccionar",
+  "diaryComposerSelectHabitSheetTitle": "Seleccionar habito",
+  "diaryDetailScreenTitle": "Entrada",
+  "diaryDetailTopHabitUpper": "ENTRADA DE HABITO",
+  "diaryDetailTopPersonalUpper": "ENTRADA PERSONAL",
+  "diaryDetailFallbackHabitTitle": "Entrada de habito",
+  "diaryDetailFallbackPersonalTitle": "Entrada personal",
+  "diaryDetailLeadingPersonal": "Escrito personal",
+  "diaryDetailFamilyPersonal": "Personal",
+  "diaryDetailTypeHabit": "Dia de habito",
+  "diaryDetailTypePersonal": "Nota personal",
+  "diaryDetailNotesUpper": "NOTAS",
+  "diaryDetailLoggedAt": "Registrado a las {time}",
+  "@diaryDetailLoggedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "diaryDetailThisWeekUpper": "ESTA SEMANA",
+  "diaryTodayUpper": "HOY",
+  "habitStatsWeekShort": "S{weekNumber}",
+  "@habitStatsWeekShort": {
+    "placeholders": {
+      "weekNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsHabitFallbackTitle": "Habito",
+  "habitStatsPeriodWeek": "Semana",
+  "habitStatsPeriodMonth": "Mes",
+  "habitStatsPeriodThreeMonths": "3 meses",
+  "habitStatsPeriodAll": "Todo",
+  "habitStatsDaysLabel": "{count} dia",
+  "@habitStatsDaysLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsCurrentStreakUpper": "RACHA ACTUAL",
+  "habitStatsHeadlineStartToday": "Empezamos hoy!",
+  "habitStatsHeadlineGoodStart": "Buen inicio!",
+  "habitStatsHeadlineOnStreak": "En racha!",
+  "habitStatsMilestoneProgress": "{label}: {next} dias",
+  "@habitStatsMilestoneProgress": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "next": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsThisWeek": "Esta semana",
+  "habitStatsLastWeek": "Semana pasada",
+  "habitStatsTimeSlotMorning": "manana",
+  "habitStatsTimeSlotAfternoon": "tarde",
+  "habitStatsTimeSlotEvening": "noche",
+  "habitStatsTimeSlotNight": "madrugada",
+  "habitStatsLegendLess": "Menos",
+  "habitStatsLegendMore": "Mas",
+  "habitStatsDayTooltip": "Dia {day}",
+  "@habitStatsDayTooltip": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsThisHabitFallback": "este habito",
+  "habitStatsMotivationLead": "Llevas ",
+  "habitStatsMotivationWith": " con ",
+  "habitStatsMotivationAboveLead": "estas ",
+  "habitStatsMotivationAboveKeyword": "por encima",
+  "habitStatsMotivationAboveTail": " de la semana pasada. ",
+  "habitStatsMotivationBelowLead": "esta semana vas un poco ",
+  "habitStatsMotivationBelowKeyword": "por debajo",
+  "habitStatsMotivationBelowTail": " de la anterior. ",
+  "habitStatsMotivationEqual": "mantienes el ritmo de la semana pasada. ",
+  "habitStatsMotivationStart": "buen comienzo. ",
+  "habitStatsMotivationGoalLead": "Anticiparte te ayudara a ",
+  "habitStatsMotivationGoalKeyword": "llegar a los {days} dias",
+  "@habitStatsMotivationGoalKeyword": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsMotivationKeepLead": "Ahora toca ",
+  "habitStatsMotivationKeepKeyword": "mantener la racha",
+  "habitStatsMotivationKeepTail": " y consolidarlo.",
+  "habitStatsMotivationBestTimeLead": " Prueba a hacerlo en la ",
+  "habitStatsMotivationBestTimeTail": ", cuando sueles ser mas constante.",
+  "editHabitSaveChanges": "Guardar cambios",
+  "editHabitSaving": "Guardando...",
+  "editHabitNotificationPermissionDenied": "Permisos de notificacion denegados.",
+  "editHabitDailyGoalDialogTitle": "Meta diaria",
+  "editHabitDailyGoalDialogSubtitle": "Escribe el numero objetivo.",
+  "editHabitCounterStepDialogTitle": "Incremento",
+  "editHabitCounterStepDialogSubtitle": "Cada cuanto aumenta el contador.",
+  "editHabitTimesPerWeekDialogTitle": "Veces por semana",
+  "editHabitTimesPerWeekDialogSubtitle": "Puedes superarlo durante la semana.",
+  "editHabitSectionIdentity": "Identidad",
+  "editHabitSectionCategory": "Categoria",
+  "editHabitSectionTracking": "Como lo mides?",
+  "editHabitSectionFrequency": "Frecuencia",
+  "editHabitSectionReminder": "Recordatorio",
+  "editHabitSectionDetails": "Detalles",
+  "editHabitTitleHint": "Ej: Meditar cada manana",
+  "editHabitTrackingCheckTitle": "Si o no",
+  "editHabitTrackingCheckSubtitle": "Lo hice o no lo hice",
+  "editHabitTrackingCountTitle": "Contador",
+  "editHabitTrackingCountSubtitle": "Vasos, minutos, paginas...",
+  "editHabitDailyGoalSection": "Meta diaria",
+  "editHabitRepetitionsTitle": "Repeticiones",
+  "editHabitRepetitionsSubtitle": "Cuantas veces al dia?",
+  "editHabitUnitHint": "Unidad (ej: vasos, km...)",
+  "editHabitCounterStepTitle": "Incremento",
+  "editHabitCounterStepSubtitle": "Cuanto aumenta cada toque.",
+  "editHabitFrequencyDaily": "Cada dia",
+  "editHabitFrequencySpecificDays": "Dias concretos",
+  "editHabitFrequencyTimesPerWeek": "X veces / semana",
+  "editHabitWeeklyGoalTitle": "Objetivo semanal",
+  "editHabitWeeklyGoalSubtitle": "Marca cuantas veces quieres completarlo.",
+  "editHabitReminderDailyTitle": "Notificacion diaria",
+  "editHabitReminderDailySubtitle": "Elige cuando quieres que te avise",
+  "editHabitDescriptionHint": "Descripcion breve",
+  "editHabitNotesHint": "Notas o contexto adicional",
+  "editHabitUnitPickerTitle": "Unidad",
+  "editHabitUnitPickerSubtitle": "Elige una sugerencia o escribe una personalizada.",
+  "editHabitUnitPickerAction": "Usar unidad",
+  "editHabitSuggestedUnitGlasses": "vasos",
+  "editHabitSuggestedUnitMinutes": "minutos",
+  "editHabitSuggestedUnitKilometers": "km",
+  "editHabitSuggestedUnitPages": "paginas",
+  "editHabitSuggestedUnitSteps": "pasos",
+  "editHabitSuggestedUnitRepetitions": "repeticiones",
+  "editHabitSuggestedUnitHours": "horas",
+  "drawerBrandName": "rutio",
+  "drawerBrandTagline": "CONSTRUYE TU CAMINO",
+  "drawerSectionViews": "VISTAS",
+  "drawerDaily": "Diario",
+  "drawerWeekly": "Semanal",
+  "drawerMonthly": "Mensual",
+  "drawerSectionTracking": "SEGUIMIENTO",
+  "drawerStatistics": "Estad\u00edsticas",
+  "drawerDiary": "Diario (Journal)",
+  "drawerSectionArchive": "ARCHIVO",
+  "drawerArchived": "Archivados",
+  "drawerSectionAccount": "CUENTA",
+  "drawerProfile": "Mi perfil",
+  "drawerProfileVersion": "v0.1 alpha",
+  "weeklyScreenUnavailableSoon": "Pantalla no disponible todav\u00eda.",
+  "weeklyScreenUnavailable": "Pantalla no disponible",
+  "weeklyWeekPrefix": "Semana",
+  "weeklyActiveHabitsCount": "{count} HABITOS ACTIVOS",
+  "@weeklyActiveHabitsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "weeklyShowHabitNameHint": "<- toca el emoji para ver el nombre",
+  "weeklyViewMenuTitle": "Cambiar vista",
+  "weeklyViewMenuDailyTitle": "Vista diaria",
+  "weeklyViewMenuDailySubtitle": "Ver h\u00e1bitos de hoy",
+  "weeklyViewMenuWeeklyTitle": "Vista semanal",
+  "weeklyViewMenuWeeklySubtitle": "Actual",
+  "weeklyViewMenuMonthlyTitle": "Vista mensual",
+  "weeklyViewMenuMonthlySubtitle": "Ver progreso del mes",
+  "drawerTodo": "To-do",
+  "familyPersonalName": "Personal",
+  "todoTitle": "To-dos",
+  "todoDateTodayFormatLabel": "Hoy",
+  "todoFilterAll": "Todos",
+  "todoFilterPending": "Pendientes",
+  "todoFilterToday": "Hoy",
+  "todoFilterThisWeek": "Esta semana",
+  "todoFilterCompleted": "Completadas",
+  "todoProgressToday": "PROGRESO HOY",
+  "todoTasksCount": " / {total} tareas",
+  "@todoTasksCount": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "todoPendingCount": "{count} pendientes",
+  "@todoPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todoOverdueCount": "{count} vencida",
+  "@todoOverdueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todoSectionPending": "PENDIENTES \u00b7 {count}",
+  "@todoSectionPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todoSectionCompleted": "COMPLETADOS \u00b7 {count}",
+  "@todoSectionCompleted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "todoCreateTitle": "Nueva tarea",
+  "todoEditTitle": "Editar tarea",
+  "todoCancel": "Cancelar",
+  "todoSave": "Guardar",
+  "todoTypeFree": "Tarea libre",
+  "todoTypeLinkedHabit": "Vinculada a h\u00e1bito",
+  "todoWhatNeedToDo": "\u00bfQu\u00e9 tienes que hacer?",
+  "todoDescriptionOptional": "Descripci\u00f3n (opcional)",
+  "todoWhen": "CU\u00c1NDO",
+  "todoDate": "Fecha",
+  "todoSelect": "Seleccionar",
+  "todoTime": "Hora",
+  "todoNoTime": "Sin hora",
+  "todoCategory": "CATEGOR\u00cdA",
+  "todoPriority": "PRIORIDAD",
+  "todoNotes": "NOTAS",
+  "todoAddNote": "A\u00f1ade una nota...",
+  "todoPriorityNone": "\u2014",
+  "todoPriorityNormal": "Normal",
+  "todoPriorityHigh": "Alta",
+  "todoPriorityUrgent": "Urgente",
+  "todoPriorityHighBadge": "Prioritaria",
+  "todoPriorityUrgentBadge": "Urgente",
+  "todoXpReward": "+{xp} XP",
+  "@todoXpReward": {
+    "placeholders": {
+      "xp": {
+        "type": "int"
+      }
+    }
+  },
+  "todoStatusOverdueYesterday": "Vencida ayer",
+  "todoStatusOverdueDate": "Vencida {date}",
+  "@todoStatusOverdueDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "todoStatusTodayAt": "Hoy \u00b7 {time}",
+  "@todoStatusTodayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "todoStatusDueToday": "Hoy",
+  "todoStatusThisWeek": "Esta semana",
+  "todoStatusOnDate": "{date}",
+  "@todoStatusOnDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "todoMockMeditateTitle": "Meditar 10 minutos antes de dormir",
+  "todoMockReadTitle": "Leer 20 p\u00e1ginas del libro actual",
+  "todoMockGroceriesTitle": "Preparar la lista de la compra semanal",
+  "todoMockDoctorTitle": "Llamar al m\u00e9dico para pedir cita",
+  "todoMockCardioTitle": "Ejercicio matutino: 30 min cardio",
+  "todoMockWaterTitle": "Preparar botella de agua y mochila",
+  "todoMockReviewGoalsTitle": "Revisar prioridades clave del d\u00eda",
+  "todoMockEncouragementTitle": "Enviar un mensaje de \u00e1nimo",
+  "todoMockPrayerTitle": "Momento breve de oraci\u00f3n",
+  "todoMockInboxTitle": "Vaciar correos importantes",
+  "todoMockJournalTitle": "Journaling emocional de 5 minutos",
+  "todoEmptyStateTitle": "Todav\u00eda no tienes tareas",
+  "todoEmptyStateBody": "Crea tu primera tarea para empezar a organizar este espacio.",
+  "todoCreateFirstTask": "Crear primera tarea",
+  "diaryFiltersTitle": "Filtros",
+  "diaryFiltersType": "Tipo",
+  "diaryFiltersPinnedOnly": "Solo fijadas",
+  "diaryFiltersFamily": "Familia",
+  "diaryFiltersApply": "Aplicar",
+  "diaryAfterCompleteTitle": "Habito completado: {habitName}",
+  "@diaryAfterCompleteTitle": {
+    "placeholders": {
+      "habitName": {
+        "type": "String"
+      }
+    }
+  },
+  "diaryAfterCompletePrompt": "Quieres anadir una nota rapida?",
+  "diaryAfterCompleteSkip": "Ahora no",
+  "diaryAfterCompleteWrite": "Escribir",
+  "diaryGeneralFamilyName": "General",
+  "diaryCardTypeHabitShort": "DIA",
+  "diaryCardTypePersonalShort": "NOTA",
+  "diaryShowMore": "Ver mas",
+  "diaryShowLess": "Ver menos",
+  "diaryStreakLabel": "Racha: {count} dia{sufix}",
+  "@diaryStreakLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sufix": {
+        "type": "String"
+      }
+    }
+  },
+  "diaryEmotionalStreakTitle": "Racha emocional",
+  "diaryDaysLabel": "{count} dia{sufix}",
+  "@diaryDaysLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sufix": {
+        "type": "String"
+      }
+    }
+  },
+  "monthShortJan": "Ene",
+  "monthShortFeb": "Feb",
+  "monthShortMar": "Mar",
+  "monthShortApr": "Abr",
+  "monthShortMay": "May",
+  "monthShortJun": "Jun",
+  "monthShortJul": "Jul",
+  "monthShortAug": "Ago",
+  "monthShortSep": "Sep",
+  "monthShortOct": "Oct",
+  "monthShortNov": "Nov",
+  "monthShortDec": "Dic",
+  "createHabitNewHabitTitle": "Nuevo habito",
+  "createHabitSaveHabit": "Guardar habito",
+  "createHabitSaved": "Guardado",
+  "emojiPickerTitle": "Selecciona un emoji",
+  "emojiPickerCurrent": "Actual: {emoji}",
+  "@emojiPickerCurrent": {
+    "placeholders": {
+      "emoji": {
+        "type": "String"
+      }
+    }
+  },
+  "emojiPickerBrowseSubtitle": "Catalogo completo con categorias y busqueda",
+  "emojiPickerNoRecents": "Tus emojis recientes apareceran aqui",
+  "emojiPickerSearchHint": "Buscar emoji",
+  "monthlyDefaultUsername": "Usuario",
+  "monthlyEmptyFilteredMessage": "No hay habitos para mostrar en este filtro.",
+  "monthlyElapsedDaysWeek": "{elapsed} dias transcurridos \u00b7 semana {week}",
+  "@monthlyElapsedDaysWeek": {
+    "placeholders": {
+      "elapsed": {
+        "type": "int"
+      },
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "monthlyFilterSummaryFamily": "Familia: {family}",
+  "@monthlyFilterSummaryFamily": {
+    "placeholders": {
+      "family": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyFilterSummaryHabit": "Habito: {habit}",
+  "@monthlyFilterSummaryHabit": {
+    "placeholders": {
+      "habit": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyFilterSummaryAll": "Todos los habitos",
+  "monthlyFiltersTooltip": "Filtros",
+  "monthlyResetTooltip": "Restablecer",
+  "monthlyFiltersTitle": "Filtros",
+  "monthlyResetAction": "Restablecer",
+  "monthlyFilterModeAll": "Todos",
+  "monthlyFilterModeFamily": "Familia",
+  "monthlyFilterModeHabit": "Habito",
+  "monthlyApplyAction": "Aplicar",
+  "monthlySelectHabitLabel": "Selecciona un habito",
+  "monthlyHabitSelectorTitle": "VER HABITO",
+  "monthlyHabitFallbackTitle": "Habito",
+  "monthlyStatMonthLabel": "MES",
+  "monthlyStatStreakLabel": "RACHA",
+  "monthlyStatHabitsLabel": "HABITOS",
+  "monthlyDaysLabel": "{count} dia{sufix}",
+  "@monthlyDaysLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "sufix": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyCurrentStreakSoft": "racha actual",
+  "monthlyBestStreakSoft": "mejor racha",
+  "monthlySelectionToday": "Hoy",
+  "monthlySelectionDone": "Completado",
+  "monthlySelectionSkipped": "Saltado",
+  "monthlySelectionPending": "Pendiente",
+  "monthlySelectionFuture": "Futuro",
+  "monthlySelectionUnscheduled": "Sin programar",
+  "monthlySelectionSelected": "Seleccionado",
+  "monthlySelectionLabel": "{day}/{month} \u00b7 {state}",
+  "@monthlySelectionLabel": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "month": {
+        "type": "int"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "monthlyCurrentMonthTooltip": "Ir a este mes",
+  "monthlyMenuTooltip": "Menu"
 }
-
-
