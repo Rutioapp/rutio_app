@@ -660,20 +660,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAccountSectionTitle => 'Account';
 
   @override
-  String get settingsLogOut => 'Log out';
+  String get settingsLogoutTitle => 'Log out';
 
   @override
-  String get settingsLogOutTitle => 'Log out?';
+  String get settingsLogoutConfirmationBody =>
+      'Are you sure you want to log out? You can sign in again at any time.';
 
   @override
-  String get settingsLogOutMessage =>
-      'You can sign back in with your email and password anytime.';
+  String get settingsLogoutConfirmAction => 'Log out';
 
   @override
-  String get settingsLogOutConfirm => 'Log out';
-
-  @override
-  String get settingsLogOutError => 'Could not log out. Please try again.';
+  String get settingsLogoutError =>
+      'We couldn’t log you out. Please try again.';
 
   @override
   String get settingsDeleteAccountTitle => 'Delete account';
