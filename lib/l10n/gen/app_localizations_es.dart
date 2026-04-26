@@ -660,18 +660,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsAccountSectionTitle => 'Cuenta';
 
   @override
-  String get settingsLogoutTitle => 'Cerrar sesión';
+  String get settingsLogOut => 'Cerrar sesiÃ³n';
 
   @override
-  String get settingsLogoutConfirmationBody =>
-      '¿Seguro que quieres cerrar sesión? Podrás volver a entrar cuando quieras.';
+  String get settingsLogOutTitle => 'Â¿Cerrar sesiÃ³n?';
 
   @override
-  String get settingsLogoutConfirmAction => 'Cerrar sesión';
+  String get settingsLogOutMessage =>
+      'PodrÃ¡s volver a entrar con tu email y contraseÃ±a cuando quieras.';
 
   @override
-  String get settingsLogoutError =>
-      'No se ha podido cerrar sesión. Inténtalo de nuevo.';
+  String get settingsLogOutConfirm => 'Cerrar sesiÃ³n';
+
+  @override
+  String get settingsLogOutError =>
+      'No se ha podido cerrar sesiÃ³n. IntÃ©ntalo de nuevo.';
 
   @override
   String get settingsDeleteAccountTitle => 'Eliminar cuenta';

@@ -1305,29 +1305,35 @@ abstract class AppLocalizations {
   /// **'Cuenta'**
   String get settingsAccountSectionTitle;
 
-  /// No description provided for @settingsLogoutTitle.
+  /// No description provided for @settingsLogOut.
   ///
   /// In es, this message translates to:
-  /// **'Cerrar sesión'**
-  String get settingsLogoutTitle;
+  /// **'Cerrar sesiÃ³n'**
+  String get settingsLogOut;
 
-  /// No description provided for @settingsLogoutConfirmationBody.
+  /// No description provided for @settingsLogOutTitle.
   ///
   /// In es, this message translates to:
-  /// **'¿Seguro que quieres cerrar sesión? Podrás volver a entrar cuando quieras.'**
-  String get settingsLogoutConfirmationBody;
+  /// **'Â¿Cerrar sesiÃ³n?'**
+  String get settingsLogOutTitle;
 
-  /// No description provided for @settingsLogoutConfirmAction.
+  /// No description provided for @settingsLogOutMessage.
   ///
   /// In es, this message translates to:
-  /// **'Cerrar sesión'**
-  String get settingsLogoutConfirmAction;
+  /// **'PodrÃ¡s volver a entrar con tu email y contraseÃ±a cuando quieras.'**
+  String get settingsLogOutMessage;
 
-  /// No description provided for @settingsLogoutError.
+  /// No description provided for @settingsLogOutConfirm.
   ///
   /// In es, this message translates to:
-  /// **'No se ha podido cerrar sesión. Inténtalo de nuevo.'**
-  String get settingsLogoutError;
+  /// **'Cerrar sesiÃ³n'**
+  String get settingsLogOutConfirm;
+
+  /// No description provided for @settingsLogOutError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido cerrar sesiÃ³n. IntÃ©ntalo de nuevo.'**
+  String get settingsLogOutError;
 
   /// No description provided for @settingsDeleteAccountTitle.
   ///

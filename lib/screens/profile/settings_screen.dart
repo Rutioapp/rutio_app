@@ -1,24 +1,17 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
+import 'widgets/account_action_settings_row.dart';
 import 'widgets/destructive_settings_row.dart';
-import 'widgets/secondary_settings_row.dart';
 import 'widgets/section_card.dart';
 import 'widgets/settings_language_section.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isSigningOut = false;
 
   @override
   Widget build(BuildContext context) {
@@ -49,22 +42,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 10),
           SectionCard(
-            child: AbsorbPointer(
-              absorbing: _isSigningOut,
-              child: Column(
-                children: [
-                  SecondarySettingsRow(
-                    title: context.l10n.settingsLogoutTitle,
-                    onTap: _isSigningOut ? null : _handleSignOut,
-                    isLoading: _isSigningOut,
-                  ),
-                  const SizedBox(height: 10),
-                  DestructiveSettingsRow(
-                    title: context.l10n.settingsDeleteAccountTitle,
-                    onTap: () => _handleDeleteAccount(context),
-                  ),
-                ],
-              ),
+            child: Column(
+              children: [
+                AccountActionSettingsRow(
+                  title: context.l10n.settingsLogOut,
+                  onTap: () => _handleLogOut(context),
+                ),
+                const SizedBox(height: 8),
+                DestructiveSettingsRow(
+                  title: context.l10n.settingsDeleteAccountTitle,
+                  onTap: () => _handleDeleteAccount(context),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -84,43 +73,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _handleSignOut() async {
-    if (_isSigningOut) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    final store = context.read<UserStateStore>();
-    final client = Supabase.instance.client;
-    final l10n = context.l10n;
-
-    final confirmed = await _showSignOutConfirmation(context);
-    if (!confirmed || !mounted) return;
-
-    setState(() => _isSigningOut = true);
-
-    try {
-      await client.auth.signOut();
-      await store.clearAuthSessionState();
-      if (!mounted) return;
-
-      if (client.auth.currentSession != null || client.auth.currentUser != null) {
-        messenger.showSnackBar(
-          SnackBar(content: Text(l10n.settingsLogoutError)),
-        );
-        return;
-      }
-
-      Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
-    } catch (_) {
-      if (!mounted) return;
-
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.settingsLogoutError)),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isSigningOut = false);
-      }
+  Future<void> _handleLogOut(BuildContext context) async {
+    if (kDebugMode) {
+      debugPrint('[settings] logout tapped');
     }
+
+    final confirmed = await _showLogOutConfirmation(context);
+    if (!confirmed) {
+      if (kDebugMode) {
+        debugPrint('[settings] logout cancelled');
+      }
+      return;
+    }
+
+    if (!context.mounted) return;
+    if (kDebugMode) {
+      debugPrint('[settings] post-logout route decision: WelcomeScreen');
+    }
+    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
 
   Future<void> _handleDeleteAccount(BuildContext context) async {
@@ -166,8 +136,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pop();
     messenger.showSnackBar(
-      SnackBar(content: Text(l10n.settingsDeleteAccountSuccess)),
-    );
+        SnackBar(content: Text(l10n.settingsDeleteAccountSuccess)));
 
     Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
@@ -271,25 +240,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<bool> _showSignOutConfirmation(BuildContext context) async {
+  Future<bool> _showLogOutConfirmation(BuildContext context) async {
     final l10n = context.l10n;
     final platform = Theme.of(context).platform;
+    final messenger = ScaffoldMessenger.of(context);
+    var isSubmitting = false;
+
+    Future<void> submitLogOut(
+      BuildContext actionContext,
+      void Function(void Function()) setModalState,
+    ) async {
+      if (isSubmitting) return;
+      setModalState(() => isSubmitting = true);
+
+      if (kDebugMode) {
+        debugPrint('[settings] logout confirmed');
+      }
+
+      try {
+        await context.read<UserStateStore>().clearAuthSessionState();
+        if (kDebugMode) {
+          debugPrint('[settings] signOut success');
+        }
+        if (actionContext.mounted) {
+          Navigator.of(actionContext).pop(true);
+        }
+      } catch (error, stackTrace) {
+        if (kDebugMode) {
+          debugPrint('[settings] signOut failure: $error');
+          debugPrintStack(
+              label: '[settings] signOut failure', stackTrace: stackTrace);
+        }
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.settingsLogOutError)),
+        );
+        if (actionContext.mounted) {
+          setModalState(() => isSubmitting = false);
+        }
+      }
+    }
 
     if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
-      final result = await showCupertinoModalPopup<bool>(
+      final result = await showCupertinoDialog<bool>(
         context: context,
-        builder: (sheetContext) => CupertinoActionSheet(
-          title: Text(l10n.settingsLogoutTitle),
-          message: Text(l10n.settingsLogoutConfirmationBody),
-          actions: [
-            CupertinoActionSheetAction(
-              onPressed: () => Navigator.of(sheetContext).pop(true),
-              child: Text(l10n.settingsLogoutConfirmAction),
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (modalContext, setModalState) => CupertinoAlertDialog(
+            title: Text(l10n.settingsLogOutTitle),
+            content: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(l10n.settingsLogOutMessage),
             ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.of(sheetContext).pop(false),
-            child: Text(l10n.commonCancel),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: isSubmitting
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(false),
+                child: Text(l10n.commonCancel),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: false,
+                onPressed: isSubmitting
+                    ? null
+                    : () => submitLogOut(dialogContext, setModalState),
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CupertinoActivityIndicator(),
+                      )
+                    : Text(l10n.settingsLogOutConfirm),
+              ),
+            ],
           ),
         ),
       );
@@ -298,19 +319,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.settingsLogoutTitle),
-        content: Text(l10n.settingsLogoutConfirmationBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(l10n.settingsLogoutConfirmAction),
-          ),
-        ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (modalContext, setModalState) => AlertDialog(
+          title: Text(l10n.settingsLogOutTitle),
+          content: Text(l10n.settingsLogOutMessage),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.commonCancel),
+            ),
+            TextButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () => submitLogOut(dialogContext, setModalState),
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(l10n.settingsLogOutConfirm),
+            ),
+          ],
+        ),
       ),
     );
 
