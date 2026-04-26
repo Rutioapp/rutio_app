@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,8 +9,15 @@ import 'widgets/destructive_settings_row.dart';
 import 'widgets/section_card.dart';
 import 'widgets/settings_language_section.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isSigningOut = false;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +51,7 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               children: [
                 AccountActionSettingsRow(
-                  title: context.l10n.settingsLogOut,
+                  title: context.l10n.settingsLogoutTitle,
                   onTap: () => _handleLogOut(context),
                 ),
                 const SizedBox(height: 8),
@@ -74,23 +80,36 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Future<void> _handleLogOut(BuildContext context) async {
-    if (kDebugMode) {
-      debugPrint('[settings] logout tapped');
-    }
+    if (_isSigningOut) return;
+    setState(() => _isSigningOut = true);
 
-    final confirmed = await _showLogOutConfirmation(context);
+    final confirmed = await _showLogoutConfirmation(context);
     if (!confirmed) {
-      if (kDebugMode) {
-        debugPrint('[settings] logout cancelled');
+      if (context.mounted) {
+        setState(() => _isSigningOut = false);
       }
       return;
     }
 
     if (!context.mounted) return;
-    if (kDebugMode) {
-      debugPrint('[settings] post-logout route decision: WelcomeScreen');
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+
+    try {
+      await context.read<UserStateStore>().clearAuthSessionState();
+      if (!context.mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
+    } catch (_) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(l10n.settingsLogoutError)),
+        );
+      }
+    } finally {
+      if (context.mounted) {
+        setState(() => _isSigningOut = false);
+      }
     }
-    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
 
   Future<void> _handleDeleteAccount(BuildContext context) async {
@@ -240,78 +259,29 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  Future<bool> _showLogOutConfirmation(BuildContext context) async {
+  Future<bool> _showLogoutConfirmation(BuildContext context) async {
     final l10n = context.l10n;
     final platform = Theme.of(context).platform;
-    final messenger = ScaffoldMessenger.of(context);
-    var isSubmitting = false;
-
-    Future<void> submitLogOut(
-      BuildContext actionContext,
-      void Function(void Function()) setModalState,
-    ) async {
-      if (isSubmitting) return;
-      setModalState(() => isSubmitting = true);
-
-      if (kDebugMode) {
-        debugPrint('[settings] logout confirmed');
-      }
-
-      try {
-        await context.read<UserStateStore>().clearAuthSessionState();
-        if (kDebugMode) {
-          debugPrint('[settings] signOut success');
-        }
-        if (actionContext.mounted) {
-          Navigator.of(actionContext).pop(true);
-        }
-      } catch (error, stackTrace) {
-        if (kDebugMode) {
-          debugPrint('[settings] signOut failure: $error');
-          debugPrintStack(
-              label: '[settings] signOut failure', stackTrace: stackTrace);
-        }
-        messenger.showSnackBar(
-          SnackBar(content: Text(l10n.settingsLogOutError)),
-        );
-        if (actionContext.mounted) {
-          setModalState(() => isSubmitting = false);
-        }
-      }
-    }
 
     if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
       final result = await showCupertinoDialog<bool>(
         context: context,
-        builder: (dialogContext) => StatefulBuilder(
-          builder: (modalContext, setModalState) => CupertinoAlertDialog(
-            title: Text(l10n.settingsLogOutTitle),
-            content: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(l10n.settingsLogOutMessage),
-            ),
-            actions: [
-              CupertinoDialogAction(
-                onPressed: isSubmitting
-                    ? null
-                    : () => Navigator.of(dialogContext).pop(false),
-                child: Text(l10n.commonCancel),
-              ),
-              CupertinoDialogAction(
-                isDestructiveAction: false,
-                onPressed: isSubmitting
-                    ? null
-                    : () => submitLogOut(dialogContext, setModalState),
-                child: isSubmitting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CupertinoActivityIndicator(),
-                      )
-                    : Text(l10n.settingsLogOutConfirm),
-              ),
-            ],
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: Text(l10n.settingsLogoutTitle),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(l10n.settingsLogoutConfirmationBody),
           ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.commonCancel),
+            ),
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.settingsLogoutConfirmAction),
+            ),
+          ],
         ),
       );
       return result == true;
@@ -319,32 +289,20 @@ class SettingsScreen extends StatelessWidget {
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (modalContext, setModalState) => AlertDialog(
-          title: Text(l10n.settingsLogOutTitle),
-          content: Text(l10n.settingsLogOutMessage),
-          actions: [
-            TextButton(
-              onPressed: isSubmitting
-                  ? null
-                  : () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.commonCancel),
-            ),
-            TextButton(
-              onPressed: isSubmitting
-                  ? null
-                  : () => submitLogOut(dialogContext, setModalState),
-              child: isSubmitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(l10n.settingsLogOutConfirm),
-            ),
-          ],
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.settingsLogoutTitle),
+        content: Text(l10n.settingsLogoutConfirmationBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.settingsLogoutConfirmAction),
+          ),
+        ],
         ),
-      ),
     );
 
     return result == true;
