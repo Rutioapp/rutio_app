@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/services/account_deletion_service.dart';
 import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
+import '../data/repositories/profile_repository.dart';
 import '../data/repositories/user_state_repository.dart';
 import '../features/achievements/application/achievement_catalog.dart';
 import '../features/achievements/domain/models/achievement.dart';
@@ -29,13 +30,16 @@ class UserStateStore extends ChangeNotifier {
   final UserStateRepository _repo;
   final HabitSyncService _habitSyncService;
   final HabitLogSyncService _habitLogSyncService;
+  final ProfileRepository? _profileRepository;
 
   UserStateStore(
     this._repo, {
     HabitSyncService? habitSyncService,
     HabitLogSyncService? habitLogSyncService,
+    ProfileRepository? profileRepository,
   })  : _habitSyncService = habitSyncService ?? HabitSyncService(),
-        _habitLogSyncService = habitLogSyncService ?? HabitLogSyncService();
+        _habitLogSyncService = habitLogSyncService ?? HabitLogSyncService(),
+        _profileRepository = profileRepository;
 
   Map<String, dynamic>? _state;
   bool _loading = false;
@@ -44,6 +48,9 @@ class UserStateStore extends ChangeNotifier {
   bool _isSupabaseHabitsBackfillRunning = false;
   bool _isSupabaseHabitLogsBackfillRunning = false;
   Object? _accountDeletionError;
+  String? _activeLocalScopeUserId;
+  int _scopeEpoch = 0;
+  Future<void> _scopeSwitchChain = Future<void>.value();
   final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
       <UnlockedAchievementRecord>[];
 
@@ -51,6 +58,8 @@ class UserStateStore extends ChangeNotifier {
   bool get isLoading => _loading;
   Object? get error => _error;
   bool get isDeletingAccount => _isDeletingAccount;
+  String? get activeLocalScopeUserId => _activeLocalScopeUserId;
+  int get scopeEpoch => _scopeEpoch;
   bool get isSupabaseHabitsBackfillRunning => _isSupabaseHabitsBackfillRunning;
   bool get isSupabaseHabitLogsBackfillRunning =>
       _isSupabaseHabitLogsBackfillRunning;
@@ -76,6 +85,19 @@ class UserStateStore extends ChangeNotifier {
   Future<void> load() => _loadStore(this);
   Future<void> save(Map<String, dynamic> newState) =>
       _saveStore(this, newState);
+  Future<void> switchLocalScope({
+    String? userId,
+    bool forceReload = false,
+  }) {
+    _scopeSwitchChain = _scopeSwitchChain.then(
+      (_) => _switchLocalScope(
+        this,
+        userId: userId,
+        forceReload: forceReload,
+      ),
+    );
+    return _scopeSwitchChain;
+  }
 
   Map<String, dynamic> get notificationSettings => _notificationSettings(this);
 

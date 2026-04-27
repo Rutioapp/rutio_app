@@ -70,9 +70,17 @@ class MyApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<UserStateStore>(
-          create: (context) => UserStateStore(
-            context.read<UserStateRepository>(),
-          )..load(),
+          create: (context) {
+            final userStateRepository = context.read<UserStateRepository>();
+            final initialUserId =
+                RutioSupabaseClient.instance.auth.currentUser?.id;
+            userStateRepository.setActiveUserScope(initialUserId);
+
+            return UserStateStore(
+              userStateRepository,
+              profileRepository: context.read<ProfileRepository>(),
+            )..load();
+          },
         ),
         ChangeNotifierProvider<AuthController>(
           create: (context) => AuthController(

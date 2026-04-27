@@ -52,27 +52,32 @@ Future<void> _clearLocalAccountData(
   final preservedLanguageCode =
       preserveLanguageCode ? _preferredLanguageCode(store) : null;
 
-  await store._repo.resetToTemplate();
-  final resetRoot = await store._repo.loadOrCreate();
-  final userState = _ensureUserStateRoot(resetRoot);
-  final meta = _map(userState['meta']);
+  final currentScopedUserId =
+      store._repo.activeUserId ?? _normalizedScopeUserId(store.userId);
+  if (currentScopedUserId != null && store._repo.activeUserId == null) {
+    store._repo.setActiveUserScope(currentScopedUserId);
+  }
 
-  meta['onboardingDone'] = false;
-  meta.remove('authEmail');
-  userState['meta'] = meta;
+  await store._repo.clearActiveScopeState();
+  await _switchLocalScope(
+    store,
+    userId: null,
+    forceReload: true,
+  );
 
-  if (preservedLanguageCode != null) {
+  if (store._state != null && preservedLanguageCode != null) {
+    final root = Map<String, dynamic>.from(store._state!);
+    final userState = _ensureUserStateRoot(root);
     final settings = _ensureSettingsRoot(userState);
     final localeSettings = _map(settings['locale']);
     localeSettings['languageCode'] = preservedLanguageCode;
     settings['locale'] = localeSettings;
     userState['settings'] = settings;
+    root['userState'] = userState;
+    await store._repo.save(root);
+    store._state = root;
   }
 
-  resetRoot['userState'] = userState;
-  await store._repo.save(resetRoot);
-
-  store._state = resetRoot;
   store._loading = false;
   store._error = null;
   store._emitChanged();
@@ -80,33 +85,11 @@ Future<void> _clearLocalAccountData(
 
 Future<void> _clearAuthSessionState(UserStateStore store) async {
   await _signOutSupabaseSessionIfPresent();
-
-  if (store._state == null) {
-    if (!store._loading) {
-      await store.load();
-    }
-    if (store._state == null) return;
-  }
-
-  final root = Map<String, dynamic>.from(store._state!);
-  final userState = _ensureUserStateRoot(root);
-  final meta = _map(userState['meta']);
-  final profile = _map(userState['profile']);
-
-  userState.remove('userId');
-  meta['onboardingDone'] = false;
-  meta.remove('authEmail');
-  profile.remove('email');
-
-  userState['meta'] = meta;
-  userState['profile'] = profile;
-  root['userState'] = userState;
-
-  await store._repo.save(root);
-  store._state = root;
-  store._loading = false;
-  store._error = null;
-  store._emitChanged();
+  await _switchLocalScope(
+    store,
+    userId: null,
+    forceReload: true,
+  );
 }
 
 Future<void> _applySupabaseIdentity(
@@ -116,6 +99,11 @@ Future<void> _applySupabaseIdentity(
   String? displayName,
   String? avatarUrl,
 }) async {
+  await _switchLocalScope(
+    store,
+    userId: userId,
+  );
+
   if (store._state == null) {
     if (!store._loading) {
       await store.load();
@@ -158,32 +146,11 @@ Future<void> _applySupabaseIdentity(
 }
 
 Future<void> _clearSupabaseIdentity(UserStateStore store) async {
-  if (store._state == null) {
-    if (!store._loading) {
-      await store.load();
-    }
-    if (store._state == null) return;
-  }
-
-  final root = Map<String, dynamic>.from(store._state!);
-  final userState = _ensureUserStateRoot(root);
-  final meta = _map(userState['meta']);
-  final profile = _map(userState['profile']);
-
-  userState.remove('userId');
-  meta.remove('authEmail');
-  profile.remove('email');
-  profile.remove('displayName');
-
-  userState['meta'] = meta;
-  userState['profile'] = profile;
-  _touchLastSavedAt(userState);
-
-  root['userState'] = userState;
-  store._state = root;
-
-  store._emitChanged();
-  await store._repo.save(root);
+  await _switchLocalScope(
+    store,
+    userId: null,
+    forceReload: true,
+  );
 }
 
 Map<String, dynamic> _ensureSettingsRoot(Map<String, dynamic> userState) {
@@ -252,66 +219,38 @@ Map<String, dynamic> _notificationMetadata(UserStateStore store) {
 Future<void> _setNotificationsEnabled(
   UserStateStore store,
   bool enabled,
-) async {
-  if (store._state == null) return;
-
-  final root = store._state!;
-  final userState = _ensureUserStateRoot(root);
-  final notifications = _ensureNotificationsSettings(userState);
-
-  notifications['enabled'] = enabled;
-  userState['settings'] = _ensureSettingsRoot(userState);
-
-  await store.save(root);
-}
+) =>
+    _updateNotificationSettings(
+      store,
+      <String, dynamic>{'enabled': enabled},
+    );
 
 Future<void> _setDailyMotivationEnabled(
   UserStateStore store,
   bool enabled,
-) async {
-  if (store._state == null) return;
-
-  final root = store._state!;
-  final userState = _ensureUserStateRoot(root);
-  final notifications = _ensureNotificationsSettings(userState);
-
-  notifications['dailyMotivation'] = enabled;
-  userState['settings'] = _ensureSettingsRoot(userState);
-
-  await store.save(root);
-}
+) =>
+    _updateNotificationSettings(
+      store,
+      <String, dynamic>{'dailyMotivation': enabled},
+    );
 
 Future<void> _setMarketingNotificationsEnabled(
   UserStateStore store,
   bool enabled,
-) async {
-  if (store._state == null) return;
-
-  final root = store._state!;
-  final userState = _ensureUserStateRoot(root);
-  final notifications = _ensureNotificationsSettings(userState);
-
-  notifications['marketing'] = enabled;
-  userState['settings'] = _ensureSettingsRoot(userState);
-
-  await store.save(root);
-}
+) =>
+    _updateNotificationSettings(
+      store,
+      <String, dynamic>{'marketing': enabled},
+    );
 
 Future<void> _setDailyMotivationTime(
   UserStateStore store,
   String hhmm,
-) async {
-  if (store._state == null) return;
-
-  final root = store._state!;
-  final userState = _ensureUserStateRoot(root);
-  final notifications = _ensureNotificationsSettings(userState);
-
-  notifications['dailyMotivationTime'] = hhmm;
-  userState['settings'] = _ensureSettingsRoot(userState);
-
-  await store.save(root);
-}
+) =>
+    _updateNotificationSettings(
+      store,
+      <String, dynamic>{'dailyMotivationTime': hhmm},
+    );
 
 Future<void> _updateNotificationSettings(
   UserStateStore store,
@@ -336,6 +275,13 @@ Future<void> _updateNotificationSettings(
 
   userState['settings'] = _ensureSettingsRoot(userState);
   await store.save(root);
+
+  unawaited(
+    _bestEffortSyncNotificationSettingsPatch(
+      store,
+      patch: patch,
+    ),
+  );
 }
 
 Future<void> _updateNotificationMetadata(
@@ -385,6 +331,12 @@ Future<void> _setPreferredLanguageCode(
   userState['settings'] = settings;
 
   await store.save(root);
+  unawaited(
+    _bestEffortSyncPreferredLanguageCode(
+      store,
+      languageCode: normalized,
+    ),
+  );
 }
 
 Map<String, dynamic> _profile(UserStateStore store) {
@@ -427,6 +379,134 @@ Future<void> _updateProfileFields(
 
   store._emitChanged();
   await store._repo.save(root);
+
+  if (displayName != null || avatarUrl != null) {
+    unawaited(
+      _bestEffortSyncProfileBasics(
+        store,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+      ),
+    );
+  }
+}
+
+Future<void> _bestEffortSyncProfileBasics(
+  UserStateStore store, {
+  String? displayName,
+  String? avatarUrl,
+}) async {
+  final repository = store._profileRepository;
+  if (repository == null) return;
+
+  final shouldClearAvatarUrl = avatarUrl != null && avatarUrl.trim().isEmpty;
+
+  try {
+    final result = await repository.updateProfileBasics(
+      email: store.authEmail,
+      displayName: _nullableTrimValue(displayName),
+      avatarUrl:
+          shouldClearAvatarUrl ? null : _nullableTrimValue(avatarUrl),
+      clearAvatarUrl: shouldClearAvatarUrl,
+    );
+    if (!result.isSuccess && kDebugMode) {
+      debugPrint(
+        '[user_state_store] profile basics write-through skipped: ${result.error?.message}',
+      );
+    }
+  } catch (error) {
+    _debugProfileWriteThroughWarning(
+      'profile basics write-through failed: $error',
+    );
+  }
+}
+
+Future<void> _bestEffortSyncPreferredLanguageCode(
+  UserStateStore store, {
+  required String languageCode,
+}) async {
+  final repository = store._profileRepository;
+  if (repository == null) return;
+
+  try {
+    final result = await repository.updatePreferredLanguage(languageCode);
+    if (!result.isSuccess && kDebugMode) {
+      debugPrint(
+        '[user_state_store] preferred language write-through skipped: ${result.error?.message}',
+      );
+    }
+  } catch (error) {
+    _debugProfileWriteThroughWarning(
+      'preferred language write-through failed: $error',
+    );
+  }
+}
+
+Future<void> _bestEffortSyncNotificationSettingsPatch(
+  UserStateStore store, {
+  required Map<String, dynamic> patch,
+}) async {
+  final repository = store._profileRepository;
+  if (repository == null || patch.isEmpty) return;
+
+  final hasNotificationsEnabled = patch.containsKey('enabled');
+  final hasDailyMotivationEnabled = patch.containsKey('dailyMotivation');
+  final hasMarketingNotificationsEnabled = patch.containsKey('marketing');
+  final hasDailyMotivationTime = patch.containsKey('dailyMotivationTime');
+
+  if (!hasNotificationsEnabled &&
+      !hasDailyMotivationEnabled &&
+      !hasMarketingNotificationsEnabled &&
+      !hasDailyMotivationTime) {
+    return;
+  }
+
+  try {
+    final result = await repository.updateNotificationSettings(
+      notificationsEnabled:
+          hasNotificationsEnabled ? _dynamicBoolOrNull(patch['enabled']) : null,
+      dailyMotivationEnabled: hasDailyMotivationEnabled
+          ? _dynamicBoolOrNull(patch['dailyMotivation'])
+          : null,
+      marketingNotificationsEnabled: hasMarketingNotificationsEnabled
+          ? _dynamicBoolOrNull(patch['marketing'])
+          : null,
+      dailyMotivationTime: hasDailyMotivationTime
+          ? _nullableTrimValue(patch['dailyMotivationTime'])
+          : null,
+      includeDailyMotivationTime: hasDailyMotivationTime,
+    );
+    if (!result.isSuccess && kDebugMode) {
+      debugPrint(
+        '[user_state_store] notification settings write-through skipped: ${result.error?.message}',
+      );
+    }
+  } catch (error) {
+    _debugProfileWriteThroughWarning(
+      'notification settings write-through failed: $error',
+    );
+  }
+}
+
+void _debugProfileWriteThroughWarning(String message) {
+  if (!kDebugMode) return;
+  debugPrint('[user_state_store] $message');
+}
+
+bool? _dynamicBoolOrNull(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value > 0;
+
+  final normalized = (value ?? '').toString().trim().toLowerCase();
+  if (normalized.isEmpty) return null;
+  if (normalized == 'true' || normalized == '1') return true;
+  if (normalized == 'false' || normalized == '0') return false;
+  return null;
+}
+
+String? _nullableTrimValue(dynamic value) {
+  final normalized = (value ?? '').toString().trim();
+  return normalized.isEmpty ? null : normalized;
 }
 
 Future<bool> _buyItem(

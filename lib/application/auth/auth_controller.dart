@@ -25,7 +25,15 @@ class AuthController extends ChangeNotifier {
         _authRepository.authStateChanges.listen(_handleAuthState);
     _finishSessionCheck();
     if (_currentUser != null) {
-      unawaited(_syncCurrentUserProfile(reason: 'controller_init'));
+      final initialUserId = _currentUser!.id;
+      unawaited(() async {
+        await _userStateStore.switchLocalScope(userId: initialUserId);
+        await _bootstrapCurrentUserProfileMetadata(
+          reason: 'controller_init',
+          touchLastLogin: true,
+        );
+        await _syncCurrentUserProfile(reason: 'controller_init');
+      }());
     }
   }
 
@@ -38,6 +46,7 @@ class AuthController extends ChangeNotifier {
   bool _isLoading = false;
   bool _isCheckingSession = true;
   bool _isSyncingProfile = false;
+  bool _isBootstrappingProfileMetadata = false;
   String? _errorMessage;
   String? _noticeMessage;
 
@@ -91,7 +100,13 @@ class AuthController extends ChangeNotifier {
         debugPrint('[auth] sign in succeeded: userId=${_currentUser!.id}');
         debugPrint('[auth] currentUser after sign in: yes');
       }
-      await _verifyProfileBootstrapRows();
+      await _userStateStore.switchLocalScope(userId: _currentUser!.id);
+      unawaited(
+        _bootstrapCurrentUserProfileMetadata(
+          reason: 'sign_in',
+          touchLastLogin: true,
+        ),
+      );
       await _syncCurrentUserProfile(reason: 'sign_in');
       notifyListeners();
       return response;
@@ -159,7 +174,13 @@ class AuthController extends ChangeNotifier {
         return null;
       }
 
-      await _verifyProfileBootstrapRows();
+      await _userStateStore.switchLocalScope(userId: _currentUser!.id);
+      unawaited(
+        _bootstrapCurrentUserProfileMetadata(
+          reason: 'sign_up',
+          touchLastLogin: true,
+        ),
+      );
       await _syncCurrentUserProfile(reason: 'sign_up');
 
       if (kDebugMode) {
@@ -192,7 +213,10 @@ class AuthController extends ChangeNotifier {
     try {
       await _authRepository.signOut();
       _currentUser = null;
-      await _userStateStore.clearSupabaseIdentity();
+      await _userStateStore.switchLocalScope(
+        userId: null,
+        forceReload: true,
+      );
       notifyListeners();
       if (kDebugMode) {
         debugPrint('[auth] sign out succeeded');
@@ -213,13 +237,19 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  Future<void> _verifyProfileBootstrapRows() async {
+  Future<void> _bootstrapCurrentUserProfileMetadata({
+    required String reason,
+    required bool touchLastLogin,
+  }) async {
+    if (_isBootstrappingProfileMetadata) return;
+
     final profileRepository = _profileRepository;
     if (profileRepository == null) return;
 
     final user = _currentUser ?? _authRepository.currentUser;
     if (user == null) return;
 
+    _isBootstrappingProfileMetadata = true;
     try {
       final ensured = await profileRepository.ensureCurrentProfile(
         email: user.email,
@@ -233,50 +263,73 @@ class AuthController extends ChangeNotifier {
         ]),
       );
 
-      if (!ensured.isSuccess) {
-        if (kDebugMode) {
+      if (!ensured.isSuccess && kDebugMode) {
+        debugPrint(
+          '[auth] profile ensure failed ($reason): ${ensured.error?.message}',
+        );
+      }
+
+      if (touchLastLogin) {
+        final loginTouch = await profileRepository.touchLastLogin();
+        if (!loginTouch.isSuccess && kDebugMode) {
           debugPrint(
-            '[auth] profile ensure failed: ${ensured.error?.message}',
+            '[auth] last_login_at touch failed ($reason): ${loginTouch.error?.message}',
           );
         }
-        return;
       }
 
-      if (ensured.data == null) {
-        if (kDebugMode) {
-          debugPrint('[auth] profile ensure returned no profile row.');
-        }
-        return;
-      }
-
-      if (kDebugMode) {
-        debugPrint('[auth] profile ensure succeeded');
+      final lastSeenTouch = await profileRepository.touchLastSeen();
+      if (!lastSeenTouch.isSuccess && kDebugMode) {
+        debugPrint(
+          '[auth] last_seen_at touch failed ($reason): ${lastSeenTouch.error?.message}',
+        );
       }
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[auth] warning: profile ensure failed: $error');
+        debugPrint('[auth] warning: profile metadata bootstrap failed: $error');
       }
+    } finally {
+      _isBootstrappingProfileMetadata = false;
     }
   }
 
   void _handleAuthState(AuthState state) {
     _currentUser = state.session?.user ?? _authRepository.currentUser;
     if (kDebugMode) {
+      final authUserId = _currentUser?.id ?? 'guest';
       debugPrint(
         '[auth] auth state changed: ${_currentUser != null ? 'signedIn' : 'signedOut'} (event=${state.event.name})',
       );
+      debugPrint('[auth] auth state userId: $authUserId');
     }
     if (_currentUser != null) {
-      unawaited(
-          _syncCurrentUserProfile(reason: 'auth_state_${state.event.name}'));
+      final userId = _currentUser!.id;
+      unawaited(() async {
+        await _userStateStore.switchLocalScope(userId: userId);
+        await _bootstrapCurrentUserProfileMetadata(
+          reason: 'auth_state_${state.event.name}',
+          touchLastLogin: _shouldTouchLastLogin(state.event),
+        );
+        await _syncCurrentUserProfile(reason: 'auth_state_${state.event.name}');
+      }());
     } else {
-      unawaited(_userStateStore.clearSupabaseIdentity());
+      unawaited(
+        _userStateStore.switchLocalScope(
+          userId: null,
+          forceReload: true,
+        ),
+      );
       if (kDebugMode) {
         debugPrint('[auth] sign out cleared/updated user state');
       }
     }
     _finishSessionCheck();
     notifyListeners();
+  }
+
+  bool _shouldTouchLastLogin(AuthChangeEvent event) {
+    return event == AuthChangeEvent.signedIn ||
+        event == AuthChangeEvent.initialSession;
   }
 
   Future<void> _syncCurrentUserProfile({required String reason}) async {
@@ -289,10 +342,12 @@ class AuthController extends ChangeNotifier {
     Map<String, dynamic>? profile;
 
     if (kDebugMode) {
-      debugPrint('[auth] profile fetch started ($reason)');
+      debugPrint('[auth] profile fetch started ($reason) userId=${user.id}');
     }
 
     try {
+      await _userStateStore.switchLocalScope(userId: user.id);
+
       if (_userStateStore.state == null && !_userStateStore.isLoading) {
         await _userStateStore.load();
       }

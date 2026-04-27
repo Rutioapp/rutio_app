@@ -54,6 +54,50 @@ bool _onboardingDone(UserStateStore store) {
   return meta['onboardingDone'] == true;
 }
 
+Future<void> _switchLocalScope(
+  UserStateStore store, {
+  String? userId,
+  bool forceReload = false,
+}) async {
+  final normalizedUserId = _normalizedScopeUserId(userId);
+  final currentUserId = _normalizedScopeUserId(store._activeLocalScopeUserId);
+
+  final scopeChanged = normalizedUserId != currentUserId;
+  if (!scopeChanged && !forceReload && store._state != null) {
+    return;
+  }
+
+  store._scopeEpoch += 1;
+  final switchEpoch = store._scopeEpoch;
+  store._activeLocalScopeUserId = normalizedUserId;
+  store._repo.setActiveUserScope(normalizedUserId);
+  if (kDebugMode) {
+    debugPrint(
+      '[user_state_store] switching local scope: '
+      'userId=${normalizedUserId ?? 'guest'} '
+      '(epoch=$switchEpoch)',
+    );
+  }
+
+  // Prevent stale in-memory data from a different authenticated account.
+  if (scopeChanged) {
+    store._state = null;
+    store._error = null;
+    store._emitChanged();
+  }
+
+  await _loadStore(
+    store,
+    expectedScopeEpoch: switchEpoch,
+    force: true,
+  );
+}
+
+String? _normalizedScopeUserId(String? userId) {
+  final normalized = (userId ?? '').trim();
+  return normalized.isEmpty ? null : normalized;
+}
+
 Future<void> _setOnboardingDone(
   UserStateStore store,
   bool done, {
@@ -372,15 +416,44 @@ void _ensureDailyReset(Map<String, dynamic> userState) {
   userState['activeHabits'] = activeHabits;
 }
 
-Future<void> _loadStore(UserStateStore store) async {
-  if (store._loading) return;
+Future<void> _loadStore(
+  UserStateStore store, {
+  int? expectedScopeEpoch,
+  bool force = false,
+}) async {
+  if (store._loading) {
+    if (!force) return;
+    var spin = 0;
+    while (store._loading && spin < 400) {
+      spin += 1;
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    if (store._loading) return;
+  }
+
+  final epochAtStart = expectedScopeEpoch ?? store._scopeEpoch;
+  final scopeAtStart = _normalizedScopeUserId(store._activeLocalScopeUserId);
 
   store._loading = true;
   store._error = null;
   store._emitChanged();
 
   try {
-    store._state = await store._repo.loadOrCreate();
+    final loaded = await store._repo.loadOrCreate();
+    if (epochAtStart != store._scopeEpoch ||
+        scopeAtStart != _normalizedScopeUserId(store._activeLocalScopeUserId)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[user_state_store] discarded stale load result '
+          '(startEpoch=$epochAtStart, currentEpoch=${store._scopeEpoch}, '
+          'startScope=${scopeAtStart ?? 'guest'}, '
+          'currentScope=${store._activeLocalScopeUserId ?? 'guest'})',
+        );
+      }
+      return;
+    }
+
+    store._state = loaded;
 
     if (store._state != null) {
       final userState = _ensureUserStateRoot(store._state!);
@@ -397,6 +470,16 @@ Future<void> _loadStore(UserStateStore store) async {
       }
 
       _touchLastSavedAt(userState);
+      if (epochAtStart != store._scopeEpoch ||
+          scopeAtStart != _normalizedScopeUserId(store._activeLocalScopeUserId)) {
+        if (kDebugMode) {
+          debugPrint(
+            '[user_state_store] skipped stale post-load save '
+            '(startEpoch=$epochAtStart, currentEpoch=${store._scopeEpoch})',
+          );
+        }
+        return;
+      }
       await store._repo.save(store._state!);
     }
   } catch (error) {
