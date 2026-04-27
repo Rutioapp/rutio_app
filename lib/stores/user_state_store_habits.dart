@@ -1,5 +1,8 @@
 part of 'user_state_store.dart';
 
+const String _supabaseHabitsBackfillCompletedByUserKey =
+    'supabaseHabitsBackfillCompletedByUser';
+
 Map<String, dynamic> _dailyRewardGrants(Map<String, dynamic> userState) {
   final daily = _map(userState['daily']);
   final grants = _map(daily['habitsCompletedToday']);
@@ -134,6 +137,220 @@ Future<void> _persistHabitRemoteId(
   activeHabits[index] = current;
   userState['activeHabits'] = activeHabits;
   await store.save(root);
+}
+
+Future<HabitBackfillSummary> _syncExistingLocalHabitsOnce(
+  UserStateStore store, {
+  bool force = false,
+}) async {
+  if (store._isSupabaseHabitsBackfillRunning) {
+    _debugBackfill('habit backfill skipped: already running');
+    return const HabitBackfillSummary(
+      totalCandidates: 0,
+      uploadedCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+    );
+  }
+
+  store._isSupabaseHabitsBackfillRunning = true;
+  try {
+    if (store._state == null) {
+      if (!store._loading) {
+        await store.load();
+      }
+      if (store._state == null) {
+        _debugBackfill('habit backfill skipped: local state unavailable');
+        return const HabitBackfillSummary(
+          totalCandidates: 0,
+          uploadedCount: 0,
+          skippedCount: 0,
+          failedCount: 0,
+        );
+      }
+    }
+
+    final authenticatedUserId = _authenticatedSupabaseUserId();
+    if (authenticatedUserId == null) {
+      _debugBackfill('habit backfill skipped: no authenticated Supabase user');
+      return const HabitBackfillSummary(
+        totalCandidates: 0,
+        uploadedCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+      );
+    }
+
+    final localUserId = (store.userId ?? '').trim();
+    if (localUserId.isEmpty || localUserId != authenticatedUserId) {
+      _debugBackfill(
+        'habit backfill skipped: local user does not match auth session',
+      );
+      return const HabitBackfillSummary(
+        totalCandidates: 0,
+        uploadedCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+      );
+    }
+
+    final root = store._state!;
+    final userState = _ensureUserStateRoot(root);
+    final markerCompleted = _isBackfillCompletedForUser(
+      userState,
+      authenticatedUserId,
+    );
+    final hasEligibleCandidates = _countEligibleBackfillCandidates(userState) > 0;
+
+    if (markerCompleted && !force && !hasEligibleCandidates) {
+      _debugBackfill(
+        'habit backfill skipped: completion marker already set for user',
+      );
+      return const HabitBackfillSummary(
+        totalCandidates: 0,
+        uploadedCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+      );
+    }
+
+    final activeHabits = _list(userState['activeHabits'])
+        .whereType<Map>()
+        .map((entry) => Map<String, dynamic>.from(_map(entry)))
+        .toList(growable: false);
+
+    final summary = await store._habitSyncService.backfillLocalHabitsWithoutRemoteId(
+      localHabits: activeHabits,
+      expectedLocalUserId: authenticatedUserId,
+      onRemoteIdAssigned: ({
+        required String localHabitId,
+        required String remoteHabitId,
+      }) =>
+          _persistHabitRemoteId(
+            store,
+            localHabitId: localHabitId,
+            remoteHabitId: remoteHabitId,
+          ),
+    );
+
+    final updatedRoot = store._state;
+    if (updatedRoot == null) return summary;
+
+    final updatedUserState = _ensureUserStateRoot(updatedRoot);
+    final remainingEligible = _countEligibleBackfillCandidates(updatedUserState);
+    final shouldMarkCompleted = remainingEligible == 0 && summary.failedCount == 0;
+
+    final wasCompleted = _isBackfillCompletedForUser(
+      updatedUserState,
+      authenticatedUserId,
+    );
+    if (shouldMarkCompleted != wasCompleted) {
+      _setBackfillCompletedForUser(
+        updatedUserState,
+        authenticatedUserId,
+        completed: shouldMarkCompleted,
+      );
+      await store.save(updatedRoot);
+    }
+
+    _debugBackfill(
+      'habit backfill summary for "$authenticatedUserId": '
+      'total=${summary.totalCandidates}, uploaded=${summary.uploadedCount}, '
+      'skipped=${summary.skippedCount}, failed=${summary.failedCount}, '
+      'remainingEligible=$remainingEligible, completed=$shouldMarkCompleted',
+    );
+
+    return summary;
+  } catch (error) {
+    _debugBackfill('habit backfill unexpected store error: $error');
+    return const HabitBackfillSummary(
+      totalCandidates: 0,
+      uploadedCount: 0,
+      skippedCount: 0,
+      failedCount: 1,
+    );
+  } finally {
+    store._isSupabaseHabitsBackfillRunning = false;
+  }
+}
+
+String? _authenticatedSupabaseUserId() {
+  try {
+    final userId = Supabase.instance.client.auth.currentUser?.id.trim();
+    if (userId == null || userId.isEmpty) return null;
+    return userId;
+  } catch (_) {
+    return null;
+  }
+}
+
+int _countEligibleBackfillCandidates(Map<String, dynamic> userState) {
+  final activeHabits = _list(userState['activeHabits'])
+      .whereType<Map>()
+      .map((entry) => Map<String, dynamic>.from(_map(entry)))
+      .toList(growable: false);
+
+  var count = 0;
+  for (final habit in activeHabits) {
+    final hasRemoteId = _habitRemoteIdValue(habit);
+    if (hasRemoteId != null) continue;
+
+    final localHabitId = _habitIdValue(habit);
+    final isDeleted = habit['deleted'] == true || habit['isDeleted'] == true;
+    final name = (habit['name'] ?? habit['title'] ?? '').toString().trim();
+
+    if (isDeleted || localHabitId == null || localHabitId.trim().isEmpty) {
+      continue;
+    }
+    if (name.isEmpty) continue;
+    count += 1;
+  }
+
+  return count;
+}
+
+bool _isBackfillCompletedForUser(
+  Map<String, dynamic> userState,
+  String userId,
+) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) return false;
+
+  final byUser = _backfillCompletedByUser(userState);
+  return byUser[normalizedUserId] == true;
+}
+
+void _setBackfillCompletedForUser(
+  Map<String, dynamic> userState,
+  String userId, {
+  required bool completed,
+}) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) return;
+
+  final byUser = _backfillCompletedByUser(userState);
+  if (completed) {
+    byUser[normalizedUserId] = true;
+  } else {
+    byUser.remove(normalizedUserId);
+  }
+
+  final meta = _map(userState['meta']);
+  meta[_supabaseHabitsBackfillCompletedByUserKey] = byUser;
+  userState['meta'] = meta;
+}
+
+Map<String, dynamic> _backfillCompletedByUser(Map<String, dynamic> userState) {
+  final meta = _map(userState['meta']);
+  final byUser = _map(meta[_supabaseHabitsBackfillCompletedByUserKey]);
+  meta[_supabaseHabitsBackfillCompletedByUserKey] = byUser;
+  userState['meta'] = meta;
+  return byUser;
+}
+
+void _debugBackfill(String message) {
+  if (!kDebugMode) return;
+  debugPrint('[habit_backfill] $message');
 }
 
 String _normalizedHabitType(dynamic rawType) {

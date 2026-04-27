@@ -362,6 +362,8 @@ class AuthController extends ChangeNotifier {
         avatarUrl: _normalizedValue(profile?['avatar_url']),
       );
 
+      unawaited(_userStateStore.syncExistingLocalHabitsOnce());
+
       if (kDebugMode) {
         debugPrint('[auth] display name applied to UserStateStore');
       }
