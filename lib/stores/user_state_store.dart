@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/services/account_deletion_service.dart';
+import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
 import '../data/repositories/user_state_repository.dart';
 import '../features/achievements/application/achievement_catalog.dart';
@@ -27,11 +28,14 @@ part 'user_state_store_todos.dart';
 class UserStateStore extends ChangeNotifier {
   final UserStateRepository _repo;
   final HabitSyncService _habitSyncService;
+  final HabitLogSyncService _habitLogSyncService;
 
   UserStateStore(
     this._repo, {
     HabitSyncService? habitSyncService,
-  }) : _habitSyncService = habitSyncService ?? HabitSyncService();
+    HabitLogSyncService? habitLogSyncService,
+  })  : _habitSyncService = habitSyncService ?? HabitSyncService(),
+        _habitLogSyncService = habitLogSyncService ?? HabitLogSyncService();
 
   Map<String, dynamic>? _state;
   bool _loading = false;

@@ -967,6 +967,13 @@ Future<void> _setCountHabitValue(
   );
 
   await store.save(root);
+  _queueBestEffortHabitLogSyncForDate(
+    store,
+    userState: userState,
+    habit: habit,
+    habitId: habitId,
+    date: DateTime.now(),
+  );
 }
 
 Future<void> _completeHabit(
@@ -1035,6 +1042,13 @@ Future<void> _completeHabit(
   );
 
   await store.save(root);
+  _queueBestEffortHabitLogSyncForDate(
+    store,
+    userState: userState,
+    habit: habit,
+    habitId: habitId,
+    date: DateTime.now(),
+  );
 }
 
 Future<void> _toggleHabitDoneForDate(
@@ -1082,6 +1096,14 @@ Future<void> _toggleHabitDoneForDate(
   );
 
   await store.save(root);
+  _queueBestEffortHabitLogSyncForDate(
+    store,
+    userState: userState,
+    habit: habit,
+    habitId: habitId,
+    date: date,
+    isCompletedOverride: !currentlyDone,
+  );
 }
 
 Future<void> _setHabitCompletionForKey(
@@ -1142,6 +1164,19 @@ Future<void> _setHabitCompletionForKey(
   );
 
   await store.save(root);
+
+  final syncHabit = _activeHabitSnapshotForSync(userState, habitId);
+  if (syncHabit != null) {
+    _queueBestEffortHabitLogSyncForDate(
+      store,
+      userState: userState,
+      habit: syncHabit,
+      habitId: habitId,
+      date: date,
+      isCompletedOverride: done,
+      isSkippedOverride: false,
+    );
+  }
 }
 
 Future<void> _setHabitSkipForKey(
@@ -1217,6 +1252,20 @@ Future<void> _setHabitSkipForKey(
   }
 
   await store.save(root);
+
+  final syncHabit = _activeHabitSnapshotForSync(userState, habitId);
+  if (syncHabit != null) {
+    _queueBestEffortHabitLogSyncForDate(
+      store,
+      userState: userState,
+      habit: syncHabit,
+      habitId: habitId,
+      date: date,
+      isSkippedOverride: skipped,
+      isCompletedOverride: skipped ? false : null,
+      countValueOverride: skipped ? 0 : null,
+    );
+  }
 }
 
 Future<void> _setCountHabitValueForDate(
@@ -1270,6 +1319,82 @@ Future<void> _setCountHabitValueForDate(
   );
 
   await store.save(root);
+  _queueBestEffortHabitLogSyncForDate(
+    store,
+    userState: userState,
+    habit: habit,
+    habitId: habitId,
+    date: date,
+    isCompletedOverride: safeValue >= target,
+    isSkippedOverride: false,
+    countValueOverride: safeValue,
+  );
+}
+
+Map<String, dynamic>? _activeHabitSnapshotForSync(
+  Map<String, dynamic> userState,
+  String habitId,
+) {
+  final activeHabits = _list(userState['activeHabits'])
+      .whereType<Map>()
+      .map((entry) => Map<String, dynamic>.from(_map(entry)))
+      .toList(growable: false);
+  final index = _activeHabitIndex(activeHabits, habitId);
+  if (index == -1) return null;
+  return Map<String, dynamic>.from(activeHabits[index]);
+}
+
+void _queueBestEffortHabitLogSyncForDate(
+  UserStateStore store, {
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> habit,
+  required String habitId,
+  required DateTime date,
+  bool? isCompletedOverride,
+  bool? isSkippedOverride,
+  num? countValueOverride,
+}) {
+  final normalizedDate = DateTime(date.year, date.month, date.day);
+  final dayKey = _dateKey(normalizedDate);
+  final history = _ensureHistoryRoot(userState);
+
+  final dayCompletions = _map(_map(history['habitCompletions'])[dayKey]);
+  final daySkips = _map(_map(history['habitSkips'])[dayKey]);
+  final dayCountValues = _map(_map(history['habitCountValues'])[dayKey]);
+
+  final isCompleted =
+      isCompletedOverride ?? _dynamicToBool(dayCompletions[habitId]);
+  final isSkipped = isSkippedOverride ?? _dynamicToBool(daySkips[habitId]);
+  final countValue = _isCountHabit(habit)
+      ? (countValueOverride ??
+          _safeNum(dayCountValues[habitId], fallback: 0).clamp(0, double.infinity))
+      : null;
+
+  final syncedHabit = Map<String, dynamic>.from(habit);
+  if ((syncedHabit['id'] ?? '').toString().trim().isEmpty) {
+    syncedHabit['id'] = habitId;
+  }
+
+  unawaited(
+    store._habitLogSyncService.syncDailyLogForHabit(
+      localHabit: syncedHabit,
+      date: normalizedDate,
+      isCompleted: isCompleted,
+      isSkipped: isSkipped,
+      countValue: countValue,
+      expectedLocalUserId: store.userId,
+    ),
+  );
+}
+
+bool _dynamicToBool(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value > 0;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == 'true' || normalized == '1';
+  }
+  return false;
 }
 
 dynamic _getActiveHabitById(UserStateStore store, String id) {
