@@ -42,6 +42,7 @@ class UserStateStore extends ChangeNotifier {
   Object? _error;
   bool _isDeletingAccount = false;
   bool _isSupabaseHabitsBackfillRunning = false;
+  bool _isSupabaseHabitLogsBackfillRunning = false;
   Object? _accountDeletionError;
   final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
       <UnlockedAchievementRecord>[];
@@ -51,6 +52,8 @@ class UserStateStore extends ChangeNotifier {
   Object? get error => _error;
   bool get isDeletingAccount => _isDeletingAccount;
   bool get isSupabaseHabitsBackfillRunning => _isSupabaseHabitsBackfillRunning;
+  bool get isSupabaseHabitLogsBackfillRunning =>
+      _isSupabaseHabitLogsBackfillRunning;
   Object? get accountDeletionError => _accountDeletionError;
 
   void _emitChanged() => notifyListeners();
@@ -249,6 +252,11 @@ class UserStateStore extends ChangeNotifier {
     bool force = false,
   }) =>
       _syncExistingLocalHabitsOnce(this, force: force);
+
+  Future<HabitLogBackfillSummary> syncExistingLocalHabitLogsOnce({
+    bool force = false,
+  }) =>
+      _syncExistingLocalHabitLogsOnce(this, force: force);
 
   Future<void> reorderVisibleHabits({
     required List<String> orderedVisibleIds,

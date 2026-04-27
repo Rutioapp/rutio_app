@@ -30,16 +30,19 @@ class HabitLogRemoteMapper {
         countValue ?? localHabit['progress'],
         fallback: 0,
       ).clamp(0, double.infinity);
-      final target = _safePositiveNum(localHabit['target'], fallback: 1);
+      final value = skipped ? 0 : rawValue.toInt();
+      final target = _safePositiveNumOrNull(localHabit['target']);
       final completed = !skipped &&
-          ((isCompleted == true) || rawValue >= target);
+          (target != null
+              ? (isCompleted == true) || value >= target
+              : isCompleted == true);
 
       return RemoteHabitLog(
         id: '',
         userId: userId,
         habitId: remoteHabitId,
         logDate: normalizedDate,
-        value: rawValue.toInt(),
+        value: value,
         isCompleted: completed,
         note: _nullableTrim(note),
         source: _normalizeSource(source),
@@ -101,9 +104,11 @@ class HabitLogRemoteMapper {
     return parsed ?? fallback;
   }
 
-  static num _safePositiveNum(dynamic value, {num fallback = 1}) {
-    final parsed = _safeNum(value, fallback: fallback);
-    return parsed > 0 ? parsed : fallback;
+  static num? _safePositiveNumOrNull(dynamic value) {
+    final normalized = (value ?? '').toString().trim();
+    if (normalized.isEmpty) return null;
+    final parsed = _safeNum(value, fallback: -1);
+    return parsed > 0 ? parsed : null;
   }
 
   static bool _isUuid(String value) {

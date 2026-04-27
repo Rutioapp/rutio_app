@@ -362,7 +362,30 @@ class AuthController extends ChangeNotifier {
         avatarUrl: _normalizedValue(profile?['avatar_url']),
       );
 
-      unawaited(_userStateStore.syncExistingLocalHabitsOnce());
+      unawaited(() async {
+        final habitSummary = await _userStateStore.syncExistingLocalHabitsOnce();
+        if (kDebugMode) {
+          debugPrint(
+            '[auth] habit backfill summary: '
+            'total=${habitSummary.totalCandidates}, '
+            'uploaded=${habitSummary.uploadedCount}, '
+            'skipped=${habitSummary.skippedCount}, '
+            'failed=${habitSummary.failedCount}',
+          );
+        }
+
+        final habitLogSummary =
+            await _userStateStore.syncExistingLocalHabitLogsOnce();
+        if (kDebugMode) {
+          debugPrint(
+            '[auth] habit log backfill summary: '
+            'total=${habitLogSummary.totalCandidates}, '
+            'uploaded=${habitLogSummary.uploadedCount}, '
+            'skipped=${habitLogSummary.skippedCount}, '
+            'failed=${habitLogSummary.failedCount}',
+          );
+        }
+      }());
 
       if (kDebugMode) {
         debugPrint('[auth] display name applied to UserStateStore');

@@ -2,6 +2,8 @@ part of 'user_state_store.dart';
 
 const String _supabaseHabitsBackfillCompletedByUserKey =
     'supabaseHabitsBackfillCompletedByUser';
+const String _supabaseHabitLogsBackfillCompletedByUserKey =
+    'supabaseHabitLogsBackfillCompletedByUser';
 
 Map<String, dynamic> _dailyRewardGrants(Map<String, dynamic> userState) {
   final daily = _map(userState['daily']);
@@ -274,6 +276,342 @@ Future<HabitBackfillSummary> _syncExistingLocalHabitsOnce(
   }
 }
 
+Future<HabitLogBackfillSummary> _syncExistingLocalHabitLogsOnce(
+  UserStateStore store, {
+  bool force = false,
+}) async {
+  if (store._isSupabaseHabitLogsBackfillRunning) {
+    _debugHabitLogBackfill('habit log backfill skipped: already running');
+    return const HabitLogBackfillSummary(
+      totalCandidates: 0,
+      uploadedCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+    );
+  }
+
+  store._isSupabaseHabitLogsBackfillRunning = true;
+  try {
+    if (store._state == null) {
+      if (!store._loading) {
+        await store.load();
+      }
+      if (store._state == null) {
+        _debugHabitLogBackfill(
+          'habit log backfill skipped: local state unavailable',
+        );
+        return const HabitLogBackfillSummary(
+          totalCandidates: 0,
+          uploadedCount: 0,
+          skippedCount: 0,
+          failedCount: 0,
+        );
+      }
+    }
+
+    final authenticatedUserId = _authenticatedSupabaseUserId();
+    if (authenticatedUserId == null) {
+      _debugHabitLogBackfill(
+        'habit log backfill skipped: no authenticated Supabase user',
+      );
+      return const HabitLogBackfillSummary(
+        totalCandidates: 0,
+        uploadedCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+      );
+    }
+
+    final localUserId = (store.userId ?? '').trim();
+    if (localUserId.isEmpty || localUserId != authenticatedUserId) {
+      _debugHabitLogBackfill(
+        'habit log backfill skipped: local user does not match auth session',
+      );
+      return const HabitLogBackfillSummary(
+        totalCandidates: 0,
+        uploadedCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+      );
+    }
+
+    final root = store._state!;
+    final userState = _ensureUserStateRoot(root);
+    final markerCompleted = _isHabitLogBackfillCompletedForUser(
+      userState,
+      authenticatedUserId,
+    );
+
+    if (markerCompleted && !force) {
+      _debugHabitLogBackfill(
+        'habit log backfill skipped: completion marker already set for user',
+      );
+      return const HabitLogBackfillSummary(
+        totalCandidates: 0,
+        uploadedCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+      );
+    }
+
+    final candidates = _collectHistoricalHabitLogBackfillCandidates(userState);
+    final summary = candidates.isEmpty
+        ? const HabitLogBackfillSummary(
+            totalCandidates: 0,
+            uploadedCount: 0,
+            skippedCount: 0,
+            failedCount: 0,
+          )
+        : await store._habitLogSyncService.backfillHistoricalHabitLogs(
+            candidates: candidates,
+            expectedLocalUserId: authenticatedUserId,
+          );
+
+    final updatedRoot = store._state;
+    if (updatedRoot == null) return summary;
+
+    final updatedUserState = _ensureUserStateRoot(updatedRoot);
+    final shouldMarkCompleted = summary.failedCount == 0;
+    final wasCompleted = _isHabitLogBackfillCompletedForUser(
+      updatedUserState,
+      authenticatedUserId,
+    );
+    if (shouldMarkCompleted != wasCompleted) {
+      _setHabitLogBackfillCompletedForUser(
+        updatedUserState,
+        authenticatedUserId,
+        completed: shouldMarkCompleted,
+      );
+      await store.save(updatedRoot);
+    }
+
+    _debugHabitLogBackfill(
+      'habit log backfill summary for "$authenticatedUserId": '
+      'total=${summary.totalCandidates}, uploaded=${summary.uploadedCount}, '
+      'skipped=${summary.skippedCount}, failed=${summary.failedCount}, '
+      'completed=$shouldMarkCompleted',
+    );
+    return summary;
+  } catch (error) {
+    _debugHabitLogBackfill('habit log backfill unexpected store error: $error');
+    return const HabitLogBackfillSummary(
+      totalCandidates: 0,
+      uploadedCount: 0,
+      skippedCount: 0,
+      failedCount: 1,
+    );
+  } finally {
+    store._isSupabaseHabitLogsBackfillRunning = false;
+  }
+}
+
+List<HabitLogBackfillCandidate> _collectHistoricalHabitLogBackfillCandidates(
+  Map<String, dynamic> userState,
+) {
+  final history = _ensureHistoryRoot(userState);
+  final completionsRoot = _map(history['habitCompletions']);
+  final skipsRoot = _map(history['habitSkips']);
+  final countValuesRoot = _map(history['habitCountValues']);
+
+  final noteRoots = <Map<String, dynamic>>[
+    _map(history['habitLogNotes']),
+    _map(history['habitNotes']),
+    _map(history['habitDailyNotes']),
+    _map(history['habitCompletionNotes']),
+  ];
+
+  final activeHabitsById = <String, Map<String, dynamic>>{};
+  for (final entry in _list(userState['activeHabits']).whereType<Map>()) {
+    final habit = Map<String, dynamic>.from(_map(entry));
+    final habitId = _habitIdValue(habit);
+    if (habitId == null || habitId.trim().isEmpty) continue;
+    activeHabitsById[habitId.trim()] = habit;
+  }
+
+  final dateKeys = <String>{
+    ...completionsRoot.keys.map((key) => key.toString()),
+    ...skipsRoot.keys.map((key) => key.toString()),
+    ...countValuesRoot.keys.map((key) => key.toString()),
+    ..._noteDateKeys(noteRoots),
+  }.toList()
+    ..sort();
+
+  final candidates = <HabitLogBackfillCandidate>[];
+
+  for (final dateKey in dateKeys) {
+    final parsedDate = _parseHistoryDateKey(dateKey);
+    if (parsedDate == null) continue;
+
+    final dayCompletions = _map(completionsRoot[dateKey]);
+    final daySkips = _map(skipsRoot[dateKey]);
+    final dayCountValues = _map(countValuesRoot[dateKey]);
+
+    final dayHabitIds = <String>{
+      ...dayCompletions.keys.map((key) => key.toString().trim()),
+      ...daySkips.keys.map((key) => key.toString().trim()),
+      ...dayCountValues.keys.map((key) => key.toString().trim()),
+      ..._noteHabitIdsForDay(noteRoots, dateKey),
+    }.where((habitId) => habitId.isNotEmpty).toList()
+      ..sort();
+
+    for (final habitId in dayHabitIds) {
+      final localHabit = Map<String, dynamic>.from(
+        activeHabitsById[habitId] ?? <String, dynamic>{'id': habitId},
+      );
+      localHabit['id'] = (localHabit['id'] ?? habitId).toString().trim();
+
+      final hasCompletionEntry = dayCompletions.containsKey(habitId);
+      final hasSkipEntry = daySkips.containsKey(habitId);
+      final hasCountEntry = dayCountValues.containsKey(habitId);
+
+      final isCompleted = hasCompletionEntry
+          ? _dynamicToBool(dayCompletions[habitId])
+          : null;
+      final isSkipped = hasSkipEntry ? _dynamicToBool(daySkips[habitId]) : null;
+      final countValue = hasCountEntry
+          ? _safeNum(dayCountValues[habitId], fallback: 0)
+              .clamp(0, double.infinity)
+          : 0;
+      final note = _extractHistoryNoteForDayHabit(
+        noteRoots: noteRoots,
+        dateKey: dateKey,
+        habitId: habitId,
+      );
+
+      candidates.add(
+        HabitLogBackfillCandidate(
+          localHabit: localHabit,
+          date: parsedDate,
+          isCompleted: isCompleted,
+          isSkipped: isSkipped,
+          countValue: countValue,
+          note: note,
+        ),
+      );
+    }
+  }
+
+  return candidates;
+}
+
+bool _isHabitLogBackfillCompletedForUser(
+  Map<String, dynamic> userState,
+  String userId,
+) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) return false;
+
+  final byUser = _habitLogBackfillCompletedByUser(userState);
+  return byUser[normalizedUserId] == true;
+}
+
+void _setHabitLogBackfillCompletedForUser(
+  Map<String, dynamic> userState,
+  String userId, {
+  required bool completed,
+}) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) return;
+
+  final byUser = _habitLogBackfillCompletedByUser(userState);
+  if (completed) {
+    byUser[normalizedUserId] = true;
+  } else {
+    byUser.remove(normalizedUserId);
+  }
+
+  final meta = _map(userState['meta']);
+  meta[_supabaseHabitLogsBackfillCompletedByUserKey] = byUser;
+  userState['meta'] = meta;
+}
+
+Map<String, dynamic> _habitLogBackfillCompletedByUser(
+  Map<String, dynamic> userState,
+) {
+  final meta = _map(userState['meta']);
+  final byUser = _map(meta[_supabaseHabitLogsBackfillCompletedByUserKey]);
+  meta[_supabaseHabitLogsBackfillCompletedByUserKey] = byUser;
+  userState['meta'] = meta;
+  return byUser;
+}
+
+Set<String> _noteDateKeys(List<Map<String, dynamic>> noteRoots) {
+  final keys = <String>{};
+  for (final noteRoot in noteRoots) {
+    for (final key in noteRoot.keys) {
+      final dateKey = key.toString();
+      if (_parseHistoryDateKey(dateKey) == null) continue;
+      keys.add(dateKey);
+    }
+  }
+  return keys;
+}
+
+Set<String> _noteHabitIdsForDay(
+  List<Map<String, dynamic>> noteRoots,
+  String dateKey,
+) {
+  final habitIds = <String>{};
+  for (final noteRoot in noteRoots) {
+    final dayMap = _map(noteRoot[dateKey]);
+    for (final key in dayMap.keys) {
+      final habitId = key.toString().trim();
+      if (habitId.isEmpty) continue;
+      habitIds.add(habitId);
+    }
+  }
+  return habitIds;
+}
+
+DateTime? _parseHistoryDateKey(String key) {
+  final normalized = key.trim();
+  if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(normalized)) {
+    return null;
+  }
+
+  final parts = normalized.split('-');
+  if (parts.length != 3) return null;
+
+  final year = int.tryParse(parts[0]);
+  final month = int.tryParse(parts[1]);
+  final day = int.tryParse(parts[2]);
+  if (year == null || month == null || day == null) return null;
+
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+
+  final parsed = DateTime(year, month, day);
+  if (parsed.year != year || parsed.month != month || parsed.day != day) {
+    return null;
+  }
+
+  return parsed;
+}
+
+String? _extractHistoryNoteForDayHabit({
+  required List<Map<String, dynamic>> noteRoots,
+  required String dateKey,
+  required String habitId,
+}) {
+  for (final noteRoot in noteRoots) {
+    final dayMap = _map(noteRoot[dateKey]);
+    final dayValue = _nullableTrim(dayMap[habitId]);
+    if (dayValue != null) return dayValue;
+
+    final habitMap = _map(noteRoot[habitId]);
+    final reverseValue = _nullableTrim(habitMap[dateKey]);
+    if (reverseValue != null) return reverseValue;
+  }
+
+  return null;
+}
+
+String? _nullableTrim(dynamic value) {
+  final normalized = (value ?? '').toString().trim();
+  return normalized.isEmpty ? null : normalized;
+}
+
 String? _authenticatedSupabaseUserId() {
   try {
     final userId = Supabase.instance.client.auth.currentUser?.id.trim();
@@ -351,6 +689,11 @@ Map<String, dynamic> _backfillCompletedByUser(Map<String, dynamic> userState) {
 void _debugBackfill(String message) {
   if (!kDebugMode) return;
   debugPrint('[habit_backfill] $message');
+}
+
+void _debugHabitLogBackfill(String message) {
+  if (!kDebugMode) return;
+  debugPrint('[habit_log_backfill] $message');
 }
 
 String _normalizedHabitType(dynamic rawType) {
