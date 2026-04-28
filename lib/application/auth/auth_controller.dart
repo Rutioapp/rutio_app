@@ -82,7 +82,7 @@ class AuthController extends ChangeNotifier {
     _setError(null);
     _setNotice(null);
     if (kDebugMode) {
-      debugPrint('[auth] sign in started: $normalizedEmail');
+      debugPrint('[auth] sign in started');
     }
 
     try {
@@ -146,7 +146,7 @@ class AuthController extends ChangeNotifier {
     _setError(null);
     _setNotice(null);
     if (kDebugMode) {
-      debugPrint('[auth] sign up started: $normalizedEmail');
+      debugPrint('[auth] sign up started');
     }
 
     try {
