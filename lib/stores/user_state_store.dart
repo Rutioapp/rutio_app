@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/services/account_deletion_service.dart';
+import '../data/services/achievement_sync_service.dart';
 import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
 import '../data/services/user_progress_sync_service.dart';
@@ -30,6 +31,7 @@ part 'user_state_store_todos.dart';
 
 class UserStateStore extends ChangeNotifier {
   final UserStateRepository _repo;
+  final AchievementSyncService _achievementSyncService;
   final HabitSyncService _habitSyncService;
   final HabitLogSyncService _habitLogSyncService;
   final UserProgressSyncService _userProgressSyncService;
@@ -37,11 +39,14 @@ class UserStateStore extends ChangeNotifier {
 
   UserStateStore(
     this._repo, {
+    AchievementSyncService? achievementSyncService,
     HabitSyncService? habitSyncService,
     HabitLogSyncService? habitLogSyncService,
     UserProgressSyncService? userProgressSyncService,
     ProfileRepository? profileRepository,
-  })  : _habitSyncService = habitSyncService ?? HabitSyncService(),
+  })  : _achievementSyncService =
+            achievementSyncService ?? AchievementSyncService(),
+        _habitSyncService = habitSyncService ?? HabitSyncService(),
         _habitLogSyncService = habitLogSyncService ?? HabitLogSyncService(),
         _userProgressSyncService =
             userProgressSyncService ?? UserProgressSyncService(),
@@ -51,6 +56,7 @@ class UserStateStore extends ChangeNotifier {
   bool _loading = false;
   Object? _error;
   bool _isDeletingAccount = false;
+  bool _isSupabaseAchievementsBackfillRunning = false;
   bool _isSupabaseHabitsBackfillRunning = false;
   bool _isSupabaseHabitLogsBackfillRunning = false;
   bool _isSupabaseUserProgressBackfillRunning = false;
@@ -67,6 +73,8 @@ class UserStateStore extends ChangeNotifier {
   bool get isDeletingAccount => _isDeletingAccount;
   String? get activeLocalScopeUserId => _activeLocalScopeUserId;
   int get scopeEpoch => _scopeEpoch;
+  bool get isSupabaseAchievementsBackfillRunning =>
+      _isSupabaseAchievementsBackfillRunning;
   bool get isSupabaseHabitsBackfillRunning => _isSupabaseHabitsBackfillRunning;
   bool get isSupabaseHabitLogsBackfillRunning =>
       _isSupabaseHabitLogsBackfillRunning;
@@ -283,6 +291,11 @@ class UserStateStore extends ChangeNotifier {
     bool force = false,
   }) =>
       _syncExistingLocalHabitsOnce(this, force: force);
+
+  Future<AchievementBackfillSummary> syncExistingLocalAchievementsOnce({
+    bool force = false,
+  }) =>
+      _syncExistingLocalAchievementsOnce(this, force: force);
 
   Future<HabitLogBackfillSummary> syncExistingLocalHabitLogsOnce({
     bool force = false,

@@ -448,6 +448,24 @@ class AuthController extends ChangeNotifier {
             'failed=${habitLogSummary.failedCount}',
           );
         }
+
+        if (kDebugMode) {
+          debugPrint('[auth] achievement backfill call started');
+        }
+        final achievementSummary =
+            await _userStateStore.syncExistingLocalAchievementsOnce();
+        if (kDebugMode) {
+          debugPrint('[auth] achievement backfill call returned');
+        }
+        if (kDebugMode) {
+          debugPrint(
+            '[auth] achievement backfill summary: '
+            'total=${achievementSummary.totalCandidates}, '
+            'uploaded=${achievementSummary.uploadedCount}, '
+            'skipped=${achievementSummary.skippedCount}, '
+            'failed=${achievementSummary.failedCount}',
+          );
+        }
       }());
 
       if (kDebugMode) {

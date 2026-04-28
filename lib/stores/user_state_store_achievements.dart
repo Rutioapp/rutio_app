@@ -1,5 +1,8 @@
 part of 'user_state_store.dart';
 
+const String _supabaseAchievementsBackfillCompletedByUserKey =
+    'supabaseAchievementsBackfillCompletedByUser';
+
 class _AppliedAchievementReward {
   const _AppliedAchievementReward({
     required this.achievementId,
@@ -10,6 +13,16 @@ class _AppliedAchievementReward {
   final String achievementId;
   final int rewardXp;
   final int rewardAmber;
+}
+
+class _AchievementSyncOutcome {
+  const _AchievementSyncOutcome({
+    required this.appliedRewards,
+    required this.newlyUnlockedRecords,
+  });
+
+  final List<_AppliedAchievementReward> appliedRewards;
+  final List<UnlockedAchievementRecord> newlyUnlockedRecords;
 }
 
 Map<String, dynamic> _ensureAchievementsRoot(Map<String, dynamic> userState) {
@@ -944,7 +957,7 @@ void _sanitizeFeaturedAchievements(Map<String, dynamic> userState) {
       .toList(growable: false);
 }
 
-List<_AppliedAchievementReward> _syncAchievementsFromCurrentHabits(
+_AchievementSyncOutcome _syncAchievementsFromCurrentHabits(
   UserStateStore store,
   Map<String, dynamic> userState, {
   bool enqueueVisualTrigger = false,
@@ -1055,10 +1068,13 @@ List<_AppliedAchievementReward> _syncAchievementsFromCurrentHabits(
 
   achievements['unlocked'] = unlocked;
   _sanitizeFeaturedAchievements(userState);
-  return _applyAchievementRewardsForRecords(
-    userState,
-    achievements: achievements,
-    records: newlyUnlockedRecords,
+  return _AchievementSyncOutcome(
+    appliedRewards: _applyAchievementRewardsForRecords(
+      userState,
+      achievements: achievements,
+      records: newlyUnlockedRecords,
+    ),
+    newlyUnlockedRecords: newlyUnlockedRecords,
   );
 }
 
@@ -1073,4 +1089,298 @@ bool _shouldQueueFamilyConsistencyUnlock(
   // streak. This catches the fresh day-7 unlock while avoiding retroactive
   // sheets for old historical streaks that were imported later.
   return snapshot.currentStreak == snapshot.bestStreak;
+}
+
+void _queueBestEffortAchievementUnlockSync(
+  UserStateStore store, {
+  required Map<String, dynamic> userState,
+  required Iterable<UnlockedAchievementRecord> records,
+}) {
+  final uniqueById = <String, UnlockedAchievementRecord>{};
+  for (final record in records) {
+    final id = record.id.trim();
+    if (id.isEmpty) continue;
+    uniqueById[id] = record;
+  }
+  if (uniqueById.isEmpty) {
+    if (kDebugMode) {
+      debugPrint(
+        '[achievement_sync] unlock sync trigger skipped: no newly unlocked records',
+      );
+    }
+    return;
+  }
+
+  final achievements = _ensureAchievementsRoot(userState);
+  final rewardAppliedIds = _rewardAppliedAchievementIdsSet(achievements);
+
+  if (kDebugMode) {
+    final sample = uniqueById.values
+        .take(5)
+        .map((record) => '${record.id}:${record.tier.name}')
+        .join(', ');
+    debugPrint(
+      '[achievement_sync] unlock sync trigger: count=${uniqueById.length}, '
+      'sample=[$sample]',
+    );
+  }
+
+  for (final record in uniqueById.values) {
+    unawaited(
+      store._achievementSyncService.syncAchievementUnlocked(
+        record: record,
+        rewardApplied: rewardAppliedIds.contains(record.id),
+        expectedLocalUserId: store.userId,
+      ),
+    );
+  }
+}
+
+Future<AchievementBackfillSummary> _syncExistingLocalAchievementsOnce(
+  UserStateStore store, {
+  bool force = false,
+}) async {
+  if (store._isSupabaseAchievementsBackfillRunning) {
+    _debugAchievementBackfill('achievement backfill skipped: already running');
+    return const AchievementBackfillSummary(
+      totalCandidates: 0,
+      uploadedCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+    );
+  }
+
+  store._isSupabaseAchievementsBackfillRunning = true;
+  try {
+    if (store._state == null) {
+      if (!store._loading) {
+        await store.load();
+      }
+      if (store._state == null) {
+        _debugAchievementBackfill(
+          'achievement backfill skipped: local state unavailable',
+        );
+        return const AchievementBackfillSummary(
+          totalCandidates: 0,
+          uploadedCount: 0,
+          skippedCount: 0,
+          failedCount: 0,
+        );
+      }
+    }
+
+    final authenticatedUserId = _authenticatedSupabaseUserId();
+    if (authenticatedUserId == null) {
+      _debugAchievementBackfill(
+        'achievement backfill skipped: no authenticated Supabase user',
+      );
+      return const AchievementBackfillSummary(
+        totalCandidates: 0,
+        uploadedCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+      );
+    }
+
+    final localUserId = (store.userId ?? '').trim();
+    if (localUserId.isEmpty || localUserId != authenticatedUserId) {
+      _debugAchievementBackfill(
+        'achievement backfill skipped: local user does not match auth session',
+      );
+      return const AchievementBackfillSummary(
+        totalCandidates: 0,
+        uploadedCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+      );
+    }
+
+    final root = store._state!;
+    final userState = _ensureUserStateRoot(root);
+    final rawUnlockedCount = _rawUnlockedAchievementEntriesCount(userState);
+    final records = _unlockedAchievementRecords(store);
+    final localUnlockedCount = records.length;
+    final alreadyCompleted = _isAchievementBackfillCompletedForUser(
+      userState,
+      authenticatedUserId,
+    );
+
+    _debugAchievementBackfill(
+      'achievement backfill precheck for "$authenticatedUserId": '
+      'markerCompleted=$alreadyCompleted, force=$force, '
+      'rawUnlockedCount=$rawUnlockedCount, parsedUnlockedCount=$localUnlockedCount',
+    );
+
+    if (rawUnlockedCount > 0 && localUnlockedCount == 0) {
+      _debugAchievementBackfill(
+        'achievement backfill cannot proceed: raw unlocked entries exist but parsing produced zero records',
+      );
+      return const AchievementBackfillSummary(
+        totalCandidates: 0,
+        uploadedCount: 0,
+        skippedCount: 0,
+        failedCount: 1,
+      );
+    }
+
+    if (alreadyCompleted && !force) {
+      if (localUnlockedCount == 0 && rawUnlockedCount == 0) {
+        _debugAchievementBackfill(
+          'achievement backfill skipped: completion marker already set and no local unlocked achievements found',
+        );
+        return const AchievementBackfillSummary(
+          totalCandidates: 0,
+          uploadedCount: 0,
+          skippedCount: 0,
+          failedCount: 0,
+        );
+      }
+
+      final remoteCount = await store._achievementSyncService
+          .fetchCurrentUserAchievementCount(
+        expectedLocalUserId: authenticatedUserId,
+      );
+      if (remoteCount != null && remoteCount > 0) {
+        _debugAchievementBackfill(
+          'achievement backfill skipped: completion marker already set and remote rows already exist (remoteCount=$remoteCount)',
+        );
+        return const AchievementBackfillSummary(
+          totalCandidates: 0,
+          uploadedCount: 0,
+          skippedCount: 0,
+          failedCount: 0,
+        );
+      }
+
+      if (remoteCount == 0) {
+        _debugAchievementBackfill(
+          'achievement backfill retrying despite completion marker: remote rows are zero',
+        );
+      } else {
+        _debugAchievementBackfill(
+          'achievement backfill skipped: completion marker already set and remote row count is unavailable',
+        );
+        return const AchievementBackfillSummary(
+          totalCandidates: 0,
+          uploadedCount: 0,
+          skippedCount: 0,
+          failedCount: 0,
+        );
+      }
+    }
+
+    final achievements = _ensureAchievementsRoot(userState);
+    final rewardAppliedIds = _rewardAppliedAchievementIdsSet(achievements);
+
+    final summary = await store._achievementSyncService
+        .syncExistingLocalAchievementsOnce(
+      localUnlockedAchievements: records,
+      rewardAppliedAchievementIds: rewardAppliedIds,
+      expectedLocalUserId: authenticatedUserId,
+      force: force,
+    );
+
+    final updatedRoot = store._state;
+    if (updatedRoot == null) return summary;
+
+    final updatedUserState = _ensureUserStateRoot(updatedRoot);
+    final shouldMarkCompleted = summary.failedCount == 0 &&
+        (summary.totalCandidates > 0 || rawUnlockedCount == 0);
+    final wasCompleted = _isAchievementBackfillCompletedForUser(
+      updatedUserState,
+      authenticatedUserId,
+    );
+    if (shouldMarkCompleted != wasCompleted) {
+      _setAchievementBackfillCompletedForUser(
+        updatedUserState,
+        authenticatedUserId,
+        completed: shouldMarkCompleted,
+      );
+      await store.save(updatedRoot);
+    }
+
+    _debugAchievementBackfill(
+      'achievement backfill summary for "$authenticatedUserId": '
+      'total=${summary.totalCandidates}, uploaded=${summary.uploadedCount}, '
+      'skipped=${summary.skippedCount}, failed=${summary.failedCount}, '
+      'rawUnlockedCount=$rawUnlockedCount, parsedUnlockedCount=$localUnlockedCount, '
+      'completed=$shouldMarkCompleted',
+    );
+    return summary;
+  } catch (error) {
+    _debugAchievementBackfill(
+      'achievement backfill unexpected store error: $error',
+    );
+    return const AchievementBackfillSummary(
+      totalCandidates: 0,
+      uploadedCount: 0,
+      skippedCount: 0,
+      failedCount: 1,
+    );
+  } finally {
+    store._isSupabaseAchievementsBackfillRunning = false;
+  }
+}
+
+bool _isAchievementBackfillCompletedForUser(
+  Map<String, dynamic> userState,
+  String userId,
+) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) return false;
+
+  final byUser = _achievementBackfillCompletedByUser(userState);
+  return byUser[normalizedUserId] == true;
+}
+
+void _setAchievementBackfillCompletedForUser(
+  Map<String, dynamic> userState,
+  String userId, {
+  required bool completed,
+}) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) return;
+
+  final byUser = _achievementBackfillCompletedByUser(userState);
+  if (completed) {
+    byUser[normalizedUserId] = true;
+  } else {
+    byUser.remove(normalizedUserId);
+  }
+
+  final meta = _map(userState['meta']);
+  meta[_supabaseAchievementsBackfillCompletedByUserKey] = byUser;
+  userState['meta'] = meta;
+}
+
+Map<String, dynamic> _achievementBackfillCompletedByUser(
+  Map<String, dynamic> userState,
+) {
+  final meta = _map(userState['meta']);
+  final byUser = _map(meta[_supabaseAchievementsBackfillCompletedByUserKey]);
+  meta[_supabaseAchievementsBackfillCompletedByUserKey] = byUser;
+  userState['meta'] = meta;
+  return byUser;
+}
+
+void _debugAchievementBackfill(String message) {
+  if (!kDebugMode) return;
+  debugPrint('[achievement_backfill] $message');
+}
+
+int _rawUnlockedAchievementEntriesCount(Map<String, dynamic> userState) {
+  final achievements = _ensureAchievementsRoot(userState);
+  final rawUnlocked = _list(achievements['unlocked']);
+
+  var count = 0;
+  for (final entry in rawUnlocked.whereType<Map>()) {
+    final mapEntry = _map(entry);
+    final id = (mapEntry['id'] ?? '').toString().trim();
+    if (id.isEmpty) continue;
+    if (_isLegacyHabitStreakEntry(mapEntry)) continue;
+    if (_isRemovedFamilyConsistencyTier(mapEntry)) continue;
+    count += 1;
+  }
+
+  return count;
 }

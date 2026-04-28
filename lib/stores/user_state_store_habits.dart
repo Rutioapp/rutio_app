@@ -1448,13 +1448,18 @@ Future<void> _setCountHabitValue(
     habitId: habitId,
     habit: habit,
   );
-  final achievementRewards = _syncAchievementsFromCurrentHabits(
+  final achievementSyncOutcome = _syncAchievementsFromCurrentHabits(
     store,
     userState,
     enqueueVisualTrigger: true,
   );
 
   await store.save(root);
+  _queueBestEffortAchievementUnlockSync(
+    store,
+    userState: userState,
+    records: achievementSyncOutcome.newlyUnlockedRecords,
+  );
   if (progressResult.xpGain != 0 || progressResult.coinsGain != 0) {
     _queueBestEffortProgressAndRewardSync(
       store,
@@ -1466,7 +1471,7 @@ Future<void> _setCountHabitValue(
       currencyReason: 'habit_completion_reward',
     );
   }
-  for (final reward in achievementRewards) {
+  for (final reward in achievementSyncOutcome.appliedRewards) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
@@ -1545,13 +1550,18 @@ Future<void> _completeHabit(
     habitId: habitId,
     habit: habit,
   );
-  final achievementRewards = _syncAchievementsFromCurrentHabits(
+  final achievementSyncOutcome = _syncAchievementsFromCurrentHabits(
     store,
     userState,
     enqueueVisualTrigger: true,
   );
 
   await store.save(root);
+  _queueBestEffortAchievementUnlockSync(
+    store,
+    userState: userState,
+    records: achievementSyncOutcome.newlyUnlockedRecords,
+  );
   if (progressResult.xpGain != 0 || progressResult.coinsGain != 0) {
     _queueBestEffortProgressAndRewardSync(
       store,
@@ -1563,7 +1573,7 @@ Future<void> _completeHabit(
       currencyReason: 'habit_completion_reward',
     );
   }
-  for (final reward in achievementRewards) {
+  for (final reward in achievementSyncOutcome.appliedRewards) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
