@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../features/notifications/application/notification_permission_controller.dart';
+import '../../../../features/notifications/domain/notification_permission_status.dart';
 import '../../../../l10n/l10n.dart';
 import '../../../../services/notification_preferences.dart';
 import '../../../../services/notification_service.dart';
@@ -202,8 +204,21 @@ class _EditHabitTabState extends State<EditHabitTab> {
       final store = context.read<UserStateStore>();
 
       if (_formData.remindersEnabled) {
-        final result = await NotificationService.instance.requestPermissionFlow();
-        if (!result.isAuthorized) {
+        final permissionController = NotificationPermissionController();
+        await permissionController.markPostLoginPromptShown();
+        final canSchedule =
+            await permissionController.ensureCanScheduleFromReminderFlow();
+        if (!canSchedule) {
+          final effectiveStatus = await permissionController.getEffectiveStatus();
+          final shouldShowPermissionSnack =
+              effectiveStatus == NotificationPermissionStatus.denied ||
+                  effectiveStatus ==
+                      NotificationPermissionStatus.permanentlyDenied;
+          if (!shouldShowPermissionSnack || !mounted) {
+            return;
+          }
+
+          final result = await NotificationService.instance.checkPermissionStatus();
           if (!mounted) return;
           messenger.showSnackBar(
             SnackBar(

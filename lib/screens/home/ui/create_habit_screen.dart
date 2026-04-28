@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'package:rutio/features/notifications/application/notification_permission_controller.dart';
+import 'package:rutio/features/notifications/domain/notification_permission_status.dart';
 import 'package:rutio/services/notification_service.dart';
 import 'package:rutio/services/notification_preferences.dart';
 import 'package:rutio/l10n/l10n.dart';
@@ -399,8 +401,21 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     final store = context.read<UserStateStore>();
     try {
       if (_reminderEnabled) {
-        final result = await NotificationService.instance.requestPermissionFlow();
-        if (!result.isAuthorized) {
+        final permissionController = NotificationPermissionController();
+        await permissionController.markPostLoginPromptShown();
+        final canSchedule =
+            await permissionController.ensureCanScheduleFromReminderFlow();
+        if (!canSchedule) {
+          final effectiveStatus = await permissionController.getEffectiveStatus();
+          final shouldShowPermissionSnack =
+              effectiveStatus == NotificationPermissionStatus.denied ||
+                  effectiveStatus ==
+                      NotificationPermissionStatus.permanentlyDenied;
+          if (!shouldShowPermissionSnack || !mounted) {
+            return;
+          }
+
+          final result = await NotificationService.instance.checkPermissionStatus();
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
