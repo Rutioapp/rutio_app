@@ -460,6 +460,7 @@ Future<void> _loadStore(
       _ensureDailyReset(userState);
       _ensureActiveHabitIds(userState);
       _ensureDiaryEntriesRoot(userState);
+      _ensureDiaryRewardAppliedDateKeys(userState);
       _ensureTodosRoot(userState);
       _ensureAchievementsRoot(userState);
       _syncAchievementsFromCurrentHabits(store, userState);
@@ -499,6 +500,8 @@ Future<void> _saveStore(
   final userState = _ensureUserStateRoot(store._state!);
   _ensureDailyReset(userState);
   _ensureActiveHabitIds(userState);
+  _ensureDiaryEntriesRoot(userState);
+  _ensureDiaryRewardAppliedDateKeys(userState);
   _ensureTodosRoot(userState);
   _ensureAchievementsRoot(userState);
   _sanitizeFeaturedAchievements(userState);

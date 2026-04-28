@@ -3,7 +3,8 @@
     "userId": "user_123",
     "meta": {
       "schemaVersion": 1,
-      "lastSavedAt": "2025-12-29T14:38:53.857331Z"
+      "lastSavedAt": "2025-12-29T14:38:53.857331Z",
+      "diaryRewardAppliedDateKeys": []
     },
 
     "progression": {

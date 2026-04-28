@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/services/account_deletion_service.dart';
+import '../constants/reward_constants.dart';
 import '../data/services/achievement_sync_service.dart';
 import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
