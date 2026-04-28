@@ -1448,7 +1448,7 @@ Future<void> _setCountHabitValue(
     habitId: habitId,
     habit: habit,
   );
-  _syncAchievementsFromCurrentHabits(
+  final achievementRewards = _syncAchievementsFromCurrentHabits(
     store,
     userState,
     enqueueVisualTrigger: true,
@@ -1464,6 +1464,17 @@ Future<void> _setCountHabitValue(
       source: 'habit_completion',
       xpReason: 'habit_completion_reward',
       currencyReason: 'habit_completion_reward',
+    );
+  }
+  for (final reward in achievementRewards) {
+    _queueBestEffortProgressAndRewardSync(
+      store,
+      userState: userState,
+      xpDelta: reward.rewardXp,
+      coinsDelta: reward.rewardAmber,
+      source: 'achievement_unlocked',
+      xpReason: 'achievement_unlocked:${reward.achievementId}',
+      currencyReason: 'achievement_unlocked:${reward.achievementId}',
     );
   }
   _queueBestEffortHabitLogSyncForDate(
@@ -1534,7 +1545,7 @@ Future<void> _completeHabit(
     habitId: habitId,
     habit: habit,
   );
-  _syncAchievementsFromCurrentHabits(
+  final achievementRewards = _syncAchievementsFromCurrentHabits(
     store,
     userState,
     enqueueVisualTrigger: true,
@@ -1550,6 +1561,17 @@ Future<void> _completeHabit(
       source: 'habit_completion',
       xpReason: 'habit_completion_reward',
       currencyReason: 'habit_completion_reward',
+    );
+  }
+  for (final reward in achievementRewards) {
+    _queueBestEffortProgressAndRewardSync(
+      store,
+      userState: userState,
+      xpDelta: reward.rewardXp,
+      coinsDelta: reward.rewardAmber,
+      source: 'achievement_unlocked',
+      xpReason: 'achievement_unlocked:${reward.achievementId}',
+      currencyReason: 'achievement_unlocked:${reward.achievementId}',
     );
   }
   _queueBestEffortHabitLogSyncForDate(

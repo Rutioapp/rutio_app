@@ -12,6 +12,7 @@ import '../data/services/user_progress_sync_service.dart';
 import '../data/repositories/profile_repository.dart';
 import '../data/repositories/user_state_repository.dart';
 import '../features/achievements/application/achievement_catalog.dart';
+import '../features/achievements/application/achievement_rewards.dart';
 import '../features/achievements/domain/models/achievement.dart';
 import '../features/achievements/domain/models/habit_streak_snapshot.dart';
 import '../features/achievements/domain/models/unlocked_achievement_record.dart';

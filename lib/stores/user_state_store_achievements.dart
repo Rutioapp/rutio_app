@@ -1,5 +1,17 @@
 part of 'user_state_store.dart';
 
+class _AppliedAchievementReward {
+  const _AppliedAchievementReward({
+    required this.achievementId,
+    required this.rewardXp,
+    required this.rewardAmber,
+  });
+
+  final String achievementId;
+  final int rewardXp;
+  final int rewardAmber;
+}
+
 Map<String, dynamic> _ensureAchievementsRoot(Map<String, dynamic> userState) {
   final profile = _map(userState['profile']);
   final achievements = _map(profile['achievements']);
@@ -24,12 +36,78 @@ Map<String, dynamic> _ensureAchievementsRoot(Map<String, dynamic> userState) {
       .map((entry) => entry.toString().trim())
       .where((entry) => entry.isNotEmpty)
       .toList(growable: false);
+  final rewardAppliedAchievementIds = _list(
+    achievements['rewardAppliedAchievementIds'],
+  )
+      .map((entry) => entry.toString().trim())
+      .where((entry) => entry.isNotEmpty)
+      .toSet()
+      .toList(growable: false);
 
   achievements['unlocked'] = normalizedUnlocked;
   achievements['featured'] = featured;
+  achievements['rewardAppliedAchievementIds'] = rewardAppliedAchievementIds;
   profile['achievements'] = achievements;
   userState['profile'] = profile;
   return achievements;
+}
+
+Set<String> _rewardAppliedAchievementIdsSet(Map<String, dynamic> achievements) {
+  return _list(achievements['rewardAppliedAchievementIds'])
+      .map((entry) => entry.toString().trim())
+      .where((entry) => entry.isNotEmpty)
+      .toSet();
+}
+
+List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
+  Map<String, dynamic> userState, {
+  required Map<String, dynamic> achievements,
+  required Iterable<UnlockedAchievementRecord> records,
+}) {
+  final rewardAppliedIds = _rewardAppliedAchievementIdsSet(achievements);
+  final appliedRewards = <_AppliedAchievementReward>[];
+
+  for (final record in records) {
+    if (rewardAppliedIds.contains(record.id)) continue;
+
+    final reward = AchievementRewards.getAchievementReward(record.tier);
+    if (reward.rewardXp <= 0 && reward.rewardAmber <= 0) {
+      rewardAppliedIds.add(record.id);
+      continue;
+    }
+
+    final progression = _map(userState['progression']);
+    final currentXp = _safeInt(progression['xp'], fallback: 0);
+    final nextXp = currentXp + reward.rewardXp;
+    progression['xp'] = nextXp;
+    progression['level'] = 1 + (nextXp ~/ 100);
+    userState['progression'] = progression;
+
+    final wallet = _map(userState['wallet']);
+    final currentCoins = _safeInt(wallet['coins'], fallback: 0);
+    wallet['coins'] = currentCoins + reward.rewardAmber;
+    userState['wallet'] = wallet;
+
+    final daily = _map(userState['daily']);
+    daily['xpEarnedToday'] =
+        _safeInt(daily['xpEarnedToday'], fallback: 0) + reward.rewardXp;
+    daily['coinsEarnedToday'] =
+        _safeInt(daily['coinsEarnedToday'], fallback: 0) + reward.rewardAmber;
+    userState['daily'] = daily;
+
+    rewardAppliedIds.add(record.id);
+    appliedRewards.add(
+      _AppliedAchievementReward(
+        achievementId: record.id,
+        rewardXp: reward.rewardXp,
+        rewardAmber: reward.rewardAmber,
+      ),
+    );
+  }
+
+  achievements['rewardAppliedAchievementIds'] =
+      rewardAppliedIds.toList(growable: false);
+  return appliedRewards;
 }
 
 List<UnlockedAchievementRecord> _unlockedAchievementRecords(
@@ -866,7 +944,7 @@ void _sanitizeFeaturedAchievements(Map<String, dynamic> userState) {
       .toList(growable: false);
 }
 
-void _syncAchievementsFromCurrentHabits(
+List<_AppliedAchievementReward> _syncAchievementsFromCurrentHabits(
   UserStateStore store,
   Map<String, dynamic> userState, {
   bool enqueueVisualTrigger = false,
@@ -878,6 +956,7 @@ void _syncAchievementsFromCurrentHabits(
       .toList(growable: false);
   final legacyUnlockDates = _legacyUnlockedDatesByFamilyTier(rawUnlocked);
   final unlockedById = <String, Map<String, dynamic>>{};
+  final newlyUnlockedRecords = <UnlockedAchievementRecord>[];
 
   for (final entry in rawUnlocked) {
     if (_isLegacyHabitStreakEntry(entry)) continue;
@@ -925,6 +1004,7 @@ void _syncAchievementsFromCurrentHabits(
       );
 
       unlockedById[achievementId] = record.toJson();
+      newlyUnlockedRecords.add(record);
 
       if (enqueueVisualTrigger &&
           _shouldQueueFamilyConsistencyUnlock(
@@ -959,6 +1039,7 @@ void _syncAchievementsFromCurrentHabits(
     );
 
     unlockedById[achievement.id] = record.toJson();
+    newlyUnlockedRecords.add(record);
 
     if (enqueueVisualTrigger && snapshot.currentStreak == achievement.targetValue) {
       store._pendingAchievementUnlocks.add(record);
@@ -974,6 +1055,11 @@ void _syncAchievementsFromCurrentHabits(
 
   achievements['unlocked'] = unlocked;
   _sanitizeFeaturedAchievements(userState);
+  return _applyAchievementRewardsForRecords(
+    userState,
+    achievements: achievements,
+    records: newlyUnlockedRecords,
+  );
 }
 
 bool _shouldQueueFamilyConsistencyUnlock(

@@ -346,6 +346,7 @@ class AchievementCatalog {
         );
     final rewards = AchievementRewards.resolveForAchievement(
       baseAchievement.id,
+      tier: baseAchievement.tier,
       xpReward: xpReward ?? _nullableReward(baseAchievement.xpReward),
       ambarReward: ambarReward ?? _nullableReward(baseAchievement.ambarReward),
     );

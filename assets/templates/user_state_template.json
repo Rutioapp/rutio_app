@@ -35,6 +35,7 @@
       "achievements": {
         "unlocked": [],
         "featured": [],
+        "rewardAppliedAchievementIds": [],
         "progress": {}
       }
     },
