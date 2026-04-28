@@ -892,6 +892,29 @@ class AppLocalizationsEs extends AppLocalizations {
       'Un recordatorio amable tras 3 días sin abrir la app';
 
   @override
+  String get notificationPermissionTitle => 'Activa tus recordatorios';
+
+  @override
+  String get notificationPermissionBody =>
+      'Rutio puede avisarte en el momento adecuado para ayudarte a mantener tus hábitos sin presión.';
+
+  @override
+  String get notificationPermissionPrimaryAction => 'Activar recordatorios';
+
+  @override
+  String get notificationPermissionSecondaryAction => 'Ahora no';
+
+  @override
+  String get notificationPermissionDeniedTitle => 'Notificaciones desactivadas';
+
+  @override
+  String get notificationPermissionDeniedBody =>
+      'Puedes activarlas más adelante desde los ajustes de tu dispositivo.';
+
+  @override
+  String get notificationPermissionOpenSettings => 'Abrir ajustes';
+
+  @override
   String get editProfileTitle => 'Editar perfil';
 
   @override

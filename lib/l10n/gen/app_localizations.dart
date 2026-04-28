@@ -1713,6 +1713,48 @@ abstract class AppLocalizations {
   /// **'Un recordatorio amable tras 3 días sin abrir la app'**
   String get profileNotificationInactivitySubtitle;
 
+  /// No description provided for @notificationPermissionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Activa tus recordatorios'**
+  String get notificationPermissionTitle;
+
+  /// No description provided for @notificationPermissionBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Rutio puede avisarte en el momento adecuado para ayudarte a mantener tus hábitos sin presión.'**
+  String get notificationPermissionBody;
+
+  /// No description provided for @notificationPermissionPrimaryAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Activar recordatorios'**
+  String get notificationPermissionPrimaryAction;
+
+  /// No description provided for @notificationPermissionSecondaryAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahora no'**
+  String get notificationPermissionSecondaryAction;
+
+  /// No description provided for @notificationPermissionDeniedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones desactivadas'**
+  String get notificationPermissionDeniedTitle;
+
+  /// No description provided for @notificationPermissionDeniedBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes activarlas más adelante desde los ajustes de tu dispositivo.'**
+  String get notificationPermissionDeniedBody;
+
+  /// No description provided for @notificationPermissionOpenSettings.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir ajustes'**
+  String get notificationPermissionOpenSettings;
+
   /// No description provided for @editProfileTitle.
   ///
   /// In es, this message translates to:

@@ -43,6 +43,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // =========================
   bool _showCompleted = false;
   bool _showSkipped = false;
+  final NotificationPermissionController _notificationPermissionController =
+      NotificationPermissionController();
+  bool _didQueuePostLoginNotificationPrompt = false;
+  bool _isPostLoginNotificationPromptVisible = false;
 
   void _applyHomeState(VoidCallback update) {
     if (!mounted) return;
@@ -66,12 +70,72 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         s.load();
       }
     });
+    _schedulePostLoginNotificationPrompt();
 
     _confettiController = ConfettiController(
       duration: const Duration(milliseconds: 650),
     );
 
     _primeCatalogFamilies();
+  }
+
+  void _schedulePostLoginNotificationPrompt() {
+    if (_didQueuePostLoginNotificationPrompt) return;
+    _didQueuePostLoginNotificationPrompt = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeShowPostLoginNotificationPrompt();
+    });
+  }
+
+  Future<void> _maybeShowPostLoginNotificationPrompt() async {
+    if (!mounted || _isPostLoginNotificationPromptVisible) return;
+
+    try {
+      final shouldShow =
+          await _notificationPermissionController.shouldShowPostLoginPrompt();
+      if (!mounted || !shouldShow || _isPostLoginNotificationPromptVisible) {
+        return;
+      }
+
+      _isPostLoginNotificationPromptVisible = true;
+      NotificationPermissionOnboardingOutcome? result;
+      try {
+        result = await showNotificationPermissionOnboardingSheet(
+          context,
+          controller: _notificationPermissionController,
+        );
+      } finally {
+        _isPostLoginNotificationPromptVisible = false;
+      }
+      if (!mounted) return;
+
+      if (result == NotificationPermissionOnboardingOutcome.denied ||
+          result == NotificationPermissionOnboardingOutcome.permanentlyDenied) {
+        _showNotificationPermissionDeniedFeedback();
+      }
+    } catch (_) {
+      _isPostLoginNotificationPromptVisible = false;
+    }
+  }
+
+  void _showNotificationPermissionDeniedFeedback() {
+    if (!mounted) return;
+
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          '${l10n.notificationPermissionDeniedTitle}\n'
+          '${l10n.notificationPermissionDeniedBody}',
+        ),
+        action: SnackBarAction(
+          label: l10n.notificationPermissionOpenSettings,
+          onPressed: NotificationService.instance.openSettings,
+        ),
+      ),
+    );
   }
 
   Widget _skippedHeader({required int count}) {
