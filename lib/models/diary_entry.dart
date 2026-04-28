@@ -5,6 +5,7 @@ class DiaryEntry {
   final String id;
   final int createdAt; // epoch ms
   final String text;
+  final String? remoteId;
 
   /// If null => personal entry
   final String? habitId;
@@ -21,6 +22,7 @@ class DiaryEntry {
     required this.id,
     required this.createdAt,
     required this.text,
+    this.remoteId,
     this.habitId,
     this.familyId,
     this.mood,
@@ -31,6 +33,7 @@ class DiaryEntry {
     String? id,
     int? createdAt,
     String? text,
+    String? remoteId,
     String? habitId,
     String? familyId,
     int? mood,
@@ -40,6 +43,7 @@ class DiaryEntry {
       id: id ?? this.id,
       createdAt: createdAt ?? this.createdAt,
       text: text ?? this.text,
+      remoteId: remoteId ?? this.remoteId,
       habitId: habitId ?? this.habitId,
       familyId: familyId ?? this.familyId,
       mood: mood ?? this.mood,
@@ -51,6 +55,7 @@ class DiaryEntry {
         'id': id,
         'createdAt': createdAt,
         'text': text,
+        'remoteId': remoteId,
         'habitId': habitId,
         'familyId': familyId,
         'mood': mood,
@@ -63,6 +68,7 @@ class DiaryEntry {
             ? json['createdAt'] as int
             : int.tryParse((json['createdAt'] ?? '0').toString()) ?? 0,
         text: (json['text'] ?? '').toString(),
+        remoteId: (json['remoteId'] as Object?)?.toString(),
         habitId: (json['habitId'] as Object?)?.toString(),
         familyId: (json['familyId'] as Object?)?.toString(),
         mood: (json['mood'] is int) ? json['mood'] as int : int.tryParse((json['mood'] ?? '').toString()),

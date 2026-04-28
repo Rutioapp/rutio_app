@@ -10,7 +10,9 @@ import '../constants/reward_constants.dart';
 import '../data/services/achievement_sync_service.dart';
 import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
+import '../data/services/journal_entry_sync_service.dart';
 import '../data/services/user_progress_sync_service.dart';
+import '../data/repositories/journal_entry_repository.dart';
 import '../data/repositories/profile_repository.dart';
 import '../data/repositories/user_state_repository.dart';
 import '../features/achievements/application/achievement_catalog.dart';
@@ -36,6 +38,7 @@ class UserStateStore extends ChangeNotifier {
   final HabitSyncService _habitSyncService;
   final HabitLogSyncService _habitLogSyncService;
   final UserProgressSyncService _userProgressSyncService;
+  final JournalEntrySyncService _journalEntrySyncService;
   final ProfileRepository? _profileRepository;
 
   UserStateStore(
@@ -44,6 +47,7 @@ class UserStateStore extends ChangeNotifier {
     HabitSyncService? habitSyncService,
     HabitLogSyncService? habitLogSyncService,
     UserProgressSyncService? userProgressSyncService,
+    JournalEntrySyncService? journalEntrySyncService,
     ProfileRepository? profileRepository,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
@@ -51,6 +55,10 @@ class UserStateStore extends ChangeNotifier {
         _habitLogSyncService = habitLogSyncService ?? HabitLogSyncService(),
         _userProgressSyncService =
             userProgressSyncService ?? UserProgressSyncService(),
+        _journalEntrySyncService = journalEntrySyncService ??
+            JournalEntrySyncService(
+              journalEntryRepository: JournalEntryRepository(),
+            ),
         _profileRepository = profileRepository;
 
   Map<String, dynamic>? _state;
@@ -61,6 +69,7 @@ class UserStateStore extends ChangeNotifier {
   bool _isSupabaseHabitsBackfillRunning = false;
   bool _isSupabaseHabitLogsBackfillRunning = false;
   bool _isSupabaseUserProgressBackfillRunning = false;
+  bool _isSupabaseJournalEntriesBackfillRunning = false;
   Object? _accountDeletionError;
   String? _activeLocalScopeUserId;
   int _scopeEpoch = 0;
@@ -81,6 +90,8 @@ class UserStateStore extends ChangeNotifier {
       _isSupabaseHabitLogsBackfillRunning;
   bool get isSupabaseUserProgressBackfillRunning =>
       _isSupabaseUserProgressBackfillRunning;
+  bool get isSupabaseJournalEntriesBackfillRunning =>
+      _isSupabaseJournalEntriesBackfillRunning;
   Object? get accountDeletionError => _accountDeletionError;
 
   void _emitChanged() => notifyListeners();
@@ -305,6 +316,11 @@ class UserStateStore extends ChangeNotifier {
 
   Future<bool> syncSupabaseUserProgressBackfillOnce({bool force = false}) =>
       _syncSupabaseUserProgressBackfillOnce(this, force: force);
+
+  Future<JournalEntryBackfillSummary> syncExistingLocalJournalEntriesOnce({
+    bool force = false,
+  }) =>
+      _syncExistingLocalJournalEntriesOnce(this, force: force);
 
   Future<void> reorderVisibleHabits({
     required List<String> orderedVisibleIds,

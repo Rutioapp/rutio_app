@@ -449,6 +449,18 @@ class AuthController extends ChangeNotifier {
           );
         }
 
+        final journalSummary =
+            await _userStateStore.syncExistingLocalJournalEntriesOnce();
+        if (kDebugMode) {
+          debugPrint(
+            '[auth] journal backfill summary: '
+            'total=${journalSummary.totalCandidates}, '
+            'uploaded=${journalSummary.uploadedCount}, '
+            'skipped=${journalSummary.skippedCount}, '
+            'failed=${journalSummary.failedCount}',
+          );
+        }
+
         if (kDebugMode) {
           debugPrint('[auth] achievement backfill call started');
         }
