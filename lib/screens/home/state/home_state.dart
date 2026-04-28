@@ -47,6 +47,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       NotificationPermissionController();
   bool _didQueuePostLoginNotificationPrompt = false;
   bool _isPostLoginNotificationPromptVisible = false;
+  bool _isCheckingPostLoginNotificationPrompt = false;
+  int _postLoginPromptRetryCount = 0;
+  static const int _maxPostLoginPromptRetries = 4;
+  static const String _notificationOnboardingLogPrefix =
+      '[NotificationPermissionOnboarding]';
+
+  void _logNotificationOnboarding(String message) {
+    if (!kDebugMode) return;
+    debugPrint('$_notificationOnboardingLogPrefix $message');
+  }
 
   void _applyHomeState(VoidCallback update) {
     if (!mounted) return;
@@ -80,25 +90,97 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _schedulePostLoginNotificationPrompt() {
-    if (_didQueuePostLoginNotificationPrompt) return;
+    if (_didQueuePostLoginNotificationPrompt) {
+      _logNotificationOnboarding(
+        '_schedulePostLoginNotificationPrompt(): skipped (already queued)',
+      );
+      return;
+    }
     _didQueuePostLoginNotificationPrompt = true;
+    _logNotificationOnboarding(
+      '_schedulePostLoginNotificationPrompt(): queued',
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _logNotificationOnboarding(
+        '_schedulePostLoginNotificationPrompt(): post frame callback fired',
+      );
       _maybeShowPostLoginNotificationPrompt();
     });
   }
 
   Future<void> _maybeShowPostLoginNotificationPrompt() async {
-    if (!mounted || _isPostLoginNotificationPromptVisible) return;
+    _logNotificationOnboarding(
+      '_maybeShowPostLoginNotificationPrompt(): entered (mounted=$mounted, '
+      'isVisible=$_isPostLoginNotificationPromptVisible, '
+      'isChecking=$_isCheckingPostLoginNotificationPrompt, '
+      'retryCount=$_postLoginPromptRetryCount)',
+    );
+    if (!mounted) {
+      _logNotificationOnboarding(
+        '_maybeShowPostLoginNotificationPrompt(): exit reason=not mounted',
+      );
+      return;
+    }
+    if (_isPostLoginNotificationPromptVisible) {
+      _logNotificationOnboarding(
+        '_maybeShowPostLoginNotificationPrompt(): exit reason=sheet already visible',
+      );
+      return;
+    }
+    if (_isCheckingPostLoginNotificationPrompt) {
+      _logNotificationOnboarding(
+        '_maybeShowPostLoginNotificationPrompt(): exit reason=check already in progress',
+      );
+      return;
+    }
 
+    final store = context.read<UserStateStore>();
+    if ((store.state == null || store.isLoading) &&
+        _postLoginPromptRetryCount < _maxPostLoginPromptRetries) {
+      _postLoginPromptRetryCount += 1;
+      _logNotificationOnboarding(
+        '_maybeShowPostLoginNotificationPrompt(): postpone '
+        '(reason=home initial state not ready, stateIsNull=${store.state == null}, '
+        'isLoading=${store.isLoading}, retry=$_postLoginPromptRetryCount/$_maxPostLoginPromptRetries)',
+      );
+      Future<void>.delayed(const Duration(milliseconds: 350), () {
+        if (!mounted) return;
+        _maybeShowPostLoginNotificationPrompt();
+      });
+      return;
+    }
+
+    _isCheckingPostLoginNotificationPrompt = true;
     try {
       final shouldShow =
           await _notificationPermissionController.shouldShowPostLoginPrompt();
-      if (!mounted || !shouldShow || _isPostLoginNotificationPromptVisible) {
+      _logNotificationOnboarding(
+        '_maybeShowPostLoginNotificationPrompt(): shouldShowPostLoginPrompt=$shouldShow',
+      );
+      if (!mounted) {
+        _logNotificationOnboarding(
+          '_maybeShowPostLoginNotificationPrompt(): exit reason=unmounted after shouldShow check',
+        );
+        return;
+      }
+      if (!shouldShow) {
+        _logNotificationOnboarding(
+          '_maybeShowPostLoginNotificationPrompt(): exit reason=controller decided false',
+        );
+        return;
+      }
+      if (_isPostLoginNotificationPromptVisible) {
+        _logNotificationOnboarding(
+          '_maybeShowPostLoginNotificationPrompt(): exit reason=sheet became visible before opening',
+        );
         return;
       }
 
       _isPostLoginNotificationPromptVisible = true;
+      _logNotificationOnboarding(
+        '_maybeShowPostLoginNotificationPrompt(): opening onboarding sheet',
+      );
       NotificationPermissionOnboardingOutcome? result;
       try {
         result = await showNotificationPermissionOnboardingSheet(
@@ -109,32 +191,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _isPostLoginNotificationPromptVisible = false;
       }
       if (!mounted) return;
+      _logNotificationOnboarding(
+        '_maybeShowPostLoginNotificationPrompt(): sheet dismissed with result=$result',
+      );
 
       if (result == NotificationPermissionOnboardingOutcome.denied ||
           result == NotificationPermissionOnboardingOutcome.permanentlyDenied) {
-        _showNotificationPermissionDeniedFeedback();
+        await _showNotificationPermissionDeniedFeedback();
       }
-    } catch (_) {
+    } catch (error) {
+      _logNotificationOnboarding(
+        '_maybeShowPostLoginNotificationPrompt(): error=$error',
+      );
       _isPostLoginNotificationPromptVisible = false;
+    } finally {
+      _isCheckingPostLoginNotificationPrompt = false;
     }
   }
 
-  void _showNotificationPermissionDeniedFeedback() {
+  Future<void> _showNotificationPermissionDeniedFeedback() async {
     if (!mounted) return;
-
-    final l10n = context.l10n;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          '${l10n.notificationPermissionDeniedTitle}\n'
-          '${l10n.notificationPermissionDeniedBody}',
-        ),
-        action: SnackBarAction(
-          label: l10n.notificationPermissionOpenSettings,
-          onPressed: NotificationService.instance.openSettings,
-        ),
-      ),
+    final permissionResult =
+        await _notificationPermissionController.getSystemPermissionResult();
+    if (!mounted) return;
+    await showNotificationPermissionRecoverySheet(
+      context,
+      controller: _notificationPermissionController,
+      permissionResult: permissionResult,
     );
   }
 

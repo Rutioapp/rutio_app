@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:confetti/confetti.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rutio/features/notifications/application/notification_permission_controller.dart';
 import 'package:rutio/features/notifications/presentation/notification_permission_onboarding_sheet.dart';
+import 'package:rutio/features/notifications/presentation/notification_permission_recovery_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/core/assets/app_assets.dart';
 
@@ -20,7 +22,6 @@ import 'package:rutio/screens/habit_monthly_overview_screen.dart';
 import 'package:rutio/screens/habit_stats_overview_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
-import 'package:rutio/services/notification_service.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/ui/behaviours/ios_feedback.dart';
 import 'package:rutio/ui/foundations/ios_foundations.dart';

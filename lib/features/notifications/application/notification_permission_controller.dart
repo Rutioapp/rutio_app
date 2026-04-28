@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../core/notifications/notification_permission_service.dart'
     as core_permission;
 import '../../../services/notification_service.dart';
@@ -14,12 +16,47 @@ class NotificationPermissionController {
   final NotificationPermissionPreferences _preferences;
   final NotificationService _notificationService;
 
+  static const String _logPrefix = '[NotificationPermissionOnboarding]';
+
+  void _log(String message) {
+    if (!kDebugMode) return;
+    debugPrint('$_logPrefix $message');
+  }
+
+  Future<core_permission.NotificationPermissionResult>
+      getSystemPermissionResult() async {
+    final result = await _notificationService.checkPermissionStatus();
+    _log(
+      'getSystemPermissionResult(): status=${result.status.name}, '
+      'isAuthorized=${result.isAuthorized}, canRequest=${result.canRequest}',
+    );
+    return result;
+  }
+
+  Future<bool> areNotificationsAllowed() async {
+    final systemResult = await getSystemPermissionResult();
+    if (systemResult.isAuthorized) {
+      await _preferences.setInternalStatus(NotificationPermissionStatus.granted);
+    }
+    _log('areNotificationsAllowed(): ${systemResult.isAuthorized}');
+    return systemResult.isAuthorized;
+  }
+
   Future<NotificationPermissionStatus> getEffectiveStatus() async {
-    final systemResult = await _notificationService.checkPermissionStatus();
+    _log('getEffectiveStatus(): start');
+    final systemResult = await getSystemPermissionResult();
     final systemStatus = _mapSystemResult(systemResult);
+    _log(
+      'getEffectiveStatus(): system permission status detected='
+      '${systemResult.status.name}, isAuthorized=${systemResult.isAuthorized}, '
+      'canRequest=${systemResult.canRequest}, mapped=$systemStatus',
+    );
 
     if (systemStatus == NotificationPermissionStatus.granted) {
       await _preferences.setInternalStatus(NotificationPermissionStatus.granted);
+      _log(
+        'getEffectiveStatus(): effectiveStatus=granted (reason: system granted)',
+      );
       return NotificationPermissionStatus.granted;
     }
 
@@ -27,24 +64,63 @@ class NotificationPermissionController {
       await _preferences.setInternalStatus(
         NotificationPermissionStatus.permanentlyDenied,
       );
+      _log(
+        'getEffectiveStatus(): effectiveStatus=permanentlyDenied '
+        '(reason: system permanentlyDenied/restricted)',
+      );
       return NotificationPermissionStatus.permanentlyDenied;
     }
 
     if (systemStatus == NotificationPermissionStatus.denied) {
       await _preferences.setInternalStatus(NotificationPermissionStatus.denied);
+      _log(
+        'getEffectiveStatus(): effectiveStatus=denied (reason: system denied)',
+      );
       return NotificationPermissionStatus.denied;
     }
 
     final internalStatus = await _preferences.getInternalStatus();
+    _log(
+      'getEffectiveStatus(): effectiveStatus=$internalStatus '
+      '(reason: system ambiguous -> fallback to internalStatus)',
+    );
     return internalStatus;
   }
 
   Future<bool> shouldShowPostLoginPrompt() async {
-    final shown = await _preferences.isPostLoginPromptShown();
-    if (shown) return false;
+    _log('shouldShowPostLoginPrompt(): start');
+    final promptShown = await _preferences.isPostLoginPromptShown();
+    final internalStatus = await _preferences.getInternalStatus();
+    final systemResult = await getSystemPermissionResult();
+    final systemStatus = _mapSystemResult(systemResult);
 
-    final status = await getEffectiveStatus();
-    return status == NotificationPermissionStatus.unknown;
+    final hasInternalFinalStatus = internalStatus ==
+            NotificationPermissionStatus.granted ||
+        internalStatus == NotificationPermissionStatus.denied ||
+        internalStatus == NotificationPermissionStatus.permanentlyDenied;
+
+    var shouldShow = false;
+    var reason = '';
+
+    if (promptShown) {
+      reason = 'promptShown=true';
+    } else if (internalStatus == NotificationPermissionStatus.softDeclined) {
+      reason = 'internalStatus=softDeclined';
+    } else if (hasInternalFinalStatus) {
+      reason = 'internalStatus is final ($internalStatus)';
+    } else {
+      shouldShow = true;
+      reason = 'promptShown=false and internalStatus=$internalStatus '
+          '(systemStatus=$systemStatus is treated as non-blocking for onboarding)';
+    }
+
+    _log(
+      'shouldShowPostLoginPrompt(): result=$shouldShow, promptShown=$promptShown, '
+      'internalStatus=$internalStatus, system permission status detected='
+      '${systemResult.status.name}, mappedSystemStatus=$systemStatus, '
+      'reason=$reason',
+    );
+    return shouldShow;
   }
 
   Future<void> markPostLoginPromptShown() {
@@ -78,7 +154,7 @@ class NotificationPermissionController {
       return false;
     }
 
-    final systemStatus = await _notificationService.checkPermissionStatus();
+    final systemStatus = await getSystemPermissionResult();
     if (!_canRequestSystemPermission(systemStatus)) {
       await _preferences.setInternalStatus(
         NotificationPermissionStatus.permanentlyDenied,

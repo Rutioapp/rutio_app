@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../features/notifications/application/notification_permission_controller.dart';
 import '../../../../features/notifications/domain/notification_permission_status.dart';
+import '../../../../features/notifications/presentation/notification_permission_recovery_sheet.dart';
 import '../../../../l10n/l10n.dart';
 import '../../../../services/notification_preferences.dart';
 import '../../../../services/notification_service.dart';
@@ -200,7 +201,6 @@ class _EditHabitTabState extends State<EditHabitTab> {
     try {
       final habitId = getHabitString(object, ['id', 'habitId', 'uuid']) ?? '';
       if (habitId.isEmpty) return;
-      final messenger = ScaffoldMessenger.of(context);
       final store = context.read<UserStateStore>();
 
       if (_formData.remindersEnabled) {
@@ -220,18 +220,10 @@ class _EditHabitTabState extends State<EditHabitTab> {
 
           final result = await NotificationService.instance.checkPermissionStatus();
           if (!mounted) return;
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                context.l10n.notificationPermissionMessage(result.status),
-              ),
-              action: result.shouldOpenSettings
-                  ? SnackBarAction(
-                      label: context.l10n.commonOpenSettings,
-                      onPressed: NotificationService.instance.openSettings,
-                    )
-                  : null,
-            ),
+          await showNotificationPermissionRecoverySheet(
+            context,
+            controller: permissionController,
+            permissionResult: result,
           );
           return;
         }

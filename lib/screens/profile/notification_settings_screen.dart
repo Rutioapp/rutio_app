@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/notifications/notification_permission_service.dart';
+import '../../features/notifications/application/notification_permission_controller.dart';
+import '../../features/notifications/presentation/notification_permission_recovery_sheet.dart';
 import '../../l10n/l10n.dart';
 import '../../services/notification_models.dart';
 import '../../services/notification_preferences.dart';
@@ -24,23 +25,79 @@ class NotificationSettingsScreen extends StatefulWidget {
 }
 
 class _NotificationSettingsScreenState
-    extends State<NotificationSettingsScreen> {
+    extends State<NotificationSettingsScreen> with WidgetsBindingObserver {
   static const int _notificationCategoryTotal = 5;
+  final NotificationPermissionController _notificationPermissionController =
+      NotificationPermissionController();
+  bool _systemNotificationsAllowed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshNotificationPermissionState();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshNotificationPermissionState();
+    }
+  }
+
+  Future<void> _refreshNotificationPermissionState() async {
+    final allowed =
+        await _notificationPermissionController.areNotificationsAllowed();
+    if (!mounted) return;
+    setState(() => _systemNotificationsAllowed = allowed);
+  }
+
+  Future<bool> _ensureSystemPermissionForUserIntent() async {
+    final current = await _notificationPermissionController.getSystemPermissionResult();
+    if (current.isAuthorized) {
+      await _refreshNotificationPermissionState();
+      return true;
+    }
+
+    var granted = false;
+    if (current.canRequest) {
+      granted = await _notificationPermissionController.requestSystemPermission();
+    }
+    if (!granted) {
+      final latest =
+          await _notificationPermissionController.getSystemPermissionResult();
+      if (!mounted) return false;
+      final outcome = await showNotificationPermissionRecoverySheet(
+        context,
+        controller: _notificationPermissionController,
+        permissionResult: latest,
+      );
+      await _refreshNotificationPermissionState();
+      return outcome == NotificationPermissionRecoveryOutcome.granted;
+    }
+
+    await _refreshNotificationPermissionState();
+    return true;
+  }
 
   Future<void> _setMasterEnabled(bool enabled) async {
     final store = context.read<UserStateStore>();
     final preferences = NotificationPreferences(store);
 
     if (enabled) {
-      final result = await NotificationService.instance.requestPermissionFlow();
-      if (!result.isAuthorized) {
-        _showNotificationPermissionSnack(result);
-        return;
-      }
+      final canEnable = await _ensureSystemPermissionForUserIntent();
+      if (!canEnable) return;
     }
 
     await preferences.setMasterEnabled(enabled);
     await NotificationService.instance.syncPhaseOne(store: store);
+    await _refreshNotificationPermissionState();
   }
 
   Future<void> _setToggle({
@@ -51,23 +108,17 @@ class _NotificationSettingsScreenState
     final preferences = NotificationPreferences(store);
     final snapshot = preferences.snapshot;
 
-    if (!snapshot.notificationsEnabled && nextValue) {
-      final result = await NotificationService.instance.requestPermissionFlow();
-      if (!result.isAuthorized) {
-        _showNotificationPermissionSnack(result);
-        return;
-      }
-      await preferences.setMasterEnabled(true);
-    } else if (nextValue) {
-      final result = await NotificationService.instance.requestPermissionFlow();
-      if (!result.isAuthorized) {
-        _showNotificationPermissionSnack(result);
-        return;
+    if (nextValue) {
+      final canEnable = await _ensureSystemPermissionForUserIntent();
+      if (!canEnable) return;
+      if (!snapshot.notificationsEnabled) {
+        await preferences.setMasterEnabled(true);
       }
     }
 
     await persist(preferences);
     await NotificationService.instance.syncPhaseOne(store: store);
+    await _refreshNotificationPermissionState();
   }
 
   Future<void> _pickDayClosureTime(NotificationTime current) async {
@@ -148,13 +199,17 @@ class _NotificationSettingsScreenState
     final store = context.watch<UserStateStore>();
     final preferences = NotificationPreferences(store);
     final snapshot = preferences.snapshot;
-    final enabledCount = <bool>[
-      snapshot.habitRemindersEnabled,
-      snapshot.dayClosureEnabled,
-      snapshot.streakRiskEnabled,
-      snapshot.streakCelebrationEnabled,
-      snapshot.inactivityReengagementEnabled,
-    ].where((value) => value).length;
+    final effectiveNotificationsEnabled =
+        snapshot.notificationsEnabled && _systemNotificationsAllowed;
+    final enabledCount = effectiveNotificationsEnabled
+        ? <bool>[
+            snapshot.habitRemindersEnabled,
+            snapshot.dayClosureEnabled,
+            snapshot.streakRiskEnabled,
+            snapshot.streakCelebrationEnabled,
+            snapshot.inactivityReengagementEnabled,
+          ].where((value) => value).length
+        : 0;
 
     final timeLabel = DateFormat.Hm().format(
       DateTime(
@@ -185,7 +240,7 @@ class _NotificationSettingsScreenState
                 SwitchRow(
                   title: l10n.profileEnableNotificationsTitle,
                   subtitle: l10n.profileEnableNotificationsSubtitle,
-                  value: snapshot.notificationsEnabled,
+                  value: effectiveNotificationsEnabled,
                   onChanged: _setMasterEnabled,
                 ),
                 const SizedBox(height: 14),
@@ -216,7 +271,7 @@ class _NotificationSettingsScreenState
                   title: l10n.profileNotificationHabitRemindersTitle,
                   subtitle: l10n.profileNotificationHabitRemindersSubtitle,
                   value: snapshot.habitRemindersEnabled,
-                  enabled: snapshot.notificationsEnabled,
+                  enabled: effectiveNotificationsEnabled,
                   onChanged: (value) => _setToggle(
                     nextValue: value,
                     persist: (preferences) =>
@@ -228,7 +283,7 @@ class _NotificationSettingsScreenState
                   title: l10n.profileNotificationDayClosureTitle,
                   subtitle: l10n.profileNotificationDayClosureSubtitle,
                   value: snapshot.dayClosureEnabled,
-                  enabled: snapshot.notificationsEnabled,
+                  enabled: effectiveNotificationsEnabled,
                   onChanged: (value) => _setToggle(
                     nextValue: value,
                     persist: (preferences) =>
@@ -240,7 +295,7 @@ class _NotificationSettingsScreenState
                   title: l10n.profileNotificationDayClosureTimeTitle,
                   subtitle: l10n.profileNotificationDayClosureTimeSubtitle,
                   valueLabel: timeLabel,
-                  enabled: snapshot.notificationsEnabled &&
+                  enabled: effectiveNotificationsEnabled &&
                       snapshot.dayClosureEnabled,
                   onTap: () => _pickDayClosureTime(snapshot.dayClosureTime),
                 ),
@@ -249,7 +304,7 @@ class _NotificationSettingsScreenState
                   title: l10n.profileNotificationStreakRiskTitle,
                   subtitle: l10n.profileNotificationStreakRiskSubtitle,
                   value: snapshot.streakRiskEnabled,
-                  enabled: snapshot.notificationsEnabled,
+                  enabled: effectiveNotificationsEnabled,
                   onChanged: (value) => _setToggle(
                     nextValue: value,
                     persist: (preferences) =>
@@ -261,7 +316,7 @@ class _NotificationSettingsScreenState
                   title: l10n.profileNotificationStreakCelebrationTitle,
                   subtitle: l10n.profileNotificationStreakCelebrationSubtitle,
                   value: snapshot.streakCelebrationEnabled,
-                  enabled: snapshot.notificationsEnabled,
+                  enabled: effectiveNotificationsEnabled,
                   onChanged: (value) => _setToggle(
                     nextValue: value,
                     persist: (preferences) =>
@@ -273,7 +328,7 @@ class _NotificationSettingsScreenState
                   title: l10n.profileNotificationInactivityTitle,
                   subtitle: l10n.profileNotificationInactivitySubtitle,
                   value: snapshot.inactivityReengagementEnabled,
-                  enabled: snapshot.notificationsEnabled,
+                  enabled: effectiveNotificationsEnabled,
                   onChanged: (value) => _setToggle(
                     nextValue: value,
                     persist: (preferences) =>
@@ -284,24 +339,6 @@ class _NotificationSettingsScreenState
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showNotificationPermissionSnack(
-    NotificationPermissionResult result,
-  ) {
-    if (!mounted) return;
-    final l10n = context.l10n;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.notificationPermissionMessage(result.status)),
-        action: result.shouldOpenSettings
-            ? SnackBarAction(
-                label: l10n.commonOpenSettings,
-                onPressed: NotificationService.instance.openSettings,
-              )
-            : null,
       ),
     );
   }

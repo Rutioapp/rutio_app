@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../features/notifications/application/notification_permission_controller.dart';
+import '../../features/notifications/presentation/notification_permission_recovery_sheet.dart';
 import '../../features/achievements/application/achievement_catalog.dart';
 import '../../features/achievements/application/achievement_progress_service.dart';
 import '../../features/achievements/domain/models/achievement.dart';
@@ -77,9 +79,40 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with WidgetsBindingObserver {
   bool _didOpenInitialEdit = false;
   static const int _notificationCategoryTotal = 5;
+  final NotificationPermissionController _notificationPermissionController =
+      NotificationPermissionController();
+  bool _systemNotificationsAllowed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshNotificationPermissionState();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshNotificationPermissionState();
+    }
+  }
+
+  Future<void> _refreshNotificationPermissionState() async {
+    final allowed =
+        await _notificationPermissionController.areNotificationsAllowed();
+    if (!mounted) return;
+    setState(() => _systemNotificationsAllowed = allowed);
+  }
 
   @override
   void didChangeDependencies() {
@@ -113,11 +146,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _openNotificationSettings() {
-    Navigator.push(
+  Future<void> _openNotificationSettings() async {
+    await Navigator.push(
       context,
       CupertinoPageRoute(builder: (_) => const NotificationSettingsScreen()),
     );
+    if (!mounted) return;
+    await _refreshNotificationPermissionState();
   }
 
   void _openAchievementsScreen() {
@@ -149,30 +184,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _setNotificationsEnabled(bool enabled) async {
     final store = context.read<UserStateStore>();
     final preferences = NotificationPreferences(store);
-    final messenger = ScaffoldMessenger.of(context);
-    final l10n = context.l10n;
 
     if (enabled) {
-      final result = await NotificationService.instance.requestPermissionFlow();
-      if (!result.isAuthorized) {
+      final systemResult =
+          await _notificationPermissionController.getSystemPermissionResult();
+      var granted = systemResult.isAuthorized;
+      if (!granted && systemResult.canRequest) {
+        granted = await _notificationPermissionController.requestSystemPermission();
+      }
+      if (!granted) {
+        final latest =
+            await _notificationPermissionController.getSystemPermissionResult();
         if (!mounted) return;
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(l10n.notificationPermissionMessage(result.status)),
-            action: result.shouldOpenSettings
-                ? SnackBarAction(
-                    label: l10n.commonOpenSettings,
-                    onPressed: NotificationService.instance.openSettings,
-                  )
-                : null,
-          ),
+        await showNotificationPermissionRecoverySheet(
+          context,
+          controller: _notificationPermissionController,
+          permissionResult: latest,
         );
+        await _refreshNotificationPermissionState();
         return;
       }
     }
 
     await preferences.setMasterEnabled(enabled);
     await NotificationService.instance.syncPhaseOne(store: store);
+    await _refreshNotificationPermissionState();
   }
 
   @override
@@ -230,13 +266,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     final notificationPreferences = NotificationPreferences(store).snapshot;
-    final enabledCategories = <bool>[
-      notificationPreferences.habitRemindersEnabled,
-      notificationPreferences.dayClosureEnabled,
-      notificationPreferences.streakRiskEnabled,
-      notificationPreferences.streakCelebrationEnabled,
-      notificationPreferences.inactivityReengagementEnabled,
-    ].where((value) => value).length;
+    final effectiveNotificationsEnabled =
+        notificationPreferences.notificationsEnabled &&
+            _systemNotificationsAllowed;
+    final enabledCategories = effectiveNotificationsEnabled
+        ? <bool>[
+            notificationPreferences.habitRemindersEnabled,
+            notificationPreferences.dayClosureEnabled,
+            notificationPreferences.streakRiskEnabled,
+            notificationPreferences.streakCelebrationEnabled,
+            notificationPreferences.inactivityReengagementEnabled,
+          ].where((value) => value).length
+        : 0;
     final achievementData = _ProfileAchievementsData.fromStore(store);
 
     return Scaffold(
@@ -300,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SwitchRow(
                   title: l10n.profileEnableNotificationsTitle,
                   subtitle: l10n.profileEnableNotificationsSubtitle,
-                  value: notificationPreferences.notificationsEnabled,
+                  value: effectiveNotificationsEnabled,
                   onChanged: _setNotificationsEnabled,
                 ),
                 const SizedBox(height: 12),
@@ -311,7 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     enabledCategories,
                     _notificationCategoryTotal,
                   ),
-                  onTap: _openNotificationSettings,
+                  onTap: () => _openNotificationSettings(),
                 ),
               ],
             ),

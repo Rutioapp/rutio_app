@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:rutio/features/notifications/application/notification_permission_controller.dart';
 import 'package:rutio/features/notifications/domain/notification_permission_status.dart';
+import 'package:rutio/features/notifications/presentation/notification_permission_recovery_sheet.dart';
 import 'package:rutio/services/notification_service.dart';
 import 'package:rutio/services/notification_preferences.dart';
 import 'package:rutio/l10n/l10n.dart';
@@ -417,18 +418,10 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
           final result = await NotificationService.instance.checkPermissionStatus();
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                context.l10n.notificationPermissionMessage(result.status),
-              ),
-              action: result.shouldOpenSettings
-                  ? SnackBarAction(
-                      label: context.l10n.commonOpenSettings,
-                      onPressed: NotificationService.instance.openSettings,
-                    )
-                  : null,
-            ),
+          await showNotificationPermissionRecoverySheet(
+            context,
+            controller: permissionController,
+            permissionResult: result,
           );
           return;
         }
