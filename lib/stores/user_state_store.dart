@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/services/account_deletion_service.dart';
 import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
+import '../data/services/user_progress_sync_service.dart';
 import '../data/repositories/profile_repository.dart';
 import '../data/repositories/user_state_repository.dart';
 import '../features/achievements/application/achievement_catalog.dart';
@@ -30,15 +31,19 @@ class UserStateStore extends ChangeNotifier {
   final UserStateRepository _repo;
   final HabitSyncService _habitSyncService;
   final HabitLogSyncService _habitLogSyncService;
+  final UserProgressSyncService _userProgressSyncService;
   final ProfileRepository? _profileRepository;
 
   UserStateStore(
     this._repo, {
     HabitSyncService? habitSyncService,
     HabitLogSyncService? habitLogSyncService,
+    UserProgressSyncService? userProgressSyncService,
     ProfileRepository? profileRepository,
   })  : _habitSyncService = habitSyncService ?? HabitSyncService(),
         _habitLogSyncService = habitLogSyncService ?? HabitLogSyncService(),
+        _userProgressSyncService =
+            userProgressSyncService ?? UserProgressSyncService(),
         _profileRepository = profileRepository;
 
   Map<String, dynamic>? _state;
@@ -47,6 +52,7 @@ class UserStateStore extends ChangeNotifier {
   bool _isDeletingAccount = false;
   bool _isSupabaseHabitsBackfillRunning = false;
   bool _isSupabaseHabitLogsBackfillRunning = false;
+  bool _isSupabaseUserProgressBackfillRunning = false;
   Object? _accountDeletionError;
   String? _activeLocalScopeUserId;
   int _scopeEpoch = 0;
@@ -63,6 +69,8 @@ class UserStateStore extends ChangeNotifier {
   bool get isSupabaseHabitsBackfillRunning => _isSupabaseHabitsBackfillRunning;
   bool get isSupabaseHabitLogsBackfillRunning =>
       _isSupabaseHabitLogsBackfillRunning;
+  bool get isSupabaseUserProgressBackfillRunning =>
+      _isSupabaseUserProgressBackfillRunning;
   Object? get accountDeletionError => _accountDeletionError;
 
   void _emitChanged() => notifyListeners();
@@ -279,6 +287,9 @@ class UserStateStore extends ChangeNotifier {
     bool force = false,
   }) =>
       _syncExistingLocalHabitLogsOnce(this, force: force);
+
+  Future<bool> syncSupabaseUserProgressBackfillOnce({bool force = false}) =>
+      _syncSupabaseUserProgressBackfillOnce(this, force: force);
 
   Future<void> reorderVisibleHabits({
     required List<String> orderedVisibleIds,

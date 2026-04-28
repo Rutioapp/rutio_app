@@ -539,6 +539,14 @@ Future<bool> _buyItem(
   userState['inventory'] = inventory;
 
   await store.save(root);
+  _queueBestEffortProgressAndRewardSync(
+    store,
+    userState: userState,
+    xpDelta: 0,
+    coinsDelta: -price,
+    source: 'shop_purchase',
+    currencyReason: 'shop_item_purchase',
+  );
   return true;
 }
 

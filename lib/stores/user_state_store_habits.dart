@@ -4,6 +4,8 @@ const String _supabaseHabitsBackfillCompletedByUserKey =
     'supabaseHabitsBackfillCompletedByUser';
 const String _supabaseHabitLogsBackfillCompletedByUserKey =
     'supabaseHabitLogsBackfillCompletedByUser';
+const String _supabaseUserProgressBackfillCompletedByUserKey =
+    'supabaseUserProgressBackfillCompletedByUser';
 
 Map<String, dynamic> _dailyRewardGrants(Map<String, dynamic> userState) {
   final daily = _map(userState['daily']);
@@ -405,6 +407,103 @@ Future<HabitLogBackfillSummary> _syncExistingLocalHabitLogsOnce(
   }
 }
 
+Future<bool> _syncSupabaseUserProgressBackfillOnce(
+  UserStateStore store, {
+  bool force = false,
+}) async {
+  if (store._isSupabaseUserProgressBackfillRunning) {
+    _debugUserProgressBackfill('progress backfill skipped: already running');
+    return false;
+  }
+
+  store._isSupabaseUserProgressBackfillRunning = true;
+  try {
+    if (store._state == null) {
+      if (!store._loading) {
+        await store.load();
+      }
+      if (store._state == null) {
+        _debugUserProgressBackfill(
+          'progress backfill skipped: local state unavailable',
+        );
+        return false;
+      }
+    }
+
+    final authenticatedUserId = _authenticatedSupabaseUserId();
+    if (authenticatedUserId == null) {
+      _debugUserProgressBackfill(
+        'progress backfill skipped: no authenticated Supabase user',
+      );
+      return false;
+    }
+
+    final localUserId = (store.userId ?? '').trim();
+    if (localUserId.isEmpty || localUserId != authenticatedUserId) {
+      _debugUserProgressBackfill(
+        'progress backfill skipped: local user does not match auth session',
+      );
+      return false;
+    }
+
+    final root = store._state!;
+    final userState = _ensureUserStateRoot(root);
+    final markerCompleted = _isUserProgressBackfillCompletedForUser(
+      userState,
+      authenticatedUserId,
+    );
+
+    if (markerCompleted && !force) {
+      _debugUserProgressBackfill(
+        'progress backfill skipped: completion marker already set for user',
+      );
+      return false;
+    }
+
+    final snapshot = _buildProgressSyncSnapshot(userState);
+    final synced = await store._userProgressSyncService
+        .syncCurrentProgressFromLocalState(
+      level: snapshot.level,
+      totalXp: snapshot.xp,
+      currentLevelXp: snapshot.xpInCurrentLevel,
+      nextLevelXp: snapshot.xpToNextLevel,
+      ambarBalance: snapshot.coins,
+      expectedLocalUserId: authenticatedUserId,
+    );
+
+    if (!synced) {
+      _debugUserProgressBackfill(
+        'progress backfill failed for "$authenticatedUserId"',
+      );
+      return false;
+    }
+
+    final wasCompleted = _isUserProgressBackfillCompletedForUser(
+      userState,
+      authenticatedUserId,
+    );
+    if (!wasCompleted) {
+      _setUserProgressBackfillCompletedForUser(
+        userState,
+        authenticatedUserId,
+        completed: true,
+      );
+      await store.save(root);
+    }
+
+    _debugUserProgressBackfill(
+      'progress backfill completed for "$authenticatedUserId": '
+      'xp=${snapshot.xp}, level=${snapshot.level}, coins=${snapshot.coins}',
+    );
+    return true;
+  } catch (error) {
+    _debugUserProgressBackfill('progress backfill unexpected store error: $error');
+    return false;
+  } finally {
+    store._isSupabaseUserProgressBackfillRunning = false;
+  }
+}
+
 List<HabitLogBackfillCandidate> _collectHistoricalHabitLogBackfillCandidates(
   Map<String, dynamic> userState,
 ) {
@@ -531,6 +630,47 @@ Map<String, dynamic> _habitLogBackfillCompletedByUser(
   final meta = _map(userState['meta']);
   final byUser = _map(meta[_supabaseHabitLogsBackfillCompletedByUserKey]);
   meta[_supabaseHabitLogsBackfillCompletedByUserKey] = byUser;
+  userState['meta'] = meta;
+  return byUser;
+}
+
+bool _isUserProgressBackfillCompletedForUser(
+  Map<String, dynamic> userState,
+  String userId,
+) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) return false;
+
+  final byUser = _userProgressBackfillCompletedByUser(userState);
+  return byUser[normalizedUserId] == true;
+}
+
+void _setUserProgressBackfillCompletedForUser(
+  Map<String, dynamic> userState,
+  String userId, {
+  required bool completed,
+}) {
+  final normalizedUserId = userId.trim();
+  if (normalizedUserId.isEmpty) return;
+
+  final byUser = _userProgressBackfillCompletedByUser(userState);
+  if (completed) {
+    byUser[normalizedUserId] = true;
+  } else {
+    byUser.remove(normalizedUserId);
+  }
+
+  final meta = _map(userState['meta']);
+  meta[_supabaseUserProgressBackfillCompletedByUserKey] = byUser;
+  userState['meta'] = meta;
+}
+
+Map<String, dynamic> _userProgressBackfillCompletedByUser(
+  Map<String, dynamic> userState,
+) {
+  final meta = _map(userState['meta']);
+  final byUser = _map(meta[_supabaseUserProgressBackfillCompletedByUserKey]);
+  meta[_supabaseUserProgressBackfillCompletedByUserKey] = byUser;
   userState['meta'] = meta;
   return byUser;
 }
@@ -694,6 +834,11 @@ void _debugBackfill(String message) {
 void _debugHabitLogBackfill(String message) {
   if (!kDebugMode) return;
   debugPrint('[habit_log_backfill] $message');
+}
+
+void _debugUserProgressBackfill(String message) {
+  if (!kDebugMode) return;
+  debugPrint('[user_progress_backfill] $message');
 }
 
 String _normalizedHabitType(dynamic rawType) {
@@ -1310,6 +1455,17 @@ Future<void> _setCountHabitValue(
   );
 
   await store.save(root);
+  if (progressResult.xpGain != 0 || progressResult.coinsGain != 0) {
+    _queueBestEffortProgressAndRewardSync(
+      store,
+      userState: userState,
+      xpDelta: progressResult.xpGain,
+      coinsDelta: progressResult.coinsGain,
+      source: 'habit_completion',
+      xpReason: 'habit_completion_reward',
+      currencyReason: 'habit_completion_reward',
+    );
+  }
   _queueBestEffortHabitLogSyncForDate(
     store,
     userState: userState,
@@ -1385,6 +1541,17 @@ Future<void> _completeHabit(
   );
 
   await store.save(root);
+  if (progressResult.xpGain != 0 || progressResult.coinsGain != 0) {
+    _queueBestEffortProgressAndRewardSync(
+      store,
+      userState: userState,
+      xpDelta: progressResult.xpGain,
+      coinsDelta: progressResult.coinsGain,
+      source: 'habit_completion',
+      xpReason: 'habit_completion_reward',
+      currencyReason: 'habit_completion_reward',
+    );
+  }
   _queueBestEffortHabitLogSyncForDate(
     store,
     userState: userState,

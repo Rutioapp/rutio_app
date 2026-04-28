@@ -418,6 +418,14 @@ class AuthController extends ChangeNotifier {
       );
 
       unawaited(() async {
+        final userProgressBackfillSynced =
+            await _userStateStore.syncSupabaseUserProgressBackfillOnce();
+        if (kDebugMode) {
+          debugPrint(
+            '[auth] user progress backfill synced: ${userProgressBackfillSynced ? 'yes' : 'no'}',
+          );
+        }
+
         final habitSummary = await _userStateStore.syncExistingLocalHabitsOnce();
         if (kDebugMode) {
           debugPrint(

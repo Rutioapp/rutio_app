@@ -12,6 +12,102 @@ class _HabitProgressResult {
   });
 }
 
+class _ProgressSyncSnapshot {
+  const _ProgressSyncSnapshot({
+    required this.level,
+    required this.xp,
+    required this.xpInCurrentLevel,
+    required this.xpToNextLevel,
+    required this.coins,
+  });
+
+  final int level;
+  final int xp;
+  final int xpInCurrentLevel;
+  final int xpToNextLevel;
+  final int coins;
+}
+
+_ProgressSyncSnapshot _buildProgressSyncSnapshot(
+  Map<String, dynamic> userState,
+) {
+  final progression = _map(userState['progression']);
+  final wallet = _map(userState['wallet']);
+
+  final rawXp = _safeInt(progression['xp'], fallback: 0);
+  final xp = rawXp < 0 ? 0 : rawXp;
+  final levelFromXp = 1 + (xp ~/ 100);
+  final rawLevel = _safeInt(
+    progression['level'],
+    fallback: levelFromXp,
+  );
+  final level = rawLevel < 1 ? 1 : rawLevel;
+  final xpInCurrentLevel = xp % 100;
+  final xpToNextLevel = 100 - xpInCurrentLevel;
+  final coins = _safeInt(wallet['coins'], fallback: 0);
+
+  return _ProgressSyncSnapshot(
+    level: level,
+    xp: xp,
+    xpInCurrentLevel: xpInCurrentLevel,
+    xpToNextLevel: xpToNextLevel,
+    coins: coins,
+  );
+}
+
+void _queueBestEffortProgressAndRewardSync(
+  UserStateStore store, {
+  required Map<String, dynamic> userState,
+  required int xpDelta,
+  required int coinsDelta,
+  required String source,
+  String? xpReason,
+  String? currencyReason,
+}) {
+  final snapshot = _buildProgressSyncSnapshot(userState);
+  final ambarEarnedDelta = coinsDelta > 0 ? coinsDelta : 0;
+  final ambarSpentDelta = coinsDelta < 0 ? -coinsDelta : 0;
+
+  if (kDebugMode) {
+    debugPrint(
+      '[user_progress_sync] reward sync triggered '
+      '(xpDelta=$xpDelta, currencyDelta=$coinsDelta, source=$source)',
+    );
+  }
+
+  unawaited(() async {
+    await store._userProgressSyncService.syncCurrentProgressFromLocalState(
+      level: snapshot.level,
+      totalXp: snapshot.xp,
+      currentLevelXp: snapshot.xpInCurrentLevel,
+      nextLevelXp: snapshot.xpToNextLevel,
+      ambarBalance: snapshot.coins,
+      ambarEarnedDelta: ambarEarnedDelta,
+      ambarSpentDelta: ambarSpentDelta,
+      expectedLocalUserId: store.userId,
+    );
+
+    if (xpDelta != 0) {
+      await store._userProgressSyncService.recordXpEvent(
+        amount: xpDelta,
+        source: source,
+        description: xpReason ?? 'habit reward',
+        expectedLocalUserId: store.userId,
+      );
+    }
+
+    if (coinsDelta != 0) {
+      await store._userProgressSyncService.recordCurrencyEvent(
+        amount: coinsDelta,
+        currency: 'ambar',
+        source: source,
+        description: currencyReason ?? 'habit reward',
+        expectedLocalUserId: store.userId,
+      );
+    }
+  }());
+}
+
 int _xpForCheck() => 10;
 int _coinsForCheck() => 5;
 
