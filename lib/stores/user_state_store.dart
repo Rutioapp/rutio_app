@@ -22,6 +22,7 @@ import '../features/achievements/domain/models/habit_streak_snapshot.dart';
 import '../features/achievements/domain/models/unlocked_achievement_record.dart';
 import '../features/gamification/application/level_up_celebration_controller.dart';
 import '../features/gamification/domain/level_event.dart';
+import '../features/gamification/domain/level_event_resolver.dart';
 import '../features/gamification/domain/level_progression.dart';
 import '../models/diary_entry.dart';
 import '../screens/todo/models/todo_item.dart';
@@ -496,6 +497,16 @@ class UserStateStore extends ChangeNotifier {
 
   int get pendingLevelCelebrationCount => _pendingLevelCelebrations.length;
   int get pendingAchievementUnlockCount => _pendingAchievementUnlocks.length;
+
+  LevelEvent? peekNextPendingLevelCelebration() {
+    if (_pendingLevelCelebrations.isEmpty) return null;
+    return _pendingLevelCelebrations.first;
+  }
+
+  Future<void> markLevelCelebrationAsCelebrated({
+    required int level,
+  }) =>
+      _markLevelCelebrationAsCelebrated(this, level: level);
 
   LevelEvent? consumeNextPendingLevelCelebration() {
     if (_pendingLevelCelebrations.isEmpty) return null;

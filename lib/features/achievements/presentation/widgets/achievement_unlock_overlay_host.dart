@@ -59,14 +59,20 @@ class _AchievementUnlockOverlayHostState
     }
 
     final store = context.read<UserStateStore>();
-    final pendingLevelEvent = store.consumeNextPendingLevelCelebration();
+    final pendingLevelEvent = store.peekNextPendingLevelCelebration();
     if (pendingLevelEvent != null) {
       _isPresentingSheet = true;
-      await showLevelUpSheet<void>(
-        navigatorContext,
-        event: pendingLevelEvent,
-      );
-      _isPresentingSheet = false;
+      try {
+        await showLevelUpSheet<void>(
+          navigatorContext,
+          event: pendingLevelEvent,
+        );
+        await store.markLevelCelebrationAsCelebrated(
+          level: pendingLevelEvent.level,
+        );
+      } finally {
+        _isPresentingSheet = false;
+      }
 
       if (!mounted) return;
       final stillPending =

@@ -55,7 +55,9 @@ class LevelUpCelebrationController {
         level: finalReachedLevel,
         type: _levelEventResolver.eventTypeForLevel(finalReachedLevel),
       ),
-      lastCelebratedLevel: finalReachedLevel,
+      // Celebration persistence is intentionally deferred until the overlay is
+      // actually consumed by the user.
+      lastCelebratedLevel: safeLastCelebratedLevel,
     );
   }
 }

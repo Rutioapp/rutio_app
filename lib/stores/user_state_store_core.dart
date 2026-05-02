@@ -466,6 +466,10 @@ Future<void> _loadStore(
       _ensureTodosRoot(userState);
       _ensureAchievementsRoot(userState);
       _syncAchievementsFromCurrentHabits(store, userState);
+      _restorePendingLevelCelebrationFromProgress(
+        store,
+        userState: userState,
+      );
 
       final viewKey = _activeViewDateKey(userState);
       if (viewKey != _today()) {

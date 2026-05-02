@@ -34,7 +34,7 @@ void main() {
       expect(decision.event, isNotNull);
       expect(decision.event!.level, 3);
       expect(decision.event!.type, LevelEventType.normalLevelUp);
-      expect(decision.lastCelebratedLevel, 3);
+      expect(decision.lastCelebratedLevel, 0);
     });
 
     test('when one XP grant crosses several levels, only final level is emitted', () {
@@ -49,7 +49,7 @@ void main() {
 
       expect(decision.event, isNotNull);
       expect(decision.event!.level, 7);
-      expect(decision.lastCelebratedLevel, 7);
+      expect(decision.lastCelebratedLevel, 0);
     });
 
     test('does not re-emit event for an already celebrated level', () {

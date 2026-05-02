@@ -1,5 +1,6 @@
 part of 'user_state_store.dart';
 const String _lastCelebratedLevelMetaKey = 'lastCelebratedLevel';
+const LevelEventResolver _levelEventResolver = LevelEventResolver();
 
 class _HabitProgressResult {
   final int xpGain;
@@ -104,11 +105,48 @@ void _queueLevelCelebrationForXpChange(
   final event = decision.event;
   if (event == null) return;
 
-  _setLastCelebratedLevel(
-    userState,
-    level: decision.lastCelebratedLevel,
-  );
   _enqueueLevelCelebration(store, event);
+}
+
+void _restorePendingLevelCelebrationFromProgress(
+  UserStateStore store, {
+  required Map<String, dynamic> userState,
+}) {
+  final progression = _map(userState['progression']);
+  final safeXp = _safeInt(progression['xp'], fallback: 0).clamp(0, 1 << 30);
+  final currentLevel = LevelProgression.fromTotalXp(safeXp).level;
+  final celebratedLevel = _lastCelebratedLevel(userState);
+
+  if (currentLevel <= celebratedLevel) return;
+  _enqueueLevelCelebration(
+    store,
+    LevelEvent(
+      level: currentLevel,
+      type: _levelEventResolver.eventTypeForLevel(currentLevel),
+    ),
+  );
+}
+
+Future<void> _markLevelCelebrationAsCelebrated(
+  UserStateStore store, {
+  required int level,
+}) async {
+  final safeLevel = level < 0 ? 0 : level;
+
+  store._pendingLevelCelebrations
+      .removeWhere((queuedEvent) => queuedEvent.level <= safeLevel);
+
+  final root = store._state;
+  if (root != null && safeLevel > 0) {
+    final userState = _ensureUserStateRoot(root);
+    final currentCelebratedLevel = _lastCelebratedLevel(userState);
+    if (safeLevel > currentCelebratedLevel) {
+      _setLastCelebratedLevel(userState, level: safeLevel);
+      await store._repo.save(root);
+    }
+  }
+
+  store._emitChanged();
 }
 
 void _queueBestEffortProgressAndRewardSync(
