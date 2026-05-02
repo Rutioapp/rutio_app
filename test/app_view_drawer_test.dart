@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
+import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/widgets/app_view_drawer.dart';
 
 void main() {
@@ -38,9 +39,22 @@ void main() {
     );
 
     scaffoldKey.currentState!.openDrawer();
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('AYUDA'), findsOneWidget);
-    expect(find.text('Reportar incidencia'), findsOneWidget);
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+    final supportSectionFinder = find.text(l10n.drawerSectionSupport);
+    final reportIssueFinder = find.text(l10n.drawerReportIssue);
+
+    await tester.scrollUntilVisible(
+      supportSectionFinder,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+
+    expect(supportSectionFinder, findsOneWidget);
+    expect(reportIssueFinder, findsOneWidget);
   });
 }
