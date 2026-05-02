@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../features/gamification/presentation/level_up_sheet.dart';
 import '../../../../stores/user_state_store.dart';
 import '../screens/achievements_screen.dart';
 import '../sheets/achievement_unlock_sheet.dart';
@@ -31,7 +32,9 @@ class _AchievementUnlockOverlayHostState
   @override
   Widget build(BuildContext context) {
     final pendingCount = context.select<UserStateStore, int>(
-      (store) => store.pendingAchievementUnlockCount,
+      (store) =>
+          store.pendingAchievementUnlockCount +
+          store.pendingLevelCelebrationCount,
     );
 
     if (!_isPresentingSheet && pendingCount > 0 && !_pumpScheduled) {
@@ -56,6 +59,27 @@ class _AchievementUnlockOverlayHostState
     }
 
     final store = context.read<UserStateStore>();
+    final pendingLevelEvent = store.consumeNextPendingLevelCelebration();
+    if (pendingLevelEvent != null) {
+      _isPresentingSheet = true;
+      await showLevelUpSheet<void>(
+        navigatorContext,
+        event: pendingLevelEvent,
+      );
+      _isPresentingSheet = false;
+
+      if (!mounted) return;
+      final stillPending =
+          context.read<UserStateStore>().pendingAchievementUnlockCount > 0 ||
+              context.read<UserStateStore>().pendingLevelCelebrationCount > 0;
+      if (stillPending) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await _showNextPending();
+        });
+      }
+      return;
+    }
+
     final next = store.consumeNextPendingAchievementUnlock();
     if (next == null) return;
 
@@ -76,7 +100,10 @@ class _AchievementUnlockOverlayHostState
     _isPresentingSheet = false;
 
     if (!mounted) return;
-    if (context.read<UserStateStore>().pendingAchievementUnlockCount > 0) {
+    final stillPending =
+        context.read<UserStateStore>().pendingAchievementUnlockCount > 0 ||
+            context.read<UserStateStore>().pendingLevelCelebrationCount > 0;
+    if (stillPending) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await _showNextPending();
       });

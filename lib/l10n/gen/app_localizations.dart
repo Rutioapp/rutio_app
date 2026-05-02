@@ -362,6 +362,54 @@ abstract class AppLocalizations {
   /// **'Añadir'**
   String get commonAdd;
 
+  /// No description provided for @levelUpNormalTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Enhorabuena'**
+  String get levelUpNormalTitle;
+
+  /// No description provided for @levelUpNormalSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Has subido al nivel {level}.'**
+  String levelUpNormalSubtitle(int level);
+
+  /// No description provided for @levelUpFirstMilestoneTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Primer gran hito'**
+  String get levelUpFirstMilestoneTitle;
+
+  /// No description provided for @levelUpFirstMilestoneSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Has alcanzado el nivel {level}. Tus rutinas empiezan a tomar forma.'**
+  String levelUpFirstMilestoneSubtitle(int level);
+
+  /// No description provided for @levelUpMajorMilestoneTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo hito alcanzado'**
+  String get levelUpMajorMilestoneTitle;
+
+  /// No description provided for @levelUpMajorMilestoneSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Has llegado al nivel {level}. Tu constancia sigue creciendo.'**
+  String levelUpMajorMilestoneSubtitle(int level);
+
+  /// No description provided for @levelUpContinueButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get levelUpContinueButton;
+
+  /// No description provided for @levelUpShareButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir'**
+  String get levelUpShareButton;
+
   /// No description provided for @homeHabitCountProgress.
   ///
   /// In es, this message translates to:

@@ -20,8 +20,8 @@ import '../features/achievements/application/achievement_rewards.dart';
 import '../features/achievements/domain/models/achievement.dart';
 import '../features/achievements/domain/models/habit_streak_snapshot.dart';
 import '../features/achievements/domain/models/unlocked_achievement_record.dart';
+import '../features/gamification/application/level_up_celebration_controller.dart';
 import '../features/gamification/domain/level_event.dart';
-import '../features/gamification/domain/level_event_resolver.dart';
 import '../features/gamification/domain/level_progression.dart';
 import '../models/diary_entry.dart';
 import '../screens/todo/models/todo_item.dart';
@@ -43,6 +43,7 @@ class UserStateStore extends ChangeNotifier {
   final UserProgressSyncService _userProgressSyncService;
   final JournalEntrySyncService _journalEntrySyncService;
   final ProfileRepository? _profileRepository;
+  final LevelUpCelebrationController _levelUpCelebrationController;
 
   UserStateStore(
     this._repo, {
@@ -62,7 +63,8 @@ class UserStateStore extends ChangeNotifier {
             JournalEntrySyncService(
               journalEntryRepository: JournalEntryRepository(),
             ),
-        _profileRepository = profileRepository;
+        _profileRepository = profileRepository,
+        _levelUpCelebrationController = const LevelUpCelebrationController();
 
   Map<String, dynamic>? _state;
   bool _loading = false;
@@ -79,6 +81,7 @@ class UserStateStore extends ChangeNotifier {
   Future<void> _scopeSwitchChain = Future<void>.value();
   final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
       <UnlockedAchievementRecord>[];
+  final List<LevelEvent> _pendingLevelCelebrations = <LevelEvent>[];
 
   Map<String, dynamic>? get state => _state;
   bool get isLoading => _loading;
@@ -491,7 +494,15 @@ class UserStateStore extends ChangeNotifier {
   Map<String, HabitStreakSnapshot> get achievementMetricSnapshots =>
       _achievementMetricSnapshots(this);
 
+  int get pendingLevelCelebrationCount => _pendingLevelCelebrations.length;
   int get pendingAchievementUnlockCount => _pendingAchievementUnlocks.length;
+
+  LevelEvent? consumeNextPendingLevelCelebration() {
+    if (_pendingLevelCelebrations.isEmpty) return null;
+    final next = _pendingLevelCelebrations.removeAt(0);
+    _emitChanged();
+    return next;
+  }
 
   UnlockedAchievementRecord? consumeNextPendingAchievementUnlock() {
     if (_pendingAchievementUnlocks.isEmpty) return null;

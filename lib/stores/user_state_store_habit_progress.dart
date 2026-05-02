@@ -1,6 +1,5 @@
 part of 'user_state_store.dart';
-
-const LevelEventResolver _levelEventResolver = LevelEventResolver();
+const String _lastCelebratedLevelMetaKey = 'lastCelebratedLevel';
 
 class _HabitProgressResult {
   final int xpGain;
@@ -60,16 +59,56 @@ void _updateProgressionLevelFromXp(
   progression['level'] = levelProgress.level;
 }
 
-List<LevelEvent> _resolveLevelEventsForXpChange({
+int _lastCelebratedLevel(Map<String, dynamic> userState) {
+  final meta = _map(userState['meta']);
+  final rawLevel = _safeInt(meta[_lastCelebratedLevelMetaKey], fallback: 0);
+  return rawLevel < 0 ? 0 : rawLevel;
+}
+
+void _setLastCelebratedLevel(
+  Map<String, dynamic> userState, {
+  required int level,
+}) {
+  final safeLevel = level < 0 ? 0 : level;
+  final meta = _map(userState['meta']);
+  meta[_lastCelebratedLevelMetaKey] = safeLevel;
+  userState['meta'] = meta;
+}
+
+void _enqueueLevelCelebration(UserStateStore store, LevelEvent event) {
+  if (store._pendingLevelCelebrations.isEmpty) {
+    store._pendingLevelCelebrations.add(event);
+    store._emitChanged();
+    return;
+  }
+
+  final lastIndex = store._pendingLevelCelebrations.length - 1;
+  final queued = store._pendingLevelCelebrations[lastIndex];
+  if (event.level >= queued.level) {
+    store._pendingLevelCelebrations[lastIndex] = event;
+    store._emitChanged();
+  }
+}
+
+void _queueLevelCelebrationForXpChange(
+  UserStateStore store, {
+  required Map<String, dynamic> userState,
   required int previousXp,
   required int currentXp,
 }) {
-  final previousLevel = LevelProgression.fromTotalXp(previousXp).level;
-  final nextLevel = LevelProgression.fromTotalXp(currentXp).level;
-  return _levelEventResolver.resolveLevelUps(
-    previousLevel: previousLevel,
-    currentLevel: nextLevel,
+  final decision = store._levelUpCelebrationController.evaluateXpChange(
+    previousXp: previousXp,
+    newXp: currentXp,
+    lastCelebratedLevel: _lastCelebratedLevel(userState),
   );
+  final event = decision.event;
+  if (event == null) return;
+
+  _setLastCelebratedLevel(
+    userState,
+    level: decision.lastCelebratedLevel,
+  );
+  _enqueueLevelCelebration(store, event);
 }
 
 void _queueBestEffortProgressAndRewardSync(
@@ -238,6 +277,7 @@ void _syncHabitHistoryFromState(
 }
 
 void _applyHabitRewards(
+  UserStateStore store,
   Map<String, dynamic> userState, {
   required String familyId,
   required int xpGain,
@@ -252,7 +292,12 @@ void _applyHabitRewards(
     progression,
     totalXp: newXp,
   );
-  _resolveLevelEventsForXpChange(previousXp: currentXp, currentXp: newXp);
+  _queueLevelCelebrationForXpChange(
+    store,
+    userState: userState,
+    previousXp: currentXp,
+    currentXp: newXp,
+  );
 
   final wallet = _map(userState['wallet']);
   final currentCoins = ((wallet['coins'] as num?) ?? 0).toInt();

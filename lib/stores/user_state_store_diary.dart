@@ -58,6 +58,7 @@ String _diaryEntryDateKey(DiaryEntry entry) {
 }
 
 _DiaryRewardResult _tryApplyDailyDiaryReward(
+  UserStateStore store,
   Map<String, dynamic> userState,
   DiaryEntry entry,
 ) {
@@ -79,7 +80,12 @@ _DiaryRewardResult _tryApplyDailyDiaryReward(
     progression,
     totalXp: nextXp,
   );
-  _resolveLevelEventsForXpChange(previousXp: currentXp, currentXp: nextXp);
+  _queueLevelCelebrationForXpChange(
+    store,
+    userState: userState,
+    previousXp: currentXp,
+    currentXp: nextXp,
+  );
   userState['progression'] = progression;
 
   final wallet = _map(userState['wallet']);
@@ -120,7 +126,7 @@ Future<void> _addDiaryEntry(UserStateStore store, DiaryEntry entry) async {
 
   final entryMap = Map<String, dynamic>.from(entry.toJson());
   rawEntries.add(entryMap);
-  final rewardResult = _tryApplyDailyDiaryReward(userState, entry);
+  final rewardResult = _tryApplyDailyDiaryReward(store, userState, entry);
   _touchLastSavedAt(userState);
 
   root['userState'] = userState;
@@ -187,7 +193,7 @@ Future<void> _updateDiaryEntry(UserStateStore store, DiaryEntry entry) async {
   } else {
     rawEntries.add(updatedEntryMap);
   }
-  final rewardResult = _tryApplyDailyDiaryReward(userState, entry);
+  final rewardResult = _tryApplyDailyDiaryReward(store, userState, entry);
 
   _touchLastSavedAt(userState);
 

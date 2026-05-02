@@ -1431,6 +1431,7 @@ Future<void> _setCountHabitValue(
 
   if (progressResult.grantDailyReward) {
     _applyHabitRewards(
+      store,
       userState,
       familyId: _habitFamilyId(habit),
       xpGain: progressResult.xpGain,
@@ -1532,6 +1533,7 @@ Future<void> _completeHabit(
     epochMillis: DateTime.now().millisecondsSinceEpoch,
   );
   _applyHabitRewards(
+    store,
     userState,
     familyId: _habitFamilyId(habit),
     xpGain: progressResult.xpGain,

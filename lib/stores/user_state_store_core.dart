@@ -83,6 +83,8 @@ Future<void> _switchLocalScope(
   if (scopeChanged) {
     store._state = null;
     store._error = null;
+    store._pendingAchievementUnlocks.clear();
+    store._pendingLevelCelebrations.clear();
     store._emitChanged();
   }
 

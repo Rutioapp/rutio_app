@@ -64,6 +64,35 @@
   "commonSave": "Guardar",
   "commonClose": "Cerrar",
   "commonAdd": "A\u00f1adir",
+  "levelUpNormalTitle": "Enhorabuena",
+  "levelUpNormalSubtitle": "Has subido al nivel {level}.",
+  "@levelUpNormalSubtitle": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "levelUpFirstMilestoneTitle": "Primer gran hito",
+  "levelUpFirstMilestoneSubtitle": "Has alcanzado el nivel {level}. Tus rutinas empiezan a tomar forma.",
+  "@levelUpFirstMilestoneSubtitle": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "levelUpMajorMilestoneTitle": "Nuevo hito alcanzado",
+  "levelUpMajorMilestoneSubtitle": "Has llegado al nivel {level}. Tu constancia sigue creciendo.",
+  "@levelUpMajorMilestoneSubtitle": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "levelUpContinueButton": "Continuar",
+  "levelUpShareButton": "Compartir",
   "homeHabitCountProgress": "{current} de {target}",
   "@homeHabitCountProgress": {
     "placeholders": {

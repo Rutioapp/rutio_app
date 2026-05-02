@@ -73,6 +73,7 @@ Set<String> _rewardAppliedAchievementIdsSet(Map<String, dynamic> achievements) {
 }
 
 List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
+  UserStateStore store,
   Map<String, dynamic> userState, {
   required Map<String, dynamic> achievements,
   required Iterable<UnlockedAchievementRecord> records,
@@ -96,7 +97,12 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
       progression,
       totalXp: nextXp,
     );
-    _resolveLevelEventsForXpChange(previousXp: currentXp, currentXp: nextXp);
+    _queueLevelCelebrationForXpChange(
+      store,
+      userState: userState,
+      previousXp: currentXp,
+      currentXp: nextXp,
+    );
     userState['progression'] = progression;
 
     final wallet = _map(userState['wallet']);
@@ -1073,6 +1079,7 @@ _AchievementSyncOutcome _syncAchievementsFromCurrentHabits(
   _sanitizeFeaturedAchievements(userState);
   return _AchievementSyncOutcome(
     appliedRewards: _applyAchievementRewardsForRecords(
+      store,
       userState,
       achievements: achievements,
       records: newlyUnlockedRecords,

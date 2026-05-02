@@ -64,6 +64,35 @@
     "commonSave":  "Save",
     "commonClose":  "Close",
     "commonAdd":  "Add",
+    "levelUpNormalTitle":  "Congratulations",
+    "levelUpNormalSubtitle":  "You reached level {level}.",
+    "@levelUpNormalSubtitle":  {
+                                  "placeholders":  {
+                                                       "level":  {
+                                                                     "type":  "int"
+                                                                 }
+                                                   }
+                              },
+    "levelUpFirstMilestoneTitle":  "First major milestone",
+    "levelUpFirstMilestoneSubtitle":  "You reached level {level}. Your routines are starting to take shape.",
+    "@levelUpFirstMilestoneSubtitle":  {
+                                          "placeholders":  {
+                                                               "level":  {
+                                                                             "type":  "int"
+                                                                         }
+                                                           }
+                                      },
+    "levelUpMajorMilestoneTitle":  "New milestone reached",
+    "levelUpMajorMilestoneSubtitle":  "You reached level {level}. Your consistency keeps growing.",
+    "@levelUpMajorMilestoneSubtitle":  {
+                                          "placeholders":  {
+                                                               "level":  {
+                                                                             "type":  "int"
+                                                                         }
+                                                           }
+                                      },
+    "levelUpContinueButton":  "Continue",
+    "levelUpShareButton":  "Share",
     "homeHabitCountProgress":  "{current} of {target}",
     "@homeHabitCountProgress":  {
                                     "placeholders":  {

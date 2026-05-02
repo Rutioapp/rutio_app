@@ -149,6 +149,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonAdd => 'Add';
 
   @override
+  String get levelUpNormalTitle => 'Congratulations';
+
+  @override
+  String levelUpNormalSubtitle(int level) {
+    return 'You reached level $level.';
+  }
+
+  @override
+  String get levelUpFirstMilestoneTitle => 'First major milestone';
+
+  @override
+  String levelUpFirstMilestoneSubtitle(int level) {
+    return 'You reached level $level. Your routines are starting to take shape.';
+  }
+
+  @override
+  String get levelUpMajorMilestoneTitle => 'New milestone reached';
+
+  @override
+  String levelUpMajorMilestoneSubtitle(int level) {
+    return 'You reached level $level. Your consistency keeps growing.';
+  }
+
+  @override
+  String get levelUpContinueButton => 'Continue';
+
+  @override
+  String get levelUpShareButton => 'Share';
+
+  @override
   String homeHabitCountProgress(String current, String target) {
     return '$current of $target';
   }
