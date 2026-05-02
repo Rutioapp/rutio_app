@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/gamification/domain/level_progression.dart';
 
 import 'package:rutio/constants/color_palette.dart';
 
@@ -107,10 +108,9 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
     final wallet = _map(userState['wallet']);
 
     final xpTotal = ((progression['xp'] as num?) ?? 0).toInt();
-    final level =
-        ((progression['level'] as num?) ?? (1 + (xpTotal ~/ 100))).toInt();
-    final xpInLevel = xpTotal % 100;
-    final xpToNext = 100 - xpInLevel;
+    final levelProgress = LevelProgression.fromTotalXp(xpTotal);
+    final level = levelProgress.level;
+    final xpProgress = levelProgress.progress;
     final coins = ((wallet['coins'] as num?) ?? 0).toInt();
 
     final displayFromStore = (store.displayName ?? '').trim();
@@ -186,8 +186,7 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
                     builder: (ctx) => HomeStatsHeader(
                       username: username,
                       level: level,
-                      xp: xpInLevel,
-                      xpToNext: xpToNext,
+                      xpProgress: xpProgress,
                       coins: coins,
                       avatarUrl: store.avatarUrl,
                       onOpenMonthlyOverview: () =>

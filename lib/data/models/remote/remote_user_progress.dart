@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:rutio/features/gamification/domain/level_progression.dart';
 
 @immutable
 class RemoteUserProgress {
@@ -30,24 +31,27 @@ class RemoteUserProgress {
 
   factory RemoteUserProgress.fromMap(Map<String, dynamic> map) {
     final parsedTotalXp = _safeInt(map['total_xp'], fallback: 0);
-    final fallbackCurrentLevelXp = parsedTotalXp % 100;
-    final fallbackNextLevelXp = 100 - fallbackCurrentLevelXp;
+    final fallbackProgress = LevelProgression.fromTotalXp(parsedTotalXp);
     final parsedLevel = _safeInt(
       map['level'],
-      fallback: 1 + (parsedTotalXp ~/ 100),
+      fallback: fallbackProgress.level,
     );
 
     return RemoteUserProgress(
       userId: (map['user_id'] ?? map['userId'] ?? '').toString().trim(),
       level: parsedLevel < 1 ? 1 : parsedLevel,
       totalXp: parsedTotalXp < 0 ? 0 : parsedTotalXp,
+      // Keep remote explicit values when available (legacy rows may already
+      // persist derived columns). Fallback is always computed from
+      // LevelProgression to avoid hardcoded fixed-100 assumptions.
       currentLevelXp: _safeInt(
         map['current_level_xp'],
-        fallback: fallbackCurrentLevelXp,
+        fallback: fallbackProgress.currentLevelXp,
       ),
       nextLevelXp: _safeInt(
         map['next_level_xp'],
-        fallback: fallbackNextLevelXp < 1 ? 1 : fallbackNextLevelXp,
+        fallback:
+            fallbackProgress.xpToNextLevel < 1 ? 1 : fallbackProgress.xpToNextLevel,
       ),
       ambarBalance: _safeInt(map['ambar_balance'], fallback: 0),
       totalAmbarEarned: _safeInt(map['total_ambar_earned'], fallback: 0),

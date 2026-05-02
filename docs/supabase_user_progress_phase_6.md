@@ -63,9 +63,25 @@ Allowed `source` values used by the app:
 
 - local `progression.level` -> `level`
 - local `progression.xp` -> `total_xp`
-- `progression.xp % 100` -> `current_level_xp`
-- `max(1, 100 - (progression.xp % 100))` -> `next_level_xp`
+- `LevelProgression.fromTotalXp(progression.xp).currentLevelXp` -> `current_level_xp`
+- `LevelProgression.fromTotalXp(progression.xp).xpToNextLevel` -> `next_level_xp`
 - local `wallet.coins` -> `ambar_balance`
+
+Level progression is now derived from a single source of truth:
+
+```dart
+base = 80
+linear = (level - 1) * 35
+curve = pow(level - 1, 1.65) * 18
+xpRequiredForLevel = round(base + linear + curve)
+```
+
+Notes:
+
+- `current_level_xp` is XP accumulated within the current level.
+- `next_level_xp` is XP remaining to reach the next level.
+- UI progress bars should use `LevelProgress.progress` (or equivalent values derived
+  from the same `LevelProgress` snapshot).
 
 Totals:
 

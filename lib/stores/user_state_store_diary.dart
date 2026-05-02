@@ -75,8 +75,11 @@ _DiaryRewardResult _tryApplyDailyDiaryReward(
   final progression = _map(userState['progression']);
   final currentXp = _safeInt(progression['xp'], fallback: 0);
   final nextXp = currentXp + RewardConstants.dailyDiaryXpReward;
-  progression['xp'] = nextXp;
-  progression['level'] = 1 + (nextXp ~/ 100);
+  _updateProgressionLevelFromXp(
+    progression,
+    totalXp: nextXp,
+  );
+  _resolveLevelEventsForXpChange(previousXp: currentXp, currentXp: nextXp);
   userState['progression'] = progression;
 
   final wallet = _map(userState['wallet']);

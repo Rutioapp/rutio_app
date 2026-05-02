@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/gamification/domain/level_progression.dart';
 
 import '../l10n/l10n.dart';
 import '../stores/user_state_store.dart';
@@ -117,13 +118,9 @@ class _HabitWeeklyScreenState extends State<HabitWeeklyScreen>
 
     final xpTotal =
         _readInt(root, ['userState', 'progression', 'xp'], fallback: 0);
-    final level = _readInt(
-      root,
-      ['userState', 'progression', 'level'],
-      fallback: 1 + (xpTotal ~/ 100),
-    );
-    final xpInLevel = xpTotal % 100;
-    final xpToNext = 100 - xpInLevel;
+    final levelProgress = LevelProgression.fromTotalXp(xpTotal);
+    final level = levelProgress.level;
+    final xpProgress = levelProgress.progress;
     final coins = _readInt(root, ['userState', 'wallet', 'coins'], fallback: 0);
     final display = (store.displayName ?? '').trim();
     final fallbackName = _readString(
@@ -152,8 +149,7 @@ class _HabitWeeklyScreenState extends State<HabitWeeklyScreen>
                     builder: (headerContext) => HomeStatsHeader(
                       username: name,
                       level: level,
-                      xp: xpInLevel,
-                      xpToNext: xpToNext,
+                      xpProgress: xpProgress,
                       coins: coins,
                       avatarUrl: store.avatarUrl,
                       onOpenMonthlyOverview: () => _replaceWith(

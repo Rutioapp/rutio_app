@@ -1,3 +1,5 @@
+import 'package:rutio/features/gamification/domain/level_progression.dart';
+
 class MonthlyHeaderVM {
   final String username;
   final int level;
@@ -68,6 +70,8 @@ class MonthlyStateUtils {
   static MonthlyHeaderVM headerVM(Map<String, dynamic>? root) {
     final us = userState(root);
     final profile = mapCast(us['profile']);
+    final progression = mapCast(us['progression']);
+    final wallet = mapCast(us['wallet']);
 
     final username = (profile['username'] ??
             profile['name'] ??
@@ -76,22 +80,21 @@ class MonthlyStateUtils {
             '')
         .toString();
 
-    final level = ((us['level'] as num?) ?? 1).toInt();
-    final coins = ((us['coins'] as num?) ??
+    final totalXp = ((progression['xp'] as num?) ??
+            (us['xp'] as num?) ??
+            (us['xpTotal'] as num?) ??
+            0)
+        .toInt();
+    final levelProgress = LevelProgression.fromTotalXp(totalXp);
+    final level = levelProgress.level;
+    final xpValue = levelProgress.progress;
+
+    final coins = ((wallet['coins'] as num?) ??
+            (us['coins'] as num?) ??
             (us['money'] as num?) ??
             (us['gold'] as num?) ??
             0)
         .toInt();
-
-    final xp =
-        ((us['xp'] as num?) ?? (us['xpCurrent'] as num?) ?? 0).toDouble();
-    final xpNext = ((us['xpToNext'] as num?) ??
-            (us['xpForNextLevel'] as num?) ??
-            (us['xpNext'] as num?) ??
-            100)
-        .toDouble();
-
-    final xpValue = (xpNext <= 0) ? 0.0 : (xp / xpNext).clamp(0.0, 1.0);
 
     return MonthlyHeaderVM(
       username: username,

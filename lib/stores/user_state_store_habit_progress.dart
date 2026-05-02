@@ -1,5 +1,7 @@
 part of 'user_state_store.dart';
 
+const LevelEventResolver _levelEventResolver = LevelEventResolver();
+
 class _HabitProgressResult {
   final int xpGain;
   final int coinsGain;
@@ -36,22 +38,37 @@ _ProgressSyncSnapshot _buildProgressSyncSnapshot(
 
   final rawXp = _safeInt(progression['xp'], fallback: 0);
   final xp = rawXp < 0 ? 0 : rawXp;
-  final levelFromXp = 1 + (xp ~/ 100);
-  final rawLevel = _safeInt(
-    progression['level'],
-    fallback: levelFromXp,
-  );
-  final level = rawLevel < 1 ? 1 : rawLevel;
-  final xpInCurrentLevel = xp % 100;
-  final xpToNextLevel = 100 - xpInCurrentLevel;
+  final levelProgress = LevelProgression.fromTotalXp(xp);
   final coins = _safeInt(wallet['coins'], fallback: 0);
 
   return _ProgressSyncSnapshot(
-    level: level,
+    level: levelProgress.level,
     xp: xp,
-    xpInCurrentLevel: xpInCurrentLevel,
-    xpToNextLevel: xpToNextLevel,
+    xpInCurrentLevel: levelProgress.currentLevelXp,
+    xpToNextLevel: levelProgress.xpToNextLevel,
     coins: coins,
+  );
+}
+
+void _updateProgressionLevelFromXp(
+  Map<String, dynamic> progression, {
+  required int totalXp,
+}) {
+  final safeTotalXp = totalXp < 0 ? 0 : totalXp;
+  final levelProgress = LevelProgression.fromTotalXp(safeTotalXp);
+  progression['xp'] = safeTotalXp;
+  progression['level'] = levelProgress.level;
+}
+
+List<LevelEvent> _resolveLevelEventsForXpChange({
+  required int previousXp,
+  required int currentXp,
+}) {
+  final previousLevel = LevelProgression.fromTotalXp(previousXp).level;
+  final nextLevel = LevelProgression.fromTotalXp(currentXp).level;
+  return _levelEventResolver.resolveLevelUps(
+    previousLevel: previousLevel,
+    currentLevel: nextLevel,
   );
 }
 
@@ -231,8 +248,11 @@ void _applyHabitRewards(
   final progression = _map(userState['progression']);
   final currentXp = ((progression['xp'] as num?) ?? 0).toInt();
   final newXp = currentXp + xpGain;
-  progression['xp'] = newXp;
-  progression['level'] = 1 + (newXp ~/ 100);
+  _updateProgressionLevelFromXp(
+    progression,
+    totalXp: newXp,
+  );
+  _resolveLevelEventsForXpChange(previousXp: currentXp, currentXp: newXp);
 
   final wallet = _map(userState['wallet']);
   final currentCoins = ((wallet['coins'] as num?) ?? 0).toInt();

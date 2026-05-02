@@ -11,8 +11,7 @@ import 'package:rutio/widgets/home/user_identity_row.dart';
 class HomeStatsHeader extends StatelessWidget {
   final String username;
   final int level;
-  final int xp;
-  final int xpToNext;
+  final double xpProgress;
   final int coins;
   final String? avatarUrl;
 
@@ -27,8 +26,7 @@ class HomeStatsHeader extends StatelessWidget {
     super.key,
     required this.username,
     required this.level,
-    required this.xp,
-    required this.xpToNext,
+    required this.xpProgress,
     required this.coins,
     required this.avatarUrl,
     required this.onOpenMonthlyOverview,
@@ -42,8 +40,7 @@ class HomeStatsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final double width = MediaQuery.of(context).size.width;
     final bool compact = width < 390;
-    final double denom = (xp + xpToNext).toDouble();
-    final double xpValue = (denom <= 0) ? 0.0 : (xp / denom).clamp(0.0, 1.0);
+    final double xpValue = xpProgress.clamp(0.0, 1.0).toDouble();
 
     // IOS-FIRST IMPROVEMENT START
     return AppHeader(

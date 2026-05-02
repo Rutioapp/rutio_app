@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/features/gamification/domain/level_progression.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../stores/user_state_store.dart';
@@ -26,7 +27,7 @@ class StatsRow extends StatelessWidget {
         <String, dynamic>{};
 
     final xp = ((progression['xp'] as num?) ?? 0).toInt();
-    final level = ((progression['level'] as num?) ?? (1 + (xp ~/ 100))).toInt();
+    final level = LevelProgression.fromTotalXp(xp).level;
     final coins = ((wallet['coins'] as num?) ?? 0).toInt();
 
     return StatsRow(level: level, xp: xp, coins: coins);

@@ -71,13 +71,11 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
   // =========================
   final xpTotal =
       _readInt(rootMap, ['userState', 'progression', 'xp'], fallback: 0);
-  final level = _readInt(
-    rootMap,
-    ['userState', 'progression', 'level'],
-    fallback: 1 + (xpTotal ~/ 100),
-  );
-  final xpInLevel = xpTotal % 100;
-  final xpToNext = 100 - xpInLevel;
+  final levelProgress = LevelProgression.fromTotalXp(xpTotal);
+  final level = levelProgress.level;
+  final xpInLevel = levelProgress.currentLevelXp;
+  final xpToNext = levelProgress.xpToNextLevel;
+  final xpProgress = levelProgress.progress;
   final coins =
       _readInt(rootMap, ['userState', 'wallet', 'coins'], fallback: 0);
 
@@ -94,6 +92,7 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
     level: level,
     xpInLevel: xpInLevel,
     xpToNext: xpToNext,
+    xpProgress: xpProgress,
     coins: coins,
   );
 }

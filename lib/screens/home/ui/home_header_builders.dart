@@ -5,13 +5,11 @@ extension _HomeScreenHeaderBuilders on _HomeScreenState {
     required BuildContext context,
     required String username,
     required int level,
-    required int xp,
-    required int xpToNext,
+    required double xpProgress,
     required int coins,
     required String? avatarUrl,
   }) {
-    final double denom = (xp + xpToNext).toDouble();
-    final double xpValue = (denom <= 0) ? 0.0 : (xp / denom).clamp(0.0, 1.0);
+    final double xpValue = xpProgress.clamp(0.0, 1.0).toDouble();
     final double width = MediaQuery.of(context).size.width;
     final bool compact = width < 390;
 

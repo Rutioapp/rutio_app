@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:rutio/features/gamification/domain/level_progression.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/widgets/app_header/app_header.dart';
 import 'package:rutio/widgets/app_header/user_stats_card.dart';
@@ -59,13 +60,9 @@ class WeeklyUserHeader extends StatelessWidget {
     final bool compact = w < 380;
 
     final int xpTotal = _readInt(userState, ['progression', 'xp'], fallback: 0);
-    final int level = _readInt(
-      userState,
-      ['progression', 'level'],
-      fallback: 1 + (xpTotal ~/ 100),
-    );
-    final int xpInLevel = xpTotal % 100;
-    final int xpToNext = 100 - xpInLevel;
+    final levelProgress = LevelProgression.fromTotalXp(xpTotal);
+    final int level = levelProgress.level;
+    final double xpValue = levelProgress.progress;
     final int coins = _readInt(userState, ['wallet', 'coins'], fallback: 0);
 
     final String profileName =
@@ -82,10 +79,6 @@ class WeeklyUserHeader extends StatelessWidget {
             : (legacyName2.isNotEmpty
                 ? legacyName2
                 : l10n.homeFallbackUsername));
-
-    final double denom = (xpInLevel + xpToNext).toDouble();
-    final double xpValue =
-        (denom <= 0) ? 0.0 : (xpInLevel / denom).clamp(0.0, 1.0);
 
     final double cardWidth = compact ? 220 : 244;
 
