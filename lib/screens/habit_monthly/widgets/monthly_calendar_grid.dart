@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/features/habits/domain/count_habit_progress.dart';
 
 import 'package:rutio/screens/habit_monthly/utils/month_utils.dart';
 import 'package:rutio/screens/habit_monthly/utils/monthly_state_utils.dart';
@@ -43,7 +44,6 @@ class MonthlyCalendarGrid extends StatelessWidget {
 
     final habitId = (habit['id'] ?? '').toString();
     final habitType = (habit['type'] ?? 'check').toString();
-    final target = ((habit['target'] as num?) ?? 1).toInt();
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -80,8 +80,12 @@ class MonthlyCalendarGrid extends StatelessWidget {
 
         bool done;
         if (habitType == 'count') {
-          final v = ((valuesMap[habitId] as num?) ?? 0).toInt();
-          done = !skipped && (v >= target || doneMap[habitId] == true);
+          final countProgress = CountHabitProgress.fromHabitMap(
+            habit,
+            currentValue: valuesMap[habitId],
+            skipped: skipped,
+          );
+          done = countProgress.isCompleted;
         } else {
           done = !skipped && (doneMap[habitId] == true);
         }

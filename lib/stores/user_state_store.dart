@@ -25,6 +25,7 @@ import '../features/gamification/domain/level_event.dart';
 import '../features/gamification/domain/level_event_resolver.dart';
 import '../features/gamification/domain/level_progression.dart';
 import '../features/gamification/domain/level_reward_resolver.dart';
+import '../features/habits/domain/count_habit_progress.dart';
 import '../models/diary_entry.dart';
 import '../screens/todo/models/todo_item.dart';
 import '../utils/family_theme.dart';

@@ -1839,21 +1839,25 @@ Future<void> _setCountHabitValueForDate(
   if (!_isCountHabit(habit)) return;
   if (!_isScheduledForDate(habit, date)) return;
 
-  final target = _habitTarget(habit);
   final safeValue = _safeDouble(value, fallback: 0).clamp(0, double.infinity);
+  final countProgress = CountHabitProgress.fromHabitMap(
+    habit,
+    currentValue: safeValue,
+    skipped: false,
+  );
 
   final dayKey = _dateKey(date);
   _setHabitCountValueForDay(
     userState,
     dateKey: dayKey,
     habitId: habitId,
-    value: safeValue,
+    value: countProgress.currentValue,
   );
   _setHabitCompletionForDay(
     userState,
     dateKey: dayKey,
     habitId: habitId,
-    done: safeValue >= target,
+    done: countProgress.isCompleted,
   );
   _setHabitSkipForDay(
     userState,
@@ -1869,9 +1873,9 @@ Future<void> _setCountHabitValueForDate(
     habit: habit,
     habitId: habitId,
     date: date,
-    isCompletedOverride: safeValue >= target,
+    isCompletedOverride: countProgress.isCompleted,
     isSkippedOverride: false,
-    countValueOverride: safeValue,
+    countValueOverride: countProgress.currentValue,
   );
 }
 

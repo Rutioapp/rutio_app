@@ -410,8 +410,10 @@ Map<DateTime, int> _extractHabitDoneCountsByDay(
   final history = _ensureHistoryRoot(userState);
   final completions = _map(history['habitCompletions']);
   final countValues = _map(history['habitCountValues']);
+  final skips = _map(history['habitSkips']);
   final keys = <String>{...completions.keys.map((key) => key.toString())};
   keys.addAll(countValues.keys.map((key) => key.toString()));
+  keys.addAll(skips.keys.map((key) => key.toString()));
 
   for (final dayKey in keys) {
     final date = _dateFromKey(dayKey);
@@ -420,10 +422,14 @@ Map<DateTime, int> _extractHabitDoneCountsByDay(
 
     final completionMap = _map(completions[dayKey]);
     final countValueMap = _map(countValues[dayKey]);
-    final doneValue = _normalizedHabitType(habit['type']) == 'count'
-        ? _safeNum(countValueMap[habitId], fallback: 0)
-        : (completionMap[habitId] == true ? 1 : 0);
-    output[day] = doneValue > 0 ? 1 : 0;
+    final skipMap = _map(skips[dayKey]);
+    final done = _habitCompletedOnDate(
+      habit,
+      completionMap: completionMap,
+      countValueMap: countValueMap,
+      skipMap: skipMap,
+    );
+    output[day] = done ? 1 : 0;
   }
 
   return output;
@@ -443,14 +449,17 @@ Map<DateTime, int> _extractFamilyDoneCountsByDay(
   final history = _ensureHistoryRoot(userState);
   final completions = _map(history['habitCompletions']);
   final countValues = _map(history['habitCountValues']);
+  final skips = _map(history['habitSkips']);
   final keys = <String>{...completions.keys.map((key) => key.toString())};
   keys.addAll(countValues.keys.map((key) => key.toString()));
+  keys.addAll(skips.keys.map((key) => key.toString()));
 
   for (final dayKey in keys) {
     final date = _dateFromKey(dayKey);
     final day = DateTime(date.year, date.month, date.day);
     final completionMap = _map(completions[dayKey]);
     final countValueMap = _map(countValues[dayKey]);
+    final skipMap = _map(skips[dayKey]);
     var hasScheduledHabit = false;
     var familyDone = false;
 
@@ -462,10 +471,12 @@ Map<DateTime, int> _extractFamilyDoneCountsByDay(
       if (habitId == null || habitId.isEmpty) continue;
 
       hasScheduledHabit = true;
-      final doneValue = _normalizedHabitType(habit['type']) == 'count'
-          ? _safeNum(countValueMap[habitId], fallback: 0)
-          : (completionMap[habitId] == true ? 1 : 0);
-      if (doneValue > 0) {
+      if (_habitCompletedOnDate(
+        habit,
+        completionMap: completionMap,
+        countValueMap: countValueMap,
+        skipMap: skipMap,
+      )) {
         familyDone = true;
         break;
       }
@@ -482,13 +493,19 @@ bool _habitCompletedOnDate(
   Map<String, dynamic> habit, {
   required Map<String, dynamic> completionMap,
   required Map<String, dynamic> countValueMap,
+  required Map<String, dynamic> skipMap,
 }) {
   final habitId = _habitIdValue(habit);
   if (habitId == null || habitId.isEmpty) return false;
+  final skipped = skipMap[habitId] == true;
 
   return _normalizedHabitType(habit['type']) == 'count'
-      ? _safeNum(countValueMap[habitId], fallback: 0) > 0
-      : completionMap[habitId] == true;
+      ? CountHabitProgress.fromHabitMap(
+          habit,
+          currentValue: countValueMap[habitId],
+          skipped: skipped,
+        ).isCompleted
+      : !skipped && completionMap[habitId] == true;
 }
 
 Map<String, HabitStreakSnapshot> _specialAchievementSnapshotsFromUserState(
@@ -624,10 +641,12 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
   final history = _ensureHistoryRoot(userState);
   final completions = _map(history['habitCompletions']);
   final countValues = _map(history['habitCountValues']);
+  final skips = _map(history['habitSkips']);
   final completionTimes = _map(history['habitCompletionTimes']);
   final allDayKeys = <String>{
     ...completions.keys.map((key) => key.toString()),
     ...countValues.keys.map((key) => key.toString()),
+    ...skips.keys.map((key) => key.toString()),
     ...completionTimes.keys.map((key) => key.toString()),
   }.where((key) => key.trim().isNotEmpty).toList()
     ..sort();
@@ -649,6 +668,7 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
     final day = DateTime(date.year, date.month, date.day);
     final completionMap = _map(completions[dayKey]);
     final countValueMap = _map(countValues[dayKey]);
+    final skipMap = _map(skips[dayKey]);
     final timeMap = _map(completionTimes[dayKey]);
 
     var scheduledCount = 0;
@@ -662,6 +682,7 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
         habit,
         completionMap: completionMap,
         countValueMap: countValueMap,
+        skipMap: skipMap,
       )) {
         continue;
       }
@@ -675,7 +696,11 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
       if (_habitFamilyId(habit) == FamilyTheme.social) {
         socialDays.add(day);
       }
-      if (_isExactTargetHit(habit, countValueMap: countValueMap)) {
+      if (_isExactTargetHit(
+        habit,
+        countValueMap: countValueMap,
+        skipMap: skipMap,
+      )) {
         exactTargetHitCount += 1;
       }
     }
@@ -767,16 +792,22 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
 bool _isExactTargetHit(
   Map<String, dynamic> habit, {
   required Map<String, dynamic> countValueMap,
+  required Map<String, dynamic> skipMap,
 }) {
   if (_normalizedHabitType(habit['type']) != 'count') return false;
 
   final habitId = _habitIdValue(habit);
   if (habitId == null || habitId.isEmpty) return false;
+  final skipped = skipMap[habitId] == true;
+  final countProgress = CountHabitProgress.fromHabitMap(
+    habit,
+    currentValue: countValueMap[habitId],
+    skipped: skipped,
+  );
+  if (!countProgress.isCompleted) return false;
 
-  final value = _safeDouble(countValueMap[habitId], fallback: 0);
-  final target = _safeDouble(habit['target'], fallback: 1);
-  if (value <= 0 || target <= 0) return false;
-  return (value - target).abs() < 0.0001;
+  return (countProgress.currentValue - countProgress.effectiveTarget).abs() <
+      0.0001;
 }
 
 bool _isOnTimeCompletion(

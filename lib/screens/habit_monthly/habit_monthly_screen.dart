@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/habits/domain/count_habit_progress.dart';
 import 'package:rutio/features/gamification/domain/level_progression.dart';
 
 import 'package:rutio/constants/color_palette.dart';
@@ -143,6 +144,7 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
             selectedHabit,
             habitCompletions,
             habitCountValues,
+            habitSkips,
           );
 
     final selectedAccent = selectedHabit == null
@@ -307,7 +309,6 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
   ) {
     final habitId = (habit['id'] ?? '').toString();
     final habitType = (habit['type'] ?? 'check').toString();
-    final target = ((habit['target'] as num?) ?? 1).toInt();
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -344,8 +345,12 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
 
       bool done;
       if (habitType == 'count') {
-        final v = ((valsMap[habitId] as num?) ?? 0).toInt();
-        done = !skipped && (v >= target || doneMap[habitId] == true);
+        final countProgress = CountHabitProgress.fromHabitMap(
+          habit,
+          currentValue: valsMap[habitId],
+          skipped: skipped,
+        );
+        done = countProgress.isCompleted;
       } else {
         done = !skipped && (doneMap[habitId] == true);
       }
@@ -363,16 +368,17 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
     Map<String, dynamic> habit,
     Map<String, dynamic> habitCompletions,
     Map<String, dynamic> habitCountValues,
+    Map<String, dynamic> habitSkips,
   ) {
     final habitId = (habit['id'] ?? '').toString();
     final habitType = (habit['type'] ?? 'check').toString();
-    final target = ((habit['target'] as num?) ?? 1).toInt();
 
     final doneDays = <DateTime>{};
 
     final dateKeys = <String>{
       ...habitCompletions.keys.map((e) => e.toString()),
       ...habitCountValues.keys.map((e) => e.toString()),
+      ...habitSkips.keys.map((e) => e.toString()),
     };
 
     for (final key in dateKeys) {
@@ -384,13 +390,19 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
 
       final doneMap = _map(habitCompletions[key]);
       final valsMap = _map(habitCountValues[key]);
+      final skipsMap = _map(habitSkips[key]);
+      final skipped = skipsMap[habitId] == true;
 
       bool done;
       if (habitType == 'count') {
-        final v = ((valsMap[habitId] as num?) ?? 0).toInt();
-        done = v >= target || doneMap[habitId] == true;
+        final countProgress = CountHabitProgress.fromHabitMap(
+          habit,
+          currentValue: valsMap[habitId],
+          skipped: skipped,
+        );
+        done = countProgress.isCompleted;
       } else {
-        done = doneMap[habitId] == true;
+        done = !skipped && doneMap[habitId] == true;
       }
 
       if (done) {

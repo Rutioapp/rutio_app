@@ -1,4 +1,5 @@
 import '../weekly_day_cell.dart';
+import 'package:rutio/features/habits/domain/count_habit_progress.dart';
 import 'weekly_habit_data_helper.dart';
 
 class WeeklyHabitDayStateResolver {
@@ -22,20 +23,19 @@ class WeeklyHabitDayStateResolver {
     }
 
     final habitType = WeeklyHabitDataHelper.normalizeHabitType(habit);
-    final isDone = isDoneFor(habitId: habitId, dateKey: dateKey);
-
     if (habitType == 'count') {
       final value = countValueFor(habitId: habitId, dateKey: dateKey);
-      final target = WeeklyHabitDataHelper.positiveNum(
-        habit['target'],
-        fallback: 1,
+      final countProgress = CountHabitProgress.fromHabitMap(
+        habit,
+        currentValue: value ?? 0,
+        skipped: false,
       );
-      final hasValue = value != null && value > 0;
-      final achieved = isDone || ((value ?? 0) >= target);
+      final hasValue = countProgress.currentValue > 0;
+      final achieved = countProgress.isCompleted;
 
       if (hasValue) {
         return WeeklyDayCellData.value(
-          _formatCountValue(value),
+          _formatCountValue(countProgress.currentValue),
           isAchieved: achieved,
         );
       }
@@ -47,6 +47,7 @@ class WeeklyHabitDayStateResolver {
       return const WeeklyDayCellData.empty();
     }
 
+    final isDone = isDoneFor(habitId: habitId, dateKey: dateKey);
     return isDone
         ? const WeeklyDayCellData.done()
         : const WeeklyDayCellData.empty();

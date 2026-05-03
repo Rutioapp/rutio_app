@@ -1,3 +1,5 @@
+import 'package:rutio/features/habits/domain/count_habit_progress.dart';
+
 import '../models/family_level.dart';
 import 'profile_families.dart';
 import 'profile_xp.dart';
@@ -13,6 +15,7 @@ List<FamilyLevel> buildFamilyLevelsFromHistory({
   final history = _map(userState['history']);
   final habitCompletions = _map(history['habitCompletions']);
   final habitCountValues = _map(history['habitCountValues']);
+  final habitSkips = _map(history['habitSkips']);
 
   final byId = <String, Map<String, dynamic>>{};
   for (final h in activeHabits) {
@@ -22,14 +25,25 @@ List<FamilyLevel> buildFamilyLevelsFromHistory({
 
   final xpByFamily = <String, int>{};
 
-  for (final e in habitCompletions.entries) {
-    final dayKey = e.key.toString();
-    final dayDone = _map(e.value);
-    final dayVals = _map(habitCountValues[dayKey]);
+  final dayKeys = <String>{
+    ...habitCompletions.keys.map((key) => key.toString()),
+    ...habitCountValues.keys.map((key) => key.toString()),
+    ...habitSkips.keys.map((key) => key.toString()),
+  };
 
-    for (final hd in dayDone.entries) {
-      final habitId = hd.key.toString();
-      final done = hd.value == true;
+  for (final dayKey in dayKeys) {
+    final dayDone = _map(habitCompletions[dayKey]);
+    final dayVals = _map(habitCountValues[dayKey]);
+    final daySkips = _map(habitSkips[dayKey]);
+    final dayHabitIds = <String>{
+      ...dayDone.keys.map((key) => key.toString()),
+      ...dayVals.keys.map((key) => key.toString()),
+      ...daySkips.keys.map((key) => key.toString()),
+    };
+
+    for (final habitId in dayHabitIds) {
+      final done = dayDone[habitId] == true;
+      final skipped = daySkips[habitId] == true;
 
       final habit = byId[habitId];
       if (habit == null) continue;
@@ -41,11 +55,15 @@ List<FamilyLevel> buildFamilyLevelsFromHistory({
       int gain = 0;
 
       if (type == 'count') {
-        final target = (habit['target'] as num?) ?? 1;
-        final inferredDone =
-            done || (((dayVals[habitId] as num?) ?? 0) >= target);
-        if (inferredDone) gain = xpForCountCompletion(target);
-      } else if (done) {
+        final progress = CountHabitProgress.fromHabitMap(
+          habit,
+          currentValue: dayVals[habitId],
+          skipped: skipped,
+        );
+        if (progress.isCompleted) {
+          gain = xpForCountCompletion(progress.effectiveTarget);
+        }
+      } else if (!skipped && done) {
         gain = xpForCheckCompletion();
       }
 

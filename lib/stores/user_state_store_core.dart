@@ -255,11 +255,13 @@ void _hydrateActiveHabitsForDate(
 
     if (type == 'count') {
       final value = skipped ? 0 : _safeNum(dayValues[habitId], fallback: 0);
-      final target = _safePositiveNum(habit['target'], fallback: 1);
-
-      habit['progress'] = value;
-      habit['doneToday'] =
-          !skipped && (value >= target || dayDone[habitId] == true);
+      final countProgress = CountHabitProgress.fromHabitMap(
+        habit,
+        currentValue: value,
+        skipped: skipped,
+      );
+      habit['progress'] = countProgress.currentValue;
+      habit['doneToday'] = countProgress.isCompleted;
       continue;
     }
 
@@ -435,10 +437,14 @@ void _ensureDailyReset(Map<String, dynamic> userState) {
 
       if (type == 'count') {
         final value = skipped ? 0 : _safeNum(habit['progress'], fallback: 0);
-        final target = _safePositiveNum(habit['target'], fallback: 1);
+        final countProgress = CountHabitProgress.fromHabitMap(
+          habit,
+          currentValue: value,
+          skipped: skipped,
+        );
 
-        previousCounts[habitId] = value;
-        previousDone[habitId] = !skipped && value >= target;
+        previousCounts[habitId] = countProgress.currentValue;
+        previousDone[habitId] = countProgress.isCompleted;
         continue;
       }
 

@@ -259,9 +259,6 @@ int _xpForCountCompletion(num target) =>
 
 int _coinsForCountCompletion(num xp) => (xp / 2).floor().clamp(0, 10);
 
-num _habitTarget(Map<String, dynamic> habit) =>
-    _safePositiveNum(habit['target'], fallback: 1);
-
 String _habitFamilyId(Map<String, dynamic> habit) =>
     _normalizeFamilyId((habit['familyId'] ?? 'mind').toString());
 
@@ -410,15 +407,19 @@ _HabitProgressResult _setCountHabitProgress(
   required num value,
   required bool rewardAlreadyGranted,
 }) {
-  final target = _habitTarget(habit);
   final safeValue = _safeDouble(value, fallback: 0).clamp(0, double.infinity);
+  final countProgress = CountHabitProgress.fromHabitMap(
+    habit,
+    currentValue: safeValue,
+    skipped: false,
+  );
 
-  habit['progress'] = safeValue;
+  habit['progress'] = countProgress.currentValue;
   habit['skippedToday'] = false;
-  habit['doneToday'] = safeValue >= target;
+  habit['doneToday'] = countProgress.isCompleted;
 
   if (habit['doneToday'] == true && !rewardAlreadyGranted) {
-    final xpGain = _xpForCountCompletion(target);
+    final xpGain = _xpForCountCompletion(countProgress.effectiveTarget);
     return _HabitProgressResult(
       xpGain: xpGain,
       coinsGain: _coinsForCountCompletion(xpGain),
