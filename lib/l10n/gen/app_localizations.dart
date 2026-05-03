@@ -410,6 +410,12 @@ abstract class AppLocalizations {
   /// **'Compartir'**
   String get levelUpShareButton;
 
+  /// No description provided for @levelUpRewardAmbarLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Has recibido {amount} Ámbar.'**
+  String levelUpRewardAmbarLine(int amount);
+
   /// No description provided for @homeHabitCountProgress.
   ///
   /// In es, this message translates to:

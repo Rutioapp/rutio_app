@@ -131,6 +131,98 @@ void main() {
         expect(store.pendingLevelCelebrationCount, 0);
       },
     );
+
+    test('enqueueing milestone celebration does not grant amber yet', () async {
+      final store = await _seedStore(
+        xp: LevelProgression.xpToReachLevel(5),
+        lastCelebratedLevel: 4,
+        habits: const <Map<String, dynamic>>[],
+      );
+      await store.load();
+
+      expect(store.pendingLevelCelebrationCount, 1);
+      expect(store.peekNextPendingLevelCelebration()?.level, 5);
+      expect(_walletCoinsFromStore(store), 0);
+    });
+
+    test(
+      'milestone reward is granted once when level celebration is consumed',
+      () async {
+        final store = await _seedStore(
+          xp: LevelProgression.xpToReachLevel(5),
+          lastCelebratedLevel: 4,
+          habits: const <Map<String, dynamic>>[],
+        );
+        await store.load();
+
+        expect(_walletCoinsFromStore(store), 0);
+        await store.markLevelCelebrationAsCelebrated(level: 5);
+
+        expect(_walletCoinsFromStore(store), 50);
+        expect(_lastCelebratedLevelFromStore(store), 5);
+        expect(store.pendingLevelCelebrationCount, 0);
+
+        await store.markLevelCelebrationAsCelebrated(level: 5);
+        expect(_walletCoinsFromStore(store), 50);
+      },
+    );
+
+    test('suppressed overlays do not grant milestone reward', () async {
+      final store = await _seedStore(
+        xp: LevelProgression.xpToReachLevel(5),
+        lastCelebratedLevel: 4,
+        habits: const <Map<String, dynamic>>[],
+      );
+      await store.load();
+      expect(store.pendingLevelCelebrationCount, 1);
+
+      store.suppressGamificationOverlaysDuringLogout();
+      await store.markLevelCelebrationAsCelebrated(level: 5);
+
+      expect(_walletCoinsFromStore(store), 0);
+      expect(_lastCelebratedLevelFromStore(store), 4);
+    });
+
+    test(
+      'restored milestone celebration grants reward only after consumption',
+      () async {
+        final seeded = await _seedStore(
+          xp: LevelProgression.xpToReachLevel(5),
+          lastCelebratedLevel: 4,
+          habits: const <Map<String, dynamic>>[],
+        );
+        await seeded.load();
+        expect(seeded.pendingLevelCelebrationCount, 1);
+        expect(_walletCoinsFromStore(seeded), 0);
+
+        final reloaded = await _buildStore(resetStorage: false);
+        await reloaded.load();
+
+        expect(reloaded.pendingLevelCelebrationCount, 1);
+        expect(reloaded.peekNextPendingLevelCelebration()?.level, 5);
+        expect(_walletCoinsFromStore(reloaded), 0);
+
+        await reloaded.markLevelCelebrationAsCelebrated(level: 5);
+        expect(_walletCoinsFromStore(reloaded), 50);
+        expect(reloaded.pendingLevelCelebrationCount, 0);
+      },
+    );
+
+    test('already celebrated milestone does not duplicate amber', () async {
+      final store = await _seedStore(
+        xp: LevelProgression.xpToReachLevel(5),
+        lastCelebratedLevel: 5,
+        habits: const <Map<String, dynamic>>[],
+      );
+      await store.load();
+
+      expect(store.pendingLevelCelebrationCount, 0);
+      expect(_walletCoinsFromStore(store), 0);
+
+      await store.markLevelCelebrationAsCelebrated(level: 5);
+      expect(_walletCoinsFromStore(store), 0);
+      expect(_lastCelebratedLevelFromStore(store), 5);
+    });
   });
 }
 
@@ -259,6 +351,15 @@ Map<String, dynamic> _checkHabit(String id) {
 int _lastCelebratedLevelFromStore(UserStateStore store) {
   final root = Map<String, dynamic>.from(store.state!);
   return _lastCelebratedLevelFromRoot(root);
+}
+
+int _walletCoinsFromStore(UserStateStore store) {
+  final root = Map<String, dynamic>.from(store.state!);
+  final userState = Map<String, dynamic>.from(root['userState'] as Map);
+  final wallet = Map<String, dynamic>.from(userState['wallet'] as Map);
+  final raw = wallet['coins'];
+  if (raw is num) return raw.toInt();
+  return int.tryParse(raw?.toString() ?? '') ?? 0;
 }
 
 int _lastCelebratedLevelFromRoot(Map<String, dynamic> root) {

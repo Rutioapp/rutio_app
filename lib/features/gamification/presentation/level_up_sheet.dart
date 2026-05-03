@@ -12,6 +12,7 @@ const Color _earth = Color(0xFF9E7540);
 Future<T?> showLevelUpSheet<T>(
   BuildContext context, {
   required LevelEvent event,
+  int? rewardAmbar,
   VoidCallback? onContinue,
 }) {
   return showModalBottomSheet<T>(
@@ -27,6 +28,7 @@ Future<T?> showLevelUpSheet<T>(
     ),
     builder: (_) => _LevelUpSheet(
       event: event,
+      rewardAmbar: rewardAmbar,
       onContinue: onContinue,
     ),
   );
@@ -35,10 +37,12 @@ Future<T?> showLevelUpSheet<T>(
 class _LevelUpSheet extends StatelessWidget {
   const _LevelUpSheet({
     required this.event,
+    this.rewardAmbar,
     this.onContinue,
   });
 
   final LevelEvent event;
+  final int? rewardAmbar;
   final VoidCallback? onContinue;
 
   @override
@@ -46,6 +50,7 @@ class _LevelUpSheet extends StatelessWidget {
     final safeBottom = MediaQuery.of(context).padding.bottom;
     final l10n = context.l10n;
     final copy = _copyForEvent(context, event);
+    final hasReward = (rewardAmbar ?? 0) > 0;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + safeBottom),
@@ -122,6 +127,19 @@ class _LevelUpSheet extends StatelessWidget {
                     height: 1.35,
                   ),
                 ),
+                if (hasReward) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    l10n.levelUpRewardAmbarLine(rewardAmbar!),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: _earth,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,

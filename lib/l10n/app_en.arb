@@ -93,6 +93,14 @@
                                       },
     "levelUpContinueButton":  "Continue",
     "levelUpShareButton":  "Share",
+    "levelUpRewardAmbarLine": "You received {amount} Amber.",
+    "@levelUpRewardAmbarLine": {
+        "placeholders": {
+            "amount": {
+                "type": "int"
+            }
+        }
+    },
     "homeHabitCountProgress":  "{current} of {target}",
     "@homeHabitCountProgress":  {
                                     "placeholders":  {

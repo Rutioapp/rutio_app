@@ -1,6 +1,7 @@
 part of 'user_state_store.dart';
 const String _lastCelebratedLevelMetaKey = 'lastCelebratedLevel';
 const LevelEventResolver _levelEventResolver = LevelEventResolver();
+const LevelRewardResolver _levelRewardResolver = LevelRewardResolver();
 
 class _HabitProgressResult {
   final int xpGain;
@@ -135,6 +136,12 @@ Future<void> _markLevelCelebrationAsCelebrated(
   UserStateStore store, {
   required int level,
 }) async {
+  if (store._isLoggingOut ||
+      store._isResettingUserState ||
+      store._suppressGamificationOverlays) {
+    return;
+  }
+
   final safeLevel = level < 0 ? 0 : level;
 
   store._pendingLevelCelebrations
@@ -145,8 +152,32 @@ Future<void> _markLevelCelebrationAsCelebrated(
     final userState = _ensureUserStateRoot(root);
     final currentCelebratedLevel = _lastCelebratedLevel(userState);
     if (safeLevel > currentCelebratedLevel) {
+      final rewardAmbar = _levelRewardResolver.rewardForLevel(safeLevel);
+      if (rewardAmbar > 0) {
+        final wallet = _map(userState['wallet']);
+        final currentCoins = _safeInt(wallet['coins'], fallback: 0);
+        wallet['coins'] = currentCoins + rewardAmbar;
+        userState['wallet'] = wallet;
+
+        final daily = _map(userState['daily']);
+        daily['coinsEarnedToday'] =
+            _safeInt(daily['coinsEarnedToday'], fallback: 0) + rewardAmbar;
+        userState['daily'] = daily;
+      }
+
       _setLastCelebratedLevel(userState, level: safeLevel);
       await store._repo.save(root);
+
+      if (rewardAmbar > 0) {
+        _queueBestEffortProgressAndRewardSync(
+          store,
+          userState: userState,
+          xpDelta: 0,
+          coinsDelta: rewardAmbar,
+          source: 'level_up_milestone',
+          currencyReason: 'level_up_milestone:$safeLevel',
+        );
+      }
     }
   }
 

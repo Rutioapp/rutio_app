@@ -179,6 +179,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get levelUpShareButton => 'Compartir';
 
   @override
+  String levelUpRewardAmbarLine(int amount) {
+    return 'Has recibido $amount Ámbar.';
+  }
+
+  @override
   String homeHabitCountProgress(String current, String target) {
     return '$current de $target';
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../features/gamification/domain/level_reward_resolver.dart';
 import '../../../../features/gamification/presentation/level_up_sheet.dart';
 import '../../../../stores/user_state_store.dart';
 import '../screens/achievements_screen.dart';
@@ -26,6 +27,7 @@ class AchievementUnlockOverlayHost extends StatefulWidget {
 
 class _AchievementUnlockOverlayHostState
     extends State<AchievementUnlockOverlayHost> {
+  static const LevelRewardResolver _levelRewardResolver = LevelRewardResolver();
   bool _pumpScheduled = false;
   bool _isPresentingSheet = false;
 
@@ -77,6 +79,9 @@ class _AchievementUnlockOverlayHostState
         await showLevelUpSheet<void>(
           navigatorContext,
           event: pendingLevelEvent,
+          rewardAmbar: _levelRewardResolver.rewardForLevel(
+            pendingLevelEvent.level,
+          ),
         );
         if (!mounted) return;
         if (!store.shouldShowGamificationOverlays) return;
