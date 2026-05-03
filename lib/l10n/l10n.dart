@@ -17,6 +17,16 @@ extension AppLocalizationsUserSharedX on AppLocalizations {
       _isSpanishUserShared ? 'NV. $level' : 'LVL. $level';
 }
 
+extension AppLocalizationsGamificationX on AppLocalizations {
+  bool get _isSpanishGamification => localeName.toLowerCase().startsWith('es');
+
+  String levelUpRewardLineWithCurrency(int amount, String currencySymbol) {
+    return _isSpanishGamification
+        ? 'Has recibido $amount $currencySymbol.'
+        : 'You received $amount $currencySymbol.';
+  }
+}
+
 extension AppLocalizationsProfileX on AppLocalizations {
   bool get _isSpanish => localeName.toLowerCase().startsWith('es');
 
