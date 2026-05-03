@@ -11,7 +11,7 @@ class LevelRewardResolver {
   };
 
   int rewardForLevel(int level) {
-    if (level <= 0) return 0;
+    if (level <= 1) return 0;
 
     final fixedReward = _fixedMilestoneRewards[level];
     if (fixedReward != null) return fixedReward;

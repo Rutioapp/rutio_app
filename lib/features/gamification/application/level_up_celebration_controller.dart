@@ -43,6 +43,12 @@ class LevelUpCelebrationController {
     // For now we only celebrate the final reached level when one XP grant
     // crosses multiple levels.
     final finalReachedLevel = currentLevel;
+    if (!_levelEventResolver.isCelebrationEligibleLevel(finalReachedLevel)) {
+      return LevelUpCelebrationDecision(
+        event: null,
+        lastCelebratedLevel: safeLastCelebratedLevel,
+      );
+    }
     if (finalReachedLevel <= safeLastCelebratedLevel) {
       return LevelUpCelebrationDecision(
         event: null,

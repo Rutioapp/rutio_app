@@ -78,6 +78,7 @@ void _setLastCelebratedLevel(
 }
 
 void _enqueueLevelCelebration(UserStateStore store, LevelEvent event) {
+  if (!_levelEventResolver.isCelebrationEligibleLevel(event.level)) return;
   if (!_canQueueGamificationOverlays(store)) return;
 
   if (store._pendingLevelCelebrations.isEmpty) {
@@ -100,6 +101,10 @@ void _queueLevelCelebrationForXpChange(
   required int previousXp,
   required int currentXp,
 }) {
+  final currentLevel =
+      LevelProgression.fromTotalXp(currentXp < 0 ? 0 : currentXp).level;
+  if (!_levelEventResolver.isCelebrationEligibleLevel(currentLevel)) return;
+
   final decision = store._levelUpCelebrationController.evaluateXpChange(
     previousXp: previousXp,
     newXp: currentXp,
@@ -122,6 +127,7 @@ void _restorePendingLevelCelebrationFromProgress(
   final currentLevel = LevelProgression.fromTotalXp(safeXp).level;
   final celebratedLevel = _lastCelebratedLevel(userState);
 
+  if (!_levelEventResolver.isCelebrationEligibleLevel(currentLevel)) return;
   if (currentLevel <= celebratedLevel) return;
   _enqueueLevelCelebration(
     store,
@@ -146,9 +152,17 @@ Future<void> _markLevelCelebrationAsCelebrated(
 
   store._pendingLevelCelebrations
       .removeWhere((queuedEvent) => queuedEvent.level <= safeLevel);
+  if (!_levelEventResolver.isCelebrationEligibleLevel(safeLevel)) {
+    store._pendingLevelCelebrations.removeWhere(
+      (queuedEvent) =>
+          !_levelEventResolver.isCelebrationEligibleLevel(queuedEvent.level),
+    );
+    store._emitChanged();
+    return;
+  }
 
   final root = store._state;
-  if (root != null && safeLevel > 0) {
+  if (root != null) {
     final userState = _ensureUserStateRoot(root);
     final currentCelebratedLevel = _lastCelebratedLevel(userState);
     if (safeLevel > currentCelebratedLevel) {

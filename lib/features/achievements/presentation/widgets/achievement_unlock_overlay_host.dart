@@ -73,6 +73,19 @@ class _AchievementUnlockOverlayHostState
 
     final pendingLevelEvent = store.peekNextPendingLevelCelebration();
     if (pendingLevelEvent != null) {
+      if (pendingLevelEvent.level <= 1) {
+        store.consumeNextPendingLevelCelebration();
+        if (!mounted) return;
+        final stillPending =
+            context.read<UserStateStore>().pendingAchievementUnlockCount > 0 ||
+                context.read<UserStateStore>().pendingLevelCelebrationCount > 0;
+        if (stillPending) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await _showNextPending();
+          });
+        }
+        return;
+      }
       if (!store.shouldShowGamificationOverlays) return;
       _isPresentingSheet = true;
       try {

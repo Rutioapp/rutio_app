@@ -5,6 +5,16 @@ void main() {
   const resolver = LevelRewardResolver();
 
   group('LevelRewardResolver', () {
+    test('level 1 rewards 0', () {
+      expect(resolver.rewardForLevel(1), 0);
+      expect(resolver.hasRewardForLevel(1), isFalse);
+    });
+
+    test('level 2 rewards 0', () {
+      expect(resolver.rewardForLevel(2), 0);
+      expect(resolver.hasRewardForLevel(2), isFalse);
+    });
+
     test('level 5 rewards +50', () {
       expect(resolver.rewardForLevel(5), 50);
     });

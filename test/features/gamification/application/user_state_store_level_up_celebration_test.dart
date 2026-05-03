@@ -10,6 +10,63 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('UserStateStore level-up celebration lifecycle', () {
+    test(
+      'new account with totalXp=0 and level 1 does not enqueue level-up or grant amber',
+      () async {
+        final store = await _seedStore(
+          xp: 0,
+          lastCelebratedLevel: 0,
+          habits: const <Map<String, dynamic>>[],
+        );
+        await store.load();
+
+        expect(store.pendingLevelCelebrationCount, 0);
+        expect(store.peekNextPendingLevelCelebration(), isNull);
+        expect(_walletCoinsFromStore(store), 0);
+      },
+    );
+
+    test(
+      'restoration skips pending celebration when currentLevel is 1 and lastCelebratedLevel is 0',
+      () async {
+        final store = await _seedStore(
+          xp: 0,
+          lastCelebratedLevel: 0,
+          habits: const <Map<String, dynamic>>[],
+        );
+        await store.load();
+
+        expect(store.pendingLevelCelebrationCount, 0);
+        expect(store.peekNextPendingLevelCelebration(), isNull);
+      },
+    );
+
+    test(
+      'restoration skips pending celebration when currentLevel is 1 and lastCelebratedLevel is null',
+      () async {
+        final store = await _seedStore(
+          xp: 0,
+          lastCelebratedLevel: null,
+          habits: const <Map<String, dynamic>>[],
+        );
+        await store.load();
+
+        expect(store.pendingLevelCelebrationCount, 0);
+        expect(store.peekNextPendingLevelCelebration(), isNull);
+      },
+    );
+
+    test(
+      'login/scope switch to a new user does not enqueue level 1 celebration',
+      () async {
+        final store = await _buildStore();
+        await store.switchLocalScope(userId: 'user_new', forceReload: true);
+
+        expect(store.pendingLevelCelebrationCount, 0);
+        expect(store.peekNextPendingLevelCelebration(), isNull);
+      },
+    );
+
     test('enqueueing level-up does not mark level as celebrated', () async {
       final thresholdLevel2 = LevelProgression.xpToReachLevel(2);
       final store = await _seedStore(
@@ -228,7 +285,7 @@ void main() {
 
 Future<UserStateStore> _seedStore({
   required int xp,
-  required int lastCelebratedLevel,
+  required int? lastCelebratedLevel,
   required List<Map<String, dynamic>> habits,
 }) async {
   final store = await _buildStore();
@@ -256,22 +313,26 @@ Future<UserStateStore> _buildStore({bool resetStorage = true}) async {
 
 Map<String, dynamic> _baseState({
   required int xp,
-  required int lastCelebratedLevel,
+  required int? lastCelebratedLevel,
   required List<Map<String, dynamic>> habits,
 }) {
   final safeXp = xp < 0 ? 0 : xp;
   final level = LevelProgression.fromTotalXp(safeXp).level;
   final today = _todayKey();
 
+  final meta = <String, dynamic>{
+    'schemaVersion': 1,
+    'lastSavedAt': DateTime.now().toUtc().toIso8601String(),
+    'diaryRewardAppliedDateKeys': <dynamic>[],
+  };
+  if (lastCelebratedLevel != null) {
+    meta['lastCelebratedLevel'] = lastCelebratedLevel;
+  }
+
   return <String, dynamic>{
     'userState': <String, dynamic>{
       'userId': 'user_123',
-      'meta': <String, dynamic>{
-        'schemaVersion': 1,
-        'lastSavedAt': DateTime.now().toUtc().toIso8601String(),
-        'diaryRewardAppliedDateKeys': <dynamic>[],
-        'lastCelebratedLevel': lastCelebratedLevel,
-      },
+      'meta': meta,
       'progression': <String, dynamic>{
         'level': level,
         'xp': safeXp,

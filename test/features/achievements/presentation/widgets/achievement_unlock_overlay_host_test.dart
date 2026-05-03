@@ -96,36 +96,80 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'skips invalid pending level celebration with level <= 1',
+    (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final store = _FakeOverlayQueueStore(
+        levelEvents: const <LevelEvent>[
+          LevelEvent(level: 1, type: LevelEventType.normalLevelUp),
+        ],
+        achievementEvents: const <UnlockedAchievementRecord>[],
+      );
+      final navigatorKey = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            navigatorKey: navigatorKey,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AchievementUnlockOverlayHost(
+              navigatorKey: navigatorKey,
+              child: const Scaffold(body: SizedBox.shrink()),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(store.callLog.where((entry) => entry == 'consumeLevel').length, 1);
+      expect(store.callLog.where((entry) => entry.startsWith('markLevel')), isEmpty);
+      expect(store.pendingLevelCelebrationCount, 0);
+      expect(find.text('Ver mis logros'), findsNothing);
+    },
+  );
 }
 
 class _FakeOverlayQueueStore extends UserStateStore {
-  _FakeOverlayQueueStore()
-      : super(
+  _FakeOverlayQueueStore({
+    List<LevelEvent>? levelEvents,
+    List<UnlockedAchievementRecord>? achievementEvents,
+  })  : _levelEvents = List<LevelEvent>.from(
+          levelEvents ??
+              const <LevelEvent>[
+                LevelEvent(
+                  level: 2,
+                  type: LevelEventType.normalLevelUp,
+                ),
+              ],
+        ),
+        _achievementEvents = List<UnlockedAchievementRecord>.from(
+          achievementEvents ??
+              <UnlockedAchievementRecord>[
+                UnlockedAchievementRecord(
+                  id: 'special:flash',
+                  type: AchievementType.special,
+                  tier: AchievementTier.bronze,
+                  unlockedAt: DateTime(2026, 1, 1),
+                  habitId: 'habit_1',
+                  habitName: 'Habit 1',
+                  familyId: 'special',
+                  targetValue: 5,
+                ),
+              ],
+        ),
+        super(
           UserStateRepository(storage: UserStateStorage())
             ..setActiveUserScope('user_123'),
           journalEntrySyncService: JournalEntrySyncService(),
         );
 
-  final List<LevelEvent> _levelEvents = <LevelEvent>[
-    const LevelEvent(
-      level: 2,
-      type: LevelEventType.normalLevelUp,
-    ),
-  ];
-
-  final List<UnlockedAchievementRecord> _achievementEvents =
-      <UnlockedAchievementRecord>[
-    UnlockedAchievementRecord(
-      id: 'special:flash',
-      type: AchievementType.special,
-      tier: AchievementTier.bronze,
-      unlockedAt: DateTime(2026, 1, 1),
-      habitId: 'habit_1',
-      habitName: 'Habit 1',
-      familyId: 'special',
-      targetValue: 5,
-    ),
-  ];
+  final List<LevelEvent> _levelEvents;
+  final List<UnlockedAchievementRecord> _achievementEvents;
 
   final List<String> callLog = <String>[];
   bool allowGamificationOverlays = true;
@@ -153,6 +197,15 @@ class _FakeOverlayQueueStore extends UserStateStore {
       _levelEvents.removeAt(0);
     }
     notifyListeners();
+  }
+
+  @override
+  LevelEvent? consumeNextPendingLevelCelebration() {
+    callLog.add('consumeLevel');
+    if (_levelEvents.isEmpty) return null;
+    final next = _levelEvents.removeAt(0);
+    notifyListeners();
+    return next;
   }
 
   @override

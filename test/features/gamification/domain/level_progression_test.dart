@@ -161,5 +161,17 @@ void main() {
       final events = resolver.resolveLevelUps(previousLevel: 1, currentLevel: 1);
       expect(events, isEmpty);
     });
+
+    test('level 1 is never emitted as a level-up event', () {
+      final events = resolver.resolveLevelUps(previousLevel: 0, currentLevel: 1);
+      expect(events, isEmpty);
+    });
+
+    test('real transition from level 1 to 2 emits only level 2', () {
+      final events = resolver.resolveLevelUps(previousLevel: 1, currentLevel: 2);
+      expect(events.length, 1);
+      expect(events.first.level, 2);
+      expect(events.first.type, LevelEventType.normalLevelUp);
+    });
   });
 }

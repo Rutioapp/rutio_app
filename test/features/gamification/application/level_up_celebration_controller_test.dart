@@ -7,6 +7,44 @@ void main() {
   const controller = LevelUpCelebrationController();
 
   group('LevelUpCelebrationController', () {
+    test('does not emit event when previousXp and newXp are zero', () {
+      final decision = controller.evaluateXpChange(
+        previousXp: 0,
+        newXp: 0,
+        lastCelebratedLevel: 0,
+      );
+
+      expect(decision.event, isNull);
+      expect(decision.lastCelebratedLevel, 0);
+    });
+
+    test('does not emit event when previousLevel is 1 and newLevel is 1', () {
+      final previousXp = 0;
+      final nextXp = LevelProgression.xpToReachLevel(2) - 1;
+
+      final decision = controller.evaluateXpChange(
+        previousXp: previousXp,
+        newXp: nextXp,
+        lastCelebratedLevel: 0,
+      );
+
+      expect(decision.event, isNull);
+    });
+
+    test('emits event when transitioning from level 1 to level 2', () {
+      final nextXp = LevelProgression.xpToReachLevel(2);
+
+      final decision = controller.evaluateXpChange(
+        previousXp: 0,
+        newXp: nextXp,
+        lastCelebratedLevel: 0,
+      );
+
+      expect(decision.event, isNotNull);
+      expect(decision.event!.level, 2);
+      expect(decision.event!.type, LevelEventType.normalLevelUp);
+    });
+
     test('does not emit event when previousLevel == newLevel', () {
       final previousXp = LevelProgression.xpToReachLevel(3);
       final nextXp = previousXp + 5;
