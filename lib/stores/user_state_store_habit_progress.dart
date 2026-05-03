@@ -77,6 +77,8 @@ void _setLastCelebratedLevel(
 }
 
 void _enqueueLevelCelebration(UserStateStore store, LevelEvent event) {
+  if (!_canQueueGamificationOverlays(store)) return;
+
   if (store._pendingLevelCelebrations.isEmpty) {
     store._pendingLevelCelebrations.add(event);
     store._emitChanged();
@@ -112,6 +114,8 @@ void _restorePendingLevelCelebrationFromProgress(
   UserStateStore store, {
   required Map<String, dynamic> userState,
 }) {
+  if (!_canQueueGamificationOverlays(store, userState: userState)) return;
+
   final progression = _map(userState['progression']);
   final safeXp = _safeInt(progression['xp'], fallback: 0).clamp(0, 1 << 30);
   final currentLevel = LevelProgression.fromTotalXp(safeXp).level;

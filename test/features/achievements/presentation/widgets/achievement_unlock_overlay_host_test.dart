@@ -63,6 +63,39 @@ void main() {
       expect(store.pendingAchievementUnlockCount, 0);
     },
   );
+
+  testWidgets(
+    'does not present level-up sheet when gamification overlays are suppressed',
+    (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final store = _FakeOverlayQueueStore()..allowGamificationOverlays = false;
+      final navigatorKey = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            navigatorKey: navigatorKey,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AchievementUnlockOverlayHost(
+              navigatorKey: navigatorKey,
+              child: const Scaffold(body: SizedBox.shrink()),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FilledButton), findsNothing);
+      expect(store.callLog.where((entry) => entry.startsWith('markLevel')), isEmpty);
+      expect(
+        store.callLog.where((entry) => entry == 'consumeAchievement'),
+        isEmpty,
+      );
+    },
+  );
 }
 
 class _FakeOverlayQueueStore extends UserStateStore {
@@ -95,12 +128,16 @@ class _FakeOverlayQueueStore extends UserStateStore {
   ];
 
   final List<String> callLog = <String>[];
+  bool allowGamificationOverlays = true;
 
   @override
   int get pendingLevelCelebrationCount => _levelEvents.length;
 
   @override
   int get pendingAchievementUnlockCount => _achievementEvents.length;
+
+  @override
+  bool get shouldShowGamificationOverlays => allowGamificationOverlays;
 
   @override
   LevelEvent? peekNextPendingLevelCelebration() {

@@ -8,6 +8,65 @@ Map<String, dynamic> _map(dynamic value) {
 
 List<dynamic> _list(dynamic value) => value is List ? value : <dynamic>[];
 
+bool _clearTransientGamificationStateInternal(UserStateStore store) {
+  final hasPendingEvents = store._pendingAchievementUnlocks.isNotEmpty ||
+      store._pendingLevelCelebrations.isNotEmpty;
+  if (!hasPendingEvents) return false;
+  store._pendingAchievementUnlocks.clear();
+  store._pendingLevelCelebrations.clear();
+  return true;
+}
+
+void _clearTransientGamificationState(UserStateStore store) {
+  final changed = _clearTransientGamificationStateInternal(store);
+  if (changed) {
+    store._emitChanged();
+  }
+}
+
+void _suppressGamificationOverlaysDuringLogout(UserStateStore store) {
+  final hadStateChange = !store._isLoggingOut ||
+      !store._isResettingUserState ||
+      !store._suppressGamificationOverlays;
+  store._isLoggingOut = true;
+  store._isResettingUserState = true;
+  store._suppressGamificationOverlays = true;
+  final hadQueueChange = _clearTransientGamificationStateInternal(store);
+  if (hadStateChange || hadQueueChange) {
+    store._emitChanged();
+  }
+}
+
+void _restoreGamificationOverlaysAfterLogout(UserStateStore store) {
+  final hadStateChange = store._isLoggingOut ||
+      store._isResettingUserState ||
+      store._suppressGamificationOverlays;
+  store._isLoggingOut = false;
+  store._isResettingUserState = false;
+  store._suppressGamificationOverlays = false;
+  if (hadStateChange) {
+    store._emitChanged();
+  }
+}
+
+bool _canQueueGamificationOverlays(
+  UserStateStore store, {
+  Map<String, dynamic>? userState,
+}) {
+  if (store._isLoggingOut ||
+      store._isResettingUserState ||
+      store._suppressGamificationOverlays) {
+    return false;
+  }
+
+  final currentUserId = (store.userId ?? '').trim();
+  if (currentUserId.isNotEmpty) return true;
+
+  final rawUserId =
+      (userState?['userId'] ?? userState?['id'] ?? '').toString().trim();
+  return rawUserId.isNotEmpty;
+}
+
 num _safeNum(dynamic value, {num fallback = 0}) {
   if (value is num) {
     if (value is double && !value.isFinite) return fallback;
@@ -83,8 +142,7 @@ Future<void> _switchLocalScope(
   if (scopeChanged) {
     store._state = null;
     store._error = null;
-    store._pendingAchievementUnlocks.clear();
-    store._pendingLevelCelebrations.clear();
+    _clearTransientGamificationStateInternal(store);
     store._emitChanged();
   }
 

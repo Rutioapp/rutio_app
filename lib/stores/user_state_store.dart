@@ -71,6 +71,9 @@ class UserStateStore extends ChangeNotifier {
   bool _loading = false;
   Object? _error;
   bool _isDeletingAccount = false;
+  bool _isLoggingOut = false;
+  bool _isResettingUserState = false;
+  bool _suppressGamificationOverlays = false;
   bool _isSupabaseAchievementsBackfillRunning = false;
   bool _isSupabaseHabitsBackfillRunning = false;
   bool _isSupabaseHabitLogsBackfillRunning = false;
@@ -88,6 +91,14 @@ class UserStateStore extends ChangeNotifier {
   bool get isLoading => _loading;
   Object? get error => _error;
   bool get isDeletingAccount => _isDeletingAccount;
+  bool get isLoggingOut => _isLoggingOut;
+  bool get isResettingUserState => _isResettingUserState;
+  bool get suppressGamificationOverlays => _suppressGamificationOverlays;
+  bool get shouldShowGamificationOverlays =>
+      !_isLoggingOut &&
+      !_isResettingUserState &&
+      !_suppressGamificationOverlays &&
+      ((userId ?? '').trim().isNotEmpty);
   String? get activeLocalScopeUserId => _activeLocalScopeUserId;
   int get scopeEpoch => _scopeEpoch;
   bool get isSupabaseAchievementsBackfillRunning =>
@@ -194,6 +205,12 @@ class UserStateStore extends ChangeNotifier {
         preserveLanguageCode: preserveLanguageCode,
       );
   Future<void> clearAuthSessionState() => _clearAuthSessionState(this);
+  void clearTransientGamificationState() =>
+      _clearTransientGamificationState(this);
+  void suppressGamificationOverlaysDuringLogout() =>
+      _suppressGamificationOverlaysDuringLogout(this);
+  void restoreGamificationOverlaysAfterLogout() =>
+      _restoreGamificationOverlaysAfterLogout(this);
   Future<void> deleteAccount() => _deleteAccount(this);
   void clearDeleteAccountError() => _clearDeleteAccountError(this);
 

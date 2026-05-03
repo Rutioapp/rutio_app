@@ -1029,6 +1029,7 @@ _AchievementSyncOutcome _syncAchievementsFromCurrentHabits(
       newlyUnlockedRecords.add(record);
 
       if (enqueueVisualTrigger &&
+          _canQueueGamificationOverlays(store, userState: userState) &&
           _shouldQueueFamilyConsistencyUnlock(
             snapshot,
             targetValue: milestone.targetValue,
@@ -1063,7 +1064,9 @@ _AchievementSyncOutcome _syncAchievementsFromCurrentHabits(
     unlockedById[achievement.id] = record.toJson();
     newlyUnlockedRecords.add(record);
 
-    if (enqueueVisualTrigger && snapshot.currentStreak == achievement.targetValue) {
+    if (enqueueVisualTrigger &&
+        _canQueueGamificationOverlays(store, userState: userState) &&
+        snapshot.currentStreak == achievement.targetValue) {
       store._pendingAchievementUnlocks.add(record);
     }
   }

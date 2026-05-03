@@ -100,6 +100,7 @@ class AuthController extends ChangeNotifier {
         debugPrint('[auth] sign in succeeded: userId=${_currentUser!.id}');
         debugPrint('[auth] currentUser after sign in: yes');
       }
+      _userStateStore.restoreGamificationOverlaysAfterLogout();
       await _userStateStore.switchLocalScope(userId: _currentUser!.id);
       unawaited(
         _bootstrapCurrentUserProfileMetadata(
@@ -174,6 +175,7 @@ class AuthController extends ChangeNotifier {
         return null;
       }
 
+      _userStateStore.restoreGamificationOverlaysAfterLogout();
       await _userStateStore.switchLocalScope(userId: _currentUser!.id);
       unawaited(
         _bootstrapCurrentUserProfileMetadata(
@@ -213,6 +215,7 @@ class AuthController extends ChangeNotifier {
     try {
       await _authRepository.signOut();
       _currentUser = null;
+      _userStateStore.suppressGamificationOverlaysDuringLogout();
       await _userStateStore.switchLocalScope(
         userId: null,
         forceReload: true,
@@ -303,6 +306,7 @@ class AuthController extends ChangeNotifier {
       debugPrint('[auth] auth state userId: $authUserId');
     }
     if (_currentUser != null) {
+      _userStateStore.restoreGamificationOverlaysAfterLogout();
       final userId = _currentUser!.id;
       unawaited(() async {
         await _userStateStore.switchLocalScope(userId: userId);
@@ -313,6 +317,7 @@ class AuthController extends ChangeNotifier {
         await _syncCurrentUserProfile(reason: 'auth_state_${state.event.name}');
       }());
     } else {
+      _userStateStore.suppressGamificationOverlaysDuringLogout();
       unawaited(
         _userStateStore.switchLocalScope(
           userId: null,

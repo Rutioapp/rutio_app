@@ -31,13 +31,21 @@ class _AchievementUnlockOverlayHostState
 
   @override
   Widget build(BuildContext context) {
-    final pendingCount = context.select<UserStateStore, int>(
-      (store) =>
-          store.pendingAchievementUnlockCount +
-          store.pendingLevelCelebrationCount,
+    final overlayQueueSnapshot = context.select<UserStateStore, ({int pendingCount, bool canShow})>(
+      (store) => (
+        pendingCount:
+            store.pendingAchievementUnlockCount +
+                store.pendingLevelCelebrationCount,
+        canShow: store.shouldShowGamificationOverlays,
+      ),
     );
+    final pendingCount = overlayQueueSnapshot.pendingCount;
+    final canShowOverlays = overlayQueueSnapshot.canShow;
 
-    if (!_isPresentingSheet && pendingCount > 0 && !_pumpScheduled) {
+    if (!_isPresentingSheet &&
+        canShowOverlays &&
+        pendingCount > 0 &&
+        !_pumpScheduled) {
       _pumpScheduled = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _pumpScheduled = false;
@@ -59,14 +67,19 @@ class _AchievementUnlockOverlayHostState
     }
 
     final store = context.read<UserStateStore>();
+    if (!store.shouldShowGamificationOverlays) return;
+
     final pendingLevelEvent = store.peekNextPendingLevelCelebration();
     if (pendingLevelEvent != null) {
+      if (!store.shouldShowGamificationOverlays) return;
       _isPresentingSheet = true;
       try {
         await showLevelUpSheet<void>(
           navigatorContext,
           event: pendingLevelEvent,
         );
+        if (!mounted) return;
+        if (!store.shouldShowGamificationOverlays) return;
         await store.markLevelCelebrationAsCelebrated(
           level: pendingLevelEvent.level,
         );
@@ -86,6 +99,7 @@ class _AchievementUnlockOverlayHostState
       return;
     }
 
+    if (!store.shouldShowGamificationOverlays) return;
     final next = store.consumeNextPendingAchievementUnlock();
     if (next == null) return;
 

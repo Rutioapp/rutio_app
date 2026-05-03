@@ -3,6 +3,7 @@ part of 'user_state_store.dart';
 Future<void> _deleteAccount(UserStateStore store) async {
   if (store._isDeletingAccount) return;
 
+  _suppressGamificationOverlaysDuringLogout(store);
   store._isDeletingAccount = true;
   store._accountDeletionError = null;
   store._loading = true;
@@ -49,6 +50,7 @@ Future<void> _clearLocalAccountData(
   UserStateStore store, {
   bool preserveLanguageCode = true,
 }) async {
+  _suppressGamificationOverlaysDuringLogout(store);
   final preservedLanguageCode =
       preserveLanguageCode ? _preferredLanguageCode(store) : null;
 
@@ -84,6 +86,7 @@ Future<void> _clearLocalAccountData(
 }
 
 Future<void> _clearAuthSessionState(UserStateStore store) async {
+  _suppressGamificationOverlaysDuringLogout(store);
   await _signOutSupabaseSessionIfPresent();
   await _switchLocalScope(
     store,
@@ -99,6 +102,7 @@ Future<void> _applySupabaseIdentity(
   String? displayName,
   String? avatarUrl,
 }) async {
+  _restoreGamificationOverlaysAfterLogout(store);
   await _switchLocalScope(
     store,
     userId: userId,

@@ -83,6 +83,54 @@ void main() {
       expect(store.pendingLevelCelebrationCount, 1);
       expect(store.peekNextPendingLevelCelebration()?.level, 2);
     });
+
+    test(
+      'logout clears pending level-up queue and does not mark level as celebrated',
+      () async {
+        final thresholdLevel2 = LevelProgression.xpToReachLevel(2);
+        final store = await _seedStore(
+          xp: thresholdLevel2 - 10,
+          lastCelebratedLevel: 0,
+          habits: [_checkHabit('habit_one')],
+        );
+
+        await store.completeHabit(habitId: 'habit_one');
+        expect(store.pendingLevelCelebrationCount, 1);
+        expect(_lastCelebratedLevelFromStore(store), 0);
+
+        await store.clearAuthSessionState();
+
+        expect(store.pendingLevelCelebrationCount, 0);
+        expect(store.pendingAchievementUnlockCount, 0);
+        expect(store.shouldShowGamificationOverlays, isFalse);
+
+        final previousScopeRepo = UserStateRepository(storage: UserStateStorage())
+          ..setActiveUserScope('user_123');
+        final previousScopeState = await previousScopeRepo.loadOrCreate();
+        expect(_lastCelebratedLevelFromRoot(previousScopeState), 0);
+
+        await store.switchLocalScope(userId: 'user_456', forceReload: true);
+        expect(store.pendingLevelCelebrationCount, 0);
+        expect(store.pendingAchievementUnlockCount, 0);
+      },
+    );
+
+    test(
+      'restore from progress is skipped while logout suppression is active',
+      () async {
+        final thresholdLevel2 = LevelProgression.xpToReachLevel(2);
+        final store = await _seedStore(
+          xp: thresholdLevel2,
+          lastCelebratedLevel: 0,
+          habits: const <Map<String, dynamic>>[],
+        );
+
+        store.suppressGamificationOverlaysDuringLogout();
+        await store.switchLocalScope(userId: 'user_123', forceReload: true);
+
+        expect(store.pendingLevelCelebrationCount, 0);
+      },
+    );
   });
 }
 
@@ -210,6 +258,10 @@ Map<String, dynamic> _checkHabit(String id) {
 
 int _lastCelebratedLevelFromStore(UserStateStore store) {
   final root = Map<String, dynamic>.from(store.state!);
+  return _lastCelebratedLevelFromRoot(root);
+}
+
+int _lastCelebratedLevelFromRoot(Map<String, dynamic> root) {
   final userState = Map<String, dynamic>.from(root['userState'] as Map);
   final meta = Map<String, dynamic>.from(userState['meta'] as Map);
   final raw = meta['lastCelebratedLevel'];
