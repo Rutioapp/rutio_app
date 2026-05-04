@@ -424,6 +424,51 @@ void main() {
       expect(find.text('1/1 dias'), findsWidgets);
     });
 
+    testWidgets('one 8/8 day in weekly range is not counted as 7/7 completed',
+        (tester) async {
+      final today = DateTime.now();
+      final dayKey =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final store = await _buildStoreWithState(
+        _baseStateForCountRegression(
+          dayKey: dayKey,
+          value: 8,
+          target: 8,
+          skipped: false,
+          completionFlag: false,
+          schedule: const {
+            'type': 'daily',
+          },
+          habitProgressValue: 8,
+          habitCurrentValue: 8,
+          habitValue: 8,
+        ),
+      );
+      await store.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HabitStatsOverviewScreen(habits: store.activeHabits),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text('1/7 dias'), findsWidgets);
+      expect(find.text('7/7 dias'), findsNothing);
+    });
+
     testWidgets('skipped + 6/8 is neither completed nor progress',
         (tester) async {
       final today = DateTime.now();
@@ -579,6 +624,58 @@ void main() {
       expect(find.text('1/1 dias'), findsWidgets);
     });
 
+    testWidgets('single 6/8 day does not appear as partial on all week days',
+        (tester) async {
+      final today = DateTime.now();
+      final dayKey =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final store = await _buildStoreWithState(
+        _baseStateForCountRegression(
+          dayKey: dayKey,
+          value: 6,
+          target: 8,
+          skipped: false,
+          completionFlag: true,
+          schedule: const {
+            'type': 'daily',
+          },
+          unit: 'km',
+          habitProgressValue: 6,
+          habitCurrentValue: 6,
+          habitValue: 6,
+        ),
+      );
+      await store.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: HabitStatsTab(
+                habit: store.activeHabits.first,
+                familyColor: Colors.blue,
+                scrollable: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text('0/7 dias'), findsWidgets);
+      expect(find.text('1 dias'), findsWidgets);
+    });
+
     testWidgets('check habits keep previous detail behavior', (tester) async {
       final today = DateTime.now();
       final dayKey =
@@ -686,6 +783,9 @@ Map<String, dynamic> _baseStateForCountRegression({
   required bool completionFlag,
   Map<String, dynamic>? schedule,
   String? unit,
+  num? habitProgressValue,
+  num? habitCurrentValue,
+  num? habitValue,
 }) {
   return {
     'userState': {
@@ -732,7 +832,9 @@ Map<String, dynamic> _baseStateForCountRegression({
           'schedule': schedule ?? {'type': 'daily'},
           'doneToday': false,
           'skippedToday': false,
-          'progress': 0,
+          'progress': habitProgressValue ?? 0,
+          if (habitCurrentValue != null) 'currentValue': habitCurrentValue,
+          if (habitValue != null) 'value': habitValue,
         },
       ],
     },

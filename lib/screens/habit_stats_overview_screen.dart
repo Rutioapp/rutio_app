@@ -1070,22 +1070,27 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     required Map<String, dynamic> dayValsMap,
     required bool skipped,
   }) {
+    final hasExplicitValue =
+        dayValsMap.containsKey(habitId) || dayValsMap.containsKey(habitId.toString());
+    final dailyValue =
+        hasExplicitValue ? (dayValsMap[habitId] ?? dayValsMap[habitId.toString()]) : 0;
+
     if (habit is Map<String, dynamic>) {
       return CountHabitProgress.fromHabitMap(
         habit,
-        currentValue: dayValsMap[habitId],
+        currentValue: dailyValue,
         skipped: skipped,
       );
     }
     if (habit is Map) {
       return CountHabitProgress.fromHabitMap(
         Map<String, dynamic>.from(habit),
-        currentValue: dayValsMap[habitId],
+        currentValue: dailyValue,
         skipped: skipped,
       );
     }
     return CountHabitProgress.fromValues(
-      currentValue: dayValsMap[habitId],
+      currentValue: dailyValue,
       targetValue: _habitTarget(habit),
       skipped: skipped,
     );

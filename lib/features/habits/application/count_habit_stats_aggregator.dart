@@ -114,7 +114,7 @@ class CountHabitStatsAggregator {
     for (final day in selectedDates) {
       final dayKey = _dateKey(day);
       final hasExplicitValue = values.containsKey(dayKey);
-      final rawValue = values[dayKey];
+      final rawValue = hasExplicitValue ? values[dayKey] : 0;
       final skipped = _asBool(skips[dayKey]);
 
       var progress = CountHabitProgress.fromHabitMap(

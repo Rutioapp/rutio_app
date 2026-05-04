@@ -92,6 +92,90 @@ void main() {
       expect(summary.partialProgressDays, 0);
     });
 
+    test('single partial day in 7-day range is not repeated across all days', () {
+      final week = List<DateTime>.generate(
+        7,
+        (index) => DateTime(2026, 5, 1 + index),
+      );
+      final summary = CountHabitStatsAdapter.fromDayBuckets(
+        habit: habit,
+        habitId: 'run',
+        scheduledDates: week,
+        historyCountValuesByDay: const {
+          '2026-05-07': {'run': 6},
+        },
+        historySkipsByDay: const {
+          '2026-05-07': {'run': false},
+        },
+      );
+
+      expect(summary.completedDays, 0);
+      expect(summary.partialProgressDays, 1);
+      expect(summary.activityDays, 1);
+      expect(summary.totalAccumulated, 6);
+      expect(
+        summary.seriesActualValues.map((point) => point.value).toList(),
+        [0, 0, 0, 0, 0, 0, 6],
+      );
+    });
+
+    test('single completed day in 7-day range is not repeated across all days', () {
+      final week = List<DateTime>.generate(
+        7,
+        (index) => DateTime(2026, 5, 1 + index),
+      );
+      final summary = CountHabitStatsAdapter.fromDayBuckets(
+        habit: habit,
+        habitId: 'run',
+        scheduledDates: week,
+        historyCountValuesByDay: const {
+          '2026-05-07': {'run': 8},
+        },
+        historySkipsByDay: const {
+          '2026-05-07': {'run': false},
+        },
+      );
+
+      expect(summary.completedDays, 1);
+      expect(summary.partialProgressDays, 0);
+      expect(summary.activityDays, 1);
+      expect(summary.totalAccumulated, 8);
+      expect(
+        summary.seriesActualValues.map((point) => point.value).toList(),
+        [0, 0, 0, 0, 0, 0, 8],
+      );
+    });
+
+    test('does not repeat habit current value when day bucket is missing', () {
+      final week = List<DateTime>.generate(
+        7,
+        (index) => DateTime(2026, 5, 1 + index),
+      );
+      final summary = CountHabitStatsAdapter.fromDayBuckets(
+        habit: {
+          ...habit,
+          'progress': 8,
+          'currentValue': 8,
+          'value': 8,
+        },
+        habitId: 'run',
+        scheduledDates: week,
+        historyCountValuesByDay: const {
+          '2026-05-07': {'run': 8},
+        },
+        historySkipsByDay: const {
+          '2026-05-07': {'run': false},
+        },
+      );
+
+      expect(summary.completedDays, 1);
+      expect(summary.totalAccumulated, 8);
+      expect(
+        summary.seriesActualValues.map((point) => point.value).toList(),
+        [0, 0, 0, 0, 0, 0, 8],
+      );
+    });
+
     test('formatValueWithUnit avoids trailing .0 for whole numbers', () {
       expect(
         CountHabitStatsAdapter.formatValueWithUnit(32.0, unit: 'km'),
