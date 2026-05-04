@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/features/habits/domain/count_habit_progress.dart';
 
 import 'package:rutio/screens/habit_monthly/utils/month_utils.dart';
 import 'package:rutio/screens/habit_monthly/utils/monthly_state_utils.dart';
@@ -13,6 +14,7 @@ class MonthGrid extends StatelessWidget {
   final int target;
   final Map<String, dynamic> habitCompletions;
   final Map<String, dynamic> habitCountValues;
+  final Map<String, dynamic> habitSkips;
   final Color color;
   final bool dense;
 
@@ -27,6 +29,7 @@ class MonthGrid extends StatelessWidget {
     required this.target,
     required this.habitCompletions,
     required this.habitCountValues,
+    this.habitSkips = const <String, dynamic>{},
     required this.color,
     required this.dense,
   });
@@ -55,6 +58,7 @@ class MonthGrid extends StatelessWidget {
 
         final dayDoneMap = MonthlyStateUtils.mapCast(habitCompletions[dayKey]);
         final dayValsMap = MonthlyStateUtils.mapCast(habitCountValues[dayKey]);
+        final daySkipsMap = MonthlyStateUtils.mapCast(habitSkips[dayKey]);
 
         final scheduled = (habit == null)
             ? true
@@ -64,10 +68,14 @@ class MonthGrid extends StatelessWidget {
         bool done = false;
         if (scheduled) {
           if (habitType == 'count') {
-            final v = ((dayValsMap[habitId] as num?) ?? 0).toInt();
-            done = v >= target || (dayDoneMap[habitId] == true);
+            final countProgress = CountHabitProgress.fromValues(
+              currentValue: dayValsMap[habitId],
+              targetValue: target,
+              skipped: daySkipsMap[habitId] == true,
+            );
+            done = countProgress.isCompleted;
           } else {
-            done = (dayDoneMap[habitId] == true);
+            done = daySkipsMap[habitId] != true && (dayDoneMap[habitId] == true);
           }
         }
 

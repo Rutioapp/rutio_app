@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/habits/domain/count_habit_progress.dart';
 
 import '../l10n/l10n.dart';
 import '../stores/user_state_store.dart';
@@ -409,16 +410,23 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     int done = 0;
 
     // Valores (para chart y totals)
-    final valuesByDay = <DateTime, int>{};
+    final valuesByDay = <DateTime, double>{};
 
     for (final d in days) {
       if (!_isScheduledForDate(habit, d)) continue;
       scheduled++;
 
-      final v = _doneValueForDay(
+      final v = _progressValueForDay(
           store: store, habit: habit, habitId: habitId, date: d);
       valuesByDay[d] = v;
-      if (v > 0) done++;
+      if (_isCompletedForDay(
+        store: store,
+        habit: habit,
+        habitId: habitId,
+        date: d,
+      )) {
+        done++;
+      }
     }
 
     final completionPct =
@@ -435,9 +443,14 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     for (final d in lastN) {
       if (!_isScheduledForDate(habit, d)) continue;
       scheduledN++;
-      final v = _doneValueForDay(
-          store: store, habit: habit, habitId: habitId, date: d);
-      if (v > 0) doneN++;
+      if (_isCompletedForDay(
+        store: store,
+        habit: habit,
+        habitId: habitId,
+        date: d,
+      )) {
+        doneN++;
+      }
     }
     final consistencyPct =
         scheduledN == 0 ? 0 : ((doneN / scheduledN) * 100).round();
@@ -466,11 +479,11 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
       final last7 =
           List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
       for (final d in last7) {
-        final v = _doneValueForDay(
+        final v = _progressValueForDay(
             store: store, habit: habit, habitId: habitId, date: d);
         bars.add(StatsBarPoint(
           label: weekdayLabelBuilder(d),
-          value: v.toDouble(),
+          value: v,
           isActive: _sameDate(d, today),
         ));
       }
@@ -483,9 +496,14 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
         double sum = 0;
         for (int i = 0; i < 7; i++) {
           final d = ws.add(Duration(days: i));
-          final v = _doneValueForDay(
-              store: store, habit: habit, habitId: habitId, date: d);
-          sum += (v > 0 ? 1 : 0).toDouble();
+          sum += _isCompletedForDay(
+            store: store,
+            habit: habit,
+            habitId: habitId,
+            date: d,
+          )
+              ? 1.0
+              : 0.0;
         }
         bars.add(StatsBarPoint(
           label: weekShortBuilder(w + 1),
@@ -626,19 +644,39 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
         : null;
     if (history == null) return null;
 
-    final completions = history['habitCompletions'];
-    if (completions is! Map) return null;
+    final completions = (history['habitCompletions'] is Map)
+        ? Map<String, dynamic>.from(history['habitCompletions'] as Map)
+        : <String, dynamic>{};
+    final countValues = (history['habitCountValues'] is Map)
+        ? Map<String, dynamic>.from(history['habitCountValues'] as Map)
+        : <String, dynamic>{};
+    final skips = (history['habitSkips'] is Map)
+        ? Map<String, dynamic>.from(history['habitSkips'] as Map)
+        : <String, dynamic>{};
+
+    final selected = _findById(widget.habits, habitId);
+    if (selected == null) return null;
+
+    final dayKeys = <String>{
+      ...completions.keys.map((key) => key.toString()),
+      ...countValues.keys.map((key) => key.toString()),
+      ...skips.keys.map((key) => key.toString()),
+    };
 
     DateTime? min;
-    for (final k in completions.keys) {
-      final dayKey = k.toString();
-      final dayMap = completions[dayKey];
-      if (dayMap is! Map) continue;
-      if (dayMap[habitId] == true) {
-        final d = _parseDateKey(dayKey);
-        if (d == null) continue;
-        if (min == null || d.isBefore(min)) min = d;
+    for (final dayKey in dayKeys) {
+      final d = _parseDateKey(dayKey);
+      if (d == null) continue;
+      if (!_isScheduledForDate(selected, d)) continue;
+      if (!_isCompletedForDay(
+        store: store,
+        habit: selected,
+        habitId: habitId,
+        date: d,
+      )) {
+        continue;
       }
+      if (min == null || d.isBefore(min)) min = d;
     }
     return min;
   }
@@ -685,7 +723,7 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
       if (d == null) continue;
       if (!_isScheduledForDate(habit, d)) continue;
 
-      final v = _doneValueForDay(
+      final v = _completionValueForDay(
           store: store, habit: habit, habitId: habitId, date: d);
       out[_dateOnly(d)] = v;
     }
@@ -693,7 +731,80 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     return out;
   }
 
-  int _doneValueForDay({
+  int _completionValueForDay({
+    required UserStateStore store,
+    required dynamic habit,
+    required String habitId,
+    required DateTime date,
+  }) {
+    return _isCompletedForDay(
+      store: store,
+      habit: habit,
+      habitId: habitId,
+      date: date,
+    )
+        ? 1
+        : 0;
+  }
+
+  bool _isCompletedForDay({
+    required UserStateStore store,
+    required dynamic habit,
+    required String habitId,
+    required DateTime date,
+  }) {
+    final root = store.state;
+    if (root is! Map) return false;
+
+    final rootMap = Map<String, dynamic>.from(root as Map);
+
+    final Map<String, dynamic>? userState = (rootMap['userState'] is Map)
+        ? Map<String, dynamic>.from(rootMap['userState'] as Map)
+        : null;
+    final Map<String, dynamic>? history = (userState?['history'] is Map)
+        ? Map<String, dynamic>.from(userState?['history'] as Map)
+        : null;
+
+    final Map<String, dynamic> completions =
+        (history?['habitCompletions'] is Map)
+            ? Map<String, dynamic>.from(history?['habitCompletions'] as Map)
+            : <String, dynamic>{};
+    final Map<String, dynamic> countValues =
+        (history?['habitCountValues'] is Map)
+            ? Map<String, dynamic>.from(history?['habitCountValues'] as Map)
+            : <String, dynamic>{};
+    final Map<String, dynamic> skips = (history?['habitSkips'] is Map)
+        ? Map<String, dynamic>.from(history?['habitSkips'] as Map)
+        : <String, dynamic>{};
+
+    final dayKey = _dateKey(date);
+
+    final Map<String, dynamic> dayDoneMap = (completions[dayKey] is Map)
+        ? Map<String, dynamic>.from(completions[dayKey] as Map)
+        : <String, dynamic>{};
+    final Map<String, dynamic> dayValsMap = (countValues[dayKey] is Map)
+        ? Map<String, dynamic>.from(countValues[dayKey] as Map)
+        : <String, dynamic>{};
+    final Map<String, dynamic> daySkipsMap = (skips[dayKey] is Map)
+        ? Map<String, dynamic>.from(skips[dayKey] as Map)
+        : <String, dynamic>{};
+
+    final skipped = daySkipsMap[habitId] == true;
+    final type = _habitType(habit);
+    if (type == 'count') {
+      final countProgress = _countProgressForDay(
+        habit: habit,
+        habitId: habitId,
+        dayValsMap: dayValsMap,
+        skipped: skipped,
+      );
+      return countProgress.isCompleted;
+    }
+
+    return !skipped && (dayDoneMap[habitId] == true);
+  }
+
+  double _progressValueForDay({
     required UserStateStore store,
     required dynamic habit,
     required String habitId,
@@ -719,6 +830,9 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
         (history?['habitCountValues'] is Map)
             ? Map<String, dynamic>.from(history?['habitCountValues'] as Map)
             : <String, dynamic>{};
+    final Map<String, dynamic> skips = (history?['habitSkips'] is Map)
+        ? Map<String, dynamic>.from(history?['habitSkips'] as Map)
+        : <String, dynamic>{};
 
     final dayKey = _dateKey(date);
 
@@ -728,19 +842,53 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     final Map<String, dynamic> dayValsMap = (countValues[dayKey] is Map)
         ? Map<String, dynamic>.from(countValues[dayKey] as Map)
         : <String, dynamic>{};
+    final Map<String, dynamic> daySkipsMap = (skips[dayKey] is Map)
+        ? Map<String, dynamic>.from(skips[dayKey] as Map)
+        : <String, dynamic>{};
 
     final type = _habitType(habit);
     if (type == 'count') {
-      final v = (dayValsMap[habitId] as num?)?.toInt() ?? 0;
-      final target = _habitTarget(habit);
-      // Para estadísticas: barra basada en progreso (cap al target)
-      return v.clamp(0, target);
+      final countProgress = _countProgressForDay(
+        habit: habit,
+        habitId: habitId,
+        dayValsMap: dayValsMap,
+        skipped: daySkipsMap[habitId] == true,
+      );
+      if (countProgress.isSkipped) return 0.0;
+      return countProgress.currentValue
+          .clamp(0.0, countProgress.effectiveTarget);
     }
 
-    final done = (dayDoneMap[habitId] == true);
-    return done ? 1 : 0;
+    final done = daySkipsMap[habitId] != true && (dayDoneMap[habitId] == true);
+    return done ? 1.0 : 0.0;
   }
 
+  CountHabitProgress _countProgressForDay({
+    required dynamic habit,
+    required String habitId,
+    required Map<String, dynamic> dayValsMap,
+    required bool skipped,
+  }) {
+    if (habit is Map<String, dynamic>) {
+      return CountHabitProgress.fromHabitMap(
+        habit,
+        currentValue: dayValsMap[habitId],
+        skipped: skipped,
+      );
+    }
+    if (habit is Map) {
+      return CountHabitProgress.fromHabitMap(
+        Map<String, dynamic>.from(habit),
+        currentValue: dayValsMap[habitId],
+        skipped: skipped,
+      );
+    }
+    return CountHabitProgress.fromValues(
+      currentValue: dayValsMap[habitId],
+      targetValue: _habitTarget(habit),
+      skipped: skipped,
+    );
+  }
   // =====================
   // Habit helpers
   // =====================
@@ -898,7 +1046,7 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
         continue;
       }
 
-      final v = _doneValueForDay(
+      final v = _progressValueForDay(
         store: store,
         habit: habit,
         habitId: habitId,
@@ -925,7 +1073,7 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
   /// Returns [thisWeekDoneDays, lastWeekDoneDays] for the given habit.
   ///
   /// Uses the SAME completion logic as the rest of this screen:
-  /// `_doneValueForDay(...) > 0` (so it works for check + count habits).
+  /// `_isCompletedForDay(...)` (so it works for check + count habits).
   /// Counts only scheduled days for the habit.
   List<int> _weeklyDoneDaysPair({
     required UserStateStore store,
@@ -942,13 +1090,14 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
         // Only count days where the habit is scheduled
         if (!_isScheduledForDate(habit, d)) continue;
 
-        final v = _doneValueForDay(
+        if (_isCompletedForDay(
           store: store,
           habit: habit,
           habitId: habitId,
           date: d,
-        );
-        if (v > 0) c++;
+        )) {
+          c++;
+        }
       }
       return c;
     }
@@ -1099,3 +1248,4 @@ class _ComputedStats {
     required this.bars,
   });
 }
+

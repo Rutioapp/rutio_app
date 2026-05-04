@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:provider/provider.dart';
+import 'package:rutio/features/habits/domain/count_habit_progress.dart';
 
 import '../../../../l10n/l10n.dart';
 import '../../../../stores/user_state_store.dart';
@@ -291,11 +292,56 @@ class _HabitStatsTabState extends State<HabitStatsTab>
 
       // Common layout: history.habitCompletions[habitId] -> {"2026-02-09": 1, ...}
       final habitCompletions = _toMap(history['habitCompletions']);
+      final habitCountValues = _toMap(history['habitCountValues']);
+      final habitSkips = _toMap(history['habitSkips']);
 
       final out = <DateTime, int>{};
       void addDate(DateTime dt, [int inc = 1]) {
         final d = _dateOnly(dt);
         out[d] = (out[d] ?? 0) + inc;
+      }
+
+      if (_isCountHabitFromAny(habit)) {
+        final targetValue = _targetValueFromAny(habit);
+        final dayKeys = <String>{
+          ...habitCompletions.keys.map((key) => key.toString()),
+          ...habitCountValues.keys.map((key) => key.toString()),
+          ...habitSkips.keys.map((key) => key.toString()),
+        };
+        for (final dayKey in dayKeys) {
+          final day = _tryParseDate(dayKey);
+          if (day == null) continue;
+
+          final doneMap = _toMap(habitCompletions[dayKey]);
+          final valuesMap = _toMap(habitCountValues[dayKey]);
+          final skipsMap = _toMap(habitSkips[dayKey]);
+
+          final value = valuesMap[habitId] ?? valuesMap[habitId.toString()];
+          final skipped = skipsMap[habitId] == true ||
+              skipsMap[habitId.toString()] == true;
+
+          final progress = CountHabitProgress.fromValues(
+            currentValue: value,
+            targetValue: targetValue,
+            skipped: skipped,
+          );
+
+          if (progress.isCompleted) {
+            addDate(day, 1);
+            continue;
+          }
+
+          // Legacy fallback: if a day was explicitly marked completed and has no
+          // count value, keep honoring that historical completion.
+          final legacyDone = doneMap[habitId] == true ||
+              doneMap[habitId.toString()] == true;
+          final hasValueEntry = valuesMap.containsKey(habitId) ||
+              valuesMap.containsKey(habitId.toString());
+          if (legacyDone && !skipped && !hasValueEntry) {
+            addDate(day, 1);
+          }
+        }
+        if (out.isNotEmpty) return out;
       }
 
       // Case A: per-habit bucket
@@ -346,6 +392,43 @@ class _HabitStatsTabState extends State<HabitStatsTab>
     }
 
     return fromHabit;
+  }
+
+  static bool _isCountHabitFromAny(dynamic habit) {
+    if (habit is Map) {
+      final raw =
+          (habit['type'] ?? habit['kind'] ?? habit['trackingType'] ?? 'check')
+              .toString()
+              .trim()
+              .toLowerCase();
+      return raw == 'count' || raw == 'counter' || raw == 'number';
+    }
+    try {
+      final dynamic d = habit as dynamic;
+      final raw = (d.type ?? d.kind ?? d.trackingType ?? 'check')
+          .toString()
+          .trim()
+          .toLowerCase();
+      return raw == 'count' || raw == 'counter' || raw == 'number';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static num _targetValueFromAny(dynamic habit) {
+    if (habit is Map) {
+      return habit['target'] ??
+          habit['targetCount'] ??
+          habit['goal'] ??
+          habit['times'] ??
+          1;
+    }
+    try {
+      final dynamic d = habit as dynamic;
+      return d.target ?? d.targetCount ?? d.goal ?? d.times ?? 1;
+    } catch (_) {
+      return 1;
+    }
   }
 
   static String? _habitIdFromAny(dynamic h) {

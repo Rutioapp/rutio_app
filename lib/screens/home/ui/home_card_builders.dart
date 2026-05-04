@@ -71,9 +71,19 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       target: target,
     );
     final isCounting = type != 'check';
+    final countProgress = isCounting
+        ? CountHabitProgress.fromHabitMap(
+            habit,
+            currentValue: current,
+            skipped: skippedToday,
+          )
+        : null;
+    final isCompleted = isCounting
+        ? countProgress!.isCompleted
+        : (doneToday && !skippedToday);
 
     final progress01 = isCounting
-        ? (target <= 0 ? 0.0 : (current / target).clamp(0.0, 1.0).toDouble())
+        ? countProgress!.completionRatio
         : (doneToday && !skippedToday ? 1.0 : 0.0);
 
     final unitLabel = _localizedUnitLabel(
@@ -127,7 +137,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
             },
       familyColor: familyColor,
       progress: progress01,
-      isCompleted: doneToday && !skippedToday,
+      isCompleted: isCompleted,
       isCounting: isCounting,
       completionBurstText: completionBurstText,
       onCheckTap: () async {
@@ -138,7 +148,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
         context.read<UserStateStore>().setHabitCompletionForKey(
               habitId: id,
               dateKey: _dateKey(_selectedDay),
-              done: !(doneToday && !skippedToday),
+              done: !isCompleted,
             );
       },
       currentCount: current,
@@ -254,7 +264,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
             await context.read<UserStateStore>().setHabitCompletionForKey(
                   habitId: id,
                   dateKey: _dateKey(_selectedDay),
-                  done: !doneToday,
+                  done: !isCompleted,
                 );
             return false;
           }

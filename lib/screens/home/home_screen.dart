@@ -10,6 +10,7 @@ import 'package:rutio/features/notifications/application/notification_permission
 import 'package:rutio/features/notifications/presentation/notification_permission_onboarding_sheet.dart';
 import 'package:rutio/features/notifications/presentation/notification_permission_recovery_sheet.dart';
 import 'package:rutio/features/gamification/domain/level_progression.dart';
+import 'package:rutio/features/habits/domain/count_habit_progress.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/core/assets/app_assets.dart';
 

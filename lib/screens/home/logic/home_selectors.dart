@@ -23,9 +23,11 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
   final history = _map(userState['history']);
   final habitCompletions = _map(history['habitCompletions']);
   final habitCountValues = _map(history['habitCountValues']);
+  final habitSkips = _map(history['habitSkips']);
 
   final selectedDoneMap = _map(habitCompletions[selectedKey]);
   final selectedCountMap = _map(habitCountValues[selectedKey]);
+  final selectedSkipMap = _map(habitSkips[selectedKey]);
 
   final List<Map<String, dynamic>> viewHabits = visibleHabits.map((h) {
     final id = (h['id'] ?? '').toString();
@@ -33,13 +35,19 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
     final out = Map<String, dynamic>.from(h);
 
     if (selectedKey != todayKey) {
+      final skipped = selectedSkipMap[id] == true;
+      out['skippedToday'] = skipped;
       if (type == 'check') {
-        out['doneToday'] = (selectedDoneMap[id] == true);
+        out['doneToday'] = !skipped && (selectedDoneMap[id] == true);
       } else {
-        final target = _readNum(out['target'], fallback: 1);
         final val = _readNum(selectedCountMap[id], fallback: 0);
-        out['progress'] = val;
-        out['doneToday'] = (selectedDoneMap[id] == true) || (val >= target);
+        final progress = CountHabitProgress.fromHabitMap(
+          out,
+          currentValue: val,
+          skipped: skipped,
+        );
+        out['progress'] = progress.isSkipped ? 0 : progress.currentValue;
+        out['doneToday'] = progress.isCompleted;
       }
     }
     return out;
@@ -52,7 +60,7 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
   }).toList();
 
   final completedHabits = viewHabits.where((h) {
-    return h['doneToday'] == true;
+    return h['doneToday'] == true && h['skippedToday'] != true;
   }).toList();
 
   final skippedHabits = viewHabits.where((h) {

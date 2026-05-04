@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/habit_monthly/utils/month_utils.dart';
 import 'package:rutio/screens/habit_monthly/widgets/monthly_calendar_grid.dart';
 import 'package:rutio/screens/habit_monthly/widgets/monthly_day_cell.dart';
+import 'package:rutio/screens/home/home_screen.dart';
+import 'package:rutio/screens/habit_stats_overview_screen.dart';
 import 'package:rutio/screens/profile/utils/profile_levels_from_history.dart';
 import 'package:rutio/screens/weekly/widgets/helpers/weekly_habit_day_state_resolver.dart';
 import 'package:rutio/stores/user_state_store.dart';
+import 'package:rutio/widgets/stats/stats_metrics_grid.dart';
+import 'package:rutio/widgets/stats/stats_weekly_bar_chart_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -237,6 +244,226 @@ void main() {
       },
     );
   });
+
+  group('Count completion regression - home selectors', () {
+    test('home does not classify 6/8 as completed', () {
+      final selectedDay = DateTime(2026, 5, 1);
+      final root = {
+        'userState': {
+          'activeHabits': [
+            {
+              'id': 'run',
+              'type': 'count',
+              'target': 8,
+              'doneToday': false,
+              'skippedToday': false,
+              'progress': 0,
+              'schedule': {'type': 'daily'},
+            },
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-01': {'run': true},
+            },
+            'habitCountValues': {
+              '2026-05-01': {'run': 6},
+            },
+            'habitSkips': {
+              '2026-05-01': {'run': false},
+            },
+          },
+          'progression': {'xp': 0},
+          'wallet': {'coins': 0},
+        },
+      };
+
+      final data = buildHomeViewData(root, selectedDay);
+      expect(data.completedHabits, isEmpty);
+      expect(data.pendingHabits.length, 1);
+      expect(data.pendingHabits.first['doneToday'], isFalse);
+    });
+
+    test('home keeps check habits completed behavior unchanged', () {
+      final selectedDay = DateTime(2026, 5, 1);
+      final root = {
+        'userState': {
+          'activeHabits': [
+            {
+              'id': 'meditate',
+              'type': 'check',
+              'doneToday': false,
+              'skippedToday': false,
+              'progress': 0,
+              'schedule': {'type': 'daily'},
+            },
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-01': {'meditate': true},
+            },
+            'habitCountValues': <String, dynamic>{},
+            'habitSkips': {
+              '2026-05-01': {'meditate': false},
+            },
+          },
+          'progression': {'xp': 0},
+          'wallet': {'coins': 0},
+        },
+      };
+
+      final data = buildHomeViewData(root, selectedDay);
+      expect(data.completedHabits.length, 1);
+      expect(data.completedHabits.first['id'], 'meditate');
+    });
+  });
+
+  group('Count completion regression - stats overview', () {
+    testWidgets('6/8 is not counted as completed in completion metric',
+        (tester) async {
+      final today = DateTime.now();
+      final dayKey =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final store = await _buildStoreWithState(
+        _baseStateForCountRegression(
+          dayKey: dayKey,
+          value: 6,
+          target: 8,
+          skipped: false,
+          completionFlag: true,
+          schedule: {
+            'type': 'once',
+            'date': dayKey,
+          },
+        ),
+      );
+      await store.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HabitStatsOverviewScreen(habits: store.activeHabits),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      final gridFinder = find.byType(StatsMetricsGrid, skipOffstage: false);
+      expect(gridFinder, findsAtLeastNWidgets(1));
+      final grid = tester.widget<StatsMetricsGrid>(gridFinder.first);
+      expect(grid.metrics.first.value, '0%');
+
+      final chartFinder =
+          find.byType(StatsWeeklyBarChartCard, skipOffstage: false);
+      expect(chartFinder, findsAtLeastNWidgets(1));
+      final chart = tester.widget<StatsWeeklyBarChartCard>(chartFinder.first);
+      expect(chart.points.any((point) => point.value > 0), isTrue);
+    });
+
+    testWidgets('8/8 is counted as completed in completion metric',
+        (tester) async {
+      final today = DateTime.now();
+      final dayKey =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final store = await _buildStoreWithState(
+        _baseStateForCountRegression(
+          dayKey: dayKey,
+          value: 8,
+          target: 8,
+          skipped: false,
+          completionFlag: false,
+          schedule: {
+            'type': 'once',
+            'date': dayKey,
+          },
+        ),
+      );
+      await store.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HabitStatsOverviewScreen(habits: store.activeHabits),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      final gridFinder = find.byType(StatsMetricsGrid, skipOffstage: false);
+      expect(gridFinder, findsAtLeastNWidgets(1));
+      final grid = tester.widget<StatsMetricsGrid>(gridFinder.first);
+      expect(grid.metrics.first.value, '100%');
+    });
+
+    testWidgets('skipped + 6/8 is neither completed nor progress', (tester) async {
+      final today = DateTime.now();
+      final dayKey =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final store = await _buildStoreWithState(
+        _baseStateForCountRegression(
+          dayKey: dayKey,
+          value: 6,
+          target: 8,
+          skipped: true,
+          completionFlag: true,
+          schedule: {
+            'type': 'once',
+            'date': dayKey,
+          },
+        ),
+      );
+      await store.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HabitStatsOverviewScreen(habits: store.activeHabits),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      final gridFinder = find.byType(StatsMetricsGrid, skipOffstage: false);
+      expect(gridFinder, findsAtLeastNWidgets(1));
+      final grid = tester.widget<StatsMetricsGrid>(gridFinder.first);
+      expect(grid.metrics.first.value, '0%');
+
+      final chartFinder =
+          find.byType(StatsWeeklyBarChartCard, skipOffstage: false);
+      expect(chartFinder, findsAtLeastNWidgets(1));
+      final chart = tester.widget<StatsWeeklyBarChartCard>(chartFinder.first);
+      expect(chart.points.every((point) => point.value == 0), isTrue);
+    });
+  });
 }
 
 Future<UserStateStore> _buildStoreWithState(Map<String, dynamic> state) async {
@@ -257,6 +484,7 @@ Map<String, dynamic> _baseStateForCountRegression({
   required num target,
   required bool skipped,
   required bool completionFlag,
+  Map<String, dynamic>? schedule,
 }) {
   return {
     'userState': {
@@ -299,7 +527,7 @@ Map<String, dynamic> _baseStateForCountRegression({
           'familyId': 'body',
           'type': 'count',
           'target': target,
-          'schedule': {'type': 'daily'},
+          'schedule': schedule ?? {'type': 'daily'},
           'doneToday': false,
           'skippedToday': false,
           'progress': 0,
