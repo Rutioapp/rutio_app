@@ -2247,11 +2247,35 @@ abstract class AppLocalizations {
   /// **'Total acumulado'**
   String get habitStatsCountTotalAccumulated;
 
+  /// No description provided for @habitStatsCountVolumeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Volumen'**
+  String get habitStatsCountVolumeTitle;
+
+  /// No description provided for @habitStatsCountGoalTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo'**
+  String get habitStatsCountGoalTitle;
+
   /// No description provided for @habitStatsCountDailyAverage.
   ///
   /// In es, this message translates to:
   /// **'Media diaria'**
   String get habitStatsCountDailyAverage;
+
+  /// No description provided for @habitStatsCountActiveDayAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Media por dia activo'**
+  String get habitStatsCountActiveDayAverage;
+
+  /// No description provided for @habitStatsCountActivityDays.
+  ///
+  /// In es, this message translates to:
+  /// **'Dias con actividad'**
+  String get habitStatsCountActivityDays;
 
   /// No description provided for @habitStatsCountBestDay.
   ///
@@ -2289,6 +2313,18 @@ abstract class AppLocalizations {
   /// **'{days} dias'**
   String habitStatsCountPartialProgressDescription(int days);
 
+  /// No description provided for @habitStatsCountActivityDaysDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'{days} dias'**
+  String habitStatsCountActivityDaysDescription(int days);
+
+  /// No description provided for @habitStatsCountVolumeScheduledDaysDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'{days} dias programados'**
+  String habitStatsCountVolumeScheduledDaysDescription(int days);
+
   /// No description provided for @habitStatsCountBestDayNoData.
   ///
   /// In es, this message translates to:
@@ -2298,7 +2334,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsCountChartWeekSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Progreso real por dia'**
+  /// **'Valores reales registrados por dia'**
   String get habitStatsCountChartWeekSubtitle;
 
   /// No description provided for @habitStatsTabSummaryTitle.

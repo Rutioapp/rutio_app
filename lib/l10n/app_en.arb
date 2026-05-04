@@ -589,7 +589,11 @@
     "habitStatsMonthCalendarTitle": "Monthly calendar",
     "habitStatsCountInsightsTitle": "Count metrics",
     "habitStatsCountTotalAccumulated": "Total accumulated",
+    "habitStatsCountVolumeTitle": "Volume",
+    "habitStatsCountGoalTitle": "Goal",
     "habitStatsCountDailyAverage": "Daily average",
+    "habitStatsCountActiveDayAverage": "Active-day average",
+    "habitStatsCountActivityDays": "Activity days",
     "habitStatsCountBestDay": "Best day",
     "habitStatsCountGoalCompleted": "Goal completed",
     "habitStatsCountPartialProgress": "Partial progress",
@@ -613,8 +617,24 @@
             }
         }
     },
+    "habitStatsCountActivityDaysDescription": "{days} days",
+    "@habitStatsCountActivityDaysDescription": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsCountVolumeScheduledDaysDescription": "{days} scheduled days",
+    "@habitStatsCountVolumeScheduledDaysDescription": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
     "habitStatsCountBestDayNoData": "No data",
-    "habitStatsCountChartWeekSubtitle": "Actual progress by day",
+    "habitStatsCountChartWeekSubtitle": "Actual values logged by day",
     "habitStatsTabSummaryTitle": "Summary",
     "habitStatsTabLastDaysTitle": "Last {days} days",
     "@habitStatsTabLastDaysTitle": {

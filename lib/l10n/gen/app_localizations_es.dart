@@ -1186,7 +1186,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsCountTotalAccumulated => 'Total acumulado';
 
   @override
+  String get habitStatsCountVolumeTitle => 'Volumen';
+
+  @override
+  String get habitStatsCountGoalTitle => 'Objetivo';
+
+  @override
   String get habitStatsCountDailyAverage => 'Media diaria';
+
+  @override
+  String get habitStatsCountActiveDayAverage => 'Media por dia activo';
+
+  @override
+  String get habitStatsCountActivityDays => 'Dias con actividad';
 
   @override
   String get habitStatsCountBestDay => 'Mejor dia';
@@ -1211,10 +1223,21 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String habitStatsCountActivityDaysDescription(int days) {
+    return '$days dias';
+  }
+
+  @override
+  String habitStatsCountVolumeScheduledDaysDescription(int days) {
+    return '$days dias programados';
+  }
+
+  @override
   String get habitStatsCountBestDayNoData => 'Sin datos';
 
   @override
-  String get habitStatsCountChartWeekSubtitle => 'Progreso real por dia';
+  String get habitStatsCountChartWeekSubtitle =>
+      'Valores reales registrados por dia';
 
   @override
   String get habitStatsTabSummaryTitle => 'Resumen';

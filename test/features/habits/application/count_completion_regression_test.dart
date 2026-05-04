@@ -358,18 +358,21 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 700));
 
-      final gridFinder = find.byType(StatsMetricsGrid, skipOffstage: false);
-      expect(gridFinder, findsAtLeastNWidgets(1));
-      final grid = tester.widget<StatsMetricsGrid>(gridFinder.first);
       expect(
-        grid.metrics.any(
-          (metric) =>
-              metric.labelUpper == 'Total acumulado' && metric.value == '6',
+        _anyGridMetricMatches(
+          tester,
+          label: 'Total acumulado',
+          value: '6',
         ),
         isTrue,
       );
-      expect(find.text('0/1 dias'), findsWidgets);
-      expect(find.text('1 dias'), findsWidgets);
+      expect(_findTextIgnoreCase('Objetivo completado'), findsWidgets);
+      expect(_findTextIgnoreCase('Progreso parcial'), findsWidgets);
+      expect(_findTextIgnoreCase('Cumplimiento medio'), findsWidgets);
+      expect(
+        _anyGridMetricMatches(tester, label: 'Consistencia'),
+        isFalse,
+      );
     });
 
     testWidgets('8/8 is counted as completed in completion metric',
@@ -411,17 +414,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 700));
 
-      final gridFinder = find.byType(StatsMetricsGrid, skipOffstage: false);
-      expect(gridFinder, findsAtLeastNWidgets(1));
-      final grid = tester.widget<StatsMetricsGrid>(gridFinder.first);
       expect(
-        grid.metrics.any(
-          (metric) =>
-              metric.labelUpper == 'Total acumulado' && metric.value == '8',
+        _anyGridMetricMatches(
+          tester,
+          label: 'Total acumulado',
+          value: '8',
         ),
         isTrue,
       );
-      expect(find.text('1/1 dias'), findsWidgets);
+      expect(_findTextIgnoreCase('Objetivo completado'), findsWidgets);
     });
 
     testWidgets('one 8/8 day in weekly range is not counted as 7/7 completed',
@@ -465,8 +466,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 700));
 
-      expect(find.text('1/7 dias'), findsWidgets);
-      expect(find.text('7/7 dias'), findsNothing);
+      expect(_findTextIgnoreCase('Objetivo completado'), findsWidgets);
     });
 
     testWidgets('skipped + 6/8 is neither completed nor progress',
@@ -508,18 +508,103 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 700));
 
-      final gridFinder = find.byType(StatsMetricsGrid, skipOffstage: false);
-      expect(gridFinder, findsAtLeastNWidgets(1));
-      final grid = tester.widget<StatsMetricsGrid>(gridFinder.first);
       expect(
-        grid.metrics.any(
-          (metric) =>
-              metric.labelUpper == 'Total acumulado' && metric.value == '0',
+        _anyGridMetricMatches(
+          tester,
+          label: 'Total acumulado',
+          value: '0',
         ),
         isTrue,
       );
-      expect(find.text('0/1 dias'), findsWidgets);
-      expect(find.text('0 dias'), findsWidgets);
+      expect(_findTextIgnoreCase('Objetivo completado'), findsWidgets);
+      expect(_findTextIgnoreCase('Progreso parcial'), findsWidgets);
+    });
+
+    testWidgets('check habits keep consistency label and do not show count labels',
+        (tester) async {
+      final today = DateTime.now();
+      final dayKey =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final store = await _buildStoreWithState(
+        {
+          'userState': {
+            'userId': 'user_123',
+            'meta': {
+              'schemaVersion': 1,
+              'lastSavedAt': DateTime.now().toUtc().toIso8601String(),
+            },
+            'progression': {'level': 1, 'xp': 0, 'prestige': 0},
+            'wallet': {'coins': 0},
+            'profile': {
+              'achievements': {
+                'unlocked': <dynamic>[],
+                'featured': <dynamic>[],
+                'rewardAppliedAchievementIds': <dynamic>[],
+              },
+            },
+            'daily': {
+              'lastResetDate': dayKey,
+              'xpEarnedToday': 0,
+              'coinsEarnedToday': 0,
+              'habitsCompletedToday': <String, dynamic>{},
+            },
+            'history': {
+              'habitCompletions': {
+                dayKey: {'meditate': true},
+              },
+              'habitCountValues': <String, dynamic>{},
+              'habitSkips': {
+                dayKey: {'meditate': false},
+              },
+              'habitCompletionTimes': <String, dynamic>{},
+            },
+            'activeHabits': [
+              {
+                'id': 'meditate',
+                'name': 'Meditate',
+                'familyId': 'mind',
+                'type': 'check',
+                'schedule': {
+                  'type': 'once',
+                  'date': dayKey,
+                },
+                'doneToday': false,
+                'skippedToday': false,
+                'progress': 0,
+              },
+            ],
+          },
+        },
+      );
+      await store.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HabitStatsOverviewScreen(habits: store.activeHabits),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(
+        _anyGridMetricMatches(tester, label: 'Consistencia'),
+        isTrue,
+      );
+      expect(
+        _anyGridMetricMatches(tester, label: 'Total acumulado'),
+        isFalse,
+      );
     });
   });
 
@@ -573,6 +658,13 @@ void main() {
       expect(find.text('0/1 dias'), findsWidgets);
       expect(find.text('1 dias'), findsWidgets);
       expect(find.text('6 km'), findsWidgets);
+      expect(find.text('Volumen'), findsWidgets);
+      expect(find.text('Objetivo'), findsWidgets);
+      expect(_findTextIgnoreCase('Total acumulado'), findsWidgets);
+      expect(_findTextIgnoreCase('Objetivo completado'), findsWidgets);
+      expect(_findTextIgnoreCase('Progreso parcial'), findsWidgets);
+      expect(_findTextIgnoreCase('Cumplimiento medio'), findsWidgets);
+      expect(_findTextIgnoreCase('Consistencia'), findsNothing);
     });
 
     testWidgets('count 8/8 appears as completed in detail metrics',
@@ -761,6 +853,42 @@ void main() {
       expect(find.text('Completado'), findsWidgets);
     });
   });
+}
+
+Finder _findTextIgnoreCase(String text) {
+  final normalized = text.trim().toLowerCase();
+  return find.byWidgetPredicate(
+    (widget) {
+      if (widget is! Text) return false;
+      final data = widget.data;
+      return data != null && data.trim().toLowerCase() == normalized;
+    },
+    skipOffstage: false,
+  );
+}
+
+bool _anyGridMetricMatches(
+  WidgetTester tester, {
+  required String label,
+  String? value,
+}) {
+  final normalizedLabel = label.trim().toLowerCase();
+  final grids = tester
+      .widgetList<StatsMetricsGrid>(
+        find.byType(StatsMetricsGrid, skipOffstage: false),
+      )
+      .toList();
+  for (final grid in grids) {
+    final match = grid.metrics.any((metric) {
+      final labelMatches =
+          metric.labelUpper.trim().toLowerCase() == normalizedLabel;
+      if (!labelMatches) return false;
+      if (value == null) return true;
+      return metric.value.trim() == value.trim();
+    });
+    if (match) return true;
+  }
+  return false;
 }
 
 Future<UserStateStore> _buildStoreWithState(Map<String, dynamic> state) async {

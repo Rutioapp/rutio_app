@@ -589,7 +589,11 @@
   "habitStatsMonthCalendarTitle": "Calendario del mes",
   "habitStatsCountInsightsTitle": "Metrica count",
   "habitStatsCountTotalAccumulated": "Total acumulado",
+  "habitStatsCountVolumeTitle": "Volumen",
+  "habitStatsCountGoalTitle": "Objetivo",
   "habitStatsCountDailyAverage": "Media diaria",
+  "habitStatsCountActiveDayAverage": "Media por dia activo",
+  "habitStatsCountActivityDays": "Dias con actividad",
   "habitStatsCountBestDay": "Mejor dia",
   "habitStatsCountGoalCompleted": "Objetivo completado",
   "habitStatsCountPartialProgress": "Progreso parcial",
@@ -613,8 +617,24 @@
       }
     }
   },
+  "habitStatsCountActivityDaysDescription": "{days} dias",
+  "@habitStatsCountActivityDaysDescription": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsCountVolumeScheduledDaysDescription": "{days} dias programados",
+  "@habitStatsCountVolumeScheduledDaysDescription": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "habitStatsCountBestDayNoData": "Sin datos",
-  "habitStatsCountChartWeekSubtitle": "Progreso real por dia",
+  "habitStatsCountChartWeekSubtitle": "Valores reales registrados por dia",
   "habitStatsTabSummaryTitle": "Resumen",
   "habitStatsTabLastDaysTitle": "Ultimos {days} dias",
   "@habitStatsTabLastDaysTitle": {

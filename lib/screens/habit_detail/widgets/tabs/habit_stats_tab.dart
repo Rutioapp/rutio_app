@@ -998,7 +998,6 @@ class _CountMetricsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final completionRatio = summary.averageCompletionRatio.clamp(0.0, 1.0);
     final completionPercent = summary.averageCompletionPercent.round();
 
     final cards = [
@@ -1024,13 +1023,27 @@ class _CountMetricsGrid extends StatelessWidget {
           summary.dailyAverage,
           unit: unit,
         ),
-        subtitle: l10n.habitStatsCountPartialProgressDescription(
-          summary.activityDays,
+        subtitle: l10n.habitStatsCountVolumeScheduledDaysDescription(
+          summary.scheduledDays,
         ),
         bg: bg,
         border: border,
         accent: familyColor,
         icon: Icons.show_chart_rounded,
+      ),
+      _MetricCard(
+        title: l10n.habitStatsCountActiveDayAverage,
+        value: CountHabitStatsAdapter.formatValueWithUnit(
+          summary.activeDayAverage,
+          unit: unit,
+        ),
+        subtitle: l10n.habitStatsCountActivityDaysDescription(
+          summary.activityDays,
+        ),
+        bg: bg,
+        border: border,
+        accent: familyColor,
+        icon: Icons.local_fire_department_rounded,
       ),
       _MetricCard(
         title: l10n.habitStatsCountBestDay,
@@ -1044,22 +1057,20 @@ class _CountMetricsGrid extends StatelessWidget {
         accent: familyColor,
         icon: Icons.emoji_events_rounded,
       ),
-      _MetricCardWithProgress(
-        title: l10n.habitStatsCountAverageCompletion,
-        value: '$completionPercent%',
-        subtitle: l10n.habitStatsCountPartialProgressDescription(
-          summary.partialProgressDays,
-        ),
-        progress: completionRatio,
-        bg: bg,
-        border: border,
-        accent: familyColor,
-        icon: Icons.auto_graph_rounded,
-      ),
     ];
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          l10n.habitStatsCountVolumeTitle,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: Colors.black.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(child: cards[0]),
@@ -1076,9 +1087,21 @@ class _CountMetricsGrid extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
+        Text(
+          l10n.habitStatsCountGoalTitle,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: Colors.black.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
           children: [
-            Expanded(
+            SizedBox(
+              width: 220,
               child: _InlineInfoChip(
                 icon: Icons.check_circle_rounded,
                 accent: familyColor,
@@ -1089,14 +1112,34 @@ class _CountMetricsGrid extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
+            SizedBox(
+              width: 220,
               child: _InlineInfoChip(
                 icon: Icons.timelapse_rounded,
                 accent: familyColor,
                 label: l10n.habitStatsCountPartialProgress,
                 value: l10n.habitStatsCountPartialProgressDescription(
                   summary.partialProgressDays,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 220,
+              child: _InlineInfoChip(
+                icon: Icons.auto_graph_rounded,
+                accent: familyColor,
+                label: l10n.habitStatsCountAverageCompletion,
+                value: '$completionPercent%',
+              ),
+            ),
+            SizedBox(
+              width: 220,
+              child: _InlineInfoChip(
+                icon: Icons.bolt_rounded,
+                accent: familyColor,
+                label: l10n.habitStatsCountActivityDays,
+                value: l10n.habitStatsCountActivityDaysDescription(
+                  summary.activityDays,
                 ),
               ),
             ),

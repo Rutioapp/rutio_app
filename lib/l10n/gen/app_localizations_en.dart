@@ -1183,7 +1183,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitStatsCountTotalAccumulated => 'Total accumulated';
 
   @override
+  String get habitStatsCountVolumeTitle => 'Volume';
+
+  @override
+  String get habitStatsCountGoalTitle => 'Goal';
+
+  @override
   String get habitStatsCountDailyAverage => 'Daily average';
+
+  @override
+  String get habitStatsCountActiveDayAverage => 'Active-day average';
+
+  @override
+  String get habitStatsCountActivityDays => 'Activity days';
 
   @override
   String get habitStatsCountBestDay => 'Best day';
@@ -1208,10 +1220,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String habitStatsCountActivityDaysDescription(int days) {
+    return '$days days';
+  }
+
+  @override
+  String habitStatsCountVolumeScheduledDaysDescription(int days) {
+    return '$days scheduled days';
+  }
+
+  @override
   String get habitStatsCountBestDayNoData => 'No data';
 
   @override
-  String get habitStatsCountChartWeekSubtitle => 'Actual progress by day';
+  String get habitStatsCountChartWeekSubtitle => 'Actual values logged by day';
 
   @override
   String get habitStatsTabSummaryTitle => 'Summary';

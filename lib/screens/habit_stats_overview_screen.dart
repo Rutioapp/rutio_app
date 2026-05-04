@@ -197,9 +197,8 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
                 countSummary.totalAccumulated,
                 unit: countUnit,
               ),
-              description: l10n.habitStatsCountGoalCompletedDescription(
-                countSummary.completedDays,
-                countSummary.scheduledDays,
+              description: l10n.habitStatsCountActivityDaysDescription(
+                countSummary.activityDays,
               ),
               icon: Icons.layers_rounded,
               accent: terracotta,
@@ -210,11 +209,23 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
                 countSummary.dailyAverage,
                 unit: countUnit,
               ),
-              description: l10n.habitStatsMetricConsistencyDescription(
-                computed.consistencyWindow,
+              description: l10n.habitStatsCountVolumeScheduledDaysDescription(
+                countSummary.scheduledDays,
               ),
               icon: Icons.show_chart_rounded,
               accent: indigo,
+            ),
+            StatsMetric(
+              labelUpper: l10n.habitStatsCountActiveDayAverage,
+              value: CountHabitStatsAdapter.formatValueWithUnit(
+                countSummary.activeDayAverage,
+                unit: countUnit,
+              ),
+              description: l10n.habitStatsCountActivityDaysDescription(
+                countSummary.activityDays,
+              ),
+              icon: Icons.local_fire_department_rounded,
+              accent: green,
             ),
             StatsMetric(
               labelUpper: l10n.habitStatsCountBestDay,
@@ -228,16 +239,6 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
               ),
               icon: Icons.emoji_events_rounded,
               accent: plum,
-            ),
-            StatsMetric(
-              labelUpper: l10n.habitStatsCountAverageCompletion,
-              value:
-                  '${countSummary.averageCompletionPercent.toStringAsFixed(0)}%',
-              description: l10n.habitStatsCountPartialProgressDescription(
-                countSummary.partialProgressDays,
-              ),
-              icon: Icons.auto_graph_rounded,
-              accent: green,
             ),
           ]
         : <StatsMetric>[
@@ -386,13 +387,18 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
               const SizedBox(height: 12),
 
               // 4) Grid 2x2 métricas
-              StatsMetricsGrid(metrics: metrics),
               if (isCountHabit && countSummary != null) ...[
+                _StatsSectionCard(
+                  icon: Icons.waterfall_chart_rounded,
+                  iconBg: familyColor.withValues(alpha: 0.12),
+                  title: l10n.habitStatsCountVolumeTitle,
+                  child: StatsMetricsGrid(metrics: metrics),
+                ),
                 const SizedBox(height: 12),
                 _StatsSectionCard(
                   icon: Icons.insights_rounded,
                   iconBg: familyColor.withValues(alpha: 0.12),
-                  title: l10n.habitStatsCountInsightsTitle,
+                  title: l10n.habitStatsCountGoalTitle,
                   child: _CountOverviewHighlights(
                     completedLabel: l10n.habitStatsCountGoalCompleted,
                     completedValue:
@@ -405,8 +411,17 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
                         l10n.habitStatsCountPartialProgressDescription(
                       countSummary.partialProgressDays,
                     ),
+                    averageLabel: l10n.habitStatsCountAverageCompletion,
+                    averageValue:
+                        '${countSummary.averageCompletionPercent.toStringAsFixed(0)}%',
+                    activityLabel: l10n.habitStatsCountActivityDays,
+                    activityValue: l10n.habitStatsCountActivityDaysDescription(
+                      countSummary.activityDays,
+                    ),
                   ),
                 ),
+              ] else ...[
+                StatsMetricsGrid(metrics: metrics),
               ],
               const SizedBox(height: 12),
 
@@ -1356,12 +1371,20 @@ class _CountOverviewHighlights extends StatelessWidget {
     required this.completedValue,
     required this.partialLabel,
     required this.partialValue,
+    required this.averageLabel,
+    required this.averageValue,
+    required this.activityLabel,
+    required this.activityValue,
   });
 
   final String completedLabel;
   final String completedValue;
   final String partialLabel;
   final String partialValue;
+  final String averageLabel;
+  final String averageValue;
+  final String activityLabel;
+  final String activityValue;
 
   @override
   Widget build(BuildContext context) {
@@ -1370,59 +1393,80 @@ class _CountOverviewHighlights extends StatelessWidget {
       required String value,
       required IconData icon,
     }) {
-      return Expanded(
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.02),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: Colors.black.withValues(alpha: 0.7)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black.withValues(alpha: 0.55),
-                      ),
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.02),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: Colors.black.withValues(alpha: 0.7)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black.withValues(alpha: 0.55),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
 
-    return Row(
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
       children: [
-        tile(
-          label: completedLabel,
-          value: completedValue,
-          icon: Icons.check_circle_rounded,
+        SizedBox(
+          width: 220,
+          child: tile(
+            label: completedLabel,
+            value: completedValue,
+            icon: Icons.check_circle_rounded,
+          ),
         ),
-        const SizedBox(width: 10),
-        tile(
-          label: partialLabel,
-          value: partialValue,
-          icon: Icons.timelapse_rounded,
+        SizedBox(
+          width: 220,
+          child: tile(
+            label: partialLabel,
+            value: partialValue,
+            icon: Icons.timelapse_rounded,
+          ),
+        ),
+        SizedBox(
+          width: 220,
+          child: tile(
+            label: averageLabel,
+            value: averageValue,
+            icon: Icons.auto_graph_rounded,
+          ),
+        ),
+        SizedBox(
+          width: 220,
+          child: tile(
+            label: activityLabel,
+            value: activityValue,
+            icon: Icons.bolt_rounded,
+          ),
         ),
       ],
     );
