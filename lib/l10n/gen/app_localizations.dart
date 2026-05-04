@@ -2235,6 +2235,72 @@ abstract class AppLocalizations {
   /// **'Calendario del mes'**
   String get habitStatsMonthCalendarTitle;
 
+  /// No description provided for @habitStatsCountInsightsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Metrica count'**
+  String get habitStatsCountInsightsTitle;
+
+  /// No description provided for @habitStatsCountTotalAccumulated.
+  ///
+  /// In es, this message translates to:
+  /// **'Total acumulado'**
+  String get habitStatsCountTotalAccumulated;
+
+  /// No description provided for @habitStatsCountDailyAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Media diaria'**
+  String get habitStatsCountDailyAverage;
+
+  /// No description provided for @habitStatsCountBestDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejor dia'**
+  String get habitStatsCountBestDay;
+
+  /// No description provided for @habitStatsCountGoalCompleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo completado'**
+  String get habitStatsCountGoalCompleted;
+
+  /// No description provided for @habitStatsCountPartialProgress.
+  ///
+  /// In es, this message translates to:
+  /// **'Progreso parcial'**
+  String get habitStatsCountPartialProgress;
+
+  /// No description provided for @habitStatsCountAverageCompletion.
+  ///
+  /// In es, this message translates to:
+  /// **'Cumplimiento medio'**
+  String get habitStatsCountAverageCompletion;
+
+  /// No description provided for @habitStatsCountGoalCompletedDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'{done}/{total} dias'**
+  String habitStatsCountGoalCompletedDescription(int done, int total);
+
+  /// No description provided for @habitStatsCountPartialProgressDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'{days} dias'**
+  String habitStatsCountPartialProgressDescription(int days);
+
+  /// No description provided for @habitStatsCountBestDayNoData.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos'**
+  String get habitStatsCountBestDayNoData;
+
+  /// No description provided for @habitStatsCountChartWeekSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Progreso real por dia'**
+  String get habitStatsCountChartWeekSubtitle;
+
   /// No description provided for @habitStatsTabSummaryTitle.
   ///
   /// In es, this message translates to:

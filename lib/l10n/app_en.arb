@@ -587,6 +587,34 @@
     "habitStatsBestTimeSectionTitle": "When do you complete it best?",
     "habitStatsBestTimeSectionSubtitle": "Based on your logs, your most consistent moments",
     "habitStatsMonthCalendarTitle": "Monthly calendar",
+    "habitStatsCountInsightsTitle": "Count metrics",
+    "habitStatsCountTotalAccumulated": "Total accumulated",
+    "habitStatsCountDailyAverage": "Daily average",
+    "habitStatsCountBestDay": "Best day",
+    "habitStatsCountGoalCompleted": "Goal completed",
+    "habitStatsCountPartialProgress": "Partial progress",
+    "habitStatsCountAverageCompletion": "Average completion",
+    "habitStatsCountGoalCompletedDescription": "{done}/{total} days",
+    "@habitStatsCountGoalCompletedDescription": {
+        "placeholders": {
+            "done": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsCountPartialProgressDescription": "{days} days",
+    "@habitStatsCountPartialProgressDescription": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsCountBestDayNoData": "No data",
+    "habitStatsCountChartWeekSubtitle": "Actual progress by day",
     "habitStatsTabSummaryTitle": "Summary",
     "habitStatsTabLastDaysTitle": "Last {days} days",
     "@habitStatsTabLastDaysTitle": {

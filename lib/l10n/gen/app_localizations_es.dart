@@ -1180,6 +1180,43 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsMonthCalendarTitle => 'Calendario del mes';
 
   @override
+  String get habitStatsCountInsightsTitle => 'Metrica count';
+
+  @override
+  String get habitStatsCountTotalAccumulated => 'Total acumulado';
+
+  @override
+  String get habitStatsCountDailyAverage => 'Media diaria';
+
+  @override
+  String get habitStatsCountBestDay => 'Mejor dia';
+
+  @override
+  String get habitStatsCountGoalCompleted => 'Objetivo completado';
+
+  @override
+  String get habitStatsCountPartialProgress => 'Progreso parcial';
+
+  @override
+  String get habitStatsCountAverageCompletion => 'Cumplimiento medio';
+
+  @override
+  String habitStatsCountGoalCompletedDescription(int done, int total) {
+    return '$done/$total dias';
+  }
+
+  @override
+  String habitStatsCountPartialProgressDescription(int days) {
+    return '$days dias';
+  }
+
+  @override
+  String get habitStatsCountBestDayNoData => 'Sin datos';
+
+  @override
+  String get habitStatsCountChartWeekSubtitle => 'Progreso real por dia';
+
+  @override
   String get habitStatsTabSummaryTitle => 'Resumen';
 
   @override

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/habits/application/count_habit_stats_adapter.dart';
+import 'package:rutio/features/habits/application/count_habit_stats_aggregator.dart';
 import 'package:rutio/features/habits/domain/count_habit_progress.dart';
 
 import '../l10n/l10n.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../stores/user_state_store.dart';
 
 import '../widgets/stats/stats_period_tabs.dart';
@@ -156,6 +159,16 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
       weekShortBuilder: (int weekNumber) =>
           l10n.habitStatsWeekShort(weekNumber),
     );
+    final isCountHabit = _habitType(selected) == 'count';
+    final countSummary = isCountHabit
+        ? _buildCountSummaryForPeriod(
+            store: store,
+            habit: selected,
+            habitId: selectedId,
+            period: _period,
+          )
+        : null;
+    final countUnit = isCountHabit ? _habitUnit(selected) : null;
 
     final weeklyPair =
         _weeklyDoneDaysPair(store: store, habit: selected, habitId: selectedId);
@@ -176,48 +189,101 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     const plum = Color(0xFF7C3AED);
     const terracotta = Color(0xFFB45309);
 
-    final metrics = <StatsMetric>[
-      StatsMetric(
-        labelUpper: l10n.habitStatsMetricCompleted,
-        value: '${computed.completionPct}%',
-        description: l10n.habitStatsMetricCompletionDescription(
-          computed.doneDays,
-          computed.totalDays,
-        ),
-        icon: Icons.check_circle_rounded,
-        accent: green,
-      ),
-      StatsMetric(
-        labelUpper: l10n.habitStatsMetricConsistency,
-        value: '${computed.consistencyPct}%',
-        description: l10n.habitStatsMetricConsistencyDescription(
-          computed.consistencyWindow,
-        ),
-        icon: Icons.auto_graph_rounded,
-        accent: indigo,
-      ),
-      StatsMetric(
-        labelUpper: l10n.habitStatsMetricBestStreak,
-        value: '${computed.bestStreak}',
-        description: l10n.habitStatsMetricPersonalBest,
-        icon: Icons.emoji_events_rounded,
-        accent: plum,
-      ),
-      StatsMetric(
-        labelUpper: l10n.habitStatsMetricTotalDone,
-        value: '${computed.totalDone}',
-        description: l10n.habitStatsMetricHistoricRecords,
-        icon: Icons.layers_rounded,
-        accent: terracotta,
-      ),
-    ];
+    final metrics = isCountHabit && countSummary != null
+        ? <StatsMetric>[
+            StatsMetric(
+              labelUpper: l10n.habitStatsCountTotalAccumulated,
+              value: CountHabitStatsAdapter.formatValueWithUnit(
+                countSummary.totalAccumulated,
+                unit: countUnit,
+              ),
+              description: l10n.habitStatsCountGoalCompletedDescription(
+                countSummary.completedDays,
+                countSummary.scheduledDays,
+              ),
+              icon: Icons.layers_rounded,
+              accent: terracotta,
+            ),
+            StatsMetric(
+              labelUpper: l10n.habitStatsCountDailyAverage,
+              value: CountHabitStatsAdapter.formatValueWithUnit(
+                countSummary.dailyAverage,
+                unit: countUnit,
+              ),
+              description: l10n.habitStatsMetricConsistencyDescription(
+                computed.consistencyWindow,
+              ),
+              icon: Icons.show_chart_rounded,
+              accent: indigo,
+            ),
+            StatsMetric(
+              labelUpper: l10n.habitStatsCountBestDay,
+              value: CountHabitStatsAdapter.formatValueWithUnit(
+                countSummary.bestDayValue,
+                unit: countUnit,
+              ),
+              description: _formatBestDayDescription(
+                l10n: l10n,
+                date: countSummary.bestDayDate,
+              ),
+              icon: Icons.emoji_events_rounded,
+              accent: plum,
+            ),
+            StatsMetric(
+              labelUpper: l10n.habitStatsCountAverageCompletion,
+              value:
+                  '${countSummary.averageCompletionPercent.toStringAsFixed(0)}%',
+              description: l10n.habitStatsCountPartialProgressDescription(
+                countSummary.partialProgressDays,
+              ),
+              icon: Icons.auto_graph_rounded,
+              accent: green,
+            ),
+          ]
+        : <StatsMetric>[
+            StatsMetric(
+              labelUpper: l10n.habitStatsMetricCompleted,
+              value: '${computed.completionPct}%',
+              description: l10n.habitStatsMetricCompletionDescription(
+                computed.doneDays,
+                computed.totalDays,
+              ),
+              icon: Icons.check_circle_rounded,
+              accent: green,
+            ),
+            StatsMetric(
+              labelUpper: l10n.habitStatsMetricConsistency,
+              value: '${computed.consistencyPct}%',
+              description: l10n.habitStatsMetricConsistencyDescription(
+                computed.consistencyWindow,
+              ),
+              icon: Icons.auto_graph_rounded,
+              accent: indigo,
+            ),
+            StatsMetric(
+              labelUpper: l10n.habitStatsMetricBestStreak,
+              value: '${computed.bestStreak}',
+              description: l10n.habitStatsMetricPersonalBest,
+              icon: Icons.emoji_events_rounded,
+              accent: plum,
+            ),
+            StatsMetric(
+              labelUpper: l10n.habitStatsMetricTotalDone,
+              value: '${computed.totalDone}',
+              description: l10n.habitStatsMetricHistoricRecords,
+              icon: Icons.layers_rounded,
+              accent: terracotta,
+            ),
+          ];
 
     final chart = StatsWeeklyBarChartCard(
       title: _period == StatsPeriod.week
           ? l10n.habitStatsChartWeekTitle
           : l10n.habitStatsChartLastFourWeeksTitle,
       subtitle: _period == StatsPeriod.week
-          ? l10n.habitStatsChartWeekSubtitle
+          ? (isCountHabit
+              ? l10n.habitStatsCountChartWeekSubtitle
+              : l10n.habitStatsChartWeekSubtitle)
           : l10n.habitStatsChartWeeksSubtitle,
       points: computed.bars,
       accent: familyColor,
@@ -321,6 +387,27 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
 
               // 4) Grid 2x2 métricas
               StatsMetricsGrid(metrics: metrics),
+              if (isCountHabit && countSummary != null) ...[
+                const SizedBox(height: 12),
+                _StatsSectionCard(
+                  icon: Icons.insights_rounded,
+                  iconBg: familyColor.withValues(alpha: 0.12),
+                  title: l10n.habitStatsCountInsightsTitle,
+                  child: _CountOverviewHighlights(
+                    completedLabel: l10n.habitStatsCountGoalCompleted,
+                    completedValue:
+                        l10n.habitStatsCountGoalCompletedDescription(
+                      countSummary.completedDays,
+                      countSummary.scheduledDays,
+                    ),
+                    partialLabel: l10n.habitStatsCountPartialProgress,
+                    partialValue:
+                        l10n.habitStatsCountPartialProgressDescription(
+                      countSummary.partialProgressDays,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
 
               // 5) Bar chart
@@ -401,6 +488,7 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     required String Function(int weekNumber) weekShortBuilder,
   }) {
     final today = _dateOnly(DateTime.now());
+    final isCountHabit = _habitType(habit) == 'count';
 
     final range =
         _periodRange(period, today: today, store: store, habitId: habitId);
@@ -479,8 +567,19 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
       final last7 =
           List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
       for (final d in last7) {
-        final v = _progressValueForDay(
-            store: store, habit: habit, habitId: habitId, date: d);
+        final v = isCountHabit
+            ? _actualCountValueForDay(
+                store: store,
+                habit: habit,
+                habitId: habitId,
+                date: d,
+              )
+            : _progressValueForDay(
+                store: store,
+                habit: habit,
+                habitId: habitId,
+                date: d,
+              );
         bars.add(StatsBarPoint(
           label: weekdayLabelBuilder(d),
           value: v,
@@ -863,6 +962,108 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     return done ? 1.0 : 0.0;
   }
 
+  double _actualCountValueForDay({
+    required UserStateStore store,
+    required dynamic habit,
+    required String habitId,
+    required DateTime date,
+  }) {
+    final root = store.state;
+    if (root is! Map) return 0;
+
+    final rootMap = Map<String, dynamic>.from(root as Map);
+    final Map<String, dynamic>? userState = (rootMap['userState'] is Map)
+        ? Map<String, dynamic>.from(rootMap['userState'] as Map)
+        : null;
+    final Map<String, dynamic>? history = (userState?['history'] is Map)
+        ? Map<String, dynamic>.from(userState?['history'] as Map)
+        : null;
+
+    final Map<String, dynamic> countValues =
+        (history?['habitCountValues'] is Map)
+            ? Map<String, dynamic>.from(history?['habitCountValues'] as Map)
+            : <String, dynamic>{};
+    final Map<String, dynamic> skips = (history?['habitSkips'] is Map)
+        ? Map<String, dynamic>.from(history?['habitSkips'] as Map)
+        : <String, dynamic>{};
+
+    final dayKey = _dateKey(date);
+    final Map<String, dynamic> dayValsMap = (countValues[dayKey] is Map)
+        ? Map<String, dynamic>.from(countValues[dayKey] as Map)
+        : <String, dynamic>{};
+    final Map<String, dynamic> daySkipsMap = (skips[dayKey] is Map)
+        ? Map<String, dynamic>.from(skips[dayKey] as Map)
+        : <String, dynamic>{};
+
+    final countProgress = _countProgressForDay(
+      habit: habit,
+      habitId: habitId,
+      dayValsMap: dayValsMap,
+      skipped: daySkipsMap[habitId] == true,
+    );
+    return countProgress.isSkipped ? 0.0 : countProgress.currentValue;
+  }
+
+  CountHabitStatsSummary _buildCountSummaryForPeriod({
+    required UserStateStore store,
+    required dynamic habit,
+    required String habitId,
+    required StatsPeriod period,
+  }) {
+    final today = _dateOnly(DateTime.now());
+    final range = _periodRange(
+      period,
+      today: today,
+      store: store,
+      habitId: habitId,
+    );
+
+    final scheduledDates = <DateTime>[];
+    for (final day in range.days) {
+      if (_isScheduledForDate(habit, day)) scheduledDates.add(day);
+    }
+
+    final root = store.state;
+    final rootMap =
+        (root is Map) ? Map<String, dynamic>.from(root as Map) : const {};
+    final userState = (rootMap['userState'] is Map)
+        ? Map<String, dynamic>.from(rootMap['userState'] as Map)
+        : <String, dynamic>{};
+    final history = (userState['history'] is Map)
+        ? Map<String, dynamic>.from(userState['history'] as Map)
+        : <String, dynamic>{};
+
+    final countValues = (history['habitCountValues'] is Map)
+        ? Map<String, dynamic>.from(history['habitCountValues'] as Map)
+        : <String, dynamic>{};
+    final skips = (history['habitSkips'] is Map)
+        ? Map<String, dynamic>.from(history['habitSkips'] as Map)
+        : <String, dynamic>{};
+    final completions = (history['habitCompletions'] is Map)
+        ? Map<String, dynamic>.from(history['habitCompletions'] as Map)
+        : <String, dynamic>{};
+
+    return CountHabitStatsAdapter.fromDayBuckets(
+      habit: _habitMap(habit),
+      habitId: habitId,
+      scheduledDates: scheduledDates,
+      historyCountValuesByDay: countValues,
+      historySkipsByDay: skips,
+      historyCompletionsByDay: completions,
+      useCompletionFallbackWithoutValue: true,
+    );
+  }
+
+  String _formatBestDayDescription({
+    required AppLocalizations l10n,
+    required DateTime? date,
+  }) {
+    if (date == null) return l10n.habitStatsCountBestDayNoData;
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$day/$month';
+  }
+
   CountHabitProgress _countProgressForDay({
     required dynamic habit,
     required String habitId,
@@ -928,6 +1129,18 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     return 'check';
   }
 
+  static Map<String, dynamic> _habitMap(dynamic habit) {
+    if (habit is Map<String, dynamic>) return habit;
+    if (habit is Map) {
+      return Map<String, dynamic>.from(habit);
+    }
+    return <String, dynamic>{
+      'type': _habitType(habit),
+      'target': _habitTarget(habit),
+      'unit': _habitUnit(habit),
+    };
+  }
+
   static int _habitTarget(dynamic habit) {
     if (habit is Map) return ((habit['target'] as num?) ?? 1).toInt();
     try {
@@ -937,6 +1150,22 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
       return ((d.target as num?) ?? 1).toInt();
     } catch (_) {}
     return 1;
+  }
+
+  static String? _habitUnit(dynamic habit) {
+    if (habit is Map) {
+      final unit = (habit['unit'] ?? habit['unitLabel'] ?? habit['counterUnit'])
+          ?.toString()
+          .trim();
+      if (unit != null && unit.isNotEmpty) return unit;
+      return null;
+    }
+    try {
+      final d = habit as dynamic;
+      final unit = (d.unit ?? d.unitLabel ?? d.counterUnit)?.toString().trim();
+      if (unit != null && unit.isNotEmpty) return unit;
+    } catch (_) {}
+    return null;
   }
 
   static bool _isScheduledForDate(dynamic habit, DateTime date) {
@@ -1116,6 +1345,85 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
   }
 }
 
+class _CountOverviewHighlights extends StatelessWidget {
+  const _CountOverviewHighlights({
+    required this.completedLabel,
+    required this.completedValue,
+    required this.partialLabel,
+    required this.partialValue,
+  });
+
+  final String completedLabel;
+  final String completedValue;
+  final String partialLabel;
+  final String partialValue;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget tile({
+      required String label,
+      required String value,
+      required IconData icon,
+    }) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.02),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: Colors.black.withValues(alpha: 0.7)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black.withValues(alpha: 0.55),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        tile(
+          label: completedLabel,
+          value: completedValue,
+          icon: Icons.check_circle_rounded,
+        ),
+        const SizedBox(width: 10),
+        tile(
+          label: partialLabel,
+          value: partialValue,
+          icon: Icons.timelapse_rounded,
+        ),
+      ],
+    );
+  }
+}
+
 class _StatsSectionCard extends StatelessWidget {
   const _StatsSectionCard({
     required this.icon,
@@ -1248,4 +1556,3 @@ class _ComputedStats {
     required this.bars,
   });
 }
-

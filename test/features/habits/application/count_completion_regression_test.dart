@@ -14,7 +14,6 @@ import 'package:rutio/screens/profile/utils/profile_levels_from_history.dart';
 import 'package:rutio/screens/weekly/widgets/helpers/weekly_habit_day_state_resolver.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/widgets/stats/stats_metrics_grid.dart';
-import 'package:rutio/widgets/stats/stats_weekly_bar_chart_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 
@@ -98,7 +97,8 @@ void main() {
   });
 
   group('Count completion regression - monthly resolver', () {
-    final monthCursor = DateTime(DateTime.now().year, DateTime.now().month - 1, 1);
+    final monthCursor =
+        DateTime(DateTime.now().year, DateTime.now().month - 1, 1);
     final day1Key = MonthUtils.dateKey(monthCursor);
     const habitId = 'run';
     final habit = <String, dynamic>{
@@ -360,13 +360,15 @@ void main() {
       final gridFinder = find.byType(StatsMetricsGrid, skipOffstage: false);
       expect(gridFinder, findsAtLeastNWidgets(1));
       final grid = tester.widget<StatsMetricsGrid>(gridFinder.first);
-      expect(grid.metrics.first.value, '0%');
-
-      final chartFinder =
-          find.byType(StatsWeeklyBarChartCard, skipOffstage: false);
-      expect(chartFinder, findsAtLeastNWidgets(1));
-      final chart = tester.widget<StatsWeeklyBarChartCard>(chartFinder.first);
-      expect(chart.points.any((point) => point.value > 0), isTrue);
+      expect(
+        grid.metrics.any(
+          (metric) =>
+              metric.labelUpper == 'Total acumulado' && metric.value == '6',
+        ),
+        isTrue,
+      );
+      expect(find.text('0/1 dias'), findsWidgets);
+      expect(find.text('1 dias'), findsWidgets);
     });
 
     testWidgets('8/8 is counted as completed in completion metric',
@@ -411,10 +413,18 @@ void main() {
       final gridFinder = find.byType(StatsMetricsGrid, skipOffstage: false);
       expect(gridFinder, findsAtLeastNWidgets(1));
       final grid = tester.widget<StatsMetricsGrid>(gridFinder.first);
-      expect(grid.metrics.first.value, '100%');
+      expect(
+        grid.metrics.any(
+          (metric) =>
+              metric.labelUpper == 'Total acumulado' && metric.value == '8',
+        ),
+        isTrue,
+      );
+      expect(find.text('1/1 dias'), findsWidgets);
     });
 
-    testWidgets('skipped + 6/8 is neither completed nor progress', (tester) async {
+    testWidgets('skipped + 6/8 is neither completed nor progress',
+        (tester) async {
       final today = DateTime.now();
       final dayKey =
           '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
@@ -455,13 +465,15 @@ void main() {
       final gridFinder = find.byType(StatsMetricsGrid, skipOffstage: false);
       expect(gridFinder, findsAtLeastNWidgets(1));
       final grid = tester.widget<StatsMetricsGrid>(gridFinder.first);
-      expect(grid.metrics.first.value, '0%');
-
-      final chartFinder =
-          find.byType(StatsWeeklyBarChartCard, skipOffstage: false);
-      expect(chartFinder, findsAtLeastNWidgets(1));
-      final chart = tester.widget<StatsWeeklyBarChartCard>(chartFinder.first);
-      expect(chart.points.every((point) => point.value == 0), isTrue);
+      expect(
+        grid.metrics.any(
+          (metric) =>
+              metric.labelUpper == 'Total acumulado' && metric.value == '0',
+        ),
+        isTrue,
+      );
+      expect(find.text('0/1 dias'), findsWidgets);
+      expect(find.text('0 dias'), findsWidgets);
     });
   });
 }
