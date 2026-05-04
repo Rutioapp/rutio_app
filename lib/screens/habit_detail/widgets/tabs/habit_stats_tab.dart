@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:provider/provider.dart';
+import 'package:rutio/features/habits/application/count_habit_stats_adapter.dart';
+import 'package:rutio/features/habits/application/count_habit_stats_aggregator.dart';
 import 'package:rutio/features/habits/domain/count_habit_progress.dart';
 
 import '../../../../l10n/l10n.dart';
@@ -79,6 +81,8 @@ class _HabitStatsTabState extends State<HabitStatsTab>
     //    completions live under userState.history.habitCompletions).
     final countsByDay =
         _extractCountsByDayWithStoreFallback(context, widget.habit);
+    final isCountHabit = _isCountHabitFromAny(widget.habit);
+    final countUnit = _countUnitFromAny(widget.habit);
 
     final totalDone = countsByDay.values.fold<int>(0, (a, b) => a + b);
     final currentStreak = _currentStreak(countsByDay, today);
@@ -102,14 +106,49 @@ class _HabitStatsTabState extends State<HabitStatsTab>
     final last7 =
         List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
     final doneLast7 = last7.map((d) => countsByDay[_dateOnly(d)] ?? 0).toList();
-    final doneThisWeek = doneLast7.where((c) => c > 0).length;
+    final countLast7Summary = isCountHabit
+        ? _buildCountSummaryForDateRange(
+            context: context,
+            habit: widget.habit,
+            start: today.subtract(const Duration(days: 6)),
+            end: today,
+          )
+        : null;
+    final countPrev7Summary = isCountHabit
+        ? _buildCountSummaryForDateRange(
+            context: context,
+            habit: widget.habit,
+            start: today.subtract(const Duration(days: 13)),
+            end: today.subtract(const Duration(days: 7)),
+          )
+        : null;
+
+    final doneThisWeek = isCountHabit
+        ? (countLast7Summary?.completedDays ?? 0)
+        : doneLast7.where((c) => c > 0).length;
     final max7 = doneLast7.isEmpty
         ? 1
         : doneLast7.reduce((a, b) => a > b ? a : b).clamp(1, 999);
+    final countLast7Values = isCountHabit
+        ? (countLast7Summary?.seriesActualValues
+                .map((point) => point.value)
+                .toList() ??
+            <double>[])
+        : const <double>[];
+    final countMax7 = countLast7Values.isEmpty
+        ? 1.0
+        : countLast7Values.reduce((a, b) => a > b ? a : b).clamp(1.0, 999999.0);
 
     final weekTrendIcon = doneThisWeek > donePrev7
         ? Icons.trending_up_rounded
         : doneThisWeek < donePrev7
+            ? Icons.trending_down_rounded
+            : Icons.trending_flat_rounded;
+    final countTrendIcon = (countLast7Summary?.completedDays ?? 0) >
+            (countPrev7Summary?.completedDays ?? 0)
+        ? Icons.trending_up_rounded
+        : (countLast7Summary?.completedDays ?? 0) <
+                (countPrev7Summary?.completedDays ?? 0)
             ? Icons.trending_down_rounded
             : Icons.trending_flat_rounded;
 
@@ -151,17 +190,28 @@ class _HabitStatsTabState extends State<HabitStatsTab>
             iconColor: widget.familyColor,
             border: border,
             bg: Colors.white,
-            child: _MetricsGrid(
-              familyColor: widget.familyColor,
-              bg: bg,
-              border: border,
-              currentStreak: currentStreak,
-              bestStreak: bestStreak,
-              totalDone: totalDone,
-              rate30: rate30,
-              doneDays30: doneDays30,
-              scrollable: false,
-            ),
+            child: isCountHabit && countLast7Summary != null
+                ? _CountMetricsGrid(
+                    familyColor: widget.familyColor,
+                    bg: bg,
+                    border: border,
+                    summary: countLast7Summary,
+                    unit: countUnit,
+                    bestDaySubtitle:
+                        _bestDaySubtitleForCount(countLast7Summary.bestDayDate),
+                    scrollable: false,
+                  )
+                : _MetricsGrid(
+                    familyColor: widget.familyColor,
+                    bg: bg,
+                    border: border,
+                    currentStreak: currentStreak,
+                    bestStreak: bestStreak,
+                    totalDone: totalDone,
+                    rate30: rate30,
+                    doneDays30: doneDays30,
+                    scrollable: false,
+                  ),
           ),
 
           const SizedBox(height: 16),
@@ -173,18 +223,31 @@ class _HabitStatsTabState extends State<HabitStatsTab>
             iconColor: widget.familyColor,
             border: border,
             bg: Colors.white,
-            child: _WeeklyBars(
-              familyColor: widget.familyColor,
-              today: today,
-              days: last7,
-              counts: doneLast7,
-              maxCount: max7,
-              weekTrendIcon: weekTrendIcon,
-              doneThisWeek: doneThisWeek,
-              donePrev7: donePrev7,
-              hintText: _hintTextFromExtraction(context, widget.habit),
-              scrollable: false,
-            ),
+            child: isCountHabit
+                ? _WeeklyBarsCount(
+                    familyColor: widget.familyColor,
+                    today: today,
+                    days: last7,
+                    values: countLast7Values,
+                    maxValue: countMax7,
+                    weekTrendIcon: countTrendIcon,
+                    completedThisWeek: countLast7Summary?.completedDays ?? 0,
+                    completedPrevWeek: countPrev7Summary?.completedDays ?? 0,
+                    hintText: _hintTextFromExtraction(context, widget.habit),
+                    scrollable: false,
+                  )
+                : _WeeklyBars(
+                    familyColor: widget.familyColor,
+                    today: today,
+                    days: last7,
+                    counts: doneLast7,
+                    maxCount: max7,
+                    weekTrendIcon: weekTrendIcon,
+                    doneThisWeek: doneThisWeek,
+                    donePrev7: donePrev7,
+                    hintText: _hintTextFromExtraction(context, widget.habit),
+                    scrollable: false,
+                  ),
           ),
 
           const SizedBox(height: 16),
@@ -265,6 +328,54 @@ class _HabitStatsTabState extends State<HabitStatsTab>
     return achievements;
   }
 
+  CountHabitStatsSummary _buildCountSummaryForDateRange({
+    required BuildContext context,
+    required dynamic habit,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final habitId = _habitIdFromAny(habit);
+    if (habitId == null || habitId.isEmpty) {
+      return CountHabitStatsSummary.empty();
+    }
+
+    final store = context.read<UserStateStore>();
+    final root = _toMap(store.state);
+    final userState = _toMap(root['userState']);
+    final history = _toMap(userState['history']);
+    final habitCompletions = _toMap(history['habitCompletions']);
+    final habitCountValues = _toMap(history['habitCountValues']);
+    final habitSkips = _toMap(history['habitSkips']);
+
+    final scheduledDates = <DateTime>[];
+    DateTime cursor = _dateOnly(start);
+    final rangeEnd = _dateOnly(end);
+    while (!cursor.isAfter(rangeEnd)) {
+      if (_isScheduledForDateFromAny(habit, cursor)) {
+        scheduledDates.add(cursor);
+      }
+      cursor = cursor.add(const Duration(days: 1));
+    }
+
+    return CountHabitStatsAdapter.fromDayBuckets(
+      habit: _habitMapFromAny(habit),
+      habitId: habitId,
+      scheduledDates: scheduledDates,
+      historyCountValuesByDay: habitCountValues,
+      historySkipsByDay: habitSkips,
+      historyCompletionsByDay: habitCompletions,
+      useCompletionFallbackWithoutValue: true,
+    );
+  }
+
+  static String _bestDaySubtitleForCount(DateTime? day) {
+    if (day == null) return '—';
+    final safe = _dateOnly(day);
+    final dd = safe.day.toString().padLeft(2, '0');
+    final mm = safe.month.toString().padLeft(2, '0');
+    return '$dd/$mm';
+  }
+
   // ---------------- Stats logic (igual que antes) ----------------
 
   /// Extracts completion counts from the habit object.
@@ -317,8 +428,8 @@ class _HabitStatsTabState extends State<HabitStatsTab>
           final skipsMap = _toMap(habitSkips[dayKey]);
 
           final value = valuesMap[habitId] ?? valuesMap[habitId.toString()];
-          final skipped = skipsMap[habitId] == true ||
-              skipsMap[habitId.toString()] == true;
+          final skipped =
+              skipsMap[habitId] == true || skipsMap[habitId.toString()] == true;
 
           final progress = CountHabitProgress.fromValues(
             currentValue: value,
@@ -333,8 +444,8 @@ class _HabitStatsTabState extends State<HabitStatsTab>
 
           // Legacy fallback: if a day was explicitly marked completed and has no
           // count value, keep honoring that historical completion.
-          final legacyDone = doneMap[habitId] == true ||
-              doneMap[habitId.toString()] == true;
+          final legacyDone =
+              doneMap[habitId] == true || doneMap[habitId.toString()] == true;
           final hasValueEntry = valuesMap.containsKey(habitId) ||
               valuesMap.containsKey(habitId.toString());
           if (legacyDone && !skipped && !hasValueEntry) {
@@ -429,6 +540,58 @@ class _HabitStatsTabState extends State<HabitStatsTab>
     } catch (_) {
       return 1;
     }
+  }
+
+  static String? _countUnitFromAny(dynamic habit) {
+    if (habit is Map) {
+      final raw = habit['unit'] ?? habit['unitLabel'] ?? habit['counterUnit'];
+      final normalized = raw?.toString().trim();
+      if (normalized != null && normalized.isNotEmpty) return normalized;
+      return null;
+    }
+    try {
+      final dynamic d = habit as dynamic;
+      final raw = d.unit ?? d.unitLabel ?? d.counterUnit;
+      final normalized = raw?.toString().trim();
+      if (normalized != null && normalized.isNotEmpty) return normalized;
+    } catch (_) {}
+    return null;
+  }
+
+  static Map<String, dynamic> _habitMapFromAny(dynamic habit) {
+    if (habit is Map<String, dynamic>) return habit;
+    if (habit is Map) return Map<String, dynamic>.from(habit);
+    return <String, dynamic>{
+      'id': _habitIdFromAny(habit),
+      'type': _isCountHabitFromAny(habit) ? 'count' : 'check',
+      'target': _targetValueFromAny(habit),
+      'unit': _countUnitFromAny(habit),
+    };
+  }
+
+  static bool _isScheduledForDateFromAny(dynamic habit, DateTime date) {
+    final map = _habitMapFromAny(habit);
+    final schedule = _toMap(map['schedule']);
+    final type = (schedule['type'] ?? 'daily').toString();
+    if (type == 'daily') return true;
+
+    if (type == 'once') {
+      final key = (schedule['date'] ?? '').toString();
+      return key == _dateKey(date);
+    }
+
+    if (type == 'weekly') {
+      final weekdaysRaw = schedule['weekdays'];
+      if (weekdaysRaw is List) {
+        final weekdays = weekdaysRaw
+            .map((e) => (e as num?)?.toInt())
+            .whereType<int>()
+            .toSet();
+        return weekdays.contains(date.weekday);
+      }
+      return true;
+    }
+    return true;
   }
 
   static String? _habitIdFromAny(dynamic h) {
@@ -663,12 +826,17 @@ class _HabitStatsTabState extends State<HabitStatsTab>
 
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
+  static String _dateKey(DateTime d) {
+    final safe = _dateOnly(d);
+    final y = safe.year.toString().padLeft(4, '0');
+    final m = safe.month.toString().padLeft(2, '0');
+    final day = safe.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
+  }
+
   static String _hintTextFromExtraction(BuildContext context, dynamic habit) {
-    if (habit is Map) {
-      final type = habit['type'] ?? habit['habitType'] ?? '';
-      if (type.toString().toLowerCase() == 'counter') {
-        return context.l10n.habitStatsTabCounterHint;
-      }
+    if (_isCountHabitFromAny(habit)) {
+      return context.l10n.habitStatsCountChartWeekSubtitle;
     }
     return context.l10n.habitStatsTabCheckHint;
   }
@@ -801,6 +969,192 @@ class _AchievementChip extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CountMetricsGrid extends StatelessWidget {
+  const _CountMetricsGrid({
+    required this.familyColor,
+    required this.bg,
+    required this.border,
+    required this.summary,
+    required this.unit,
+    required this.bestDaySubtitle,
+    required this.scrollable,
+  });
+
+  final Color familyColor;
+  final bool scrollable;
+  final Color bg;
+  final Color border;
+  final CountHabitStatsSummary summary;
+  final String? unit;
+  final String bestDaySubtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final completionRatio = summary.averageCompletionRatio.clamp(0.0, 1.0);
+    final completionPercent = summary.averageCompletionPercent.round();
+
+    final cards = [
+      _MetricCard(
+        title: l10n.habitStatsCountTotalAccumulated,
+        value: CountHabitStatsAdapter.formatValueWithUnit(
+          summary.totalAccumulated,
+          unit: unit,
+        ),
+        subtitle: l10n.habitStatsCountGoalCompletedDescription(
+          summary.completedDays,
+          summary.scheduledDays,
+        ),
+        bg: bg,
+        border: border,
+        accent: familyColor,
+        icon: Icons.layers_rounded,
+        gradient: true,
+      ),
+      _MetricCard(
+        title: l10n.habitStatsCountDailyAverage,
+        value: CountHabitStatsAdapter.formatValueWithUnit(
+          summary.dailyAverage,
+          unit: unit,
+        ),
+        subtitle: l10n.habitStatsCountPartialProgressDescription(
+          summary.activityDays,
+        ),
+        bg: bg,
+        border: border,
+        accent: familyColor,
+        icon: Icons.show_chart_rounded,
+      ),
+      _MetricCard(
+        title: l10n.habitStatsCountBestDay,
+        value: CountHabitStatsAdapter.formatValueWithUnit(
+          summary.bestDayValue,
+          unit: unit,
+        ),
+        subtitle: bestDaySubtitle,
+        bg: bg,
+        border: border,
+        accent: familyColor,
+        icon: Icons.emoji_events_rounded,
+      ),
+      _MetricCardWithProgress(
+        title: l10n.habitStatsCountAverageCompletion,
+        value: '$completionPercent%',
+        subtitle: l10n.habitStatsCountPartialProgressDescription(
+          summary.partialProgressDays,
+        ),
+        progress: completionRatio,
+        bg: bg,
+        border: border,
+        accent: familyColor,
+        icon: Icons.auto_graph_rounded,
+      ),
+    ];
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: cards[0]),
+            const SizedBox(width: 12),
+            Expanded(child: cards[1]),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: cards[2]),
+            const SizedBox(width: 12),
+            Expanded(child: cards[3]),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _InlineInfoChip(
+                icon: Icons.check_circle_rounded,
+                accent: familyColor,
+                label: l10n.habitStatsCountGoalCompleted,
+                value: l10n.habitStatsCountGoalCompletedDescription(
+                  summary.completedDays,
+                  summary.scheduledDays,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _InlineInfoChip(
+                icon: Icons.timelapse_rounded,
+                accent: familyColor,
+                label: l10n.habitStatsCountPartialProgress,
+                value: l10n.habitStatsCountPartialProgressDescription(
+                  summary.partialProgressDays,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _InlineInfoChip extends StatelessWidget {
+  const _InlineInfoChip({
+    required this.icon,
+    required this.accent,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1366,6 +1720,196 @@ class _WeeklyBars extends StatelessWidget {
           hintText,
           style: TextStyle(
               fontSize: 11, color: Colors.black.withValues(alpha: 0.50)),
+        ),
+      ],
+    );
+  }
+}
+
+class _WeeklyBarsCount extends StatelessWidget {
+  const _WeeklyBarsCount({
+    required this.familyColor,
+    required this.today,
+    required this.days,
+    required this.values,
+    required this.maxValue,
+    required this.weekTrendIcon,
+    required this.completedThisWeek,
+    required this.completedPrevWeek,
+    required this.hintText,
+    required this.scrollable,
+  });
+
+  final Color familyColor;
+  final bool scrollable;
+  final DateTime today;
+  final List<DateTime> days;
+  final List<double> values;
+  final double maxValue;
+  final IconData weekTrendIcon;
+  final int completedThisWeek;
+  final int completedPrevWeek;
+  final String hintText;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final comparison = completedThisWeek - completedPrevWeek;
+    final comparisonText = l10n.habitStatsTabWeeklyDelta(comparison);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                l10n.habitStatsCountChartWeekSubtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black.withValues(alpha: 0.70),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: familyColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(weekTrendIcon, size: 14, color: familyColor),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          comparisonText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: familyColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 170,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const topAndBottom = 44.0;
+              final maxBar =
+                  math.max(0.0, constraints.maxHeight - topAndBottom);
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: List.generate(days.length, (i) {
+                  final d = days[i];
+                  final value = i < values.length ? values[i] : 0.0;
+                  final isToday = _dateOnly(d) == today;
+                  final h = maxValue <= 0 ? 0.0 : (value / maxValue) * maxBar;
+
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            value <= 0
+                                ? ''
+                                : CountHabitStatsAdapter.formatNumber(value),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: familyColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: h),
+                            duration: Duration(milliseconds: 400 + (i * 50)),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, barValue, child) {
+                              return Container(
+                                height: barValue,
+                                decoration: BoxDecoration(
+                                  gradient: value == 0
+                                      ? null
+                                      : LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [
+                                            familyColor.withValues(alpha: 0.95),
+                                            familyColor.withValues(alpha: 0.7),
+                                          ],
+                                        ),
+                                  color: value == 0
+                                      ? Colors.black.withValues(alpha: 0.08)
+                                      : null,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: value > 0 && isToday
+                                      ? [
+                                          BoxShadow(
+                                            color: familyColor.withValues(
+                                                alpha: 0.4),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _dowShort(context, d),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight:
+                                  isToday ? FontWeight.w900 : FontWeight.w600,
+                              color: isToday
+                                  ? familyColor
+                                  : Colors.black.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          hintText,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.black.withValues(alpha: 0.50),
+          ),
         ),
       ],
     );

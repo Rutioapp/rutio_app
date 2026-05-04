@@ -9,6 +9,7 @@ import 'package:rutio/screens/habit_monthly/utils/month_utils.dart';
 import 'package:rutio/screens/habit_monthly/widgets/monthly_calendar_grid.dart';
 import 'package:rutio/screens/habit_monthly/widgets/monthly_day_cell.dart';
 import 'package:rutio/screens/home/home_screen.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats_tab.dart';
 import 'package:rutio/screens/habit_stats_overview_screen.dart';
 import 'package:rutio/screens/profile/utils/profile_levels_from_history.dart';
 import 'package:rutio/screens/weekly/widgets/helpers/weekly_habit_day_state_resolver.dart';
@@ -476,6 +477,193 @@ void main() {
       expect(find.text('0 dias'), findsWidgets);
     });
   });
+
+  group('Count completion regression - habit detail tab', () {
+    testWidgets('count 6/8 shows partial progress and not completed',
+        (tester) async {
+      final today = DateTime.now();
+      final dayKey =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final store = await _buildStoreWithState(
+        _baseStateForCountRegression(
+          dayKey: dayKey,
+          value: 6,
+          target: 8,
+          skipped: false,
+          completionFlag: true,
+          schedule: {
+            'type': 'once',
+            'date': dayKey,
+          },
+          unit: 'km',
+        ),
+      );
+      await store.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: HabitStatsTab(
+                habit: store.activeHabits.first,
+                familyColor: Colors.blue,
+                scrollable: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text('0/1 dias'), findsWidgets);
+      expect(find.text('1 dias'), findsWidgets);
+      expect(find.text('6 km'), findsWidgets);
+    });
+
+    testWidgets('count 8/8 appears as completed in detail metrics',
+        (tester) async {
+      final today = DateTime.now();
+      final dayKey =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final store = await _buildStoreWithState(
+        _baseStateForCountRegression(
+          dayKey: dayKey,
+          value: 8,
+          target: 8,
+          skipped: false,
+          completionFlag: false,
+          schedule: {
+            'type': 'once',
+            'date': dayKey,
+          },
+          unit: 'km',
+        ),
+      );
+      await store.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: HabitStatsTab(
+                habit: store.activeHabits.first,
+                familyColor: Colors.blue,
+                scrollable: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text('1/1 dias'), findsWidgets);
+    });
+
+    testWidgets('check habits keep previous detail behavior', (tester) async {
+      final today = DateTime.now();
+      final dayKey =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final store = await _buildStoreWithState(
+        {
+          'userState': {
+            'userId': 'user_123',
+            'meta': {
+              'schemaVersion': 1,
+              'lastSavedAt': DateTime.now().toUtc().toIso8601String(),
+            },
+            'progression': {'level': 1, 'xp': 0, 'prestige': 0},
+            'wallet': {'coins': 0},
+            'profile': {
+              'achievements': {
+                'unlocked': <dynamic>[],
+                'featured': <dynamic>[],
+                'rewardAppliedAchievementIds': <dynamic>[],
+              },
+            },
+            'daily': {
+              'lastResetDate': dayKey,
+              'xpEarnedToday': 0,
+              'coinsEarnedToday': 0,
+              'habitsCompletedToday': <String, dynamic>{},
+            },
+            'history': {
+              'habitCompletions': {
+                dayKey: {'meditate': true},
+              },
+              'habitCountValues': <String, dynamic>{},
+              'habitSkips': {
+                dayKey: {'meditate': false},
+              },
+              'habitCompletionTimes': <String, dynamic>{},
+            },
+            'activeHabits': [
+              {
+                'id': 'meditate',
+                'name': 'Meditate',
+                'familyId': 'mind',
+                'type': 'check',
+                'schedule': {
+                  'type': 'once',
+                  'date': dayKey,
+                },
+                'doneToday': false,
+                'skippedToday': false,
+                'progress': 0,
+              },
+            ],
+          },
+        },
+      );
+      await store.load();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<UserStateStore>.value(
+          value: store,
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: HabitStatsTab(
+                habit: store.activeHabits.first,
+                familyColor: Colors.blue,
+                scrollable: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+
+      expect(find.text('Completado'), findsWidgets);
+    });
+  });
 }
 
 Future<UserStateStore> _buildStoreWithState(Map<String, dynamic> state) async {
@@ -497,6 +685,7 @@ Map<String, dynamic> _baseStateForCountRegression({
   required bool skipped,
   required bool completionFlag,
   Map<String, dynamic>? schedule,
+  String? unit,
 }) {
   return {
     'userState': {
@@ -539,6 +728,7 @@ Map<String, dynamic> _baseStateForCountRegression({
           'familyId': 'body',
           'type': 'count',
           'target': target,
+          if (unit != null) 'unit': unit,
           'schedule': schedule ?? {'type': 'daily'},
           'doneToday': false,
           'skippedToday': false,
