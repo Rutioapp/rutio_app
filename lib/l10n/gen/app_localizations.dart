@@ -413,7 +413,7 @@ abstract class AppLocalizations {
   /// No description provided for @levelUpRewardAmbarLine.
   ///
   /// In es, this message translates to:
-  /// **'Has recibido {amount} Ámbar.'**
+  /// **'Has recibido {amount} Ãmbar.'**
   String levelUpRewardAmbarLine(int amount);
 
   /// No description provided for @homeHabitCountProgress.
@@ -3258,7 +3258,7 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2Title.
   ///
   /// In es, this message translates to:
-  /// **'Estadísticas V2'**
+  /// **'EstadÃ­sticas V2'**
   String get statisticsV2Title;
 
   /// No description provided for @statisticsV2TabOverview.
@@ -3270,13 +3270,13 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2TabHabits.
   ///
   /// In es, this message translates to:
-  /// **'Hábitos'**
+  /// **'HÃ¡bitos'**
   String get statisticsV2TabHabits;
 
   /// No description provided for @statisticsV2PeriodDay.
   ///
   /// In es, this message translates to:
-  /// **'Día'**
+  /// **'DÃ­a'**
   String get statisticsV2PeriodDay;
 
   /// No description provided for @statisticsV2PeriodWeek.
@@ -3294,7 +3294,7 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2PeriodYear.
   ///
   /// In es, this message translates to:
-  /// **'Año'**
+  /// **'AÃ±o'**
   String get statisticsV2PeriodYear;
 
   /// No description provided for @statisticsV2OverviewSubtitleToday.
@@ -3318,7 +3318,7 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2OverviewSubtitleThisYear.
   ///
   /// In es, this message translates to:
-  /// **'Este año'**
+  /// **'Este aÃ±o'**
   String get statisticsV2OverviewSubtitleThisYear;
 
   /// No description provided for @statisticsV2OverviewSummaryTitle.
@@ -3330,13 +3330,13 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2OverviewCompletedHabits.
   ///
   /// In es, this message translates to:
-  /// **'Hábitos completados'**
+  /// **'HÃ¡bitos completados'**
   String get statisticsV2OverviewCompletedHabits;
 
   /// No description provided for @statisticsV2OverviewHabitsWithProgress.
   ///
   /// In es, this message translates to:
-  /// **'Hábitos con progreso'**
+  /// **'HÃ¡bitos con progreso'**
   String get statisticsV2OverviewHabitsWithProgress;
 
   /// No description provided for @statisticsV2OverviewOverallConsistency.
@@ -3348,7 +3348,7 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2OverviewTotalHabits.
   ///
   /// In es, this message translates to:
-  /// **'Hábitos totales:'**
+  /// **'HÃ¡bitos totales:'**
   String get statisticsV2OverviewTotalHabits;
 
   /// No description provided for @statisticsV2OverviewFamilies.
@@ -3366,13 +3366,13 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2OverviewConsistencySubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Días completados frente a programados'**
+  /// **'DÃ­as completados frente a programados'**
   String get statisticsV2OverviewConsistencySubtitle;
 
   /// No description provided for @statisticsV2OverviewConsistencyFraction.
   ///
   /// In es, this message translates to:
-  /// **'{completed} / {scheduled} días completados'**
+  /// **'{completed} / {scheduled} dÃ­as completados'**
   String statisticsV2OverviewConsistencyFraction(int completed, int scheduled);
 
   /// No description provided for @statisticsV2OverviewOverallConsistencyValue.
@@ -3390,31 +3390,31 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2OverviewActivitySubtitle.
   ///
   /// In es, this message translates to:
-  /// **'El progreso cuenta aunque no esté completado'**
+  /// **'El progreso cuenta aunque no estÃ© completado'**
   String get statisticsV2OverviewActivitySubtitle;
 
   /// No description provided for @statisticsV2OverviewActiveDays.
   ///
   /// In es, this message translates to:
-  /// **'Días activos'**
+  /// **'DÃ­as activos'**
   String get statisticsV2OverviewActiveDays;
 
   /// No description provided for @statisticsV2OverviewCountGoalCompletedDays.
   ///
   /// In es, this message translates to:
-  /// **'Días count con objetivo completado'**
+  /// **'DÃ­as count con objetivo completado'**
   String get statisticsV2OverviewCountGoalCompletedDays;
 
   /// No description provided for @statisticsV2OverviewCountPartialDays.
   ///
   /// In es, this message translates to:
-  /// **'Días count con progreso parcial'**
+  /// **'DÃ­as count con progreso parcial'**
   String get statisticsV2OverviewCountPartialDays;
 
   /// No description provided for @statisticsV2OverviewActivityHint.
   ///
   /// In es, this message translates to:
-  /// **'En hábitos count, el progreso parcial cuenta como actividad, pero no como completado.'**
+  /// **'En hÃ¡bitos count, el progreso parcial cuenta como actividad, pero no como completado.'**
   String get statisticsV2OverviewActivityHint;
 
   /// No description provided for @statisticsV2OverviewFamiliesTitle.
@@ -3426,19 +3426,19 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2OverviewFamiliesSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Distribución por familia'**
+  /// **'DistribuciÃ³n por familia'**
   String get statisticsV2OverviewFamiliesSubtitle;
 
   /// No description provided for @statisticsV2OverviewFamiliesEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Aún no hay suficientes datos por familia en este periodo.'**
+  /// **'AÃºn no hay suficientes datos por familia en este periodo.'**
   String get statisticsV2OverviewFamiliesEmpty;
 
   /// No description provided for @statisticsV2OverviewTopHabitsTitle.
   ///
   /// In es, this message translates to:
-  /// **'Hábitos destacados'**
+  /// **'HÃ¡bitos destacados'**
   String get statisticsV2OverviewTopHabitsTitle;
 
   /// No description provided for @statisticsV2OverviewTopHabitsSubtitle.
@@ -3450,7 +3450,7 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2OverviewTopHabitsEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Todavía no hay hábitos destacados en este periodo.'**
+  /// **'TodavÃ­a no hay hÃ¡bitos destacados en este periodo.'**
   String get statisticsV2OverviewTopHabitsEmpty;
 
   /// No description provided for @statisticsV2OverviewVolumeLabel.
@@ -3480,13 +3480,13 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2OverviewBestMomentSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Franja del día con más completados'**
+  /// **'Franja del dÃ­a con mÃ¡s completados'**
   String get statisticsV2OverviewBestMomentSubtitle;
 
   /// No description provided for @statisticsV2OverviewBestMomentEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Todavía no hay suficientes datos para detectar tu mejor momento.'**
+  /// **'TodavÃ­a no hay suficientes datos para detectar tu mejor momento.'**
   String get statisticsV2OverviewBestMomentEmpty;
 
   /// No description provided for @statisticsV2OverviewCalendarTitle.
@@ -3504,13 +3504,13 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2OverviewCalendarEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Aún no hay datos para mostrar en este calendario.'**
+  /// **'AÃºn no hay datos para mostrar en este calendario.'**
   String get statisticsV2OverviewCalendarEmpty;
 
   /// No description provided for @statisticsV2HabitsSearchHint.
   ///
   /// In es, this message translates to:
-  /// **'Buscar hábito'**
+  /// **'Buscar hÃ¡bito'**
   String get statisticsV2HabitsSearchHint;
 
   /// No description provided for @statisticsV2HabitsFilterAll.
@@ -3552,25 +3552,25 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2HabitsEmptyTitle.
   ///
   /// In es, this message translates to:
-  /// **'Aún no tienes hábitos activos'**
+  /// **'AÃºn no tienes hÃ¡bitos activos'**
   String get statisticsV2HabitsEmptyTitle;
 
   /// No description provided for @statisticsV2HabitsEmptySubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Crea tu primer hábito para empezar a ver estadísticas detalladas.'**
+  /// **'Crea tu primer hÃ¡bito para empezar a ver estadÃ­sticas detalladas.'**
   String get statisticsV2HabitsEmptySubtitle;
 
   /// No description provided for @statisticsV2HabitsNoMatchesTitle.
   ///
   /// In es, this message translates to:
-  /// **'No hay hábitos que coincidan'**
+  /// **'No hay hÃ¡bitos que coincidan'**
   String get statisticsV2HabitsNoMatchesTitle;
 
   /// No description provided for @statisticsV2HabitsNoMatchesSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Prueba otra búsqueda o filtro.'**
+  /// **'Prueba otra bÃºsqueda o filtro.'**
   String get statisticsV2HabitsNoMatchesSubtitle;
 
   /// No description provided for @statisticsV2HabitsMetricCompleted.
@@ -3612,7 +3612,7 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2HabitsCheckCompletedDays.
   ///
   /// In es, this message translates to:
-  /// **'{done}/{scheduled} días'**
+  /// **'{done}/{scheduled} dÃ­as'**
   String statisticsV2HabitsCheckCompletedDays(int done, int scheduled);
 
   /// No description provided for @statisticsV2HabitsCompletedPct.
@@ -3636,8 +3636,128 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV2HabitsPartialDays.
   ///
   /// In es, this message translates to:
-  /// **'{count} días parciales'**
+  /// **'{count} dÃ­as parciales'**
   String statisticsV2HabitsPartialDays(int count);
+
+  /// No description provided for @statisticsV2DetailTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle del hábito'**
+  String get statisticsV2DetailTitle;
+
+  /// No description provided for @statisticsV2DetailNotFoundTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontró el hábito'**
+  String get statisticsV2DetailNotFoundTitle;
+
+  /// No description provided for @statisticsV2DetailNotFoundSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito ya no está disponible en tu lista activa.'**
+  String get statisticsV2DetailNotFoundSubtitle;
+
+  /// No description provided for @statisticsV2DetailNoDataTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay datos en este periodo'**
+  String get statisticsV2DetailNoDataTitle;
+
+  /// No description provided for @statisticsV2DetailNoDataSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa este hábito en este periodo para desbloquear métricas detalladas.'**
+  String get statisticsV2DetailNoDataSubtitle;
+
+  /// No description provided for @statisticsV2DetailChartTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tendencia'**
+  String get statisticsV2DetailChartTitle;
+
+  /// No description provided for @statisticsV2DetailChartSubtitleWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'Valores diarios en los últimos 7 días'**
+  String get statisticsV2DetailChartSubtitleWeek;
+
+  /// No description provided for @statisticsV2DetailChartSubtitleMonth.
+  ///
+  /// In es, this message translates to:
+  /// **'Valores diarios agrupados en los últimos 30 días'**
+  String get statisticsV2DetailChartSubtitleMonth;
+
+  /// No description provided for @statisticsV2DetailChartSubtitleYear.
+  ///
+  /// In es, this message translates to:
+  /// **'Valores mensuales en los últimos 12 meses'**
+  String get statisticsV2DetailChartSubtitleYear;
+
+  /// No description provided for @statisticsV2DetailCheckSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen de cumplimiento'**
+  String get statisticsV2DetailCheckSectionTitle;
+
+  /// No description provided for @statisticsV2DetailCompletedDays.
+  ///
+  /// In es, this message translates to:
+  /// **'Completados / programados'**
+  String get statisticsV2DetailCompletedDays;
+
+  /// No description provided for @statisticsV2DetailCompletionLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Completado'**
+  String get statisticsV2DetailCompletionLabel;
+
+  /// No description provided for @statisticsV2DetailConsistencyLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Consistencia'**
+  String get statisticsV2DetailConsistencyLabel;
+
+  /// No description provided for @statisticsV2DetailBestStreakLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejor racha'**
+  String get statisticsV2DetailBestStreakLabel;
+
+  /// No description provided for @statisticsV2DetailActivityDaysLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Días con actividad'**
+  String get statisticsV2DetailActivityDaysLabel;
+
+  /// No description provided for @statisticsV2DetailNoComparisonData.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay suficientes datos semanales para comparar.'**
+  String get statisticsV2DetailNoComparisonData;
+
+  /// No description provided for @statisticsV2DetailBestMomentTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuándo lo cumples mejor'**
+  String get statisticsV2DetailBestMomentTitle;
+
+  /// No description provided for @statisticsV2DetailBestMomentSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Según tus registros de completado'**
+  String get statisticsV2DetailBestMomentSubtitle;
+
+  /// No description provided for @statisticsV2DetailBestMomentEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay suficientes datos para detectar tu mejor momento.'**
+  String get statisticsV2DetailBestMomentEmpty;
+
+  /// No description provided for @statisticsV2DetailInsightTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Insight dinámico'**
+  String get statisticsV2DetailInsightTitle;
 
   /// No description provided for @drawerBrandName.
   ///

@@ -244,6 +244,21 @@ class StatisticsDataAdapter {
       habit: habit,
       range: range,
     );
+    final dailyValues = _dailyValuesInRange(
+      store: store,
+      habit: habit,
+      range: range,
+    );
+    final daysWithActivity = _activityDaysInRange(
+      store: store,
+      habit: habit,
+      range: range,
+    );
+    final bestMoment = _bestMomentPercents(
+      store: store,
+      range: range,
+      habitIds: {summary.id},
+    );
 
     final today = _dateOnly(anchor ?? DateTime.now());
     final thisWeekRange = StatisticsRange.lastDays(7, anchor: today);
@@ -267,8 +282,15 @@ class StatisticsDataAdapter {
       period: period,
       range: range,
       habit: summary,
+      scheduledDays: summary.scheduledDays,
+      completedDays: summary.doneDays,
+      daysWithActivity: daysWithActivity,
+      dailyValues: dailyValues,
       thisWeekDoneDays: thisWeekDone,
       lastWeekDoneDays: lastWeekDone,
+      bestMomentPercents: bestMoment.percents,
+      bestMomentKey: bestMoment.bestKey,
+      hasBestMomentData: bestMoment.hasData,
       insight: insight,
     );
   }
@@ -380,6 +402,85 @@ class StatisticsDataAdapter {
         output++;
       }
     }
+    return output;
+  }
+
+  int _activityDaysInRange({
+    required UserStateStore store,
+    required Map<String, dynamic> habit,
+    required StatisticsRange range,
+  }) {
+    final type = _habitType(habit);
+    final habitId = _habitId(habit);
+    var output = 0;
+
+    for (final day in range.days) {
+      if (!_isScheduledForDate(habit, day)) {
+        continue;
+      }
+
+      if (type == StatisticsHabitType.check) {
+        if (_isCompletedForDay(
+          store: store,
+          habit: habit,
+          habitId: habitId,
+          day: day,
+        )) {
+          output++;
+        }
+        continue;
+      }
+
+      final raw = _rawValueForDay(
+        store: store,
+        habitId: habitId,
+        day: day,
+      );
+      if (raw > 0) {
+        output++;
+      }
+    }
+
+    return output;
+  }
+
+  List<int> _dailyValuesInRange({
+    required UserStateStore store,
+    required Map<String, dynamic> habit,
+    required StatisticsRange range,
+  }) {
+    final type = _habitType(habit);
+    final habitId = _habitId(habit);
+    final output = <int>[];
+
+    for (final day in range.days) {
+      final isScheduled = _isScheduledForDate(habit, day);
+      if (type == StatisticsHabitType.check) {
+        final completed = isScheduled &&
+            _isCompletedForDay(
+              store: store,
+              habit: habit,
+              habitId: habitId,
+              day: day,
+            );
+        output.add(completed ? 1 : 0);
+        continue;
+      }
+
+      if (!isScheduled) {
+        output.add(0);
+        continue;
+      }
+
+      output.add(
+        _rawValueForDay(
+          store: store,
+          habitId: habitId,
+          day: day,
+        ),
+      );
+    }
+
     return output;
   }
 

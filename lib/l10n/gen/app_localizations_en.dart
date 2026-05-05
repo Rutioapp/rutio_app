@@ -1956,6 +1956,74 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get statisticsV2DetailTitle => 'Habit detail';
+
+  @override
+  String get statisticsV2DetailNotFoundTitle => 'Habit not found';
+
+  @override
+  String get statisticsV2DetailNotFoundSubtitle =>
+      'This habit is no longer available in your active list.';
+
+  @override
+  String get statisticsV2DetailNoDataTitle => 'No data in this range yet';
+
+  @override
+  String get statisticsV2DetailNoDataSubtitle =>
+      'Complete this habit in this period to unlock detailed metrics.';
+
+  @override
+  String get statisticsV2DetailChartTitle => 'Trend';
+
+  @override
+  String get statisticsV2DetailChartSubtitleWeek =>
+      'Daily values in the last 7 days';
+
+  @override
+  String get statisticsV2DetailChartSubtitleMonth =>
+      'Daily values grouped in the last 30 days';
+
+  @override
+  String get statisticsV2DetailChartSubtitleYear =>
+      'Monthly values in the last 12 months';
+
+  @override
+  String get statisticsV2DetailCheckSectionTitle => 'Completion summary';
+
+  @override
+  String get statisticsV2DetailCompletedDays => 'Completed / scheduled';
+
+  @override
+  String get statisticsV2DetailCompletionLabel => 'Completion';
+
+  @override
+  String get statisticsV2DetailConsistencyLabel => 'Consistency';
+
+  @override
+  String get statisticsV2DetailBestStreakLabel => 'Best streak';
+
+  @override
+  String get statisticsV2DetailActivityDaysLabel => 'Days with activity';
+
+  @override
+  String get statisticsV2DetailNoComparisonData =>
+      'There is still not enough weekly data to compare.';
+
+  @override
+  String get statisticsV2DetailBestMomentTitle => 'When you complete it best';
+
+  @override
+  String get statisticsV2DetailBestMomentSubtitle =>
+      'Based on your completion logs';
+
+  @override
+  String get statisticsV2DetailBestMomentEmpty =>
+      'There is still not enough data to detect your best moment.';
+
+  @override
+  String get statisticsV2DetailInsightTitle => 'Dynamic insight';
+
+  @override
   String get drawerBrandName => 'rutio';
 
   @override

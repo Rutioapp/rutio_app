@@ -5,70 +5,62 @@ import 'package:provider/provider.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
-import 'package:rutio/features/statistics/presentation/screens/statistics_screen.dart';
+import 'package:rutio/features/statistics/application/adapters/statistics_data_adapter.dart';
+import 'package:rutio/features/statistics/domain/statistics_period.dart';
+import 'package:rutio/features/statistics/presentation/screens/statistics_habit_detail_screen.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  final today = DateTime(2026, 5, 5);
-  final todayKey = _dateKey(today);
+  final todayKey = _dateKey(DateTime.now());
 
-  testWidgets('Statistics habits tab renders empty list', (tester) async {
-    final store = await _seedStore(habits: const <Map<String, dynamic>>[]);
-    await store.load();
-    await _pumpScreen(tester, store: store);
-
-    await _openHabitsTab(tester);
-    expect(find.text('You still have no active habits'), findsOneWidget);
-  });
-
-  testWidgets('Statistics habits tab renders check habits', (tester) async {
+  testWidgets('Detail renders check habit', (tester) async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
-        _checkHabit('check_1', name: 'Morning walk'),
+        _checkHabit('check_1', name: 'Read'),
       ],
       habitCompletions: <String, dynamic>{
         todayKey: <String, dynamic>{'check_1': true},
       },
     );
     await store.load();
-    await _pumpScreen(tester, store: store);
 
-    await _openHabitsTab(tester);
-    await tester.tap(find.text('Day'));
-    await tester.pumpAndSettle();
+    await _pumpDetail(tester, store: store, habitId: 'check_1');
+    final l10n = _l10nOf(tester);
 
-    expect(find.text('Morning walk'), findsOneWidget);
-    expect(find.text('1/1 days'), findsWidgets);
-    expect(find.text('100% completed'), findsWidgets);
+    expect(find.text(l10n.statisticsV2DetailTitle), findsOneWidget);
+    expect(find.text('Read'), findsOneWidget);
   });
 
-  testWidgets('Statistics habits tab renders count habits', (tester) async {
+  testWidgets('Detail renders count habit', (tester) async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
-        _countHabit('count_1', name: 'Read pages', target: 8),
+        _countHabit('count_1', name: 'Run', target: 8),
       ],
       habitCountValues: <String, dynamic>{
         todayKey: <String, dynamic>{'count_1': 8},
       },
     );
     await store.load();
-    await _pumpScreen(tester, store: store);
+    final detail = const StatisticsDataAdapter().buildHabitDetail(
+      store: store,
+      habitId: 'count_1',
+      period: StatisticsPeriod.week,
+    );
+    expect(detail, isNotNull);
+    expect(detail!.habit.type.name, 'count');
+    expect(detail.habit.countProgress, isNotNull);
 
-    await _openHabitsTab(tester);
-    await tester.tap(find.text('Day'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Read pages'), findsOneWidget);
-    expect(find.text('1 goals completed'), findsWidgets);
-    expect(find.text('0 partial days'), findsWidgets);
+    await _pumpDetail(tester, store: store, habitId: 'count_1');
+    final l10n = _l10nOf(tester);
+    expect(find.text(l10n.statisticsV2DetailTitle), findsOneWidget);
+    expect(find.text('Run'), findsOneWidget);
+    expect(find.text(l10n.statisticsV2HabitsTypeCount), findsOneWidget);
   });
 
-  testWidgets('Count 6/8 shows partial progress and not completed goal', (
-    tester,
-  ) async {
+  test('Count 6/8 is partial progress and not goal completed', () async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
         _countHabit('count_1', name: 'Run', target: 8),
@@ -78,17 +70,20 @@ void main() {
       },
     );
     await store.load();
-    await _pumpScreen(tester, store: store);
+    final adapter = const StatisticsDataAdapter();
 
-    await _openHabitsTab(tester);
-    await tester.tap(find.text('Day'));
-    await tester.pumpAndSettle();
+    final detail = adapter.buildHabitDetail(
+      store: store,
+      habitId: 'count_1',
+      period: StatisticsPeriod.week,
+    );
 
-    expect(find.text('1 partial days'), findsWidgets);
-    expect(find.text('0 goals completed'), findsWidgets);
+    expect(detail, isNotNull);
+    expect(detail!.habit.countProgress!.partialProgressDays, 1);
+    expect(detail.habit.countProgress!.goalCompletedDays, 0);
   });
 
-  testWidgets('Count 8/8 shows goal completed', (tester) async {
+  test('Count 8/8 is goal completed', () async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
         _countHabit('count_1', name: 'Run', target: 8),
@@ -98,146 +93,91 @@ void main() {
       },
     );
     await store.load();
-    await _pumpScreen(tester, store: store);
+    final adapter = const StatisticsDataAdapter();
 
-    await _openHabitsTab(tester);
-    await tester.tap(find.text('Day'));
-    await tester.pumpAndSettle();
+    final detail = adapter.buildHabitDetail(
+      store: store,
+      habitId: 'count_1',
+      period: StatisticsPeriod.week,
+    );
 
-    expect(find.text('1 goals completed'), findsWidgets);
-    expect(find.text('0 partial days'), findsWidgets);
+    expect(detail, isNotNull);
+    expect(detail!.habit.countProgress!.goalCompletedDays, 1);
+    expect(detail.habit.countProgress!.partialProgressDays, 0);
   });
 
-  testWidgets('Habits search filters by name', (tester) async {
-    final store = await _seedStore(
-      habits: <Map<String, dynamic>>[
-        _checkHabit('check_1', name: 'Morning walk'),
-        _checkHabit('check_2', name: 'Read'),
-      ],
-    );
-    await store.load();
-    await _pumpScreen(tester, store: store);
-
-    await _openHabitsTab(tester);
-    await tester.enterText(
-      find.byKey(const Key('statistics_habits_search_field')),
-      'read',
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Read'), findsOneWidget);
-    expect(find.text('Morning walk'), findsNothing);
-  });
-
-  testWidgets('Habits filter All/Check/Count works', (tester) async {
-    final store = await _seedStore(
-      habits: <Map<String, dynamic>>[
-        _checkHabit('check_1', name: 'Check habit'),
-        _countHabit('count_1', name: 'Count habit', target: 8),
-      ],
-      habitCountValues: <String, dynamic>{
-        todayKey: <String, dynamic>{'count_1': 2},
-      },
-    );
-    await store.load();
-    await _pumpScreen(tester, store: store);
-
-    await _openHabitsTab(tester);
-    expect(find.text('Check habit'), findsOneWidget);
-    expect(find.text('Count habit'), findsOneWidget);
-
-    await tester.tap(find.text('Check').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Check habit'), findsOneWidget);
-    expect(find.text('Count habit'), findsNothing);
-
-    await tester.tap(find.text('Count').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Check habit'), findsNothing);
-    expect(find.text('Count habit'), findsOneWidget);
-
-    await tester.tap(find.text('All').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Check habit'), findsOneWidget);
-    expect(find.text('Count habit'), findsOneWidget);
-  });
-
-  testWidgets('Tap on habit card opens real statistics detail', (
+  testWidgets('Detail selector Week/Month/Year updates chart subtitle', (
     tester,
   ) async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
-        _checkHabit('check_1', name: 'Morning walk'),
+        _checkHabit('check_1', name: 'Read'),
       ],
       habitCompletions: <String, dynamic>{
         todayKey: <String, dynamic>{'check_1': true},
       },
     );
     await store.load();
-    await _pumpScreen(tester, store: store);
 
-    await _openHabitsTab(tester);
-    await tester.tap(find.text('Morning walk').first);
+    await _pumpDetail(tester, store: store, habitId: 'check_1');
+    final l10n = _l10nOf(tester);
+    expect(find.text(l10n.statisticsV2DetailChartSubtitleWeek), findsOneWidget);
+
+    await tester.tap(find.text('Month'));
     await tester.pumpAndSettle();
+    expect(find.text(l10n.statisticsV2DetailChartSubtitleMonth), findsOneWidget);
 
-    final context = tester.element(find.byType(Scaffold).first);
-    final l10n = AppLocalizations.of(context);
-    expect(find.text(l10n.statisticsV2DetailTitle), findsOneWidget);
+    await tester.tap(find.text('Year'));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.statisticsV2DetailChartSubtitleYear), findsOneWidget);
   });
 
-  testWidgets('Changing period updates visible metrics in habits tab', (
+  testWidgets('Detail with no data does not crash and shows empty state', (
     tester,
   ) async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
-        _checkHabit('check_1', name: 'Reading'),
+        _checkHabit('check_1', name: 'Read'),
       ],
-      habitCompletions: <String, dynamic>{
-        todayKey: <String, dynamic>{'check_1': true},
-      },
     );
     await store.load();
-    await _pumpScreen(tester, store: store);
 
-    await _openHabitsTab(tester);
-    await tester.tap(find.text('Day'));
-    await tester.pumpAndSettle();
-    expect(find.text('1/1 days'), findsWidgets);
+    await _pumpDetail(tester, store: store, habitId: 'check_1');
+    final l10n = _l10nOf(tester);
 
-    await tester.tap(find.text('Week'));
-    await tester.pumpAndSettle();
-    expect(find.text('1/7 days'), findsWidgets);
+    expect(find.text(l10n.statisticsV2DetailNoDataTitle), findsOneWidget);
   });
 
-  testWidgets('Check habits keep completion semantics', (tester) async {
+  testWidgets('Check habits keep check completion semantics', (tester) async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
-        _checkHabit('check_1', name: 'Stretch'),
+        _checkHabit('check_1', name: 'Read'),
       ],
       habitCompletions: <String, dynamic>{
         todayKey: <String, dynamic>{'check_1': false},
       },
     );
     await store.load();
-    await _pumpScreen(tester, store: store);
+    final detail = const StatisticsDataAdapter().buildHabitDetail(
+      store: store,
+      habitId: 'check_1',
+      period: StatisticsPeriod.week,
+    );
+    expect(detail, isNotNull);
+    expect(detail!.habit.type.name, 'check');
+    expect(detail.completedDays, 0);
+    expect(detail.scheduledDays, 7);
+    expect(detail.completionPct, 0);
 
-    await _openHabitsTab(tester);
-    await tester.tap(find.text('Day'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('0/1 days'), findsWidgets);
-    expect(find.text('0% completed'), findsWidgets);
+    await _pumpDetail(tester, store: store, habitId: 'check_1');
+    expect(find.byType(StatisticsHabitDetailScreen), findsOneWidget);
   });
 }
 
-Future<void> _openHabitsTab(WidgetTester tester) async {
-  await tester.tap(find.text('Habits'));
-  await tester.pumpAndSettle();
-}
-
-Future<void> _pumpScreen(
+Future<void> _pumpDetail(
   WidgetTester tester, {
   required UserStateStore store,
+  required String habitId,
 }) async {
   await tester.pumpWidget(
     ChangeNotifierProvider<UserStateStore>.value(
@@ -251,7 +191,7 @@ Future<void> _pumpScreen(
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const StatisticsScreen(),
+        home: StatisticsHabitDetailScreen(habitId: habitId),
       ),
     ),
   );
@@ -265,7 +205,7 @@ Future<UserStateStore> _seedStore({
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final repo = UserStateRepository(storage: UserStateStorage())
-    ..setActiveUserScope('stats_habits_user');
+    ..setActiveUserScope('stats_detail_user');
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
@@ -273,7 +213,7 @@ Future<UserStateStore> _seedStore({
 
   final state = <String, dynamic>{
     'userState': <String, dynamic>{
-      'userId': 'stats_habits_user',
+      'userId': 'stats_detail_user',
       'meta': <String, dynamic>{
         'schemaVersion': 1,
         'lastSavedAt': DateTime.now().toUtc().toIso8601String(),
@@ -361,4 +301,9 @@ String _dateKey(DateTime date) {
   final m = date.month.toString().padLeft(2, '0');
   final d = date.day.toString().padLeft(2, '0');
   return '$y-$m-$d';
+}
+
+AppLocalizations _l10nOf(WidgetTester tester) {
+  final context = tester.element(find.byType(Scaffold).first);
+  return AppLocalizations.of(context);
 }

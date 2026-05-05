@@ -164,15 +164,42 @@ class StatisticsHabitDetailSummary {
     required this.period,
     required this.range,
     required this.habit,
+    required this.scheduledDays,
+    required this.completedDays,
+    required this.daysWithActivity,
+    required this.dailyValues,
     required this.thisWeekDoneDays,
     required this.lastWeekDoneDays,
+    required this.bestMomentPercents,
+    required this.bestMomentKey,
+    required this.hasBestMomentData,
     required this.insight,
   });
 
   final StatisticsPeriod period;
   final StatisticsRange range;
   final StatisticsHabitSummary habit;
+  final int scheduledDays;
+  final int completedDays;
+  final int daysWithActivity;
+  final List<int> dailyValues;
   final int thisWeekDoneDays;
   final int lastWeekDoneDays;
+  final Map<String, int> bestMomentPercents;
+  final String? bestMomentKey;
+  final bool hasBestMomentData;
   final String insight;
+
+  int get completionPct {
+    if (scheduledDays <= 0) return 0;
+    return ((completedDays / scheduledDays) * 100).round();
+  }
+
+  bool get hasRangeData {
+    if (completedDays > 0 || daysWithActivity > 0) return true;
+    if (habit.type == StatisticsHabitType.count) {
+      return habit.periodVolume > 0;
+    }
+    return false;
+  }
 }

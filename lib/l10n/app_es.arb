@@ -1,4 +1,4 @@
-{
+﻿{
   "splashTagline": "CONSTRUYE TU CAMINO",
   "splashTapToStart": "TOCA PARA COMENZAR",
   "welcomeBrand": "RUTIO",
@@ -93,7 +93,7 @@
   },
   "levelUpContinueButton": "Continuar",
   "levelUpShareButton": "Compartir",
-  "levelUpRewardAmbarLine": "Has recibido {amount} Ámbar.",
+  "levelUpRewardAmbarLine": "Has recibido {amount} Ãmbar.",
   "@levelUpRewardAmbarLine": {
     "placeholders": {
       "amount": {
@@ -882,26 +882,26 @@
   "editHabitSuggestedUnitSteps": "pasos",
   "editHabitSuggestedUnitRepetitions": "repeticiones",
   "editHabitSuggestedUnitHours": "horas",
-  "statisticsV2Title": "Estadísticas V2",
+  "statisticsV2Title": "EstadÃ­sticas V2",
   "statisticsV2TabOverview": "Vista general",
-  "statisticsV2TabHabits": "Hábitos",
-  "statisticsV2PeriodDay": "Día",
+  "statisticsV2TabHabits": "HÃ¡bitos",
+  "statisticsV2PeriodDay": "DÃ­a",
   "statisticsV2PeriodWeek": "Semana",
   "statisticsV2PeriodMonth": "Mes",
-  "statisticsV2PeriodYear": "Año",
+  "statisticsV2PeriodYear": "AÃ±o",
   "statisticsV2OverviewSubtitleToday": "Hoy",
   "statisticsV2OverviewSubtitleThisWeek": "Esta semana",
   "statisticsV2OverviewSubtitleThisMonth": "Este mes",
-  "statisticsV2OverviewSubtitleThisYear": "Este año",
+  "statisticsV2OverviewSubtitleThisYear": "Este aÃ±o",
   "statisticsV2OverviewSummaryTitle": "Resumen",
-  "statisticsV2OverviewCompletedHabits": "Hábitos completados",
-  "statisticsV2OverviewHabitsWithProgress": "Hábitos con progreso",
+  "statisticsV2OverviewCompletedHabits": "HÃ¡bitos completados",
+  "statisticsV2OverviewHabitsWithProgress": "HÃ¡bitos con progreso",
   "statisticsV2OverviewOverallConsistency": "Consistencia",
-  "statisticsV2OverviewTotalHabits": "Hábitos totales:",
+  "statisticsV2OverviewTotalHabits": "HÃ¡bitos totales:",
   "statisticsV2OverviewFamilies": "Familias:",
   "statisticsV2OverviewConsistencyTitle": "Consistencia general",
-  "statisticsV2OverviewConsistencySubtitle": "Días completados frente a programados",
-  "statisticsV2OverviewConsistencyFraction": "{completed} / {scheduled} días completados",
+  "statisticsV2OverviewConsistencySubtitle": "DÃ­as completados frente a programados",
+  "statisticsV2OverviewConsistencyFraction": "{completed} / {scheduled} dÃ­as completados",
   "@statisticsV2OverviewConsistencyFraction": {
     "placeholders": {
       "completed": {
@@ -921,17 +921,17 @@
     }
   },
   "statisticsV2OverviewActivityTitle": "Actividad y progreso",
-  "statisticsV2OverviewActivitySubtitle": "El progreso cuenta aunque no esté completado",
-  "statisticsV2OverviewActiveDays": "Días activos",
-  "statisticsV2OverviewCountGoalCompletedDays": "Días count con objetivo completado",
-  "statisticsV2OverviewCountPartialDays": "Días count con progreso parcial",
-  "statisticsV2OverviewActivityHint": "En hábitos count, el progreso parcial cuenta como actividad, pero no como completado.",
+  "statisticsV2OverviewActivitySubtitle": "El progreso cuenta aunque no estÃ© completado",
+  "statisticsV2OverviewActiveDays": "DÃ­as activos",
+  "statisticsV2OverviewCountGoalCompletedDays": "DÃ­as count con objetivo completado",
+  "statisticsV2OverviewCountPartialDays": "DÃ­as count con progreso parcial",
+  "statisticsV2OverviewActivityHint": "En hÃ¡bitos count, el progreso parcial cuenta como actividad, pero no como completado.",
   "statisticsV2OverviewFamiliesTitle": "Familias",
-  "statisticsV2OverviewFamiliesSubtitle": "Distribución por familia",
-  "statisticsV2OverviewFamiliesEmpty": "Aún no hay suficientes datos por familia en este periodo.",
-  "statisticsV2OverviewTopHabitsTitle": "Hábitos destacados",
+  "statisticsV2OverviewFamiliesSubtitle": "DistribuciÃ³n por familia",
+  "statisticsV2OverviewFamiliesEmpty": "AÃºn no hay suficientes datos por familia en este periodo.",
+  "statisticsV2OverviewTopHabitsTitle": "HÃ¡bitos destacados",
   "statisticsV2OverviewTopHabitsSubtitle": "Mejor rendimiento en el periodo seleccionado",
-  "statisticsV2OverviewTopHabitsEmpty": "Todavía no hay hábitos destacados en este periodo.",
+  "statisticsV2OverviewTopHabitsEmpty": "TodavÃ­a no hay hÃ¡bitos destacados en este periodo.",
   "statisticsV2OverviewVolumeLabel": "Volumen",
   "statisticsV2OverviewConsistencyShortLabel": "Consistencia",
   "statisticsV2OverviewBestMomentTitle": "Mejor momento",
@@ -943,29 +943,29 @@
       }
     }
   },
-  "statisticsV2OverviewBestMomentSubtitle": "Franja del día con más completados",
-  "statisticsV2OverviewBestMomentEmpty": "Todavía no hay suficientes datos para detectar tu mejor momento.",
+  "statisticsV2OverviewBestMomentSubtitle": "Franja del dÃ­a con mÃ¡s completados",
+  "statisticsV2OverviewBestMomentEmpty": "TodavÃ­a no hay suficientes datos para detectar tu mejor momento.",
   "statisticsV2OverviewCalendarTitle": "Calendario de consistencia",
   "statisticsV2OverviewCalendarSubtitle": "Ritmo visual del mes actual",
-  "statisticsV2OverviewCalendarEmpty": "Aún no hay datos para mostrar en este calendario.",
-  "statisticsV2HabitsSearchHint": "Buscar hábito",
+  "statisticsV2OverviewCalendarEmpty": "AÃºn no hay datos para mostrar en este calendario.",
+  "statisticsV2HabitsSearchHint": "Buscar hÃ¡bito",
   "statisticsV2HabitsFilterAll": "Todos",
   "statisticsV2HabitsFilterCheck": "Check",
   "statisticsV2HabitsFilterCount": "Count",
   "statisticsV2HabitsAllFamilies": "Familias",
   "statisticsV2HabitsTypeCheck": "Check",
   "statisticsV2HabitsTypeCount": "Count",
-  "statisticsV2HabitsEmptyTitle": "Aún no tienes hábitos activos",
-  "statisticsV2HabitsEmptySubtitle": "Crea tu primer hábito para empezar a ver estadísticas detalladas.",
-  "statisticsV2HabitsNoMatchesTitle": "No hay hábitos que coincidan",
-  "statisticsV2HabitsNoMatchesSubtitle": "Prueba otra búsqueda o filtro.",
+  "statisticsV2HabitsEmptyTitle": "AÃºn no tienes hÃ¡bitos activos",
+  "statisticsV2HabitsEmptySubtitle": "Crea tu primer hÃ¡bito para empezar a ver estadÃ­sticas detalladas.",
+  "statisticsV2HabitsNoMatchesTitle": "No hay hÃ¡bitos que coincidan",
+  "statisticsV2HabitsNoMatchesSubtitle": "Prueba otra bÃºsqueda o filtro.",
   "statisticsV2HabitsMetricCompleted": "Completado",
   "statisticsV2HabitsMetricCompletion": "Cumplimiento",
   "statisticsV2HabitsMetricStreak": "Racha",
   "statisticsV2HabitsTotalAccumulated": "Total acumulado",
   "statisticsV2HabitsGoalCompleted": "Objetivos completados",
   "statisticsV2HabitsPartialProgress": "Progreso parcial",
-  "statisticsV2HabitsCheckCompletedDays": "{done}/{scheduled} días",
+  "statisticsV2HabitsCheckCompletedDays": "{done}/{scheduled} dÃ­as",
   "@statisticsV2HabitsCheckCompletedDays": {
     "placeholders": {
       "done": {
@@ -1000,7 +1000,7 @@
       }
     }
   },
-  "statisticsV2HabitsPartialDays": "{count} días parciales",
+  "statisticsV2HabitsPartialDays": "{count} dÃ­as parciales",
   "@statisticsV2HabitsPartialDays": {
     "placeholders": {
       "count": {
@@ -1008,6 +1008,26 @@
       }
     }
   },
+  "statisticsV2DetailTitle": "Detalle del hábito",
+  "statisticsV2DetailNotFoundTitle": "No se encontró el hábito",
+  "statisticsV2DetailNotFoundSubtitle": "Este hábito ya no está disponible en tu lista activa.",
+  "statisticsV2DetailNoDataTitle": "Todavía no hay datos en este periodo",
+  "statisticsV2DetailNoDataSubtitle": "Completa este hábito en este periodo para desbloquear métricas detalladas.",
+  "statisticsV2DetailChartTitle": "Tendencia",
+  "statisticsV2DetailChartSubtitleWeek": "Valores diarios en los últimos 7 días",
+  "statisticsV2DetailChartSubtitleMonth": "Valores diarios agrupados en los últimos 30 días",
+  "statisticsV2DetailChartSubtitleYear": "Valores mensuales en los últimos 12 meses",
+  "statisticsV2DetailCheckSectionTitle": "Resumen de cumplimiento",
+  "statisticsV2DetailCompletedDays": "Completados / programados",
+  "statisticsV2DetailCompletionLabel": "Completado",
+  "statisticsV2DetailConsistencyLabel": "Consistencia",
+  "statisticsV2DetailBestStreakLabel": "Mejor racha",
+  "statisticsV2DetailActivityDaysLabel": "Días con actividad",
+  "statisticsV2DetailNoComparisonData": "Aún no hay suficientes datos semanales para comparar.",
+  "statisticsV2DetailBestMomentTitle": "Cuándo lo cumples mejor",
+  "statisticsV2DetailBestMomentSubtitle": "Según tus registros de completado",
+  "statisticsV2DetailBestMomentEmpty": "Todavía no hay suficientes datos para detectar tu mejor momento.",
+  "statisticsV2DetailInsightTitle": "Insight dinámico",
   "drawerBrandName": "rutio",
   "drawerBrandTagline": "CONSTRUYE TU CAMINO",
   "drawerSectionViews": "VISTAS",
@@ -1316,3 +1336,4 @@
   "monthlyCurrentMonthTooltip": "Ir a este mes",
   "monthlyMenuTooltip": "Menu"
 }
+
