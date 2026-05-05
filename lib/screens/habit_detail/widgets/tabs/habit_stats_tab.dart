@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../../../l10n/l10n.dart';
 import '../../../../stores/user_state_store.dart';
+import '../../../../widgets/stats/helpers/stats_number_formatter.dart';
+import '../../../../widgets/stats/stats_weekly_bar_chart_card.dart';
 
 /// TAB: EstadÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­sticas de un hÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡bito - VERSIÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œN MEJORADA
 ///
@@ -102,15 +104,6 @@ class _HabitStatsTabState extends State<HabitStatsTab>
         List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
     final doneLast7 = last7.map((d) => countsByDay[_dateOnly(d)] ?? 0).toList();
     final doneThisWeek = doneLast7.where((c) => c > 0).length;
-    final max7 = doneLast7.isEmpty
-        ? 1
-        : doneLast7.reduce((a, b) => a > b ? a : b).clamp(1, 999);
-
-    final weekTrendIcon = doneThisWeek > donePrev7
-        ? Icons.trending_up_rounded
-        : doneThisWeek < donePrev7
-            ? Icons.trending_down_rounded
-            : Icons.trending_flat_rounded;
 
     final border = widget.familyColor.withValues(alpha: 0.20);
     final bg = widget.familyColor.withValues(alpha: 0.08);
@@ -172,17 +165,19 @@ class _HabitStatsTabState extends State<HabitStatsTab>
             iconColor: widget.familyColor,
             border: border,
             bg: Colors.white,
-            child: _WeeklyBars(
-              familyColor: widget.familyColor,
-              today: today,
-              days: last7,
-              counts: doneLast7,
-              maxCount: max7,
-              weekTrendIcon: weekTrendIcon,
-              doneThisWeek: doneThisWeek,
-              donePrev7: donePrev7,
-              hintText: _hintTextFromExtraction(context, widget.habit),
-              scrollable: false,
+            child: StatsWeeklyBarChartCard(
+              title: l10n.habitStatsTabLastDaysTitle(7),
+              subtitle: l10n.habitStatsTabWeeklyDelta(doneThisWeek - donePrev7),
+              points: List.generate(last7.length, (i) {
+                final d = last7[i];
+                return StatsBarPoint(
+                  label: _dowShort(context, d),
+                  value: doneLast7[i].toDouble(),
+                  isActive: _dateOnly(d) == today,
+                );
+              }),
+              accent: widget.familyColor,
+              valueFormatter: (v) => StatsNumberFormatter.compact1(v),
             ),
           ),
 
@@ -580,6 +575,7 @@ class _HabitStatsTabState extends State<HabitStatsTab>
 
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
+  // ignore: unused_element
   static String _hintTextFromExtraction(BuildContext context, dynamic habit) {
     if (habit is Map) {
       final type = habit['type'] ?? habit['habitType'] ?? '';
@@ -1098,6 +1094,7 @@ class _MetricCardWithProgress extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _WeeklyBars extends StatelessWidget {
   final Color familyColor;
   final bool scrollable;

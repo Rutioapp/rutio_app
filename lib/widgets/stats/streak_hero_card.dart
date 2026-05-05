@@ -59,7 +59,15 @@ class _StreakHeroCardState extends State<StreakHeroCard>
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    const bg = Color(0xFF1C1A17);
+    final visual = _visualForStreak(widget.streakDays);
+    final onDark = visual.gradient.first.computeLuminance() < 0.35;
+    final textColor = onDark ? Colors.white : const Color(0xFF1F1B16);
+    final mutedTextColor =
+        onDark ? Colors.white.withValues(alpha: 0.72) : const Color(0xFF6A6153);
+    final trackColor =
+        onDark ? Colors.white.withValues(alpha: 0.16) : Colors.black.withValues(alpha: 0.10);
+    final captionColor =
+        onDark ? Colors.white.withValues(alpha: 0.55) : Colors.black.withValues(alpha: 0.55);
 
     final next = widget.nextMilestoneDays <= 0 ? 1 : widget.nextMilestoneDays;
     final progress = (widget.streakDays / next).clamp(0.0, 1.0);
@@ -79,11 +87,16 @@ class _StreakHeroCardState extends State<StreakHeroCard>
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: bg,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: visual.gradient,
+            ),
             borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: visual.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.20),
+                color: visual.shadow,
                 blurRadius: 24,
                 offset: const Offset(0, 14),
               ),
@@ -95,7 +108,7 @@ class _StreakHeroCardState extends State<StreakHeroCard>
                 right: 2,
                 bottom: -6,
                 child: Opacity(
-                  opacity: 0.18,
+                  opacity: visual.emojiOpacity,
                   child: Text(
                     widget.decorEmoji,
                     style: const TextStyle(fontSize: 86),
@@ -110,10 +123,10 @@ class _StreakHeroCardState extends State<StreakHeroCard>
                     child: Text(
                       '${widget.streakDays}',
                       textAlign: TextAlign.left,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 72,
                         height: 0.95,
-                        color: Colors.white,
+                        color: textColor,
                         fontFamily: AppTextStyles.serifFamily,
                       ),
                     ),
@@ -127,7 +140,7 @@ class _StreakHeroCardState extends State<StreakHeroCard>
                         Text(
                           l10n.habitStatsCurrentStreakUpper,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.50),
+                            color: mutedTextColor,
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.4,
@@ -136,8 +149,8 @@ class _StreakHeroCardState extends State<StreakHeroCard>
                         const SizedBox(height: 10),
                         Text(
                           _headline(context, widget.streakDays, next),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: textColor,
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                             height: 1.05,
@@ -148,7 +161,7 @@ class _StreakHeroCardState extends State<StreakHeroCard>
                           l10n.habitStatsMilestoneProgress(
                               milestoneLabel, next),
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
+                            color: mutedTextColor,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -158,6 +171,8 @@ class _StreakHeroCardState extends State<StreakHeroCard>
                           progress: progress,
                           leftLabel: left,
                           rightLabel: right,
+                          trackColor: trackColor,
+                          captionColor: captionColor,
                         ),
                       ],
                     ),
@@ -177,6 +192,53 @@ class _StreakHeroCardState extends State<StreakHeroCard>
     if (streak < next) return l10n.habitStatsHeadlineGoodStart;
     return l10n.habitStatsHeadlineOnStreak;
   }
+
+  _StreakVisual _visualForStreak(int streak) {
+    if (streak <= 2) {
+      return const _StreakVisual(
+        gradient: [Color(0xFFF6F1E7), Color(0xFFF1E7D8)],
+        border: Color(0xFFE7D9C6),
+        shadow: Color(0x2213120F),
+        emojiOpacity: 0.10,
+      );
+    }
+    if (streak <= 6) {
+      return const _StreakVisual(
+        gradient: [Color(0xFFEAF3E7), Color(0xFFE0ECDE)],
+        border: Color(0xFFC9DDC2),
+        shadow: Color(0x22334A34),
+        emojiOpacity: 0.12,
+      );
+    }
+    if (streak <= 13) {
+      return const _StreakVisual(
+        gradient: [Color(0xFFF7EEE1), Color(0xFFF2E3C8)],
+        border: Color(0xFFE7CFAC),
+        shadow: Color(0x224A3A2A),
+        emojiOpacity: 0.14,
+      );
+    }
+    return const _StreakVisual(
+      gradient: [Color(0xFF1D2622), Color(0xFF2D342D)],
+      border: Color(0xFF4A5F4E),
+      shadow: Color(0x33322A1F),
+      emojiOpacity: 0.20,
+    );
+  }
+}
+
+class _StreakVisual {
+  const _StreakVisual({
+    required this.gradient,
+    required this.border,
+    required this.shadow,
+    required this.emojiOpacity,
+  });
+
+  final List<Color> gradient;
+  final Color border;
+  final Color shadow;
+  final double emojiOpacity;
 }
 
 class _ProgressBar extends StatelessWidget {
@@ -184,11 +246,15 @@ class _ProgressBar extends StatelessWidget {
     required this.progress,
     required this.leftLabel,
     required this.rightLabel,
+    required this.trackColor,
+    required this.captionColor,
   });
 
   final double progress;
   final String leftLabel;
   final String rightLabel;
+  final Color trackColor;
+  final Color captionColor;
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +264,7 @@ class _ProgressBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           child: Container(
             height: 6,
-            color: Colors.white.withValues(alpha: 0.16),
+            color: trackColor,
             child: Align(
               alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
@@ -221,7 +287,7 @@ class _ProgressBar extends StatelessWidget {
             Text(
               leftLabel,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: captionColor,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -229,7 +295,7 @@ class _ProgressBar extends StatelessWidget {
             Text(
               rightLabel,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.55),
+                color: captionColor,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),

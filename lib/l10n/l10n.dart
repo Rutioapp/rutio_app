@@ -1122,6 +1122,43 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
   String get habitStatsLastWeek =>
       _isSpanishHabitStats ? 'Semana pasada' : 'Last week';
 
+  String get habitStatsCountObjectiveTitle =>
+      _isSpanishHabitStats ? 'Objetivo' : 'Goal';
+
+  String habitStatsCountObjectiveSubtitle(int target) => _isSpanishHabitStats
+      ? 'Meta diaria: $target'
+      : 'Daily target: $target';
+
+  String get habitStatsCountGoalCompleted =>
+      _isSpanishHabitStats ? 'Completado' : 'Completed';
+
+  String get habitStatsCountPartialProgress =>
+      _isSpanishHabitStats ? 'Parcial' : 'Partial';
+
+  String get habitStatsCountAverageCompliance =>
+      _isSpanishHabitStats ? 'Cumplimiento medio' : 'Average compliance';
+
+  String get habitStatsCountDailyTarget =>
+      _isSpanishHabitStats ? 'Meta diaria' : 'Daily target';
+
+  String get habitStatsCountVolumeTitle =>
+      _isSpanishHabitStats ? 'Volumen' : 'Volume';
+
+  String get habitStatsCountTotalAccumulated =>
+      _isSpanishHabitStats ? 'Total acumulado' : 'Total accumulated';
+
+  String get habitStatsCountDailyAverage =>
+      _isSpanishHabitStats ? 'Media diaria' : 'Daily average';
+
+  String get habitStatsCountActiveDayAverage =>
+      _isSpanishHabitStats ? 'Media por dia activo' : 'Avg active day';
+
+  String get habitStatsCountBestDay =>
+      _isSpanishHabitStats ? 'Mejor dia' : 'Best day';
+
+  String get habitStatsCountActiveDays =>
+      _isSpanishHabitStats ? 'Dias con actividad' : 'Active days';
+
   String habitStatsTimeSlot(String slot) {
     switch (slot) {
       case 'morning':

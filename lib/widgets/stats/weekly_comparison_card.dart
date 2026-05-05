@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
+import 'helpers/stats_card_surface.dart';
 
 /// WeeklyComparisonCard
 /// UX/estilo (Rutio):
@@ -125,19 +126,8 @@ class WeeklyComparisonCard extends StatelessWidget {
     if (!asCard) return content;
 
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.08)),
-      ),
+      padding: StatsCardSurface.padding,
+      decoration: StatsCardSurface.decoration(context),
       child: content,
     );
   }

@@ -12,6 +12,9 @@ import '../widgets/stats/stats_month_heatmap.dart';
 import '../widgets/stats/weekly_comparison_card.dart';
 import '../widgets/stats/stats_best_time_of_day_card.dart';
 import '../widgets/stats/stats_motivational_tip_card.dart';
+import '../widgets/stats/stats_count_cards.dart';
+import '../widgets/stats/helpers/stats_card_surface.dart';
+import '../widgets/stats/helpers/stats_number_formatter.dart';
 
 import 'package:rutio/widgets/app_header/app_header.dart';
 import 'package:rutio/widgets/app_view_drawer.dart';
@@ -220,6 +223,7 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
           : l10n.habitStatsChartWeeksSubtitle,
       points: computed.bars,
       accent: familyColor,
+      valueFormatter: (v) => StatsNumberFormatter.compact1(v),
     );
 
     return Stack(
@@ -326,6 +330,25 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
               chart,
               const SizedBox(height: 12),
 
+              if (computed.countStats != null) ...[
+                StatsCountObjectiveCard(
+                  goalCompletedDays: computed.countStats!.goalCompletedDays,
+                  partialProgressDays: computed.countStats!.partialProgressDays,
+                  compliancePct: computed.countStats!.compliancePct,
+                  target: computed.countStats!.target,
+                  accent: familyColor,
+                ),
+                const SizedBox(height: 12),
+                StatsCountVolumeCard(
+                  totalAccumulated: computed.countStats!.totalAccumulated,
+                  dailyAverage: computed.countStats!.dailyAverage,
+                  activeDayAverage: computed.countStats!.activeDayAverage,
+                  bestDay: computed.countStats!.bestDay,
+                  activeDays: computed.countStats!.activeDays,
+                ),
+                const SizedBox(height: 12),
+              ],
+
               // 5.1) Comparación semanal
               WeeklyComparisonCard(
                 thisWeekDays: thisWeekDays,
@@ -379,6 +402,7 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
                 thisWeekDoneDays: thisWeekDays,
                 lastWeekDoneDays: lastWeekDays,
                 bestTimeLabel: bestTimeLabel,
+                compliancePct: computed.countStats?.compliancePct.round(),
               ),
             ],
           ),
@@ -400,6 +424,8 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     required String Function(int weekNumber) weekShortBuilder,
   }) {
     final today = _dateOnly(DateTime.now());
+    final isCountHabit = _habitType(habit) == 'count';
+    final target = _habitTarget(habit) <= 0 ? 1 : _habitTarget(habit);
 
     final range =
         _periodRange(period, today: today, store: store, habitId: habitId);
@@ -408,16 +434,12 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
     int scheduled = 0;
     int done = 0;
 
-    // Valores (para chart y totals)
-    final valuesByDay = <DateTime, int>{};
-
     for (final d in days) {
       if (!_isScheduledForDate(habit, d)) continue;
       scheduled++;
 
       final v = _doneValueForDay(
           store: store, habit: habit, habitId: habitId, date: d);
-      valuesByDay[d] = v;
       if (v > 0) done++;
     }
 
@@ -466,8 +488,19 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
       final last7 =
           List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
       for (final d in last7) {
-        final v = _doneValueForDay(
-            store: store, habit: habit, habitId: habitId, date: d);
+        final v = isCountHabit
+            ? _rawValueForDay(
+                store: store,
+                habit: habit,
+                habitId: habitId,
+                date: d,
+              )
+            : _doneValueForDay(
+                store: store,
+                habit: habit,
+                habitId: habitId,
+                date: d,
+              );
         bars.add(StatsBarPoint(
           label: weekdayLabelBuilder(d),
           value: v.toDouble(),
@@ -483,9 +516,21 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
         double sum = 0;
         for (int i = 0; i < 7; i++) {
           final d = ws.add(Duration(days: i));
-          final v = _doneValueForDay(
-              store: store, habit: habit, habitId: habitId, date: d);
-          sum += (v > 0 ? 1 : 0).toDouble();
+          if (!_isScheduledForDate(habit, d)) continue;
+          final v = isCountHabit
+              ? _rawValueForDay(
+                  store: store,
+                  habit: habit,
+                  habitId: habitId,
+                  date: d,
+                )
+              : _doneValueForDay(
+                  store: store,
+                  habit: habit,
+                  habitId: habitId,
+                  date: d,
+                );
+          sum += isCountHabit ? v.toDouble() : (v > 0 ? 1 : 0).toDouble();
         }
         bars.add(StatsBarPoint(
           label: weekShortBuilder(w + 1),
@@ -494,6 +539,54 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
               today.isBefore(we.add(const Duration(days: 1))),
         ));
       }
+    }
+
+    _CountStats? countStats;
+    if (isCountHabit) {
+      int goalCompletedDays = 0;
+      int partialProgressDays = 0;
+      int totalAccumulated = 0;
+      int bestDay = 0;
+      int activeDays = 0;
+      double complianceAccumulated = 0;
+
+      for (final d in days) {
+        if (!_isScheduledForDate(habit, d)) continue;
+        final raw = _rawValueForDay(
+          store: store,
+          habit: habit,
+          habitId: habitId,
+          date: d,
+        );
+        totalAccumulated += raw;
+        if (raw > 0) {
+          activeDays++;
+          if (raw > bestDay) bestDay = raw;
+        }
+        if (raw >= target) goalCompletedDays++;
+        if (raw > 0 && raw < target) partialProgressDays++;
+        complianceAccumulated += (raw / target).clamp(0.0, 1.0);
+      }
+
+      final compliancePct = scheduled == 0
+          ? 0.0
+          : (complianceAccumulated / scheduled.toDouble()) * 100.0;
+      final dailyAverage =
+          scheduled == 0 ? 0.0 : totalAccumulated / scheduled.toDouble();
+      final activeDayAverage =
+          activeDays == 0 ? 0.0 : totalAccumulated / activeDays.toDouble();
+
+      countStats = _CountStats(
+        target: target,
+        goalCompletedDays: goalCompletedDays,
+        partialProgressDays: partialProgressDays,
+        compliancePct: compliancePct,
+        totalAccumulated: totalAccumulated,
+        dailyAverage: dailyAverage,
+        activeDayAverage: activeDayAverage,
+        bestDay: bestDay,
+        activeDays: activeDays,
+      );
     }
 
     return _ComputedStats(
@@ -507,6 +600,7 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
       totalDone: totalDone,
       nextMilestone: nextMilestone,
       bars: bars,
+      countStats: countStats,
     );
   }
 
@@ -739,6 +833,48 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
 
     final done = (dayDoneMap[habitId] == true);
     return done ? 1 : 0;
+  }
+
+  int _rawValueForDay({
+    required UserStateStore store,
+    required dynamic habit,
+    required String habitId,
+    required DateTime date,
+  }) {
+    final root = store.state;
+    if (root is! Map) return 0;
+
+    final rootMap = Map<String, dynamic>.from(root as Map);
+
+    final Map<String, dynamic>? userState = (rootMap['userState'] is Map)
+        ? Map<String, dynamic>.from(rootMap['userState'] as Map)
+        : null;
+    final Map<String, dynamic>? history = (userState?['history'] is Map)
+        ? Map<String, dynamic>.from(userState?['history'] as Map)
+        : null;
+
+    final Map<String, dynamic> completions =
+        (history?['habitCompletions'] is Map)
+            ? Map<String, dynamic>.from(history?['habitCompletions'] as Map)
+            : <String, dynamic>{};
+    final Map<String, dynamic> countValues =
+        (history?['habitCountValues'] is Map)
+            ? Map<String, dynamic>.from(history?['habitCountValues'] as Map)
+            : <String, dynamic>{};
+
+    final dayKey = _dateKey(date);
+    final Map<String, dynamic> dayDoneMap = (completions[dayKey] is Map)
+        ? Map<String, dynamic>.from(completions[dayKey] as Map)
+        : <String, dynamic>{};
+    final Map<String, dynamic> dayValsMap = (countValues[dayKey] is Map)
+        ? Map<String, dynamic>.from(countValues[dayKey] as Map)
+        : <String, dynamic>{};
+
+    if (_habitType(habit) == 'count') {
+      return (dayValsMap[habitId] as num?)?.toInt() ?? 0;
+    }
+
+    return dayDoneMap[habitId] == true ? 1 : 0;
   }
 
   // =====================
@@ -985,19 +1121,8 @@ class _StatsSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-            color: Colors.black.withValues(alpha: 0.04),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: StatsCardSurface.decoration(context),
+      padding: StatsCardSurface.padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1085,6 +1210,7 @@ class _ComputedStats {
   final int nextMilestone;
 
   final List<StatsBarPoint> bars;
+  final _CountStats? countStats;
 
   const _ComputedStats({
     required this.totalDays,
@@ -1097,5 +1223,30 @@ class _ComputedStats {
     required this.totalDone,
     required this.nextMilestone,
     required this.bars,
+    this.countStats,
   });
+}
+
+class _CountStats {
+  const _CountStats({
+    required this.target,
+    required this.goalCompletedDays,
+    required this.partialProgressDays,
+    required this.compliancePct,
+    required this.totalAccumulated,
+    required this.dailyAverage,
+    required this.activeDayAverage,
+    required this.bestDay,
+    required this.activeDays,
+  });
+
+  final int target;
+  final int goalCompletedDays;
+  final int partialProgressDays;
+  final double compliancePct;
+  final int totalAccumulated;
+  final double dailyAverage;
+  final double activeDayAverage;
+  final int bestDay;
+  final int activeDays;
 }
