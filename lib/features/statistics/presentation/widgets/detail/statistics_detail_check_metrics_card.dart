@@ -30,41 +30,61 @@ class StatisticsDetailCheckMetricsCard extends StatelessWidget {
         children: [
           Text(
             l10n.statisticsV2DetailCheckSectionTitle,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'DMSerifDisplay',
+            ),
           ),
           const SizedBox(height: 12),
-          GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 2,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 2.2,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _MetricTile(
-                label: l10n.statisticsV2DetailCompletedDays,
-                value: l10n.statisticsV2HabitsCheckCompletedDays(
-                  completedDays,
-                  scheduledDays,
-                ),
-              ),
-              _MetricTile(
-                label: l10n.statisticsV2DetailCompletionLabel,
-                value: l10n.statisticsV2HabitsCompletedPct(completionPct),
-              ),
-              _MetricTile(
-                label: l10n.statisticsV2DetailConsistencyLabel,
-                value: l10n.statisticsV2HabitsCompletedPct(completionPct),
-              ),
-              _MetricTile(
-                label: l10n.statisticsV2DetailBestStreakLabel,
-                value: l10n.statisticsV2HabitsCurrentStreakDays(bestStreak),
-              ),
-              _MetricTile(
-                label: l10n.statisticsV2DetailActivityDaysLabel,
-                value: daysWithActivity.toString(),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final tileWidth = (constraints.maxWidth - 10) / 2;
+              return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  SizedBox(
+                    width: tileWidth,
+                    child: _MetricTile(
+                      label: l10n.statisticsV2DetailCompletedDays,
+                      value: l10n.statisticsV2HabitsCheckCompletedDays(
+                        completedDays,
+                        scheduledDays,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: tileWidth,
+                    child: _MetricTile(
+                      label: l10n.statisticsV2DetailCompletionLabel,
+                      value: l10n.statisticsV2HabitsCompletedPct(completionPct),
+                    ),
+                  ),
+                  SizedBox(
+                    width: tileWidth,
+                    child: _MetricTile(
+                      label: l10n.statisticsV2DetailConsistencyLabel,
+                      value: l10n.statisticsV2HabitsCompletedPct(completionPct),
+                    ),
+                  ),
+                  SizedBox(
+                    width: tileWidth,
+                    child: _MetricTile(
+                      label: l10n.statisticsV2DetailBestStreakLabel,
+                      value: l10n.statisticsV2HabitsCurrentStreakDays(bestStreak),
+                    ),
+                  ),
+                  SizedBox(
+                    width: tileWidth,
+                    child: _MetricTile(
+                      label: l10n.statisticsV2DetailActivityDaysLabel,
+                      value: daysWithActivity.toString(),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

@@ -19,6 +19,7 @@ import '../widgets/detail/statistics_detail_check_metrics_card.dart';
 import '../widgets/detail/statistics_detail_empty_state.dart';
 import '../widgets/detail/statistics_detail_header_card.dart';
 import '../widgets/statistics_period_selector.dart';
+import '../widgets/statistics_v2_tokens.dart';
 
 class StatisticsHabitDetailScreen extends StatefulWidget {
   const StatisticsHabitDetailScreen({
@@ -57,8 +58,18 @@ class _StatisticsHabitDetailScreenState extends State<StatisticsHabitDetailScree
 
     if (detail == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF8F5EF),
-        appBar: AppBar(title: Text(l10n.statisticsV2DetailTitle)),
+        backgroundColor: StatisticsV2Tokens.background,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            l10n.statisticsV2DetailTitle,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: StatisticsDetailEmptyState(
@@ -73,12 +84,27 @@ class _StatisticsHabitDetailScreenState extends State<StatisticsHabitDetailScree
     final familyColor = FamilyTheme.colorOf(habit.familyId);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
+      backgroundColor: StatisticsV2Tokens.background,
       appBar: AppBar(
-        title: Text(l10n.statisticsV2DetailTitle),
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          l10n.statisticsV2DetailTitle,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.more_horiz_rounded),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           StatisticsPeriodSelector(
             value: _period,
@@ -314,7 +340,11 @@ class _InsightCard extends StatelessWidget {
         children: [
           Text(
             l10n.statisticsV2DetailInsightTitle,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'DMSerifDisplay',
+            ),
           ),
           const SizedBox(height: 8),
           Text(

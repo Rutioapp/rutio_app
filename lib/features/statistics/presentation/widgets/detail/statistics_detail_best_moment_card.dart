@@ -27,7 +27,11 @@ class StatisticsDetailBestMomentCard extends StatelessWidget {
         children: [
           Text(
             l10n.statisticsV2DetailBestMomentTitle,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'DMSerifDisplay',
+            ),
           ),
           const SizedBox(height: 4),
           Text(

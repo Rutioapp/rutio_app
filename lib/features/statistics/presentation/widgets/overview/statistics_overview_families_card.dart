@@ -50,41 +50,48 @@ class _FamilyRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Text(
-            FamilyTheme.emojiOf(family.familyId),
-            style: const TextStyle(fontSize: 16),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              FamilyTheme.nameOf(family.familyId),
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F0E6),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Text(
+              FamilyTheme.emojiOf(family.familyId),
+              style: const TextStyle(fontSize: 16),
             ),
-          ),
-          SizedBox(
-            width: 100,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                minHeight: 7,
-                value: completionValue,
-                backgroundColor: color.withValues(alpha: 0.15),
-                valueColor: AlwaysStoppedAnimation<Color>(color),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                FamilyTheme.nameOf(family.familyId),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${family.completedHabits}/${family.totalHabits}',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              color: Colors.black.withValues(alpha: 0.65),
+            SizedBox(
+              width: 72,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  minHeight: 6,
+                  value: completionValue,
+                  backgroundColor: color.withValues(alpha: 0.15),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Text(
+              '${family.completedHabits}/${family.totalHabits}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: Colors.black.withValues(alpha: 0.65),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

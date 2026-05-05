@@ -65,56 +65,62 @@ class _HabitRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '#$rank',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                color: Colors.black.withValues(alpha: 0.62),
-              ),
-            ),
-          ),
-          Container(
-            width: 9,
-            height: 9,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              habit.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                rightValue,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
-              ),
-              Text(
-                rightLabel,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F0E6),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 22,
+              child: Text(
+                '#$rank',
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black.withValues(alpha: 0.56),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black.withValues(alpha: 0.62),
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                habit.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  rightValue,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                ),
+                Text(
+                  rightLabel,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black.withValues(alpha: 0.56),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

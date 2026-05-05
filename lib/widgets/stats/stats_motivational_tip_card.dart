@@ -61,7 +61,11 @@ class StatsMotivationalTipCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
             alignment: Alignment.center,
-            child: const Text('??', style: TextStyle(fontSize: 22)),
+            child: const Icon(
+              Icons.lightbulb_rounded,
+              size: 22,
+              color: Color(0xFF2E7D32),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(

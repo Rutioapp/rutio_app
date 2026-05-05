@@ -39,18 +39,23 @@ class StatisticsOverviewActivityCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          _ActivityPill(
-            label: l10n.statisticsV2OverviewCountGoalCompletedDays,
-            value: summary.countGoalCompletedDays.toString(),
-            tint: const Color(0xFFEAF6EE),
-            textColor: const Color(0xFF2F6B4F),
-          ),
-          const SizedBox(height: 8),
-          _ActivityPill(
-            label: l10n.statisticsV2OverviewCountPartialDays,
-            value: summary.countPartialProgressDays.toString(),
-            tint: const Color(0xFFF8EED8),
-            textColor: const Color(0xFF8B5A1F),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _ActivityPill(
+                label: l10n.statisticsV2OverviewCountGoalCompletedDays,
+                value: summary.countGoalCompletedDays.toString(),
+                tint: const Color(0xFFEAF6EE),
+                textColor: const Color(0xFF2F6B4F),
+              ),
+              _ActivityPill(
+                label: l10n.statisticsV2OverviewCountPartialDays,
+                value: summary.countPartialProgressDays.toString(),
+                tint: const Color(0xFFF8EED8),
+                textColor: const Color(0xFF8B5A1F),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           Text(
@@ -114,16 +119,19 @@ class _ActivityPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(minWidth: 144),
       decoration: BoxDecoration(
         color: tint,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
+          Flexible(
             child: Text(
               label,
+              maxLines: 2,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -131,6 +139,7 @@ class _ActivityPill extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Text(
             value,
             style: TextStyle(

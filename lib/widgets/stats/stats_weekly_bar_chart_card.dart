@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import 'helpers/stats_card_surface.dart';
 import 'helpers/stats_number_formatter.dart';
 
 class StatsBarPoint {
@@ -48,18 +49,7 @@ class StatsWeeklyBarChartCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: StatsCardSurface.decoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

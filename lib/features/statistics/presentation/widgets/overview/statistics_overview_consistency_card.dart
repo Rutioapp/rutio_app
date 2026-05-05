@@ -25,12 +25,48 @@ class StatisticsOverviewConsistencyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.statisticsV2OverviewConsistencyFraction(
-              summary.completedDays,
-              summary.scheduledDays,
-            ),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          Row(
+            children: [
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 5,
+                      backgroundColor: Colors.black.withValues(alpha: 0.08),
+                      valueColor:
+                          const AlwaysStoppedAnimation<Color>(Color(0xFF5D896D)),
+                    ),
+                    Center(
+                      child: Text(
+                        '${summary.overallConsistencyPct}%',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.statisticsV2OverviewConsistencyFraction(
+                    summary.completedDays,
+                    summary.scheduledDays,
+                  ),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 10),
           ClipRRect(
@@ -44,7 +80,7 @@ class StatisticsOverviewConsistencyCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             l10n.statisticsV2OverviewOverallConsistencyValue(
               summary.overallConsistencyPct,

@@ -20,6 +20,12 @@ class StatisticsDetailEmptyState extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(
+            Icons.insights_rounded,
+            size: 20,
+            color: Colors.black.withValues(alpha: 0.48),
+          ),
+          const SizedBox(height: 8),
           Text(
             title,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),

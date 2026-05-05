@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../widgets/stats/helpers/stats_card_surface.dart';
+import '../statistics_v2_tokens.dart';
 
 class StatisticsOverviewSectionCard extends StatelessWidget {
   const StatisticsOverviewSectionCard({
@@ -24,17 +25,13 @@ class StatisticsOverviewSectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+            style: StatisticsV2Tokens.title.copyWith(fontSize: 16),
           ),
           if ((subtitle ?? '').trim().isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               subtitle!,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Colors.black.withValues(alpha: 0.58),
-              ),
+              style: StatisticsV2Tokens.subtitle,
             ),
           ],
           const SizedBox(height: 12),

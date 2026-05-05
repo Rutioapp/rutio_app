@@ -24,15 +24,55 @@ class StatisticsOverviewTab extends StatelessWidget {
       children: [
         StatisticsOverviewSummaryCard(summary: summary),
         const SizedBox(height: 12),
-        StatisticsOverviewConsistencyCard(summary: summary),
-        const SizedBox(height: 12),
         StatisticsOverviewActivityCard(summary: summary),
         const SizedBox(height: 12),
-        StatisticsOverviewFamiliesCard(summary: summary),
-        const SizedBox(height: 12),
-        StatisticsOverviewTopHabitsCard(summary: summary),
-        const SizedBox(height: 12),
-        StatisticsOverviewBestMomentCard(summary: summary),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 380;
+            if (compact) {
+              return Column(
+                children: [
+                  StatisticsOverviewConsistencyCard(summary: summary),
+                  const SizedBox(height: 12),
+                  StatisticsOverviewFamiliesCard(summary: summary),
+                  const SizedBox(height: 12),
+                  StatisticsOverviewBestMomentCard(summary: summary),
+                  const SizedBox(height: 12),
+                  StatisticsOverviewTopHabitsCard(summary: summary),
+                ],
+              );
+            }
+            return Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: StatisticsOverviewConsistencyCard(summary: summary),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: StatisticsOverviewFamiliesCard(summary: summary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: StatisticsOverviewBestMomentCard(summary: summary),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: StatisticsOverviewTopHabitsCard(summary: summary),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
         const SizedBox(height: 12),
         StatisticsOverviewCalendarCard(summary: summary),
       ],

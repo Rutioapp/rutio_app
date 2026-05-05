@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 import '../../../../stores/user_state_store.dart';
 import '../../application/adapters/statistics_data_adapter.dart';
@@ -9,6 +10,7 @@ import 'statistics_habit_detail_screen.dart';
 import '../widgets/statistics_habits_tab.dart';
 import '../widgets/statistics_overview_tab.dart';
 import '../widgets/statistics_period_selector.dart';
+import '../widgets/statistics_v2_tokens.dart';
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -43,10 +45,20 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     final overview = _adapter.buildOverview(store: store, period: _period);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F5EF),
+      backgroundColor: StatisticsV2Tokens.background,
       appBar: AppBar(
-        title: Text(context.l10n.statisticsV2Title),
-        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        toolbarHeight: 82,
+        titleSpacing: 20,
+        title: Text(
+          context.l10n.statisticsV2Title,
+          style: AppTextStyles.welcomeTitle.copyWith(
+            fontSize: 40,
+            color: StatisticsV2Tokens.ink,
+          ),
+        ),
+        centerTitle: false,
         elevation: 0,
       ),
       body: Column(
@@ -71,22 +83,34 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
-              height: 40,
+              height: 42,
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: StatisticsV2Tokens.surfaceSoft,
+                borderRadius: BorderRadius.circular(20),
               ),
               child: TabBar(
                 controller: _tabController,
                 indicator: BoxDecoration(
-                  color: const Color(0xFF1D1B18),
-                  borderRadius: BorderRadius.circular(10),
+                  color: StatisticsV2Tokens.accent,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.14),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.black.withValues(alpha: 0.6),
+                dividerColor: Colors.transparent,
+                unselectedLabelColor:
+                    StatisticsV2Tokens.ink.withValues(alpha: 0.64),
                 labelStyle:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                unselectedLabelStyle:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 tabs: [
                   Tab(text: context.l10n.statisticsV2TabOverview),
                   Tab(text: context.l10n.statisticsV2TabHabits),

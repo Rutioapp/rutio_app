@@ -54,17 +54,18 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? const Color(0xFF1D1B18) : Colors.white,
+      color: selected ? const Color(0xFF5A341A) : const Color(0xFFFFFCF7),
       borderRadius: BorderRadius.circular(999),
+      elevation: selected ? 2 : 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
               color: selected ? Colors.white : Colors.black.withValues(alpha: 0.72),
             ),

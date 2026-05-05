@@ -64,9 +64,13 @@ class _StatisticsHabitsTabState extends State<StatisticsHabitsTab> {
                   hintText: context.l10n.statisticsV2HabitsSearchHint,
                   isDense: true,
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: const Color(0xFFF3EEE4),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: Colors.black.withValues(alpha: 0.56),
+                  ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
                   ),
                   contentPadding: const EdgeInsets.symmetric(
@@ -89,27 +93,35 @@ class _StatisticsHabitsTabState extends State<StatisticsHabitsTab> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  DropdownButton<String>(
-                    value: _selectedFamilyId,
-                    borderRadius: BorderRadius.circular(12),
-                    underline: const SizedBox.shrink(),
-                    items: [
-                      DropdownMenuItem(
-                        value: '',
-                        child: Text(context.l10n.statisticsV2HabitsAllFamilies),
-                      ),
-                      ...FamilyTheme.order.map(
-                        (familyId) => DropdownMenuItem(
-                          value: familyId,
-                          child: Text(FamilyTheme.nameOf(familyId)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3EEE4),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: DropdownButton<String>(
+                      value: _selectedFamilyId,
+                      borderRadius: BorderRadius.circular(12),
+                      underline: const SizedBox.shrink(),
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                      items: [
+                        DropdownMenuItem(
+                          value: '',
+                          child: Text(context.l10n.statisticsV2HabitsAllFamilies),
                         ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedFamilyId = value ?? '';
-                      });
-                    },
+                        ...FamilyTheme.order.map(
+                          (familyId) => DropdownMenuItem(
+                            value: familyId,
+                            child: Text(FamilyTheme.nameOf(familyId)),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedFamilyId = value ?? '';
+                        });
+                      },
+                    ),
                   ),
                 ],
               ),
