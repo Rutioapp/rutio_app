@@ -4,7 +4,7 @@ import '../../domain/statistics_period.dart';
 
 /// Compatibility screen kept for Phase 1 references.
 /// The modular detail implementation currently lives in
-/// `statistics_habit_details_page.dart`.
+/// `statistics_habit_detail_page.dart`.
 class StatisticsHabitDetailScreen extends StatelessWidget {
   const StatisticsHabitDetailScreen({
     super.key,

@@ -882,6 +882,72 @@
     "editHabitSuggestedUnitSteps": "steps",
     "editHabitSuggestedUnitRepetitions": "reps",
     "editHabitSuggestedUnitHours": "hours",
+    "statisticsV2Title": "Statistics V2",
+    "statisticsV2TabOverview": "Overview",
+    "statisticsV2TabHabits": "Habits",
+    "statisticsV2PeriodDay": "Day",
+    "statisticsV2PeriodWeek": "Week",
+    "statisticsV2PeriodMonth": "Month",
+    "statisticsV2PeriodYear": "Year",
+    "statisticsV2OverviewSubtitleToday": "Today",
+    "statisticsV2OverviewSubtitleThisWeek": "This week",
+    "statisticsV2OverviewSubtitleThisMonth": "This month",
+    "statisticsV2OverviewSubtitleThisYear": "This year",
+    "statisticsV2OverviewSummaryTitle": "Summary",
+    "statisticsV2OverviewCompletedHabits": "Completed habits",
+    "statisticsV2OverviewHabitsWithProgress": "Habits with progress",
+    "statisticsV2OverviewOverallConsistency": "Consistency",
+    "statisticsV2OverviewTotalHabits": "Total habits:",
+    "statisticsV2OverviewFamilies": "Families:",
+    "statisticsV2OverviewConsistencyTitle": "Overall consistency",
+    "statisticsV2OverviewConsistencySubtitle": "Completed vs scheduled days",
+    "statisticsV2OverviewConsistencyFraction": "{completed} / {scheduled} completed days",
+    "@statisticsV2OverviewConsistencyFraction": {
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "scheduled": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV2OverviewOverallConsistencyValue": "{percent}% overall consistency",
+    "@statisticsV2OverviewOverallConsistencyValue": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV2OverviewActivityTitle": "Activity and progress",
+    "statisticsV2OverviewActivitySubtitle": "Progress counts even if not completed yet",
+    "statisticsV2OverviewActiveDays": "Active days",
+    "statisticsV2OverviewCountGoalCompletedDays": "Count goal-completed days",
+    "statisticsV2OverviewCountPartialDays": "Count partial-progress days",
+    "statisticsV2OverviewActivityHint": "For count habits, partial progress is activity, but it is not completion.",
+    "statisticsV2OverviewFamiliesTitle": "Families",
+    "statisticsV2OverviewFamiliesSubtitle": "Distribution by family",
+    "statisticsV2OverviewFamiliesEmpty": "There is not enough data by family in this period yet.",
+    "statisticsV2OverviewTopHabitsTitle": "Top habits",
+    "statisticsV2OverviewTopHabitsSubtitle": "Best completion and consistency in the selected period",
+    "statisticsV2OverviewTopHabitsEmpty": "No highlighted habits yet in this period.",
+    "statisticsV2OverviewVolumeLabel": "Volume",
+    "statisticsV2OverviewConsistencyShortLabel": "Consistency",
+    "statisticsV2OverviewBestMomentTitle": "Best moment",
+    "statisticsV2OverviewBestMomentTitleWith": "Best moment: {slot}",
+    "@statisticsV2OverviewBestMomentTitleWith": {
+        "placeholders": {
+            "slot": {
+                "type": "String"
+            }
+        }
+    },
+    "statisticsV2OverviewBestMomentSubtitle": "Time of day with most completions",
+    "statisticsV2OverviewBestMomentEmpty": "There is not enough data yet to detect your best moment.",
+    "statisticsV2OverviewCalendarTitle": "Consistency calendar",
+    "statisticsV2OverviewCalendarSubtitle": "Visual rhythm for the current month",
+    "statisticsV2OverviewCalendarEmpty": "You still have no data to show in this calendar.",
     "drawerBrandName":  "rutio",
     "drawerBrandTagline":  "BUILD YOUR PATH",
     "drawerSectionViews":  "VIEWS",
@@ -890,6 +956,7 @@
     "drawerMonthly":  "Monthly",
     "drawerSectionTracking":  "TRACKING",
     "drawerStatistics":  "Statistics",
+    "drawerStatisticsV2Preview": "Statistics V2 Preview",
     "drawerDiary":  "Diary (Journal)",
     "drawerSectionArchive":  "ARCHIVE",
     "drawerArchived":  "Archived",

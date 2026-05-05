@@ -20,55 +20,121 @@ class StatisticsDataAdapter {
     final range = StatisticsRange.forPeriod(period, anchor: anchor);
     final habits = _activeHabits(store);
     final summaries = habits
-        .map((habit) => _buildHabitSummary(
-              store: store,
-              habit: habit,
-              range: range,
-            ))
+        .map(
+          (habit) => _buildHabitSummary(
+            store: store,
+            habit: habit,
+            range: range,
+          ),
+        )
         .toList(growable: false);
 
     final totalHabits = summaries.length;
-    final totalFamilies = summaries
-        .map((item) => item.familyId)
-        .where((id) => id.trim().isNotEmpty)
-        .toSet()
-        .length;
 
-    final overallConsistencyPct = totalHabits == 0
-        ? 0
-        : (summaries
-                    .map((item) => item.completionPct)
-                    .reduce((a, b) => a + b) /
-                totalHabits)
-            .round();
+    final completedActivityDays = <String>{};
+    final familiesMap = <String, _FamilyAccumulator>{};
+    var completedHabits = 0;
+    var habitsWithProgress = 0;
+    var scheduledDays = 0;
+    var completedDays = 0;
+    var countGoalCompletedDays = 0;
+    var countPartialProgressDays = 0;
+
+    for (final habit in habits) {
+      final habitId = _habitId(habit);
+      final habitFamilyId = _habitFamilyId(habit);
+      final habitType = _habitType(habit);
+      final habitTarget = _habitTarget(habit);
+      final familyAccumulator = familiesMap.putIfAbsent(
+        habitFamilyId,
+        () => _FamilyAccumulator(familyId: habitFamilyId),
+      )..totalHabits += 1;
+
+      var habitCompletedInRange = false;
+      var habitHasProgress = false;
+
+      for (final day in range.days) {
+        if (!_isScheduledForDate(habit, day)) {
+          continue;
+        }
+
+        scheduledDays += 1;
+        familyAccumulator.scheduledDays += 1;
+
+        final raw = _rawValueForDay(
+          store: store,
+          habitId: habitId,
+          day: day,
+        );
+        final completed = _isCompletedForDay(
+          store: store,
+          habit: habit,
+          habitId: habitId,
+          day: day,
+        );
+
+        if (completed) {
+          completedDays += 1;
+          familyAccumulator.completedDays += 1;
+          habitCompletedInRange = true;
+          if (habitType == StatisticsHabitType.count) {
+            countGoalCompletedDays += 1;
+          }
+        }
+
+        if (habitType == StatisticsHabitType.check) {
+          if (completed) {
+            habitHasProgress = true;
+            completedActivityDays.add(_dateKey(day));
+          }
+          continue;
+        }
+
+        if (raw > 0) {
+          habitHasProgress = true;
+          completedActivityDays.add(_dateKey(day));
+        }
+        if (raw > 0 && raw < habitTarget) {
+          countPartialProgressDays += 1;
+        }
+      }
+
+      if (habitCompletedInRange) {
+        completedHabits += 1;
+        familyAccumulator.completedHabits += 1;
+      }
+      if (habitHasProgress) {
+        habitsWithProgress += 1;
+        familyAccumulator.habitsWithProgress += 1;
+      }
+    }
+
+    final overallConsistencyPct =
+        scheduledDays == 0 ? 0 : ((completedDays / scheduledDays) * 100).round();
 
     final topHabits = [...summaries]
       ..sort((a, b) {
+        final byDoneDays = b.doneDays.compareTo(a.doneDays);
+        if (byDoneDays != 0) return byDoneDays;
         final byCompletion = b.completionPct.compareTo(a.completionPct);
         if (byCompletion != 0) return byCompletion;
+        final byVolume = b.periodVolume.compareTo(a.periodVolume);
+        if (byVolume != 0) return byVolume;
         return b.currentStreak.compareTo(a.currentStreak);
       });
 
-    final familyConsistencyPct = <String, int>{};
-    for (final familyId in FamilyTheme.order) {
-      final familyItems = summaries.where((item) => item.familyId == familyId);
-      if (familyItems.isEmpty) {
-        continue;
-      }
-      final average = familyItems
-              .map((item) => item.completionPct)
-              .reduce((a, b) => a + b) /
-          familyItems.length;
-      familyConsistencyPct[familyId] = average.round();
-    }
+    final families = [
+      for (final familyId in FamilyTheme.order)
+        if (familiesMap.containsKey(familyId)) familiesMap[familyId]!,
+      for (final entry in familiesMap.entries)
+        if (!FamilyTheme.order.contains(entry.key)) entry.value,
+    ].map((item) => item.toSummary()).toList(growable: false);
 
-    final bestMomentPercents = _bestMomentPercents(
+    final bestMoment = _bestMomentPercents(
       store: store,
       range: range,
       habitIds: summaries.map((item) => item.id).toSet(),
     );
-
-    final bestMomentLabel = _bestMomentLabel(bestMomentPercents);
 
     final monthConsistencyByDay = _monthConsistencyByDay(
       store: store,
@@ -76,16 +142,26 @@ class StatisticsDataAdapter {
       month: _dateOnly(anchor ?? DateTime.now()),
     );
 
+    final totalFamilies = families.length;
+
     return StatisticsOverviewSummary(
       period: period,
       range: range,
       totalHabits: totalHabits,
       totalFamilies: totalFamilies,
+      completedHabits: completedHabits,
+      habitsWithProgress: habitsWithProgress,
+      scheduledDays: scheduledDays,
+      completedDays: completedDays,
+      daysWithActivity: completedActivityDays.length,
+      countGoalCompletedDays: countGoalCompletedDays,
+      countPartialProgressDays: countPartialProgressDays,
       overallConsistencyPct: overallConsistencyPct,
       topHabits: topHabits.take(3).toList(growable: false),
-      familyConsistencyPct: familyConsistencyPct,
-      bestMomentPercents: bestMomentPercents,
-      bestMomentLabel: bestMomentLabel,
+      families: families,
+      bestMomentPercents: bestMoment.percents,
+      bestMomentKey: bestMoment.bestKey,
+      hasBestMomentData: bestMoment.hasData,
       monthConsistencyByDay: monthConsistencyByDay,
     );
   }
@@ -321,7 +397,7 @@ class StatisticsDataAdapter {
     return (dayMap[habitId] as num?)?.toInt() ?? 0;
   }
 
-  Map<String, int> _bestMomentPercents({
+  _BestMomentAggregate _bestMomentPercents({
     required UserStateStore store,
     required StatisticsRange range,
     required Set<String> habitIds,
@@ -368,36 +444,27 @@ class StatisticsDataAdapter {
       return ((bucket * 100) / total).round();
     }
 
-    return {
+    final percents = {
       'morning': pct(morning),
       'afternoon': pct(afternoon),
       'evening': pct(evening),
       'night': pct(night),
     };
-  }
 
-  String _bestMomentLabel(Map<String, int> percents) {
-    final entries = percents.entries.toList(growable: false);
-    if (entries.isEmpty) return '';
-
-    final best = entries.reduce((a, b) {
-      if (b.value > a.value) return b;
-      return a;
-    });
-
-    if (best.value <= 0) return '';
-    switch (best.key) {
-      case 'morning':
-        return 'Manana';
-      case 'afternoon':
-        return 'Tarde';
-      case 'evening':
-        return 'Noche';
-      case 'night':
-        return 'Madrugada';
-      default:
-        return '';
+    String? bestKey;
+    var bestValue = 0;
+    for (final entry in percents.entries) {
+      if (entry.value > bestValue) {
+        bestValue = entry.value;
+        bestKey = entry.key;
+      }
     }
+
+    return _BestMomentAggregate(
+      percents: percents,
+      bestKey: bestValue > 0 ? bestKey : null,
+      hasData: total > 0,
+    );
   }
 
   Map<int, double> _monthConsistencyByDay({
@@ -545,5 +612,39 @@ class StatisticsDataAdapter {
     final m = date.month.toString().padLeft(2, '0');
     final d = date.day.toString().padLeft(2, '0');
     return '$y-$m-$d';
+  }
+}
+
+class _BestMomentAggregate {
+  const _BestMomentAggregate({
+    required this.percents,
+    required this.bestKey,
+    required this.hasData,
+  });
+
+  final Map<String, int> percents;
+  final String? bestKey;
+  final bool hasData;
+}
+
+class _FamilyAccumulator {
+  _FamilyAccumulator({required this.familyId});
+
+  final String familyId;
+  int totalHabits = 0;
+  int completedHabits = 0;
+  int habitsWithProgress = 0;
+  int scheduledDays = 0;
+  int completedDays = 0;
+
+  StatisticsOverviewFamilySummary toSummary() {
+    return StatisticsOverviewFamilySummary(
+      familyId: familyId,
+      totalHabits: totalHabits,
+      completedHabits: completedHabits,
+      habitsWithProgress: habitsWithProgress,
+      scheduledDays: scheduledDays,
+      completedDays: completedDays,
+    );
   }
 }

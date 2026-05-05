@@ -75,11 +75,19 @@ class StatisticsOverviewSummary {
     required this.range,
     required this.totalHabits,
     required this.totalFamilies,
+    required this.completedHabits,
+    required this.habitsWithProgress,
+    required this.scheduledDays,
+    required this.completedDays,
+    required this.daysWithActivity,
+    required this.countGoalCompletedDays,
+    required this.countPartialProgressDays,
     required this.overallConsistencyPct,
     required this.topHabits,
-    required this.familyConsistencyPct,
+    required this.families,
     required this.bestMomentPercents,
-    required this.bestMomentLabel,
+    required this.bestMomentKey,
+    required this.hasBestMomentData,
     required this.monthConsistencyByDay,
   });
 
@@ -87,12 +95,43 @@ class StatisticsOverviewSummary {
   final StatisticsRange range;
   final int totalHabits;
   final int totalFamilies;
+  final int completedHabits;
+  final int habitsWithProgress;
+  final int scheduledDays;
+  final int completedDays;
+  final int daysWithActivity;
+  final int countGoalCompletedDays;
+  final int countPartialProgressDays;
   final int overallConsistencyPct;
   final List<StatisticsHabitSummary> topHabits;
-  final Map<String, int> familyConsistencyPct;
+  final List<StatisticsOverviewFamilySummary> families;
   final Map<String, int> bestMomentPercents;
-  final String bestMomentLabel;
+  final String? bestMomentKey;
+  final bool hasBestMomentData;
   final Map<int, double> monthConsistencyByDay;
+}
+
+class StatisticsOverviewFamilySummary {
+  const StatisticsOverviewFamilySummary({
+    required this.familyId,
+    required this.totalHabits,
+    required this.completedHabits,
+    required this.habitsWithProgress,
+    required this.scheduledDays,
+    required this.completedDays,
+  });
+
+  final String familyId;
+  final int totalHabits;
+  final int completedHabits;
+  final int habitsWithProgress;
+  final int scheduledDays;
+  final int completedDays;
+
+  int get completionPct {
+    if (scheduledDays <= 0) return 0;
+    return ((completedDays / scheduledDays) * 100).round();
+  }
 }
 
 class StatisticsHabitDetailSummary {

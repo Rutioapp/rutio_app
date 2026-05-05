@@ -1739,6 +1739,150 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editHabitSuggestedUnitHours => 'horas';
 
   @override
+  String get statisticsV2Title => 'Estadísticas V2';
+
+  @override
+  String get statisticsV2TabOverview => 'Vista general';
+
+  @override
+  String get statisticsV2TabHabits => 'Hábitos';
+
+  @override
+  String get statisticsV2PeriodDay => 'Día';
+
+  @override
+  String get statisticsV2PeriodWeek => 'Semana';
+
+  @override
+  String get statisticsV2PeriodMonth => 'Mes';
+
+  @override
+  String get statisticsV2PeriodYear => 'Año';
+
+  @override
+  String get statisticsV2OverviewSubtitleToday => 'Hoy';
+
+  @override
+  String get statisticsV2OverviewSubtitleThisWeek => 'Esta semana';
+
+  @override
+  String get statisticsV2OverviewSubtitleThisMonth => 'Este mes';
+
+  @override
+  String get statisticsV2OverviewSubtitleThisYear => 'Este año';
+
+  @override
+  String get statisticsV2OverviewSummaryTitle => 'Resumen';
+
+  @override
+  String get statisticsV2OverviewCompletedHabits => 'Hábitos completados';
+
+  @override
+  String get statisticsV2OverviewHabitsWithProgress => 'Hábitos con progreso';
+
+  @override
+  String get statisticsV2OverviewOverallConsistency => 'Consistencia';
+
+  @override
+  String get statisticsV2OverviewTotalHabits => 'Hábitos totales:';
+
+  @override
+  String get statisticsV2OverviewFamilies => 'Familias:';
+
+  @override
+  String get statisticsV2OverviewConsistencyTitle => 'Consistencia general';
+
+  @override
+  String get statisticsV2OverviewConsistencySubtitle =>
+      'Días completados frente a programados';
+
+  @override
+  String statisticsV2OverviewConsistencyFraction(int completed, int scheduled) {
+    return '$completed / $scheduled días completados';
+  }
+
+  @override
+  String statisticsV2OverviewOverallConsistencyValue(int percent) {
+    return '$percent% de consistencia general';
+  }
+
+  @override
+  String get statisticsV2OverviewActivityTitle => 'Actividad y progreso';
+
+  @override
+  String get statisticsV2OverviewActivitySubtitle =>
+      'El progreso cuenta aunque no esté completado';
+
+  @override
+  String get statisticsV2OverviewActiveDays => 'Días activos';
+
+  @override
+  String get statisticsV2OverviewCountGoalCompletedDays =>
+      'Días count con objetivo completado';
+
+  @override
+  String get statisticsV2OverviewCountPartialDays =>
+      'Días count con progreso parcial';
+
+  @override
+  String get statisticsV2OverviewActivityHint =>
+      'En hábitos count, el progreso parcial cuenta como actividad, pero no como completado.';
+
+  @override
+  String get statisticsV2OverviewFamiliesTitle => 'Familias';
+
+  @override
+  String get statisticsV2OverviewFamiliesSubtitle => 'Distribución por familia';
+
+  @override
+  String get statisticsV2OverviewFamiliesEmpty =>
+      'Aún no hay suficientes datos por familia en este periodo.';
+
+  @override
+  String get statisticsV2OverviewTopHabitsTitle => 'Hábitos destacados';
+
+  @override
+  String get statisticsV2OverviewTopHabitsSubtitle =>
+      'Mejor rendimiento en el periodo seleccionado';
+
+  @override
+  String get statisticsV2OverviewTopHabitsEmpty =>
+      'Todavía no hay hábitos destacados en este periodo.';
+
+  @override
+  String get statisticsV2OverviewVolumeLabel => 'Volumen';
+
+  @override
+  String get statisticsV2OverviewConsistencyShortLabel => 'Consistencia';
+
+  @override
+  String get statisticsV2OverviewBestMomentTitle => 'Mejor momento';
+
+  @override
+  String statisticsV2OverviewBestMomentTitleWith(String slot) {
+    return 'Mejor momento: $slot';
+  }
+
+  @override
+  String get statisticsV2OverviewBestMomentSubtitle =>
+      'Franja del día con más completados';
+
+  @override
+  String get statisticsV2OverviewBestMomentEmpty =>
+      'Todavía no hay suficientes datos para detectar tu mejor momento.';
+
+  @override
+  String get statisticsV2OverviewCalendarTitle => 'Calendario de consistencia';
+
+  @override
+  String get statisticsV2OverviewCalendarSubtitle =>
+      'Ritmo visual del mes actual';
+
+  @override
+  String get statisticsV2OverviewCalendarEmpty =>
+      'Aún no hay datos para mostrar en este calendario.';
+
+  @override
   String get drawerBrandName => 'rutio';
 
   @override
@@ -1761,6 +1905,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get drawerStatistics => 'Estadísticas';
+
+  @override
+  String get drawerStatisticsV2Preview => 'Statistics V2 Preview';
 
   @override
   String get drawerDiary => 'Diario (Journal)';

@@ -18,8 +18,10 @@ class StatisticsRange {
       case StatisticsPeriod.day:
         return StatisticsRange(start: today, end: today);
       case StatisticsPeriod.week:
+        // V2 keeps rolling windows to match existing statistics behavior.
         return StatisticsRange.lastDays(7, anchor: today);
       case StatisticsPeriod.month:
+        // "Month" means rolling last 30 days in this phase.
         return StatisticsRange.lastDays(30, anchor: today);
       case StatisticsPeriod.year:
         return StatisticsRange.lastDays(365, anchor: today);

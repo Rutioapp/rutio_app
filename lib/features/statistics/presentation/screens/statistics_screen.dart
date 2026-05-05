@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 import '../../../../stores/user_state_store.dart';
 import '../../application/adapters/statistics_data_adapter.dart';
 import '../../domain/statistics_period.dart';
+import 'statistics_habit_detail_screen.dart';
 import '../widgets/statistics_habits_tab.dart';
 import '../widgets/statistics_overview_tab.dart';
 import '../widgets/statistics_period_selector.dart';
@@ -43,7 +45,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF8F5EF),
       appBar: AppBar(
-        title: const Text('Estadisticas (Fase 1)'),
+        title: Text(context.l10n.statisticsV2Title),
         centerTitle: true,
         elevation: 0,
       ),
@@ -53,6 +55,11 @@ class _StatisticsScreenState extends State<StatisticsScreen>
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: StatisticsPeriodSelector(
               value: _period,
+              periods: const [
+                StatisticsPeriod.day,
+                StatisticsPeriod.week,
+                StatisticsPeriod.month,
+              ],
               onChanged: (period) {
                 setState(() {
                   _period = period;
@@ -80,9 +87,9 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 unselectedLabelColor: Colors.black.withValues(alpha: 0.6),
                 labelStyle:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                tabs: const [
-                  Tab(text: 'Vista general'),
-                  Tab(text: 'Habitos'),
+                tabs: [
+                  Tab(text: context.l10n.statisticsV2TabOverview),
+                  Tab(text: context.l10n.statisticsV2TabHabits),
                 ],
               ),
             ),
@@ -100,7 +107,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                   onOpenHabit: (habitId) {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => _StatisticsDetailRoutePage(
+                        builder: (_) => StatisticsHabitDetailScreen(
                           habitId: habitId,
                           initialPeriod: _period,
                         ),
@@ -113,56 +120,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           ),
         ],
       ),
-    );
-  }
-}
-
-class _StatisticsDetailRoutePage extends StatelessWidget {
-  const _StatisticsDetailRoutePage({
-    required this.habitId,
-    required this.initialPeriod,
-  });
-
-  final String habitId;
-  final StatisticsPeriod initialPeriod;
-
-  @override
-  Widget build(BuildContext context) {
-    final adapter = const StatisticsDataAdapter();
-    final store = context.watch<UserStateStore>();
-    final detail = adapter.buildHabitDetail(
-      store: store,
-      habitId: habitId,
-      period: initialPeriod,
-    );
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Detalle de habito')),
-      body: detail == null
-          ? const Center(child: Text('No se encontro el habito.'))
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    detail.habit.title,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text('Periodo: ${detail.period.name}'),
-                  Text('Racha actual: ${detail.habit.currentStreak} dias'),
-                  Text(
-                    'Comparacion semanal: ${detail.thisWeekDoneDays} vs ${detail.lastWeekDoneDays}',
-                  ),
-                  const SizedBox(height: 12),
-                  Text(detail.insight),
-                ],
-              ),
-            ),
     );
   }
 }

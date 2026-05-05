@@ -132,6 +132,12 @@ class AppViewDrawer extends StatelessWidget {
                     ),
                     const _DrawerDivider(),
                     _DrawerTile(
+                      icon: Icons.science_outlined,
+                      label: context.l10n.drawerStatisticsV2Preview,
+                      onTap: () => _goNamed(context, '/stats-v2'),
+                    ),
+                    const _DrawerDivider(),
+                    _DrawerTile(
                       icon: Icons.menu_book_outlined,
                       label: context.l10n.drawerDiary,
                       isSelected: selected == 'diary',
@@ -181,6 +187,11 @@ class AppViewDrawer extends StatelessWidget {
   void _go(BuildContext context, VoidCallback onTap) {
     Navigator.of(context).pop();
     onTap();
+  }
+
+  void _goNamed(BuildContext context, String routeName) {
+    Navigator.of(context).pop();
+    Navigator.of(context).pushNamed(routeName);
   }
 
   Future<void> _handleReportIssueTap(BuildContext context) async {
