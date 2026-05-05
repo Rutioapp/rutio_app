@@ -14,6 +14,7 @@ import 'data/repositories/user_state_repository.dart';
 import 'data/local/user_state_storage.dart';
 import 'data/local/asset_json_loader.dart';
 import 'features/achievements/presentation/screens/achievements_screen.dart';
+import 'features/statistics/presentation/screens/statistics_screen.dart';
 import 'features/achievements/presentation/widgets/achievement_unlock_overlay_host.dart';
 import 'stores/user_state_store.dart';
 
@@ -132,6 +133,7 @@ class MyApp extends StatelessWidget {
               '/diary': (_) => DiaryScreen(),
               '/archived': (_) => ArchivedHabitsScreen(),
               '/stats': (_) => HabitStatsOverviewHost(),
+              StatisticsScreen.route: (_) => const StatisticsScreen(),
             },
           ),
         ),
