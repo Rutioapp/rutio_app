@@ -3507,6 +3507,138 @@ abstract class AppLocalizations {
   /// **'Aún no hay datos para mostrar en este calendario.'**
   String get statisticsV2OverviewCalendarEmpty;
 
+  /// No description provided for @statisticsV2HabitsSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar hábito'**
+  String get statisticsV2HabitsSearchHint;
+
+  /// No description provided for @statisticsV2HabitsFilterAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos'**
+  String get statisticsV2HabitsFilterAll;
+
+  /// No description provided for @statisticsV2HabitsFilterCheck.
+  ///
+  /// In es, this message translates to:
+  /// **'Check'**
+  String get statisticsV2HabitsFilterCheck;
+
+  /// No description provided for @statisticsV2HabitsFilterCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Count'**
+  String get statisticsV2HabitsFilterCount;
+
+  /// No description provided for @statisticsV2HabitsAllFamilies.
+  ///
+  /// In es, this message translates to:
+  /// **'Familias'**
+  String get statisticsV2HabitsAllFamilies;
+
+  /// No description provided for @statisticsV2HabitsTypeCheck.
+  ///
+  /// In es, this message translates to:
+  /// **'Check'**
+  String get statisticsV2HabitsTypeCheck;
+
+  /// No description provided for @statisticsV2HabitsTypeCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Count'**
+  String get statisticsV2HabitsTypeCount;
+
+  /// No description provided for @statisticsV2HabitsEmptyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no tienes hábitos activos'**
+  String get statisticsV2HabitsEmptyTitle;
+
+  /// No description provided for @statisticsV2HabitsEmptySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea tu primer hábito para empezar a ver estadísticas detalladas.'**
+  String get statisticsV2HabitsEmptySubtitle;
+
+  /// No description provided for @statisticsV2HabitsNoMatchesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay hábitos que coincidan'**
+  String get statisticsV2HabitsNoMatchesTitle;
+
+  /// No description provided for @statisticsV2HabitsNoMatchesSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Prueba otra búsqueda o filtro.'**
+  String get statisticsV2HabitsNoMatchesSubtitle;
+
+  /// No description provided for @statisticsV2HabitsMetricCompleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Completado'**
+  String get statisticsV2HabitsMetricCompleted;
+
+  /// No description provided for @statisticsV2HabitsMetricCompletion.
+  ///
+  /// In es, this message translates to:
+  /// **'Cumplimiento'**
+  String get statisticsV2HabitsMetricCompletion;
+
+  /// No description provided for @statisticsV2HabitsMetricStreak.
+  ///
+  /// In es, this message translates to:
+  /// **'Racha'**
+  String get statisticsV2HabitsMetricStreak;
+
+  /// No description provided for @statisticsV2HabitsTotalAccumulated.
+  ///
+  /// In es, this message translates to:
+  /// **'Total acumulado'**
+  String get statisticsV2HabitsTotalAccumulated;
+
+  /// No description provided for @statisticsV2HabitsGoalCompleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivos completados'**
+  String get statisticsV2HabitsGoalCompleted;
+
+  /// No description provided for @statisticsV2HabitsPartialProgress.
+  ///
+  /// In es, this message translates to:
+  /// **'Progreso parcial'**
+  String get statisticsV2HabitsPartialProgress;
+
+  /// No description provided for @statisticsV2HabitsCheckCompletedDays.
+  ///
+  /// In es, this message translates to:
+  /// **'{done}/{scheduled} días'**
+  String statisticsV2HabitsCheckCompletedDays(int done, int scheduled);
+
+  /// No description provided for @statisticsV2HabitsCompletedPct.
+  ///
+  /// In es, this message translates to:
+  /// **'{percent}% completado'**
+  String statisticsV2HabitsCompletedPct(int percent);
+
+  /// No description provided for @statisticsV2HabitsCurrentStreakDays.
+  ///
+  /// In es, this message translates to:
+  /// **'{days} d'**
+  String statisticsV2HabitsCurrentStreakDays(int days);
+
+  /// No description provided for @statisticsV2HabitsGoalCompletedDays.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} objetivos completados'**
+  String statisticsV2HabitsGoalCompletedDays(int count);
+
+  /// No description provided for @statisticsV2HabitsPartialDays.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} días parciales'**
+  String statisticsV2HabitsPartialDays(int count);
+
   /// No description provided for @drawerBrandName.
   ///
   /// In es, this message translates to:

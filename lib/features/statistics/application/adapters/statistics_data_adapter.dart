@@ -173,35 +173,53 @@ class StatisticsDataAdapter {
     String? familyId,
     DateTime? anchor,
   }) {
+    return buildHabitList(
+      store: store,
+      period: period,
+      query: query,
+      familyId: familyId,
+      anchor: anchor,
+    ).map((item) => item.summary).toList(growable: false);
+  }
+
+  List<StatisticsHabitListItem> buildHabitList({
+    required UserStateStore store,
+    required StatisticsPeriod period,
+    String? query,
+    String? familyId,
+    StatisticsHabitListTypeFilter typeFilter = StatisticsHabitListTypeFilter.all,
+    DateTime? anchor,
+  }) {
     final normalizedQuery = (query ?? '').trim().toLowerCase();
     final normalizedFamily = (familyId ?? '').trim().toLowerCase();
     final range = StatisticsRange.forPeriod(period, anchor: anchor);
 
-    final output = <StatisticsHabitSummary>[];
+    final output = <StatisticsHabitListItem>[];
 
     for (final habit in _activeHabits(store)) {
       final title = _habitTitle(habit);
       final itemFamily = _habitFamilyId(habit);
+      final itemType = _habitType(habit);
       final matchesQuery = normalizedQuery.isEmpty ||
           title.toLowerCase().contains(normalizedQuery);
       final matchesFamily = normalizedFamily.isEmpty ||
           itemFamily.toLowerCase() == normalizedFamily;
-      if (!matchesQuery || !matchesFamily) {
+      final matchesType = _matchesTypeFilter(itemType, typeFilter);
+      if (!matchesQuery || !matchesFamily || !matchesType) {
         continue;
       }
 
-      output.add(
-        _buildHabitSummary(store: store, habit: habit, range: range),
+      final summary = _buildHabitSummary(
+        store: store,
+        habit: habit,
+        range: range,
       );
+      final progress01 = summary.type == StatisticsHabitType.count &&
+              summary.countProgress != null
+          ? (summary.countProgress!.compliancePct / 100).clamp(0.0, 1.0)
+          : (summary.completionPct / 100).clamp(0.0, 1.0);
+      output.add(StatisticsHabitListItem(summary: summary, progress01: progress01));
     }
-
-    output.sort((a, b) {
-      final byCompletion = b.completionPct.compareTo(a.completionPct);
-      if (byCompletion != 0) return byCompletion;
-      final byVolume = b.periodVolume.compareTo(a.periodVolume);
-      if (byVolume != 0) return byVolume;
-      return a.title.compareTo(b.title);
-    });
 
     return output;
   }
@@ -559,6 +577,20 @@ class StatisticsDataAdapter {
   StatisticsHabitType _habitType(Map<String, dynamic> habit) {
     final raw = (habit['type'] ?? 'check').toString().toLowerCase();
     return raw == 'count' ? StatisticsHabitType.count : StatisticsHabitType.check;
+  }
+
+  bool _matchesTypeFilter(
+    StatisticsHabitType type,
+    StatisticsHabitListTypeFilter filter,
+  ) {
+    switch (filter) {
+      case StatisticsHabitListTypeFilter.all:
+        return true;
+      case StatisticsHabitListTypeFilter.check:
+        return type == StatisticsHabitType.check;
+      case StatisticsHabitListTypeFilter.count:
+        return type == StatisticsHabitType.count;
+    }
   }
 
   bool _isScheduledForDate(Map<String, dynamic> habit, DateTime date) {

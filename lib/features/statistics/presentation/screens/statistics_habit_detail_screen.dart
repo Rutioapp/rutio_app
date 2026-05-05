@@ -18,11 +18,11 @@ class StatisticsHabitDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalle de habito')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          'Compat wrapper activo para $habitId (${initialPeriod.name}).',
+      appBar: AppBar(title: const Text('Habit stats detail')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('Preview detail for $habitId (${initialPeriod.name})'),
         ),
       ),
     );

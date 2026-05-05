@@ -1878,6 +1878,84 @@ class AppLocalizationsEn extends AppLocalizations {
       'You still have no data to show in this calendar.';
 
   @override
+  String get statisticsV2HabitsSearchHint => 'Search habit';
+
+  @override
+  String get statisticsV2HabitsFilterAll => 'All';
+
+  @override
+  String get statisticsV2HabitsFilterCheck => 'Check';
+
+  @override
+  String get statisticsV2HabitsFilterCount => 'Count';
+
+  @override
+  String get statisticsV2HabitsAllFamilies => 'Families';
+
+  @override
+  String get statisticsV2HabitsTypeCheck => 'Check';
+
+  @override
+  String get statisticsV2HabitsTypeCount => 'Count';
+
+  @override
+  String get statisticsV2HabitsEmptyTitle => 'You still have no active habits';
+
+  @override
+  String get statisticsV2HabitsEmptySubtitle =>
+      'Create your first habit to start seeing detailed statistics.';
+
+  @override
+  String get statisticsV2HabitsNoMatchesTitle => 'No matching habits';
+
+  @override
+  String get statisticsV2HabitsNoMatchesSubtitle =>
+      'Try another search or filter.';
+
+  @override
+  String get statisticsV2HabitsMetricCompleted => 'Completed';
+
+  @override
+  String get statisticsV2HabitsMetricCompletion => 'Completion';
+
+  @override
+  String get statisticsV2HabitsMetricStreak => 'Streak';
+
+  @override
+  String get statisticsV2HabitsTotalAccumulated => 'Total accumulated';
+
+  @override
+  String get statisticsV2HabitsGoalCompleted => 'Goals completed';
+
+  @override
+  String get statisticsV2HabitsPartialProgress => 'Partial progress';
+
+  @override
+  String statisticsV2HabitsCheckCompletedDays(int done, int scheduled) {
+    return '$done/$scheduled days';
+  }
+
+  @override
+  String statisticsV2HabitsCompletedPct(int percent) {
+    return '$percent% completed';
+  }
+
+  @override
+  String statisticsV2HabitsCurrentStreakDays(int days) {
+    return '$days d';
+  }
+
+  @override
+  String statisticsV2HabitsGoalCompletedDays(int count) {
+    return '$count goals completed';
+  }
+
+  @override
+  String statisticsV2HabitsPartialDays(int count) {
+    return '$count partial days';
+  }
+
+  @override
   String get drawerBrandName => 'rutio';
 
   @override

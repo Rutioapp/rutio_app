@@ -948,6 +948,66 @@
     "statisticsV2OverviewCalendarTitle": "Consistency calendar",
     "statisticsV2OverviewCalendarSubtitle": "Visual rhythm for the current month",
     "statisticsV2OverviewCalendarEmpty": "You still have no data to show in this calendar.",
+    "statisticsV2HabitsSearchHint": "Search habit",
+    "statisticsV2HabitsFilterAll": "All",
+    "statisticsV2HabitsFilterCheck": "Check",
+    "statisticsV2HabitsFilterCount": "Count",
+    "statisticsV2HabitsAllFamilies": "Families",
+    "statisticsV2HabitsTypeCheck": "Check",
+    "statisticsV2HabitsTypeCount": "Count",
+    "statisticsV2HabitsEmptyTitle": "You still have no active habits",
+    "statisticsV2HabitsEmptySubtitle": "Create your first habit to start seeing detailed statistics.",
+    "statisticsV2HabitsNoMatchesTitle": "No matching habits",
+    "statisticsV2HabitsNoMatchesSubtitle": "Try another search or filter.",
+    "statisticsV2HabitsMetricCompleted": "Completed",
+    "statisticsV2HabitsMetricCompletion": "Completion",
+    "statisticsV2HabitsMetricStreak": "Streak",
+    "statisticsV2HabitsTotalAccumulated": "Total accumulated",
+    "statisticsV2HabitsGoalCompleted": "Goals completed",
+    "statisticsV2HabitsPartialProgress": "Partial progress",
+    "statisticsV2HabitsCheckCompletedDays": "{done}/{scheduled} days",
+    "@statisticsV2HabitsCheckCompletedDays": {
+        "placeholders": {
+            "done": {
+                "type": "int"
+            },
+            "scheduled": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV2HabitsCompletedPct": "{percent}% completed",
+    "@statisticsV2HabitsCompletedPct": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV2HabitsCurrentStreakDays": "{days} d",
+    "@statisticsV2HabitsCurrentStreakDays": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV2HabitsGoalCompletedDays": "{count} goals completed",
+    "@statisticsV2HabitsGoalCompletedDays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV2HabitsPartialDays": "{count} partial days",
+    "@statisticsV2HabitsPartialDays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "drawerBrandName":  "rutio",
     "drawerBrandTagline":  "BUILD YOUR PATH",
     "drawerSectionViews":  "VIEWS",

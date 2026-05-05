@@ -948,6 +948,66 @@
   "statisticsV2OverviewCalendarTitle": "Calendario de consistencia",
   "statisticsV2OverviewCalendarSubtitle": "Ritmo visual del mes actual",
   "statisticsV2OverviewCalendarEmpty": "Aún no hay datos para mostrar en este calendario.",
+  "statisticsV2HabitsSearchHint": "Buscar hábito",
+  "statisticsV2HabitsFilterAll": "Todos",
+  "statisticsV2HabitsFilterCheck": "Check",
+  "statisticsV2HabitsFilterCount": "Count",
+  "statisticsV2HabitsAllFamilies": "Familias",
+  "statisticsV2HabitsTypeCheck": "Check",
+  "statisticsV2HabitsTypeCount": "Count",
+  "statisticsV2HabitsEmptyTitle": "Aún no tienes hábitos activos",
+  "statisticsV2HabitsEmptySubtitle": "Crea tu primer hábito para empezar a ver estadísticas detalladas.",
+  "statisticsV2HabitsNoMatchesTitle": "No hay hábitos que coincidan",
+  "statisticsV2HabitsNoMatchesSubtitle": "Prueba otra búsqueda o filtro.",
+  "statisticsV2HabitsMetricCompleted": "Completado",
+  "statisticsV2HabitsMetricCompletion": "Cumplimiento",
+  "statisticsV2HabitsMetricStreak": "Racha",
+  "statisticsV2HabitsTotalAccumulated": "Total acumulado",
+  "statisticsV2HabitsGoalCompleted": "Objetivos completados",
+  "statisticsV2HabitsPartialProgress": "Progreso parcial",
+  "statisticsV2HabitsCheckCompletedDays": "{done}/{scheduled} días",
+  "@statisticsV2HabitsCheckCompletedDays": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "scheduled": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsV2HabitsCompletedPct": "{percent}% completado",
+  "@statisticsV2HabitsCompletedPct": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsV2HabitsCurrentStreakDays": "{days} d",
+  "@statisticsV2HabitsCurrentStreakDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsV2HabitsGoalCompletedDays": "{count} objetivos completados",
+  "@statisticsV2HabitsGoalCompletedDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsV2HabitsPartialDays": "{count} días parciales",
+  "@statisticsV2HabitsPartialDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "drawerBrandName": "rutio",
   "drawerBrandTagline": "CONSTRUYE TU CAMINO",
   "drawerSectionViews": "VISTAS",

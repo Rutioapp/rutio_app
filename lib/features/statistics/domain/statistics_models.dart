@@ -2,6 +2,7 @@ import 'statistics_period.dart';
 import 'statistics_range.dart';
 
 enum StatisticsHabitType { check, count }
+enum StatisticsHabitListTypeFilter { all, check, count }
 
 class StatisticsHabitSummary {
   const StatisticsHabitSummary({
@@ -41,6 +42,30 @@ class StatisticsHabitSummary {
     if (scheduledDays <= 0) return 0;
     return periodVolume / scheduledDays;
   }
+}
+
+class StatisticsHabitListItem {
+  const StatisticsHabitListItem({
+    required this.summary,
+    required this.progress01,
+  });
+
+  final StatisticsHabitSummary summary;
+  final double progress01;
+
+  String get id => summary.id;
+  String get title => summary.title;
+  String get familyId => summary.familyId;
+  StatisticsHabitType get type => summary.type;
+  int get target => summary.target;
+  int get scheduledDays => summary.scheduledDays;
+  int get doneDays => summary.doneDays;
+  int get completionPct => summary.completionPct;
+  int get currentStreak => summary.currentStreak;
+  int get periodVolume => summary.periodVolume;
+  CountHabitProgressSnapshot? get countProgress => summary.countProgress;
+  bool get isCount => type == StatisticsHabitType.count;
+  bool get isCheck => type == StatisticsHabitType.check;
 }
 
 class CountHabitProgressSnapshot {
