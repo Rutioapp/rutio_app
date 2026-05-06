@@ -162,6 +162,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                     StatisticsV3WeeklyActivityShell(
                       title: l10n.statisticsV3DailyActivityTitle,
                       subtitle: l10n.statisticsV3DailyActivitySubtitle,
+                      days: viewData.weeklyActivity,
                     ),
                   ],
                 ],

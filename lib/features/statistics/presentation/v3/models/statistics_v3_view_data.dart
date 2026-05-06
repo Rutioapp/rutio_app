@@ -38,6 +38,24 @@ class StatisticsV3HighlightedHabitItem {
   final int completedCount;
 }
 
+class StatisticsV3WeeklyActivityDay {
+  const StatisticsV3WeeklyActivityDay({
+    required this.date,
+    required this.completedCount,
+    required this.expectedCount,
+    required this.percentage,
+    required this.isToday,
+    required this.isFuture,
+  });
+
+  final DateTime date;
+  final int completedCount;
+  final int expectedCount;
+  final int percentage;
+  final bool isToday;
+  final bool isFuture;
+}
+
 class StatisticsV3ViewData {
   const StatisticsV3ViewData({
     required this.totalDays,
@@ -49,6 +67,7 @@ class StatisticsV3ViewData {
     required this.families,
     required this.bestMoment,
     required this.highlightedHabits,
+    required this.weeklyActivity,
   });
 
   final int totalDays;
@@ -60,4 +79,5 @@ class StatisticsV3ViewData {
   final List<StatisticsV3FamilyItem> families;
   final StatisticsV3BestMomentInsight bestMoment;
   final List<StatisticsV3HighlightedHabitItem> highlightedHabits;
+  final List<StatisticsV3WeeklyActivityDay> weeklyActivity;
 }

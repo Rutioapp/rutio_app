@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 import 'package:rutio/l10n/l10n.dart';
 
 class StatisticsV3WeeklyActivityShell extends StatelessWidget {
@@ -6,20 +7,12 @@ class StatisticsV3WeeklyActivityShell extends StatelessWidget {
     super.key,
     required this.title,
     required this.subtitle,
+    required this.days,
   });
 
   final String title;
   final String subtitle;
-
-  static const List<int> _weekdays = <int>[
-    DateTime.monday,
-    DateTime.tuesday,
-    DateTime.wednesday,
-    DateTime.thursday,
-    DateTime.friday,
-    DateTime.saturday,
-    DateTime.sunday,
-  ];
+  final List<StatisticsV3WeeklyActivityDay> days;
 
   @override
   Widget build(BuildContext context) {
@@ -56,14 +49,23 @@ class StatisticsV3WeeklyActivityShell extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              for (var index = 0; index < _weekdays.length; index++) ...[
-                Expanded(
-                  child: _WeekdayActivityColumn(
-                    label: l10n.weekdayShort(_weekdays[index]),
-                    fillFraction: 0.18,
-                  ),
-                ),
-                if (index < _weekdays.length - 1) const SizedBox(width: 4),
+              for (var index = 0; index < days.length; index++) ...[
+                () {
+                  final item = days[index];
+                  final fillFraction = item.isFuture
+                      ? 0.0
+                      : (item.percentage / 100).clamp(0.0, 1.0);
+
+                  return Expanded(
+                    child: _WeekdayActivityColumn(
+                      label: l10n.weekdayShort(item.date.weekday),
+                      fillFraction: fillFraction,
+                      isToday: item.isToday,
+                      isFuture: item.isFuture,
+                    ),
+                  );
+                }(),
+                if (index < days.length - 1) const SizedBox(width: 4),
               ],
             ],
           ),
@@ -77,13 +79,24 @@ class _WeekdayActivityColumn extends StatelessWidget {
   const _WeekdayActivityColumn({
     required this.label,
     required this.fillFraction,
+    required this.isToday,
+    required this.isFuture,
   });
 
   final String label;
   final double fillFraction;
+  final bool isToday;
+  final bool isFuture;
 
   @override
   Widget build(BuildContext context) {
+    final labelColor = isFuture
+        ? const Color(0xFFB9B0A5)
+        : (isToday ? const Color(0xFF5B4A37) : const Color(0xFF7A6D5E));
+    final trackColor = isFuture
+        ? const Color(0xFFF7F3EC)
+        : const Color(0xFFF2EBE0);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -91,10 +104,10 @@ class _WeekdayActivityColumn extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF7A6D5E),
+            color: labelColor,
           ),
         ),
         const SizedBox(height: 8),
@@ -104,32 +117,36 @@ class _WeekdayActivityColumn extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             children: [
               Container(
-                width: 10,
+                width: isToday ? 11 : 10,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF2EBE0),
+                  color: trackColor,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: FractionallySizedBox(
-                  heightFactor: fillFraction,
-                  widthFactor: 1,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x6FB79A75),
-                          Color(0xA8D4C1AE),
-                        ],
+              if (fillFraction > 0)
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(
+                    width: isToday ? 11 : 10,
+                    child: FractionallySizedBox(
+                      heightFactor: fillFraction,
+                      widthFactor: 1,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0x6FB79A75),
+                              Color(0xA8D4C1AE),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

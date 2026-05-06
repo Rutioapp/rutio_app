@@ -55,14 +55,7 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
   for (final day in periodRange.days) {
     final dayKey = _dateKey(day);
     final dayCompletionTimes = _map(completionTimesRoot[dayKey]);
-    final expectedHabitIds = _expectedHabitIdsForDay(
-      day: day,
-      today: today,
-      dayKey: dayKey,
-      userState: userState,
-      habits: habits,
-    );
-    final completedHabitIds = _completedHabitIdsForDay(
+    final dayStats = _buildDayCompletionStats(
       day: day,
       today: today,
       dayKey: dayKey,
@@ -73,11 +66,9 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
       habits: habits,
       habitsById: habitsById,
     );
-    expectedHabitInstances += expectedHabitIds.length;
+    expectedHabitInstances += dayStats.expectedCount;
 
-    for (final habitId in completedHabitIds) {
-      if (!expectedHabitIds.contains(habitId)) continue;
-
+    for (final habitId in dayStats.completedExpectedHabitIds) {
       completedHabits += 1;
       completedByHabit[habitId] = (completedByHabit[habitId] ?? 0) + 1;
 
@@ -165,6 +156,17 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
   final amberGained = period == StatisticsV3Period.day
       ? _safeInt(daily['coinsEarnedToday'], fallback: 0).clamp(0, 1 << 30)
       : 0;
+  final weeklyActivity = period == StatisticsV3Period.week
+      ? _buildWeeklyActivityData(
+          today: today,
+          userState: userState,
+          completionsRoot: completionsRoot,
+          skipsRoot: skipsRoot,
+          countValuesRoot: countValuesRoot,
+          habits: habits,
+          habitsById: habitsById,
+        )
+      : const <StatisticsV3WeeklyActivityDay>[];
 
   // TODO: Add reliable per-period XP/Amber history once local data stores it.
   return StatisticsV3ViewData(
@@ -177,7 +179,59 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     families: families,
     bestMoment: bestMoment,
     highlightedHabits: highlightedItems,
+    weeklyActivity: weeklyActivity,
   );
+}
+
+List<StatisticsV3WeeklyActivityDay> _buildWeeklyActivityData({
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required Map<String, dynamic> countValuesRoot,
+  required List<Map<String, dynamic>> habits,
+  required Map<String, Map<String, dynamic>> habitsById,
+}) {
+  final weekStart = _startOfWeek(today);
+
+  return List<StatisticsV3WeeklyActivityDay>.generate(7, (index) {
+    final day = weekStart.add(Duration(days: index));
+    final dayKey = _dateKey(day);
+    final isToday = _dateOnly(day) == _dateOnly(today);
+    final isFuture = day.isAfter(today);
+
+    if (isFuture) {
+      return StatisticsV3WeeklyActivityDay(
+        date: day,
+        completedCount: 0,
+        expectedCount: 0,
+        percentage: 0,
+        isToday: isToday,
+        isFuture: true,
+      );
+    }
+
+    final dayStats = _buildDayCompletionStats(
+      day: day,
+      today: today,
+      dayKey: dayKey,
+      userState: userState,
+      completionsRoot: completionsRoot,
+      skipsRoot: skipsRoot,
+      countValuesRoot: countValuesRoot,
+      habits: habits,
+      habitsById: habitsById,
+    );
+
+    return StatisticsV3WeeklyActivityDay(
+      date: day,
+      completedCount: dayStats.completedCount,
+      expectedCount: dayStats.expectedCount,
+      percentage: dayStats.percentage,
+      isToday: isToday,
+      isFuture: false,
+    );
+  }, growable: false);
 }
 
 StatisticsV3BestMomentInsight _buildBestMomentInsight({
@@ -323,6 +377,52 @@ Set<String> _completedHabitIdsForDay({
   }
 
   return completedIds;
+}
+
+_DayCompletionStats _buildDayCompletionStats({
+  required DateTime day,
+  required DateTime today,
+  required String dayKey,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required Map<String, dynamic> countValuesRoot,
+  required List<Map<String, dynamic>> habits,
+  required Map<String, Map<String, dynamic>> habitsById,
+}) {
+  final expectedHabitIds = _expectedHabitIdsForDay(
+    day: day,
+    today: today,
+    dayKey: dayKey,
+    userState: userState,
+    habits: habits,
+  );
+  final completedHabitIds = _completedHabitIdsForDay(
+    day: day,
+    today: today,
+    dayKey: dayKey,
+    userState: userState,
+    completionsRoot: completionsRoot,
+    skipsRoot: skipsRoot,
+    countValuesRoot: countValuesRoot,
+    habits: habits,
+    habitsById: habitsById,
+  );
+
+  final completedExpectedHabitIds =
+      completedHabitIds.where(expectedHabitIds.contains).toSet();
+  final expectedCount = expectedHabitIds.length;
+  final completedCount = completedExpectedHabitIds.length;
+  final percentage = expectedCount == 0
+      ? 0
+      : ((completedCount / expectedCount) * 100).round().clamp(0, 100);
+
+  return _DayCompletionStats(
+    completedExpectedHabitIds: completedExpectedHabitIds,
+    expectedCount: expectedCount,
+    completedCount: completedCount,
+    percentage: percentage,
+  );
 }
 
 Set<String> _expectedHabitIdsForDay({
@@ -550,4 +650,18 @@ enum _MomentBucket {
         return l10n.statisticsV3MomentNight;
     }
   }
+}
+
+class _DayCompletionStats {
+  const _DayCompletionStats({
+    required this.completedExpectedHabitIds,
+    required this.expectedCount,
+    required this.completedCount,
+    required this.percentage,
+  });
+
+  final Set<String> completedExpectedHabitIds;
+  final int expectedCount;
+  final int completedCount;
+  final int percentage;
 }

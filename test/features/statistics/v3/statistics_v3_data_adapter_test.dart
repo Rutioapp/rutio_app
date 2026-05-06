@@ -154,6 +154,180 @@ void main() {
       });
     });
 
+    group('weekly activity', () {
+      test('returns 7 day entries for the current week', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(id: 'habit-a', title: 'Habit A'),
+          ],
+        );
+
+        expect(result.weeklyActivity, hasLength(7));
+        expect(result.weeklyActivity.first.date.weekday, DateTime.monday);
+        expect(result.weeklyActivity.last.date.weekday, DateTime.sunday);
+      });
+
+      test('calculates completed/expected/percentage correctly for a past day', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final monday = weekNow.subtract(
+          Duration(days: weekNow.weekday - DateTime.monday),
+        );
+        final mondayKey = _dateKey(monday);
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'habit-weekly-monday',
+              title: 'Monday Habit',
+              schedule: {
+                'type': 'weekly',
+                'weekdays': [DateTime.monday],
+              },
+            ),
+          ],
+          history: {
+            'habitCompletions': {
+              mondayKey: {'habit-weekly-monday': true},
+            },
+            'habitCompletionTimes': {
+              mondayKey: {
+                'habit-weekly-monday': DateTime(
+                  monday.year,
+                  monday.month,
+                  monday.day,
+                  8,
+                ).millisecondsSinceEpoch,
+              },
+            },
+            'habitSkips': <String, dynamic>{},
+            'habitCountValues': <String, dynamic>{},
+          },
+        );
+
+        final mondayItem = result.weeklyActivity.first;
+        expect(mondayItem.expectedCount, 1);
+        expect(mondayItem.completedCount, 1);
+        expect(mondayItem.percentage, 100);
+      });
+
+      test('unticking one habit reduces today percentage', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+
+        final allDone = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(id: 'habit-b', title: 'Habit B', doneToday: true, progress: 1),
+          ],
+        );
+
+        final oneUnticked = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(id: 'habit-b', title: 'Habit B', doneToday: false, progress: 0),
+          ],
+        );
+
+        final todayAllDone = allDone.weeklyActivity.firstWhere((item) => item.isToday);
+        final todayUnticked =
+            oneUnticked.weeklyActivity.firstWhere((item) => item.isToday);
+
+        expect(todayAllDone.percentage, 100);
+        expect(todayUnticked.percentage, 50);
+      });
+
+      test('adding expected active habits without completion reduces today percentage', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+
+        final base = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'habit-existing',
+              title: 'Existing Habit',
+              doneToday: true,
+              progress: 1,
+            ),
+          ],
+        );
+
+        final withNewUncompleted = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'habit-existing',
+              title: 'Existing Habit',
+              doneToday: true,
+              progress: 1,
+            ),
+            _habit(
+              id: 'habit-new',
+              title: 'New Habit',
+              doneToday: false,
+              progress: 0,
+            ),
+          ],
+        );
+
+        final baseToday = base.weeklyActivity.firstWhere((item) => item.isToday);
+        final newToday =
+            withNewUncompleted.weeklyActivity.firstWhere((item) => item.isToday);
+
+        expect(baseToday.percentage, 100);
+        expect(newToday.percentage, 50);
+      });
+
+      test('count habits below target are not completed in weekly activity', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'count-weekly',
+              title: 'Count Weekly',
+              type: 'count',
+              target: 5,
+              progress: 4,
+              doneToday: false,
+            ),
+          ],
+          history: _historyForDay(
+            weekNow,
+            countValues: {'count-weekly': 4},
+          ),
+        );
+
+        final todayItem = result.weeklyActivity.firstWhere((item) => item.isToday);
+        expect(todayItem.expectedCount, 1);
+        expect(todayItem.completedCount, 0);
+        expect(todayItem.percentage, 0);
+      });
+
+      test('future days are marked as future and rendered neutral data', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+          ],
+        );
+
+        final futureDays = result.weeklyActivity.where((item) => item.isFuture).toList();
+        expect(futureDays, hasLength(4));
+        for (final item in futureDays) {
+          expect(item.completedCount, 0);
+          expect(item.expectedCount, 0);
+          expect(item.percentage, 0);
+        }
+      });
+    });
+
     group('highlighted habits', () {
       test('returns the top 3 habits in descending completion order', () async {
         final result = await _buildMonthViewData(
@@ -348,6 +522,19 @@ Future<StatisticsV3ViewData> _buildDayViewData({
   );
 }
 
+Future<StatisticsV3ViewData> _buildWeekViewData({
+  required DateTime now,
+  required List<Map<String, dynamic>> activeHabits,
+  Map<String, dynamic>? history,
+}) async {
+  return _buildViewData(
+    period: StatisticsV3Period.week,
+    now: now,
+    activeHabits: activeHabits,
+    history: history,
+  );
+}
+
 Future<StatisticsV3ViewData> _buildMonthViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
@@ -514,6 +701,7 @@ Map<String, dynamic> _habit({
   bool doneToday = false,
   String? familyId,
   String emoji = '✨',
+  Map<String, dynamic>? schedule,
 }) {
   return <String, dynamic>{
     'id': id,
@@ -526,9 +714,11 @@ Map<String, dynamic> _habit({
     'doneToday': doneToday,
     'skippedToday': false,
     if (familyId != null) 'familyId': familyId,
-    'schedule': <String, dynamic>{
-      'type': 'daily',
-    },
+    'schedule':
+        schedule ??
+        <String, dynamic>{
+          'type': 'daily',
+        },
   };
 }
 
