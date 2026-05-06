@@ -563,8 +563,24 @@
     "statisticsV3FamiliesCardTitle": "Families",
     "statisticsV3FamiliesEmpty": "No families with activity in this period yet.",
     "statisticsV3BestMomentCardTitle": "Best moment",
-    "statisticsV3BestMomentFallback": "You tend to complete more in the morning.",
-    "statisticsV3HighlightedHabitCardTitle": "Highlighted habit",
+    "statisticsV3BestMomentFallback": "Time insight will appear after more timestamped completions.",
+    "statisticsV3BestMomentWithCount": "{moment} · {count}",
+    "@statisticsV3BestMomentWithCount": {
+        "placeholders": {
+            "moment": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV3MomentMorning": "Morning",
+    "statisticsV3MomentAfternoon": "Afternoon",
+    "statisticsV3MomentEvening": "Evening",
+    "statisticsV3MomentNight": "Night",
+    "statisticsV3NoFamily": "No family",
+    "statisticsV3HighlightedHabitCardTitle": "Highlighted habits",
     "statisticsV3HighlightedHabitQuestionDay": "Which habit have I been doing the longest today?",
     "statisticsV3HighlightedHabitQuestionWeek": "Which habit have I been doing the longest this week?",
     "statisticsV3HighlightedHabitQuestionMonth": "Which habit have I been doing the longest this month?",
@@ -582,7 +598,7 @@
     "statisticsV3HabitViewPlaceholderBody": "This section is reserved for the detailed per-habit statistics view in V3. For now, you can use the general overview safely.",
     "statisticsV3ProgressMessageEmpty": "There is still time to begin",
     "statisticsV3ProgressMessageInProgress": "Your rhythm is building",
-    "statisticsV3ProgressMessageComplete": "A calm day completed",
+    "statisticsV3ProgressMessageComplete": "A calm period completed",
     "habitStatsMetricCompleted": "Completed",
     "habitStatsMetricCompletionDescription": "{done}/{total} days",
     "@habitStatsMetricCompletionDescription": {

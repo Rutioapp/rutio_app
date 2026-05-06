@@ -563,8 +563,24 @@
   "statisticsV3FamiliesCardTitle": "Familias",
   "statisticsV3FamiliesEmpty": "Aun no hay familias con actividad en este periodo.",
   "statisticsV3BestMomentCardTitle": "Mejor momento",
-  "statisticsV3BestMomentFallback": "Cumples mas por la manana.",
-  "statisticsV3HighlightedHabitCardTitle": "Habito destacado",
+  "statisticsV3BestMomentFallback": "La informacion de horario aparecera cuando haya mas completados con hora registrada.",
+  "statisticsV3BestMomentWithCount": "{moment} · {count}",
+  "@statisticsV3BestMomentWithCount": {
+    "placeholders": {
+      "moment": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsV3MomentMorning": "Manana",
+  "statisticsV3MomentAfternoon": "Tarde",
+  "statisticsV3MomentEvening": "Noche",
+  "statisticsV3MomentNight": "Madrugada",
+  "statisticsV3NoFamily": "Sin familia",
+  "statisticsV3HighlightedHabitCardTitle": "Habitos destacados",
   "statisticsV3HighlightedHabitQuestionDay": "Que habito he estado haciendo durante mas tiempo hoy?",
   "statisticsV3HighlightedHabitQuestionWeek": "Que habito he estado haciendo durante mas tiempo esta semana?",
   "statisticsV3HighlightedHabitQuestionMonth": "Que habito he estado haciendo durante mas tiempo este mes?",
@@ -582,7 +598,7 @@
   "statisticsV3HabitViewPlaceholderBody": "Esta seccion queda reservada para la vista detallada por habito en V3. Por ahora puedes usar el resumen general sin riesgos.",
   "statisticsV3ProgressMessageEmpty": "Aun estas a tiempo de empezar",
   "statisticsV3ProgressMessageInProgress": "Tu ritmo se esta construyendo",
-  "statisticsV3ProgressMessageComplete": "Dia completado con calma",
+  "statisticsV3ProgressMessageComplete": "Periodo completado con calma",
   "habitStatsMetricCompleted": "Completado",
   "habitStatsMetricCompletionDescription": "{done}/{total} dias",
   "@habitStatsMetricCompletionDescription": {

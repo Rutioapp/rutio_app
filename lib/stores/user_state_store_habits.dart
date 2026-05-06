@@ -1057,6 +1057,8 @@ Future<void> _addCustomHabit(
 
   activeHabits.add(<String, dynamic>{
     'id': id,
+    'createdAt': (habit['createdAt'] ?? habit['created_at'] ?? _today())
+        .toString(),
     'name': (habit['name'] ?? habit['title'] ?? 'Habito').toString(),
     'emoji': resolvedEmoji,
     'description': (habit['description'] ?? '').toString(),

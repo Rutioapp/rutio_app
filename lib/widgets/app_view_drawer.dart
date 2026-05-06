@@ -23,6 +23,7 @@ class AppViewDrawer extends StatelessWidget {
     required this.onGoDiary,
     required this.onGoArchived,
     required this.onGoStats,
+    this.onGoStatsV3,
     required this.onGoProfile,
     this.selected,
   });
@@ -34,10 +35,11 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoDiary;
   final VoidCallback onGoArchived;
   final VoidCallback onGoStats;
+  final VoidCallback? onGoStatsV3;
   final VoidCallback onGoProfile;
 
   /// Valores sugeridos:
-  /// 'daily'|'weekly'|'monthly'|'todo'|'diary'|'archived'|'stats'|'profile'
+  /// 'daily'|'weekly'|'monthly'|'todo'|'diary'|'archived'|'stats'|'stats_v3'|'profile'
   final String? selected;
 
   static const Color _skyTop = Color(0xFFEAF3FB);
@@ -132,6 +134,13 @@ class AppViewDrawer extends StatelessWidget {
                     ),
                     const _DrawerDivider(),
                     _DrawerTile(
+                      icon: Icons.auto_graph_rounded,
+                      label: context.l10n.drawerStatisticsV3,
+                      isSelected: selected == 'stats_v3',
+                      onTap: () => _openStatsV3(context),
+                    ),
+                    const _DrawerDivider(),
+                    _DrawerTile(
                       icon: Icons.menu_book_outlined,
                       label: context.l10n.drawerDiary,
                       isSelected: selected == 'diary',
@@ -181,6 +190,15 @@ class AppViewDrawer extends StatelessWidget {
   void _go(BuildContext context, VoidCallback onTap) {
     Navigator.of(context).pop();
     onTap();
+  }
+
+  void _openStatsV3(BuildContext context) {
+    final callback = onGoStatsV3;
+    if (callback != null) {
+      _go(context, callback);
+      return;
+    }
+    _go(context, () => Navigator.pushNamed(context, '/stats-v3'));
   }
 
   Future<void> _handleReportIssueTap(BuildContext context) async {

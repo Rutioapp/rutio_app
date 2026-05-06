@@ -1,18 +1,5 @@
 import 'package:flutter/material.dart';
-
-class StatisticsV3FamilyChipItem {
-  const StatisticsV3FamilyChipItem({
-    required this.name,
-    required this.emoji,
-    required this.color,
-    required this.completedCount,
-  });
-
-  final String name;
-  final String emoji;
-  final Color color;
-  final int completedCount;
-}
+import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 
 class StatisticsV3FamilyChipsCard extends StatelessWidget {
   const StatisticsV3FamilyChipsCard({
@@ -24,7 +11,7 @@ class StatisticsV3FamilyChipsCard extends StatelessWidget {
 
   final String title;
   final String emptyLabel;
-  final List<StatisticsV3FamilyChipItem> items;
+  final List<StatisticsV3FamilyItem> items;
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +60,7 @@ class StatisticsV3FamilyChipsCard extends StatelessWidget {
 class _FamilyChip extends StatelessWidget {
   const _FamilyChip({required this.item});
 
-  final StatisticsV3FamilyChipItem item;
+  final StatisticsV3FamilyItem item;
 
   @override
   Widget build(BuildContext context) {

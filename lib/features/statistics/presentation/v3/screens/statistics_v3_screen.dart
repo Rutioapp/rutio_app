@@ -1,10 +1,10 @@
-import 'dart:math' as math;
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_best_moment_card.dart';
+import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
+import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_best_moment_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_consistency_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_family_chips_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_header.dart';
@@ -22,7 +22,6 @@ import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/home/home_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
 import 'package:rutio/stores/user_state_store.dart';
-import 'package:rutio/utils/family_theme.dart';
 import 'package:rutio/widgets/app_view_drawer.dart';
 import 'package:rutio/widgets/backgrounds/home_landscape_background.dart';
 
@@ -53,7 +52,11 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final store = context.watch<UserStateStore>();
-    final viewData = _buildViewData(store, _period, l10n);
+    final viewData = buildStatisticsV3ViewData(
+      store: store,
+      period: _period,
+      l10n: l10n,
+    );
 
     return Stack(
       children: [
@@ -121,7 +124,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       StatisticsV3ConsistencyCard(
                         title: l10n.statisticsV3ConsistencyCardTitle,
                         activeDaysLabel:
-                            l10n.statisticsV3ConsistencyActiveDays,
+                            l10n.statisticsV3SummaryCompletedLabel,
                         completionLabel:
                             l10n.statisticsV3ConsistencyCompletionLabel,
                         activeDays: viewData.activeDays,
@@ -135,21 +138,23 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       ),
                       StatisticsV3BestMomentCard(
                         title: l10n.statisticsV3BestMomentCardTitle,
-                        body: l10n.statisticsV3BestMomentFallback,
+                        body: viewData.bestMoment.hasData
+                            ? l10n.statisticsV3BestMomentWithCount(
+                                viewData.bestMoment.label,
+                                viewData.bestMoment.count,
+                              )
+                            : l10n.statisticsV3BestMomentFallback,
                       ),
                       StatisticsV3HighlightedHabitCard(
                         title: l10n.statisticsV3HighlightedHabitCardTitle,
                         emptyLabel: l10n.statisticsV3HighlightedHabitEmpty,
-                        habitName: viewData.highlightedHabitName,
-                        habitEmoji: viewData.highlightedHabitEmoji,
-                        metricLabel: viewData.highlightedMetricLabel ??
-                            l10n.statisticsV3HighlightedHabitEmpty,
+                        items: viewData.highlightedHabits,
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   StatisticsV3ProgressMessageChip(
-                    message: _progressMessage(l10n, viewData.consistencyPct),
+                    message: _progressMessage(viewData, l10n),
                   ),
                 ],
               ],
@@ -160,112 +165,14 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
     );
   }
 
-  _StatisticsV3ViewData _buildViewData(
-    UserStateStore store,
-    StatisticsV3Period period,
+  String _progressMessage(
+    StatisticsV3ViewData viewData,
     AppLocalizations l10n,
   ) {
-    final today = DateTime.now();
-    final end = DateTime(today.year, today.month, today.day);
-    final days = List<DateTime>.generate(
-      period.trailingDays,
-      (index) => end.subtract(Duration(days: period.trailingDays - 1 - index)),
-      growable: false,
-    );
-
-    final root = store.state ?? const <String, dynamic>{};
-    final userState = _map(root['userState']);
-    final history = _map(userState['history']);
-    final completionsRoot = _map(history['habitCompletions']);
-    final habits = store.activeHabits;
-
-    final habitsById = <String, Map<String, dynamic>>{};
-    for (final habit in habits) {
-      final id = _habitId(habit);
-      if (id.isNotEmpty) {
-        habitsById[id] = habit;
-      }
+    if (viewData.consistencyPct <= 0) return l10n.statisticsV3ProgressMessageEmpty;
+    if (viewData.consistencyPct >= 100) {
+      return l10n.statisticsV3ProgressMessageComplete;
     }
-
-    final completedByFamily = <String, int>{};
-    final completedByHabit = <String, int>{};
-    var completedHabits = 0;
-    var activeDays = 0;
-
-    for (final day in days) {
-      final dayMap = _map(completionsRoot[_dateKey(day)]);
-      var anyCompleted = false;
-      for (final entry in dayMap.entries) {
-        if (entry.value != true) continue;
-        anyCompleted = true;
-        completedHabits++;
-
-        final habitId = entry.key.toString();
-        completedByHabit[habitId] = (completedByHabit[habitId] ?? 0) + 1;
-
-        final familyId = _normalizedFamilyId(habitsById[habitId]?['familyId']);
-        completedByFamily[familyId] = (completedByFamily[familyId] ?? 0) + 1;
-      }
-      if (anyCompleted) activeDays++;
-    }
-
-    final families = completedByFamily.entries.toList(growable: false)
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final topFamilies = families.take(4).map((entry) {
-      final familyId = entry.key;
-      return StatisticsV3FamilyChipItem(
-        name: l10n.familyName(familyId),
-        emoji: FamilyTheme.emojiOf(familyId),
-        color: FamilyTheme.colorOf(familyId),
-        completedCount: entry.value,
-      );
-    }).toList(growable: false);
-
-    String? highlightedHabitName;
-    String? highlightedHabitEmoji;
-    String? highlightedMetricLabel;
-
-    if (completedByHabit.isNotEmpty) {
-      final bestHabitId = completedByHabit.keys.reduce((a, b) {
-        final countA = completedByHabit[a] ?? 0;
-        final countB = completedByHabit[b] ?? 0;
-        if (countA != countB) return countA > countB ? a : b;
-
-        final streakA = store.habitStreakSnapshotForHabitId(a).currentStreak;
-        final streakB = store.habitStreakSnapshotForHabitId(b).currentStreak;
-        return streakA >= streakB ? a : b;
-      });
-
-      final highlightedHabit = habitsById[bestHabitId];
-      highlightedHabitName = _habitName(highlightedHabit);
-      highlightedHabitEmoji = _habitEmoji(highlightedHabit);
-      final completedDays = completedByHabit[bestHabitId] ?? 0;
-      highlightedMetricLabel =
-          l10n.statisticsV3HighlightedCompletedDays(completedDays);
-    }
-
-    final totalDays = math.max(days.length, 1);
-    final consistencyPct = ((activeDays / totalDays) * 100).round();
-    final xpGained = completedHabits * 10;
-    final amberGained = completedHabits * 4;
-
-    return _StatisticsV3ViewData(
-      totalDays: totalDays,
-      completedHabits: completedHabits,
-      xpGained: xpGained,
-      amberGained: amberGained,
-      activeDays: activeDays,
-      consistencyPct: consistencyPct,
-      families: topFamilies,
-      highlightedHabitName: highlightedHabitName,
-      highlightedHabitEmoji: highlightedHabitEmoji,
-      highlightedMetricLabel: highlightedMetricLabel,
-    );
-  }
-
-  String _progressMessage(AppLocalizations l10n, int consistencyPct) {
-    if (consistencyPct <= 0) return l10n.statisticsV3ProgressMessageEmpty;
-    if (consistencyPct >= 100) return l10n.statisticsV3ProgressMessageComplete;
     return l10n.statisticsV3ProgressMessageInProgress;
   }
 }
@@ -312,70 +219,4 @@ class _HabitViewPlaceholderCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _StatisticsV3ViewData {
-  const _StatisticsV3ViewData({
-    required this.totalDays,
-    required this.completedHabits,
-    required this.xpGained,
-    required this.amberGained,
-    required this.activeDays,
-    required this.consistencyPct,
-    required this.families,
-    required this.highlightedHabitName,
-    required this.highlightedHabitEmoji,
-    required this.highlightedMetricLabel,
-  });
-
-  final int totalDays;
-  final int completedHabits;
-  final int xpGained;
-  final int amberGained;
-  final int activeDays;
-  final int consistencyPct;
-  final List<StatisticsV3FamilyChipItem> families;
-  final String? highlightedHabitName;
-  final String? highlightedHabitEmoji;
-  final String? highlightedMetricLabel;
-}
-
-Map<String, dynamic> _map(dynamic value) {
-  if (value is Map) return Map<String, dynamic>.from(value);
-  return <String, dynamic>{};
-}
-
-String _dateKey(DateTime date) {
-  return '${date.year.toString().padLeft(4, '0')}-'
-      '${date.month.toString().padLeft(2, '0')}-'
-      '${date.day.toString().padLeft(2, '0')}';
-}
-
-String _habitId(Map<String, dynamic> habit) {
-  return (habit['id'] ?? habit['habitId'] ?? habit['uuid'] ?? habit['key'] ?? '')
-      .toString()
-      .trim();
-}
-
-String _habitName(Map<String, dynamic>? habit) {
-  if (habit == null) return '';
-  return (habit['title'] ??
-          habit['name'] ??
-          habit['habitName'] ??
-          habit['label'] ??
-          '')
-      .toString()
-      .trim();
-}
-
-String _habitEmoji(Map<String, dynamic>? habit) {
-  if (habit == null) return '✨';
-  final emoji = (habit['emoji'] ?? '').toString().trim();
-  return emoji.isEmpty ? '✨' : emoji;
-}
-
-String _normalizedFamilyId(dynamic rawFamilyId) {
-  final familyId = (rawFamilyId ?? FamilyTheme.fallbackId).toString();
-  if (FamilyTheme.colors.containsKey(familyId)) return familyId;
-  return FamilyTheme.fallbackId;
 }

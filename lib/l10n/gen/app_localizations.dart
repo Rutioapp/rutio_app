@@ -2196,13 +2196,49 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV3BestMomentFallback.
   ///
   /// In es, this message translates to:
-  /// **'Cumples mas por la manana.'**
+  /// **'La informacion de horario aparecera cuando haya mas completados con hora registrada.'**
   String get statisticsV3BestMomentFallback;
+
+  /// No description provided for @statisticsV3BestMomentWithCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{moment} · {count}'**
+  String statisticsV3BestMomentWithCount(String moment, int count);
+
+  /// No description provided for @statisticsV3MomentMorning.
+  ///
+  /// In es, this message translates to:
+  /// **'Manana'**
+  String get statisticsV3MomentMorning;
+
+  /// No description provided for @statisticsV3MomentAfternoon.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarde'**
+  String get statisticsV3MomentAfternoon;
+
+  /// No description provided for @statisticsV3MomentEvening.
+  ///
+  /// In es, this message translates to:
+  /// **'Noche'**
+  String get statisticsV3MomentEvening;
+
+  /// No description provided for @statisticsV3MomentNight.
+  ///
+  /// In es, this message translates to:
+  /// **'Madrugada'**
+  String get statisticsV3MomentNight;
+
+  /// No description provided for @statisticsV3NoFamily.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin familia'**
+  String get statisticsV3NoFamily;
 
   /// No description provided for @statisticsV3HighlightedHabitCardTitle.
   ///
   /// In es, this message translates to:
-  /// **'Habito destacado'**
+  /// **'Habitos destacados'**
   String get statisticsV3HighlightedHabitCardTitle;
 
   /// No description provided for @statisticsV3HighlightedHabitQuestionDay.
@@ -2268,7 +2304,7 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV3ProgressMessageComplete.
   ///
   /// In es, this message translates to:
-  /// **'Dia completado con calma'**
+  /// **'Periodo completado con calma'**
   String get statisticsV3ProgressMessageComplete;
 
   /// No description provided for @habitStatsMetricCompleted.

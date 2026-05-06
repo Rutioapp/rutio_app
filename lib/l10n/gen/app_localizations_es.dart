@@ -1155,10 +1155,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statisticsV3BestMomentCardTitle => 'Mejor momento';
 
   @override
-  String get statisticsV3BestMomentFallback => 'Cumples mas por la manana.';
+  String get statisticsV3BestMomentFallback =>
+      'La informacion de horario aparecera cuando haya mas completados con hora registrada.';
 
   @override
-  String get statisticsV3HighlightedHabitCardTitle => 'Habito destacado';
+  String statisticsV3BestMomentWithCount(String moment, int count) {
+    return '$moment · $count';
+  }
+
+  @override
+  String get statisticsV3MomentMorning => 'Manana';
+
+  @override
+  String get statisticsV3MomentAfternoon => 'Tarde';
+
+  @override
+  String get statisticsV3MomentEvening => 'Noche';
+
+  @override
+  String get statisticsV3MomentNight => 'Madrugada';
+
+  @override
+  String get statisticsV3NoFamily => 'Sin familia';
+
+  @override
+  String get statisticsV3HighlightedHabitCardTitle => 'Habitos destacados';
 
   @override
   String get statisticsV3HighlightedHabitQuestionDay =>
@@ -1207,7 +1228,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu ritmo se esta construyendo';
 
   @override
-  String get statisticsV3ProgressMessageComplete => 'Dia completado con calma';
+  String get statisticsV3ProgressMessageComplete =>
+      'Periodo completado con calma';
 
   @override
   String get habitStatsMetricCompleted => 'Completado';

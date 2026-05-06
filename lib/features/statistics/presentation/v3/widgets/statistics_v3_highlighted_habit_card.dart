@@ -1,24 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 
 class StatisticsV3HighlightedHabitCard extends StatelessWidget {
   const StatisticsV3HighlightedHabitCard({
     super.key,
     required this.title,
     required this.emptyLabel,
-    required this.metricLabel,
-    this.habitName,
-    this.habitEmoji,
+    required this.items,
   });
 
   final String title;
   final String emptyLabel;
-  final String metricLabel;
-  final String? habitName;
-  final String? habitEmoji;
+  final List<StatisticsV3HighlightedHabitItem> items;
 
   @override
   Widget build(BuildContext context) {
-    final hasHabit = (habitName ?? '').trim().isNotEmpty;
+    final hasItems = items.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
@@ -41,7 +38,7 @@ class StatisticsV3HighlightedHabitCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (!hasHabit)
+          if (!hasItems)
             Text(
               emptyLabel,
               maxLines: 3,
@@ -56,25 +53,10 @@ class StatisticsV3HighlightedHabitCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _HighlightedHabitRow(
-                  emoji: habitEmoji ?? '*',
-                  name: habitName!,
-                  metricLabel: metricLabel,
-                ),
-                const SizedBox(height: 8),
-                _HighlightedHabitRow(
-                  emoji: '*',
-                  name: emptyLabel,
-                  metricLabel: '',
-                  isMuted: true,
-                ),
-                const SizedBox(height: 8),
-                _HighlightedHabitRow(
-                  emoji: '*',
-                  name: emptyLabel,
-                  metricLabel: '',
-                  isMuted: true,
-                ),
+                for (var index = 0; index < items.take(3).length; index++) ...[
+                  if (index > 0) const SizedBox(height: 8),
+                  _HighlightedHabitRow(item: items[index]),
+                ],
               ],
             ),
         ],
@@ -84,23 +66,12 @@ class StatisticsV3HighlightedHabitCard extends StatelessWidget {
 }
 
 class _HighlightedHabitRow extends StatelessWidget {
-  const _HighlightedHabitRow({
-    required this.emoji,
-    required this.name,
-    required this.metricLabel,
-    this.isMuted = false,
-  });
+  const _HighlightedHabitRow({required this.item});
 
-  final String emoji;
-  final String name;
-  final String metricLabel;
-  final bool isMuted;
+  final StatisticsV3HighlightedHabitItem item;
 
   @override
   Widget build(BuildContext context) {
-    final textColor =
-        isMuted ? const Color(0xFF8C8277) : const Color(0xFF2E241B);
-
     return Row(
       children: [
         Container(
@@ -112,39 +83,35 @@ class _HighlightedHabitRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
-            emoji,
+            item.emoji,
             style: const TextStyle(fontSize: 13),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            name,
+            item.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
-              fontWeight: isMuted ? FontWeight.w500 : FontWeight.w700,
-              color: textColor,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF2E241B),
             ),
           ),
         ),
-        if (metricLabel.isNotEmpty) ...[
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              metricLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF5E554A),
-              ),
-            ),
+        const SizedBox(width: 6),
+        Text(
+          '${item.completedCount}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.right,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF5E554A),
           ),
-        ],
+        ),
       ],
     );
   }
