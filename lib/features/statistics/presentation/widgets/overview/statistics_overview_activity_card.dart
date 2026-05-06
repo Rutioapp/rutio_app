@@ -119,7 +119,6 @@ class _ActivityPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 144),
       decoration: BoxDecoration(
         color: tint,
         borderRadius: BorderRadius.circular(14),

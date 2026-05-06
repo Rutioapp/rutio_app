@@ -883,6 +883,7 @@
     "editHabitSuggestedUnitRepetitions": "reps",
     "editHabitSuggestedUnitHours": "hours",
     "statisticsV2Title": "Statistics V2",
+    "statisticsV2HeaderSubtitle": "Your Rutio progress",
     "statisticsV2TabOverview": "Overview",
     "statisticsV2TabHabits": "Habits",
     "statisticsV2PeriodDay": "Day",

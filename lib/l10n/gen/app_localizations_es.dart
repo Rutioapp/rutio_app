@@ -1115,7 +1115,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get archiveHabitTileConfirmAction => 'Archivar';
 
   @override
-  String get habitStatsTitle => 'Estadisticas';
+  String get habitStatsTitle => 'Estadísticas';
 
   @override
   String get habitStatsEmpty => 'No hay habitos para mostrar.';
@@ -1133,7 +1133,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsMetricConsistencyDescription(int window) {
-    return 'Ultimos $window dias';
+    return 'Últimos $window días';
   }
 
   @override
@@ -1164,7 +1164,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsNextMilestone => 'Siguiente hito';
 
   @override
-  String get habitStatsWeeklyComparisonTitle => 'Comparacion semanal';
+  String get habitStatsWeeklyComparisonTitle => 'Comparación semanal';
 
   @override
   String get habitStatsWeeklyComparisonSubtitle => 'Esta semana vs la anterior';
@@ -1184,7 +1184,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsTabLastDaysTitle(int days) {
-    return 'Ultimos $days dias';
+    return 'Últimos $days días';
   }
 
   @override
@@ -1212,7 +1212,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get habitStatsTabCheckHint =>
-      'Dias en los que completaste este habito';
+      'Días en los que completaste este hábito';
 
   @override
   String get habitStatsTabFireStreakTitle => 'Racha de fuego';
@@ -1739,16 +1739,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editHabitSuggestedUnitHours => 'horas';
 
   @override
-  String get statisticsV2Title => 'EstadÃ­sticas V2';
+  String get statisticsV2Title => 'Estadísticas V2';
+
+  @override
+  String get statisticsV2HeaderSubtitle => 'Tu progreso en Rutio';
 
   @override
   String get statisticsV2TabOverview => 'Vista general';
 
   @override
-  String get statisticsV2TabHabits => 'HÃ¡bitos';
+  String get statisticsV2TabHabits => 'Hábitos';
 
   @override
-  String get statisticsV2PeriodDay => 'DÃ­a';
+  String get statisticsV2PeriodDay => 'Día';
 
   @override
   String get statisticsV2PeriodWeek => 'Semana';
@@ -1757,7 +1760,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statisticsV2PeriodMonth => 'Mes';
 
   @override
-  String get statisticsV2PeriodYear => 'AÃ±o';
+  String get statisticsV2PeriodYear => 'Año';
 
   @override
   String get statisticsV2OverviewSubtitleToday => 'Hoy';
@@ -1769,22 +1772,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statisticsV2OverviewSubtitleThisMonth => 'Este mes';
 
   @override
-  String get statisticsV2OverviewSubtitleThisYear => 'Este aÃ±o';
+  String get statisticsV2OverviewSubtitleThisYear => 'Este año';
 
   @override
   String get statisticsV2OverviewSummaryTitle => 'Resumen';
 
   @override
-  String get statisticsV2OverviewCompletedHabits => 'HÃ¡bitos completados';
+  String get statisticsV2OverviewCompletedHabits => 'Hábitos completados';
 
   @override
-  String get statisticsV2OverviewHabitsWithProgress => 'HÃ¡bitos con progreso';
+  String get statisticsV2OverviewHabitsWithProgress => 'Hábitos con progreso';
 
   @override
   String get statisticsV2OverviewOverallConsistency => 'Consistencia';
 
   @override
-  String get statisticsV2OverviewTotalHabits => 'HÃ¡bitos totales:';
+  String get statisticsV2OverviewTotalHabits => 'Hábitos totales:';
 
   @override
   String get statisticsV2OverviewFamilies => 'Familias:';
@@ -1794,11 +1797,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get statisticsV2OverviewConsistencySubtitle =>
-      'DÃ­as completados frente a programados';
+      'Días completados frente a programados';
 
   @override
   String statisticsV2OverviewConsistencyFraction(int completed, int scheduled) {
-    return '$completed / $scheduled dÃ­as completados';
+    return '$completed / $scheduled días completados';
   }
 
   @override
@@ -1811,36 +1814,35 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get statisticsV2OverviewActivitySubtitle =>
-      'El progreso cuenta aunque no estÃ© completado';
+      'El progreso cuenta aunque no esté completado';
 
   @override
-  String get statisticsV2OverviewActiveDays => 'DÃ­as activos';
+  String get statisticsV2OverviewActiveDays => 'Días activos';
 
   @override
   String get statisticsV2OverviewCountGoalCompletedDays =>
-      'DÃ­as count con objetivo completado';
+      'Días count con objetivo completado';
 
   @override
   String get statisticsV2OverviewCountPartialDays =>
-      'DÃ­as count con progreso parcial';
+      'Días count con progreso parcial';
 
   @override
   String get statisticsV2OverviewActivityHint =>
-      'En hÃ¡bitos count, el progreso parcial cuenta como actividad, pero no como completado.';
+      'En hábitos count, el progreso parcial cuenta como actividad, pero no como completado.';
 
   @override
   String get statisticsV2OverviewFamiliesTitle => 'Familias';
 
   @override
-  String get statisticsV2OverviewFamiliesSubtitle =>
-      'DistribuciÃ³n por familia';
+  String get statisticsV2OverviewFamiliesSubtitle => 'Distribución por familia';
 
   @override
   String get statisticsV2OverviewFamiliesEmpty =>
-      'AÃºn no hay suficientes datos por familia en este periodo.';
+      'Aún no hay suficientes datos por familia en este periodo.';
 
   @override
-  String get statisticsV2OverviewTopHabitsTitle => 'HÃ¡bitos destacados';
+  String get statisticsV2OverviewTopHabitsTitle => 'Hábitos destacados';
 
   @override
   String get statisticsV2OverviewTopHabitsSubtitle =>
@@ -1848,7 +1850,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get statisticsV2OverviewTopHabitsEmpty =>
-      'TodavÃ­a no hay hÃ¡bitos destacados en este periodo.';
+      'Todavía no hay hábitos destacados en este periodo.';
 
   @override
   String get statisticsV2OverviewVolumeLabel => 'Volumen';
@@ -1866,11 +1868,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get statisticsV2OverviewBestMomentSubtitle =>
-      'Franja del dÃ­a con mÃ¡s completados';
+      'Franja del día con más completados';
 
   @override
   String get statisticsV2OverviewBestMomentEmpty =>
-      'TodavÃ­a no hay suficientes datos para detectar tu mejor momento.';
+      'Todavía no hay suficientes datos para detectar tu mejor momento.';
 
   @override
   String get statisticsV2OverviewCalendarTitle => 'Calendario de consistencia';
@@ -1881,10 +1883,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get statisticsV2OverviewCalendarEmpty =>
-      'AÃºn no hay datos para mostrar en este calendario.';
+      'Aún no hay datos para mostrar en este calendario.';
 
   @override
-  String get statisticsV2HabitsSearchHint => 'Buscar hÃ¡bito';
+  String get statisticsV2HabitsSearchHint => 'Buscar hábito';
 
   @override
   String get statisticsV2HabitsFilterAll => 'Todos';
@@ -1905,19 +1907,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statisticsV2HabitsTypeCount => 'Count';
 
   @override
-  String get statisticsV2HabitsEmptyTitle => 'AÃºn no tienes hÃ¡bitos activos';
+  String get statisticsV2HabitsEmptyTitle => 'Aún no tienes hábitos activos';
 
   @override
   String get statisticsV2HabitsEmptySubtitle =>
-      'Crea tu primer hÃ¡bito para empezar a ver estadÃ­sticas detalladas.';
+      'Crea tu primer hábito para empezar a ver estadísticas detalladas.';
 
   @override
-  String get statisticsV2HabitsNoMatchesTitle =>
-      'No hay hÃ¡bitos que coincidan';
+  String get statisticsV2HabitsNoMatchesTitle => 'No hay hábitos que coincidan';
 
   @override
   String get statisticsV2HabitsNoMatchesSubtitle =>
-      'Prueba otra bÃºsqueda o filtro.';
+      'Prueba otra búsqueda o filtro.';
 
   @override
   String get statisticsV2HabitsMetricCompleted => 'Completado';
@@ -1939,7 +1940,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String statisticsV2HabitsCheckCompletedDays(int done, int scheduled) {
-    return '$done/$scheduled dÃ­as';
+    return '$done/$scheduled días';
   }
 
   @override
@@ -1959,7 +1960,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String statisticsV2HabitsPartialDays(int count) {
-    return '$count dÃ­as parciales';
+    return '$count días parciales';
   }
 
   @override
@@ -2056,7 +2057,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get drawerStatistics => 'Estadísticas';
 
   @override
-  String get drawerStatisticsV2Preview => 'Statistics V2 Preview';
+  String get drawerStatisticsV2Preview => 'Vista previa Statistics V2';
 
   @override
   String get drawerDiary => 'Diario (Journal)';

@@ -23,9 +23,7 @@ class StatisticsOverviewTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
       children: [
         StatisticsOverviewSummaryCard(summary: summary),
-        const SizedBox(height: 12),
-        StatisticsOverviewActivityCard(summary: summary),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 380;
@@ -34,11 +32,13 @@ class StatisticsOverviewTab extends StatelessWidget {
                 children: [
                   StatisticsOverviewConsistencyCard(summary: summary),
                   const SizedBox(height: 12),
+                  StatisticsOverviewActivityCard(summary: summary),
+                  const SizedBox(height: 12),
                   StatisticsOverviewFamiliesCard(summary: summary),
                   const SizedBox(height: 12),
-                  StatisticsOverviewBestMomentCard(summary: summary),
-                  const SizedBox(height: 12),
                   StatisticsOverviewTopHabitsCard(summary: summary),
+                  const SizedBox(height: 12),
+                  StatisticsOverviewBestMomentCard(summary: summary),
                 ],
               );
             }
@@ -48,11 +48,13 @@ class StatisticsOverviewTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
+                      flex: 6,
                       child: StatisticsOverviewConsistencyCard(summary: summary),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: StatisticsOverviewFamiliesCard(summary: summary),
+                      flex: 5,
+                      child: StatisticsOverviewActivityCard(summary: summary),
                     ),
                   ],
                 ),
@@ -61,14 +63,18 @@ class StatisticsOverviewTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: StatisticsOverviewBestMomentCard(summary: summary),
+                      flex: 5,
+                      child: StatisticsOverviewFamiliesCard(summary: summary),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
+                      flex: 6,
                       child: StatisticsOverviewTopHabitsCard(summary: summary),
                     ),
                   ],
                 ),
+                const SizedBox(height: 10),
+                StatisticsOverviewBestMomentCard(summary: summary),
               ],
             );
           },

@@ -1737,6 +1737,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsV2Title => 'Statistics V2';
 
   @override
+  String get statisticsV2HeaderSubtitle => 'Your Rutio progress';
+
+  @override
   String get statisticsV2TabOverview => 'Overview';
 
   @override

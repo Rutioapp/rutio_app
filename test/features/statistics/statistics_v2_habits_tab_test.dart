@@ -12,7 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  final today = DateTime(2026, 5, 5);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
   final todayKey = _dateKey(today);
 
   testWidgets('Statistics habits tab renders empty list', (tester) async {
@@ -27,7 +28,7 @@ void main() {
   testWidgets('Statistics habits tab renders check habits', (tester) async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
-        _checkHabit('check_1', name: 'Morning walk'),
+        _checkHabit('check_1', name: 'Morning walk', emoji: '🚶'),
       ],
       habitCompletions: <String, dynamic>{
         todayKey: <String, dynamic>{'check_1': true},
@@ -41,8 +42,78 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Morning walk'), findsOneWidget);
-    expect(find.text('1/1 days'), findsWidgets);
-    expect(find.text('100% completed'), findsWidgets);
+    expect(find.text('🚶'), findsOneWidget);
+    expect(_metricByKey(tester, 'statistics_habit_secondary_metric'), '1/1 days');
+    expect(_metricByKey(tester, 'statistics_habit_primary_metric'), '100% completed');
+  });
+
+  testWidgets('Habit list card uses habit emoji when available', (tester) async {
+    final store = await _seedStore(
+      habits: <Map<String, dynamic>>[
+        _checkHabit('check_1', name: 'Run', emoji: '🏃'),
+      ],
+      habitCompletions: <String, dynamic>{
+        todayKey: <String, dynamic>{'check_1': true},
+      },
+    );
+    await store.load();
+    await _pumpScreen(tester, store: store);
+
+    await _openHabitsTab(tester);
+    await tester.tap(find.text('Day'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('🏃'), findsOneWidget);
+  });
+
+  testWidgets('Habit emoji falls back to family emoji when missing', (
+    tester,
+  ) async {
+    final store = await _seedStore(
+      habits: <Map<String, dynamic>>[
+        _checkHabit(
+          'check_1',
+          name: 'Read',
+          emoji: '',
+          familyId: 'mind',
+        ),
+      ],
+      habitCompletions: <String, dynamic>{
+        todayKey: <String, dynamic>{'check_1': true},
+      },
+    );
+    await store.load();
+    await _pumpScreen(tester, store: store);
+
+    await _openHabitsTab(tester);
+    await tester.tap(find.text('Day'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('🧠'), findsWidgets);
+  });
+
+  testWidgets('Habit card shows family as secondary chip', (tester) async {
+    final store = await _seedStore(
+      habits: <Map<String, dynamic>>[
+        _checkHabit(
+          'check_1',
+          name: 'Journal',
+          emoji: '✍️',
+          familyId: 'mind',
+        ),
+      ],
+      habitCompletions: <String, dynamic>{
+        todayKey: <String, dynamic>{'check_1': true},
+      },
+    );
+    await store.load();
+    await _pumpScreen(tester, store: store);
+
+    await _openHabitsTab(tester);
+    await tester.tap(find.text('Day'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('🧠 Mente'), findsOneWidget);
   });
 
   testWidgets('Statistics habits tab renders count habits', (tester) async {
@@ -62,8 +133,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Read pages'), findsOneWidget);
-    expect(find.text('1 goals completed'), findsWidgets);
-    expect(find.text('0 partial days'), findsWidgets);
+    expect(
+      _metricByKey(tester, 'statistics_habit_secondary_metric'),
+      '1 goals completed',
+    );
+    expect(_metricByKey(tester, 'statistics_habit_tertiary_metric'), '0 partial days');
   });
 
   testWidgets('Count 6/8 shows partial progress and not completed goal', (
@@ -84,8 +158,14 @@ void main() {
     await tester.tap(find.text('Day'));
     await tester.pumpAndSettle();
 
-    expect(find.text('1 partial days'), findsWidgets);
-    expect(find.text('0 goals completed'), findsWidgets);
+    expect(
+      _metricByKey(tester, 'statistics_habit_tertiary_metric'),
+      '1 partial days',
+    );
+    expect(
+      _metricByKey(tester, 'statistics_habit_secondary_metric'),
+      '0 goals completed',
+    );
   });
 
   testWidgets('Count 8/8 shows goal completed', (tester) async {
@@ -104,8 +184,11 @@ void main() {
     await tester.tap(find.text('Day'));
     await tester.pumpAndSettle();
 
-    expect(find.text('1 goals completed'), findsWidgets);
-    expect(find.text('0 partial days'), findsWidgets);
+    expect(
+      _metricByKey(tester, 'statistics_habit_secondary_metric'),
+      '1 goals completed',
+    );
+    expect(_metricByKey(tester, 'statistics_habit_tertiary_metric'), '0 partial days');
   });
 
   testWidgets('Habits search filters by name', (tester) async {
@@ -202,11 +285,11 @@ void main() {
     await _openHabitsTab(tester);
     await tester.tap(find.text('Day'));
     await tester.pumpAndSettle();
-    expect(find.text('1/1 days'), findsWidgets);
+    expect(_metricByKey(tester, 'statistics_habit_secondary_metric'), '1/1 days');
 
     await tester.tap(find.text('Week'));
     await tester.pumpAndSettle();
-    expect(find.text('1/7 days'), findsWidgets);
+    expect(_metricByKey(tester, 'statistics_habit_secondary_metric'), '1/7 days');
   });
 
   testWidgets('Check habits keep completion semantics', (tester) async {
@@ -225,8 +308,8 @@ void main() {
     await tester.tap(find.text('Day'));
     await tester.pumpAndSettle();
 
-    expect(find.text('0/1 days'), findsWidgets);
-    expect(find.text('0% completed'), findsWidgets);
+    expect(_metricByKey(tester, 'statistics_habit_secondary_metric'), '0/1 days');
+    expect(_metricByKey(tester, 'statistics_habit_primary_metric'), '0% completed');
   });
 }
 
@@ -328,11 +411,17 @@ Future<UserStateStore> _seedStore({
   return store;
 }
 
-Map<String, dynamic> _checkHabit(String id, {required String name}) {
+Map<String, dynamic> _checkHabit(
+  String id, {
+  required String name,
+  String familyId = 'mind',
+  String emoji = '✅',
+}) {
   return <String, dynamic>{
     'id': id,
     'name': name,
-    'familyId': 'mind',
+    'familyId': familyId,
+    'emoji': emoji,
     'type': 'check',
     'target': 1,
     'schedule': <String, dynamic>{'type': 'daily'},
@@ -344,11 +433,14 @@ Map<String, dynamic> _countHabit(
   String id, {
   required String name,
   required int target,
+  String familyId = 'body',
+  String emoji = '🔢',
 }) {
   return <String, dynamic>{
     'id': id,
     'name': name,
-    'familyId': 'body',
+    'familyId': familyId,
+    'emoji': emoji,
     'type': 'count',
     'target': target,
     'schedule': <String, dynamic>{'type': 'daily'},
@@ -361,4 +453,10 @@ String _dateKey(DateTime date) {
   final m = date.month.toString().padLeft(2, '0');
   final d = date.day.toString().padLeft(2, '0');
   return '$y-$m-$d';
+}
+
+String _metricByKey(WidgetTester tester, String keyName) {
+  final target = find.byKey(Key(keyName));
+  final text = tester.widgetList<Text>(target).first;
+  return text.data ?? text.textSpan?.toPlainText() ?? '';
 }

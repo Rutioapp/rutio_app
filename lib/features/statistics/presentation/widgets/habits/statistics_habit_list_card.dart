@@ -32,21 +32,22 @@ class StatisticsHabitListCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           decoration: StatsCardSurface.decoration(context),
-          padding: StatsCardSurface.padding,
+          padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 62,
+                height: 62,
                 decoration: BoxDecoration(
-                  color: familyColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
+                  color: const Color(0xFFF6F1E6),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  FamilyTheme.emojiOf(item.familyId),
-                  style: const TextStyle(fontSize: 24),
+                  _habitEmoji(),
+                  style: const TextStyle(fontSize: 32),
                 ),
               ),
               const SizedBox(width: 12),
@@ -55,6 +56,7 @@ class StatisticsHabitListCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
@@ -62,15 +64,16 @@ class StatisticsHabitListCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 20,
-                              height: 1,
-                              fontWeight: FontWeight.w900,
+                              fontSize: 30,
+                              height: 0.98,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _primaryMetric(context),
+                          key: const Key('statistics_habit_primary_metric'),
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
@@ -78,73 +81,50 @@ class StatisticsHabitListCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 5),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 7),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: familyColor,
-                                borderRadius: BorderRadius.circular(99),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              FamilyTheme.nameOf(item.familyId),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black.withValues(alpha: 0.7),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                typeLabel,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.black.withValues(alpha: 0.72),
-                                ),
-                              ),
-                            ),
-                          ],
+                        _MetaChip(
+                          backgroundColor: familyColor.withValues(alpha: 0.13),
+                          textColor: Colors.black.withValues(alpha: 0.72),
+                          label:
+                              '${FamilyTheme.emojiOf(item.familyId)} ${FamilyTheme.nameOf(item.familyId)}',
                         ),
-                        const SizedBox(height: 5),
-                        Text(
-                          _secondaryMetric(context),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black.withValues(alpha: 0.62),
-                          ),
+                        _MetaChip(
+                          backgroundColor: Colors.black.withValues(alpha: 0.06),
+                          textColor: Colors.black.withValues(alpha: 0.7),
+                          label: typeLabel,
                         ),
-                        if (tertiaryMetric != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            tertiaryMetric,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black.withValues(alpha: 0.55),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 7),
+                    Text(
+                      _secondaryMetric(context),
+                      key: const Key('statistics_habit_secondary_metric'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black.withValues(alpha: 0.64),
+                      ),
+                    ),
+                    if (tertiaryMetric != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        tertiaryMetric,
+                        key: const Key('statistics_habit_tertiary_metric'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: item.isCount
+                              ? const Color(0xFF8B5A1F)
+                              : const Color(0xFF94613C),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 9),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(999),
                       child: LinearProgressIndicator(
@@ -157,17 +137,29 @@ class StatisticsHabitListCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Icon(
                 Icons.chevron_right_rounded,
-                size: 23,
-                color: Colors.black.withValues(alpha: 0.42),
+                size: 25,
+                color: Colors.black.withValues(alpha: 0.38),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  String _habitEmoji() {
+    final normalized = item.habitEmoji.trim();
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+    final fallbackFamily = FamilyTheme.emojiOf(item.familyId).trim();
+    if (fallbackFamily.isNotEmpty) {
+      return fallbackFamily;
+    }
+    return '•';
   }
 
   String _primaryMetric(BuildContext context) {
@@ -210,3 +202,33 @@ class StatisticsHabitListCard extends StatelessWidget {
   }
 }
 
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.backgroundColor,
+    required this.textColor,
+    required this.label,
+  });
+
+  final Color backgroundColor;
+  final Color textColor;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+}

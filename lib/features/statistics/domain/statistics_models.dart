@@ -8,6 +8,7 @@ class StatisticsHabitSummary {
   const StatisticsHabitSummary({
     required this.id,
     required this.title,
+    required this.habitEmoji,
     required this.familyId,
     required this.type,
     required this.target,
@@ -22,6 +23,7 @@ class StatisticsHabitSummary {
 
   final String id;
   final String title;
+  final String habitEmoji;
   final String familyId;
   final StatisticsHabitType type;
   final int target;
@@ -55,6 +57,7 @@ class StatisticsHabitListItem {
 
   String get id => summary.id;
   String get title => summary.title;
+  String get habitEmoji => summary.habitEmoji;
   String get familyId => summary.familyId;
   StatisticsHabitType get type => summary.type;
   int get target => summary.target;

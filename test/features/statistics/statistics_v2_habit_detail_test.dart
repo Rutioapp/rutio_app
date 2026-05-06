@@ -19,7 +19,7 @@ void main() {
   testWidgets('Detail renders check habit', (tester) async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
-        _checkHabit('check_1', name: 'Read'),
+        _checkHabit('check_1', name: 'Read', emoji: '📚'),
       ],
       habitCompletions: <String, dynamic>{
         todayKey: <String, dynamic>{'check_1': true},
@@ -32,12 +32,13 @@ void main() {
 
     expect(find.text(l10n.statisticsV2DetailTitle), findsOneWidget);
     expect(find.text('Read'), findsOneWidget);
+    expect(find.text('📚'), findsOneWidget);
   });
 
   testWidgets('Detail renders count habit', (tester) async {
     final store = await _seedStore(
       habits: <Map<String, dynamic>>[
-        _countHabit('count_1', name: 'Run', target: 8),
+        _countHabit('count_1', name: 'Run', target: 8, emoji: '🏃'),
       ],
       habitCountValues: <String, dynamic>{
         todayKey: <String, dynamic>{'count_1': 8},
@@ -57,7 +58,25 @@ void main() {
     final l10n = _l10nOf(tester);
     expect(find.text(l10n.statisticsV2DetailTitle), findsOneWidget);
     expect(find.text('Run'), findsOneWidget);
+    expect(find.text('🏃'), findsOneWidget);
     expect(find.text(l10n.statisticsV2HabitsTypeCount), findsOneWidget);
+  });
+
+  testWidgets('Detail header falls back to family emoji when habit emoji is missing', (
+    tester,
+  ) async {
+    final store = await _seedStore(
+      habits: <Map<String, dynamic>>[
+        _checkHabit('check_1', name: 'Read', emoji: '', familyId: 'mind'),
+      ],
+      habitCompletions: <String, dynamic>{
+        todayKey: <String, dynamic>{'check_1': true},
+      },
+    );
+    await store.load();
+
+    await _pumpDetail(tester, store: store, habitId: 'check_1');
+    expect(find.text('🧠'), findsWidgets);
   });
 
   test('Count 6/8 is partial progress and not goal completed', () async {
@@ -268,11 +287,17 @@ Future<UserStateStore> _seedStore({
   return store;
 }
 
-Map<String, dynamic> _checkHabit(String id, {required String name}) {
+Map<String, dynamic> _checkHabit(
+  String id, {
+  required String name,
+  String familyId = 'mind',
+  String emoji = '✅',
+}) {
   return <String, dynamic>{
     'id': id,
     'name': name,
-    'familyId': 'mind',
+    'familyId': familyId,
+    'emoji': emoji,
     'type': 'check',
     'target': 1,
     'schedule': <String, dynamic>{'type': 'daily'},
@@ -284,11 +309,14 @@ Map<String, dynamic> _countHabit(
   String id, {
   required String name,
   required int target,
+  String familyId = 'body',
+  String emoji = '🔢',
 }) {
   return <String, dynamic>{
     'id': id,
     'name': name,
-    'familyId': 'body',
+    'familyId': familyId,
+    'emoji': emoji,
     'type': 'count',
     'target': target,
     'schedule': <String, dynamic>{'type': 'daily'},

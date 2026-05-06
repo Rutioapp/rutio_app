@@ -84,15 +84,11 @@ class _HabitRow extends StatelessWidget {
                 ),
               ),
             ),
-            Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(99),
-              ),
+            Text(
+              habit.habitEmoji,
+              style: const TextStyle(fontSize: 16),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Expanded(
               child: Text(
                 habit.title,
@@ -102,6 +98,15 @@ class _HabitRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+            const SizedBox(width: 6),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

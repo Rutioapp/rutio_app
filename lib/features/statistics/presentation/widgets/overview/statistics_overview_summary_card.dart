@@ -20,38 +20,40 @@ class StatisticsOverviewSummaryCard extends StatelessWidget {
     return StatisticsOverviewSectionCard(
       title: l10n.statisticsV2OverviewSummaryTitle,
       subtitle: summary.period.overviewSubtitle(context),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFD7E7F2), Color(0xFFF6F0E5), Color(0xFFE8EFE5)],
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFD7E7F2), Color(0xFFF6F0E5), Color(0xFFE8EFE5)],
+            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
           ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
-        ),
-        padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _MetricTile(
-                    icon: Icons.check_circle_rounded,
-                    label: l10n.statisticsV2OverviewCompletedHabits,
-                    value: summary.completedHabits.toString(),
+          padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _MetricTile(
+                      icon: Icons.check_circle_rounded,
+                      label: l10n.statisticsV2OverviewCompletedHabits,
+                      value: summary.completedHabits.toString(),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _MetricTile(
-                    icon: Icons.local_fire_department_rounded,
-                    label: l10n.statisticsV2OverviewHabitsWithProgress,
-                    value: summary.habitsWithProgress.toString(),
+                  const _DividerV(),
+                  Expanded(
+                    child: _MetricTile(
+                      icon: Icons.local_fire_department_rounded,
+                      label: l10n.statisticsV2OverviewHabitsWithProgress,
+                      value: summary.habitsWithProgress.toString(),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _MetricTile(
-                    icon: Icons.auto_graph_rounded,
+                  const _DividerV(),
+                  Expanded(
+                    child: _MetricTile(
+                      icon: Icons.auto_graph_rounded,
                     label: l10n.statisticsV2OverviewOverallConsistency,
                     value: '${summary.overallConsistencyPct}%',
                   ),
@@ -150,6 +152,20 @@ class _InlineMetric extends StatelessWidget {
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
         ),
       ],
+    );
+  }
+}
+
+class _DividerV extends StatelessWidget {
+  const _DividerV();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 66,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      color: Colors.white.withValues(alpha: 0.8),
     );
   }
 }

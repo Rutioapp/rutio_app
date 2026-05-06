@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// Single source of truth for Rutio family metadata.
 ///
@@ -20,12 +20,12 @@ class FamilyTheme {
   static const String professional = 'professional';
 
   static const Map<String, Color> colors = {
-    mind: Color(0xFF7C6BAE),         // lavanda cálida
-    spirit: Color(0xFF6A9E7F),       // sage verde
-    body: Color(0xFFC97048),         // terracota
-    emotional: Color(0xFFC4687A),    // rosa viejo
-    social: Color(0xFF5A8FAD),       // azul pizarra
-    discipline: Color(0xFFC09A3A),   // mostaza dorada
+    mind: Color(0xFF7C6BAE), // lavanda cálida
+    spirit: Color(0xFF6A9E7F), // sage verde
+    body: Color(0xFFC97048), // terracota
+    emotional: Color(0xFFC4687A), // rosa viejo
+    social: Color(0xFF5A8FAD), // azul pizarra
+    discipline: Color(0xFFC09A3A), // mostaza dorada
     professional: Color(0xFF6B7D72), // gris verde
   };
 

@@ -187,6 +187,37 @@ void main() {
     expect(find.text(l10n.statisticsV2PeriodWeek), findsOneWidget);
     expect(find.text(l10n.statisticsV2PeriodMonth), findsOneWidget);
   });
+
+  testWidgets('Spanish l10n keeps accented Statistics V2 labels', (tester) async {
+    final store = await _seedStore(habits: const <Map<String, dynamic>>[]);
+    await store.load();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<UserStateStore>.value(
+        value: store,
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const StatisticsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+
+    expect(find.text('Estadísticas V2'), findsOneWidget);
+    expect(find.text('Hábitos'), findsOneWidget);
+    expect(find.text('Día'), findsOneWidget);
+    expect(l10n.habitStatsWeeklyComparisonTitle, 'Comparación semanal');
+  });
 }
 
 Future<void> _pumpOverview(

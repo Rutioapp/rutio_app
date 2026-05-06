@@ -369,6 +369,7 @@ class StatisticsDataAdapter {
     return StatisticsHabitSummary(
       id: habitId,
       title: _habitTitle(habit),
+      habitEmoji: _habitEmoji(habit),
       familyId: _habitFamilyId(habit),
       type: type,
       target: target,
@@ -629,19 +630,19 @@ class StatisticsDataAdapter {
     if (summary.type == StatisticsHabitType.count && summary.countProgress != null) {
       final compliance = summary.countProgress!.compliancePct.round();
       if (weeklyDelta > 0) {
-        return 'Subiste $weeklyDelta dias frente a la semana pasada y mantienes $compliance% de cumplimiento.';
+        return 'Subiste $weeklyDelta días frente a la semana pasada y mantienes $compliance% de cumplimiento.';
       }
       if (weeklyDelta < 0) {
-        return 'Bajaste ${weeklyDelta.abs()} dias frente a la semana pasada. Prioriza bloques cortos para recuperar ritmo.';
+        return 'Bajaste ${weeklyDelta.abs()} días frente a la semana pasada. Prioriza bloques cortos para recuperar ritmo.';
       }
-      return 'Semana estable: $compliance% de cumplimiento medio en este habito count.';
+      return 'Semana estable: $compliance% de cumplimiento medio en este hábito count.';
     }
 
     if (weeklyDelta > 0) {
-      return 'Vas en subida: +$weeklyDelta dias completados frente a la semana anterior.';
+      return 'Vas en subida: +$weeklyDelta días completados frente a la semana anterior.';
     }
     if (weeklyDelta < 0) {
-      return 'Hay una caida de ${weeklyDelta.abs()} dias. Un ajuste pequeno puede devolver la racha.';
+      return 'Hay una caída de ${weeklyDelta.abs()} días. Un ajuste pequeño puede devolver la racha.';
     }
     return 'Ritmo estable respecto a la semana pasada. Buena base para construir consistencia.';
   }
@@ -663,6 +664,29 @@ class StatisticsDataAdapter {
       return 'Habito sin titulo';
     }
     return title;
+  }
+
+  String _habitEmoji(Map<String, dynamic> habit) {
+    const aliases = [
+      'emoji',
+      'habitEmoji',
+      'selectedEmoji',
+      'icon',
+      'symbol',
+      'avatar',
+    ];
+    for (final key in aliases) {
+      final raw = (habit[key] ?? '').toString().trim();
+      if (raw.isNotEmpty) {
+        return raw;
+      }
+    }
+
+    final familyEmoji = FamilyTheme.emojiOf(_habitFamilyId(habit)).trim();
+    if (familyEmoji.isNotEmpty) {
+      return familyEmoji;
+    }
+    return '•';
   }
 
   String _habitFamilyId(Map<String, dynamic> habit) {

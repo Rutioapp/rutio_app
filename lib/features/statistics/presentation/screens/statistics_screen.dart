@@ -49,15 +49,47 @@ class _StatisticsScreenState extends State<StatisticsScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        toolbarHeight: 82,
+        toolbarHeight: 94,
         titleSpacing: 20,
-        title: Text(
-          context.l10n.statisticsV2Title,
-          style: AppTextStyles.welcomeTitle.copyWith(
-            fontSize: 40,
-            color: StatisticsV2Tokens.ink,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.l10n.statisticsV2Title,
+              style: AppTextStyles.welcomeTitle.copyWith(
+                fontSize: 40,
+                color: StatisticsV2Tokens.ink,
+              ),
+            ),
+            Text(
+              context.l10n.statisticsV2HeaderSubtitle,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: StatisticsV2Tokens.ink.withValues(alpha: 0.62),
+              ),
+            ),
+          ],
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Container(
+              width: 39,
+              height: 39,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+              ),
+              child: Icon(
+                Icons.bar_chart_rounded,
+                size: 19,
+                color: StatisticsV2Tokens.accent,
+              ),
+            ),
+          ),
+        ],
         centerTitle: false,
         elevation: 0,
       ),

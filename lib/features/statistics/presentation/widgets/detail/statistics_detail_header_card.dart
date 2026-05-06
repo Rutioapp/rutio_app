@@ -31,18 +31,20 @@ class StatisticsDetailHeaderCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 50,
-                height: 50,
+                width: 66,
+                height: 66,
                 decoration: BoxDecoration(
-                  color: familyColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(15),
+                  color: const Color(0xFFF7F1E6),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  FamilyTheme.emojiOf(habit.familyId),
-                  style: const TextStyle(fontSize: 27),
+                  _habitEmoji(),
+                  style: const TextStyle(fontSize: 34),
                 ),
               ),
               const SizedBox(width: 12),
@@ -55,12 +57,12 @@ class StatisticsDetailHeaderCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 33,
-                        height: 0.95,
+                        fontSize: 48,
+                        height: 0.86,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 7),
                     Text(
                       '${FamilyTheme.nameOf(habit.familyId)} · $goalText',
                       maxLines: 1,
@@ -76,11 +78,17 @@ class StatisticsDetailHeaderCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 11),
           Wrap(
             spacing: 8,
             runSpacing: 6,
             children: [
+              _MiniChip(
+                color: familyColor.withValues(alpha: 0.13),
+                textColor: Colors.black.withValues(alpha: 0.76),
+                label:
+                    '${FamilyTheme.emojiOf(habit.familyId)} ${FamilyTheme.nameOf(habit.familyId)}',
+              ),
               _MiniChip(
                 color: Colors.black.withValues(alpha: 0.06),
                 textColor: Colors.black.withValues(alpha: 0.72),
@@ -89,7 +97,8 @@ class StatisticsDetailHeaderCard extends StatelessWidget {
               _MiniChip(
                 color: const Color(0xFFEAF6EE),
                 textColor: const Color(0xFF2F6B4F),
-                label: '${l10n.statisticsV2HabitsMetricStreak}: ${habit.currentStreak}',
+                label:
+                    '${l10n.statisticsV2HabitsMetricStreak}: ${habit.currentStreak}',
               ),
               _MiniChip(
                 color: const Color(0xFFF5EFE4),
@@ -102,6 +111,18 @@ class StatisticsDetailHeaderCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _habitEmoji() {
+    final normalized = habit.habitEmoji.trim();
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+    final fallbackFamily = FamilyTheme.emojiOf(habit.familyId).trim();
+    if (fallbackFamily.isNotEmpty) {
+      return fallbackFamily;
+    }
+    return '•';
   }
 }
 
@@ -135,4 +156,3 @@ class _MiniChip extends StatelessWidget {
     );
   }
 }
-

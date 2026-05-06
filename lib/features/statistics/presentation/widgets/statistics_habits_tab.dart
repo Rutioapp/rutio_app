@@ -54,78 +54,89 @@ class _StatisticsHabitsTabState extends State<StatisticsHabitsTab> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Column(
-            children: [
-              TextField(
-                key: const Key('statistics_habits_search_field'),
-                controller: _searchController,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: context.l10n.statisticsV2HabitsSearchHint,
-                  isDense: true,
-                  filled: true,
-                  fillColor: const Color(0xFFF3EEE4),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: Colors.black.withValues(alpha: 0.56),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+            ),
+            child: Column(
+              children: [
+                TextField(
+                  key: const Key('statistics_habits_search_field'),
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: context.l10n.statisticsV2HabitsSearchHint,
+                    isDense: true,
+                    filled: true,
+                    fillColor: const Color(0xFFF3EEE4),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: Colors.black.withValues(alpha: 0.56),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: StatisticsHabitsTypeFilter(
-                      value: _typeFilter,
-                      onChanged: (value) {
-                        setState(() {
-                          _typeFilter = value;
-                        });
-                      },
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: StatisticsHabitsTypeFilter(
+                        value: _typeFilter,
+                        onChanged: (value) {
+                          setState(() {
+                            _typeFilter = value;
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3EEE4),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: DropdownButton<String>(
-                      value: _selectedFamilyId,
-                      borderRadius: BorderRadius.circular(12),
-                      underline: const SizedBox.shrink(),
-                      icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                      items: [
-                        DropdownMenuItem(
-                          value: '',
-                          child: Text(context.l10n.statisticsV2HabitsAllFamilies),
-                        ),
-                        ...FamilyTheme.order.map(
-                          (familyId) => DropdownMenuItem(
-                            value: familyId,
-                            child: Text(FamilyTheme.nameOf(familyId)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3EEE4),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _selectedFamilyId,
+                        borderRadius: BorderRadius.circular(12),
+                        underline: const SizedBox.shrink(),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                        items: [
+                          DropdownMenuItem(
+                            value: '',
+                            child: Text(context.l10n.statisticsV2HabitsAllFamilies),
                           ),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedFamilyId = value ?? '';
-                        });
-                      },
+                          ...FamilyTheme.order.map(
+                            (familyId) => DropdownMenuItem(
+                              value: familyId,
+                              child: Text(
+                                '${FamilyTheme.emojiOf(familyId)} ${FamilyTheme.nameOf(familyId)}',
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedFamilyId = value ?? '';
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         Expanded(
