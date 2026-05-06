@@ -1121,6 +1121,95 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsEmpty => 'No hay habitos para mostrar.';
 
   @override
+  String get statisticsV3Subtitle => 'Tu progreso en Rutio';
+
+  @override
+  String get statisticsV3SummaryCardTitle => 'Resumen general';
+
+  @override
+  String get statisticsV3SummaryCompletedLabel => 'habitos completados';
+
+  @override
+  String get statisticsV3SummaryXpLabel => 'XP';
+
+  @override
+  String get statisticsV3SummaryAmberLabel => 'Ambar';
+
+  @override
+  String get statisticsV3ConsistencyCardTitle => 'Consistencia';
+
+  @override
+  String get statisticsV3ConsistencyActiveDays => 'dias activos';
+
+  @override
+  String get statisticsV3ConsistencyCompletionLabel => 'de cumplimiento';
+
+  @override
+  String get statisticsV3FamiliesCardTitle => 'Familias';
+
+  @override
+  String get statisticsV3FamiliesEmpty =>
+      'Aun no hay familias con actividad en este periodo.';
+
+  @override
+  String get statisticsV3BestMomentCardTitle => 'Mejor momento';
+
+  @override
+  String get statisticsV3BestMomentFallback => 'Cumples mas por la manana.';
+
+  @override
+  String get statisticsV3HighlightedHabitCardTitle => 'Habito destacado';
+
+  @override
+  String get statisticsV3HighlightedHabitQuestionDay =>
+      'Que habito he estado haciendo durante mas tiempo hoy?';
+
+  @override
+  String get statisticsV3HighlightedHabitQuestionWeek =>
+      'Que habito he estado haciendo durante mas tiempo esta semana?';
+
+  @override
+  String get statisticsV3HighlightedHabitQuestionMonth =>
+      'Que habito he estado haciendo durante mas tiempo este mes?';
+
+  @override
+  String get statisticsV3HighlightedHabitQuestionYear =>
+      'Que habito he estado haciendo durante mas tiempo este ano?';
+
+  @override
+  String get statisticsV3HighlightedHabitEmpty =>
+      'Aun no hay un habito destacado disponible.';
+
+  @override
+  String statisticsV3HighlightedCompletedDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# dias completados',
+      one: '# dia completado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get statisticsV3HabitViewPlaceholderTitle => 'Vista por habito';
+
+  @override
+  String get statisticsV3HabitViewPlaceholderBody =>
+      'Esta seccion queda reservada para la vista detallada por habito en V3. Por ahora puedes usar el resumen general sin riesgos.';
+
+  @override
+  String get statisticsV3ProgressMessageEmpty =>
+      'Aun estas a tiempo de empezar';
+
+  @override
+  String get statisticsV3ProgressMessageInProgress =>
+      'Tu ritmo se esta construyendo';
+
+  @override
+  String get statisticsV3ProgressMessageComplete => 'Dia completado con calma';
+
+  @override
   String get habitStatsMetricCompleted => 'Completado';
 
   @override
@@ -1477,10 +1566,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsHabitFallbackTitle => 'Habito';
 
   @override
+  String get habitStatsPeriodDay => 'Dia';
+
+  @override
   String get habitStatsPeriodWeek => 'Semana';
 
   @override
   String get habitStatsPeriodMonth => 'Mes';
+
+  @override
+  String get habitStatsPeriodYear => 'Año';
 
   @override
   String get habitStatsPeriodThreeMonths => '3 meses';
@@ -1761,6 +1856,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get drawerStatistics => 'Estadísticas';
+
+  @override
+  String get drawerStatisticsV3 => 'Estadísticas V3';
 
   @override
   String get drawerDiary => 'Diario (Journal)';

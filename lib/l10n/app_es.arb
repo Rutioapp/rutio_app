@@ -552,6 +552,37 @@
   "archiveHabitTileConfirmAction": "Archivar",
   "habitStatsTitle": "Estadisticas",
   "habitStatsEmpty": "No hay habitos para mostrar.",
+  "statisticsV3Subtitle": "Tu progreso en Rutio",
+  "statisticsV3SummaryCardTitle": "Resumen general",
+  "statisticsV3SummaryCompletedLabel": "habitos completados",
+  "statisticsV3SummaryXpLabel": "XP",
+  "statisticsV3SummaryAmberLabel": "Ambar",
+  "statisticsV3ConsistencyCardTitle": "Consistencia",
+  "statisticsV3ConsistencyActiveDays": "dias activos",
+  "statisticsV3ConsistencyCompletionLabel": "de cumplimiento",
+  "statisticsV3FamiliesCardTitle": "Familias",
+  "statisticsV3FamiliesEmpty": "Aun no hay familias con actividad en este periodo.",
+  "statisticsV3BestMomentCardTitle": "Mejor momento",
+  "statisticsV3BestMomentFallback": "Cumples mas por la manana.",
+  "statisticsV3HighlightedHabitCardTitle": "Habito destacado",
+  "statisticsV3HighlightedHabitQuestionDay": "Que habito he estado haciendo durante mas tiempo hoy?",
+  "statisticsV3HighlightedHabitQuestionWeek": "Que habito he estado haciendo durante mas tiempo esta semana?",
+  "statisticsV3HighlightedHabitQuestionMonth": "Que habito he estado haciendo durante mas tiempo este mes?",
+  "statisticsV3HighlightedHabitQuestionYear": "Que habito he estado haciendo durante mas tiempo este ano?",
+  "statisticsV3HighlightedHabitEmpty": "Aun no hay un habito destacado disponible.",
+  "statisticsV3HighlightedCompletedDays": "{count, plural, =1{# dia completado} other{# dias completados}}",
+  "@statisticsV3HighlightedCompletedDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsV3HabitViewPlaceholderTitle": "Vista por habito",
+  "statisticsV3HabitViewPlaceholderBody": "Esta seccion queda reservada para la vista detallada por habito en V3. Por ahora puedes usar el resumen general sin riesgos.",
+  "statisticsV3ProgressMessageEmpty": "Aun estas a tiempo de empezar",
+  "statisticsV3ProgressMessageInProgress": "Tu ritmo se esta construyendo",
+  "statisticsV3ProgressMessageComplete": "Dia completado con calma",
   "habitStatsMetricCompleted": "Completado",
   "habitStatsMetricCompletionDescription": "{done}/{total} dias",
   "@habitStatsMetricCompletionDescription": {
@@ -769,8 +800,10 @@
     }
   },
   "habitStatsHabitFallbackTitle": "Habito",
+  "habitStatsPeriodDay": "Dia",
   "habitStatsPeriodWeek": "Semana",
   "habitStatsPeriodMonth": "Mes",
+  "habitStatsPeriodYear": "Año",
   "habitStatsPeriodThreeMonths": "3 meses",
   "habitStatsPeriodAll": "Todo",
   "habitStatsDaysLabel": "{count} dia",
@@ -890,6 +923,7 @@
   "drawerMonthly": "Mensual",
   "drawerSectionTracking": "SEGUIMIENTO",
   "drawerStatistics": "Estad\u00edsticas",
+  "drawerStatisticsV3": "Estad\u00edsticas V3",
   "drawerDiary": "Diario (Journal)",
   "drawerSectionArchive": "ARCHIVO",
   "drawerArchived": "Archivados",

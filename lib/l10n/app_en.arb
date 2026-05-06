@@ -552,6 +552,37 @@
     "archiveHabitTileConfirmAction": "Archive",
     "habitStatsTitle": "Statistics",
     "habitStatsEmpty": "There are no habits to show.",
+    "statisticsV3Subtitle": "Your progress in Rutio",
+    "statisticsV3SummaryCardTitle": "General summary",
+    "statisticsV3SummaryCompletedLabel": "habits completed",
+    "statisticsV3SummaryXpLabel": "XP",
+    "statisticsV3SummaryAmberLabel": "Amber",
+    "statisticsV3ConsistencyCardTitle": "Consistency",
+    "statisticsV3ConsistencyActiveDays": "active days",
+    "statisticsV3ConsistencyCompletionLabel": "completion",
+    "statisticsV3FamiliesCardTitle": "Families",
+    "statisticsV3FamiliesEmpty": "No families with activity in this period yet.",
+    "statisticsV3BestMomentCardTitle": "Best moment",
+    "statisticsV3BestMomentFallback": "You tend to complete more in the morning.",
+    "statisticsV3HighlightedHabitCardTitle": "Highlighted habit",
+    "statisticsV3HighlightedHabitQuestionDay": "Which habit have I been doing the longest today?",
+    "statisticsV3HighlightedHabitQuestionWeek": "Which habit have I been doing the longest this week?",
+    "statisticsV3HighlightedHabitQuestionMonth": "Which habit have I been doing the longest this month?",
+    "statisticsV3HighlightedHabitQuestionYear": "Which habit have I been doing the longest this year?",
+    "statisticsV3HighlightedHabitEmpty": "No highlighted habit available yet.",
+    "statisticsV3HighlightedCompletedDays": "{count, plural, =1{# day completed} other{# days completed}}",
+    "@statisticsV3HighlightedCompletedDays": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV3HabitViewPlaceholderTitle": "Per-habit view",
+    "statisticsV3HabitViewPlaceholderBody": "This section is reserved for the detailed per-habit statistics view in V3. For now, you can use the general overview safely.",
+    "statisticsV3ProgressMessageEmpty": "There is still time to begin",
+    "statisticsV3ProgressMessageInProgress": "Your rhythm is building",
+    "statisticsV3ProgressMessageComplete": "A calm day completed",
     "habitStatsMetricCompleted": "Completed",
     "habitStatsMetricCompletionDescription": "{done}/{total} days",
     "@habitStatsMetricCompletionDescription": {
@@ -769,8 +800,10 @@
         }
     },
     "habitStatsHabitFallbackTitle": "Habit",
+    "habitStatsPeriodDay": "Day",
     "habitStatsPeriodWeek": "Week",
     "habitStatsPeriodMonth": "Month",
+    "habitStatsPeriodYear": "Year",
     "habitStatsPeriodThreeMonths": "3 months",
     "habitStatsPeriodAll": "All",
     "habitStatsDaysLabel": "{count} day",
@@ -890,6 +923,7 @@
     "drawerMonthly":  "Monthly",
     "drawerSectionTracking":  "TRACKING",
     "drawerStatistics":  "Statistics",
+    "drawerStatisticsV3": "Statistics V3",
     "drawerDiary":  "Diary (Journal)",
     "drawerSectionArchive":  "ARCHIVE",
     "drawerArchived":  "Archived",

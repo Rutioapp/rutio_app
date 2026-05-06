@@ -948,6 +948,9 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
   String get habitStatsTitle =>
       _isSpanishHabitStats ? 'Estadisticas' : 'Statistics';
 
+  String get habitStatsSubtitle =>
+      _isSpanishHabitStats ? 'Tu progreso en Rutio' : 'Your progress in Rutio';
+
   String get habitStatsEmpty => _isSpanishHabitStats
       ? 'No hay habitos para mostrar.'
       : 'There are no habits to show.';
@@ -1088,12 +1091,11 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
 
   String get habitStatsPeriodWeek => _isSpanishHabitStats ? 'Semana' : 'Week';
 
+  String get habitStatsPeriodDay => _isSpanishHabitStats ? 'Dia' : 'Day';
+
   String get habitStatsPeriodMonth => _isSpanishHabitStats ? 'Mes' : 'Month';
 
-  String get habitStatsPeriodThreeMonths =>
-      _isSpanishHabitStats ? '3 meses' : '3 months';
-
-  String get habitStatsPeriodAll => _isSpanishHabitStats ? 'Todo' : 'All';
+  String get habitStatsPeriodYear => _isSpanishHabitStats ? 'Año' : 'Year';
 
   String habitStatsDaysLabel(int count) => _isSpanishHabitStats
       ? '$count dia${count == 1 ? '' : 's'}'
