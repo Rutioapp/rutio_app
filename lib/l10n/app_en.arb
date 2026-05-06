@@ -553,6 +553,8 @@
     "habitStatsTitle": "Statistics",
     "habitStatsEmpty": "There are no habits to show.",
     "statisticsV3Subtitle": "Your progress in Rutio",
+    "statisticsV3DailyActivityTitle": "Daily activity",
+    "statisticsV3DailyActivitySubtitle": "Weekly completion rhythm",
     "statisticsV3SummaryCardTitle": "General summary",
     "statisticsV3SummaryCompletedLabel": "habits completed",
     "statisticsV3SummaryXpLabel": "XP",

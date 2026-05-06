@@ -1121,6 +1121,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsV3Subtitle => 'Your progress in Rutio';
 
   @override
+  String get statisticsV3DailyActivityTitle => 'Daily activity';
+
+  @override
+  String get statisticsV3DailyActivitySubtitle => 'Weekly completion rhythm';
+
+  @override
   String get statisticsV3SummaryCardTitle => 'General summary';
 
   @override

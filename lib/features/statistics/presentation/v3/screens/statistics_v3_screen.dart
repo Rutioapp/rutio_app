@@ -11,6 +11,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_highlighted_habit_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_period_selector.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_progress_message_chip.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_activity_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_summary_card.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
@@ -156,6 +157,13 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                   StatisticsV3ProgressMessageChip(
                     message: _progressMessage(viewData, l10n),
                   ),
+                  if (_period == StatisticsV3Period.week) ...[
+                    const SizedBox(height: 14),
+                    StatisticsV3WeeklyActivityShell(
+                      title: l10n.statisticsV3DailyActivityTitle,
+                      subtitle: l10n.statisticsV3DailyActivitySubtitle,
+                    ),
+                  ],
                 ],
               ],
             ),
@@ -169,7 +177,9 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
     StatisticsV3ViewData viewData,
     AppLocalizations l10n,
   ) {
-    if (viewData.consistencyPct <= 0) return l10n.statisticsV3ProgressMessageEmpty;
+    if (viewData.consistencyPct <= 0) {
+      return l10n.statisticsV3ProgressMessageEmpty;
+    }
     if (viewData.consistencyPct >= 100) {
       return l10n.statisticsV3ProgressMessageComplete;
     }

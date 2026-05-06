@@ -2133,6 +2133,18 @@ abstract class AppLocalizations {
   /// **'Tu progreso en Rutio'**
   String get statisticsV3Subtitle;
 
+  /// No description provided for @statisticsV3DailyActivityTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actividad diaria'**
+  String get statisticsV3DailyActivityTitle;
+
+  /// No description provided for @statisticsV3DailyActivitySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritmo semanal de completado'**
+  String get statisticsV3DailyActivitySubtitle;
+
   /// No description provided for @statisticsV3SummaryCardTitle.
   ///
   /// In es, this message translates to:
