@@ -22,8 +22,29 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
   static const _cellBase = Color(0xFFD8D1C5);
   static const _cellBorder = Color(0xFFE5DED3);
   static const _todayBorder = Color(0xFF9AA789);
-  static const _todayFill = Color(0xFFE8EFE1);
   static const _futureFill = Color(0xFFF0EBE3);
+  static final _legendEntries = <_CalendarLegendEntry>[
+    _CalendarLegendEntry(
+      label: '0–24%',
+      color: _CalendarIntensityBucket.zero.color,
+    ),
+    _CalendarLegendEntry(
+      label: '25–49%',
+      color: _CalendarIntensityBucket.low.color,
+    ),
+    _CalendarLegendEntry(
+      label: '50–74%',
+      color: _CalendarIntensityBucket.medium.color,
+    ),
+    _CalendarLegendEntry(
+      label: '75–89%',
+      color: _CalendarIntensityBucket.high.color,
+    ),
+    _CalendarLegendEntry(
+      label: '90–100%',
+      color: _CalendarIntensityBucket.full.color,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -128,16 +149,17 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
 
               return _CalendarCell(
                 dayNumber: day.date.day,
-                percentage: day.percentage,
                 fillColor: tone.fillColor,
                 borderColor: day.isToday ? _todayBorder.withValues(alpha: 0.82) : tone.borderColor,
                 dayColor: tone.textColor,
-                accentColor: tone.accentColor,
+                dotColor: tone.dotColor,
                 isToday: day.isToday,
                 isFuture: day.isFuture,
               );
             },
           ),
+          const SizedBox(height: 10),
+          _CalendarLegend(entries: _legendEntries),
         ],
       ),
     );
@@ -172,19 +194,25 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
       return _CalendarTone.future;
     }
 
-    if (day.percentage <= 0) {
-      return _CalendarTone.zero;
+    final bucket = _calendarBucketForPercentage(day.percentage);
+    return _CalendarTone.fromBucket(bucket);
+  }
+
+  _CalendarIntensityBucket _calendarBucketForPercentage(int percentage) {
+    final value = percentage.clamp(0, 100);
+    if (value <= 24) {
+      return _CalendarIntensityBucket.zero;
     }
-    if (day.percentage <= 33) {
-      return _CalendarTone.low;
+    if (value <= 49) {
+      return _CalendarIntensityBucket.low;
     }
-    if (day.percentage <= 66) {
-      return _CalendarTone.medium;
+    if (value <= 74) {
+      return _CalendarIntensityBucket.medium;
     }
-    if (day.percentage < 100) {
-      return _CalendarTone.high;
+    if (value <= 89) {
+      return _CalendarIntensityBucket.high;
     }
-    return _CalendarTone.full;
+    return _CalendarIntensityBucket.full;
   }
 }
 
@@ -206,28 +234,24 @@ class _CalendarPlaceholderCell extends StatelessWidget {
 class _CalendarCell extends StatelessWidget {
   const _CalendarCell({
     required this.dayNumber,
-    required this.percentage,
     required this.fillColor,
     required this.borderColor,
     required this.dayColor,
-    required this.accentColor,
+    required this.dotColor,
     required this.isToday,
     required this.isFuture,
   });
 
   final int dayNumber;
-  final int percentage;
   final Color fillColor;
   final Color borderColor;
   final Color dayColor;
-  final Color accentColor;
+  final Color dotColor;
   final bool isToday;
   final bool isFuture;
 
   @override
   Widget build(BuildContext context) {
-    final displayColor = isFuture ? accentColor : dayColor;
-
     return Container(
       decoration: BoxDecoration(
         color: fillColor,
@@ -245,7 +269,7 @@ class _CalendarCell extends StatelessWidget {
                 fontSize: 10.5,
                 height: 1,
                 fontWeight: FontWeight.w700,
-                color: displayColor.withValues(
+                color: dayColor.withValues(
                   alpha: isFuture ? 0.50 : (isToday ? 0.95 : 0.88),
                 ),
               ),
@@ -258,7 +282,7 @@ class _CalendarCell extends StatelessWidget {
               width: 7,
               height: 7,
               decoration: BoxDecoration(
-                color: _dotColor(),
+                color: dotColor,
                 shape: BoxShape.circle,
               ),
             ),
@@ -267,25 +291,6 @@ class _CalendarCell extends StatelessWidget {
       ),
     );
   }
-
-  Color _dotColor() {
-    if (isFuture) {
-      return accentColor.withValues(alpha: 0.20);
-    }
-    if (percentage <= 0) {
-      return StatisticsV3MonthlyCalendarShell._cellBase.withValues(alpha: 0.20);
-    }
-    if (percentage <= 33) {
-      return StatisticsV3MonthlyCalendarShell._todayBorder.withValues(alpha: 0.26);
-    }
-    if (percentage <= 66) {
-      return StatisticsV3MonthlyCalendarShell._todayBorder.withValues(alpha: 0.42);
-    }
-    if (percentage < 100) {
-      return StatisticsV3MonthlyCalendarShell._todayBorder.withValues(alpha: 0.58);
-    }
-    return StatisticsV3MonthlyCalendarShell._todayBorder.withValues(alpha: 0.76);
-  }
 }
 
 class _CalendarTone {
@@ -293,53 +298,102 @@ class _CalendarTone {
     required this.fillColor,
     required this.borderColor,
     required this.textColor,
-    required this.accentColor,
+    required this.dotColor,
   });
 
   final Color fillColor;
   final Color borderColor;
   final Color textColor;
-  final Color accentColor;
+  final Color dotColor;
 
-  static const zero = _CalendarTone(
-    fillColor: Color(0xFFFEFCF9),
-    borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
-    textColor: StatisticsV3MonthlyCalendarShell._mutedText,
-    accentColor: StatisticsV3MonthlyCalendarShell._cellBase,
-  );
-
-  static const low = _CalendarTone(
-    fillColor: Color(0xFFF7F4EE),
-    borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
-    textColor: StatisticsV3MonthlyCalendarShell._text,
-    accentColor: StatisticsV3MonthlyCalendarShell._todayBorder,
-  );
-
-  static const medium = _CalendarTone(
-    fillColor: Color(0xFFEEF1E6),
-    borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
-    textColor: StatisticsV3MonthlyCalendarShell._text,
-    accentColor: StatisticsV3MonthlyCalendarShell._todayBorder,
-  );
-
-  static const high = _CalendarTone(
-    fillColor: Color(0xFFE3EAD8),
-    borderColor: StatisticsV3MonthlyCalendarShell._todayBorder,
-    textColor: StatisticsV3MonthlyCalendarShell._text,
-    accentColor: StatisticsV3MonthlyCalendarShell._todayBorder,
-  );
-
-  static const full = _CalendarTone(
-    fillColor: StatisticsV3MonthlyCalendarShell._todayFill,
-    borderColor: StatisticsV3MonthlyCalendarShell._todayBorder,
-    textColor: StatisticsV3MonthlyCalendarShell._text,
-    accentColor: StatisticsV3MonthlyCalendarShell._todayBorder,
-  );
+  factory _CalendarTone.fromBucket(_CalendarIntensityBucket bucket) {
+    return _CalendarTone(
+      fillColor: bucket.color,
+      borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
+      textColor: StatisticsV3MonthlyCalendarShell._text,
+      dotColor: bucket.color.withValues(alpha: 0.64),
+    );
+  }
 
   static const future = _CalendarTone(
     fillColor: StatisticsV3MonthlyCalendarShell._futureFill,
     borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
     textColor: StatisticsV3MonthlyCalendarShell._mutedText,
-    accentColor: StatisticsV3MonthlyCalendarShell._cellBase,
+    dotColor: StatisticsV3MonthlyCalendarShell._cellBase,
   );
+}
+
+class _CalendarIntensityBucket {
+  const _CalendarIntensityBucket._(this.color);
+
+  final Color color;
+
+  static const zero = _CalendarIntensityBucket._(Color(0xFFF4EAD7));
+  static const low = _CalendarIntensityBucket._(Color(0xFFEEDDAF));
+  static const medium = _CalendarIntensityBucket._(Color(0xFFD9A947));
+  static const high = _CalendarIntensityBucket._(Color(0xFF8FA36C));
+  static const full = _CalendarIntensityBucket._(Color(0xFF4F743B));
+}
+
+class _CalendarLegend extends StatelessWidget {
+  const _CalendarLegend({required this.entries});
+
+  final List<_CalendarLegendEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 6,
+      children: entries
+          .map(
+            (entry) => _CalendarLegendItem(
+              label: entry.label,
+              color: entry.color,
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _CalendarLegendEntry {
+  const _CalendarLegendEntry({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+}
+
+class _CalendarLegendItem extends StatelessWidget {
+  const _CalendarLegendItem({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10.5,
+            height: 1,
+            fontWeight: FontWeight.w500,
+            color: StatisticsV3MonthlyCalendarShell._mutedText,
+          ),
+        ),
+      ],
+    );
+  }
 }
