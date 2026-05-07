@@ -1142,20 +1142,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsV3ConsistencyCardTitle => 'Consistency';
 
   @override
+  String get statisticsV3ConsistencyCompletedLabel => 'completed';
+
+  @override
+  String get statisticsV3ConsistencyPendingLabel => 'pending';
+
+  @override
+  String get statisticsV3ConsistencyStreakLabel => 'day streak';
+
+  @override
   String get statisticsV3ConsistencyActiveDays => 'active days';
 
   @override
   String get statisticsV3ConsistencyCompletionLabel => 'completion';
 
   @override
-  String get statisticsV3FamiliesCardTitle => 'Families';
+  String get statisticsV3FamiliesCardTitle => 'Featured family';
 
   @override
   String get statisticsV3FamiliesEmpty =>
-      'No families with activity in this period yet.';
+      'No family with activity in this period yet.';
+
+  @override
+  String get statisticsV3FeaturedFamilySubtitleDay =>
+      'The family with the most activity today';
+
+  @override
+  String get statisticsV3FeaturedFamilySubtitleWeek =>
+      'The family with the most activity this week';
+
+  @override
+  String get statisticsV3FeaturedFamilySubtitleMonth =>
+      'The family with the most activity this month';
+
+  @override
+  String get statisticsV3FeaturedFamilySubtitleYear =>
+      'The family with the most activity this year';
 
   @override
   String get statisticsV3BestMomentCardTitle => 'Best moment';
+
+  @override
+  String get statisticsV3BestMomentSubtitle => 'Your most active time slot';
 
   @override
   String get statisticsV3BestMomentFallback =>
@@ -1170,10 +1198,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsV3MomentMorning => 'Morning';
 
   @override
-  String get statisticsV3MomentAfternoon => 'Afternoon';
+  String get statisticsV3MomentAfternoon => 'Noon';
 
   @override
-  String get statisticsV3MomentEvening => 'Evening';
+  String get statisticsV3MomentEvening => 'Afternoon';
 
   @override
   String get statisticsV3MomentNight => 'Night';
@@ -1182,7 +1210,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsV3NoFamily => 'No family';
 
   @override
-  String get statisticsV3HighlightedHabitCardTitle => 'Highlighted habits';
+  String get statisticsV3HighlightedHabitCardTitle => 'Featured habit';
+
+  @override
+  String get statisticsV3HighlightedHabitSubtitleDay =>
+      'The habit with the most activity today';
+
+  @override
+  String get statisticsV3HighlightedHabitSubtitleWeek =>
+      'The habit with the most activity this week';
+
+  @override
+  String get statisticsV3HighlightedHabitSubtitleMonth =>
+      'The habit with the most activity this month';
+
+  @override
+  String get statisticsV3HighlightedHabitSubtitleYear =>
+      'The habit with the most activity this year';
+
+  @override
+  String get statisticsV3HighlightedHabitStreakLabel => 'Streak';
+
+  @override
+  String statisticsV3HighlightedHabitStreakDays(int days) {
+    return '$days days';
+  }
 
   @override
   String get statisticsV3HighlightedHabitQuestionDay =>
@@ -1202,7 +1254,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statisticsV3HighlightedHabitEmpty =>
-      'No highlighted habit available yet.';
+      'No featured habit available yet.';
 
   @override
   String statisticsV3HighlightedCompletedDays(int count) {
@@ -1230,6 +1282,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statisticsV3ProgressMessageComplete => 'A calm period completed';
+
+  @override
+  String get statisticsV3WeeklyImprovementTitle => 'Weekly improvement';
+
+  @override
+  String get statisticsV3WeeklyImprovementVsLastWeek => 'vs last week';
+
+  @override
+  String get statisticsV3WeeklyImprovementNoComparison => 'No comparison yet';
+
+  @override
+  String get statisticsV3WeeklyImprovementSameAsLastWeek => 'Same as last week';
 
   @override
   String get habitStatsMetricCompleted => 'Completed';

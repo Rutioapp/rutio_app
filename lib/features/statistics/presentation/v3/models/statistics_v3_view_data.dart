@@ -17,22 +17,33 @@ class StatisticsV3FamilyItem {
 class StatisticsV3BestMomentInsight {
   const StatisticsV3BestMomentInsight({
     required this.hasData,
+    required this.slot,
     required this.label,
     required this.count,
   });
 
   final bool hasData;
+  final StatisticsV3BestMomentSlot slot;
   final String label;
   final int count;
 }
 
+enum StatisticsV3BestMomentSlot {
+  morning,
+  noon,
+  afternoon,
+  night,
+}
+
 class StatisticsV3HighlightedHabitItem {
   const StatisticsV3HighlightedHabitItem({
+    required this.habitId,
     required this.name,
     required this.emoji,
     required this.completedCount,
   });
 
+  final String habitId;
   final String name;
   final String emoji;
   final int completedCount;
@@ -56,6 +67,20 @@ class StatisticsV3WeeklyActivityDay {
   final bool isFuture;
 }
 
+class StatisticsV3WeeklyImprovementData {
+  const StatisticsV3WeeklyImprovementData({
+    required this.hasComparison,
+    required this.currentWeekPercentage,
+    required this.previousWeekPercentage,
+    required this.deltaPercentage,
+  });
+
+  final bool hasComparison;
+  final int currentWeekPercentage;
+  final int previousWeekPercentage;
+  final int deltaPercentage;
+}
+
 class StatisticsV3ViewData {
   const StatisticsV3ViewData({
     required this.totalDays,
@@ -68,6 +93,7 @@ class StatisticsV3ViewData {
     required this.bestMoment,
     required this.highlightedHabits,
     required this.weeklyActivity,
+    required this.weeklyImprovement,
   });
 
   final int totalDays;
@@ -80,4 +106,5 @@ class StatisticsV3ViewData {
   final StatisticsV3BestMomentInsight bestMoment;
   final List<StatisticsV3HighlightedHabitItem> highlightedHabits;
   final List<StatisticsV3WeeklyActivityDay> weeklyActivity;
+  final StatisticsV3WeeklyImprovementData weeklyImprovement;
 }

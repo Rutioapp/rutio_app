@@ -12,6 +12,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_period_selector.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_progress_message_chip.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_activity_shell.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_improvement_chip.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_summary_card.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
@@ -58,6 +59,9 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       period: _period,
       l10n: l10n,
     );
+    final currentStreakDays = _currentGlobalStreak(store);
+    final highlightedHabitStreakDays =
+        _highlightedHabitStreak(store, viewData.highlightedHabits);
 
     return Stack(
       children: [
@@ -117,6 +121,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                   GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
+                    padding: EdgeInsets.zero,
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
@@ -124,45 +129,54 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                     children: [
                       StatisticsV3ConsistencyCard(
                         title: l10n.statisticsV3ConsistencyCardTitle,
-                        activeDaysLabel:
-                            l10n.statisticsV3SummaryCompletedLabel,
-                        completionLabel:
-                            l10n.statisticsV3ConsistencyCompletionLabel,
-                        activeDays: viewData.activeDays,
-                        totalDays: viewData.totalDays,
-                        completionPct: viewData.consistencyPct,
+                        completedHabits: viewData.completedHabits,
+                        totalHabits: viewData.totalDays,
+                        consistencyPct: viewData.consistencyPct,
+                        streakDays: currentStreakDays,
                       ),
                       StatisticsV3FamilyChipsCard(
                         title: l10n.statisticsV3FamiliesCardTitle,
+                        subtitle: _featuredFamilySubtitle(_period, l10n),
                         emptyLabel: l10n.statisticsV3FamiliesEmpty,
                         items: viewData.families,
                       ),
                       StatisticsV3BestMomentCard(
                         title: l10n.statisticsV3BestMomentCardTitle,
-                        body: viewData.bestMoment.hasData
-                            ? l10n.statisticsV3BestMomentWithCount(
-                                viewData.bestMoment.label,
-                                viewData.bestMoment.count,
-                              )
-                            : l10n.statisticsV3BestMomentFallback,
+                        insight: viewData.bestMoment,
+                        fallback: l10n.statisticsV3BestMomentFallback,
                       ),
                       StatisticsV3HighlightedHabitCard(
                         title: l10n.statisticsV3HighlightedHabitCardTitle,
                         emptyLabel: l10n.statisticsV3HighlightedHabitEmpty,
                         items: viewData.highlightedHabits,
+                        streakDays: highlightedHabitStreakDays,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  StatisticsV3ProgressMessageChip(
-                    message: _progressMessage(viewData, l10n),
-                  ),
                   if (_period == StatisticsV3Period.week) ...[
-                    const SizedBox(height: 14),
-                    StatisticsV3WeeklyActivityShell(
-                      title: l10n.statisticsV3DailyActivityTitle,
-                      subtitle: l10n.statisticsV3DailyActivitySubtitle,
-                      days: viewData.weeklyActivity,
+                    const SizedBox(height: 10),
+                    _StatisticsV3WeeklySection(
+                      improvementTitle: l10n.statisticsV3WeeklyImprovementTitle,
+                      improvementSubtitle: _weeklyImprovementSubtitle(
+                        viewData.weeklyImprovement,
+                        l10n,
+                      ),
+                      improvementDelta: _weeklyImprovementDelta(
+                        viewData.weeklyImprovement,
+                      ),
+                      activityTitle: l10n.statisticsV3DailyActivityTitle,
+                      activitySubtitle:
+                          l10n.statisticsV3DailyActivitySubtitle,
+                      activityDays: viewData.weeklyActivity,
+                    ),
+                    const SizedBox(height: 12),
+                    StatisticsV3ProgressMessageChip(
+                      message: _progressMessage(viewData, l10n),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    StatisticsV3ProgressMessageChip(
+                      message: _progressMessage(viewData, l10n),
                     ),
                   ],
                 ],
@@ -185,6 +199,132 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       return l10n.statisticsV3ProgressMessageComplete;
     }
     return l10n.statisticsV3ProgressMessageInProgress;
+  }
+
+  int _currentGlobalStreak(UserStateStore store) {
+    final snapshot = store.achievementMetricSnapshots['special:imparable'];
+    return snapshot?.currentStreak ?? 0;
+  }
+
+  int _highlightedHabitStreak(
+    UserStateStore store,
+    List<StatisticsV3HighlightedHabitItem> habits,
+  ) {
+    if (habits.isEmpty) return 0;
+    return store
+        .habitStreakSnapshotForHabitId(habits.first.habitId)
+        .currentStreak;
+  }
+
+  String _featuredFamilySubtitle(
+    StatisticsV3Period period,
+    AppLocalizations l10n,
+  ) {
+    switch (period) {
+      case StatisticsV3Period.day:
+        return l10n.statisticsV3FeaturedFamilySubtitleDay;
+      case StatisticsV3Period.week:
+        return l10n.statisticsV3FeaturedFamilySubtitleWeek;
+      case StatisticsV3Period.month:
+        return l10n.statisticsV3FeaturedFamilySubtitleMonth;
+      case StatisticsV3Period.year:
+        return l10n.statisticsV3FeaturedFamilySubtitleYear;
+    }
+  }
+
+  int? _weeklyImprovementDelta(StatisticsV3WeeklyImprovementData data) {
+    if (!data.hasComparison || data.deltaPercentage == 0) {
+      return null;
+    }
+    return data.deltaPercentage;
+  }
+
+  String _weeklyImprovementSubtitle(
+    StatisticsV3WeeklyImprovementData data,
+    AppLocalizations l10n,
+  ) {
+    if (!data.hasComparison) {
+      return l10n.statisticsV3WeeklyImprovementNoComparison;
+    }
+    if (data.deltaPercentage == 0) {
+      return l10n.statisticsV3WeeklyImprovementSameAsLastWeek;
+    }
+    return l10n.statisticsV3WeeklyImprovementVsLastWeek;
+  }
+}
+
+class _StatisticsV3WeeklySection extends StatelessWidget {
+  const _StatisticsV3WeeklySection({
+    required this.improvementTitle,
+    required this.improvementSubtitle,
+    required this.improvementDelta,
+    required this.activityTitle,
+    required this.activitySubtitle,
+    required this.activityDays,
+  });
+
+  final String improvementTitle;
+  final String improvementSubtitle;
+  final int? improvementDelta;
+  final String activityTitle;
+  final String activitySubtitle;
+  final List<StatisticsV3WeeklyActivityDay> activityDays;
+
+  static const double _columnGap = 10;
+  static const double _stackBreakpoint = 280;
+  static const double _cardHeight = 200;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < _stackBreakpoint) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              StatisticsV3WeeklyImprovementChip(
+                title: improvementTitle,
+                subtitle: improvementSubtitle,
+                deltaPercentage: improvementDelta,
+              ),
+              const SizedBox(height: _columnGap),
+              StatisticsV3WeeklyActivityShell(
+                title: activityTitle,
+                subtitle: activitySubtitle,
+                days: activityDays,
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: _cardHeight,
+                child: StatisticsV3WeeklyImprovementChip(
+                  title: improvementTitle,
+                  subtitle: improvementSubtitle,
+                  deltaPercentage: improvementDelta,
+                ),
+              ),
+            ),
+            const SizedBox(width: _columnGap),
+            Expanded(
+              child: SizedBox(
+                height: _cardHeight,
+                child: StatisticsV3WeeklyActivityShell(
+                  title: activityTitle,
+                  subtitle: activitySubtitle,
+                  days: activityDays,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

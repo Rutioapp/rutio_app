@@ -43,8 +43,8 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
   final completedByHabit = <String, int>{};
   final completionsByMoment = <_MomentBucket, int>{
     _MomentBucket.morning: 0,
+    _MomentBucket.noon: 0,
     _MomentBucket.afternoon: 0,
-    _MomentBucket.evening: 0,
     _MomentBucket.night: 0,
   };
 
@@ -132,6 +132,7 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
       .map((entry) {
         final habit = habitsById[entry.key];
         return StatisticsV3HighlightedHabitItem(
+          habitId: entry.key,
           name: _habitName(habit, fallback: l10n.habitStatsHabitFallbackTitle),
           emoji: _habitEmoji(habit),
           completedCount: entry.value,
@@ -167,6 +168,15 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
           habitsById: habitsById,
         )
       : const <StatisticsV3WeeklyActivityDay>[];
+  final weeklyImprovement = _buildWeeklyImprovementData(
+    today: today,
+    userState: userState,
+    completionsRoot: completionsRoot,
+    skipsRoot: skipsRoot,
+    countValuesRoot: countValuesRoot,
+    habits: habits,
+    habitsById: habitsById,
+  );
 
   // TODO: Add reliable per-period XP/Amber history once local data stores it.
   return StatisticsV3ViewData(
@@ -180,6 +190,113 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     bestMoment: bestMoment,
     highlightedHabits: highlightedItems,
     weeklyActivity: weeklyActivity,
+    weeklyImprovement: weeklyImprovement,
+  );
+}
+
+StatisticsV3WeeklyImprovementData _buildWeeklyImprovementData({
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required Map<String, dynamic> countValuesRoot,
+  required List<Map<String, dynamic>> habits,
+  required Map<String, Map<String, dynamic>> habitsById,
+}) {
+  final currentWeekStart = _startOfWeek(today);
+  final previousWeekStart = currentWeekStart.subtract(const Duration(days: 7));
+  final previousWeekEnd = currentWeekStart.subtract(const Duration(days: 1));
+
+  final currentWeekStats = _buildPeriodConsistencyStats(
+    start: currentWeekStart,
+    end: today,
+    today: today,
+    userState: userState,
+    completionsRoot: completionsRoot,
+    skipsRoot: skipsRoot,
+    countValuesRoot: countValuesRoot,
+    habits: habits,
+    habitsById: habitsById,
+  );
+  final previousWeekStats = _buildPeriodConsistencyStats(
+    start: previousWeekStart,
+    end: previousWeekEnd,
+    today: today,
+    userState: userState,
+    completionsRoot: completionsRoot,
+    skipsRoot: skipsRoot,
+    countValuesRoot: countValuesRoot,
+    habits: habits,
+    habitsById: habitsById,
+  );
+
+  if (previousWeekStats.expectedCount <= 0) {
+    return StatisticsV3WeeklyImprovementData(
+      hasComparison: false,
+      currentWeekPercentage: currentWeekStats.percentage,
+      previousWeekPercentage: previousWeekStats.percentage,
+      deltaPercentage: 0,
+    );
+  }
+
+  return StatisticsV3WeeklyImprovementData(
+    hasComparison: true,
+    currentWeekPercentage: currentWeekStats.percentage,
+    previousWeekPercentage: previousWeekStats.percentage,
+    deltaPercentage:
+        currentWeekStats.percentage - previousWeekStats.percentage,
+  );
+}
+
+_PeriodConsistencyStats _buildPeriodConsistencyStats({
+  required DateTime start,
+  required DateTime end,
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required Map<String, dynamic> countValuesRoot,
+  required List<Map<String, dynamic>> habits,
+  required Map<String, Map<String, dynamic>> habitsById,
+}) {
+  final from = _dateOnly(start);
+  final to = _dateOnly(end);
+  if (to.isBefore(from)) {
+    return const _PeriodConsistencyStats(
+      expectedCount: 0,
+      completedCount: 0,
+      percentage: 0,
+    );
+  }
+
+  var expectedCount = 0;
+  var completedCount = 0;
+  final days = to.difference(from).inDays + 1;
+  for (var index = 0; index < days; index++) {
+    final day = from.add(Duration(days: index));
+    final dayKey = _dateKey(day);
+    final dayStats = _buildDayCompletionStats(
+      day: day,
+      today: today,
+      dayKey: dayKey,
+      userState: userState,
+      completionsRoot: completionsRoot,
+      skipsRoot: skipsRoot,
+      countValuesRoot: countValuesRoot,
+      habits: habits,
+      habitsById: habitsById,
+    );
+    expectedCount += dayStats.expectedCount;
+    completedCount += dayStats.completedCount;
+  }
+
+  final percentage = expectedCount == 0
+      ? 0
+      : ((completedCount / expectedCount) * 100).round().clamp(0, 100);
+  return _PeriodConsistencyStats(
+    expectedCount: expectedCount,
+    completedCount: completedCount,
+    percentage: percentage,
   );
 }
 
@@ -242,6 +359,7 @@ StatisticsV3BestMomentInsight _buildBestMomentInsight({
   if (timestampedCompletions <= 0) {
     return const StatisticsV3BestMomentInsight(
       hasData: false,
+      slot: StatisticsV3BestMomentSlot.morning,
       label: '',
       count: 0,
     );
@@ -257,6 +375,7 @@ StatisticsV3BestMomentInsight _buildBestMomentInsight({
   if (bestEntry.value <= 0) {
     return const StatisticsV3BestMomentInsight(
       hasData: false,
+      slot: StatisticsV3BestMomentSlot.morning,
       label: '',
       count: 0,
     );
@@ -264,6 +383,7 @@ StatisticsV3BestMomentInsight _buildBestMomentInsight({
 
   return StatisticsV3BestMomentInsight(
     hasData: true,
+    slot: bestEntry.key.slot,
     label: bestEntry.key.localizedLabel(l10n),
     count: bestEntry.value,
   );
@@ -601,8 +721,8 @@ String _familyGroupKey(Map<String, dynamic>? habit) {
 
 _MomentBucket _bucketForHour(int hour) {
   if (hour >= 5 && hour <= 11) return _MomentBucket.morning;
-  if (hour >= 12 && hour <= 17) return _MomentBucket.afternoon;
-  if (hour >= 18 && hour <= 22) return _MomentBucket.evening;
+  if (hour >= 12 && hour <= 14) return _MomentBucket.noon;
+  if (hour >= 15 && hour <= 20) return _MomentBucket.afternoon;
   return _MomentBucket.night;
 }
 
@@ -630,21 +750,34 @@ class _PeriodRange {
 
 enum _MomentBucket {
   morning(0),
-  afternoon(1),
-  evening(2),
+  noon(1),
+  afternoon(2),
   night(3);
 
   const _MomentBucket(this.priority);
 
   final int priority;
 
+  StatisticsV3BestMomentSlot get slot {
+    switch (this) {
+      case _MomentBucket.morning:
+        return StatisticsV3BestMomentSlot.morning;
+      case _MomentBucket.noon:
+        return StatisticsV3BestMomentSlot.noon;
+      case _MomentBucket.afternoon:
+        return StatisticsV3BestMomentSlot.afternoon;
+      case _MomentBucket.night:
+        return StatisticsV3BestMomentSlot.night;
+    }
+  }
+
   String localizedLabel(AppLocalizations l10n) {
     switch (this) {
       case _MomentBucket.morning:
         return l10n.statisticsV3MomentMorning;
-      case _MomentBucket.afternoon:
+      case _MomentBucket.noon:
         return l10n.statisticsV3MomentAfternoon;
-      case _MomentBucket.evening:
+      case _MomentBucket.afternoon:
         return l10n.statisticsV3MomentEvening;
       case _MomentBucket.night:
         return l10n.statisticsV3MomentNight;
@@ -661,6 +794,18 @@ class _DayCompletionStats {
   });
 
   final Set<String> completedExpectedHabitIds;
+  final int expectedCount;
+  final int completedCount;
+  final int percentage;
+}
+
+class _PeriodConsistencyStats {
+  const _PeriodConsistencyStats({
+    required this.expectedCount,
+    required this.completedCount,
+    required this.percentage,
+  });
+
   final int expectedCount;
   final int completedCount;
   final int percentage;

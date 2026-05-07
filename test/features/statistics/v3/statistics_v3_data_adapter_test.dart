@@ -328,6 +328,204 @@ void main() {
       });
     });
 
+    group('weekly improvement', () {
+      test('computes +12 delta when current week is 82 and previous week is 70', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final currentMonday = _startOfWeek(weekNow);
+        final previousMonday = currentMonday.subtract(const Duration(days: 7));
+        final habits = _buildWeeklyHabits(
+          count: 100,
+          weekday: DateTime.monday,
+        );
+        final history = _emptyHistory();
+
+        for (var index = 0; index < 82; index++) {
+          _setCheckCompletion(history, currentMonday, 'weekly-habit-${index + 1}');
+        }
+        for (var index = 0; index < 70; index++) {
+          _setCheckCompletion(history, previousMonday, 'weekly-habit-${index + 1}');
+        }
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: habits,
+          history: history,
+        );
+
+        expect(result.weeklyImprovement.hasComparison, isTrue);
+        expect(result.weeklyImprovement.currentWeekPercentage, 82);
+        expect(result.weeklyImprovement.previousWeekPercentage, 70);
+        expect(result.weeklyImprovement.deltaPercentage, 12);
+      });
+
+      test('computes -8 delta when current week is 65 and previous week is 73', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final currentMonday = _startOfWeek(weekNow);
+        final previousMonday = currentMonday.subtract(const Duration(days: 7));
+        final habits = _buildWeeklyHabits(
+          count: 100,
+          weekday: DateTime.monday,
+        );
+        final history = _emptyHistory();
+
+        for (var index = 0; index < 65; index++) {
+          _setCheckCompletion(history, currentMonday, 'weekly-habit-${index + 1}');
+        }
+        for (var index = 0; index < 73; index++) {
+          _setCheckCompletion(history, previousMonday, 'weekly-habit-${index + 1}');
+        }
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: habits,
+          history: history,
+        );
+
+        expect(result.weeklyImprovement.hasComparison, isTrue);
+        expect(result.weeklyImprovement.currentWeekPercentage, 65);
+        expect(result.weeklyImprovement.previousWeekPercentage, 73);
+        expect(result.weeklyImprovement.deltaPercentage, -8);
+      });
+
+      test('returns zero delta when current and previous week percentages are equal', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final currentMonday = _startOfWeek(weekNow);
+        final previousMonday = currentMonday.subtract(const Duration(days: 7));
+        final habits = _buildWeeklyHabits(
+          count: 100,
+          weekday: DateTime.monday,
+        );
+        final history = _emptyHistory();
+
+        for (var index = 0; index < 70; index++) {
+          final habitId = 'weekly-habit-${index + 1}';
+          _setCheckCompletion(history, currentMonday, habitId);
+          _setCheckCompletion(history, previousMonday, habitId);
+        }
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: habits,
+          history: history,
+        );
+
+        expect(result.weeklyImprovement.hasComparison, isTrue);
+        expect(result.weeklyImprovement.currentWeekPercentage, 70);
+        expect(result.weeklyImprovement.previousWeekPercentage, 70);
+        expect(result.weeklyImprovement.deltaPercentage, 0);
+      });
+
+      test('returns no comparison when previous week has no expected habits', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final currentMonday = _startOfWeek(weekNow);
+        final habits = _buildWeeklyHabits(
+          count: 10,
+          weekday: DateTime.monday,
+          createdAt: currentMonday,
+        );
+        final history = _emptyHistory();
+
+        for (var index = 0; index < 6; index++) {
+          _setCheckCompletion(history, currentMonday, 'weekly-habit-${index + 1}');
+        }
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: habits,
+          history: history,
+        );
+
+        expect(result.weeklyImprovement.hasComparison, isFalse);
+        expect(result.weeklyImprovement.currentWeekPercentage, 60);
+        expect(result.weeklyImprovement.previousWeekPercentage, 0);
+        expect(result.weeklyImprovement.deltaPercentage, 0);
+      });
+
+      test('uses elapsed days only for current week consistency', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final currentWeekStart = _startOfWeek(weekNow);
+        final monday = currentWeekStart;
+        final tuesday = currentWeekStart.add(const Duration(days: 1));
+        final thursday = currentWeekStart.add(const Duration(days: 3));
+        final history = _emptyHistory();
+        _setCheckCompletion(history, monday, 'daily-habit');
+        _setCheckCompletion(history, tuesday, 'daily-habit');
+        _setCheckCompletion(history, thursday, 'daily-habit');
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'daily-habit',
+              title: 'Daily Habit',
+            ),
+          ],
+          history: history,
+        );
+
+        expect(result.weeklyImprovement.currentWeekPercentage, 67);
+      });
+
+      test('uses full previous week window for previous consistency', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final currentWeekStart = _startOfWeek(weekNow);
+        final previousSunday = currentWeekStart.subtract(const Duration(days: 1));
+        final history = _emptyHistory();
+        _setCheckCompletion(history, previousSunday, 'sunday-habit');
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'sunday-habit',
+              title: 'Sunday Habit',
+              schedule: {
+                'type': 'weekly',
+                'weekdays': [DateTime.sunday],
+              },
+            ),
+          ],
+          history: history,
+        );
+
+        expect(result.weeklyImprovement.hasComparison, isTrue);
+        expect(result.weeklyImprovement.previousWeekPercentage, 100);
+        expect(result.weeklyImprovement.currentWeekPercentage, 0);
+        expect(result.weeklyImprovement.deltaPercentage, -100);
+      });
+
+      test('count habits below target remain unfinished for weekly improvement', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final currentMonday = _startOfWeek(weekNow);
+        final previousMonday = currentMonday.subtract(const Duration(days: 7));
+        final history = _emptyHistory();
+        _setCountValue(history, currentMonday, 'count-weekly', 4);
+        _setCountValue(history, previousMonday, 'count-weekly', 5);
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'count-weekly',
+              title: 'Count Weekly',
+              type: 'count',
+              target: 5,
+              schedule: {
+                'type': 'weekly',
+                'weekdays': [DateTime.monday],
+              },
+            ),
+          ],
+          history: history,
+        );
+
+        expect(result.weeklyImprovement.hasComparison, isTrue);
+        expect(result.weeklyImprovement.currentWeekPercentage, 0);
+        expect(result.weeklyImprovement.previousWeekPercentage, 100);
+        expect(result.weeklyImprovement.deltaPercentage, -100);
+      });
+    });
+
     group('highlighted habits', () {
       test('returns the top 3 habits in descending completion order', () async {
         final result = await _buildMonthViewData(
@@ -676,6 +874,80 @@ Map<String, dynamic> _ensureDayMap(
 
 List<int> _days(List<int> dayNumbers) => dayNumbers;
 
+Map<String, dynamic> _emptyHistory() {
+  return <String, dynamic>{
+    'habitCompletions': <String, dynamic>{},
+    'habitCompletionTimes': <String, dynamic>{},
+    'habitSkips': <String, dynamic>{},
+    'habitCountValues': <String, dynamic>{},
+  };
+}
+
+void _setCheckCompletion(
+  Map<String, dynamic> history,
+  DateTime day,
+  String habitId,
+) {
+  final dayKey = _dateKey(day);
+  final completionsRoot =
+      history['habitCompletions'] as Map<String, dynamic>? ??
+      <String, dynamic>{};
+  history['habitCompletions'] = completionsRoot;
+  final completionTimesRoot =
+      history['habitCompletionTimes'] as Map<String, dynamic>? ??
+      <String, dynamic>{};
+  history['habitCompletionTimes'] = completionTimesRoot;
+
+  final completions = _ensureDayMap(completionsRoot, dayKey);
+  completions[habitId] = true;
+  final times = _ensureDayMap(completionTimesRoot, dayKey);
+  times[habitId] = DateTime(
+    day.year,
+    day.month,
+    day.day,
+    8,
+  ).millisecondsSinceEpoch;
+}
+
+void _setCountValue(
+  Map<String, dynamic> history,
+  DateTime day,
+  String habitId,
+  num value,
+) {
+  final dayKey = _dateKey(day);
+  final countValuesRoot =
+      history['habitCountValues'] as Map<String, dynamic>? ??
+      <String, dynamic>{};
+  history['habitCountValues'] = countValuesRoot;
+
+  final countValues = _ensureDayMap(countValuesRoot, dayKey);
+  countValues[habitId] = value;
+}
+
+DateTime _startOfWeek(DateTime date) {
+  final day = DateTime(date.year, date.month, date.day);
+  return day.subtract(Duration(days: day.weekday - DateTime.monday));
+}
+
+List<Map<String, dynamic>> _buildWeeklyHabits({
+  required int count,
+  required int weekday,
+  DateTime? createdAt,
+}) {
+  return List<Map<String, dynamic>>.generate(count, (index) {
+    return _habit(
+      id: 'weekly-habit-${index + 1}',
+      title: 'Weekly habit ${index + 1}',
+      schedule: {
+        'type': 'weekly',
+        'weekdays': [weekday],
+      },
+      createdAt: createdAt,
+    );
+  }, growable: false);
+}
+
 List<Map<String, dynamic>> _buildDailyHabits({
   required int total,
   required int completed,
@@ -702,6 +974,7 @@ Map<String, dynamic> _habit({
   String? familyId,
   String emoji = '✨',
   Map<String, dynamic>? schedule,
+  DateTime? createdAt,
 }) {
   return <String, dynamic>{
     'id': id,
@@ -714,6 +987,7 @@ Map<String, dynamic> _habit({
     'doneToday': doneToday,
     'skippedToday': false,
     if (familyId != null) 'familyId': familyId,
+    if (createdAt != null) 'createdAt': createdAt.toIso8601String(),
     'schedule':
         schedule ??
         <String, dynamic>{

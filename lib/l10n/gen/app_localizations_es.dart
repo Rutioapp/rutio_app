@@ -1115,10 +1115,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get archiveHabitTileConfirmAction => 'Archivar';
 
   @override
-  String get habitStatsTitle => 'Estadisticas';
+  String get habitStatsTitle => 'Estadísticas';
 
   @override
-  String get habitStatsEmpty => 'No hay habitos para mostrar.';
+  String get habitStatsEmpty => 'No hay hábitos para mostrar.';
 
   @override
   String get statisticsV3Subtitle => 'Tu progreso en Rutio';
@@ -1133,36 +1133,64 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statisticsV3SummaryCardTitle => 'Resumen general';
 
   @override
-  String get statisticsV3SummaryCompletedLabel => 'habitos completados';
+  String get statisticsV3SummaryCompletedLabel => 'hábitos completados';
 
   @override
   String get statisticsV3SummaryXpLabel => 'XP';
 
   @override
-  String get statisticsV3SummaryAmberLabel => 'Ambar';
+  String get statisticsV3SummaryAmberLabel => 'Ámbar';
 
   @override
   String get statisticsV3ConsistencyCardTitle => 'Consistencia';
 
   @override
-  String get statisticsV3ConsistencyActiveDays => 'dias activos';
+  String get statisticsV3ConsistencyCompletedLabel => 'completado';
+
+  @override
+  String get statisticsV3ConsistencyPendingLabel => 'pendientes';
+
+  @override
+  String get statisticsV3ConsistencyStreakLabel => 'racha días';
+
+  @override
+  String get statisticsV3ConsistencyActiveDays => 'días activos';
 
   @override
   String get statisticsV3ConsistencyCompletionLabel => 'de cumplimiento';
 
   @override
-  String get statisticsV3FamiliesCardTitle => 'Familias';
+  String get statisticsV3FamiliesCardTitle => 'Familia destacada';
 
   @override
   String get statisticsV3FamiliesEmpty =>
-      'Aun no hay familias con actividad en este periodo.';
+      'Aún no hay una familia con actividad en este periodo.';
+
+  @override
+  String get statisticsV3FeaturedFamilySubtitleDay =>
+      'La familia con más actividad hoy';
+
+  @override
+  String get statisticsV3FeaturedFamilySubtitleWeek =>
+      'La familia con más actividad esta semana';
+
+  @override
+  String get statisticsV3FeaturedFamilySubtitleMonth =>
+      'La familia con más actividad este mes';
+
+  @override
+  String get statisticsV3FeaturedFamilySubtitleYear =>
+      'La familia con más actividad este año';
 
   @override
   String get statisticsV3BestMomentCardTitle => 'Mejor momento';
 
   @override
+  String get statisticsV3BestMomentSubtitle => 'Tu franja más activa';
+
+  @override
   String get statisticsV3BestMomentFallback =>
-      'La informacion de horario aparecera cuando haya mas completados con hora registrada.';
+      'La información de horario aparecerá cuando haya más completados con hora registrada.';
 
   @override
   String statisticsV3BestMomentWithCount(String moment, int count) {
@@ -1170,79 +1198,117 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get statisticsV3MomentMorning => 'Manana';
+  String get statisticsV3MomentMorning => 'Mañana';
 
   @override
-  String get statisticsV3MomentAfternoon => 'Tarde';
+  String get statisticsV3MomentAfternoon => 'Mediodía';
 
   @override
-  String get statisticsV3MomentEvening => 'Noche';
+  String get statisticsV3MomentEvening => 'Tarde';
 
   @override
-  String get statisticsV3MomentNight => 'Madrugada';
+  String get statisticsV3MomentNight => 'Noche';
 
   @override
   String get statisticsV3NoFamily => 'Sin familia';
 
   @override
-  String get statisticsV3HighlightedHabitCardTitle => 'Habitos destacados';
+  String get statisticsV3HighlightedHabitCardTitle => 'Hábito destacado';
+
+  @override
+  String get statisticsV3HighlightedHabitSubtitleDay =>
+      'El hábito con más actividad hoy';
+
+  @override
+  String get statisticsV3HighlightedHabitSubtitleWeek =>
+      'El hábito con más actividad esta semana';
+
+  @override
+  String get statisticsV3HighlightedHabitSubtitleMonth =>
+      'El hábito con más actividad este mes';
+
+  @override
+  String get statisticsV3HighlightedHabitSubtitleYear =>
+      'El hábito con más actividad este año';
+
+  @override
+  String get statisticsV3HighlightedHabitStreakLabel => 'Racha';
+
+  @override
+  String statisticsV3HighlightedHabitStreakDays(int days) {
+    return '$days días';
+  }
 
   @override
   String get statisticsV3HighlightedHabitQuestionDay =>
-      'Que habito he estado haciendo durante mas tiempo hoy?';
+      '¿Qué hábito he estado haciendo durante más tiempo hoy?';
 
   @override
   String get statisticsV3HighlightedHabitQuestionWeek =>
-      'Que habito he estado haciendo durante mas tiempo esta semana?';
+      '¿Qué hábito he estado haciendo durante más tiempo esta semana?';
 
   @override
   String get statisticsV3HighlightedHabitQuestionMonth =>
-      'Que habito he estado haciendo durante mas tiempo este mes?';
+      '¿Qué hábito he estado haciendo durante más tiempo este mes?';
 
   @override
   String get statisticsV3HighlightedHabitQuestionYear =>
-      'Que habito he estado haciendo durante mas tiempo este ano?';
+      '¿Qué hábito he estado haciendo durante más tiempo este año?';
 
   @override
   String get statisticsV3HighlightedHabitEmpty =>
-      'Aun no hay un habito destacado disponible.';
+      'Aún no hay un hábito destacado disponible.';
 
   @override
   String statisticsV3HighlightedCompletedDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '# dias completados',
-      one: '# dia completado',
+      other: '# días completados',
+      one: '# día completado',
     );
     return '$_temp0';
   }
 
   @override
-  String get statisticsV3HabitViewPlaceholderTitle => 'Vista por habito';
+  String get statisticsV3HabitViewPlaceholderTitle => 'Vista por hábito';
 
   @override
   String get statisticsV3HabitViewPlaceholderBody =>
-      'Esta seccion queda reservada para la vista detallada por habito en V3. Por ahora puedes usar el resumen general sin riesgos.';
+      'Esta sección queda reservada para la vista detallada por hábito en V3. Por ahora puedes usar el resumen general sin riesgos.';
 
   @override
   String get statisticsV3ProgressMessageEmpty =>
-      'Aun estas a tiempo de empezar';
+      'Aún estás a tiempo de empezar';
 
   @override
   String get statisticsV3ProgressMessageInProgress =>
-      'Tu ritmo se esta construyendo';
+      'Tu ritmo se está construyendo';
 
   @override
   String get statisticsV3ProgressMessageComplete =>
       'Periodo completado con calma';
 
   @override
+  String get statisticsV3WeeklyImprovementTitle => 'Mejora de semana';
+
+  @override
+  String get statisticsV3WeeklyImprovementVsLastWeek => 'vs semana anterior';
+
+  @override
+  String get statisticsV3WeeklyImprovementNoComparison =>
+      'Sin comparación todavía';
+
+  @override
+  String get statisticsV3WeeklyImprovementSameAsLastWeek =>
+      'Igual que la semana anterior';
+
+  @override
   String get habitStatsMetricCompleted => 'Completado';
 
   @override
   String habitStatsMetricCompletionDescription(int done, int total) {
-    return '$done/$total dias';
+    return '$done/$total días';
   }
 
   @override
@@ -1250,7 +1316,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsMetricConsistencyDescription(int window) {
-    return 'Ultimos $window dias';
+    return 'Últimos $window días';
   }
 
   @override
@@ -1269,10 +1335,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsChartWeekTitle => 'Semana';
 
   @override
-  String get habitStatsChartLastFourWeeksTitle => 'Ultimas 4 semanas';
+  String get habitStatsChartLastFourWeeksTitle => 'Últimas 4 semanas';
 
   @override
-  String get habitStatsChartWeekSubtitle => 'Completado por dia';
+  String get habitStatsChartWeekSubtitle => 'Completado por día';
 
   @override
   String get habitStatsChartWeeksSubtitle => 'Completado agregado por semana';
@@ -1287,11 +1353,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsWeeklyComparisonSubtitle => 'Esta semana vs la anterior';
 
   @override
-  String get habitStatsBestTimeSectionTitle => 'Cuando lo cumples mejor?';
+  String get habitStatsBestTimeSectionTitle => '¿Cuándo lo cumples mejor?';
 
   @override
   String get habitStatsBestTimeSectionSubtitle =>
-      'Basado en tus registros, tus momentos mas consistentes';
+      'Basado en tus registros, tus momentos más consistentes';
 
   @override
   String get habitStatsMonthCalendarTitle => 'Calendario del mes';
@@ -1301,7 +1367,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsTabLastDaysTitle(int days) {
-    return 'Ultimos $days dias';
+    return 'Últimos $days días';
   }
 
   @override
@@ -1312,7 +1378,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsTabDayUnit(int count) {
-    return '$count dia';
+    return '$count día';
   }
 
   @override
@@ -1320,23 +1386,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsTabCompletionWindow(int done, int total) {
-    return '$done / $total dias';
+    return '$done / $total días';
   }
 
   @override
   String get habitStatsTabCounterHint =>
-      'Cuenta el numero de veces completado cada dia';
+      'Cuenta el número de veces completado cada día';
 
   @override
   String get habitStatsTabCheckHint =>
-      'Dias en los que completaste este habito';
+      'Días en los que completaste este hábito';
 
   @override
   String get habitStatsTabFireStreakTitle => 'Racha de fuego';
 
   @override
   String habitStatsTabStreakInARow(int days) {
-    return '$days dias seguidos';
+    return '$days días seguidos';
   }
 
   @override
@@ -1355,7 +1421,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsTabLast30DaysPercent(int percent) {
-    return '$percent% ultimos 30 dias';
+    return '$percent% últimos 30 días';
   }
 
   @override
@@ -1363,7 +1429,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsTabRecordStreak(int days) {
-    return '$days dias de racha';
+    return '$days días de racha';
   }
 
   @override
@@ -1378,10 +1444,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diaryTitle => 'Diario';
 
   @override
-  String get diaryMenuTooltip => 'Menu';
+  String get diaryMenuTooltip => 'Menú';
 
   @override
-  String get diaryCloseSearchTooltip => 'Cerrar busqueda';
+  String get diaryCloseSearchTooltip => 'Cerrar búsqueda';
 
   @override
   String get diarySearchTooltip => 'Buscar';
@@ -1402,14 +1468,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diaryNoteSaved => 'Nota guardada';
 
   @override
-  String get diaryPinSoon => 'Fijar: proximamente';
+  String get diaryPinSoon => 'Fijar: próximamente';
 
   @override
   String get diaryDeleteEntryTitle => 'Eliminar entrada';
 
   @override
   String get diaryDeleteEntryBody =>
-      'Seguro que quieres eliminar esta entrada?';
+      '¿Seguro que quieres eliminar esta entrada?';
 
   @override
   String diaryEntriesCount(int count) {
@@ -1420,7 +1486,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diaryPeriodAll => 'Todo';
 
   @override
-  String get diaryPeriodDays => 'Dias';
+  String get diaryPeriodDays => 'Días';
 
   @override
   String get diaryPeriodWeeks => 'Semanas';
@@ -1438,7 +1504,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diarySearchScopeAll => 'Todo';
 
   @override
-  String get diarySearchScopeHabits => 'Habitos';
+  String get diarySearchScopeHabits => 'Hábitos';
 
   @override
   String get diarySearchScopePersonal => 'Personal';
@@ -1454,10 +1520,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get diarySummaryEmptyTitle => 'Hoy aun no has escrito';
+  String get diarySummaryEmptyTitle => 'Hoy aún no has escrito';
 
   @override
-  String get diarySummaryEmptySubtitle => 'Un minuto puede cambiar tu dia';
+  String get diarySummaryEmptySubtitle => 'Un minuto puede cambiar tu día';
 
   @override
   String get diarySummaryOneTitle => 'Buen comienzo';
@@ -1466,13 +1532,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diarySummaryOneSubtitle => 'Has dado espacio a tu mente';
 
   @override
-  String get diarySummaryFewTitle => 'Estas cuidando tu mundo interior';
+  String get diarySummaryFewTitle => 'Estás cuidando tu mundo interior';
 
   @override
-  String get diarySummaryFewSubtitle => 'Sigue asi';
+  String get diarySummaryFewSubtitle => 'Sigue así';
 
   @override
-  String get diarySummaryManyTitle => 'Dia muy consciente';
+  String get diarySummaryManyTitle => 'Día muy consciente';
 
   @override
   String get diarySummaryManySubtitle => 'Gran trabajo emocional';
@@ -1493,24 +1559,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diaryComposerNewEntryUpper => 'NUEVA ENTRADA';
 
   @override
-  String get diaryComposerMoodSectionUpper => '¿COMO TE SENTISTE?';
+  String get diaryComposerMoodSectionUpper => '¿CÓMO TE SENTISTE?';
 
   @override
-  String get diaryComposerTitleUpper => 'TITULO';
+  String get diaryComposerTitleUpper => 'TÍTULO';
 
   @override
-  String get diaryComposerReflectionUpper => 'REFLEXION';
+  String get diaryComposerReflectionUpper => 'REFLEXIÓN';
 
   @override
-  String get diaryComposerTitleHint => 'Como resumirias hoy?';
+  String get diaryComposerTitleHint => '¿Cómo resumirías hoy?';
 
   @override
   String get diaryComposerHabitReflectionHint =>
-      'Que paso hoy con tu habito? Que sentiste? Que aprendiste?';
+      '¿Qué pasó hoy con tu hábito? ¿Qué sentiste? ¿Qué aprendiste?';
 
   @override
   String get diaryComposerPersonalReflectionHint =>
-      'Que tienes en mente? Que quieres dejar por escrito hoy?';
+      '¿Qué tienes en mente? ¿Qué quieres dejar por escrito hoy?';
 
   @override
   String get diaryComposerSaveChanges => 'Guardar cambios';
@@ -1519,42 +1585,42 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diaryComposerSaveEntry => 'Guardar entrada';
 
   @override
-  String get diaryComposerTypeHabit => 'Ligada a habito';
+  String get diaryComposerTypeHabit => 'Ligada a hábito';
 
   @override
   String get diaryComposerTypePersonal => 'Personal';
 
   @override
-  String get diaryComposerSelectHabit => 'Seleccionar habito';
+  String get diaryComposerSelectHabit => 'Seleccionar hábito';
 
   @override
-  String get diaryComposerTapToChooseHabit => 'Toca para elegir un habito';
+  String get diaryComposerTapToChooseHabit => 'Toca para elegir un hábito';
 
   @override
   String get diaryComposerWriteSomethingError =>
       'Escribe algo para guardar la entrada';
 
   @override
-  String get diaryComposerSelectHabitError => 'Selecciona un habito';
+  String get diaryComposerSelectHabitError => 'Selecciona un hábito';
 
   @override
   String get diaryComposerNoActiveHabits =>
-      'No hay habitos activos para seleccionar';
+      'No hay hábitos activos para seleccionar';
 
   @override
-  String get diaryComposerSelectHabitSheetTitle => 'Seleccionar habito';
+  String get diaryComposerSelectHabitSheetTitle => 'Seleccionar hábito';
 
   @override
   String get diaryDetailScreenTitle => 'Entrada';
 
   @override
-  String get diaryDetailTopHabitUpper => 'ENTRADA DE HABITO';
+  String get diaryDetailTopHabitUpper => 'ENTRADA DE HÁBITO';
 
   @override
   String get diaryDetailTopPersonalUpper => 'ENTRADA PERSONAL';
 
   @override
-  String get diaryDetailFallbackHabitTitle => 'Entrada de habito';
+  String get diaryDetailFallbackHabitTitle => 'Entrada de hábito';
 
   @override
   String get diaryDetailFallbackPersonalTitle => 'Entrada personal';
@@ -1566,7 +1632,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diaryDetailFamilyPersonal => 'Personal';
 
   @override
-  String get diaryDetailTypeHabit => 'Dia de habito';
+  String get diaryDetailTypeHabit => 'Día de hábito';
 
   @override
   String get diaryDetailTypePersonal => 'Nota personal';
@@ -1591,10 +1657,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get habitStatsHabitFallbackTitle => 'Habito';
+  String get habitStatsHabitFallbackTitle => 'Hábito';
 
   @override
-  String get habitStatsPeriodDay => 'Dia';
+  String get habitStatsPeriodDay => 'Día';
 
   @override
   String get habitStatsPeriodWeek => 'Semana';
@@ -1613,7 +1679,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsDaysLabel(int count) {
-    return '$count dia';
+    return '$count día';
   }
 
   @override
@@ -1630,7 +1696,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsMilestoneProgress(String label, int next) {
-    return '$label: $next dias';
+    return '$label: $next días';
   }
 
   @override
@@ -1655,15 +1721,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsLegendLess => 'Menos';
 
   @override
-  String get habitStatsLegendMore => 'Mas';
+  String get habitStatsLegendMore => 'Más';
 
   @override
   String habitStatsDayTooltip(int day) {
-    return 'Dia $day';
+    return 'Día $day';
   }
 
   @override
-  String get habitStatsThisHabitFallback => 'este habito';
+  String get habitStatsThisHabitFallback => 'este hábito';
 
   @override
   String get habitStatsMotivationLead => 'Llevas ';
@@ -1701,7 +1767,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String habitStatsMotivationGoalKeyword(int days) {
-    return 'llegar a los $days dias';
+    return 'llegar a los $days días';
   }
 
   @override
@@ -1718,7 +1784,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get habitStatsMotivationBestTimeTail =>
-      ', cuando sueles ser mas constante.';
+      ', cuando sueles ser más constante.';
 
   @override
   String get editHabitSaveChanges => 'Guardar cambios';
@@ -1728,7 +1794,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get editHabitNotificationPermissionDenied =>
-      'Permisos de notificacion denegados.';
+      'Permisos de notificación denegados.';
 
   @override
   String get editHabitDailyGoalDialogTitle => 'Meta diaria';
@@ -1757,7 +1823,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editHabitSectionCategory => 'Categoria';
 
   @override
-  String get editHabitSectionTracking => 'Como lo mides?';
+  String get editHabitSectionTracking => '¿Cómo lo mides?';
 
   @override
   String get editHabitSectionFrequency => 'Frecuencia';
@@ -1790,7 +1856,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editHabitRepetitionsTitle => 'Repeticiones';
 
   @override
-  String get editHabitRepetitionsSubtitle => 'Cuantas veces al dia?';
+  String get editHabitRepetitionsSubtitle => '¿Cuántas veces al día?';
 
   @override
   String get editHabitUnitHint => 'Unidad (ej: vasos, km...)';
@@ -1802,10 +1868,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editHabitCounterStepSubtitle => 'Cuanto aumenta cada toque.';
 
   @override
-  String get editHabitFrequencyDaily => 'Cada dia';
+  String get editHabitFrequencyDaily => 'Cada día';
 
   @override
-  String get editHabitFrequencySpecificDays => 'Dias concretos';
+  String get editHabitFrequencySpecificDays => 'Días concretos';
 
   @override
   String get editHabitFrequencyTimesPerWeek => 'X veces / semana';
@@ -1815,10 +1881,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get editHabitWeeklyGoalSubtitle =>
-      'Marca cuantas veces quieres completarlo.';
+      'Marca cuántas veces quieres completarlo.';
 
   @override
-  String get editHabitReminderDailyTitle => 'Notificacion diaria';
+  String get editHabitReminderDailyTitle => 'Notificación diaria';
 
   @override
   String get editHabitReminderDailySubtitle =>
@@ -2157,11 +2223,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String diaryAfterCompleteTitle(String habitName) {
-    return 'Habito completado: $habitName';
+    return 'Hábito completado: $habitName';
   }
 
   @override
-  String get diaryAfterCompletePrompt => 'Quieres anadir una nota rapida?';
+  String get diaryAfterCompletePrompt => '¿Quieres añadir una nota rápida?';
 
   @override
   String get diaryAfterCompleteSkip => 'Ahora no';
@@ -2173,20 +2239,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diaryGeneralFamilyName => 'General';
 
   @override
-  String get diaryCardTypeHabitShort => 'DIA';
+  String get diaryCardTypeHabitShort => 'DÍA';
 
   @override
   String get diaryCardTypePersonalShort => 'NOTA';
 
   @override
-  String get diaryShowMore => 'Ver mas';
+  String get diaryShowMore => 'Ver más';
 
   @override
   String get diaryShowLess => 'Ver menos';
 
   @override
   String diaryStreakLabel(int count, String sufix) {
-    return 'Racha: $count dia$sufix';
+    return 'Racha: $count día$sufix';
   }
 
   @override
@@ -2194,7 +2260,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String diaryDaysLabel(int count, String sufix) {
-    return '$count dia$sufix';
+    return '$count día$sufix';
   }
 
   @override
@@ -2234,10 +2300,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get monthShortDec => 'Dic';
 
   @override
-  String get createHabitNewHabitTitle => 'Nuevo habito';
+  String get createHabitNewHabitTitle => 'Nuevo hábito';
 
   @override
-  String get createHabitSaveHabit => 'Guardar habito';
+  String get createHabitSaveHabit => 'Guardar hábito';
 
   @override
   String get createHabitSaved => 'Guardado';
@@ -2255,7 +2321,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Catalogo completo con categorias y busqueda';
 
   @override
-  String get emojiPickerNoRecents => 'Tus emojis recientes apareceran aqui';
+  String get emojiPickerNoRecents => 'Tus emojis recientes aparecerán aquí';
 
   @override
   String get emojiPickerSearchHint => 'Buscar emoji';
@@ -2265,11 +2331,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get monthlyEmptyFilteredMessage =>
-      'No hay habitos para mostrar en este filtro.';
+      'No hay hábitos para mostrar en este filtro.';
 
   @override
   String monthlyElapsedDaysWeek(int elapsed, int week) {
-    return '$elapsed dias transcurridos · semana $week';
+    return '$elapsed días transcurridos · semana $week';
   }
 
   @override
@@ -2279,11 +2345,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String monthlyFilterSummaryHabit(String habit) {
-    return 'Habito: $habit';
+    return 'Hábito: $habit';
   }
 
   @override
-  String get monthlyFilterSummaryAll => 'Todos los habitos';
+  String get monthlyFilterSummaryAll => 'Todos los hábitos';
 
   @override
   String get monthlyFiltersTooltip => 'Filtros';
@@ -2304,19 +2370,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get monthlyFilterModeFamily => 'Familia';
 
   @override
-  String get monthlyFilterModeHabit => 'Habito';
+  String get monthlyFilterModeHabit => 'Hábito';
 
   @override
   String get monthlyApplyAction => 'Aplicar';
 
   @override
-  String get monthlySelectHabitLabel => 'Selecciona un habito';
+  String get monthlySelectHabitLabel => 'Selecciona un hábito';
 
   @override
   String get monthlyHabitSelectorTitle => 'VER HABITO';
 
   @override
-  String get monthlyHabitFallbackTitle => 'Habito';
+  String get monthlyHabitFallbackTitle => 'Hábito';
 
   @override
   String get monthlyStatMonthLabel => 'MES';
@@ -2329,7 +2395,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String monthlyDaysLabel(int count, String sufix) {
-    return '$count dia$sufix';
+    return '$count día$sufix';
   }
 
   @override

@@ -560,11 +560,19 @@
     "statisticsV3SummaryXpLabel": "XP",
     "statisticsV3SummaryAmberLabel": "Amber",
     "statisticsV3ConsistencyCardTitle": "Consistency",
+    "statisticsV3ConsistencyCompletedLabel": "completed",
+    "statisticsV3ConsistencyPendingLabel": "pending",
+    "statisticsV3ConsistencyStreakLabel": "day streak",
     "statisticsV3ConsistencyActiveDays": "active days",
     "statisticsV3ConsistencyCompletionLabel": "completion",
-    "statisticsV3FamiliesCardTitle": "Families",
-    "statisticsV3FamiliesEmpty": "No families with activity in this period yet.",
+    "statisticsV3FamiliesCardTitle": "Featured family",
+    "statisticsV3FamiliesEmpty": "No family with activity in this period yet.",
+    "statisticsV3FeaturedFamilySubtitleDay": "The family with the most activity today",
+    "statisticsV3FeaturedFamilySubtitleWeek": "The family with the most activity this week",
+    "statisticsV3FeaturedFamilySubtitleMonth": "The family with the most activity this month",
+    "statisticsV3FeaturedFamilySubtitleYear": "The family with the most activity this year",
     "statisticsV3BestMomentCardTitle": "Best moment",
+    "statisticsV3BestMomentSubtitle": "Your most active time slot",
     "statisticsV3BestMomentFallback": "Time insight will appear after more timestamped completions.",
     "statisticsV3BestMomentWithCount": "{moment} · {count}",
     "@statisticsV3BestMomentWithCount": {
@@ -578,16 +586,29 @@
         }
     },
     "statisticsV3MomentMorning": "Morning",
-    "statisticsV3MomentAfternoon": "Afternoon",
-    "statisticsV3MomentEvening": "Evening",
+    "statisticsV3MomentAfternoon": "Noon",
+    "statisticsV3MomentEvening": "Afternoon",
     "statisticsV3MomentNight": "Night",
     "statisticsV3NoFamily": "No family",
-    "statisticsV3HighlightedHabitCardTitle": "Highlighted habits",
+    "statisticsV3HighlightedHabitCardTitle": "Featured habit",
+    "statisticsV3HighlightedHabitSubtitleDay": "The habit with the most activity today",
+    "statisticsV3HighlightedHabitSubtitleWeek": "The habit with the most activity this week",
+    "statisticsV3HighlightedHabitSubtitleMonth": "The habit with the most activity this month",
+    "statisticsV3HighlightedHabitSubtitleYear": "The habit with the most activity this year",
+    "statisticsV3HighlightedHabitStreakLabel": "Streak",
+    "statisticsV3HighlightedHabitStreakDays": "{days} days",
+    "@statisticsV3HighlightedHabitStreakDays": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
     "statisticsV3HighlightedHabitQuestionDay": "Which habit have I been doing the longest today?",
     "statisticsV3HighlightedHabitQuestionWeek": "Which habit have I been doing the longest this week?",
     "statisticsV3HighlightedHabitQuestionMonth": "Which habit have I been doing the longest this month?",
     "statisticsV3HighlightedHabitQuestionYear": "Which habit have I been doing the longest this year?",
-    "statisticsV3HighlightedHabitEmpty": "No highlighted habit available yet.",
+    "statisticsV3HighlightedHabitEmpty": "No featured habit available yet.",
     "statisticsV3HighlightedCompletedDays": "{count, plural, =1{# day completed} other{# days completed}}",
     "@statisticsV3HighlightedCompletedDays": {
         "placeholders": {
@@ -601,6 +622,10 @@
     "statisticsV3ProgressMessageEmpty": "There is still time to begin",
     "statisticsV3ProgressMessageInProgress": "Your rhythm is building",
     "statisticsV3ProgressMessageComplete": "A calm period completed",
+    "statisticsV3WeeklyImprovementTitle": "Weekly improvement",
+    "statisticsV3WeeklyImprovementVsLastWeek": "vs last week",
+    "statisticsV3WeeklyImprovementNoComparison": "No comparison yet",
+    "statisticsV3WeeklyImprovementSameAsLastWeek": "Same as last week",
     "habitStatsMetricCompleted": "Completed",
     "habitStatsMetricCompletionDescription": "{done}/{total} days",
     "@habitStatsMetricCompletionDescription": {

@@ -17,6 +17,10 @@ class StatisticsV3WeeklyActivityShell extends StatelessWidget {
   final String subtitle;
   final List<StatisticsV3WeeklyActivityDay> days;
 
+  static const _border = Color(0xFFE9E3D9);
+  static const _text = Color(0xFF2F251C);
+  static const _green = Color(0xFF4E7D35);
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -25,41 +29,96 @@ class StatisticsV3WeeklyActivityShell extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.86),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9E3D9)),
+        color: const Color(0xFFFDFBF7).withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 172;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _WeeklyActivityHeader(
+                title: title,
+                compact: compact,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11,
+                  height: 1.1,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF6A6155),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: days.isEmpty
+                    ? _WeeklyActivityEmptyState(
+                        message: l10n.statisticsV3ProgressMessageEmpty,
+                      )
+                    : _WeeklyActivityChart(
+                        days: days,
+                        weekdayLabels: _weekdayLabels(locale, l10n, days),
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _WeeklyActivityHeader extends StatelessWidget {
+  const _WeeklyActivityHeader({
+    required this.title,
+    required this.compact,
+  });
+
+  final String title;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: compact ? 22 : 23,
+      child: Row(
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2F251C),
+          Container(
+            width: compact ? 21 : 23,
+            height: compact ? 21 : 23,
+            decoration: BoxDecoration(
+              color:
+                  StatisticsV3WeeklyActivityShell._green.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.auto_graph_rounded,
+              size: compact ? 15 : 16,
+              color: StatisticsV3WeeklyActivityShell._green,
             ),
           ),
-          const SizedBox(height: 5),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF6A6155),
+          const SizedBox(width: 7),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: compact ? 13.4 : 14.2,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                  color: StatisticsV3WeeklyActivityShell._text,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 160,
-            child: days.isEmpty
-                ? _WeeklyActivityEmptyState(
-                    message: l10n.statisticsV3ProgressMessageEmpty,
-                  )
-                : _WeeklyActivityChart(
-                    days: days,
-                    weekdayLabels: _weekdayLabels(locale, l10n, days),
-                  ),
           ),
         ],
       ),
@@ -77,28 +136,31 @@ class _WeeklyActivityEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 86,
-            height: 1,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE9E2D7).withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(999),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 86,
+              height: 1,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE9E2D7).withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              height: 1.25,
-              color: Color(0xFF8E8274),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11,
+                height: 1.2,
+                color: Color(0xFF8E8274),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -152,10 +214,10 @@ class _WeeklyActivityChartPainter extends CustomPainter {
     }
 
     const leftLabelWidth = 26.0;
-    const rightPadding = 4.0;
-    const topPadding = 6.0;
-    const bottomLabelHeight = 18.0;
-    const xLabelOffset = 4.0;
+    const rightPadding = 2.0;
+    const topPadding = 4.0;
+    const bottomLabelHeight = 14.0;
+    const xLabelOffset = 2.0;
 
     final chartLeft = leftLabelWidth;
     final chartTop = topPadding;
@@ -226,7 +288,7 @@ class _WeeklyActivityChartPainter extends CustomPainter {
         text: TextSpan(
           text: '$value',
           style: const TextStyle(
-            fontSize: 9,
+            fontSize: 8,
             fontWeight: FontWeight.w600,
             color: _labelColor,
           ),
@@ -234,7 +296,7 @@ class _WeeklyActivityChartPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
         textAlign: TextAlign.right,
         maxLines: 1,
-      )..layout(maxWidth: 22);
+      )..layout(maxWidth: 20);
 
       final y = _valueToY(chartRect, value.toDouble());
       painter.paint(
@@ -257,7 +319,7 @@ class _WeeklyActivityChartPainter extends CustomPainter {
         text: TextSpan(
           text: label,
           style: const TextStyle(
-            fontSize: 10,
+            fontSize: 9,
             fontWeight: FontWeight.w600,
             color: Color(0xFF908477),
           ),
@@ -265,7 +327,7 @@ class _WeeklyActivityChartPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
         textAlign: TextAlign.center,
         maxLines: 1,
-      )..layout(minWidth: 0, maxWidth: 24);
+      )..layout(minWidth: 0, maxWidth: 20);
 
       painter.paint(
         canvas,
@@ -305,7 +367,7 @@ class _WeeklyActivityChartPainter extends CustomPainter {
 
     final linePaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.15
+      ..strokeWidth = 2
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..color = _lineColor;
@@ -318,7 +380,7 @@ class _WeeklyActivityChartPainter extends CustomPainter {
       if (futurePoints.length > 1) {
         final futurePaint = Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.8
+          ..strokeWidth = 1.6
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
           ..color = _futureColor.withValues(alpha: 0.55);
@@ -332,7 +394,7 @@ class _WeeklyActivityChartPainter extends CustomPainter {
     for (var index = 0; index < count; index++) {
       final day = days[index];
       final point = points[index];
-      final radius = day.isToday ? 4.2 : 3.3;
+      final radius = day.isToday ? 3.9 : 3.1;
       final fillColor = day.isFuture
           ? _futureColor.withValues(alpha: 0.55)
           : (day.isToday ? _todayColor : _lineColor);

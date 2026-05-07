@@ -2118,13 +2118,13 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsTitle.
   ///
   /// In es, this message translates to:
-  /// **'Estadisticas'**
+  /// **'Estadísticas'**
   String get habitStatsTitle;
 
   /// No description provided for @habitStatsEmpty.
   ///
   /// In es, this message translates to:
-  /// **'No hay habitos para mostrar.'**
+  /// **'No hay hábitos para mostrar.'**
   String get habitStatsEmpty;
 
   /// No description provided for @statisticsV3Subtitle.
@@ -2154,7 +2154,7 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV3SummaryCompletedLabel.
   ///
   /// In es, this message translates to:
-  /// **'habitos completados'**
+  /// **'hábitos completados'**
   String get statisticsV3SummaryCompletedLabel;
 
   /// No description provided for @statisticsV3SummaryXpLabel.
@@ -2166,7 +2166,7 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV3SummaryAmberLabel.
   ///
   /// In es, this message translates to:
-  /// **'Ambar'**
+  /// **'Ámbar'**
   String get statisticsV3SummaryAmberLabel;
 
   /// No description provided for @statisticsV3ConsistencyCardTitle.
@@ -2175,10 +2175,28 @@ abstract class AppLocalizations {
   /// **'Consistencia'**
   String get statisticsV3ConsistencyCardTitle;
 
+  /// No description provided for @statisticsV3ConsistencyCompletedLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'completado'**
+  String get statisticsV3ConsistencyCompletedLabel;
+
+  /// No description provided for @statisticsV3ConsistencyPendingLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'pendientes'**
+  String get statisticsV3ConsistencyPendingLabel;
+
+  /// No description provided for @statisticsV3ConsistencyStreakLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'racha días'**
+  String get statisticsV3ConsistencyStreakLabel;
+
   /// No description provided for @statisticsV3ConsistencyActiveDays.
   ///
   /// In es, this message translates to:
-  /// **'dias activos'**
+  /// **'días activos'**
   String get statisticsV3ConsistencyActiveDays;
 
   /// No description provided for @statisticsV3ConsistencyCompletionLabel.
@@ -2190,14 +2208,38 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV3FamiliesCardTitle.
   ///
   /// In es, this message translates to:
-  /// **'Familias'**
+  /// **'Familia destacada'**
   String get statisticsV3FamiliesCardTitle;
 
   /// No description provided for @statisticsV3FamiliesEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Aun no hay familias con actividad en este periodo.'**
+  /// **'Aún no hay una familia con actividad en este periodo.'**
   String get statisticsV3FamiliesEmpty;
+
+  /// No description provided for @statisticsV3FeaturedFamilySubtitleDay.
+  ///
+  /// In es, this message translates to:
+  /// **'La familia con más actividad hoy'**
+  String get statisticsV3FeaturedFamilySubtitleDay;
+
+  /// No description provided for @statisticsV3FeaturedFamilySubtitleWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'La familia con más actividad esta semana'**
+  String get statisticsV3FeaturedFamilySubtitleWeek;
+
+  /// No description provided for @statisticsV3FeaturedFamilySubtitleMonth.
+  ///
+  /// In es, this message translates to:
+  /// **'La familia con más actividad este mes'**
+  String get statisticsV3FeaturedFamilySubtitleMonth;
+
+  /// No description provided for @statisticsV3FeaturedFamilySubtitleYear.
+  ///
+  /// In es, this message translates to:
+  /// **'La familia con más actividad este año'**
+  String get statisticsV3FeaturedFamilySubtitleYear;
 
   /// No description provided for @statisticsV3BestMomentCardTitle.
   ///
@@ -2205,10 +2247,16 @@ abstract class AppLocalizations {
   /// **'Mejor momento'**
   String get statisticsV3BestMomentCardTitle;
 
+  /// No description provided for @statisticsV3BestMomentSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu franja más activa'**
+  String get statisticsV3BestMomentSubtitle;
+
   /// No description provided for @statisticsV3BestMomentFallback.
   ///
   /// In es, this message translates to:
-  /// **'La informacion de horario aparecera cuando haya mas completados con hora registrada.'**
+  /// **'La información de horario aparecerá cuando haya más completados con hora registrada.'**
   String get statisticsV3BestMomentFallback;
 
   /// No description provided for @statisticsV3BestMomentWithCount.
@@ -2220,25 +2268,25 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV3MomentMorning.
   ///
   /// In es, this message translates to:
-  /// **'Manana'**
+  /// **'Mañana'**
   String get statisticsV3MomentMorning;
 
   /// No description provided for @statisticsV3MomentAfternoon.
   ///
   /// In es, this message translates to:
-  /// **'Tarde'**
+  /// **'Mediodía'**
   String get statisticsV3MomentAfternoon;
 
   /// No description provided for @statisticsV3MomentEvening.
   ///
   /// In es, this message translates to:
-  /// **'Noche'**
+  /// **'Tarde'**
   String get statisticsV3MomentEvening;
 
   /// No description provided for @statisticsV3MomentNight.
   ///
   /// In es, this message translates to:
-  /// **'Madrugada'**
+  /// **'Noche'**
   String get statisticsV3MomentNight;
 
   /// No description provided for @statisticsV3NoFamily.
@@ -2250,67 +2298,103 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsV3HighlightedHabitCardTitle.
   ///
   /// In es, this message translates to:
-  /// **'Habitos destacados'**
+  /// **'Hábito destacado'**
   String get statisticsV3HighlightedHabitCardTitle;
+
+  /// No description provided for @statisticsV3HighlightedHabitSubtitleDay.
+  ///
+  /// In es, this message translates to:
+  /// **'El hábito con más actividad hoy'**
+  String get statisticsV3HighlightedHabitSubtitleDay;
+
+  /// No description provided for @statisticsV3HighlightedHabitSubtitleWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'El hábito con más actividad esta semana'**
+  String get statisticsV3HighlightedHabitSubtitleWeek;
+
+  /// No description provided for @statisticsV3HighlightedHabitSubtitleMonth.
+  ///
+  /// In es, this message translates to:
+  /// **'El hábito con más actividad este mes'**
+  String get statisticsV3HighlightedHabitSubtitleMonth;
+
+  /// No description provided for @statisticsV3HighlightedHabitSubtitleYear.
+  ///
+  /// In es, this message translates to:
+  /// **'El hábito con más actividad este año'**
+  String get statisticsV3HighlightedHabitSubtitleYear;
+
+  /// No description provided for @statisticsV3HighlightedHabitStreakLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Racha'**
+  String get statisticsV3HighlightedHabitStreakLabel;
+
+  /// No description provided for @statisticsV3HighlightedHabitStreakDays.
+  ///
+  /// In es, this message translates to:
+  /// **'{days} días'**
+  String statisticsV3HighlightedHabitStreakDays(int days);
 
   /// No description provided for @statisticsV3HighlightedHabitQuestionDay.
   ///
   /// In es, this message translates to:
-  /// **'Que habito he estado haciendo durante mas tiempo hoy?'**
+  /// **'¿Qué hábito he estado haciendo durante más tiempo hoy?'**
   String get statisticsV3HighlightedHabitQuestionDay;
 
   /// No description provided for @statisticsV3HighlightedHabitQuestionWeek.
   ///
   /// In es, this message translates to:
-  /// **'Que habito he estado haciendo durante mas tiempo esta semana?'**
+  /// **'¿Qué hábito he estado haciendo durante más tiempo esta semana?'**
   String get statisticsV3HighlightedHabitQuestionWeek;
 
   /// No description provided for @statisticsV3HighlightedHabitQuestionMonth.
   ///
   /// In es, this message translates to:
-  /// **'Que habito he estado haciendo durante mas tiempo este mes?'**
+  /// **'¿Qué hábito he estado haciendo durante más tiempo este mes?'**
   String get statisticsV3HighlightedHabitQuestionMonth;
 
   /// No description provided for @statisticsV3HighlightedHabitQuestionYear.
   ///
   /// In es, this message translates to:
-  /// **'Que habito he estado haciendo durante mas tiempo este ano?'**
+  /// **'¿Qué hábito he estado haciendo durante más tiempo este año?'**
   String get statisticsV3HighlightedHabitQuestionYear;
 
   /// No description provided for @statisticsV3HighlightedHabitEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Aun no hay un habito destacado disponible.'**
+  /// **'Aún no hay un hábito destacado disponible.'**
   String get statisticsV3HighlightedHabitEmpty;
 
   /// No description provided for @statisticsV3HighlightedCompletedDays.
   ///
   /// In es, this message translates to:
-  /// **'{count, plural, =1{# dia completado} other{# dias completados}}'**
+  /// **'{count, plural, =1{# día completado} other{# días completados}}'**
   String statisticsV3HighlightedCompletedDays(int count);
 
   /// No description provided for @statisticsV3HabitViewPlaceholderTitle.
   ///
   /// In es, this message translates to:
-  /// **'Vista por habito'**
+  /// **'Vista por hábito'**
   String get statisticsV3HabitViewPlaceholderTitle;
 
   /// No description provided for @statisticsV3HabitViewPlaceholderBody.
   ///
   /// In es, this message translates to:
-  /// **'Esta seccion queda reservada para la vista detallada por habito en V3. Por ahora puedes usar el resumen general sin riesgos.'**
+  /// **'Esta sección queda reservada para la vista detallada por hábito en V3. Por ahora puedes usar el resumen general sin riesgos.'**
   String get statisticsV3HabitViewPlaceholderBody;
 
   /// No description provided for @statisticsV3ProgressMessageEmpty.
   ///
   /// In es, this message translates to:
-  /// **'Aun estas a tiempo de empezar'**
+  /// **'Aún estás a tiempo de empezar'**
   String get statisticsV3ProgressMessageEmpty;
 
   /// No description provided for @statisticsV3ProgressMessageInProgress.
   ///
   /// In es, this message translates to:
-  /// **'Tu ritmo se esta construyendo'**
+  /// **'Tu ritmo se está construyendo'**
   String get statisticsV3ProgressMessageInProgress;
 
   /// No description provided for @statisticsV3ProgressMessageComplete.
@@ -2318,6 +2402,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Periodo completado con calma'**
   String get statisticsV3ProgressMessageComplete;
+
+  /// No description provided for @statisticsV3WeeklyImprovementTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejora de semana'**
+  String get statisticsV3WeeklyImprovementTitle;
+
+  /// No description provided for @statisticsV3WeeklyImprovementVsLastWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'vs semana anterior'**
+  String get statisticsV3WeeklyImprovementVsLastWeek;
+
+  /// No description provided for @statisticsV3WeeklyImprovementNoComparison.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin comparación todavía'**
+  String get statisticsV3WeeklyImprovementNoComparison;
+
+  /// No description provided for @statisticsV3WeeklyImprovementSameAsLastWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'Igual que la semana anterior'**
+  String get statisticsV3WeeklyImprovementSameAsLastWeek;
 
   /// No description provided for @habitStatsMetricCompleted.
   ///
@@ -2328,7 +2436,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsMetricCompletionDescription.
   ///
   /// In es, this message translates to:
-  /// **'{done}/{total} dias'**
+  /// **'{done}/{total} días'**
   String habitStatsMetricCompletionDescription(int done, int total);
 
   /// No description provided for @habitStatsMetricConsistency.
@@ -2340,7 +2448,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsMetricConsistencyDescription.
   ///
   /// In es, this message translates to:
-  /// **'Ultimos {window} dias'**
+  /// **'Últimos {window} días'**
   String habitStatsMetricConsistencyDescription(int window);
 
   /// No description provided for @habitStatsMetricBestStreak.
@@ -2376,13 +2484,13 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsChartLastFourWeeksTitle.
   ///
   /// In es, this message translates to:
-  /// **'Ultimas 4 semanas'**
+  /// **'Últimas 4 semanas'**
   String get habitStatsChartLastFourWeeksTitle;
 
   /// No description provided for @habitStatsChartWeekSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Completado por dia'**
+  /// **'Completado por día'**
   String get habitStatsChartWeekSubtitle;
 
   /// No description provided for @habitStatsChartWeeksSubtitle.
@@ -2412,13 +2520,13 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsBestTimeSectionTitle.
   ///
   /// In es, this message translates to:
-  /// **'Cuando lo cumples mejor?'**
+  /// **'¿Cuándo lo cumples mejor?'**
   String get habitStatsBestTimeSectionTitle;
 
   /// No description provided for @habitStatsBestTimeSectionSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Basado en tus registros, tus momentos mas consistentes'**
+  /// **'Basado en tus registros, tus momentos más consistentes'**
   String get habitStatsBestTimeSectionSubtitle;
 
   /// No description provided for @habitStatsMonthCalendarTitle.
@@ -2436,7 +2544,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsTabLastDaysTitle.
   ///
   /// In es, this message translates to:
-  /// **'Ultimos {days} dias'**
+  /// **'Últimos {days} días'**
   String habitStatsTabLastDaysTitle(int days);
 
   /// No description provided for @habitStatsTabAchievementsUnlocked.
@@ -2454,7 +2562,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsTabDayUnit.
   ///
   /// In es, this message translates to:
-  /// **'{count} dia'**
+  /// **'{count} día'**
   String habitStatsTabDayUnit(int count);
 
   /// No description provided for @habitStatsTabTotalLabel.
@@ -2466,19 +2574,19 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsTabCompletionWindow.
   ///
   /// In es, this message translates to:
-  /// **'{done} / {total} dias'**
+  /// **'{done} / {total} días'**
   String habitStatsTabCompletionWindow(int done, int total);
 
   /// No description provided for @habitStatsTabCounterHint.
   ///
   /// In es, this message translates to:
-  /// **'Cuenta el numero de veces completado cada dia'**
+  /// **'Cuenta el número de veces completado cada día'**
   String get habitStatsTabCounterHint;
 
   /// No description provided for @habitStatsTabCheckHint.
   ///
   /// In es, this message translates to:
-  /// **'Dias en los que completaste este habito'**
+  /// **'Días en los que completaste este hábito'**
   String get habitStatsTabCheckHint;
 
   /// No description provided for @habitStatsTabFireStreakTitle.
@@ -2490,7 +2598,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsTabStreakInARow.
   ///
   /// In es, this message translates to:
-  /// **'{days} dias seguidos'**
+  /// **'{days} días seguidos'**
   String habitStatsTabStreakInARow(int days);
 
   /// No description provided for @habitStatsTabCentennialTitle.
@@ -2520,7 +2628,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsTabLast30DaysPercent.
   ///
   /// In es, this message translates to:
-  /// **'{percent}% ultimos 30 dias'**
+  /// **'{percent}% últimos 30 días'**
   String habitStatsTabLast30DaysPercent(int percent);
 
   /// No description provided for @habitStatsTabLegendaryRecordTitle.
@@ -2532,7 +2640,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsTabRecordStreak.
   ///
   /// In es, this message translates to:
-  /// **'{days} dias de racha'**
+  /// **'{days} días de racha'**
   String habitStatsTabRecordStreak(int days);
 
   /// No description provided for @habitStatsTabWeeklyDelta.
@@ -2556,13 +2664,13 @@ abstract class AppLocalizations {
   /// No description provided for @diaryMenuTooltip.
   ///
   /// In es, this message translates to:
-  /// **'Menu'**
+  /// **'Menú'**
   String get diaryMenuTooltip;
 
   /// No description provided for @diaryCloseSearchTooltip.
   ///
   /// In es, this message translates to:
-  /// **'Cerrar busqueda'**
+  /// **'Cerrar búsqueda'**
   String get diaryCloseSearchTooltip;
 
   /// No description provided for @diarySearchTooltip.
@@ -2604,7 +2712,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryPinSoon.
   ///
   /// In es, this message translates to:
-  /// **'Fijar: proximamente'**
+  /// **'Fijar: próximamente'**
   String get diaryPinSoon;
 
   /// No description provided for @diaryDeleteEntryTitle.
@@ -2616,7 +2724,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryDeleteEntryBody.
   ///
   /// In es, this message translates to:
-  /// **'Seguro que quieres eliminar esta entrada?'**
+  /// **'¿Seguro que quieres eliminar esta entrada?'**
   String get diaryDeleteEntryBody;
 
   /// No description provided for @diaryEntriesCount.
@@ -2634,7 +2742,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryPeriodDays.
   ///
   /// In es, this message translates to:
-  /// **'Dias'**
+  /// **'Días'**
   String get diaryPeriodDays;
 
   /// No description provided for @diaryPeriodWeeks.
@@ -2670,7 +2778,7 @@ abstract class AppLocalizations {
   /// No description provided for @diarySearchScopeHabits.
   ///
   /// In es, this message translates to:
-  /// **'Habitos'**
+  /// **'Hábitos'**
   String get diarySearchScopeHabits;
 
   /// No description provided for @diarySearchScopePersonal.
@@ -2694,13 +2802,13 @@ abstract class AppLocalizations {
   /// No description provided for @diarySummaryEmptyTitle.
   ///
   /// In es, this message translates to:
-  /// **'Hoy aun no has escrito'**
+  /// **'Hoy aún no has escrito'**
   String get diarySummaryEmptyTitle;
 
   /// No description provided for @diarySummaryEmptySubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Un minuto puede cambiar tu dia'**
+  /// **'Un minuto puede cambiar tu día'**
   String get diarySummaryEmptySubtitle;
 
   /// No description provided for @diarySummaryOneTitle.
@@ -2718,19 +2826,19 @@ abstract class AppLocalizations {
   /// No description provided for @diarySummaryFewTitle.
   ///
   /// In es, this message translates to:
-  /// **'Estas cuidando tu mundo interior'**
+  /// **'Estás cuidando tu mundo interior'**
   String get diarySummaryFewTitle;
 
   /// No description provided for @diarySummaryFewSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Sigue asi'**
+  /// **'Sigue así'**
   String get diarySummaryFewSubtitle;
 
   /// No description provided for @diarySummaryManyTitle.
   ///
   /// In es, this message translates to:
-  /// **'Dia muy consciente'**
+  /// **'Día muy consciente'**
   String get diarySummaryManyTitle;
 
   /// No description provided for @diarySummaryManySubtitle.
@@ -2772,37 +2880,37 @@ abstract class AppLocalizations {
   /// No description provided for @diaryComposerMoodSectionUpper.
   ///
   /// In es, this message translates to:
-  /// **'¿COMO TE SENTISTE?'**
+  /// **'¿CÓMO TE SENTISTE?'**
   String get diaryComposerMoodSectionUpper;
 
   /// No description provided for @diaryComposerTitleUpper.
   ///
   /// In es, this message translates to:
-  /// **'TITULO'**
+  /// **'TÍTULO'**
   String get diaryComposerTitleUpper;
 
   /// No description provided for @diaryComposerReflectionUpper.
   ///
   /// In es, this message translates to:
-  /// **'REFLEXION'**
+  /// **'REFLEXIÓN'**
   String get diaryComposerReflectionUpper;
 
   /// No description provided for @diaryComposerTitleHint.
   ///
   /// In es, this message translates to:
-  /// **'Como resumirias hoy?'**
+  /// **'¿Cómo resumirías hoy?'**
   String get diaryComposerTitleHint;
 
   /// No description provided for @diaryComposerHabitReflectionHint.
   ///
   /// In es, this message translates to:
-  /// **'Que paso hoy con tu habito? Que sentiste? Que aprendiste?'**
+  /// **'¿Qué pasó hoy con tu hábito? ¿Qué sentiste? ¿Qué aprendiste?'**
   String get diaryComposerHabitReflectionHint;
 
   /// No description provided for @diaryComposerPersonalReflectionHint.
   ///
   /// In es, this message translates to:
-  /// **'Que tienes en mente? Que quieres dejar por escrito hoy?'**
+  /// **'¿Qué tienes en mente? ¿Qué quieres dejar por escrito hoy?'**
   String get diaryComposerPersonalReflectionHint;
 
   /// No description provided for @diaryComposerSaveChanges.
@@ -2820,7 +2928,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryComposerTypeHabit.
   ///
   /// In es, this message translates to:
-  /// **'Ligada a habito'**
+  /// **'Ligada a hábito'**
   String get diaryComposerTypeHabit;
 
   /// No description provided for @diaryComposerTypePersonal.
@@ -2832,13 +2940,13 @@ abstract class AppLocalizations {
   /// No description provided for @diaryComposerSelectHabit.
   ///
   /// In es, this message translates to:
-  /// **'Seleccionar habito'**
+  /// **'Seleccionar hábito'**
   String get diaryComposerSelectHabit;
 
   /// No description provided for @diaryComposerTapToChooseHabit.
   ///
   /// In es, this message translates to:
-  /// **'Toca para elegir un habito'**
+  /// **'Toca para elegir un hábito'**
   String get diaryComposerTapToChooseHabit;
 
   /// No description provided for @diaryComposerWriteSomethingError.
@@ -2850,19 +2958,19 @@ abstract class AppLocalizations {
   /// No description provided for @diaryComposerSelectHabitError.
   ///
   /// In es, this message translates to:
-  /// **'Selecciona un habito'**
+  /// **'Selecciona un hábito'**
   String get diaryComposerSelectHabitError;
 
   /// No description provided for @diaryComposerNoActiveHabits.
   ///
   /// In es, this message translates to:
-  /// **'No hay habitos activos para seleccionar'**
+  /// **'No hay hábitos activos para seleccionar'**
   String get diaryComposerNoActiveHabits;
 
   /// No description provided for @diaryComposerSelectHabitSheetTitle.
   ///
   /// In es, this message translates to:
-  /// **'Seleccionar habito'**
+  /// **'Seleccionar hábito'**
   String get diaryComposerSelectHabitSheetTitle;
 
   /// No description provided for @diaryDetailScreenTitle.
@@ -2874,7 +2982,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryDetailTopHabitUpper.
   ///
   /// In es, this message translates to:
-  /// **'ENTRADA DE HABITO'**
+  /// **'ENTRADA DE HÁBITO'**
   String get diaryDetailTopHabitUpper;
 
   /// No description provided for @diaryDetailTopPersonalUpper.
@@ -2886,7 +2994,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryDetailFallbackHabitTitle.
   ///
   /// In es, this message translates to:
-  /// **'Entrada de habito'**
+  /// **'Entrada de hábito'**
   String get diaryDetailFallbackHabitTitle;
 
   /// No description provided for @diaryDetailFallbackPersonalTitle.
@@ -2910,7 +3018,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryDetailTypeHabit.
   ///
   /// In es, this message translates to:
-  /// **'Dia de habito'**
+  /// **'Día de hábito'**
   String get diaryDetailTypeHabit;
 
   /// No description provided for @diaryDetailTypePersonal.
@@ -2952,13 +3060,13 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsHabitFallbackTitle.
   ///
   /// In es, this message translates to:
-  /// **'Habito'**
+  /// **'Hábito'**
   String get habitStatsHabitFallbackTitle;
 
   /// No description provided for @habitStatsPeriodDay.
   ///
   /// In es, this message translates to:
-  /// **'Dia'**
+  /// **'Día'**
   String get habitStatsPeriodDay;
 
   /// No description provided for @habitStatsPeriodWeek.
@@ -2994,7 +3102,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsDaysLabel.
   ///
   /// In es, this message translates to:
-  /// **'{count} dia'**
+  /// **'{count} día'**
   String habitStatsDaysLabel(int count);
 
   /// No description provided for @habitStatsCurrentStreakUpper.
@@ -3024,7 +3132,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsMilestoneProgress.
   ///
   /// In es, this message translates to:
-  /// **'{label}: {next} dias'**
+  /// **'{label}: {next} días'**
   String habitStatsMilestoneProgress(String label, int next);
 
   /// No description provided for @habitStatsThisWeek.
@@ -3072,19 +3180,19 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsLegendMore.
   ///
   /// In es, this message translates to:
-  /// **'Mas'**
+  /// **'Más'**
   String get habitStatsLegendMore;
 
   /// No description provided for @habitStatsDayTooltip.
   ///
   /// In es, this message translates to:
-  /// **'Dia {day}'**
+  /// **'Día {day}'**
   String habitStatsDayTooltip(int day);
 
   /// No description provided for @habitStatsThisHabitFallback.
   ///
   /// In es, this message translates to:
-  /// **'este habito'**
+  /// **'este hábito'**
   String get habitStatsThisHabitFallback;
 
   /// No description provided for @habitStatsMotivationLead.
@@ -3156,7 +3264,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsMotivationGoalKeyword.
   ///
   /// In es, this message translates to:
-  /// **'llegar a los {days} dias'**
+  /// **'llegar a los {days} días'**
   String habitStatsMotivationGoalKeyword(int days);
 
   /// No description provided for @habitStatsMotivationKeepLead.
@@ -3186,7 +3294,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsMotivationBestTimeTail.
   ///
   /// In es, this message translates to:
-  /// **', cuando sueles ser mas constante.'**
+  /// **', cuando sueles ser más constante.'**
   String get habitStatsMotivationBestTimeTail;
 
   /// No description provided for @editHabitSaveChanges.
@@ -3204,7 +3312,7 @@ abstract class AppLocalizations {
   /// No description provided for @editHabitNotificationPermissionDenied.
   ///
   /// In es, this message translates to:
-  /// **'Permisos de notificacion denegados.'**
+  /// **'Permisos de notificación denegados.'**
   String get editHabitNotificationPermissionDenied;
 
   /// No description provided for @editHabitDailyGoalDialogTitle.
@@ -3258,7 +3366,7 @@ abstract class AppLocalizations {
   /// No description provided for @editHabitSectionTracking.
   ///
   /// In es, this message translates to:
-  /// **'Como lo mides?'**
+  /// **'¿Cómo lo mides?'**
   String get editHabitSectionTracking;
 
   /// No description provided for @editHabitSectionFrequency.
@@ -3324,7 +3432,7 @@ abstract class AppLocalizations {
   /// No description provided for @editHabitRepetitionsSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Cuantas veces al dia?'**
+  /// **'¿Cuántas veces al día?'**
   String get editHabitRepetitionsSubtitle;
 
   /// No description provided for @editHabitUnitHint.
@@ -3348,13 +3456,13 @@ abstract class AppLocalizations {
   /// No description provided for @editHabitFrequencyDaily.
   ///
   /// In es, this message translates to:
-  /// **'Cada dia'**
+  /// **'Cada día'**
   String get editHabitFrequencyDaily;
 
   /// No description provided for @editHabitFrequencySpecificDays.
   ///
   /// In es, this message translates to:
-  /// **'Dias concretos'**
+  /// **'Días concretos'**
   String get editHabitFrequencySpecificDays;
 
   /// No description provided for @editHabitFrequencyTimesPerWeek.
@@ -3372,13 +3480,13 @@ abstract class AppLocalizations {
   /// No description provided for @editHabitWeeklyGoalSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Marca cuantas veces quieres completarlo.'**
+  /// **'Marca cuántas veces quieres completarlo.'**
   String get editHabitWeeklyGoalSubtitle;
 
   /// No description provided for @editHabitReminderDailyTitle.
   ///
   /// In es, this message translates to:
-  /// **'Notificacion diaria'**
+  /// **'Notificación diaria'**
   String get editHabitReminderDailyTitle;
 
   /// No description provided for @editHabitReminderDailySubtitle.
@@ -4008,13 +4116,13 @@ abstract class AppLocalizations {
   /// No description provided for @diaryAfterCompleteTitle.
   ///
   /// In es, this message translates to:
-  /// **'Habito completado: {habitName}'**
+  /// **'Hábito completado: {habitName}'**
   String diaryAfterCompleteTitle(String habitName);
 
   /// No description provided for @diaryAfterCompletePrompt.
   ///
   /// In es, this message translates to:
-  /// **'Quieres anadir una nota rapida?'**
+  /// **'¿Quieres añadir una nota rápida?'**
   String get diaryAfterCompletePrompt;
 
   /// No description provided for @diaryAfterCompleteSkip.
@@ -4038,7 +4146,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryCardTypeHabitShort.
   ///
   /// In es, this message translates to:
-  /// **'DIA'**
+  /// **'DÍA'**
   String get diaryCardTypeHabitShort;
 
   /// No description provided for @diaryCardTypePersonalShort.
@@ -4050,7 +4158,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryShowMore.
   ///
   /// In es, this message translates to:
-  /// **'Ver mas'**
+  /// **'Ver más'**
   String get diaryShowMore;
 
   /// No description provided for @diaryShowLess.
@@ -4062,7 +4170,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryStreakLabel.
   ///
   /// In es, this message translates to:
-  /// **'Racha: {count} dia{sufix}'**
+  /// **'Racha: {count} día{sufix}'**
   String diaryStreakLabel(int count, String sufix);
 
   /// No description provided for @diaryEmotionalStreakTitle.
@@ -4074,7 +4182,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryDaysLabel.
   ///
   /// In es, this message translates to:
-  /// **'{count} dia{sufix}'**
+  /// **'{count} día{sufix}'**
   String diaryDaysLabel(int count, String sufix);
 
   /// No description provided for @monthShortJan.
@@ -4152,13 +4260,13 @@ abstract class AppLocalizations {
   /// No description provided for @createHabitNewHabitTitle.
   ///
   /// In es, this message translates to:
-  /// **'Nuevo habito'**
+  /// **'Nuevo hábito'**
   String get createHabitNewHabitTitle;
 
   /// No description provided for @createHabitSaveHabit.
   ///
   /// In es, this message translates to:
-  /// **'Guardar habito'**
+  /// **'Guardar hábito'**
   String get createHabitSaveHabit;
 
   /// No description provided for @createHabitSaved.
@@ -4188,7 +4296,7 @@ abstract class AppLocalizations {
   /// No description provided for @emojiPickerNoRecents.
   ///
   /// In es, this message translates to:
-  /// **'Tus emojis recientes apareceran aqui'**
+  /// **'Tus emojis recientes aparecerán aquí'**
   String get emojiPickerNoRecents;
 
   /// No description provided for @emojiPickerSearchHint.
@@ -4206,13 +4314,13 @@ abstract class AppLocalizations {
   /// No description provided for @monthlyEmptyFilteredMessage.
   ///
   /// In es, this message translates to:
-  /// **'No hay habitos para mostrar en este filtro.'**
+  /// **'No hay hábitos para mostrar en este filtro.'**
   String get monthlyEmptyFilteredMessage;
 
   /// No description provided for @monthlyElapsedDaysWeek.
   ///
   /// In es, this message translates to:
-  /// **'{elapsed} dias transcurridos · semana {week}'**
+  /// **'{elapsed} días transcurridos · semana {week}'**
   String monthlyElapsedDaysWeek(int elapsed, int week);
 
   /// No description provided for @monthlyFilterSummaryFamily.
@@ -4224,13 +4332,13 @@ abstract class AppLocalizations {
   /// No description provided for @monthlyFilterSummaryHabit.
   ///
   /// In es, this message translates to:
-  /// **'Habito: {habit}'**
+  /// **'Hábito: {habit}'**
   String monthlyFilterSummaryHabit(String habit);
 
   /// No description provided for @monthlyFilterSummaryAll.
   ///
   /// In es, this message translates to:
-  /// **'Todos los habitos'**
+  /// **'Todos los hábitos'**
   String get monthlyFilterSummaryAll;
 
   /// No description provided for @monthlyFiltersTooltip.
@@ -4272,7 +4380,7 @@ abstract class AppLocalizations {
   /// No description provided for @monthlyFilterModeHabit.
   ///
   /// In es, this message translates to:
-  /// **'Habito'**
+  /// **'Hábito'**
   String get monthlyFilterModeHabit;
 
   /// No description provided for @monthlyApplyAction.
@@ -4284,7 +4392,7 @@ abstract class AppLocalizations {
   /// No description provided for @monthlySelectHabitLabel.
   ///
   /// In es, this message translates to:
-  /// **'Selecciona un habito'**
+  /// **'Selecciona un hábito'**
   String get monthlySelectHabitLabel;
 
   /// No description provided for @monthlyHabitSelectorTitle.
@@ -4296,7 +4404,7 @@ abstract class AppLocalizations {
   /// No description provided for @monthlyHabitFallbackTitle.
   ///
   /// In es, this message translates to:
-  /// **'Habito'**
+  /// **'Hábito'**
   String get monthlyHabitFallbackTitle;
 
   /// No description provided for @monthlyStatMonthLabel.
@@ -4320,7 +4428,7 @@ abstract class AppLocalizations {
   /// No description provided for @monthlyDaysLabel.
   ///
   /// In es, this message translates to:
-  /// **'{count} dia{sufix}'**
+  /// **'{count} día{sufix}'**
   String monthlyDaysLabel(int count, String sufix);
 
   /// No description provided for @monthlyCurrentStreakSoft.
