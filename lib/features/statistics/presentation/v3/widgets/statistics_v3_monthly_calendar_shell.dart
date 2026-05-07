@@ -1,16 +1,19 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 
 class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
   const StatisticsV3MonthlyCalendarShell({
     super.key,
     required this.title,
     required this.subtitle,
+    required this.days,
   });
 
   final String title;
   final String subtitle;
+  final List<StatisticsV3MonthlyCalendarDay> days;
 
   static const _border = Color(0xFFE9E3D9);
   static const _cream = Color(0xFFFDFBF7);
@@ -21,22 +24,18 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
   static const _todayBorder = Color(0xFF9AA789);
   static const _todayFill = Color(0xFFE8EFE1);
   static const _futureFill = Color(0xFFF0EBE3);
-  static const _placeholderFill = Color(0x00FFFFFF);
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final firstDay = DateTime(now.year, now.month, 1);
-    final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
+    final calendarDays = days.isEmpty ? _fallbackDays() : days;
+    final firstDay = calendarDays.first.date;
+    final daysInMonth = calendarDays.length;
     const daysPerWeek = 7;
     final leadingDays =
         (firstDay.weekday - DateTime.monday + daysPerWeek) % daysPerWeek;
     final totalCells = leadingDays + daysInMonth;
     final rows = math.max(4, (totalCells / daysPerWeek).ceil());
     final cellCount = rows * daysPerWeek;
-    final todayDay = now.year == firstDay.year && now.month == firstDay.month
-        ? now.day
-        : -1;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
@@ -121,32 +120,21 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               if (index < leadingDays || index >= leadingDays + daysInMonth) {
-                return _CalendarCell(
-                  fillColor: _placeholderFill,
-                  borderColor: _cellBorder.withValues(alpha: 0.25),
-                  dotColor: _cellBase.withValues(alpha: 0.20),
-                  showDot: false,
-                );
+                return const _CalendarPlaceholderCell();
               }
 
-              final dayNumber = index - leadingDays + 1;
-              final isToday = dayNumber == todayDay;
-              final isFuture = todayDay != -1 && dayNumber > todayDay;
-              final fillColor = isToday
-                  ? _todayFill
-                  : isFuture
-                      ? _futureFill.withValues(alpha: 0.48)
-                      : _cellBase.withValues(alpha: 0.52);
+              final day = calendarDays[index - leadingDays];
+              final tone = _calendarToneFor(day);
 
               return _CalendarCell(
-                fillColor: fillColor,
-                borderColor: isToday
-                    ? _todayBorder.withValues(alpha: 0.72)
-                    : _cellBorder,
-                dotColor: isFuture
-                    ? _cellBase.withValues(alpha: 0.45)
-                    : _todayBorder.withValues(alpha: 0.45),
-                showDot: true,
+                dayNumber: day.date.day,
+                percentage: day.percentage,
+                fillColor: tone.fillColor,
+                borderColor: day.isToday ? _todayBorder.withValues(alpha: 0.82) : tone.borderColor,
+                dayColor: tone.textColor,
+                accentColor: tone.accentColor,
+                isToday: day.isToday,
+                isFuture: day.isFuture,
               );
             },
           ),
@@ -154,39 +142,204 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
       ),
     );
   }
+
+  List<StatisticsV3MonthlyCalendarDay> _fallbackDays() {
+    final now = DateTime.now();
+    final firstDay = DateTime(now.year, now.month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
+
+    return List<StatisticsV3MonthlyCalendarDay>.generate(daysInMonth, (index) {
+      final date = firstDay.add(Duration(days: index));
+      final isToday = date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day;
+      final isFuture = date.isAfter(DateTime(now.year, now.month, now.day));
+
+      return StatisticsV3MonthlyCalendarDay(
+        date: date,
+        completedCount: 0,
+        expectedCount: 0,
+        percentage: 0,
+        isToday: isToday,
+        isFuture: isFuture,
+        isCurrentMonth: true,
+      );
+    }, growable: false);
+  }
+
+  _CalendarTone _calendarToneFor(StatisticsV3MonthlyCalendarDay day) {
+    if (day.isFuture) {
+      return _CalendarTone.future;
+    }
+
+    if (day.percentage <= 0) {
+      return _CalendarTone.zero;
+    }
+    if (day.percentage <= 33) {
+      return _CalendarTone.low;
+    }
+    if (day.percentage <= 66) {
+      return _CalendarTone.medium;
+    }
+    if (day.percentage < 100) {
+      return _CalendarTone.high;
+    }
+    return _CalendarTone.full;
+  }
+}
+
+class _CalendarPlaceholderCell extends StatelessWidget {
+  const _CalendarPlaceholderCell();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: StatisticsV3MonthlyCalendarShell._cellBorder.withValues(alpha: 0.25)),
+      ),
+    );
+  }
 }
 
 class _CalendarCell extends StatelessWidget {
   const _CalendarCell({
+    required this.dayNumber,
+    required this.percentage,
     required this.fillColor,
     required this.borderColor,
-    required this.dotColor,
-    required this.showDot,
+    required this.dayColor,
+    required this.accentColor,
+    required this.isToday,
+    required this.isFuture,
   });
 
+  final int dayNumber;
+  final int percentage;
   final Color fillColor;
   final Color borderColor;
-  final Color dotColor;
-  final bool showDot;
+  final Color dayColor;
+  final Color accentColor;
+  final bool isToday;
+  final bool isFuture;
 
   @override
   Widget build(BuildContext context) {
+    final displayColor = isFuture ? accentColor : dayColor;
+
     return Container(
       decoration: BoxDecoration(
         color: fillColor,
         borderRadius: BorderRadius.circular(11),
         border: Border.all(color: borderColor),
       ),
-      child: Center(
-        child: Container(
-          width: showDot ? 6 : 0,
-          height: showDot ? 6 : 0,
-          decoration: BoxDecoration(
-            color: showDot ? dotColor : Colors.transparent,
-            shape: BoxShape.circle,
+      child: Stack(
+        children: [
+          Positioned(
+            top: 4,
+            left: 4,
+            child: Text(
+              '$dayNumber',
+              style: TextStyle(
+                fontSize: 10.5,
+                height: 1,
+                fontWeight: FontWeight.w700,
+                color: displayColor.withValues(
+                  alpha: isFuture ? 0.50 : (isToday ? 0.95 : 0.88),
+                ),
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            right: 4,
+            bottom: 4,
+            child: Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: _dotColor(),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  Color _dotColor() {
+    if (isFuture) {
+      return accentColor.withValues(alpha: 0.20);
+    }
+    if (percentage <= 0) {
+      return StatisticsV3MonthlyCalendarShell._cellBase.withValues(alpha: 0.20);
+    }
+    if (percentage <= 33) {
+      return StatisticsV3MonthlyCalendarShell._todayBorder.withValues(alpha: 0.26);
+    }
+    if (percentage <= 66) {
+      return StatisticsV3MonthlyCalendarShell._todayBorder.withValues(alpha: 0.42);
+    }
+    if (percentage < 100) {
+      return StatisticsV3MonthlyCalendarShell._todayBorder.withValues(alpha: 0.58);
+    }
+    return StatisticsV3MonthlyCalendarShell._todayBorder.withValues(alpha: 0.76);
+  }
+}
+
+class _CalendarTone {
+  const _CalendarTone({
+    required this.fillColor,
+    required this.borderColor,
+    required this.textColor,
+    required this.accentColor,
+  });
+
+  final Color fillColor;
+  final Color borderColor;
+  final Color textColor;
+  final Color accentColor;
+
+  static const zero = _CalendarTone(
+    fillColor: Color(0xFFFEFCF9),
+    borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
+    textColor: StatisticsV3MonthlyCalendarShell._mutedText,
+    accentColor: StatisticsV3MonthlyCalendarShell._cellBase,
+  );
+
+  static const low = _CalendarTone(
+    fillColor: Color(0xFFF7F4EE),
+    borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
+    textColor: StatisticsV3MonthlyCalendarShell._text,
+    accentColor: StatisticsV3MonthlyCalendarShell._todayBorder,
+  );
+
+  static const medium = _CalendarTone(
+    fillColor: Color(0xFFEEF1E6),
+    borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
+    textColor: StatisticsV3MonthlyCalendarShell._text,
+    accentColor: StatisticsV3MonthlyCalendarShell._todayBorder,
+  );
+
+  static const high = _CalendarTone(
+    fillColor: Color(0xFFE3EAD8),
+    borderColor: StatisticsV3MonthlyCalendarShell._todayBorder,
+    textColor: StatisticsV3MonthlyCalendarShell._text,
+    accentColor: StatisticsV3MonthlyCalendarShell._todayBorder,
+  );
+
+  static const full = _CalendarTone(
+    fillColor: StatisticsV3MonthlyCalendarShell._todayFill,
+    borderColor: StatisticsV3MonthlyCalendarShell._todayBorder,
+    textColor: StatisticsV3MonthlyCalendarShell._text,
+    accentColor: StatisticsV3MonthlyCalendarShell._todayBorder,
+  );
+
+  static const future = _CalendarTone(
+    fillColor: StatisticsV3MonthlyCalendarShell._futureFill,
+    borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
+    textColor: StatisticsV3MonthlyCalendarShell._mutedText,
+    accentColor: StatisticsV3MonthlyCalendarShell._cellBase,
+  );
 }

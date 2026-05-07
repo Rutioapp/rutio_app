@@ -168,6 +168,15 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
           habitsById: habitsById,
         )
       : const <StatisticsV3WeeklyActivityDay>[];
+  final monthlyCalendarDays = _buildMonthlyCalendarData(
+    today: today,
+    userState: userState,
+    completionsRoot: completionsRoot,
+    skipsRoot: skipsRoot,
+    countValuesRoot: countValuesRoot,
+    habits: habits,
+    habitsById: habitsById,
+  );
   final weeklyImprovement = _buildWeeklyImprovementData(
     today: today,
     userState: userState,
@@ -190,6 +199,7 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     bestMoment: bestMoment,
     highlightedHabits: highlightedItems,
     weeklyActivity: weeklyActivity,
+    monthlyCalendarDays: monthlyCalendarDays,
     weeklyImprovement: weeklyImprovement,
   );
 }
@@ -347,6 +357,61 @@ List<StatisticsV3WeeklyActivityDay> _buildWeeklyActivityData({
       percentage: dayStats.percentage,
       isToday: isToday,
       isFuture: false,
+    );
+  }, growable: false);
+}
+
+List<StatisticsV3MonthlyCalendarDay> _buildMonthlyCalendarData({
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required Map<String, dynamic> countValuesRoot,
+  required List<Map<String, dynamic>> habits,
+  required Map<String, Map<String, dynamic>> habitsById,
+}) {
+  final firstDayOfMonth = DateTime(today.year, today.month, 1);
+  final daysInMonth = DateUtils.getDaysInMonth(today.year, today.month);
+
+  return List<StatisticsV3MonthlyCalendarDay>.generate(daysInMonth, (index) {
+    final day = firstDayOfMonth.add(Duration(days: index));
+    final dayKey = _dateKey(day);
+    final isToday = _dateOnly(day) == _dateOnly(today);
+    final isFuture = day.isAfter(today);
+    final isCurrentMonth = day.year == today.year && day.month == today.month;
+
+    if (isFuture) {
+      return StatisticsV3MonthlyCalendarDay(
+        date: day,
+        completedCount: 0,
+        expectedCount: 0,
+        percentage: 0,
+        isToday: isToday,
+        isFuture: true,
+        isCurrentMonth: isCurrentMonth,
+      );
+    }
+
+    final dayStats = _buildDayCompletionStats(
+      day: day,
+      today: today,
+      dayKey: dayKey,
+      userState: userState,
+      completionsRoot: completionsRoot,
+      skipsRoot: skipsRoot,
+      countValuesRoot: countValuesRoot,
+      habits: habits,
+      habitsById: habitsById,
+    );
+
+    return StatisticsV3MonthlyCalendarDay(
+      date: day,
+      completedCount: dayStats.completedCount,
+      expectedCount: dayStats.expectedCount,
+      percentage: dayStats.percentage,
+      isToday: isToday,
+      isFuture: false,
+      isCurrentMonth: isCurrentMonth,
     );
   }, growable: false);
 }

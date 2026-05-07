@@ -179,6 +179,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                     StatisticsV3MonthlyCalendarShell(
                       title: l10n.statisticsV3MonthlyCalendarTitle,
                       subtitle: l10n.statisticsV3MonthlyCalendarSubtitle,
+                      days: viewData.monthlyCalendarDays,
                     ),
                     const SizedBox(height: 12),
                     StatisticsV3ProgressMessageChip(
