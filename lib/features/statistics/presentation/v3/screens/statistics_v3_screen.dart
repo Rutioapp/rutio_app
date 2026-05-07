@@ -9,6 +9,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_family_chips_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_header.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_highlighted_habit_card.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_monthly_calendar_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_period_selector.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_progress_message_chip.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_activity_shell.dart';
@@ -168,6 +169,16 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       activitySubtitle:
                           l10n.statisticsV3DailyActivitySubtitle,
                       activityDays: viewData.weeklyActivity,
+                    ),
+                    const SizedBox(height: 12),
+                    StatisticsV3ProgressMessageChip(
+                      message: _progressMessage(viewData, l10n),
+                    ),
+                  ] else if (_period == StatisticsV3Period.month) ...[
+                    const SizedBox(height: 12),
+                    StatisticsV3MonthlyCalendarShell(
+                      title: l10n.statisticsV3MonthlyCalendarTitle,
+                      subtitle: l10n.statisticsV3MonthlyCalendarSubtitle,
                     ),
                     const SizedBox(height: 12),
                     StatisticsV3ProgressMessageChip(

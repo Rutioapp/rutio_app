@@ -1304,6 +1304,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Igual que la semana anterior';
 
   @override
+  String get statisticsV3MonthlyCalendarTitle => 'Calendario de constancia';
+
+  @override
+  String get statisticsV3MonthlyCalendarSubtitle =>
+      'Tu ritmo mensual de un vistazo';
+
+  @override
   String get habitStatsMetricCompleted => 'Completado';
 
   @override

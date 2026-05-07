@@ -625,8 +625,10 @@
   "statisticsV3WeeklyImprovementTitle": "Mejora de semana",
   "statisticsV3WeeklyImprovementVsLastWeek": "vs semana anterior",
   "statisticsV3WeeklyImprovementNoComparison": "Sin comparación todavía",
-  "statisticsV3WeeklyImprovementSameAsLastWeek": "Igual que la semana anterior",
-  "habitStatsMetricCompleted": "Completado",
+    "statisticsV3WeeklyImprovementSameAsLastWeek": "Igual que la semana anterior",
+    "statisticsV3MonthlyCalendarTitle": "Calendario de constancia",
+    "statisticsV3MonthlyCalendarSubtitle": "Tu ritmo mensual de un vistazo",
+    "habitStatsMetricCompleted": "Completado",
   "habitStatsMetricCompletionDescription": "{done}/{total} días",
   "@habitStatsMetricCompletionDescription": {
     "placeholders": {

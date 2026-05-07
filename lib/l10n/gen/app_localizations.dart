@@ -2427,6 +2427,18 @@ abstract class AppLocalizations {
   /// **'Igual que la semana anterior'**
   String get statisticsV3WeeklyImprovementSameAsLastWeek;
 
+  /// No description provided for @statisticsV3MonthlyCalendarTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Calendario de constancia'**
+  String get statisticsV3MonthlyCalendarTitle;
+
+  /// No description provided for @statisticsV3MonthlyCalendarSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu ritmo mensual de un vistazo'**
+  String get statisticsV3MonthlyCalendarSubtitle;
+
   /// No description provided for @habitStatsMetricCompleted.
   ///
   /// In es, this message translates to:

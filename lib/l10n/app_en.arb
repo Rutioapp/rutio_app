@@ -619,6 +619,8 @@
     },
     "statisticsV3HabitViewPlaceholderTitle": "Per-habit view",
     "statisticsV3HabitViewPlaceholderBody": "This section is reserved for the detailed per-habit statistics view in V3. For now, you can use the general overview safely.",
+    "statisticsV3MonthlyCalendarTitle": "Consistency calendar",
+    "statisticsV3MonthlyCalendarSubtitle": "Month rhythm at a glance",
     "statisticsV3ProgressMessageEmpty": "There is still time to begin",
     "statisticsV3ProgressMessageInProgress": "Your rhythm is building",
     "statisticsV3ProgressMessageComplete": "A calm period completed",
