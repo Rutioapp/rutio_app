@@ -2427,6 +2427,18 @@ abstract class AppLocalizations {
   /// **'Igual que la semana anterior'**
   String get statisticsV3WeeklyImprovementSameAsLastWeek;
 
+  /// No description provided for @statisticsV3YearlyConsistencyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Constancia anual'**
+  String get statisticsV3YearlyConsistencyTitle;
+
+  /// No description provided for @statisticsV3YearlyConsistencySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu ritmo anual de un vistazo'**
+  String get statisticsV3YearlyConsistencySubtitle;
+
   /// No description provided for @statisticsV3MonthlyCalendarTitle.
   ///
   /// In es, this message translates to:

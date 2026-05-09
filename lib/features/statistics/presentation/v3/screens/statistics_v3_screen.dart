@@ -14,6 +14,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_progress_message_chip.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_activity_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_improvement_chip.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_yearly_consistency_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_summary_card.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
@@ -169,6 +170,16 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       activitySubtitle:
                           l10n.statisticsV3DailyActivitySubtitle,
                       activityDays: viewData.weeklyActivity,
+                    ),
+                    const SizedBox(height: 12),
+                    StatisticsV3ProgressMessageChip(
+                      message: _progressMessage(viewData, l10n),
+                    ),
+                  ] else if (_period == StatisticsV3Period.year) ...[
+                    const SizedBox(height: 12),
+                    StatisticsV3YearlyConsistencyShell(
+                      title: l10n.statisticsV3YearlyConsistencyTitle,
+                      subtitle: l10n.statisticsV3YearlyConsistencySubtitle,
                     ),
                     const SizedBox(height: 12),
                     StatisticsV3ProgressMessageChip(

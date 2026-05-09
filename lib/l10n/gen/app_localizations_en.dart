@@ -1296,6 +1296,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsV3WeeklyImprovementSameAsLastWeek => 'Same as last week';
 
   @override
+  String get statisticsV3YearlyConsistencyTitle => 'Yearly consistency';
+
+  @override
+  String get statisticsV3YearlyConsistencySubtitle =>
+      'Your annual rhythm at a glance';
+
+  @override
   String get statisticsV3MonthlyCalendarTitle => 'Consistency calendar';
 
   @override
