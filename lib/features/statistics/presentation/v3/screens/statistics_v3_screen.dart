@@ -15,6 +15,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_activity_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_improvement_chip.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_summary_card.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_yearly_consistency_shell.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/diary/diary_screen.dart';
@@ -78,7 +79,8 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
             onGoDiary: () => _navReplace(context, const DiaryScreen()),
             onGoArchived: () =>
                 _navReplace(context, const ArchivedHabitsScreen()),
-            onGoStats: () => _navReplace(context, const HabitStatsOverviewHost()),
+            onGoStats: () =>
+                _navReplace(context, const HabitStatsOverviewHost()),
             onGoStatsV3: () {},
             onGoProfile: () => _navReplace(context, const ProfileScreen()),
           ),
@@ -166,8 +168,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                         viewData.weeklyImprovement,
                       ),
                       activityTitle: l10n.statisticsV3DailyActivityTitle,
-                      activitySubtitle:
-                          l10n.statisticsV3DailyActivitySubtitle,
+                      activitySubtitle: l10n.statisticsV3DailyActivitySubtitle,
                       activityDays: viewData.weeklyActivity,
                     ),
                     const SizedBox(height: 12),
@@ -180,6 +181,17 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       title: l10n.statisticsV3MonthlyCalendarTitle,
                       subtitle: l10n.statisticsV3MonthlyCalendarSubtitle,
                       days: viewData.monthlyCalendarDays,
+                    ),
+                    const SizedBox(height: 12),
+                    StatisticsV3ProgressMessageChip(
+                      message: _progressMessage(viewData, l10n),
+                    ),
+                  ] else if (_period == StatisticsV3Period.year) ...[
+                    const SizedBox(height: 12),
+                    StatisticsV3YearlyConsistencyShell(
+                      title: _yearlyConsistencyTitle(context),
+                      subtitle: _yearlyConsistencySubtitle(context),
+                      months: viewData.yearlyConsistencyMonths,
                     ),
                     const SizedBox(height: 12),
                     StatisticsV3ProgressMessageChip(
@@ -262,6 +274,18 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       return l10n.statisticsV3WeeklyImprovementSameAsLastWeek;
     }
     return l10n.statisticsV3WeeklyImprovementVsLastWeek;
+  }
+
+  String _yearlyConsistencyTitle(BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode.toLowerCase();
+    return locale == 'es' ? 'Constancia anual' : 'Yearly consistency';
+  }
+
+  String _yearlyConsistencySubtitle(BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode.toLowerCase();
+    return locale == 'es'
+        ? 'Consistencia por mes en el año actual'
+        : 'Month-by-month consistency for the current year';
   }
 }
 

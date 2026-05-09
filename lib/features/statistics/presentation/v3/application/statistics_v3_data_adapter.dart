@@ -127,18 +127,15 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
       return nameA.compareTo(nameB);
     });
 
-  final highlightedItems = highlightedHabits
-      .take(3)
-      .map((entry) {
-        final habit = habitsById[entry.key];
-        return StatisticsV3HighlightedHabitItem(
-          habitId: entry.key,
-          name: _habitName(habit, fallback: l10n.habitStatsHabitFallbackTitle),
-          emoji: _habitEmoji(habit),
-          completedCount: entry.value,
-        );
-      })
-      .toList(growable: false);
+  final highlightedItems = highlightedHabits.take(3).map((entry) {
+    final habit = habitsById[entry.key];
+    return StatisticsV3HighlightedHabitItem(
+      habitId: entry.key,
+      name: _habitName(habit, fallback: l10n.habitStatsHabitFallbackTitle),
+      emoji: _habitEmoji(habit),
+      completedCount: entry.value,
+    );
+  }).toList(growable: false);
 
   final bestMoment = _buildBestMomentInsight(
     l10n: l10n,
@@ -177,6 +174,17 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     habits: habits,
     habitsById: habitsById,
   );
+  final yearlyConsistencyMonths = period == StatisticsV3Period.year
+      ? _buildYearlyConsistencyData(
+          today: today,
+          userState: userState,
+          completionsRoot: completionsRoot,
+          skipsRoot: skipsRoot,
+          countValuesRoot: countValuesRoot,
+          habits: habits,
+          habitsById: habitsById,
+        )
+      : const <StatisticsV3YearlyConsistencyMonth>[];
   final weeklyImprovement = _buildWeeklyImprovementData(
     today: today,
     userState: userState,
@@ -200,6 +208,7 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     highlightedHabits: highlightedItems,
     weeklyActivity: weeklyActivity,
     monthlyCalendarDays: monthlyCalendarDays,
+    yearlyConsistencyMonths: yearlyConsistencyMonths,
     weeklyImprovement: weeklyImprovement,
   );
 }
@@ -253,8 +262,7 @@ StatisticsV3WeeklyImprovementData _buildWeeklyImprovementData({
     hasComparison: true,
     currentWeekPercentage: currentWeekStats.percentage,
     previousWeekPercentage: previousWeekStats.percentage,
-    deltaPercentage:
-        currentWeekStats.percentage - previousWeekStats.percentage,
+    deltaPercentage: currentWeekStats.percentage - previousWeekStats.percentage,
   );
 }
 
@@ -416,6 +424,62 @@ List<StatisticsV3MonthlyCalendarDay> _buildMonthlyCalendarData({
   }, growable: false);
 }
 
+List<StatisticsV3YearlyConsistencyMonth> _buildYearlyConsistencyData({
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required Map<String, dynamic> countValuesRoot,
+  required List<Map<String, dynamic>> habits,
+  required Map<String, Map<String, dynamic>> habitsById,
+}) {
+  final year = today.year;
+
+  return List<StatisticsV3YearlyConsistencyMonth>.generate(12, (index) {
+    final month = index + 1;
+    final monthStart = DateTime(year, month, 1);
+    final isCurrentMonth = month == today.month;
+    final isFuture = monthStart.isAfter(today);
+
+    if (isFuture) {
+      return StatisticsV3YearlyConsistencyMonth(
+        month: month,
+        year: year,
+        completedCount: 0,
+        expectedCount: 0,
+        percentage: 0,
+        isCurrentMonth: false,
+        isFuture: true,
+      );
+    }
+
+    final monthEnd = isCurrentMonth
+        ? today
+        : DateTime(year, month, DateUtils.getDaysInMonth(year, month));
+    final monthStats = _buildPeriodConsistencyStats(
+      start: monthStart,
+      end: monthEnd,
+      today: today,
+      userState: userState,
+      completionsRoot: completionsRoot,
+      skipsRoot: skipsRoot,
+      countValuesRoot: countValuesRoot,
+      habits: habits,
+      habitsById: habitsById,
+    );
+
+    return StatisticsV3YearlyConsistencyMonth(
+      month: month,
+      year: year,
+      completedCount: monthStats.completedCount,
+      expectedCount: monthStats.expectedCount,
+      percentage: monthStats.percentage,
+      isCurrentMonth: isCurrentMonth,
+      isFuture: false,
+    );
+  }, growable: false);
+}
+
 StatisticsV3BestMomentInsight _buildBestMomentInsight({
   required AppLocalizations l10n,
   required Map<_MomentBucket, int> completionsByMoment,
@@ -464,7 +528,8 @@ _PeriodRange _currentPeriodRange(
     case StatisticsV3Period.week:
       return _PeriodRange(start: _startOfWeek(today), end: today);
     case StatisticsV3Period.month:
-      return _PeriodRange(start: DateTime(today.year, today.month, 1), end: today);
+      return _PeriodRange(
+          start: DateTime(today.year, today.month, 1), end: today);
     case StatisticsV3Period.year:
       return _PeriodRange(start: DateTime(today.year, 1, 1), end: today);
   }
@@ -618,8 +683,7 @@ Set<String> _expectedHabitIdsForDay({
   required List<Map<String, dynamic>> habits,
 }) {
   final expectedIds = <String>{};
-  final useCurrentHabitState =
-      dayKey == _dateKey(today) &&
+  final useCurrentHabitState = dayKey == _dateKey(today) &&
       _activeViewDateKey(userState, fallbackKey: dayKey) == dayKey;
 
   for (final habit in habits) {
@@ -675,13 +739,11 @@ bool _isArchivedHabit(Map<String, dynamic> habit) =>
     habit['archived'] == true || habit['isArchived'] == true;
 
 bool _isCountHabit(Map<String, dynamic> habit) {
-  final type = (habit['type'] ??
-          habit['trackingType'] ??
-          habit['habitType'] ??
-          '')
-      .toString()
-      .trim()
-      .toLowerCase();
+  final type =
+      (habit['type'] ?? habit['trackingType'] ?? habit['habitType'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
   return type == 'count' || type == 'counter' || type == 'numeric';
 }
 
@@ -753,7 +815,11 @@ bool _isScheduledForDate(Map<String, dynamic> habit, DateTime date) {
 }
 
 String _habitId(Map<String, dynamic> habit) {
-  return (habit['id'] ?? habit['habitId'] ?? habit['uuid'] ?? habit['key'] ?? '')
+  return (habit['id'] ??
+          habit['habitId'] ??
+          habit['uuid'] ??
+          habit['key'] ??
+          '')
       .toString()
       .trim();
 }
@@ -763,10 +829,13 @@ String _habitName(
   required String fallback,
 }) {
   if (habit == null) return fallback;
-  final raw =
-      (habit['title'] ?? habit['name'] ?? habit['habitName'] ?? habit['label'] ?? '')
-          .toString()
-          .trim();
+  final raw = (habit['title'] ??
+          habit['name'] ??
+          habit['habitName'] ??
+          habit['label'] ??
+          '')
+      .toString()
+      .trim();
   return raw.isEmpty ? fallback : raw;
 }
 

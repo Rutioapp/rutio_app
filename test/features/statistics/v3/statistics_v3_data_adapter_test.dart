@@ -16,7 +16,8 @@ void main() {
 
   group('buildStatisticsV3ViewData', () {
     group('day consistency', () {
-      test('uses completed expected habits over total expected active habits', () async {
+      test('uses completed expected habits over total expected active habits',
+          () async {
         final result = await _buildDayViewData(
           now: now,
           activeHabits: _buildDailyHabits(
@@ -30,7 +31,8 @@ void main() {
         expect(result.consistencyPct, 100);
       });
 
-      test('drops when active habits increase without more completions', () async {
+      test('drops when active habits increase without more completions',
+          () async {
         final result = await _buildDayViewData(
           now: now,
           activeHabits: _buildDailyHabits(
@@ -169,7 +171,8 @@ void main() {
         expect(result.weeklyActivity.last.date.weekday, DateTime.sunday);
       });
 
-      test('calculates completed/expected/percentage correctly for a past day', () async {
+      test('calculates completed/expected/percentage correctly for a past day',
+          () async {
         final weekNow = DateTime(2026, 5, 6, 10);
         final monday = weekNow.subtract(
           Duration(days: weekNow.weekday - DateTime.monday),
@@ -219,20 +222,25 @@ void main() {
         final allDone = await _buildWeekViewData(
           now: weekNow,
           activeHabits: [
-            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
-            _habit(id: 'habit-b', title: 'Habit B', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-b', title: 'Habit B', doneToday: true, progress: 1),
           ],
         );
 
         final oneUnticked = await _buildWeekViewData(
           now: weekNow,
           activeHabits: [
-            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
-            _habit(id: 'habit-b', title: 'Habit B', doneToday: false, progress: 0),
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-b', title: 'Habit B', doneToday: false, progress: 0),
           ],
         );
 
-        final todayAllDone = allDone.weeklyActivity.firstWhere((item) => item.isToday);
+        final todayAllDone =
+            allDone.weeklyActivity.firstWhere((item) => item.isToday);
         final todayUnticked =
             oneUnticked.weeklyActivity.firstWhere((item) => item.isToday);
 
@@ -240,7 +248,9 @@ void main() {
         expect(todayUnticked.percentage, 50);
       });
 
-      test('adding expected active habits without completion reduces today percentage', () async {
+      test(
+          'adding expected active habits without completion reduces today percentage',
+          () async {
         final weekNow = DateTime(2026, 5, 6, 10);
 
         final base = await _buildWeekViewData(
@@ -273,15 +283,17 @@ void main() {
           ],
         );
 
-        final baseToday = base.weeklyActivity.firstWhere((item) => item.isToday);
-        final newToday =
-            withNewUncompleted.weeklyActivity.firstWhere((item) => item.isToday);
+        final baseToday =
+            base.weeklyActivity.firstWhere((item) => item.isToday);
+        final newToday = withNewUncompleted.weeklyActivity
+            .firstWhere((item) => item.isToday);
 
         expect(baseToday.percentage, 100);
         expect(newToday.percentage, 50);
       });
 
-      test('count habits below target are not completed in weekly activity', () async {
+      test('count habits below target are not completed in weekly activity',
+          () async {
         final weekNow = DateTime(2026, 5, 6, 10);
 
         final result = await _buildWeekViewData(
@@ -302,23 +314,27 @@ void main() {
           ),
         );
 
-        final todayItem = result.weeklyActivity.firstWhere((item) => item.isToday);
+        final todayItem =
+            result.weeklyActivity.firstWhere((item) => item.isToday);
         expect(todayItem.expectedCount, 1);
         expect(todayItem.completedCount, 0);
         expect(todayItem.percentage, 0);
       });
 
-      test('future days are marked as future and rendered neutral data', () async {
+      test('future days are marked as future and rendered neutral data',
+          () async {
         final weekNow = DateTime(2026, 5, 6, 10);
 
         final result = await _buildWeekViewData(
           now: weekNow,
           activeHabits: [
-            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
           ],
         );
 
-        final futureDays = result.weeklyActivity.where((item) => item.isFuture).toList();
+        final futureDays =
+            result.weeklyActivity.where((item) => item.isFuture).toList();
         expect(futureDays, hasLength(4));
         for (final item in futureDays) {
           expect(item.completedCount, 0);
@@ -329,20 +345,25 @@ void main() {
     });
 
     group('monthly calendar', () {
-      test('returns the expected number of days for the current month', () async {
+      test('returns the expected number of days for the current month',
+          () async {
         final monthNow = DateTime(2026, 5, 6, 10);
         final result = await _buildMonthViewData(
           now: monthNow,
           activeHabits: [
-            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
           ],
         );
 
         expect(result.monthlyCalendarDays, hasLength(31));
-        expect(result.monthlyCalendarDays.every((day) => day.isCurrentMonth), isTrue);
+        expect(result.monthlyCalendarDays.every((day) => day.isCurrentMonth),
+            isTrue);
       });
 
-      test('calculates completed/expected/percentage correctly for a specific day', () async {
+      test(
+          'calculates completed/expected/percentage correctly for a specific day',
+          () async {
         final monthNow = DateTime(2026, 5, 6, 10);
         final mayFifth = DateTime(2026, 5, 5, 10);
 
@@ -374,16 +395,20 @@ void main() {
         final allDone = await _buildMonthViewData(
           now: monthNow,
           activeHabits: [
-            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
-            _habit(id: 'habit-b', title: 'Habit B', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-b', title: 'Habit B', doneToday: true, progress: 1),
           ],
         );
 
         final oneUnticked = await _buildMonthViewData(
           now: monthNow,
           activeHabits: [
-            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
-            _habit(id: 'habit-b', title: 'Habit B', doneToday: false, progress: 0),
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-b', title: 'Habit B', doneToday: false, progress: 0),
           ],
         );
 
@@ -396,27 +421,39 @@ void main() {
         expect(todayUnticked.percentage, 50);
       });
 
-      test('adding active unfinished habit reduces today percentage if expected today', () async {
+      test(
+          'adding active unfinished habit reduces today percentage if expected today',
+          () async {
         final monthNow = DateTime(2026, 5, 6, 10);
 
         final base = await _buildMonthViewData(
           now: monthNow,
           activeHabits: [
-            _habit(id: 'habit-existing', title: 'Existing', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-existing',
+                title: 'Existing',
+                doneToday: true,
+                progress: 1),
           ],
         );
 
         final withNewUncompleted = await _buildMonthViewData(
           now: monthNow,
           activeHabits: [
-            _habit(id: 'habit-existing', title: 'Existing', doneToday: true, progress: 1),
-            _habit(id: 'habit-new', title: 'New', doneToday: false, progress: 0),
+            _habit(
+                id: 'habit-existing',
+                title: 'Existing',
+                doneToday: true,
+                progress: 1),
+            _habit(
+                id: 'habit-new', title: 'New', doneToday: false, progress: 0),
           ],
         );
 
-        final baseToday = base.monthlyCalendarDays.firstWhere((item) => item.isToday);
-        final newToday =
-            withNewUncompleted.monthlyCalendarDays.firstWhere((item) => item.isToday);
+        final baseToday =
+            base.monthlyCalendarDays.firstWhere((item) => item.isToday);
+        final newToday = withNewUncompleted.monthlyCalendarDays
+            .firstWhere((item) => item.isToday);
 
         expect(baseToday.percentage, 100);
         expect(newToday.percentage, 50);
@@ -443,19 +480,22 @@ void main() {
           ),
         );
 
-        final todayItem = result.monthlyCalendarDays.firstWhere((item) => item.isToday);
+        final todayItem =
+            result.monthlyCalendarDays.firstWhere((item) => item.isToday);
         expect(todayItem.expectedCount, 1);
         expect(todayItem.completedCount, 0);
         expect(todayItem.percentage, 0);
       });
 
-      test('future days are marked as future and rendered neutral data', () async {
+      test('future days are marked as future and rendered neutral data',
+          () async {
         final monthNow = DateTime(2026, 5, 6, 10);
 
         final result = await _buildMonthViewData(
           now: monthNow,
           activeHabits: [
-            _habit(id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
           ],
         );
 
@@ -478,12 +518,233 @@ void main() {
         );
 
         expect(result.monthlyCalendarDays, hasLength(31));
-        expect(result.monthlyCalendarDays.every((day) => day.percentage == 0), isTrue);
+        expect(result.monthlyCalendarDays.every((day) => day.percentage == 0),
+            isTrue);
+      });
+    });
+
+    group('yearly consistency', () {
+      test('returns 12 month entries for year period', () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+
+        final result = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+          ],
+        );
+
+        expect(result.yearlyConsistencyMonths, hasLength(12));
+        expect(result.yearlyConsistencyMonths.first.month, 1);
+        expect(result.yearlyConsistencyMonths.last.month, 12);
+      });
+
+      test('calculates completed expected percentage for a past month',
+          () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 1, 1, 8), 'habit-jan');
+        _setCheckCompletion(history, DateTime(2026, 1, 2, 8), 'habit-jan');
+        _setCheckCompletion(history, DateTime(2026, 1, 3, 8), 'habit-jan');
+
+        final result = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(id: 'habit-jan', title: 'Habit Jan'),
+          ],
+          history: history,
+        );
+
+        final january = result.yearlyConsistencyMonths.firstWhere(
+          (item) => item.month == 1,
+        );
+        expect(january.expectedCount, 31);
+        expect(january.completedCount, 3);
+        expect(january.percentage, 10);
+      });
+
+      test('current month uses elapsed days only up to today', () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        for (var day = 1; day <= 10; day++) {
+          _setCheckCompletion(history, DateTime(2026, 5, day, 8), 'habit-may');
+        }
+
+        final result = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(id: 'habit-may', title: 'Habit May'),
+          ],
+          history: history,
+        );
+
+        final may = result.yearlyConsistencyMonths.firstWhere(
+          (item) => item.month == 5,
+        );
+        expect(may.expectedCount, 20);
+        expect(may.completedCount, 10);
+        expect(may.percentage, 50);
+        expect(may.isCurrentMonth, isTrue);
+      });
+
+      test('future months are marked future with neutral values', () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+
+        final result = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(id: 'habit-a', title: 'Habit A'),
+          ],
+        );
+
+        final futureMonths = result.yearlyConsistencyMonths
+            .where((item) => item.isFuture)
+            .toList();
+        expect(futureMonths, hasLength(7));
+        for (final month in futureMonths) {
+          expect(month.completedCount, 0);
+          expect(month.expectedCount, 0);
+          expect(month.percentage, 0);
+        }
+      });
+
+      test('unticking a habit reduces current month percentage', () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        for (var day = 1; day <= 20; day++) {
+          _setCheckCompletion(history, DateTime(2026, 5, day, 8), 'habit-a');
+          _setCheckCompletion(history, DateTime(2026, 5, day, 8), 'habit-b');
+        }
+
+        final allDone = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-b', title: 'Habit B', doneToday: true, progress: 1),
+          ],
+          history: history,
+        );
+        final oneUnticked = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(
+                id: 'habit-a', title: 'Habit A', doneToday: true, progress: 1),
+            _habit(
+                id: 'habit-b', title: 'Habit B', doneToday: false, progress: 0),
+          ],
+          history: history,
+        );
+
+        final mayAllDone = allDone.yearlyConsistencyMonths.firstWhere(
+          (item) => item.month == 5,
+        );
+        final mayUnticked = oneUnticked.yearlyConsistencyMonths.firstWhere(
+          (item) => item.month == 5,
+        );
+
+        expect(mayAllDone.percentage, 100);
+        expect(mayUnticked.percentage, 98);
+      });
+
+      test('adding active unfinished habit reduces current month percentage',
+          () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        for (var day = 1; day <= 20; day++) {
+          _setCheckCompletion(
+            history,
+            DateTime(2026, 5, day, 8),
+            'habit-existing',
+          );
+        }
+
+        final base = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(
+                id: 'habit-existing',
+                title: 'Existing',
+                doneToday: true,
+                progress: 1),
+          ],
+          history: history,
+        );
+        final withNewUncompleted = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(
+                id: 'habit-existing',
+                title: 'Existing',
+                doneToday: true,
+                progress: 1),
+            _habit(
+                id: 'habit-new', title: 'New', doneToday: false, progress: 0),
+          ],
+          history: history,
+        );
+
+        final mayBase =
+            base.yearlyConsistencyMonths.firstWhere((item) => item.month == 5);
+        final mayNew = withNewUncompleted.yearlyConsistencyMonths.firstWhere(
+          (item) => item.month == 5,
+        );
+
+        expect(mayBase.percentage, 100);
+        expect(mayNew.percentage, 50);
+      });
+
+      test('count habit below target is not completed', () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+        final history = _historyForDay(
+          yearNow,
+          countValues: {'count-yearly': 4},
+        );
+
+        final result = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(
+              id: 'count-yearly',
+              title: 'Count Yearly',
+              type: 'count',
+              target: 5,
+              progress: 4,
+              doneToday: false,
+            ),
+          ],
+          history: history,
+        );
+
+        final may = result.yearlyConsistencyMonths.firstWhere(
+          (item) => item.month == 5,
+        );
+        expect(may.expectedCount, 20);
+        expect(may.completedCount, 0);
+        expect(may.percentage, 0);
+      });
+
+      test('empty data does not crash', () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+
+        final result = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: const <Map<String, dynamic>>[],
+        );
+
+        expect(result.yearlyConsistencyMonths, hasLength(12));
+        expect(
+            result.yearlyConsistencyMonths
+                .every((month) => month.percentage == 0),
+            isTrue);
       });
     });
 
     group('weekly improvement', () {
-      test('computes +12 delta when current week is 82 and previous week is 70', () async {
+      test('computes +12 delta when current week is 82 and previous week is 70',
+          () async {
         final weekNow = DateTime(2026, 5, 6, 10);
         final currentMonday = _startOfWeek(weekNow);
         final previousMonday = currentMonday.subtract(const Duration(days: 7));
@@ -494,10 +755,12 @@ void main() {
         final history = _emptyHistory();
 
         for (var index = 0; index < 82; index++) {
-          _setCheckCompletion(history, currentMonday, 'weekly-habit-${index + 1}');
+          _setCheckCompletion(
+              history, currentMonday, 'weekly-habit-${index + 1}');
         }
         for (var index = 0; index < 70; index++) {
-          _setCheckCompletion(history, previousMonday, 'weekly-habit-${index + 1}');
+          _setCheckCompletion(
+              history, previousMonday, 'weekly-habit-${index + 1}');
         }
 
         final result = await _buildWeekViewData(
@@ -512,7 +775,8 @@ void main() {
         expect(result.weeklyImprovement.deltaPercentage, 12);
       });
 
-      test('computes -8 delta when current week is 65 and previous week is 73', () async {
+      test('computes -8 delta when current week is 65 and previous week is 73',
+          () async {
         final weekNow = DateTime(2026, 5, 6, 10);
         final currentMonday = _startOfWeek(weekNow);
         final previousMonday = currentMonday.subtract(const Duration(days: 7));
@@ -523,10 +787,12 @@ void main() {
         final history = _emptyHistory();
 
         for (var index = 0; index < 65; index++) {
-          _setCheckCompletion(history, currentMonday, 'weekly-habit-${index + 1}');
+          _setCheckCompletion(
+              history, currentMonday, 'weekly-habit-${index + 1}');
         }
         for (var index = 0; index < 73; index++) {
-          _setCheckCompletion(history, previousMonday, 'weekly-habit-${index + 1}');
+          _setCheckCompletion(
+              history, previousMonday, 'weekly-habit-${index + 1}');
         }
 
         final result = await _buildWeekViewData(
@@ -541,7 +807,9 @@ void main() {
         expect(result.weeklyImprovement.deltaPercentage, -8);
       });
 
-      test('returns zero delta when current and previous week percentages are equal', () async {
+      test(
+          'returns zero delta when current and previous week percentages are equal',
+          () async {
         final weekNow = DateTime(2026, 5, 6, 10);
         final currentMonday = _startOfWeek(weekNow);
         final previousMonday = currentMonday.subtract(const Duration(days: 7));
@@ -569,7 +837,8 @@ void main() {
         expect(result.weeklyImprovement.deltaPercentage, 0);
       });
 
-      test('returns no comparison when previous week has no expected habits', () async {
+      test('returns no comparison when previous week has no expected habits',
+          () async {
         final weekNow = DateTime(2026, 5, 6, 10);
         final currentMonday = _startOfWeek(weekNow);
         final habits = _buildWeeklyHabits(
@@ -580,7 +849,8 @@ void main() {
         final history = _emptyHistory();
 
         for (var index = 0; index < 6; index++) {
-          _setCheckCompletion(history, currentMonday, 'weekly-habit-${index + 1}');
+          _setCheckCompletion(
+              history, currentMonday, 'weekly-habit-${index + 1}');
         }
 
         final result = await _buildWeekViewData(
@@ -623,7 +893,8 @@ void main() {
       test('uses full previous week window for previous consistency', () async {
         final weekNow = DateTime(2026, 5, 6, 10);
         final currentWeekStart = _startOfWeek(weekNow);
-        final previousSunday = currentWeekStart.subtract(const Duration(days: 1));
+        final previousSunday =
+            currentWeekStart.subtract(const Duration(days: 1));
         final history = _emptyHistory();
         _setCheckCompletion(history, previousSunday, 'sunday-habit');
 
@@ -648,7 +919,8 @@ void main() {
         expect(result.weeklyImprovement.deltaPercentage, -100);
       });
 
-      test('count habits below target remain unfinished for weekly improvement', () async {
+      test('count habits below target remain unfinished for weekly improvement',
+          () async {
         final weekNow = DateTime(2026, 5, 6, 10);
         final currentMonday = _startOfWeek(weekNow);
         final previousMonday = currentMonday.subtract(const Duration(days: 7));
@@ -712,7 +984,9 @@ void main() {
         );
       });
 
-      test('returns only the available habits when fewer than 3 have completions', () async {
+      test(
+          'returns only the available habits when fewer than 3 have completions',
+          () async {
         final result = await _buildMonthViewData(
           now: now,
           activeHabits: [
@@ -743,7 +1017,8 @@ void main() {
     });
 
     group('families', () {
-      test('aggregates completions by family and returns up to 4 entries', () async {
+      test('aggregates completions by family and returns up to 4 entries',
+          () async {
         final result = await _buildMonthViewData(
           now: now,
           activeHabits: [
@@ -835,7 +1110,8 @@ void main() {
         expect(result.families, isEmpty);
       });
 
-      test('unknown or deleted habit ids in completions do not crash', () async {
+      test('unknown or deleted habit ids in completions do not crash',
+          () async {
         final result = await _buildMonthViewData(
           now: now,
           activeHabits: [
@@ -894,6 +1170,19 @@ Future<StatisticsV3ViewData> _buildMonthViewData({
 }) async {
   return _buildViewData(
     period: StatisticsV3Period.month,
+    now: now,
+    activeHabits: activeHabits,
+    history: history,
+  );
+}
+
+Future<StatisticsV3ViewData> _buildYearViewData({
+  required DateTime now,
+  required List<Map<String, dynamic>> activeHabits,
+  Map<String, dynamic>? history,
+}) async {
+  return _buildViewData(
+    period: StatisticsV3Period.year,
     now: now,
     activeHabits: activeHabits,
     history: history,
@@ -1045,11 +1334,11 @@ void _setCheckCompletion(
   final dayKey = _dateKey(day);
   final completionsRoot =
       history['habitCompletions'] as Map<String, dynamic>? ??
-      <String, dynamic>{};
+          <String, dynamic>{};
   history['habitCompletions'] = completionsRoot;
   final completionTimesRoot =
       history['habitCompletionTimes'] as Map<String, dynamic>? ??
-      <String, dynamic>{};
+          <String, dynamic>{};
   history['habitCompletionTimes'] = completionTimesRoot;
 
   final completions = _ensureDayMap(completionsRoot, dayKey);
@@ -1072,7 +1361,7 @@ void _setCountValue(
   final dayKey = _dateKey(day);
   final countValuesRoot =
       history['habitCountValues'] as Map<String, dynamic>? ??
-      <String, dynamic>{};
+          <String, dynamic>{};
   history['habitCountValues'] = countValuesRoot;
 
   final countValues = _ensureDayMap(countValuesRoot, dayKey);
@@ -1142,8 +1431,7 @@ Map<String, dynamic> _habit({
     'skippedToday': false,
     if (familyId != null) 'familyId': familyId,
     if (createdAt != null) 'createdAt': createdAt.toIso8601String(),
-    'schedule':
-        schedule ??
+    'schedule': schedule ??
         <String, dynamic>{
           'type': 'daily',
         },
@@ -1170,7 +1458,8 @@ class _FakeStatisticsV3Store implements UserStateStore {
     if (habits is! List) return const <Map<String, dynamic>>[];
     return habits
         .whereType<Map>()
-        .map((entry) => Map<String, dynamic>.from(entry.cast<String, dynamic>()))
+        .map(
+            (entry) => Map<String, dynamic>.from(entry.cast<String, dynamic>()))
         .toList(growable: false);
   }
 

@@ -87,6 +87,26 @@ class StatisticsV3MonthlyCalendarDay {
   final bool isCurrentMonth;
 }
 
+class StatisticsV3YearlyConsistencyMonth {
+  const StatisticsV3YearlyConsistencyMonth({
+    required this.month,
+    required this.year,
+    required this.completedCount,
+    required this.expectedCount,
+    required this.percentage,
+    required this.isCurrentMonth,
+    required this.isFuture,
+  });
+
+  final int month;
+  final int year;
+  final int completedCount;
+  final int expectedCount;
+  final int percentage;
+  final bool isCurrentMonth;
+  final bool isFuture;
+}
+
 class StatisticsV3WeeklyImprovementData {
   const StatisticsV3WeeklyImprovementData({
     required this.hasComparison,
@@ -114,6 +134,7 @@ class StatisticsV3ViewData {
     required this.highlightedHabits,
     required this.weeklyActivity,
     required this.monthlyCalendarDays,
+    required this.yearlyConsistencyMonths,
     required this.weeklyImprovement,
   });
 
@@ -128,5 +149,6 @@ class StatisticsV3ViewData {
   final List<StatisticsV3HighlightedHabitItem> highlightedHabits;
   final List<StatisticsV3WeeklyActivityDay> weeklyActivity;
   final List<StatisticsV3MonthlyCalendarDay> monthlyCalendarDays;
+  final List<StatisticsV3YearlyConsistencyMonth> yearlyConsistencyMonths;
   final StatisticsV3WeeklyImprovementData weeklyImprovement;
 }
