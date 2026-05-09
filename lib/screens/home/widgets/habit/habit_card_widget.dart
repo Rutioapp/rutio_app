@@ -327,7 +327,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(radius),
-                onTap: openDefault,
+                onTap: widget.onTap ?? openDefault,
                 child: Padding(
                   padding: const EdgeInsets.only(left: 16, right: 8),
                   child: Row(

@@ -43,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // =========================
   bool _showCompleted = false;
   bool _showSkipped = false;
+  String? _revealedHomeSwipeHabitId;
   final NotificationPermissionController _notificationPermissionController =
       NotificationPermissionController();
   bool _didQueuePostLoginNotificationPrompt = false;
