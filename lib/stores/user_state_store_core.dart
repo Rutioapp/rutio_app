@@ -243,7 +243,7 @@ void _hydrateActiveHabitsForDate(
     final habitId = (habit['id'] ?? '').toString();
     final type = (habit['type'] ?? 'check').toString();
 
-    if (!_isScheduledForDate(habit, date)) {
+    if (!_isHabitExpectedForDate(habit, date)) {
       habit['doneToday'] = false;
       habit['skippedToday'] = false;
       habit['progress'] = 0;
@@ -322,6 +322,53 @@ bool _isScheduledForDate(Map<String, dynamic> habit, DateTime date) {
   }
 
   return true;
+}
+
+bool _isHabitExpectedForDate(Map<String, dynamic> habit, DateTime date) {
+  if (_isArchivedHabit(habit)) return false;
+  if (!_wasHabitCreatedByDay(habit, date)) return false;
+  return _isScheduledForDate(habit, date);
+}
+
+bool _isArchivedHabit(Map<String, dynamic> habit) =>
+    habit['archived'] == true || habit['isArchived'] == true;
+
+bool _wasHabitCreatedByDay(Map<String, dynamic> habit, DateTime day) {
+  final createdAt = _parseHabitDate(
+    habit['createdAt'] ??
+        habit['created_at'] ??
+        habit['createdDate'] ??
+        habit['dateCreated'],
+  );
+  if (createdAt == null) return true;
+  return !_dateOnly(createdAt.toLocal()).isAfter(_dateOnly(day));
+}
+
+DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
+
+DateTime? _parseHabitDate(dynamic value) {
+  if (value is DateTime) return value;
+  if (value is int) {
+    return DateTime.fromMillisecondsSinceEpoch(value).toLocal();
+  }
+  if (value is num) {
+    return DateTime.fromMillisecondsSinceEpoch(value.toInt()).toLocal();
+  }
+
+  final raw = (value ?? '').toString().trim();
+  if (raw.isEmpty) return null;
+
+  final parsed = DateTime.tryParse(raw);
+  if (parsed != null) return parsed.toLocal();
+
+  final dateKeyMatch = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(raw);
+  if (dateKeyMatch == null) return null;
+
+  return DateTime(
+    int.parse(dateKeyMatch.group(1)!),
+    int.parse(dateKeyMatch.group(2)!),
+    int.parse(dateKeyMatch.group(3)!),
+  );
 }
 
 void _touchLastSavedAt(Map<String, dynamic> userState) {

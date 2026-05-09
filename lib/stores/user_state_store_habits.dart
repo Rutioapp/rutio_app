@@ -1411,7 +1411,7 @@ Future<void> _setCountHabitValue(
   if (index == -1) return;
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
-  if (!_isScheduledForDate(habit, DateTime.now())) return;
+  if (!_isHabitExpectedForDate(habit, DateTime.now())) return;
   if (!_isCountHabit(habit)) return;
 
   final rewardAlreadyGranted =
@@ -1511,7 +1511,7 @@ Future<void> _completeHabit(
   if (index == -1) return;
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
-  if (!_isScheduledForDate(habit, DateTime.now())) return;
+  if (!_isHabitExpectedForDate(habit, DateTime.now())) return;
 
   final type = _normalizedHabitType(habit['type']);
   final rewardAlreadyGranted =
@@ -1620,7 +1620,7 @@ Future<void> _toggleHabitDoneForDate(
   if (index == -1) return;
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
-  if (!_isScheduledForDate(habit, date)) return;
+  if (!_isHabitExpectedForDate(habit, date)) return;
 
   final dayKey = _dateKey(date);
   final history = _ensureHistoryRoot(userState);
@@ -1665,28 +1665,26 @@ Future<void> _setHabitCompletionForKey(
   _ensureDailyReset(userState);
 
   final date = _dateFromKey(dateKey);
+  final activeHabits = _mutableActiveHabits(userState);
+  final index = _activeHabitIndex(activeHabits, habitId);
+  if (index == -1) return;
+  final habit = Map<String, dynamic>.from(activeHabits[index]);
+  if (!_isHabitExpectedForDate(habit, date)) return;
 
   if (_isSameDay(date, DateTime.now())) {
     if (done) {
       await store.completeHabit(habitId: habitId);
       return;
     }
+    final type = _normalizedHabitType(habit['type']);
 
-    final activeHabits = _mutableActiveHabits(userState);
+    habit['doneToday'] = false;
+    habit['skippedToday'] = false;
+    habit['progress'] =
+        type == 'count' ? _safeNum(habit['progress'], fallback: 0) : 0;
 
-    final index = _activeHabitIndex(activeHabits, habitId);
-    if (index != -1) {
-      final habit = Map<String, dynamic>.from(activeHabits[index]);
-      final type = _normalizedHabitType(habit['type']);
-
-      habit['doneToday'] = false;
-      habit['skippedToday'] = false;
-      habit['progress'] =
-          type == 'count' ? _safeNum(habit['progress'], fallback: 0) : 0;
-
-      activeHabits[index] = habit;
-      userState['activeHabits'] = activeHabits;
-    }
+    activeHabits[index] = habit;
+    userState['activeHabits'] = activeHabits;
   }
 
   _setHabitCompletionTimeState(
@@ -1738,33 +1736,31 @@ Future<void> _setHabitSkipForKey(
   _ensureDailyReset(userState);
 
   final date = _dateFromKey(dateKey);
+  final activeHabits = _mutableActiveHabits(userState);
+  final index = _activeHabitIndex(activeHabits, habitId);
+  if (index == -1) return;
+  final habit = Map<String, dynamic>.from(activeHabits[index]);
+  if (!_isHabitExpectedForDate(habit, date)) return;
 
   if (_isSameDay(date, DateTime.now())) {
-    final activeHabits = _mutableActiveHabits(userState);
-
-    final index = _activeHabitIndex(activeHabits, habitId);
-    if (index != -1) {
-      final habit = Map<String, dynamic>.from(activeHabits[index]);
-
-      habit['skippedToday'] = skipped;
-      if (skipped) {
-        habit['doneToday'] = false;
-        if (_isCountHabit(habit)) {
-          habit['progress'] = 0;
-        }
-
-        _setHabitCompletionTimeState(
-          userState,
-          dateKey: dateKey,
-          habitId: habitId,
-          done: false,
-          epochMillis: 0,
-        );
+    habit['skippedToday'] = skipped;
+    if (skipped) {
+      habit['doneToday'] = false;
+      if (_isCountHabit(habit)) {
+        habit['progress'] = 0;
       }
 
-      activeHabits[index] = habit;
-      userState['activeHabits'] = activeHabits;
+      _setHabitCompletionTimeState(
+        userState,
+        dateKey: dateKey,
+        habitId: habitId,
+        done: false,
+        epochMillis: 0,
+      );
     }
+
+    activeHabits[index] = habit;
+    userState['activeHabits'] = activeHabits;
   }
 
   _setHabitSkipForDay(
@@ -1839,7 +1835,7 @@ Future<void> _setCountHabitValueForDate(
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
   if (!_isCountHabit(habit)) return;
-  if (!_isScheduledForDate(habit, date)) return;
+  if (!_isHabitExpectedForDate(habit, date)) return;
 
   final target = _habitTarget(habit);
   final safeValue = _safeDouble(value, fallback: 0).clamp(0, double.infinity);
