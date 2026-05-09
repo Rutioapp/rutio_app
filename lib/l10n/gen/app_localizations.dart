@@ -362,6 +362,42 @@ abstract class AppLocalizations {
   /// **'Añadir'**
   String get commonAdd;
 
+  /// No description provided for @homeSwipeActionSkip.
+  ///
+  /// In es, this message translates to:
+  /// **'Saltar'**
+  String get homeSwipeActionSkip;
+
+  /// No description provided for @homeSwipeActionEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar'**
+  String get homeSwipeActionEdit;
+
+  /// No description provided for @homeSwipeActionDelete.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get homeSwipeActionDelete;
+
+  /// No description provided for @homeSwipeDeleteConfirmTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar hábito'**
+  String get homeSwipeDeleteConfirmTitle;
+
+  /// No description provided for @homeSwipeDeleteConfirmBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Se borrará el hábito y su historial. Esta acción no se puede deshacer.'**
+  String get homeSwipeDeleteConfirmBody;
+
+  /// No description provided for @homeSwipeDeleteConfirmAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get homeSwipeDeleteConfirmAction;
+
   /// No description provided for @levelUpNormalTitle.
   ///
   /// In es, this message translates to:

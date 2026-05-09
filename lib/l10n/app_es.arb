@@ -64,6 +64,12 @@
   "commonSave": "Guardar",
   "commonClose": "Cerrar",
   "commonAdd": "Añadir",
+  "homeSwipeActionSkip": "Saltar",
+  "homeSwipeActionEdit": "Editar",
+  "homeSwipeActionDelete": "Eliminar",
+  "homeSwipeDeleteConfirmTitle": "Eliminar hábito",
+  "homeSwipeDeleteConfirmBody": "Se borrará el hábito y su historial. Esta acción no se puede deshacer.",
+  "homeSwipeDeleteConfirmAction": "Eliminar",
   "levelUpNormalTitle": "Enhorabuena",
   "levelUpNormalSubtitle": "Has subido al nivel {level}.",
   "@levelUpNormalSubtitle": {

@@ -64,6 +64,12 @@
     "commonSave":  "Save",
     "commonClose":  "Close",
     "commonAdd":  "Add",
+    "homeSwipeActionSkip": "Skip",
+    "homeSwipeActionEdit": "Edit",
+    "homeSwipeActionDelete": "Delete",
+    "homeSwipeDeleteConfirmTitle": "Delete habit",
+    "homeSwipeDeleteConfirmBody": "The habit and its history will be deleted. This action cannot be undone.",
+    "homeSwipeDeleteConfirmAction": "Delete",
     "levelUpNormalTitle":  "Congratulations",
     "levelUpNormalSubtitle":  "You reached level {level}.",
     "@levelUpNormalSubtitle":  {

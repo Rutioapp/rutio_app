@@ -149,6 +149,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonAdd => 'Add';
 
   @override
+  String get homeSwipeActionSkip => 'Skip';
+
+  @override
+  String get homeSwipeActionEdit => 'Edit';
+
+  @override
+  String get homeSwipeActionDelete => 'Delete';
+
+  @override
+  String get homeSwipeDeleteConfirmTitle => 'Delete habit';
+
+  @override
+  String get homeSwipeDeleteConfirmBody =>
+      'The habit and its history will be deleted. This action cannot be undone.';
+
+  @override
+  String get homeSwipeDeleteConfirmAction => 'Delete';
+
+  @override
   String get levelUpNormalTitle => 'Congratulations';
 
   @override
