@@ -120,6 +120,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get homeSkippedToday => 'Omitido hoy';
+
+  @override
   String get homeEmptyStateMultiline =>
       'Aún no tienes hábitos activos.\nPulsa “Nuevo” para añadir el primero.';
 

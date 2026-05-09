@@ -295,6 +295,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       familyColor: familyColor,
       progress: progress01,
       isCompleted: doneToday && !skippedToday,
+      isSkipped: skippedToday,
       isCounting: isCounting,
       completionBurstText: completionBurstText,
       onCheckTap: () async {
@@ -440,7 +441,10 @@ class _HomeSwipeActionTray extends StatefulWidget {
 
   static const double _actionWidth = 78;
   static const double _openThresholdRatio = 0.30;
-  static const double _rightCompleteThreshold = 72;
+  static const double _rightVisualLimit = 84;
+  static const double _rightCompleteThreshold = 54;
+  static const double _rightFlingMinOffset = 26;
+  static const double _rightFlingVelocity = 520;
 
   @override
   State<_HomeSwipeActionTray> createState() => _HomeSwipeActionTrayState();
@@ -453,7 +457,7 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
 
   double _offset = 0;
   bool _isDragging = false;
-  double _rightDragDistance = 0;
+  bool _startedFromOpenTray = false;
 
   double get _revealWidth => _HomeSwipeActionTray._actionWidth * 3;
   double get _openOffset => -_revealWidth;
@@ -491,7 +495,8 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
   }
 
   void _animateTo(double target) {
-    final clampedTarget = target.clamp(_openOffset, 0.0);
+    final clampedTarget =
+        target.clamp(_openOffset, _HomeSwipeActionTray._rightVisualLimit);
     if ((_offset - clampedTarget).abs() < 0.5) {
       setState(() => _offset = clampedTarget);
       return;
@@ -514,7 +519,7 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
 
   void _handleHorizontalStart(DragStartDetails details) {
     _isDragging = true;
-    _rightDragDistance = 0;
+    _startedFromOpenTray = widget.isOpen || _offset < -0.5;
     widget.onRequestCloseOthers();
     _controller.stop();
   }
@@ -523,8 +528,29 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
     final dx = details.delta.dx;
     if (dx == 0) return;
 
-    if (dx > 0 && _offset == 0) {
-      _rightDragDistance += dx;
+    if (dx > 0) {
+      if (_offset < 0) {
+        final nextOffset = (_offset + dx).clamp(_openOffset, 0.0);
+        if (nextOffset == _offset) return;
+        setState(() {
+          _offset = nextOffset;
+        });
+        return;
+      }
+
+      if (!widget.canSwipeRightComplete || widget.onSwipeRightComplete == null) {
+        return;
+      }
+
+      final dragFactor = _offset > (_HomeSwipeActionTray._rightVisualLimit * 0.55)
+          ? 0.42
+          : 0.72;
+      final nextOffset =
+          (_offset + (dx * dragFactor)).clamp(0.0, _HomeSwipeActionTray._rightVisualLimit);
+      if (nextOffset == _offset) return;
+      setState(() {
+        _offset = nextOffset;
+      });
       return;
     }
 
@@ -542,19 +568,23 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
   Future<void> _handleHorizontalEnd(DragEndDetails details) async {
     _isDragging = false;
     final rightVelocity = details.velocity.pixelsPerSecond.dx;
-
-    if (_offset == 0 &&
+    final canCompleteFromSwipe = !_startedFromOpenTray &&
         widget.canSwipeRightComplete &&
-        widget.onSwipeRightComplete != null &&
-        (_rightDragDistance >= _HomeSwipeActionTray._rightCompleteThreshold ||
-            rightVelocity >= 420)) {
-      _rightDragDistance = 0;
+        widget.onSwipeRightComplete != null;
+    final passedRightThreshold =
+        _offset >= _HomeSwipeActionTray._rightCompleteThreshold;
+    final flingRight = rightVelocity >= _HomeSwipeActionTray._rightFlingVelocity &&
+        _offset >= _HomeSwipeActionTray._rightFlingMinOffset;
+
+    if (canCompleteFromSwipe && (passedRightThreshold || flingRight)) {
+      _startedFromOpenTray = false;
+      _animateTo(0);
       await widget.onSwipeRightComplete!.call();
       return;
     }
-    _rightDragDistance = 0;
+    _startedFromOpenTray = false;
 
-    if (_offset >= 0) {
+    if (_offset > 0) {
       _animateTo(0);
       return;
     }
@@ -578,11 +608,38 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
     final revealWidth = _revealWidth;
     final verticalInset = widget.compact ? 6.0 : 8.0;
     final radius = widget.compact ? 18.0 : 20.0;
-    final progress = (_offset.abs() / revealWidth).clamp(0.0, 1.0);
-    final showTray = progress > 0.001;
+    final revealProgress = ((_offset < 0 ? _offset.abs() : 0.0) / revealWidth)
+        .clamp(0.0, 1.0);
+    final showTray = revealProgress > 0.001;
+    final rightProgress =
+        (_offset / _HomeSwipeActionTray._rightVisualLimit).clamp(0.0, 1.0);
+    final showRightCue = widget.canSwipeRightComplete && rightProgress > 0.001;
 
     return Stack(
       children: [
+        if (showRightCue)
+          Positioned.fill(
+            child: Container(
+              margin: EdgeInsets.symmetric(vertical: verticalInset),
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemGreen
+                    .withValues(alpha: 0.04 + (0.06 * rightProgress)),
+                borderRadius: BorderRadius.circular(radius),
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Icon(
+                    CupertinoIcons.check_mark_circled_solid,
+                    size: 20,
+                    color: CupertinoColors.systemGreen
+                        .withValues(alpha: 0.34 + (0.22 * rightProgress)),
+                  ),
+                ),
+              ),
+            ),
+          ),
         if (showTray)
           Positioned.fill(
             child: Container(

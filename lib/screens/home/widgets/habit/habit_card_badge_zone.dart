@@ -122,3 +122,51 @@ class HabitCountBadge extends StatelessWidget {
     );
   }
 }
+
+class HabitSkippedBadge extends StatelessWidget {
+  const HabitSkippedBadge({
+    super.key,
+    required this.label,
+    required this.compact,
+  });
+
+  final String label;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final background = brightness == Brightness.dark
+        ? const Color(0xFF2C2A25)
+        : const Color(0xFFF2EBDD);
+    final border = brightness == Brightness.dark
+        ? const Color(0xFF474039)
+        : const Color(0xFFE1D8C7);
+    final foreground = brightness == Brightness.dark
+        ? const Color(0xFFD8D1C3)
+        : const Color(0xFF72695C);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 9,
+        vertical: compact ? 4 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: border),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: compact ? 10.5 : 11,
+          fontWeight: FontWeight.w700,
+          color: foreground,
+          letterSpacing: -0.1,
+        ),
+      ),
+    );
+  }
+}

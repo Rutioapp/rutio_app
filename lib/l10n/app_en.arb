@@ -47,15 +47,16 @@
                                                                }
                                                  }
                             },
-    "homeSkippedCount":  "Skipped ({count})",
-    "@homeSkippedCount":  {
+  "homeSkippedCount":  "Skipped ({count})",
+  "@homeSkippedCount":  {
                               "placeholders":  {
                                                    "count":  {
                                                                  "type":  "String"
                                                              }
                                                }
                           },
-    "homeEmptyStateMultiline":  "You still have no active habits.\nTap “New” to add your first one.",
+  "homeSkippedToday":  "Skipped today",
+  "homeEmptyStateMultiline":  "You still have no active habits.\nTap “New” to add your first one.",
     "homeEmptyStateSingleLine":  "You still have no active habits. Tap “New” to add your first one.",
     "homeEditCounterTitle":  "Edit counter",
     "homeEditCounterHint":  "Enter a number",

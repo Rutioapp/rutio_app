@@ -55,6 +55,7 @@
       }
     }
   },
+  "homeSkippedToday": "Omitido hoy",
   "homeEmptyStateMultiline": "Aún no tienes hábitos activos.\nPulsa “Nuevo” para añadir el primero.",
   "homeEmptyStateSingleLine": "Aún no tienes hábitos activos. Pulsa “Nuevo” para añadir el primero.",
   "homeEditCounterTitle": "Editar contador",

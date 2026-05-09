@@ -308,6 +308,12 @@ abstract class AppLocalizations {
   /// **'Skipeados ({count})'**
   String homeSkippedCount(String count);
 
+  /// No description provided for @homeSkippedToday.
+  ///
+  /// In es, this message translates to:
+  /// **'Omitido hoy'**
+  String get homeSkippedToday;
+
   /// No description provided for @homeEmptyStateMultiline.
   ///
   /// In es, this message translates to:

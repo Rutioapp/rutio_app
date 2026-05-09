@@ -18,6 +18,7 @@ class HabitCardWidget extends StatefulWidget {
   final double progress;
 
   final bool isCompleted;
+  final bool isSkipped;
   final VoidCallback? onCheckTap;
 
   final bool isCounting;
@@ -50,6 +51,7 @@ class HabitCardWidget extends StatefulWidget {
     this.emoji,
     this.onEmojiTap,
     this.isCompleted = false,
+    this.isSkipped = false,
     this.onCheckTap,
     this.isCounting = false,
     this.compact = false,
@@ -190,6 +192,8 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     final radius = widget.compact ? 18.0 : 20.0;
     final verticalPadding = widget.compact ? 8.0 : 10.0;
     // IOS-FIRST IMPROVEMENT END
+    final isSkipped = widget.isSkipped;
+    final controlOpacity = isSkipped ? 0.82 : 1.0;
     final reminderLabel = widget.reminderLabel?.trim();
     final hasReminder = reminderLabel != null && reminderLabel.isNotEmpty;
     final compactCountLabel =
@@ -208,12 +212,20 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                 widget.unitLabel!.trim(),
               )
         : null;
-    final badgeZone = hasReminder || widget.isCounting
+    final badgeZone = hasReminder || widget.isCounting || isSkipped
         ? HabitCardBadgeZone(
             familyColor: widget.familyColor,
             compact: widget.compact,
             reminderLabel: reminderLabel,
             countLabel: countInfoLabel,
+            extraBadges: isSkipped
+                ? [
+                    HabitSkippedBadge(
+                      label: context.l10n.homeSkippedToday,
+                      compact: widget.compact,
+                    ),
+                  ]
+                : const <Widget>[],
           )
         : null;
 
@@ -270,45 +282,49 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
               ],
             ),
           ),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: widget.onCheckTap,
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Center(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOut,
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: widget.familyColor, width: 1.6),
-                    color: widget.isCompleted
-                        ? widget.familyColor
-                        : Colors.transparent,
-                  ),
-                  child: AnimatedSwitcher(
+          Opacity(
+            opacity: controlOpacity,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.onCheckTap,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    transitionBuilder: (child, animation) {
-                      return ScaleTransition(
-                        scale: animation,
-                        child: FadeTransition(opacity: animation, child: child),
-                      );
-                    },
-                    child: widget.isCompleted
-                        ? const Icon(
-                            CupertinoIcons.check_mark,
-                            key: ValueKey('done'),
-                            size: 17,
-                            color: Colors.white,
-                          )
-                        : const SizedBox(
-                            key: ValueKey('empty'),
-                            width: 18,
-                            height: 18,
-                          ),
+                    curve: Curves.easeOut,
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: widget.familyColor, width: 1.6),
+                      color: widget.isCompleted
+                          ? widget.familyColor
+                          : Colors.transparent,
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      transitionBuilder: (child, animation) {
+                        return ScaleTransition(
+                          scale: animation,
+                          child:
+                              FadeTransition(opacity: animation, child: child),
+                        );
+                      },
+                      child: widget.isCompleted
+                          ? const Icon(
+                              CupertinoIcons.check_mark,
+                              key: ValueKey('done'),
+                              size: 17,
+                              color: Colors.white,
+                            )
+                          : const SizedBox(
+                              key: ValueKey('empty'),
+                              width: 18,
+                              height: 18,
+                            ),
+                    ),
                   ),
                 ),
               ),
@@ -362,28 +378,34 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
               ),
             ),
           ),
-          _CircleButton(
-            icon: CupertinoIcons.minus,
-            onTap: widget.onDecrement,
+          Opacity(
+            opacity: controlOpacity,
+            child: _CircleButton(
+              icon: CupertinoIcons.minus,
+              onTap: widget.onDecrement,
+            ),
           ),
           const SizedBox(width: IosSpacing.xs),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: widget.onCountTap,
-            child: SizedBox(
-              width: 52,
-              height: 52,
-              child: CustomPaint(
-                painter: _ProgressRingPainter(
-                  progress: ringProgress,
-                  progressColor: widget.familyColor,
-                ),
-                child: Center(
-                  child: Text(
-                    '${_formatCountLabel(widget.currentCount)}/${_formatCountLabel(widget.targetCount)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11.5,
+          Opacity(
+            opacity: controlOpacity,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.onCountTap,
+              child: SizedBox(
+                width: 52,
+                height: 52,
+                child: CustomPaint(
+                  painter: _ProgressRingPainter(
+                    progress: ringProgress,
+                    progressColor: widget.familyColor,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${_formatCountLabel(widget.currentCount)}/${_formatCountLabel(widget.targetCount)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11.5,
+                      ),
                     ),
                   ),
                 ),
@@ -391,9 +413,12 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
             ),
           ),
           const SizedBox(width: IosSpacing.xs),
-          _CircleButton(
-            icon: CupertinoIcons.add,
-            onTap: widget.onIncrement,
+          Opacity(
+            opacity: controlOpacity,
+            child: _CircleButton(
+              icon: CupertinoIcons.add,
+              onTap: widget.onIncrement,
+            ),
           ),
           const SizedBox(width: 12),
         ],
