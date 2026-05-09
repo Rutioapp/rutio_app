@@ -14,6 +14,11 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
     return !a;
   }).toList(growable: false);
 
+  // Solo los hábitos esperados en la fecha seleccionada cuentan para Home.
+  final expectedHabits = visibleHabits
+      .where((habit) => isHabitExpectedForDate(habit, selectedDay))
+      .toList(growable: false);
+
   // =========================
   // 📅 VIAJE POR DÍAS: snapshot del día seleccionado
   // =========================
@@ -27,7 +32,7 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
   final selectedDoneMap = _map(habitCompletions[selectedKey]);
   final selectedCountMap = _map(habitCountValues[selectedKey]);
 
-  final List<Map<String, dynamic>> viewHabits = visibleHabits.map((h) {
+  final List<Map<String, dynamic>> viewHabits = expectedHabits.map((h) {
     final id = (h['id'] ?? '').toString();
     final type = (h['type'] ?? 'check').toString();
     final out = Map<String, dynamic>.from(h);
@@ -95,4 +100,71 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
     xpProgress: xpProgress,
     coins: coins,
   );
+}
+
+bool isHabitExpectedForDate(Map<String, dynamic> habit, DateTime date) {
+  if (_isArchivedHabit(habit)) return false;
+  if (!_wasHabitCreatedByDay(habit, date)) return false;
+  return _isHabitScheduledForDate(habit, date);
+}
+
+bool _isArchivedHabit(Map<String, dynamic> habit) =>
+    habit['archived'] == true || habit['isArchived'] == true;
+
+bool _wasHabitCreatedByDay(Map<String, dynamic> habit, DateTime day) {
+  final createdAt = _parseHabitDate(
+    habit['createdAt'] ??
+        habit['created_at'] ??
+        habit['createdDate'] ??
+        habit['dateCreated'],
+  );
+  if (createdAt == null) return true;
+  final createdDateOnly = _onlyDate(createdAt.toLocal());
+  final dayOnly = _onlyDate(day);
+  return !createdDateOnly.isAfter(dayOnly);
+}
+
+DateTime? _parseHabitDate(dynamic value) {
+  if (value is DateTime) return value;
+  if (value is int) {
+    return DateTime.fromMillisecondsSinceEpoch(value).toLocal();
+  }
+  if (value is num) {
+    return DateTime.fromMillisecondsSinceEpoch(value.toInt()).toLocal();
+  }
+
+  final raw = (value ?? '').toString().trim();
+  if (raw.isEmpty) return null;
+
+  final parsed = DateTime.tryParse(raw);
+  if (parsed != null) return parsed.toLocal();
+
+  final dateKeyMatch = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(raw);
+  if (dateKeyMatch == null) return null;
+
+  return DateTime(
+    int.parse(dateKeyMatch.group(1)!),
+    int.parse(dateKeyMatch.group(2)!),
+    int.parse(dateKeyMatch.group(3)!),
+  );
+}
+
+bool _isHabitScheduledForDate(Map<String, dynamic> habit, DateTime date) {
+  final schedule = _map(habit['schedule']);
+  final type = (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
+
+  if (type == 'once') {
+    return (schedule['date'] ?? '').toString().trim() == _dateKey(date);
+  }
+
+  if (type == 'weekly') {
+    final weekdays = schedule['weekdays'];
+    if (weekdays is! List) return false;
+    return weekdays
+        .whereType<num>()
+        .map((day) => day.toInt())
+        .contains(date.weekday);
+  }
+
+  return true;
 }

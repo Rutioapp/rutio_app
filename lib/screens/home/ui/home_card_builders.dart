@@ -721,7 +721,7 @@ class _SwipeTrayActionButton extends StatelessWidget {
     return Expanded(
       child: CupertinoButton(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-        minSize: 42,
+        minimumSize: const Size(42, 42),
         onPressed: onTap,
         child: Column(
           mainAxisSize: MainAxisSize.min,
