@@ -645,6 +645,7 @@ _DayCompletionStats _buildDayCompletionStats({
     today: today,
     dayKey: dayKey,
     userState: userState,
+    skipsRoot: skipsRoot,
     habits: habits,
   );
   final completedHabitIds = _completedHabitIdsForDay(
@@ -680,9 +681,11 @@ Set<String> _expectedHabitIdsForDay({
   required DateTime today,
   required String dayKey,
   required Map<String, dynamic> userState,
+  required Map<String, dynamic> skipsRoot,
   required List<Map<String, dynamic>> habits,
 }) {
   final expectedIds = <String>{};
+  final daySkips = _map(skipsRoot[dayKey]);
   final useCurrentHabitState = dayKey == _dateKey(today) &&
       _activeViewDateKey(userState, fallbackKey: dayKey) == dayKey;
 
@@ -692,6 +695,7 @@ Set<String> _expectedHabitIdsForDay({
     if (_isArchivedHabit(habit)) continue;
     if (!_wasHabitCreatedByDay(habit, day)) continue;
     if (!_isScheduledForDate(habit, day)) continue;
+    if (_isDone(daySkips[habitId])) continue;
 
     expectedIds.add(habitId);
   }
@@ -706,6 +710,14 @@ Set<String> _expectedHabitIdsForDay({
       continue;
     }
     if (!_isScheduledForDate(habit, day)) {
+      expectedIds.remove(habitId);
+      continue;
+    }
+    if (_isDone(daySkips[habitId])) {
+      expectedIds.remove(habitId);
+      continue;
+    }
+    if (_isDone(habit['skippedToday'])) {
       expectedIds.remove(habitId);
       continue;
     }

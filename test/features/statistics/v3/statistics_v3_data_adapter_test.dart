@@ -72,6 +72,91 @@ void main() {
         expect(result.highlightedHabits, isEmpty);
         expect(result.families, isEmpty);
       });
+
+      test(
+          'excludes skipped scheduled habits from denominator (10 scheduled, 8 completed, 2 skipped)',
+          () async {
+        final habits = List<Map<String, dynamic>>.generate(10, (index) {
+          final habit = _habit(
+            id: 'habit-${index + 1}',
+            title: 'Habit ${index + 1}',
+            doneToday: index < 8,
+            progress: index < 8 ? 1 : 0,
+          );
+          if (index >= 8) {
+            habit['skippedToday'] = true;
+          }
+          return habit;
+        }, growable: false);
+
+        final result = await _buildDayViewData(
+          now: now,
+          activeHabits: habits,
+          history: _historyForDay(
+            now,
+            completions: <String, dynamic>{
+              for (var index = 0; index < 8; index++) 'habit-${index + 1}': true,
+              'habit-9': true,
+              'habit-10': true,
+            },
+            skips: <String, dynamic>{
+              'habit-9': true,
+              'habit-10': true,
+            },
+          ),
+        );
+
+        expect(result.totalDays, 8);
+        expect(result.completedHabits, 8);
+        expect(result.consistencyPct, 100);
+      });
+
+      test('skipped habit with stale done=true does not count as completed',
+          () async {
+        final skippedHabit = _habit(
+          id: 'skipped-check',
+          title: 'Skipped Check',
+          doneToday: true,
+          progress: 1,
+        )..['skippedToday'] = true;
+
+        final result = await _buildDayViewData(
+          now: now,
+          activeHabits: [skippedHabit],
+          history: _historyForDay(
+            now,
+            completions: {'skipped-check': true},
+            skips: {'skipped-check': true},
+          ),
+        );
+
+        expect(result.totalDays, 0);
+        expect(result.completedHabits, 0);
+        expect(result.consistencyPct, 0);
+      });
+
+      test('unscheduled habits remain excluded from expected set', () async {
+        final tomorrow = now.add(const Duration(days: 1));
+        final result = await _buildDayViewData(
+          now: now,
+          activeHabits: [
+            _habit(
+              id: 'habit-once-tomorrow',
+              title: 'Once Tomorrow',
+              doneToday: true,
+              progress: 1,
+              schedule: <String, dynamic>{
+                'type': 'once',
+                'date': _dateKey(tomorrow),
+              },
+            ),
+          ],
+        );
+
+        expect(result.totalDays, 0);
+        expect(result.completedHabits, 0);
+        expect(result.consistencyPct, 0);
+      });
     });
 
     group('count habits', () {
@@ -153,6 +238,32 @@ void main() {
         expect(result.totalDays, 1);
         expect(result.consistencyPct, 100);
         expect(result.highlightedHabits.single.completedCount, 1);
+      });
+
+      test('skipped count habit with count >= target does not count completed',
+          () async {
+        final skippedCountHabit = _habit(
+          id: 'count-skipped',
+          title: 'Count Skipped',
+          type: 'count',
+          target: 5,
+          progress: 6,
+          doneToday: true,
+        )..['skippedToday'] = true;
+
+        final result = await _buildDayViewData(
+          now: now,
+          activeHabits: [skippedCountHabit],
+          history: _historyForDay(
+            now,
+            countValues: {'count-skipped': 6},
+            skips: {'count-skipped': true},
+          ),
+        );
+
+        expect(result.totalDays, 0);
+        expect(result.completedHabits, 0);
+        expect(result.consistencyPct, 0);
       });
     });
 
@@ -246,6 +357,71 @@ void main() {
 
         expect(todayAllDone.percentage, 100);
         expect(todayUnticked.percentage, 50);
+      });
+
+      test('excluded skips reduce expected count for that day', () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final monday = weekNow.subtract(
+          Duration(days: weekNow.weekday - DateTime.monday),
+        );
+        final mondayKey = _dateKey(monday);
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'habit-weekly-complete',
+              title: 'Weekly Complete',
+              schedule: {
+                'type': 'weekly',
+                'weekdays': [DateTime.monday],
+              },
+            ),
+            _habit(
+              id: 'habit-weekly-skipped',
+              title: 'Weekly Skipped',
+              schedule: {
+                'type': 'weekly',
+                'weekdays': [DateTime.monday],
+              },
+            ),
+            _habit(
+              id: 'habit-weekly-pending',
+              title: 'Weekly Pending',
+              schedule: {
+                'type': 'weekly',
+                'weekdays': [DateTime.monday],
+              },
+            ),
+          ],
+          history: {
+            'habitCompletions': {
+              mondayKey: {
+                'habit-weekly-complete': true,
+                'habit-weekly-skipped': true,
+              },
+            },
+            'habitCompletionTimes': {
+              mondayKey: {
+                'habit-weekly-complete':
+                    DateTime(2026, 5, 5, 8).millisecondsSinceEpoch,
+                'habit-weekly-skipped':
+                    DateTime(2026, 5, 5, 9).millisecondsSinceEpoch,
+              },
+            },
+            'habitSkips': {
+              mondayKey: {
+                'habit-weekly-skipped': true,
+              },
+            },
+            'habitCountValues': <String, dynamic>{},
+          },
+        );
+
+        final mondayItem = result.weeklyActivity.first;
+        expect(mondayItem.expectedCount, 2);
+        expect(mondayItem.completedCount, 1);
+        expect(mondayItem.percentage, 50);
       });
 
       test(
@@ -378,6 +554,41 @@ void main() {
             completions: {'habit-complete': true},
             completionTimes: {
               'habit-complete': DateTime(2026, 5, 5, 8).millisecondsSinceEpoch,
+            },
+          ),
+        );
+
+        final mayFifthItem =
+            result.monthlyCalendarDays.firstWhere((item) => item.date.day == 5);
+        expect(mayFifthItem.expectedCount, 2);
+        expect(mayFifthItem.completedCount, 1);
+        expect(mayFifthItem.percentage, 50);
+      });
+
+      test('excludes skipped habits from expected count for each calendar day',
+          () async {
+        final monthNow = DateTime(2026, 5, 6, 10);
+        final mayFifth = DateTime(2026, 5, 5, 10);
+
+        final result = await _buildMonthViewData(
+          now: monthNow,
+          activeHabits: [
+            _habit(id: 'habit-complete', title: 'Complete'),
+            _habit(id: 'habit-skipped', title: 'Skipped'),
+            _habit(id: 'habit-pending', title: 'Pending'),
+          ],
+          history: _historyForDay(
+            mayFifth,
+            completions: {
+              'habit-complete': true,
+              'habit-skipped': true,
+            },
+            skips: {
+              'habit-skipped': true,
+            },
+            completionTimes: {
+              'habit-complete': DateTime(2026, 5, 5, 8).millisecondsSinceEpoch,
+              'habit-skipped': DateTime(2026, 5, 5, 9).millisecondsSinceEpoch,
             },
           ),
         );
@@ -586,6 +797,40 @@ void main() {
         expect(may.completedCount, 10);
         expect(may.percentage, 50);
         expect(may.isCurrentMonth, isTrue);
+      });
+
+      test('excludes skipped habit instances from monthly denominator',
+          () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+
+        for (var day = 1; day <= 20; day++) {
+          _setCheckCompletion(history, DateTime(2026, 5, day, 8), 'habit-a');
+        }
+        for (var day = 1; day <= 10; day++) {
+          _setSkip(history, DateTime(2026, 5, day, 8), 'habit-b');
+        }
+
+        final result = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(
+              id: 'habit-a',
+              title: 'Habit A',
+              doneToday: true,
+              progress: 1,
+            ),
+            _habit(id: 'habit-b', title: 'Habit B'),
+          ],
+          history: history,
+        );
+
+        final may = result.yearlyConsistencyMonths.firstWhere(
+          (item) => item.month == 5,
+        );
+        expect(may.expectedCount, 30);
+        expect(may.completedCount, 20);
+        expect(may.percentage, 67);
       });
 
       test('future months are marked future with neutral values', () async {
@@ -949,6 +1194,37 @@ void main() {
         expect(result.weeklyImprovement.currentWeekPercentage, 0);
         expect(result.weeklyImprovement.previousWeekPercentage, 100);
         expect(result.weeklyImprovement.deltaPercentage, -100);
+      });
+
+      test('weekly improvement excludes skipped habits from current week',
+          () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final currentMonday = _startOfWeek(weekNow);
+        final previousMonday = currentMonday.subtract(const Duration(days: 7));
+        final history = _emptyHistory();
+        final habits = _buildWeeklyHabits(
+          count: 10,
+          weekday: DateTime.monday,
+        );
+
+        for (var index = 0; index < 8; index++) {
+          final habitId = 'weekly-habit-${index + 1}';
+          _setCheckCompletion(history, currentMonday, habitId);
+          _setCheckCompletion(history, previousMonday, habitId);
+        }
+        _setSkip(history, currentMonday, 'weekly-habit-9');
+        _setSkip(history, currentMonday, 'weekly-habit-10');
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: habits,
+          history: history,
+        );
+
+        expect(result.weeklyImprovement.hasComparison, isTrue);
+        expect(result.weeklyImprovement.currentWeekPercentage, 100);
+        expect(result.weeklyImprovement.previousWeekPercentage, 80);
+        expect(result.weeklyImprovement.deltaPercentage, 20);
       });
     });
 
@@ -1366,6 +1642,20 @@ void _setCountValue(
 
   final countValues = _ensureDayMap(countValuesRoot, dayKey);
   countValues[habitId] = value;
+}
+
+void _setSkip(
+  Map<String, dynamic> history,
+  DateTime day,
+  String habitId,
+) {
+  final dayKey = _dateKey(day);
+  final skipsRoot = history['habitSkips'] as Map<String, dynamic>? ??
+      <String, dynamic>{};
+  history['habitSkips'] = skipsRoot;
+
+  final skips = _ensureDayMap(skipsRoot, dayKey);
+  skips[habitId] = true;
 }
 
 DateTime _startOfWeek(DateTime date) {
