@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 import '../../../../../l10n/l10n.dart';
 import '../../../../../utils/family_theme.dart';
@@ -37,6 +38,7 @@ class EditHabitTabContent extends StatelessWidget {
     required this.onEditTimesPerWeek,
     required this.onToggleReminders,
     required this.onReminderTimeChanged,
+    required this.onOpenRoutineComingSoon,
   });
 
   final TextEditingController titleController;
@@ -65,6 +67,7 @@ class EditHabitTabContent extends StatelessWidget {
   final VoidCallback onEditTimesPerWeek;
   final ValueChanged<bool> onToggleReminders;
   final ValueChanged<DateTime> onReminderTimeChanged;
+  final VoidCallback onOpenRoutineComingSoon;
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +76,11 @@ class EditHabitTabContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        HabitFormSectionLabel(text: l10n.editHabitSectionIdentity),
+        EditHabitHeaderSection(
+          title: l10n.editHabitHeaderTitle,
+          subtitle: l10n.editHabitHeaderSubtitle,
+        ),
+        const SizedBox(height: 12),
         EditHabitIdentitySection(
           titleController: titleController,
           titleFocusNode: titleFocusNode,
@@ -82,21 +89,23 @@ class EditHabitTabContent extends StatelessWidget {
           onPickEmoji: onPickEmoji,
           onTitleChanged: onTitleChanged,
         ),
-        const SizedBox(height: 28),
-        HabitFormSectionLabel(text: l10n.editHabitSectionCategory),
+        const SizedBox(height: 14),
+        _EditSectionHeading(text: l10n.createHabitSectionCategory),
+        const SizedBox(height: 8),
         EditHabitCategorySection(
           families: EditHabitTabFormData.availableFamilies,
           selectedFamilyId: formData.familyId,
           onSelectFamily: onSelectFamily,
         ),
-        const SizedBox(height: 28),
-        HabitFormSectionLabel(text: l10n.editHabitSectionTracking),
+        const SizedBox(height: 14),
+        _EditSectionHeading(text: l10n.createHabitSectionTracking),
+        const SizedBox(height: 8),
         EditHabitTrackingTypeSection(
           trackingType: formData.trackingType,
           onSelectCheck: onSelectCheckTrackingType,
           onSelectCount: onSelectCountTrackingType,
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 14),
         EditHabitCountSection(
           isVisible: formData.showsCountTargetSection,
           targetCount: formData.targetCount,
@@ -110,8 +119,7 @@ class EditHabitTabContent extends StatelessWidget {
           onIncrementStep: onIncrementStep,
           onEditStep: onEditStep,
         ),
-        const SizedBox(height: 28),
-        HabitFormSectionLabel(text: l10n.editHabitSectionFrequency),
+        const SizedBox(height: 14),
         EditHabitFrequencySection(
           trackingType: formData.trackingType,
           frequencyMode: formData.frequencyMode,
@@ -124,22 +132,67 @@ class EditHabitTabContent extends StatelessWidget {
           onIncrementTimesPerWeek: onIncrementTimesPerWeek,
           onEditTimesPerWeek: onEditTimesPerWeek,
         ),
-        const SizedBox(height: 28),
-        HabitFormSectionLabel(text: l10n.editHabitSectionReminder),
+        const SizedBox(height: 12),
+        EditHabitRoutineSection(
+          onTap: onOpenRoutineComingSoon,
+        ),
+        const SizedBox(height: 12),
         EditHabitReminderSection(
           remindersEnabled: formData.remindersEnabled,
           reminderTime: formData.reminderTime,
           onToggleReminders: onToggleReminders,
           onReminderTimeChanged: onReminderTimeChanged,
         ),
-        const SizedBox(height: 28),
-        HabitFormSectionLabel(text: l10n.editHabitSectionDetails),
+        const SizedBox(height: 14),
+        _EditSectionHeading(text: l10n.editHabitSectionDetails),
+        const SizedBox(height: 8),
         EditHabitDetailsSection(
           descriptionController: descriptionController,
           notesController: notesController,
         ),
-        const SizedBox(height: 100),
       ],
+    );
+  }
+}
+
+class EditHabitHeaderSection extends StatelessWidget {
+  const EditHabitHeaderSection({
+    super.key,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.authTitle.copyWith(
+              fontSize: 38,
+              height: 0.92,
+              color: editHabitDark,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w400,
+              color: editHabitDark.withOpacitySafe(0.55),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -166,93 +219,135 @@ class EditHabitIdentitySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: onPickEmoji,
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: editHabitCamel.withOpacitySafe(0.11),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: editHabitCamel.withOpacitySafe(0.35)),
+    return _EditSurfaceCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: onPickEmoji,
+            child: Container(
+              width: 74,
+              height: 74,
+              decoration: BoxDecoration(
+                color: editHabitCamel.withOpacitySafe(0.10),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: editHabitCamel.withOpacitySafe(0.24)),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 38),
+                    ),
+                  ),
+                  Positioned(
+                    right: -6,
+                    bottom: -6,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: editHabitCream,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: editHabitCamel.withOpacitySafe(0.30),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.edit_rounded,
+                        size: 12,
+                        color: editHabitCamel.withOpacitySafe(0.92),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Stack(
-              clipBehavior: Clip.none,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Text(
-                    emoji,
-                    style: const TextStyle(fontSize: 30),
+                Text(
+                  l10n.createHabitNameLabel,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.9,
+                    color: editHabitDark.withOpacitySafe(0.45),
                   ),
                 ),
-                const Positioned(
-                  right: -2,
-                  bottom: -2,
-                  child: _EditBadge(),
+                const SizedBox(height: 6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacitySafe(0.82),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: showTitleError
+                          ? editHabitCamel
+                          : editHabitCamel.withOpacitySafe(0.22),
+                      width: showTitleError ? 1.4 : 1,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: titleController,
+                    focusNode: titleFocusNode,
+                    maxLength: 40,
+                    onChanged: onTitleChanged,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w500,
+                      color: editHabitDark,
+                    ),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      hintText: l10n.editHabitTitleHint,
+                      hintStyle: GoogleFonts.dmSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: editHabitDark.withOpacitySafe(0.28),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 11,
+                      ),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.createHabitNameHelper,
+                        maxLines: 2,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: editHabitDark.withOpacitySafe(0.52),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${titleController.text.characters.length} / 40',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: editHabitDark.withOpacitySafe(0.42),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: titleController,
-                focusNode: titleFocusNode,
-                maxLength: 40,
-                onChanged: onTitleChanged,
-                style: GoogleFonts.dmSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: editHabitDark,
-                ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  hintText: l10n.editHabitTitleHint,
-                  hintStyle: GoogleFonts.dmSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    color: editHabitDark.withOpacitySafe(0.28),
-                  ),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: showTitleError
-                          ? editHabitCamel
-                          : editHabitCamel.withOpacitySafe(0.30),
-                      width: showTitleError ? 1.4 : 1,
-                    ),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: showTitleError
-                          ? editHabitCamel
-                          : editHabitCamel.withOpacitySafe(0.80),
-                      width: 1.2,
-                    ),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${titleController.text.characters.length} / 40',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    color: editHabitDark.withOpacitySafe(0.28),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -271,72 +366,60 @@ class EditHabitCategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: families.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 74 / 60,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-      ),
-      itemBuilder: (BuildContext context, int index) {
-        final familyId = families[index];
-        final isSelected = familyId == selectedFamilyId;
-        final color = FamilyTheme.colorOf(familyId);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: families.map((String familyId) {
+          final bool isSelected = familyId == selectedFamilyId;
+          final Color color = FamilyTheme.colorOf(familyId);
 
-        return GestureDetector(
-          onTap: () => onSelectFamily(familyId),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? color.withOpacitySafe(0.11)
-                  : Colors.white.withOpacitySafe(0.50),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color:
-                    isSelected ? color : editHabitCamel.withOpacitySafe(0.12),
-                width: isSelected ? 1.5 : 1,
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => onSelectFamily(familyId),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                width: 66,
+                height: 76,
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? color.withOpacitySafe(0.10)
+                      : Colors.white.withOpacitySafe(0.56),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected ? color : editHabitCamel.withOpacitySafe(0.15),
+                    width: isSelected ? 1.5 : 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      FamilyTheme.emojiOf(familyId),
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      context.l10n.familyName(familyId),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 10,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSelected ? color : editHabitDark,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    FamilyTheme.emojiOf(familyId),
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.l10n.familyName(familyId),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: editHabitDark,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+          );
+        }).toList(growable: false),
+      ),
     );
   }
 }
@@ -358,15 +441,19 @@ class EditHabitTrackingTypeSection extends StatelessWidget {
     final l10n = context.l10n;
 
     return SizedBox(
-      height: 112,
+      height: 86,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: HabitFormTypeCard(
-              title: l10n.editHabitTrackingCheckTitle,
-              description: l10n.editHabitTrackingCheckSubtitle,
-              icon: Icons.check_rounded,
+            child: _EditTrackingCard(
+              title: l10n.createHabitTrackingCheckTitle,
+              description: l10n.createHabitTrackingCheckSubtitle,
+              leading: const Icon(
+                Icons.check_rounded,
+                size: 26,
+                color: editHabitCream,
+              ),
               accentColor: editHabitSage,
               isSelected: trackingType == 'check',
               onTap: onSelectCheck,
@@ -374,11 +461,18 @@ class EditHabitTrackingTypeSection extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: HabitFormTypeCard(
-              title: l10n.editHabitTrackingCountTitle,
-              description: l10n.editHabitTrackingCountSubtitle,
-              icon: Icons.loop_rounded,
-              accentColor: editHabitCamel,
+            child: _EditTrackingCard(
+              title: l10n.createHabitTrackingCountTitle,
+              description: l10n.createHabitTrackingCountSubtitle,
+              leading: Text(
+                '123',
+                style: GoogleFonts.dmSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w500,
+                  color: editHabitCamel.withOpacitySafe(0.95),
+                ),
+              ),
+              accentColor: editHabitSage,
               isSelected: trackingType == 'count',
               onTap: onSelectCount,
             ),
@@ -431,15 +525,9 @@ class EditHabitCountSection extends StatelessWidget {
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  HabitFormSectionLabel(text: l10n.editHabitDailyGoalSection),
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacitySafe(0.42),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                          color: editHabitCamel.withOpacitySafe(0.14)),
-                    ),
+                  _EditSectionHeading(text: l10n.editHabitDailyGoalSection),
+                  const SizedBox(height: 8),
+                  _EditSurfaceCard(
                     child: Column(
                       children: [
                         _EditHabitStepperRow(
@@ -450,7 +538,7 @@ class EditHabitCountSection extends StatelessWidget {
                           onIncrement: onIncrementTarget,
                           onEdit: onEditTarget,
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 12),
                         GestureDetector(
                           onTap: onOpenUnitSelector,
                           child: AbsorbPointer(
@@ -502,7 +590,7 @@ class EditHabitCountSection extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 12),
                         _EditHabitStepperRow(
                           title: l10n.editHabitCounterStepTitle,
                           subtitle: l10n.editHabitCounterStepSubtitle,
@@ -551,109 +639,312 @@ class EditHabitFrequencySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final List<_EditSegmentOption> segments = [
+      _EditSegmentOption(
+        id: 'daily',
+        label: l10n.editHabitFrequencyDaily,
+      ),
+      _EditSegmentOption(
+        id: 'specificDays',
+        label: l10n.editHabitFrequencySpecificDays,
+      ),
+      if (trackingType == 'check')
+        _EditSegmentOption(
+          id: 'timesPerWeek',
+          label: l10n.editHabitFrequencyTimesPerWeek,
+        ),
+    ];
+
+    String cardTitle;
+    String cardSubtitle;
+    IconData cardIcon;
+    switch (frequencyMode) {
+      case 'specificDays':
+        cardTitle = l10n.createHabitFrequencySpecificTitle;
+        cardSubtitle = l10n.createHabitFrequencySpecificSubtitle;
+        cardIcon = CupertinoIcons.calendar_badge_plus;
+        break;
+      case 'timesPerWeek':
+        cardTitle = l10n.createHabitFrequencyTimesPerWeekTitle;
+        cardSubtitle = l10n.createHabitFrequencyTimesPerWeekSubtitle;
+        cardIcon = CupertinoIcons.repeat;
+        break;
+      default:
+        cardTitle = l10n.createHabitFrequencyDailyTitle;
+        cardSubtitle = l10n.createHabitFrequencyDailySubtitle;
+        cardIcon = CupertinoIcons.calendar_today;
+        break;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            HabitFormFrequencyChip(
-              label: l10n.editHabitFrequencyDaily,
-              isSelected: frequencyMode == 'daily',
-              onTap: () => onSelectFrequencyMode('daily'),
-            ),
-            HabitFormFrequencyChip(
-              label: l10n.editHabitFrequencySpecificDays,
-              isSelected: frequencyMode == 'specificDays',
-              onTap: () => onSelectFrequencyMode('specificDays'),
-            ),
-            if (trackingType == 'check')
-              HabitFormFrequencyChip(
-                label: l10n.editHabitFrequencyTimesPerWeek,
-                isSelected: frequencyMode == 'timesPerWeek',
-                onTap: () => onSelectFrequencyMode('timesPerWeek'),
-              ),
-          ],
+        _EditSectionHeading(text: l10n.createHabitSectionFrequency),
+        const SizedBox(height: 8),
+        _EditFrequencySegmentedControl(
+          options: segments,
+          selectedId: frequencyMode,
+          onSelected: onSelectFrequencyMode,
         ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          child: frequencyMode == 'specificDays'
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 14),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: List<Widget>.generate(
-                      7,
-                      (int index) {
-                        final day = index + 1;
-                        final isSelected = selectedDays.contains(day);
-
-                        return GestureDetector(
-                          onTap: () => onToggleSelectedDay(day),
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? editHabitCamel
-                                  : Colors.white.withOpacitySafe(0.45),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isSelected
-                                    ? editHabitCamel
-                                    : editHabitCamel.withOpacitySafe(0.20),
-                              ),
-                            ),
-                            child: Text(
-                              l10n.weekdayLetter(day),
-                              style: GoogleFonts.dmSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: isSelected
-                                    ? editHabitCream
-                                    : editHabitDark.withOpacitySafe(0.38),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          child: showsWeeklyCheckTargetSection
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 14),
-                  child: Container(
-                    padding: const EdgeInsets.all(18),
+        const SizedBox(height: 8),
+        _EditSurfaceCard(
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacitySafe(0.42),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                          color: editHabitCamel.withOpacitySafe(0.14)),
+                      color: editHabitSage.withOpacitySafe(0.15),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: _EditHabitStepperRow(
-                      title: l10n.editHabitWeeklyGoalTitle,
-                      subtitle: l10n.editHabitWeeklyGoalSubtitle,
-                      value: timesPerWeekTarget,
-                      onDecrement: onDecrementTimesPerWeek,
-                      onIncrement: onIncrementTimesPerWeek,
-                      onEdit: onEditTimesPerWeek,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      cardIcon,
+                      color: editHabitSage,
+                      size: 18,
                     ),
                   ),
-                )
-              : const SizedBox.shrink(),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          cardTitle,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: editHabitDark,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          cardSubtitle,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: editHabitDark.withOpacitySafe(0.52),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: editHabitDark.withOpacitySafe(0.45),
+                  ),
+                ],
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: frequencyMode == 'specificDays'
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: List<Widget>.generate(7, (int index) {
+                            final int day = index + 1;
+                            final bool isSelected = selectedDays.contains(day);
+
+                            return GestureDetector(
+                              onTap: () => onToggleSelectedDay(day),
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? editHabitSage
+                                      : Colors.white.withOpacitySafe(0.45),
+                                  borderRadius: BorderRadius.circular(9),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? editHabitSage
+                                        : editHabitCamel.withOpacitySafe(0.20),
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.weekdayLetter(day),
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: isSelected
+                                        ? editHabitCream
+                                        : editHabitDark.withOpacitySafe(0.42),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: showsWeeklyCheckTargetSection
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l10n.editHabitWeeklyGoalTitle,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: editHabitDark.withOpacitySafe(0.75),
+                                ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                HabitFormStepperButton(
+                                  icon: Icons.remove_rounded,
+                                  onTap: onDecrementTimesPerWeek,
+                                ),
+                                const SizedBox(width: 8),
+                                HabitFormEditableTargetValue(
+                                  value: timesPerWeekTarget,
+                                  onTap: onEditTimesPerWeek,
+                                ),
+                                const SizedBox(width: 8),
+                                HabitFormStepperButton(
+                                  icon: Icons.add_rounded,
+                                  onTap: onIncrementTimesPerWeek,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+}
+
+class EditHabitRoutineSection extends StatelessWidget {
+  const EditHabitRoutineSection({
+    super.key,
+    required this.onTap,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: _EditSurfaceCard(
+        borderColor: editHabitCamel.withOpacitySafe(0.25),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: editHabitCamel.withOpacitySafe(0.16),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                CupertinoIcons.briefcase_fill,
+                size: 17,
+                color: editHabitCamel.withOpacitySafe(0.95),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        l10n.createHabitRoutineTitle,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: editHabitDark,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacitySafe(0.72),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: editHabitCamel.withOpacitySafe(0.22),
+                          ),
+                        ),
+                        child: Text(
+                          l10n.createHabitOptionalPill,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w500,
+                            color: editHabitDark.withOpacitySafe(0.55),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.createHabitRoutineSubtitle,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: editHabitDark.withOpacitySafe(0.52),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacitySafe(0.68),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: editHabitCamel.withOpacitySafe(0.40),
+                ),
+              ),
+              child: Text(
+                l10n.createHabitComingSoon,
+                style: GoogleFonts.dmSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: editHabitCamel.withOpacitySafe(0.95),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: editHabitDark.withOpacitySafe(0.42),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -675,89 +966,166 @@ class EditHabitReminderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final String timeText = MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay(hour: reminderTime.hour, minute: reminderTime.minute),
+      alwaysUse24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat ||
+          Localizations.localeOf(context).languageCode == 'es',
+    );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacitySafe(0.48),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: editHabitCamel.withOpacitySafe(0.14)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: editHabitCamel.withOpacitySafe(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  CupertinoIcons.bell_fill,
-                  size: 18,
-                  color: editHabitCamel,
-                ),
+    return GestureDetector(
+      onTap: remindersEnabled ? () => _showReminderTimeSheet(context) : null,
+      child: _EditSurfaceCard(
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: editHabitCamel.withOpacitySafe(0.14),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              alignment: Alignment.center,
+              child: Icon(
+                CupertinoIcons.bell_fill,
+                size: 17,
+                color: editHabitCamel.withOpacitySafe(0.95),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.createHabitReminderTitle,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: editHabitDark,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    remindersEnabled
+                        ? l10n.createHabitReminderEnabledSubtitle
+                        : l10n.createHabitReminderDisabledSubtitle,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: editHabitDark.withOpacitySafe(0.55),
+                    ),
+                  ),
+                  if (remindersEnabled) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      l10n.editHabitReminderDailyTitle,
+                      timeText,
                       style: GoogleFonts.dmSans(
-                        fontSize: 15,
+                        fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: editHabitDark,
+                        color: editHabitDark.withOpacitySafe(0.90),
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      l10n.editHabitReminderDailySubtitle,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: editHabitDark.withOpacitySafe(0.42),
+                  ],
+                ],
+              ),
+            ),
+            CupertinoSwitch(
+              value: remindersEnabled,
+              activeTrackColor: editHabitSage,
+              onChanged: (bool value) async {
+                onToggleReminders(value);
+                if (value) {
+                  await _showReminderTimeSheet(context);
+                }
+              },
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: editHabitDark.withOpacitySafe(0.42),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showReminderTimeSheet(BuildContext context) async {
+    final l10n = context.l10n;
+    DateTime selected = reminderTime;
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext sheetContext) {
+        return Container(
+          height: 300,
+          decoration: const BoxDecoration(
+            color: editHabitCream,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: Text(
+                        l10n.commonCancel,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w500,
+                          color: editHabitSage,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        l10n.createHabitReminderTimeTitle,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: editHabitDark,
+                        ),
+                      ),
+                    ),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        onReminderTimeChanged(selected);
+                        Navigator.of(sheetContext).pop();
+                      },
+                      child: Text(
+                        l10n.createHabitDone,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w500,
+                          color: editHabitSage,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              CupertinoSwitch(
-                value: remindersEnabled,
-                activeTrackColor: editHabitCamel,
-                onChanged: onToggleReminders,
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.time,
+                  initialDateTime: reminderTime,
+                  use24hFormat: MediaQuery.of(context).alwaysUse24HourFormat ||
+                      Localizations.localeOf(context).languageCode == 'es',
+                  onDateTimeChanged: (DateTime value) {
+                    selected = value;
+                  },
+                ),
               ),
             ],
           ),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
-          child: remindersEnabled
-              ? Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacitySafe(0.42),
-                    borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: editHabitCamel.withOpacitySafe(0.14)),
-                  ),
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.time,
-                    initialDateTime: reminderTime,
-                    use24hFormat: true,
-                    onDateTimeChanged: onReminderTimeChanged,
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -776,13 +1144,7 @@ class EditHabitDetailsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacitySafe(0.42),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: editHabitCamel.withOpacitySafe(0.14)),
-      ),
+    return _EditSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -913,22 +1275,221 @@ class _EditHabitStepperRow extends StatelessWidget {
   }
 }
 
-class _EditBadge extends StatelessWidget {
-  const _EditBadge();
+class _EditSectionHeading extends StatelessWidget {
+  const _EditSectionHeading({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: AppTextStyles.authTitle.copyWith(
+        fontSize: 18.5,
+        color: const Color(0xFF2D160B),
+      ),
+    );
+  }
+}
+
+class _EditSurfaceCard extends StatelessWidget {
+  const _EditSurfaceCard({
+    required this.child,
+    this.borderColor,
+  });
+
+  final Widget child;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 18,
-      height: 18,
-      decoration: const BoxDecoration(
-        color: editHabitCamel,
-        shape: BoxShape.circle,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacitySafe(0.58),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: borderColor ?? editHabitCamel.withOpacitySafe(0.16),
+        ),
       ),
-      child: const Icon(
-        Icons.edit,
-        size: 9,
-        color: editHabitCream,
+      child: child,
+    );
+  }
+}
+
+class _EditTrackingCard extends StatelessWidget {
+  const _EditTrackingCard({
+    required this.title,
+    required this.description,
+    required this.leading,
+    required this.accentColor,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String description;
+  final Widget leading;
+  final Color accentColor;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? accentColor.withOpacitySafe(0.08)
+              : Colors.white.withOpacitySafe(0.58),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? accentColor.withOpacitySafe(0.85)
+                : editHabitCamel.withOpacitySafe(0.18),
+            width: isSelected ? 1.4 : 1,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? accentColor
+                        : editHabitCamel.withOpacitySafe(0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: leading,
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: editHabitDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: editHabitDark.withOpacitySafe(0.55),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (isSelected)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  width: 19,
+                  height: 19,
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 12,
+                    color: editHabitCream,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EditSegmentOption {
+  const _EditSegmentOption({
+    required this.id,
+    required this.label,
+  });
+
+  final String id;
+  final String label;
+}
+
+class _EditFrequencySegmentedControl extends StatelessWidget {
+  const _EditFrequencySegmentedControl({
+    required this.options,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<_EditSegmentOption> options;
+  final String selectedId;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacitySafe(0.55),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: editHabitCamel.withOpacitySafe(0.16),
+        ),
+      ),
+      child: Row(
+        children: options.map((option) {
+          final bool isSelected = option.id == selectedId;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onSelected(option.id),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 170),
+                curve: Curves.easeOut,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          colors: [Color(0xFF5E855F), Color(0xFF4A754E)],
+                        )
+                      : null,
+                  color: isSelected ? null : Colors.transparent,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  option.label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12.2,
+                    fontWeight: FontWeight.w500,
+                    color: isSelected
+                        ? editHabitCream
+                        : editHabitDark.withOpacitySafe(0.55),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(growable: false),
       ),
     );
   }

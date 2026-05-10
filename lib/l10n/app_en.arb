@@ -942,6 +942,8 @@
     "editHabitCounterStepDialogSubtitle": "How much the counter increases each tap.",
     "editHabitTimesPerWeekDialogTitle": "Times per week",
     "editHabitTimesPerWeekDialogSubtitle": "You can go over it during the week.",
+    "editHabitHeaderTitle": "Edit habit",
+    "editHabitHeaderSubtitle": "Adjust how you want to keep going.",
     "editHabitSectionIdentity": "Identity",
     "editHabitSectionCategory": "Category",
     "editHabitSectionTracking": "How do you track it?",

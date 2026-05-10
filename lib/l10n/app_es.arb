@@ -942,6 +942,8 @@
   "editHabitCounterStepDialogSubtitle": "Cada cuanto aumenta el contador.",
   "editHabitTimesPerWeekDialogTitle": "Veces por semana",
   "editHabitTimesPerWeekDialogSubtitle": "Puedes superarlo durante la semana.",
+  "editHabitHeaderTitle": "Editar hábito",
+  "editHabitHeaderSubtitle": "Ajusta cómo quieres continuar.",
   "editHabitSectionIdentity": "Identidad",
   "editHabitSectionCategory": "Categoria",
   "editHabitSectionTracking": "¿Cómo lo mides?",

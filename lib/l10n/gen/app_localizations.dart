@@ -3411,6 +3411,18 @@ abstract class AppLocalizations {
   /// **'Puedes superarlo durante la semana.'**
   String get editHabitTimesPerWeekDialogSubtitle;
 
+  /// No description provided for @editHabitHeaderTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar hábito'**
+  String get editHabitHeaderTitle;
+
+  /// No description provided for @editHabitHeaderSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ajusta cómo quieres continuar.'**
+  String get editHabitHeaderSubtitle;
+
   /// No description provided for @editHabitSectionIdentity.
   ///
   /// In es, this message translates to:
