@@ -660,6 +660,13 @@ extension AppLocalizationsEditHabitX on AppLocalizations {
       ? 'Puedes superarlo durante la semana.'
       : 'You can go over it during the week.';
 
+  String get editHabitHeaderTitle =>
+      _isSpanishEditHabit ? 'Editar h\u00e1bito' : 'Edit habit';
+
+  String get editHabitHeaderSubtitle => _isSpanishEditHabit
+      ? 'Ajusta c\u00f3mo quieres continuar.'
+      : 'Adjust how you want to keep going.';
+
   String get editHabitSectionIdentity =>
       _isSpanishEditHabit ? 'Identidad' : 'Identity';
 

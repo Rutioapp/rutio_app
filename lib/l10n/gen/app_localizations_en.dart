@@ -1840,6 +1840,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can go over it during the week.';
 
   @override
+  String get editHabitHeaderTitle => 'Edit habit';
+
+  @override
+  String get editHabitHeaderSubtitle => 'Adjust how you want to keep going.';
+
+  @override
   String get editHabitSectionIdentity => 'Identity';
 
   @override
