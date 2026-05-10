@@ -133,6 +133,17 @@
                                                                           }
                                                              }
                                         },
+    "homeTimesPerWeekProgress": "{completed}/{target} this week",
+    "@homeTimesPerWeekProgress": {
+      "placeholders": {
+        "completed": {
+          "type": "String"
+        },
+        "target": {
+          "type": "String"
+        }
+      }
+    },
     "homeAddHabitLoadError":  "Could not load the catalog",
     "homeAddHabitCreated":  "\"{name}\" has been created",
     "@homeAddHabitCreated":  {

@@ -43,6 +43,27 @@ void main() {
       expect(_historyDoneFor(store, '2026-05-11', 'weekly-check'), isTrue);
     });
 
+    test('timesPerWeek check completion works on any weekday', () async {
+      final store = await _seedStore(habits: [
+        _habit(
+          id: 'tpw-check',
+          schedule: const {
+            'type': 'timesPerWeek',
+            'timesPerWeek': 3,
+            'weekStartsOn': 1,
+          },
+        ),
+      ]);
+
+      await store.setHabitCompletionForKey(
+        habitId: 'tpw-check',
+        dateKey: '2026-05-12',
+        done: true,
+      );
+
+      expect(_historyDoneFor(store, '2026-05-12', 'tpw-check'), isTrue);
+    });
+
     test('weekly skip is ignored on non-scheduled weekday', () async {
       final store = await _seedStore(habits: [
         _habit(

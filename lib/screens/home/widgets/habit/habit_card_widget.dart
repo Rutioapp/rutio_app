@@ -35,6 +35,7 @@ class HabitCardWidget extends StatefulWidget {
   final num targetCount;
   final String? unitLabel;
   final String? reminderLabel;
+  final String? weeklyProgressLabel;
 
   final VoidCallback? onIncrement;
   final VoidCallback? onDecrement;
@@ -64,6 +65,7 @@ class HabitCardWidget extends StatefulWidget {
     this.targetCount = 1,
     this.unitLabel,
     this.reminderLabel,
+    this.weeklyProgressLabel,
     this.onIncrement,
     this.onDecrement,
     this.onCountTap,
@@ -212,12 +214,17 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                 widget.unitLabel!.trim(),
               )
         : null;
-    final badgeZone = hasReminder || widget.isCounting || isSkipped
+    final weeklyProgressLabel = widget.weeklyProgressLabel?.trim();
+    final hasWeeklyProgress =
+        weeklyProgressLabel != null && weeklyProgressLabel.isNotEmpty;
+    final badgeZone =
+        hasReminder || widget.isCounting || isSkipped || hasWeeklyProgress
         ? HabitCardBadgeZone(
             familyColor: widget.familyColor,
             compact: widget.compact,
             reminderLabel: reminderLabel,
             countLabel: countInfoLabel,
+            progressLabel: hasWeeklyProgress ? weeklyProgressLabel : null,
             extraBadges: isSkipped
                 ? [
                     HabitSkippedBadge(

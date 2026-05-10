@@ -29,6 +29,17 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
   String _homeSwipeDeleteConfirmAction(BuildContext context) =>
       _isSpanishHomeSwipe(context) ? 'Eliminar' : 'Delete';
 
+  String _homeTimesPerWeekProgressLabel(
+    BuildContext context, {
+    required int completed,
+    required int target,
+  }) {
+    final base = '$completed/$target';
+    return _isSpanishHomeSwipe(context)
+        ? '$base esta semana'
+        : '$base this week';
+  }
+
   Future<void> _confirmAndDeleteHabitFromHome(
     BuildContext context, {
     required String habitId,
@@ -176,6 +187,18 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       target: target,
     );
     final isCounting = type != 'check';
+    final isTimesPerWeekCheck = habit['isTimesPerWeekCheck'] == true;
+    final weeklyCompletedCount =
+        toNum(habit['weeklyCompletedCount'], fallback: 0).toInt();
+    final weeklyTargetCount =
+        toPositiveNum(habit['weeklyTargetCount'], fallback: 1).toInt();
+    final String? weeklyProgressLabel = isTimesPerWeekCheck
+        ? _homeTimesPerWeekProgressLabel(
+            context,
+            completed: weeklyCompletedCount,
+            target: weeklyTargetCount,
+          )
+        : null;
 
     final progress01 = isCounting
         ? (target <= 0 ? 0.0 : (current / target).clamp(0.0, 1.0).toDouble())
@@ -313,6 +336,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       targetCount: target,
       unitLabel: unitLabel.isEmpty ? null : unitLabel,
       reminderLabel: reminderLabel,
+      weeklyProgressLabel: weeklyProgressLabel,
       onIncrement: isCounting
           ? () {
               final step = toPositiveNum(

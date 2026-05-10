@@ -8,6 +8,7 @@ class HabitCardBadgeZone extends StatelessWidget {
     required this.compact,
     this.reminderLabel,
     this.countLabel,
+    this.progressLabel,
     this.extraBadges = const <Widget>[],
   });
 
@@ -17,6 +18,7 @@ class HabitCardBadgeZone extends StatelessWidget {
   final bool compact;
   final String? reminderLabel;
   final String? countLabel;
+  final String? progressLabel;
   final List<Widget> extraBadges;
 
   @override
@@ -34,6 +36,12 @@ class HabitCardBadgeZone extends StatelessWidget {
           familyColor: familyColor,
           compact: compact,
         ),
+      if (progressLabel?.trim().isNotEmpty ?? false)
+        HabitCountBadge(
+          label: progressLabel!.trim(),
+          familyColor: familyColor,
+          compact: compact,
+        ),
       ...extraBadges,
     ];
 
@@ -42,15 +50,11 @@ class HabitCardBadgeZone extends StatelessWidget {
     }
 
     return IgnorePointer(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          for (var index = 0; index < badges.length; index++) ...[
-            if (index > 0) const SizedBox(width: _badgeGap),
-            badges[index],
-          ],
-        ],
+      child: Wrap(
+        spacing: _badgeGap,
+        runSpacing: compact ? 4 : 5,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: badges,
       ),
     );
   }

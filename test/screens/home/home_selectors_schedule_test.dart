@@ -163,6 +163,371 @@ void main() {
       expect(view.doneCount, 1);
       expect(view.totalCount, 1);
     });
+
+    test('timesPerWeek check appears pending while weekly target is not met',
+        () {
+      final selectedDay = DateTime(2026, 5, 13);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-check',
+              createdAt: '2020-01-01',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-12': {'tpw-check': true},
+              selectedKey: {'tpw-check': false},
+            },
+            'habitCountValues': {selectedKey: {}},
+            'habitSkips': {selectedKey: {'tpw-check': false}},
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      expect(view.pendingHabits.map((h) => h['id']), ['tpw-check']);
+      expect(view.completedHabits, isEmpty);
+      expect(view.skippedHabits, isEmpty);
+
+      final habit = view.viewHabits.single;
+      expect(habit['isTimesPerWeekCheck'], isTrue);
+      expect(habit['weeklyCompletedCount'], 1);
+      expect(habit['weeklyTargetCount'], 3);
+      expect(habit['isWeeklyTargetMet'], isFalse);
+    });
+
+    test(
+        'timesPerWeek check with 1/3 and doneToday appears in completed section',
+        () {
+      final selectedDay = DateTime(2026, 5, 13);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-check',
+              createdAt: '2020-01-01',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              selectedKey: {'tpw-check': true},
+            },
+            'habitCountValues': {selectedKey: {}},
+            'habitSkips': {selectedKey: {'tpw-check': false}},
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      expect(view.pendingHabits, isEmpty);
+      expect(view.completedHabits.map((h) => h['id']), ['tpw-check']);
+      expect(view.skippedHabits, isEmpty);
+
+      final habit = view.completedHabits.single;
+      expect(habit['weeklyCompletedCount'], 1);
+      expect(habit['weeklyTargetCount'], 3);
+      expect(habit['isWeeklyTargetMet'], isFalse);
+      expect(habit['doneToday'], isTrue);
+    });
+
+    test(
+        'timesPerWeek check is completed for the week once target is reached even if not done on selected day',
+        () {
+      final selectedDay = DateTime(2026, 5, 15);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-check',
+              createdAt: '2020-01-01',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-12': {'tpw-check': true},
+              '2026-05-13': {'tpw-check': true},
+              '2026-05-14': {'tpw-check': true},
+              selectedKey: {'tpw-check': false},
+            },
+            'habitCountValues': {selectedKey: {}},
+            'habitSkips': {selectedKey: {'tpw-check': false}},
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      expect(view.pendingHabits, isEmpty);
+      expect(view.completedHabits.map((h) => h['id']), ['tpw-check']);
+      expect(view.skippedHabits, isEmpty);
+      expect(view.doneCount, 1);
+      expect(view.totalCount, 1);
+
+      final habit = view.completedHabits.single;
+      expect(habit['isWeeklyTargetMet'], isTrue);
+      expect(habit['weeklyCompletedCount'], 3);
+      expect(habit['weeklyTargetCount'], 3);
+      expect(habit['doneToday'], isFalse);
+    });
+
+    test('timesPerWeek weekly completed count ignores completions outside selected week',
+        () {
+      final selectedDay = DateTime(2026, 5, 13);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-check',
+              createdAt: '2020-01-01',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-10': {'tpw-check': true},
+              '2026-05-12': {'tpw-check': true},
+              '2026-05-13': {'tpw-check': true},
+              selectedKey: {'tpw-check': true},
+            },
+            'habitCountValues': {selectedKey: {}},
+            'habitSkips': {selectedKey: {'tpw-check': false}},
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      final habit = view.viewHabits.single;
+      expect(habit['weeklyCompletedCount'], 2);
+      expect(habit['weeklyTargetCount'], 3);
+      expect(habit['isWeeklyTargetMet'], isFalse);
+    });
+
+    test('timesPerWeek display supports over-completion (4/3)', () {
+      final selectedDay = DateTime(2026, 5, 15);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-check',
+              createdAt: '2020-01-01',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-12': {'tpw-check': true},
+              '2026-05-13': {'tpw-check': true},
+              '2026-05-14': {'tpw-check': true},
+              selectedKey: {'tpw-check': true},
+            },
+            'habitCountValues': {selectedKey: {}},
+            'habitSkips': {selectedKey: {'tpw-check': false}},
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      expect(view.pendingHabits, isEmpty);
+      expect(view.completedHabits.map((h) => h['id']), ['tpw-check']);
+      expect(view.skippedHabits, isEmpty);
+
+      final habit = view.completedHabits.single;
+      expect(habit['weeklyCompletedCount'], 4);
+      expect(habit['weeklyTargetCount'], 3);
+      expect(habit['isWeeklyTargetMet'], isTrue);
+    });
+
+    test('timesPerWeek visibility still respects createdAt', () {
+      final selectedDay = DateTime(2026, 5, 13);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-future',
+              createdAt: '2026-05-20',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-13': {'tpw-future': true},
+            },
+            'habitCountValues': {
+              '2026-05-13': {},
+            },
+            'habitSkips': {
+              '2026-05-13': {'tpw-future': false},
+            },
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      expect(view.viewHabits, isEmpty);
+      expect(view.pendingHabits, isEmpty);
+      expect(view.completedHabits, isEmpty);
+      expect(view.skippedHabits, isEmpty);
+    });
+
+    test(
+        'timesPerWeek skip does not reduce weekly target and met target remains completed',
+        () {
+      final selectedDay = DateTime(2026, 5, 15);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-check',
+              createdAt: '2020-01-01',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-12': {'tpw-check': true},
+              '2026-05-13': {'tpw-check': true},
+              '2026-05-14': {'tpw-check': true},
+              selectedKey: {'tpw-check': false},
+            },
+            'habitCountValues': {selectedKey: {}},
+            'habitSkips': {selectedKey: {'tpw-check': true}},
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      expect(view.pendingHabits, isEmpty);
+      expect(view.completedHabits.map((h) => h['id']), ['tpw-check']);
+      expect(view.skippedHabits, isEmpty);
+
+      final habit = view.completedHabits.single;
+      expect(habit['weeklyCompletedCount'], 3);
+      expect(habit['weeklyTargetCount'], 3);
+      expect(habit['isWeeklyTargetMet'], isTrue);
+      expect(habit['skippedToday'], isTrue);
+    });
+
+    test('timesPerWeek skipped today and target not met appears skipped', () {
+      final selectedDay = DateTime(2026, 5, 15);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-check',
+              createdAt: '2020-01-01',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-12': {'tpw-check': true},
+              selectedKey: {'tpw-check': false},
+            },
+            'habitCountValues': {selectedKey: {}},
+            'habitSkips': {selectedKey: {'tpw-check': true}},
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      expect(view.pendingHabits, isEmpty);
+      expect(view.completedHabits, isEmpty);
+      expect(view.skippedHabits.map((h) => h['id']), ['tpw-check']);
+
+      final habit = view.skippedHabits.single;
+      expect(habit['weeklyCompletedCount'], 1);
+      expect(habit['weeklyTargetCount'], 3);
+      expect(habit['isWeeklyTargetMet'], isFalse);
+      expect(habit['skippedToday'], isTrue);
+    });
+
+    test('count habits do not get timesPerWeek weekly-progress behavior', () {
+      final selectedDay = DateTime(2026, 5, 13);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            {
+              ..._habit(
+                id: 'count-habit',
+                createdAt: '2020-01-01',
+                schedule: const {
+                  'type': 'timesPerWeek',
+                  'timesPerWeek': 4,
+                  'weekStartsOn': 1,
+                },
+              ),
+              'type': 'count',
+              'target': 5,
+            },
+          ],
+          'history': {
+            'habitCompletions': {
+              selectedKey: {'count-habit': false},
+            },
+            'habitCountValues': {
+              selectedKey: {'count-habit': 2},
+            },
+            'habitSkips': {
+              selectedKey: {'count-habit': false},
+            },
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      expect(view.pendingHabits.map((h) => h['id']), ['count-habit']);
+      expect(view.completedHabits, isEmpty);
+      expect(view.skippedHabits, isEmpty);
+      final habit = view.viewHabits.single;
+      expect(habit['isTimesPerWeekCheck'], isFalse);
+      expect(habit.containsKey('weeklyCompletedCount'), isFalse);
+      expect(habit.containsKey('weeklyTargetCount'), isFalse);
+      expect(habit.containsKey('isWeeklyTargetMet'), isFalse);
+    });
   });
 }
 
