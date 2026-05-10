@@ -121,6 +121,48 @@ void main() {
       expect(view.doneCount, 0);
       expect(view.totalCount, 1);
     });
+
+    test('non-today view uses selected day skips and skip wins over stale done',
+        () {
+      final selectedDay = DateTime(2026, 5, 11);
+      final selectedKey = _dateKey(selectedDay);
+
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'daily-check',
+              createdAt: '2020-01-01',
+              schedule: const {'type': 'daily'},
+              doneToday: true,
+              skippedToday: true,
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              selectedKey: {
+                'daily-check': true,
+              },
+            },
+            'habitCountValues': {
+              selectedKey: {},
+            },
+            'habitSkips': {
+              selectedKey: {
+                'daily-check': false,
+              },
+            },
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      expect(view.pendingHabits, isEmpty);
+      expect(view.completedHabits.map((h) => h['id']), ['daily-check']);
+      expect(view.skippedHabits, isEmpty);
+      expect(view.doneCount, 1);
+      expect(view.totalCount, 1);
+    });
   });
 }
 
