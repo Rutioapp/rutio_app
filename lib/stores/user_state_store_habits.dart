@@ -860,10 +860,78 @@ List<int> _normalizedWeekdays(dynamic rawWeekdays) {
       .toList(growable: false);
 }
 
+bool _isTimesPerWeekFrequencyMode(dynamic rawMode) =>
+    (rawMode ?? '').toString().trim().toLowerCase() == 'timesperweek';
+
+int? _readLegacyTimesPerWeekTarget(Map<String, dynamic> source) {
+  for (final key in const ['timesPerWeekTarget', 'timesPerWeek', 'goal', 'times']) {
+    final value = source[key];
+    if (value == null) continue;
+    final target = _safePositiveNum(value, fallback: 0).toInt();
+    if (target >= 1) return target;
+  }
+  return null;
+}
+
+Map<String, dynamic> _resolvedScheduleForHabitSave({
+  required String habitType,
+  required Map<String, dynamic> source,
+  Map<String, dynamic>? fallbackSchedule,
+}) {
+  final fallback = _normalizeSchedule(fallbackSchedule);
+  final rawSchedule = _map(source['schedule']);
+  final normalizedSchedule =
+      rawSchedule.isEmpty ? <String, dynamic>{} : _normalizeSchedule(rawSchedule);
+  final normalizedType = (normalizedSchedule['type'] ?? '').toString();
+
+  if (habitType == 'count') {
+    if (normalizedSchedule.isEmpty || normalizedType == 'timesPerWeek') {
+      return Map<String, dynamic>.from(fallback);
+    }
+    return normalizedSchedule;
+  }
+
+  if (normalizedType == 'timesPerWeek') {
+    final target = _safePositiveNum(
+      normalizedSchedule['timesPerWeek'] ?? _readLegacyTimesPerWeekTarget(source),
+      fallback: 1,
+    ).toInt();
+    final rawWeekStartsOn = _safeInt(normalizedSchedule['weekStartsOn'], fallback: 1);
+    final weekStartsOn =
+        rawWeekStartsOn >= 1 && rawWeekStartsOn <= 7 ? rawWeekStartsOn : 1;
+    return _normalizeSchedule({
+      'type': 'timesPerWeek',
+      'timesPerWeek': target,
+      'weekStartsOn': weekStartsOn,
+    });
+  }
+
+  final legacyTarget = _readLegacyTimesPerWeekTarget(source);
+  final indicatesTimesPerWeek =
+      _isTimesPerWeekFrequencyMode(source['frequencyMode']) ||
+      _isTimesPerWeekFrequencyMode(source['mode']);
+  if (indicatesTimesPerWeek &&
+      legacyTarget != null &&
+      (normalizedSchedule.isEmpty || normalizedType == 'daily')) {
+    return _normalizeSchedule({
+      'type': 'timesPerWeek',
+      'timesPerWeek': legacyTarget,
+      'weekStartsOn': 1,
+    });
+  }
+
+  if (normalizedSchedule.isNotEmpty) {
+    return normalizedSchedule;
+  }
+  return Map<String, dynamic>.from(fallback);
+}
+
 Map<String, dynamic> _habitSchedule({
   String scheduleType = 'daily',
   String? scheduledDate,
   List<int>? weekdays,
+  int? timesPerWeek,
+  int? weekStartsOn,
 }) {
   if (scheduleType == 'once') {
     return _normalizeSchedule({
@@ -876,6 +944,14 @@ Map<String, dynamic> _habitSchedule({
     return _normalizeSchedule({
       'type': 'weekly',
       'weekdays': weekdays ?? const <int>[],
+    });
+  }
+
+  if (scheduleType == 'timesPerWeek') {
+    return _normalizeSchedule({
+      'type': 'timesPerWeek',
+      'timesPerWeek': _safePositiveNum(timesPerWeek, fallback: 1).toInt(),
+      'weekStartsOn': _safeInt(weekStartsOn, fallback: 1),
     });
   }
 
@@ -1039,10 +1115,16 @@ Future<void> _addCustomHabit(
   }
 
   final type = _normalizedHabitType(habit['type']);
+  final source = _map(habit);
   final routineDays = _normalizedWeekdays(habit['routineDays']);
-  final schedule = routineDays.isEmpty || routineDays.length == 7
+  final fallbackSchedule = routineDays.isEmpty || routineDays.length == 7
       ? _habitSchedule()
       : _habitSchedule(scheduleType: 'weekly', weekdays: routineDays);
+  final schedule = _resolvedScheduleForHabitSave(
+    habitType: type,
+    source: source,
+    fallbackSchedule: fallbackSchedule,
+  );
 
   final familyId = habit['familyId'];
   final allFamilies = habit['allFamilies'] == true;
@@ -1361,9 +1443,27 @@ Future<void> _updateHabitDetailsFromEdit(
   if (patch.containsKey('cadence')) {
     current['frequency'] = patch['cadence'];
   }
+  if (patch.containsKey('frequencyMode')) {
+    current['frequencyMode'] = patch['frequencyMode'];
+  }
 
-  if (patch.containsKey('schedule') && patch['schedule'] is Map) {
-    current['schedule'] = _normalizeSchedule(_map(patch['schedule']));
+  final shouldResolveSchedule = patch.containsKey('schedule') ||
+      patch.containsKey('frequencyMode') ||
+      patch.containsKey('timesPerWeekTarget') ||
+      patch.containsKey('goal') ||
+      patch.containsKey('times') ||
+      patch.containsKey('type') ||
+      patch.containsKey('trackingType') ||
+      patch.containsKey('habitType') ||
+      patch.containsKey('tracking');
+  if (shouldResolveSchedule) {
+    final mergedForSchedule = Map<String, dynamic>.from(current)
+      ..addAll(patch);
+    current['schedule'] = _resolvedScheduleForHabitSave(
+      habitType: type,
+      source: mergedForSchedule,
+      fallbackSchedule: _map(current['schedule']),
+    );
   }
 
   activeHabits[index] = current;

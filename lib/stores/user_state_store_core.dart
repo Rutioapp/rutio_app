@@ -297,6 +297,25 @@ Map<String, dynamic> _normalizeSchedule(Map<String, dynamic>? schedule) {
     };
   }
 
+  if (type == 'timesPerWeek') {
+    final timesPerWeek = _safePositiveNum(
+      normalized['timesPerWeek'] ??
+          normalized['timesPerWeekTarget'] ??
+          normalized['goal'] ??
+          normalized['times'],
+      fallback: 1,
+    ).toInt();
+    final rawWeekStartsOn = _safeInt(normalized['weekStartsOn'], fallback: 1);
+    final weekStartsOn =
+        rawWeekStartsOn >= 1 && rawWeekStartsOn <= 7 ? rawWeekStartsOn : 1;
+
+    return {
+      'type': 'timesPerWeek',
+      'timesPerWeek': timesPerWeek < 1 ? 1 : timesPerWeek,
+      'weekStartsOn': weekStartsOn,
+    };
+  }
+
   return {'type': 'daily'};
 }
 
