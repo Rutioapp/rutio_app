@@ -56,6 +56,8 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   bool _showTitleError = false;
   int _timesPerWeekTarget = 3;
 
+  static const int _defaultWeekStartsOn = 1;
+
   @override
   void initState() {
     super.initState();
@@ -114,6 +116,15 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
   bool get _showsWeeklyCheckTargetSection =>
       _trackingType == 'check' && _frequencyMode == 'timesPerWeek';
+
+  void _selectTrackingType(String trackingType) {
+    setState(() {
+      _trackingType = trackingType;
+      if (_trackingType == 'count' && _frequencyMode == 'timesPerWeek') {
+        _frequencyMode = 'daily';
+      }
+    });
+  }
 
   Future<void> _pickEmoji() async {
     final String? emoji = await showEmojiPickerBottomSheet(
@@ -462,6 +473,18 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
     final List<int> routineDays = _resolvedRoutineDaysForSave();
     final bool isWeeklyCheckGoal = _showsWeeklyCheckTargetSection;
+    final Map<String, dynamic> schedule = isWeeklyCheckGoal
+        ? <String, dynamic>{
+            'type': 'timesPerWeek',
+            'timesPerWeek': _timesPerWeekTarget,
+            'weekStartsOn': _defaultWeekStartsOn,
+          }
+        : routineDays.isEmpty || routineDays.length == 7
+            ? <String, dynamic>{'type': 'daily'}
+            : <String, dynamic>{
+                'type': 'weekly',
+                'weekdays': routineDays,
+              };
     final String habitId = 'custom_${DateTime.now().millisecondsSinceEpoch}';
     final String reminderTime = formatHabitTimeForSave(
       TimeOfDay(hour: _reminderTime.hour, minute: _reminderTime.minute),
@@ -481,6 +504,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
       'reminderEnabled': _reminderEnabled,
       'remindersEnabled': _reminderEnabled,
       'reminderTime': reminderTime,
+      'schedule': schedule,
       if (routineDays.isNotEmpty) 'routineDays': routineDays,
       if (isWeeklyCheckGoal) 'goal': _timesPerWeekTarget,
       if (isWeeklyCheckGoal) 'targetCount': _timesPerWeekTarget,
@@ -782,7 +806,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
               icon: Icons.check_rounded,
               accentColor: _sage,
               isSelected: _trackingType == 'check',
-              onTap: () => setState(() => _trackingType = 'check'),
+              onTap: () => _selectTrackingType('check'),
             ),
           ),
           const SizedBox(width: 12),
@@ -793,7 +817,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
               icon: Icons.loop_rounded,
               accentColor: _camel,
               isSelected: _trackingType == 'count',
-              onTap: () => setState(() => _trackingType = 'count'),
+              onTap: () => _selectTrackingType('count'),
             ),
           ),
         ],
@@ -964,11 +988,12 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
               isSelected: _frequencyMode == 'specificDays',
               onTap: () => setState(() => _frequencyMode = 'specificDays'),
             ),
-            HabitFormFrequencyChip(
-              label: l10n.editHabitFrequencyTimesPerWeek,
-              isSelected: _frequencyMode == 'timesPerWeek',
-              onTap: () => setState(() => _frequencyMode = 'timesPerWeek'),
-            ),
+            if (_trackingType == 'check')
+              HabitFormFrequencyChip(
+                label: l10n.editHabitFrequencyTimesPerWeek,
+                isSelected: _frequencyMode == 'timesPerWeek',
+                onTap: () => setState(() => _frequencyMode = 'timesPerWeek'),
+              ),
           ],
         ),
         AnimatedSize(

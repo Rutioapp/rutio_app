@@ -166,6 +166,14 @@ class EditHabitTabFormData {
   }
 
   Map<String, dynamic> buildScheduleForSave() {
+    if (trackingType == 'check' && frequencyMode == 'timesPerWeek') {
+      return <String, dynamic>{
+        'type': 'timesPerWeek',
+        'timesPerWeek': timesPerWeekTarget < 1 ? 1 : timesPerWeekTarget,
+        'weekStartsOn': 1,
+      };
+    }
+
     final routineDays = resolvedRoutineDaysForSave();
     if (routineDays.isEmpty || routineDays.length == 7) {
       return <String, dynamic>{'type': 'daily'};
@@ -280,16 +288,28 @@ class EditHabitTabFormData {
         selectedDays
           ..clear()
           ..addAll(weekdays);
+      } else if (trackingType == 'check' && type == 'timesPerWeek') {
+        frequencyMode = 'timesPerWeek';
+        final scheduleTarget = getHabitInt(
+              schedule,
+              ['timesPerWeek', 'timesPerWeekTarget', 'goal', 'times'],
+            ) ??
+            timesPerWeekTarget;
+        timesPerWeekTarget = scheduleTarget < 1 ? 1 : scheduleTarget;
       }
     }
 
-    if (rawFrequencyMode == 'timesPerWeek') {
+    if (trackingType == 'check' && rawFrequencyMode == 'timesPerWeek') {
       frequencyMode = 'timesPerWeek';
     } else if (trackingType == 'check' &&
         frequencyMode == 'daily' &&
         rawFrequency.contains('seman') &&
         timesPerWeekTarget > 1) {
       frequencyMode = 'timesPerWeek';
+    }
+
+    if (trackingType == 'count' && frequencyMode == 'timesPerWeek') {
+      frequencyMode = 'daily';
     }
 
     if (selectedDays.isEmpty) {
