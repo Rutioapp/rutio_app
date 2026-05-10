@@ -14,7 +14,6 @@ import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/utils/app_theme.dart';
 import 'package:rutio/utils/family_theme.dart';
 import 'package:rutio/widgets/emoji_picker_bottom_sheet.dart';
-import 'package:rutio/screens/habit_detail/widgets/editor/habit_editor_header.dart';
 import 'package:rutio/screens/habit_detail/widgets/editor/habit_editor_utils.dart';
 import 'package:rutio/screens/habit_detail/widgets/editor/habit_form_visuals.dart';
 
@@ -418,16 +417,17 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
         final canSchedule =
             await permissionController.ensureCanScheduleFromReminderFlow();
         if (!canSchedule) {
-          final effectiveStatus = await permissionController.getEffectiveStatus();
-          final shouldShowPermissionSnack =
-              effectiveStatus == NotificationPermissionStatus.denied ||
-                  effectiveStatus ==
-                      NotificationPermissionStatus.permanentlyDenied;
+          final effectiveStatus =
+              await permissionController.getEffectiveStatus();
+          final shouldShowPermissionSnack = effectiveStatus ==
+                  NotificationPermissionStatus.denied ||
+              effectiveStatus == NotificationPermissionStatus.permanentlyDenied;
           if (!shouldShowPermissionSnack || !mounted) {
             return;
           }
 
-          final result = await NotificationService.instance.checkPermissionStatus();
+          final result =
+              await NotificationService.instance.checkPermissionStatus();
           if (!mounted) return;
           await showNotificationPermissionRecoverySheet(
             context,
@@ -544,61 +544,34 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String liveTitle = _title.trim().isEmpty
-        ? context.l10n.createHabitNewHabitTitle
-        : _title.trim();
-
     return Scaffold(
       backgroundColor: _cream,
       body: Stack(
         children: [
           HabitFormBackground(familyColor: _familyColor),
           SafeArea(
-            child: Column(
-              children: [
-                HabitEditorHeader(
-                  title: liveTitle,
-                  familyColor: _familyColor,
-                  onBack: () => Navigator.maybePop(context),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  height: 1,
-                  color: _camel.withValues(alpha: 0.18),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        HabitFormSectionLabel(
-                            text: context.l10n.editHabitSectionIdentity),
-                        _buildIdentitySection(),
-                        const SizedBox(height: 28),
-                        HabitFormSectionLabel(
-                            text: context.l10n.editHabitSectionCategory),
-                        _buildCategorySection(),
-                        const SizedBox(height: 28),
-                        HabitFormSectionLabel(
-                            text: context.l10n.editHabitSectionTracking),
-                        _buildTrackingTypeSection(),
-                        const SizedBox(height: 28),
-                        _buildCountSection(),
-                        const SizedBox(height: 28),
-                        HabitFormSectionLabel(
-                            text: context.l10n.editHabitSectionFrequency),
-                        _buildFrequencySection(),
-                        const SizedBox(height: 28),
-                        HabitFormSectionLabel(
-                            text: context.l10n.editHabitSectionReminder),
-                        _buildReminderSection(),
-                        const SizedBox(height: 100),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 12),
+                  _buildIdentitySection(),
+                  const SizedBox(height: 14),
+                  _buildCategorySection(),
+                  const SizedBox(height: 14),
+                  _buildTrackingTypeSection(),
+                  const SizedBox(height: 14),
+                  _buildCountSection(),
+                  const SizedBox(height: 14),
+                  _buildFrequencySection(),
+                  const SizedBox(height: 12),
+                  _buildRoutineSection(),
+                  const SizedBox(height: 12),
+                  _buildReminderSection(),
+                ],
+              ),
             ),
           ),
           _buildBottomCta(),
@@ -607,115 +580,187 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     );
   }
 
-  Widget _buildIdentitySection() {
+  Widget _buildHeader() {
     final l10n = context.l10n;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GestureDetector(
-          onTap: _pickEmoji,
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: _camel.withValues(alpha: 0.11),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _camel.withValues(alpha: 0.35)),
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Center(
-                  child: Text(
-                    _emoji,
-                    style: const TextStyle(fontSize: 30),
-                  ),
-                ),
-                Positioned(
-                  right: -2,
-                  bottom: -2,
-                  child: Container(
-                    width: 18,
-                    height: 18,
-                    decoration: const BoxDecoration(
-                      color: _camel,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.edit,
-                      size: 9,
-                      color: _cream,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        _HeaderRoundButton(
+          icon: Icons.arrow_back_ios_new_rounded,
+          onTap: () => Navigator.maybePop(context),
         ),
-        const SizedBox(width: 14),
         Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: _titleController,
-                focusNode: _titleFocusNode,
-                maxLength: 40,
-                onChanged: (String value) {
-                  setState(() {
-                    _title = value;
-                    if (_showTitleError && value.trim().isNotEmpty) {
-                      _showTitleError = false;
-                    }
-                  });
-                },
-                style: GoogleFonts.dmSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
+              Text(
+                l10n.createHabitNewHabitTitle,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.authTitle.copyWith(
+                  fontSize: 42,
+                  height: 0.9,
                   color: _dark,
                 ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  hintText: l10n.editHabitTitleHint,
-                  hintStyle: GoogleFonts.dmSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    color: _dark.withValues(alpha: 0.28),
-                  ),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: _showTitleError
-                          ? _camel
-                          : _camel.withValues(alpha: 0.30),
-                      width: _showTitleError ? 1.4 : 1,
-                    ),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: _showTitleError
-                          ? _camel
-                          : _camel.withValues(alpha: 0.80),
-                      width: 1.2,
-                    ),
-                  ),
-                ),
               ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${_title.characters.length} / 40',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    color: _dark.withValues(alpha: 0.28),
-                  ),
+              const SizedBox(height: 1),
+              Text(
+                l10n.createHabitHeaderSubtitle,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w400,
+                  color: _dark.withValues(alpha: 0.55),
                 ),
               ),
             ],
           ),
         ),
+        const _HeaderRoundButton(
+          icon: CupertinoIcons.ellipsis,
+          onTap: null,
+        ),
       ],
+    );
+  }
+
+  Widget _buildIdentitySection() {
+    final l10n = context.l10n;
+
+    return _SurfaceCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: _pickEmoji,
+            child: Container(
+              width: 74,
+              height: 74,
+              decoration: BoxDecoration(
+                color: _camel.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: _camel.withValues(alpha: 0.24)),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(
+                    child: Text(
+                      _emoji,
+                      style: const TextStyle(fontSize: 38),
+                    ),
+                  ),
+                  Positioned(
+                    right: -6,
+                    bottom: -6,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: _cream,
+                        shape: BoxShape.circle,
+                        border:
+                            Border.all(color: _camel.withValues(alpha: 0.30)),
+                      ),
+                      child: Icon(
+                        Icons.edit_rounded,
+                        size: 12,
+                        color: _camel.withValues(alpha: 0.92),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.createHabitNameLabel,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.9,
+                    color: _dark.withValues(alpha: 0.45),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _showTitleError
+                          ? _camel
+                          : _camel.withValues(alpha: 0.22),
+                      width: _showTitleError ? 1.4 : 1,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _titleController,
+                    focusNode: _titleFocusNode,
+                    maxLength: 40,
+                    onChanged: (String value) {
+                      setState(() {
+                        _title = value;
+                        if (_showTitleError && value.trim().isNotEmpty) {
+                          _showTitleError = false;
+                        }
+                      });
+                    },
+                    style: GoogleFonts.dmSans(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w500,
+                      color: _dark,
+                    ),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      hintText: l10n.editHabitTitleHint,
+                      hintStyle: GoogleFonts.dmSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: _dark.withValues(alpha: 0.28),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 11,
+                      ),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.createHabitNameHelper,
+                        maxLines: 2,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: _dark.withValues(alpha: 0.52),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${_title.characters.length} / 40',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: _dark.withValues(alpha: 0.42),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -723,105 +768,121 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     final List<String> families = _availableFamilies;
     final l10n = context.l10n;
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: families.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 74 / 60,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-      ),
-      itemBuilder: (BuildContext context, int index) {
-        final String familyId = families[index];
-        final bool isSelected = familyId == _familyId;
-        final Color color = FamilyTheme.colorOf(familyId);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeading(text: l10n.createHabitSectionCategory),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: families.map((String familyId) {
+              final bool isSelected = familyId == _familyId;
+              final Color color = FamilyTheme.colorOf(familyId);
 
-        return GestureDetector(
-          onTap: () => _selectFamily(familyId),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? color.withValues(alpha: 0.11)
-                  : Colors.white.withValues(alpha: 0.50),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isSelected ? color : _camel.withValues(alpha: 0.12),
-                width: isSelected ? 1.5 : 1,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    FamilyTheme.emojiOf(familyId),
-                    style: const TextStyle(fontSize: 13),
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => _selectFamily(familyId),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    width: 66,
+                    height: 76,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? color.withValues(alpha: 0.10)
+                          : Colors.white.withValues(alpha: 0.56),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color:
+                            isSelected ? color : _camel.withValues(alpha: 0.15),
+                        width: isSelected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          FamilyTheme.emojiOf(familyId),
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          l10n.familyName(familyId),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 10,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: isSelected ? color : _dark,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.familyName(familyId),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: _dark,
-                  ),
-                ),
-              ],
-            ),
+              );
+            }).toList(growable: false),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
   Widget _buildTrackingTypeSection() {
     final l10n = context.l10n;
 
-    return SizedBox(
-      height: 112,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: HabitFormTypeCard(
-              title: l10n.editHabitTrackingCheckTitle,
-              description: l10n.editHabitTrackingCheckSubtitle,
-              icon: Icons.check_rounded,
-              accentColor: _sage,
-              isSelected: _trackingType == 'check',
-              onTap: () => _selectTrackingType('check'),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeading(text: l10n.createHabitSectionTracking),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 86,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _TrackingCard(
+                  title: l10n.createHabitTrackingCheckTitle,
+                  description: l10n.createHabitTrackingCheckSubtitle,
+                  leading: const Icon(
+                    Icons.check_rounded,
+                    size: 26,
+                    color: _cream,
+                  ),
+                  accentColor: _sage,
+                  isSelected: _trackingType == 'check',
+                  onTap: () => _selectTrackingType('check'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _TrackingCard(
+                  title: l10n.createHabitTrackingCountTitle,
+                  description: l10n.createHabitTrackingCountSubtitle,
+                  leading: Text(
+                    '123',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                      color: _camel.withValues(alpha: 0.95),
+                    ),
+                  ),
+                  accentColor: _sage,
+                  isSelected: _trackingType == 'count',
+                  onTap: () => _selectTrackingType('count'),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: HabitFormTypeCard(
-              title: l10n.editHabitTrackingCountTitle,
-              description: l10n.editHabitTrackingCountSubtitle,
-              icon: Icons.loop_rounded,
-              accentColor: _camel,
-              isSelected: _trackingType == 'count',
-              onTap: () => _selectTrackingType('count'),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -838,14 +899,9 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  HabitFormSectionLabel(text: l10n.editHabitDailyGoalSection),
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.42),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: _camel.withValues(alpha: 0.14)),
-                    ),
+                  _SectionHeading(text: l10n.editHabitDailyGoalSection),
+                  const SizedBox(height: 8),
+                  _SurfaceCard(
                     child: Column(
                       children: [
                         Row(
@@ -907,7 +963,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 12),
                         GestureDetector(
                           onTap: _showUnitBottomSheet,
                           child: AbsorbPointer(
@@ -970,256 +1026,535 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
 
   Widget _buildFrequencySection() {
     final l10n = context.l10n;
+    final List<_SegmentOption> segments = [
+      _SegmentOption(
+        id: 'daily',
+        label: l10n.editHabitFrequencyDaily,
+      ),
+      _SegmentOption(
+        id: 'specificDays',
+        label: l10n.editHabitFrequencySpecificDays,
+      ),
+      if (_trackingType == 'check')
+        _SegmentOption(
+          id: 'timesPerWeek',
+          label: l10n.editHabitFrequencyTimesPerWeek,
+        ),
+    ];
+
+    String cardTitle;
+    String cardSubtitle;
+    IconData cardIcon;
+    switch (_frequencyMode) {
+      case 'specificDays':
+        cardTitle = l10n.createHabitFrequencySpecificTitle;
+        cardSubtitle = l10n.createHabitFrequencySpecificSubtitle;
+        cardIcon = CupertinoIcons.calendar_badge_plus;
+        break;
+      case 'timesPerWeek':
+        cardTitle = l10n.createHabitFrequencyTimesPerWeekTitle;
+        cardSubtitle = l10n.createHabitFrequencyTimesPerWeekSubtitle;
+        cardIcon = CupertinoIcons.repeat;
+        break;
+      default:
+        cardTitle = l10n.createHabitFrequencyDailyTitle;
+        cardSubtitle = l10n.createHabitFrequencyDailySubtitle;
+        cardIcon = CupertinoIcons.calendar_today;
+        break;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            HabitFormFrequencyChip(
-              label: l10n.editHabitFrequencyDaily,
-              isSelected: _frequencyMode == 'daily',
-              onTap: () => setState(() => _frequencyMode = 'daily'),
-            ),
-            HabitFormFrequencyChip(
-              label: l10n.editHabitFrequencySpecificDays,
-              isSelected: _frequencyMode == 'specificDays',
-              onTap: () => setState(() => _frequencyMode = 'specificDays'),
-            ),
-            if (_trackingType == 'check')
-              HabitFormFrequencyChip(
-                label: l10n.editHabitFrequencyTimesPerWeek,
-                isSelected: _frequencyMode == 'timesPerWeek',
-                onTap: () => setState(() => _frequencyMode = 'timesPerWeek'),
-              ),
-          ],
+        _SectionHeading(text: l10n.createHabitSectionFrequency),
+        const SizedBox(height: 8),
+        _FrequencySegmentedControl(
+          options: segments,
+          selectedId: _frequencyMode,
+          onSelected: (String id) => setState(() => _frequencyMode = id),
         ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          child: _frequencyMode == 'specificDays'
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 14),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: List<Widget>.generate(7, (int index) {
-                      final int day = index + 1;
-                      final bool isSelected = _selectedDays.contains(day);
-
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            if (isSelected && _selectedDays.length > 1) {
-                              _selectedDays.remove(day);
-                            } else if (!isSelected) {
-                              _selectedDays.add(day);
-                            }
-                          });
-                        },
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? _camel
-                                : Colors.white.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isSelected
-                                  ? _camel
-                                  : _camel.withValues(alpha: 0.20),
-                            ),
-                          ),
-                          child: Text(
-                            l10n.weekdayLetter(day),
-                            style: GoogleFonts.dmSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: isSelected
-                                  ? _cream
-                                  : _dark.withValues(alpha: 0.38),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          child: _showsWeeklyCheckTargetSection
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 14),
-                  child: Container(
-                    padding: const EdgeInsets.all(18),
+        const SizedBox(height: 8),
+        _SurfaceCard(
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.42),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: _camel.withValues(alpha: 0.14)),
+                      color: _sage.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Row(
+                    alignment: Alignment.center,
+                    child: Icon(
+                      cardIcon,
+                      color: _sage,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.editHabitWeeklyGoalTitle,
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: _dark,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                l10n.editHabitWeeklyGoalSubtitle,
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w400,
-                                  color: _dark.withValues(alpha: 0.38),
-                                ),
-                              ),
-                            ],
+                        Text(
+                          cardTitle,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _dark,
                           ),
                         ),
-                        Row(
-                          children: [
-                            HabitFormStepperButton(
-                              icon: Icons.remove_rounded,
-                              onTap: () {
-                                if (_timesPerWeekTarget > 1) {
-                                  setState(() => _timesPerWeekTarget -= 1);
-                                }
-                              },
-                            ),
-                            const SizedBox(width: 10),
-                            HabitFormEditableTargetValue(
-                              value: _timesPerWeekTarget,
-                              onTap: () => _showNumberInputDialog(
-                                title: l10n.editHabitTimesPerWeekDialogTitle,
-                                subtitle:
-                                    l10n.editHabitTimesPerWeekDialogSubtitle,
-                                initialValue: _timesPerWeekTarget,
-                                onSubmitted: (int value) {
-                                  if (!mounted) return;
-                                  setState(() => _timesPerWeekTarget = value);
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            HabitFormStepperButton(
-                              icon: Icons.add_rounded,
-                              onTap: () =>
-                                  setState(() => _timesPerWeekTarget += 1),
-                            ),
-                          ],
+                        const SizedBox(height: 2),
+                        Text(
+                          cardSubtitle,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: _dark.withValues(alpha: 0.52),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                )
-              : const SizedBox.shrink(),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: _dark.withValues(alpha: 0.45),
+                  ),
+                ],
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: _frequencyMode == 'specificDays'
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: List<Widget>.generate(7, (int index) {
+                            final int day = index + 1;
+                            final bool isSelected = _selectedDays.contains(day);
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  if (isSelected && _selectedDays.length > 1) {
+                                    _selectedDays.remove(day);
+                                  } else if (!isSelected) {
+                                    _selectedDays.add(day);
+                                  }
+                                });
+                              },
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? _sage
+                                      : Colors.white.withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(9),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? _sage
+                                        : _camel.withValues(alpha: 0.20),
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.weekdayLetter(day),
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: isSelected
+                                        ? _cream
+                                        : _dark.withValues(alpha: 0.42),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: _showsWeeklyCheckTargetSection
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l10n.editHabitWeeklyGoalTitle,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: _dark.withValues(alpha: 0.75),
+                                ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                HabitFormStepperButton(
+                                  icon: Icons.remove_rounded,
+                                  onTap: () {
+                                    if (_timesPerWeekTarget > 1) {
+                                      setState(() => _timesPerWeekTarget -= 1);
+                                    }
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                HabitFormEditableTargetValue(
+                                  value: _timesPerWeekTarget,
+                                  onTap: () => _showNumberInputDialog(
+                                    title:
+                                        l10n.editHabitTimesPerWeekDialogTitle,
+                                    subtitle: l10n
+                                        .editHabitTimesPerWeekDialogSubtitle,
+                                    initialValue: _timesPerWeekTarget,
+                                    onSubmitted: (int value) {
+                                      if (!mounted) return;
+                                      setState(
+                                          () => _timesPerWeekTarget = value);
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                HabitFormStepperButton(
+                                  icon: Icons.add_rounded,
+                                  onTap: () =>
+                                      setState(() => _timesPerWeekTarget += 1),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildReminderSection() {
+  Widget _buildRoutineSection() {
     final l10n = context.l10n;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.48),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _camel.withValues(alpha: 0.14)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _camel.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  CupertinoIcons.bell_fill,
-                  size: 18,
-                  color: _camel,
+    return GestureDetector(
+      onTap: _showRoutineComingSoonDialog,
+      child: _SurfaceCard(
+        borderColor: _camel.withValues(alpha: 0.25),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _camel.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                CupertinoIcons.briefcase_fill,
+                size: 17,
+                color: _camel.withValues(alpha: 0.95),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        l10n.createHabitRoutineTitle,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: _dark,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.72),
+                          borderRadius: BorderRadius.circular(999),
+                          border:
+                              Border.all(color: _camel.withValues(alpha: 0.22)),
+                        ),
+                        child: Text(
+                          l10n.createHabitOptionalPill,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w500,
+                            color: _dark.withValues(alpha: 0.55),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.createHabitRoutineSubtitle,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: _dark.withValues(alpha: 0.52),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.68),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _camel.withValues(alpha: 0.40),
+                  style: BorderStyle.solid,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: Text(
+                l10n.createHabitComingSoon,
+                style: GoogleFonts.dmSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: _camel.withValues(alpha: 0.95),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: _dark.withValues(alpha: 0.42),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReminderSection() {
+    final l10n = context.l10n;
+    final String timeText = MaterialLocalizations.of(context).formatTimeOfDay(
+      TimeOfDay(hour: _reminderTime.hour, minute: _reminderTime.minute),
+      alwaysUse24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat ||
+          Localizations.localeOf(context).languageCode == 'es',
+    );
+
+    return GestureDetector(
+      onTap: _showReminderTimeSheet,
+      child: _SurfaceCard(
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: _camel.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                CupertinoIcons.bell_fill,
+                size: 17,
+                color: _camel.withValues(alpha: 0.95),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.createHabitReminderTitle,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _dark,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _reminderEnabled
+                        ? l10n.createHabitReminderEnabledSubtitle
+                        : l10n.createHabitReminderDisabledSubtitle,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: _dark.withValues(alpha: 0.55),
+                    ),
+                  ),
+                  if (_reminderEnabled) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      l10n.editHabitReminderDailyTitle,
+                      timeText,
                       style: GoogleFonts.dmSans(
-                        fontSize: 15,
+                        fontSize: 18,
                         fontWeight: FontWeight.w500,
-                        color: _dark,
+                        color: _dark.withValues(alpha: 0.90),
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      l10n.editHabitReminderDailySubtitle,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: _dark.withValues(alpha: 0.42),
+                  ],
+                ],
+              ),
+            ),
+            CupertinoSwitch(
+              value: _reminderEnabled,
+              activeTrackColor: _sage,
+              onChanged: (bool value) {
+                setState(() => _reminderEnabled = value);
+                if (value) {
+                  _showReminderTimeSheet();
+                }
+              },
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: _dark.withValues(alpha: 0.42),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showReminderTimeSheet() async {
+    if (!_reminderEnabled) {
+      return;
+    }
+    final l10n = context.l10n;
+    DateTime selected = _reminderTime;
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext sheetContext) {
+        return Container(
+          height: 300,
+          decoration: const BoxDecoration(
+            color: _cream,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: Text(
+                        l10n.commonCancel,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w500,
+                          color: _sage,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        l10n.createHabitReminderTimeTitle,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: _dark,
+                        ),
+                      ),
+                    ),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        setState(() => _reminderTime = selected);
+                        Navigator.of(sheetContext).pop();
+                      },
+                      child: Text(
+                        l10n.createHabitDone,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w500,
+                          color: _sage,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              CupertinoSwitch(
-                value: _reminderEnabled,
-                activeTrackColor: _camel,
-                onChanged: (bool value) {
-                  setState(() => _reminderEnabled = value);
-                },
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.time,
+                  initialDateTime: _reminderTime,
+                  use24hFormat: MediaQuery.of(context).alwaysUse24HourFormat ||
+                      Localizations.localeOf(context).languageCode == 'es',
+                  onDateTimeChanged: (DateTime value) {
+                    selected = value;
+                  },
+                ),
               ),
             ],
           ),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
-          child: _reminderEnabled
-              ? Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.42),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _camel.withValues(alpha: 0.14)),
-                  ),
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.time,
-                    initialDateTime: _reminderTime,
-                    use24hFormat: true,
-                    onDateTimeChanged: (DateTime value) {
-                      setState(() => _reminderTime = value);
-                    },
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showRoutineComingSoonDialog() async {
+    final l10n = context.l10n;
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return CupertinoAlertDialog(
+          title: Text(
+            l10n.createHabitRoutineTitle,
+            style: GoogleFonts.dmSans(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              l10n.createHabitRoutineComingSoonDialogBody,
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: _dark.withValues(alpha: 0.74),
+              ),
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                l10n.commonClose,
+                style: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1232,13 +1567,310 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
             ? context.l10n.editHabitSaving
             : context.l10n.createHabitSaveHabit;
 
-    return HabitFormBottomCta(
-      label: label,
-      onPressed: _save,
-      isDisabled: disabled,
-      backgroundColor: backgroundColor,
-      foregroundColor: _cream,
-      baseColor: _cream,
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 68,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  _cream.withValues(alpha: 0),
+                  _cream,
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+            child: SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(16),
+                color: backgroundColor,
+                onPressed: disabled ? null : _save,
+                child: Text(
+                  label,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: _cream,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: AppTextStyles.authTitle.copyWith(
+        fontSize: 18.5,
+        color: const Color(0xFF2D160B),
+      ),
+    );
+  }
+}
+
+class _SurfaceCard extends StatelessWidget {
+  const _SurfaceCard({
+    required this.child,
+    this.borderColor,
+  });
+
+  final Widget child;
+  final Color? borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.58),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: borderColor ?? const Color(0xFFB8895A).withValues(alpha: 0.16),
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _HeaderRoundButton extends StatelessWidget {
+  const _HeaderRoundButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 38,
+      height: 38,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.56),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFFB8895A).withValues(alpha: 0.24),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: const Color(0xFF3D2010)
+                  .withValues(alpha: onTap == null ? 0.35 : 0.85),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TrackingCard extends StatelessWidget {
+  const _TrackingCard({
+    required this.title,
+    required this.description,
+    required this.leading,
+    required this.accentColor,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String description;
+  final Widget leading;
+  final Color accentColor;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? accentColor.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.58),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? accentColor.withValues(alpha: 0.85)
+                : const Color(0xFFB8895A).withValues(alpha: 0.18),
+            width: isSelected ? 1.4 : 1,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? accentColor
+                        : const Color(0xFFB8895A).withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: leading,
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF3D2010),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color:
+                              const Color(0xFF3D2010).withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (isSelected)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  width: 19,
+                  height: 19,
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 12,
+                    color: Color(0xFFF5EDE0),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SegmentOption {
+  const _SegmentOption({
+    required this.id,
+    required this.label,
+  });
+
+  final String id;
+  final String label;
+}
+
+class _FrequencySegmentedControl extends StatelessWidget {
+  const _FrequencySegmentedControl({
+    required this.options,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<_SegmentOption> options;
+  final String selectedId;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFB8895A).withValues(alpha: 0.16),
+        ),
+      ),
+      child: Row(
+        children: options.map((option) {
+          final bool isSelected = option.id == selectedId;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onSelected(option.id),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 170),
+                curve: Curves.easeOut,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          colors: [Color(0xFF5E855F), Color(0xFF4A754E)],
+                        )
+                      : null,
+                  color: isSelected ? null : Colors.transparent,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  option.label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12.2,
+                    fontWeight: FontWeight.w500,
+                    color: isSelected
+                        ? const Color(0xFFF5EDE0)
+                        : const Color(0xFF3D2010).withValues(alpha: 0.55),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(growable: false),
+      ),
     );
   }
 }

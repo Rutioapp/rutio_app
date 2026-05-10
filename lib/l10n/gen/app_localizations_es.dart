@@ -2337,6 +2337,91 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createHabitNewHabitTitle => 'Nuevo hábito';
 
   @override
+  String get createHabitHeaderSubtitle => 'Pequeños pasos, progreso constante.';
+
+  @override
+  String get createHabitNameLabel => 'NOMBRE DEL HÁBITO';
+
+  @override
+  String get createHabitNameHelper =>
+      'Un nombre claro te ayuda a mantener el foco.';
+
+  @override
+  String get createHabitSectionCategory => 'Categoría';
+
+  @override
+  String get createHabitSectionTracking => 'Tipo de seguimiento';
+
+  @override
+  String get createHabitSectionFrequency => 'Frecuencia';
+
+  @override
+  String get createHabitTrackingCheckTitle => 'Sí / No';
+
+  @override
+  String get createHabitTrackingCheckSubtitle => 'Complétalo una vez';
+
+  @override
+  String get createHabitTrackingCountTitle => 'Contador';
+
+  @override
+  String get createHabitTrackingCountSubtitle =>
+      'Registra cantidad, minutos, páginas...';
+
+  @override
+  String get createHabitFrequencyDailyTitle => 'Cada día';
+
+  @override
+  String get createHabitFrequencyDailySubtitle =>
+      'Se repite cada día hasta que lo cambies.';
+
+  @override
+  String get createHabitFrequencySpecificTitle => 'Días concretos';
+
+  @override
+  String get createHabitFrequencySpecificSubtitle =>
+      'Elige qué días de la semana aparece.';
+
+  @override
+  String get createHabitFrequencyTimesPerWeekTitle => 'X veces por semana';
+
+  @override
+  String get createHabitFrequencyTimesPerWeekSubtitle =>
+      'Objetivo semanal flexible. Complétalo cualquier día.';
+
+  @override
+  String get createHabitRoutineTitle => 'Añadir a rutina';
+
+  @override
+  String get createHabitOptionalPill => 'Opcional';
+
+  @override
+  String get createHabitRoutineSubtitle =>
+      'Coloca este hábito dentro de una rutina de mañana o noche.';
+
+  @override
+  String get createHabitComingSoon => 'Próximamente';
+
+  @override
+  String get createHabitRoutineComingSoonDialogBody =>
+      'La asignación a rutinas llegará pronto. Puedes guardar este hábito ahora.';
+
+  @override
+  String get createHabitReminderTitle => 'Recordatorio';
+
+  @override
+  String get createHabitReminderEnabledSubtitle => 'Recordatorio diario';
+
+  @override
+  String get createHabitReminderDisabledSubtitle => 'Recordatorio desactivado';
+
+  @override
+  String get createHabitReminderTimeTitle => 'Hora del recordatorio';
+
+  @override
+  String get createHabitDone => 'Hecho';
+
+  @override
   String get createHabitSaveHabit => 'Guardar hábito';
 
   @override

@@ -2326,6 +2326,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createHabitNewHabitTitle => 'New habit';
 
   @override
+  String get createHabitHeaderSubtitle => 'Small steps, steady progress.';
+
+  @override
+  String get createHabitNameLabel => 'NAME YOUR HABIT';
+
+  @override
+  String get createHabitNameHelper => 'A clear habit name keeps you focused.';
+
+  @override
+  String get createHabitSectionCategory => 'Category';
+
+  @override
+  String get createHabitSectionTracking => 'Tracking type';
+
+  @override
+  String get createHabitSectionFrequency => 'Frequency';
+
+  @override
+  String get createHabitTrackingCheckTitle => 'Yes / No';
+
+  @override
+  String get createHabitTrackingCheckSubtitle => 'Complete it once';
+
+  @override
+  String get createHabitTrackingCountTitle => 'Counter';
+
+  @override
+  String get createHabitTrackingCountSubtitle =>
+      'Track quantity, minutes, pages...';
+
+  @override
+  String get createHabitFrequencyDailyTitle => 'Every day';
+
+  @override
+  String get createHabitFrequencyDailySubtitle =>
+      'Repeats daily until you change it.';
+
+  @override
+  String get createHabitFrequencySpecificTitle => 'Specific days';
+
+  @override
+  String get createHabitFrequencySpecificSubtitle =>
+      'Choose which weekdays this habit appears.';
+
+  @override
+  String get createHabitFrequencyTimesPerWeekTitle => 'X times per week';
+
+  @override
+  String get createHabitFrequencyTimesPerWeekSubtitle =>
+      'Flexible weekly goal. Complete it any day.';
+
+  @override
+  String get createHabitRoutineTitle => 'Add to routine';
+
+  @override
+  String get createHabitOptionalPill => 'Optional';
+
+  @override
+  String get createHabitRoutineSubtitle =>
+      'Place this habit inside a morning or evening routine.';
+
+  @override
+  String get createHabitComingSoon => 'Coming soon';
+
+  @override
+  String get createHabitRoutineComingSoonDialogBody =>
+      'Routine assignment is coming soon. You can still save this habit now.';
+
+  @override
+  String get createHabitReminderTitle => 'Reminder';
+
+  @override
+  String get createHabitReminderEnabledSubtitle => 'Daily reminder';
+
+  @override
+  String get createHabitReminderDisabledSubtitle => 'Reminder off';
+
+  @override
+  String get createHabitReminderTimeTitle => 'Reminder time';
+
+  @override
+  String get createHabitDone => 'Done';
+
+  @override
   String get createHabitSaveHabit => 'Save habit';
 
   @override
