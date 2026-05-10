@@ -326,6 +326,75 @@ void main() {
       expect(habit['isWeeklyTargetMet'], isFalse);
     });
 
+    test('timesPerWeek weekly completed count respects schedule weekStartsOn',
+        () {
+      final selectedDay = DateTime(2026, 5, 10);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-sunday-start',
+              createdAt: '2020-01-01',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 7,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-04': {'tpw-sunday-start': true},
+              selectedKey: {'tpw-sunday-start': true},
+            },
+            'habitCountValues': {selectedKey: {}},
+            'habitSkips': {selectedKey: {'tpw-sunday-start': false}},
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      final habit = view.viewHabits.single;
+      expect(habit['weeklyCompletedCount'], 1);
+      expect(habit['weeklyTargetCount'], 3);
+      expect(habit['isWeeklyTargetMet'], isFalse);
+    });
+
+    test('timesPerWeek defaults weekStartsOn to Monday when missing', () {
+      final selectedDay = DateTime(2026, 5, 13);
+      final selectedKey = _dateKey(selectedDay);
+      final root = <String, dynamic>{
+        'userState': {
+          'activeHabits': [
+            _habit(
+              id: 'tpw-default-week-start',
+              createdAt: '2020-01-01',
+              schedule: const {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+              },
+            ),
+          ],
+          'history': {
+            'habitCompletions': {
+              '2026-05-10': {'tpw-default-week-start': true},
+              '2026-05-12': {'tpw-default-week-start': true},
+              selectedKey: {'tpw-default-week-start': true},
+            },
+            'habitCountValues': {selectedKey: {}},
+            'habitSkips': {selectedKey: {'tpw-default-week-start': false}},
+          },
+        },
+      };
+
+      final view = buildHomeViewData(root, selectedDay);
+      final habit = view.viewHabits.single;
+      expect(habit['weeklyCompletedCount'], 2);
+      expect(habit['weeklyTargetCount'], 3);
+      expect(habit['isWeeklyTargetMet'], isFalse);
+    });
+
     test('timesPerWeek display supports over-completion (4/3)', () {
       final selectedDay = DateTime(2026, 5, 15);
       final selectedKey = _dateKey(selectedDay);

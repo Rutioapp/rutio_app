@@ -295,6 +295,31 @@ void main() {
         expect(result.consistencyPct, 33);
       });
 
+      test('week period on Monday still applies weekly target expectations',
+          () async {
+        final mondayNow = DateTime(2026, 5, 4, 10);
+
+        final result = await _buildWeekViewData(
+          now: mondayNow,
+          activeHabits: [
+            _habit(
+              id: 'tpw-monday',
+              title: 'TPW Monday',
+              schedule: {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          history: _emptyHistory(),
+        );
+
+        expect(result.totalDays, 3);
+        expect(result.completedHabits, 0);
+        expect(result.consistencyPct, 0);
+      });
+
       test('week period hits 100% when weekly target is met (3/3)', () async {
         final weekNow = DateTime(2026, 5, 8, 10);
         final history = _emptyHistory();
@@ -397,6 +422,32 @@ void main() {
                 'type': 'timesPerWeek',
                 'timesPerWeek': 3,
                 'weekStartsOn': 7,
+              },
+            ),
+          ],
+          history: history,
+        );
+
+        expect(result.totalDays, 3);
+        expect(result.completedHabits, 1);
+        expect(result.consistencyPct, 33);
+      });
+
+      test('weekStartsOn defaults to Monday when missing', () async {
+        final weekNow = DateTime(2026, 5, 13, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 5, 10, 8), 'tpw-default');
+        _setCheckCompletion(history, DateTime(2026, 5, 12, 8), 'tpw-default');
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'tpw-default',
+              title: 'TPW Default',
+              schedule: {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
               },
             ),
           ],

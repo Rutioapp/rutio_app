@@ -150,6 +150,7 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     countValuesRoot: countValuesRoot,
     habits: habits,
     habitsById: habitsById,
+    includeTimesPerWeekContribution: period != StatisticsV3Period.day,
   );
   final totalExpectedHabitInstances = math.max(periodStats.expectedCount, 0);
   final totalCompletedHabitInstances = math.max(periodStats.completedCount, 0);
@@ -286,6 +287,7 @@ _PeriodConsistencyStats _buildPeriodConsistencyStats({
   required Map<String, dynamic> countValuesRoot,
   required List<Map<String, dynamic>> habits,
   required Map<String, Map<String, dynamic>> habitsById,
+  bool includeTimesPerWeekContribution = true,
 }) {
   final from = _dateOnly(start);
   final to = _dateOnly(end);
@@ -317,17 +319,19 @@ _PeriodConsistencyStats _buildPeriodConsistencyStats({
     expectedCount += dayStats.expectedCount;
     completedCount += dayStats.completedCount;
   }
-  final timesPerWeekContribution = _buildTimesPerWeekContribution(
-    from: from,
-    to: to,
-    today: today,
-    userState: userState,
-    completionsRoot: completionsRoot,
-    skipsRoot: skipsRoot,
-    habits: habits,
-  );
-  expectedCount += timesPerWeekContribution.expectedCount;
-  completedCount += timesPerWeekContribution.completedCount;
+  if (includeTimesPerWeekContribution) {
+    final timesPerWeekContribution = _buildTimesPerWeekContribution(
+      from: from,
+      to: to,
+      today: today,
+      userState: userState,
+      completionsRoot: completionsRoot,
+      skipsRoot: skipsRoot,
+      habits: habits,
+    );
+    expectedCount += timesPerWeekContribution.expectedCount;
+    completedCount += timesPerWeekContribution.completedCount;
+  }
 
   final percentage = expectedCount == 0
       ? 0
@@ -348,13 +352,6 @@ _ExpectedCompletedCounts _buildTimesPerWeekContribution({
   required Map<String, dynamic> skipsRoot,
   required List<Map<String, dynamic>> habits,
 }) {
-  if (_dateOnly(from) == _dateOnly(to)) {
-    return const _ExpectedCompletedCounts(
-      expectedCount: 0,
-      completedCount: 0,
-    );
-  }
-
   var expectedCount = 0;
   var completedCount = 0;
   final isCompactWeekWindow = to.difference(from).inDays < 7;

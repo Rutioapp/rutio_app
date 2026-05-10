@@ -64,6 +64,56 @@ void main() {
       expect(_historyDoneFor(store, '2026-05-12', 'tpw-check'), isTrue);
     });
 
+    test('timesPerWeek check skip works on any weekday', () async {
+      final store = await _seedStore(habits: [
+        _habit(
+          id: 'tpw-check-skip',
+          schedule: const {
+            'type': 'timesPerWeek',
+            'timesPerWeek': 3,
+            'weekStartsOn': 1,
+          },
+        ),
+      ]);
+
+      await store.setHabitSkipForKey(
+        habitId: 'tpw-check-skip',
+        dateKey: '2026-05-14',
+        skipped: true,
+      );
+
+      expect(_historySkipFor(store, '2026-05-14', 'tpw-check-skip'), isTrue);
+      expect(_historyDoneFor(store, '2026-05-14', 'tpw-check-skip'), isFalse);
+    });
+
+    test('timesPerWeek completion is ignored before createdAt', () async {
+      final store = await _seedStore(habits: [
+        _habit(
+          id: 'tpw-future',
+          createdAt: '2026-05-20',
+          schedule: const {
+            'type': 'timesPerWeek',
+            'timesPerWeek': 3,
+            'weekStartsOn': 1,
+          },
+        ),
+      ]);
+
+      await store.setHabitCompletionForKey(
+        habitId: 'tpw-future',
+        dateKey: '2026-05-19',
+        done: true,
+      );
+      await store.setHabitSkipForKey(
+        habitId: 'tpw-future',
+        dateKey: '2026-05-19',
+        skipped: true,
+      );
+
+      expect(_historyDoneFor(store, '2026-05-19', 'tpw-future'), isNull);
+      expect(_historySkipFor(store, '2026-05-19', 'tpw-future'), isNull);
+    });
+
     test('weekly skip is ignored on non-scheduled weekday', () async {
       final store = await _seedStore(habits: [
         _habit(

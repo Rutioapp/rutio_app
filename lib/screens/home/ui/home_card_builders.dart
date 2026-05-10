@@ -188,6 +188,13 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     );
     final isCounting = type != 'check';
     final isTimesPerWeekCheck = habit['isTimesPerWeekCheck'] == true;
+    final isWeeklyTargetMet = habit['isWeeklyTargetMet'] == true;
+    final effectiveSkipped = isTimesPerWeekCheck
+        ? skippedToday && !isWeeklyTargetMet && !doneToday
+        : skippedToday;
+    final effectiveCompleted = isTimesPerWeekCheck
+        ? (doneToday || isWeeklyTargetMet) && !effectiveSkipped
+        : doneToday && !effectiveSkipped;
     final weeklyCompletedCount =
         toNum(habit['weeklyCompletedCount'], fallback: 0).toInt();
     final weeklyTargetCount =
@@ -202,7 +209,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
 
     final progress01 = isCounting
         ? (target <= 0 ? 0.0 : (current / target).clamp(0.0, 1.0).toDouble())
-        : (doneToday && !skippedToday ? 1.0 : 0.0);
+        : (effectiveCompleted ? 1.0 : 0.0);
 
     final unitLabel = _localizedUnitLabel(
       context,
@@ -317,8 +324,8 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
             },
       familyColor: familyColor,
       progress: progress01,
-      isCompleted: doneToday && !skippedToday,
-      isSkipped: skippedToday,
+      isCompleted: effectiveCompleted,
+      isSkipped: effectiveSkipped,
       isCounting: isCounting,
       completionBurstText: completionBurstText,
       onCheckTap: () async {
@@ -329,7 +336,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
         context.read<UserStateStore>().setHabitCompletionForKey(
               habitId: id,
               dateKey: _dateKey(_selectedDay),
-              done: !(doneToday && !skippedToday),
+              done: !doneToday,
             );
       },
       currentCount: current,

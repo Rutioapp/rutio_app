@@ -82,6 +82,39 @@ void main() {
       expect(habit!['schedule'], {'type': 'daily'});
     });
 
+    test(
+        'count habits keep non-timesPerWeek schedule on edit even if patch includes timesPerWeek',
+        () async {
+      final store = await _seedStore(
+        habits: [
+          _habit(
+            id: 'count-edit-no-tpw',
+            type: 'count',
+            target: 5,
+            schedule: const {'type': 'daily'},
+          ),
+        ],
+      );
+
+      await store.updateHabitDetailsFromEdit({
+        'id': 'count-edit-no-tpw',
+        'type': 'count',
+        'target': 6,
+        'frequencyMode': 'timesPerWeek',
+        'timesPerWeekTarget': 4,
+        'schedule': {
+          'type': 'timesPerWeek',
+          'timesPerWeek': 4,
+          'weekStartsOn': 1,
+        },
+      });
+
+      final habit = _activeHabitById(store, 'count-edit-no-tpw');
+      expect(habit, isNotNull);
+      expect(habit!['schedule'], {'type': 'daily'});
+      expect(habit['target'], 6);
+    });
+
     test('updateHabitDetailsFromEdit keeps canonical timesPerWeek schedule',
         () async {
       final store = await _seedStore(
