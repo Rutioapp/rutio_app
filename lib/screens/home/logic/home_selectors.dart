@@ -38,6 +38,8 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
     final id = (h['id'] ?? '').toString();
     final type = (h['type'] ?? 'check').toString();
     final out = Map<String, dynamic>.from(h);
+    final isTimesPerWeekCheck = _isTimesPerWeekCheckHabit(out);
+    out['isTimesPerWeekCheck'] = isTimesPerWeekCheck;
 
     if (selectedKey != todayKey) {
       final skipped = selectedSkipsMap[id] == true;
@@ -52,20 +54,54 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
             !skipped && ((selectedDoneMap[id] == true) || (val >= target));
       }
     }
+
+    if (isTimesPerWeekCheck) {
+      final weeklyTarget = _timesPerWeekTarget(out);
+      final weekStartsOn = _timesPerWeekWeekStartsOn(out);
+      final completedThisWeek = _completedTimesInWeek(
+        habit: out,
+        habitId: id,
+        selectedDay: selectedDay,
+        weekStartsOn: weekStartsOn,
+        habitCompletions: habitCompletions,
+      );
+      final weeklyTargetMet = completedThisWeek >= weeklyTarget;
+
+      out['weeklyCompletedCount'] = completedThisWeek;
+      out['weeklyTargetCount'] = weeklyTarget;
+      out['isWeeklyTargetMet'] = weeklyTargetMet;
+    }
+
     return out;
   }).toList(growable: false);
 
   final pendingHabits = viewHabits.where((h) {
+    if (_isTimesPerWeekCheckHabit(h)) {
+      final doneToday = h['doneToday'] == true;
+      final weeklyTargetMet = h['isWeeklyTargetMet'] == true;
+      final skipped = h['skippedToday'] == true;
+      return !skipped && !doneToday && !weeklyTargetMet;
+    }
     final done = h['doneToday'] == true;
     final skipped = h['skippedToday'] == true;
     return !done && !skipped;
   }).toList();
 
   final completedHabits = viewHabits.where((h) {
+    if (_isTimesPerWeekCheckHabit(h)) {
+      final doneToday = h['doneToday'] == true;
+      final weeklyTargetMet = h['isWeeklyTargetMet'] == true;
+      return doneToday || weeklyTargetMet;
+    }
     return h['doneToday'] == true;
   }).toList();
 
   final skippedHabits = viewHabits.where((h) {
+    if (_isTimesPerWeekCheckHabit(h)) {
+      final doneToday = h['doneToday'] == true;
+      final weeklyTargetMet = h['isWeeklyTargetMet'] == true;
+      return h['skippedToday'] == true && !weeklyTargetMet && !doneToday;
+    }
     return h['skippedToday'] == true;
   }).toList();
 
@@ -158,6 +194,10 @@ bool _isHabitScheduledForDate(Map<String, dynamic> habit, DateTime date) {
   final schedule = _map(habit['schedule']);
   final type = (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
 
+  if (type == 'timesperweek') {
+    return true;
+  }
+
   if (type == 'once') {
     return (schedule['date'] ?? '').toString().trim() == _dateKey(date);
   }
@@ -172,4 +212,67 @@ bool _isHabitScheduledForDate(Map<String, dynamic> habit, DateTime date) {
   }
 
   return true;
+}
+
+bool _isTimesPerWeekCheckHabit(Map<String, dynamic> habit) {
+  final type = (habit['type'] ?? 'check').toString().trim().toLowerCase();
+  if (type != 'check') return false;
+  final schedule = _map(habit['schedule']);
+  final scheduleType =
+      (schedule['type'] ?? '').toString().trim().toLowerCase();
+  return scheduleType == 'timesperweek';
+}
+
+int _timesPerWeekTarget(Map<String, dynamic> habit) {
+  final schedule = _map(habit['schedule']);
+  final target = _readNum(
+    schedule['timesPerWeek'] ?? schedule['timesPerWeekTarget'],
+    fallback: 1,
+  ).toInt();
+  return target < 1 ? 1 : target;
+}
+
+int _timesPerWeekWeekStartsOn(Map<String, dynamic> habit) {
+  final schedule = _map(habit['schedule']);
+  final raw = _readNum(schedule['weekStartsOn'], fallback: 1).toInt();
+  if (raw < 1 || raw > 7) return 1;
+  return raw;
+}
+
+DateTime _weekStartForDate(DateTime day, {required int weekStartsOn}) {
+  final normalizedDay = _onlyDate(day);
+  final normalizedWeekStartsOn =
+      weekStartsOn >= 1 && weekStartsOn <= 7 ? weekStartsOn : 1;
+  final delta = (normalizedDay.weekday - normalizedWeekStartsOn + 7) % 7;
+  return normalizedDay.subtract(Duration(days: delta));
+}
+
+int _completedTimesInWeek({
+  required Map<String, dynamic> habit,
+  required String habitId,
+  required DateTime selectedDay,
+  required int weekStartsOn,
+  required Map<String, dynamic> habitCompletions,
+}) {
+  final weekStart = _weekStartForDate(selectedDay, weekStartsOn: weekStartsOn);
+  var completed = 0;
+  for (var offset = 0; offset < 7; offset += 1) {
+    final day = weekStart.add(Duration(days: offset));
+    if (!_wasHabitCreatedByDay(habit, day)) continue;
+    final dayDoneMap = _map(habitCompletions[_dateKey(day)]);
+    if (_isTruthyDone(dayDoneMap[habitId])) {
+      completed += 1;
+    }
+  }
+  return completed;
+}
+
+bool _isTruthyDone(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value > 0;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == 'true' || normalized == '1';
+  }
+  return false;
 }

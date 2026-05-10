@@ -217,6 +217,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String homeTimesPerWeekProgress(String completed, String target) {
+    return '$completed/$target this week';
+  }
+
+  @override
   String get homeAddHabitLoadError => 'Could not load the catalog';
 
   @override

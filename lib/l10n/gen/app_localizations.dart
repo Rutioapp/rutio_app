@@ -471,6 +471,12 @@ abstract class AppLocalizations {
   String homeHabitCountProgressWithUnit(
       String current, String target, String unit);
 
+  /// No description provided for @homeTimesPerWeekProgress.
+  ///
+  /// In es, this message translates to:
+  /// **'{completed}/{target} esta semana'**
+  String homeTimesPerWeekProgress(String completed, String target);
+
   /// No description provided for @homeAddHabitLoadError.
   ///
   /// In es, this message translates to:
