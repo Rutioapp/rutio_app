@@ -4323,6 +4323,162 @@ abstract class AppLocalizations {
   /// **'Nuevo hábito'**
   String get createHabitNewHabitTitle;
 
+  /// No description provided for @createHabitHeaderSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Pequeños pasos, progreso constante.'**
+  String get createHabitHeaderSubtitle;
+
+  /// No description provided for @createHabitNameLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'NOMBRE DEL HÁBITO'**
+  String get createHabitNameLabel;
+
+  /// No description provided for @createHabitNameHelper.
+  ///
+  /// In es, this message translates to:
+  /// **'Un nombre claro te ayuda a mantener el foco.'**
+  String get createHabitNameHelper;
+
+  /// No description provided for @createHabitSectionCategory.
+  ///
+  /// In es, this message translates to:
+  /// **'Categoría'**
+  String get createHabitSectionCategory;
+
+  /// No description provided for @createHabitSectionTracking.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo de seguimiento'**
+  String get createHabitSectionTracking;
+
+  /// No description provided for @createHabitSectionFrequency.
+  ///
+  /// In es, this message translates to:
+  /// **'Frecuencia'**
+  String get createHabitSectionFrequency;
+
+  /// No description provided for @createHabitTrackingCheckTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sí / No'**
+  String get createHabitTrackingCheckTitle;
+
+  /// No description provided for @createHabitTrackingCheckSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Complétalo una vez'**
+  String get createHabitTrackingCheckSubtitle;
+
+  /// No description provided for @createHabitTrackingCountTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Contador'**
+  String get createHabitTrackingCountTitle;
+
+  /// No description provided for @createHabitTrackingCountSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Registra cantidad, minutos, páginas...'**
+  String get createHabitTrackingCountSubtitle;
+
+  /// No description provided for @createHabitFrequencyDailyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada día'**
+  String get createHabitFrequencyDailyTitle;
+
+  /// No description provided for @createHabitFrequencyDailySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Se repite cada día hasta que lo cambies.'**
+  String get createHabitFrequencyDailySubtitle;
+
+  /// No description provided for @createHabitFrequencySpecificTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Días concretos'**
+  String get createHabitFrequencySpecificTitle;
+
+  /// No description provided for @createHabitFrequencySpecificSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige qué días de la semana aparece.'**
+  String get createHabitFrequencySpecificSubtitle;
+
+  /// No description provided for @createHabitFrequencyTimesPerWeekTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'X veces por semana'**
+  String get createHabitFrequencyTimesPerWeekTitle;
+
+  /// No description provided for @createHabitFrequencyTimesPerWeekSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo semanal flexible. Complétalo cualquier día.'**
+  String get createHabitFrequencyTimesPerWeekSubtitle;
+
+  /// No description provided for @createHabitRoutineTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir a rutina'**
+  String get createHabitRoutineTitle;
+
+  /// No description provided for @createHabitOptionalPill.
+  ///
+  /// In es, this message translates to:
+  /// **'Opcional'**
+  String get createHabitOptionalPill;
+
+  /// No description provided for @createHabitRoutineSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Coloca este hábito dentro de una rutina de mañana o noche.'**
+  String get createHabitRoutineSubtitle;
+
+  /// No description provided for @createHabitComingSoon.
+  ///
+  /// In es, this message translates to:
+  /// **'Próximamente'**
+  String get createHabitComingSoon;
+
+  /// No description provided for @createHabitRoutineComingSoonDialogBody.
+  ///
+  /// In es, this message translates to:
+  /// **'La asignación a rutinas llegará pronto. Puedes guardar este hábito ahora.'**
+  String get createHabitRoutineComingSoonDialogBody;
+
+  /// No description provided for @createHabitReminderTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorio'**
+  String get createHabitReminderTitle;
+
+  /// No description provided for @createHabitReminderEnabledSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorio diario'**
+  String get createHabitReminderEnabledSubtitle;
+
+  /// No description provided for @createHabitReminderDisabledSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorio desactivado'**
+  String get createHabitReminderDisabledSubtitle;
+
+  /// No description provided for @createHabitReminderTimeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora del recordatorio'**
+  String get createHabitReminderTimeTitle;
+
+  /// No description provided for @createHabitDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Hecho'**
+  String get createHabitDone;
+
   /// No description provided for @createHabitSaveHabit.
   ///
   /// In es, this message translates to:
