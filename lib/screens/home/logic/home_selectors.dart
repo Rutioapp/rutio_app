@@ -41,18 +41,29 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
     final isTimesPerWeekCheck = _isTimesPerWeekCheckHabit(out);
     out['isTimesPerWeekCheck'] = isTimesPerWeekCheck;
 
-    if (selectedKey != todayKey) {
+    final useSelectedDaySnapshot =
+        selectedKey != todayKey ||
+        selectedSkipsMap.containsKey(id) ||
+        selectedDoneMap.containsKey(id) ||
+        selectedCountMap.containsKey(id);
+
+    if (useSelectedDaySnapshot) {
       final skipped = selectedSkipsMap[id] == true;
+      final doneFromSelectedDay = selectedDoneMap[id] == true;
       out['skippedToday'] = skipped;
       if (type == 'check') {
-        out['doneToday'] = !skipped && (selectedDoneMap[id] == true);
+        // For normal checks, skip wins over done in the selected day snapshot.
+        out['doneToday'] =
+            isTimesPerWeekCheck ? doneFromSelectedDay : !skipped && doneFromSelectedDay;
       } else {
         final target = _readNum(out['target'], fallback: 1);
         final val = skipped ? 0 : _readNum(selectedCountMap[id], fallback: 0);
         out['progress'] = val;
-        out['doneToday'] =
-            !skipped && ((selectedDoneMap[id] == true) || (val >= target));
+        out['doneToday'] = !skipped && (doneFromSelectedDay || (val >= target));
       }
+    } else if (type == 'check' && !isTimesPerWeekCheck && out['skippedToday'] == true) {
+      // Defensive guard for stale in-memory flags: normal checks cannot be done+skipped.
+      out['doneToday'] = false;
     }
 
     if (isTimesPerWeekCheck) {
