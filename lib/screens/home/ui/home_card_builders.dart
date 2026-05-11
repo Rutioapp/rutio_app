@@ -226,7 +226,10 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       }
     }
 
-    void openHabitDetails(int initialTab) {
+    void openHabitDetails(
+      int initialTab, {
+      HabitDetailScreenMode mode = HabitDetailScreenMode.normal,
+    }) {
       Navigator.push(
         context,
         CupertinoPageRoute(
@@ -234,6 +237,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
             habit: habit,
             familyColor: familyColor,
             initialTab: initialTab,
+            mode: mode,
             onSaveHabit: (updatedHabit) {
               if (updatedHabit is Map) {
                 final updates = <String, dynamic>{};
@@ -378,7 +382,12 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       onOpenDetails: compact
           ? null
           : (initialTab) {
-              openHabitDetails(initialTab);
+              openHabitDetails(
+                initialTab,
+                mode: initialTab == 1
+                    ? HabitDetailScreenMode.statsOnly
+                    : HabitDetailScreenMode.normal,
+              );
               // IOS-FIRST IMPROVEMENT END
             },
       onTap: isTrayOpen ? closeTrayIfOpen : null,
@@ -419,7 +428,10 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
               skipped: !skippedToday,
             );
       },
-      onEdit: () => openHabitDetails(0),
+      onEdit: () => openHabitDetails(
+        0,
+        mode: HabitDetailScreenMode.editOnly,
+      ),
       onDelete: () async {
         await _confirmAndDeleteHabitFromHome(context, habitId: id);
       },
