@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../features/notifications/application/notification_permission_controller.dart';
@@ -246,6 +248,212 @@ class _EditHabitTabState extends State<EditHabitTab> {
     }
   }
 
+  Future<void> _showRoutineSheet() async {
+    final l10n = context.l10n;
+    final List<_EditRoutinePreviewOption> options = <_EditRoutinePreviewOption>[
+      _EditRoutinePreviewOption(
+        emoji: '??',
+        title: l10n.createHabitRoutineMorningTitle,
+        subtitle: l10n.createHabitRoutineMorningSubtitle,
+      ),
+      _EditRoutinePreviewOption(
+        emoji: '??',
+        title: l10n.createHabitRoutineDeepFocusTitle,
+        subtitle: l10n.createHabitRoutineDeepFocusSubtitle,
+      ),
+      _EditRoutinePreviewOption(
+        emoji: '??',
+        title: l10n.createHabitRoutineEveningTitle,
+        subtitle: l10n.createHabitRoutineEveningSubtitle,
+      ),
+    ];
+
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: editHabitCream,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: editHabitCamel.withOpacitySafe(0.24),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    l10n.createHabitRoutineTitle,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: editHabitDark,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.createHabitRoutineSheetSubtitle,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: editHabitDark.withOpacitySafe(0.56),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...options.map(
+                    (_EditRoutinePreviewOption option) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(sheetContext).pop(),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacitySafe(0.62),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: editHabitCamel.withOpacitySafe(0.22),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: editHabitCamel.withOpacitySafe(0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  option.emoji,
+                                  style: const TextStyle(fontSize: 18),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      option.title,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: editHabitDark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      option.subtitle,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w400,
+                                        color:
+                                            editHabitDark.withOpacitySafe(0.55),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacitySafe(0.82),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: editHabitCamel.withOpacitySafe(0.26),
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.createHabitRoutineSoon,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: editHabitCamel.withOpacitySafe(0.95),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: () => Navigator.of(sheetContext).pop(),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacitySafe(0.35),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: editHabitCamel.withOpacitySafe(0.30),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_rounded,
+                            size: 16,
+                            color: editHabitCamel.withOpacitySafe(0.95),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            l10n.createHabitRoutineCreateNew,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: editHabitDark.withOpacitySafe(0.82),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  CupertinoButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    child: Text(
+                      l10n.createHabitRoutineNotNow,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: editHabitDark.withOpacitySafe(0.65),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -258,7 +466,7 @@ class _EditHabitTabState extends State<EditHabitTab> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 22, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
                   child: EditHabitTabContent(
                     titleController: _titleCtrl,
                     titleFocusNode: _titleFocusNode,
@@ -298,6 +506,7 @@ class _EditHabitTabState extends State<EditHabitTab> {
                       },
                     ),
                     onOpenUnitSelector: _showUnitBottomSheet,
+                    onSelectQuickUnit: _setUnit,
                     onDecrementStep: () {
                       if (_formData.counterStep > 1) {
                         setState(() => _formData.counterStep -= 1);
@@ -344,6 +553,7 @@ class _EditHabitTabState extends State<EditHabitTab> {
                     onReminderTimeChanged: (DateTime value) {
                       setState(() => _formData.reminderTime = value);
                     },
+                    onOpenRoutineComingSoon: _showRoutineSheet,
                   ),
                 ),
               ),
@@ -365,4 +575,16 @@ class _EditHabitTabState extends State<EditHabitTab> {
       ],
     );
   }
+}
+
+class _EditRoutinePreviewOption {
+  const _EditRoutinePreviewOption({
+    required this.emoji,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String emoji;
+  final String title;
+  final String subtitle;
 }

@@ -2363,6 +2363,48 @@ class AppLocalizationsEn extends AppLocalizations {
       'Track quantity, minutes, pages...';
 
   @override
+  String get createHabitCounterGoalTitle => 'Daily goal';
+
+  @override
+  String get createHabitCounterGoalSubtitle =>
+      'Set the amount you want to reach each day.';
+
+  @override
+  String get createHabitCounterGoalExamples =>
+      'Examples: 8 glasses, 20 pages, 30 minutes';
+
+  @override
+  String get createHabitCounterTargetAmountLabel => 'Target amount';
+
+  @override
+  String get createHabitCounterUnitLabel => 'Unit';
+
+  @override
+  String get createHabitCounterQuickUnitsLabel => 'Quick units';
+
+  @override
+  String get createHabitCounterQuickUnitMinutes => 'minutes';
+
+  @override
+  String get createHabitCounterQuickUnitPages => 'pages';
+
+  @override
+  String get createHabitCounterQuickUnitGlasses => 'glasses';
+
+  @override
+  String get createHabitCounterQuickUnitReps => 'reps';
+
+  @override
+  String get createHabitCounterQuickUnitCustom => '+ Custom';
+
+  @override
+  String get createHabitCounterExampleTitle => 'Example: 10 minutes';
+
+  @override
+  String get createHabitCounterExampleSubtitle =>
+      'Track the total time you spend meditating.';
+
+  @override
   String get createHabitFrequencyDailyTitle => 'Every day';
 
   @override
@@ -2392,6 +2434,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get createHabitRoutineSubtitle =>
       'Place this habit inside a morning or evening routine.';
+
+  @override
+  String get createHabitRoutineSheetSubtitle =>
+      'Choose where this habit could live in the future.';
+
+  @override
+  String get createHabitRoutineMorningTitle => 'Morning ritual';
+
+  @override
+  String get createHabitRoutineMorningSubtitle =>
+      'Start your day with intention.';
+
+  @override
+  String get createHabitRoutineDeepFocusTitle => 'Deep focus';
+
+  @override
+  String get createHabitRoutineDeepFocusSubtitle =>
+      'Group habits that help you concentrate.';
+
+  @override
+  String get createHabitRoutineEveningTitle => 'Evening wind-down';
+
+  @override
+  String get createHabitRoutineEveningSubtitle =>
+      'Slow down and close the day.';
+
+  @override
+  String get createHabitRoutineSoon => 'Soon';
+
+  @override
+  String get createHabitRoutineCreateNew => 'Create new routine';
+
+  @override
+  String get createHabitRoutineNotNow => 'Not now';
 
   @override
   String get createHabitComingSoon => 'Coming soon';

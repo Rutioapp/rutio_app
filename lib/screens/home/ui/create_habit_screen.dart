@@ -159,140 +159,149 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
   }
 
   Future<void> _showUnitBottomSheet() async {
-    final TextEditingController customController = TextEditingController(
-      text: _unit.trim(),
-    );
+    String customValue = _unit.trim();
     final l10n = context.l10n;
 
     final String? selected = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
+      isScrollControlled: true,
       backgroundColor: _cream,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (BuildContext sheetContext) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: _camel.withValues(alpha: 0.22),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                l10n.editHabitUnitPickerTitle,
-                style: AppTextStyles.welcomeTitle.copyWith(
-                  fontSize: 28,
-                  color: _dark,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.editHabitUnitPickerSubtitle,
-                style: GoogleFonts.dmSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: _dark.withValues(alpha: 0.62),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _suggestedUnits(context).map((String unit) {
-                  final bool isSelected = _unit.trim() == unit;
-                  return GestureDetector(
-                    onTap: () => Navigator.of(sheetContext).pop(unit),
+        final double keyboardInset =
+            MediaQuery.of(sheetContext).viewInsets.bottom;
+
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(bottom: keyboardInset),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
+                      width: 40,
+                      height: 4,
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? _camel.withValues(alpha: 0.12)
-                            : Colors.white.withValues(alpha: 0.55),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isSelected
-                              ? _camel
-                              : _camel.withValues(alpha: 0.24),
-                        ),
-                      ),
-                      child: Text(
-                        unit,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: _dark,
-                        ),
+                        color: _camel.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                     ),
-                  );
-                }).toList(growable: false),
-              ),
-              const SizedBox(height: 18),
-              TextField(
-                controller: customController,
-                autofocus: false,
-                style: GoogleFonts.dmSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: _dark,
-                ),
-                decoration: InputDecoration(
-                  hintText: l10n.editHabitUnitHint,
-                  hintStyle: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: _dark.withValues(alpha: 0.35),
                   ),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide:
-                        BorderSide(color: _camel.withValues(alpha: 0.30)),
+                  const SizedBox(height: 18),
+                  Text(
+                    l10n.editHabitUnitPickerTitle,
+                    style: AppTextStyles.welcomeTitle.copyWith(
+                      fontSize: 28,
+                      color: _dark,
+                    ),
                   ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide:
-                        BorderSide(color: _camel.withValues(alpha: 0.80)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: CupertinoButton(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  color: _dark,
-                  borderRadius: BorderRadius.circular(16),
-                  onPressed: () => Navigator.of(sheetContext)
-                      .pop(customController.text.trim()),
-                  child: Text(
-                    l10n.editHabitUnitPickerAction,
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.editHabitUnitPickerSubtitle,
                     style: GoogleFonts.dmSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: _cream,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: _dark.withValues(alpha: 0.62),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _suggestedUnits(context).map((String unit) {
+                      final bool isSelected = _unit.trim() == unit;
+                      return GestureDetector(
+                        onTap: () => Navigator.of(sheetContext).pop(unit),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? _camel.withValues(alpha: 0.12)
+                                : Colors.white.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected
+                                  ? _camel
+                                  : _camel.withValues(alpha: 0.24),
+                            ),
+                          ),
+                          child: Text(
+                            unit,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: _dark,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(growable: false),
+                  ),
+                  const SizedBox(height: 18),
+                  TextFormField(
+                    autofocus: true,
+                    initialValue: customValue,
+                    onChanged: (String value) => customValue = value,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: _dark,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: l10n.editHabitUnitHint,
+                      hintStyle: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: _dark.withValues(alpha: 0.35),
+                      ),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide:
+                            BorderSide(color: _camel.withValues(alpha: 0.30)),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide:
+                            BorderSide(color: _camel.withValues(alpha: 0.80)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: CupertinoButton(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      color: _dark,
+                      borderRadius: BorderRadius.circular(16),
+                      onPressed: () =>
+                          Navigator.of(sheetContext).pop(customValue.trim()),
+                      child: Text(
+                        l10n.editHabitUnitPickerAction,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: _cream,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
     );
-
-    customController.dispose();
 
     if (!mounted || selected == null) {
       return;
@@ -903,115 +912,394 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                   const SizedBox(height: 8),
                   _SurfaceCard(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.editHabitRepetitionsTitle,
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: _dark,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    l10n.editHabitRepetitionsSubtitle,
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w400,
-                                      color: _dark.withValues(alpha: 0.38),
-                                    ),
-                                  ),
-                                ],
+                              child: Text(
+                                l10n.createHabitCounterGoalTitle,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _dark,
+                                ),
                               ),
                             ),
-                            Row(
-                              children: [
-                                HabitFormStepperButton(
-                                  icon: Icons.remove_rounded,
-                                  onTap: () {
-                                    if (_target > 1) {
-                                      setState(() => _target -= 1);
-                                    }
-                                  },
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: _camel.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '123',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: _camel.withValues(alpha: 0.95),
                                 ),
-                                const SizedBox(width: 10),
-                                HabitFormEditableTargetValue(
-                                  value: _target,
-                                  onTap: () => _showNumberInputDialog(
-                                    title: l10n.editHabitDailyGoalDialogTitle,
-                                    subtitle:
-                                        l10n.editHabitDailyGoalDialogSubtitle,
-                                    initialValue: _target,
-                                    onSubmitted: (int value) {
-                                      if (!mounted) return;
-                                      setState(() => _target = value);
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                HabitFormStepperButton(
-                                  icon: Icons.add_rounded,
-                                  onTap: () => setState(() => _target += 1),
-                                ),
-                              ],
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        GestureDetector(
-                          onTap: _showUnitBottomSheet,
-                          child: AbsorbPointer(
-                            child: SizedBox(
-                              height: 44,
-                              child: TextField(
-                                controller: _unitController,
-                                readOnly: true,
-                                minLines: 1,
-                                maxLines: 1,
-                                textAlignVertical: TextAlignVertical.center,
+                        const SizedBox(height: 2),
+                        Text(
+                          l10n.createHabitCounterGoalSubtitle,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                            color: _dark.withValues(alpha: 0.52),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l10n.createHabitCounterTargetAmountLabel,
                                 style: GoogleFonts.dmSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: _dark,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: _dark.withValues(alpha: 0.40),
+                                  letterSpacing: 0.6,
                                 ),
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  hintText: l10n.editHabitUnitHint,
-                                  hintStyle: GoogleFonts.dmSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    color: _dark.withValues(alpha: 0.28),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                l10n.createHabitCounterUnitLabel,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: _dark.withValues(alpha: 0.40),
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 42,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.80),
+                                  borderRadius: BorderRadius.circular(11),
+                                  border: Border.all(
+                                    color: _camel.withValues(alpha: 0.20),
                                   ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                  suffixIconConstraints: const BoxConstraints(
-                                    minWidth: 28,
-                                    minHeight: 28,
-                                  ),
-                                  suffixIcon: Icon(
-                                    Icons.expand_more_rounded,
-                                    color: _camel.withValues(alpha: 0.90),
-                                  ),
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: _camel.withValues(alpha: 0.30),
+                                ),
+                                child: Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (_target > 1) {
+                                          setState(() => _target -= 1);
+                                        }
+                                      },
+                                      child: Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.82),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color:
+                                                _camel.withValues(alpha: 0.24),
+                                          ),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          CupertinoIcons.minus,
+                                          size: 11,
+                                          color: _camel.withValues(alpha: 0.95),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  focusedBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: _camel.withValues(alpha: 0.80),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => _showNumberInputDialog(
+                                          title: l10n
+                                              .editHabitDailyGoalDialogTitle,
+                                          subtitle: l10n
+                                              .editHabitDailyGoalDialogSubtitle,
+                                          initialValue: _target,
+                                          onSubmitted: (int value) {
+                                            if (!mounted) return;
+                                            setState(() => _target = value);
+                                          },
+                                        ),
+                                        child: Container(
+                                          alignment: Alignment.center,
+                                          color: Colors.transparent,
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              '$_target',
+                                              style: const TextStyle(
+                                                fontFamily:
+                                                    AppTextStyles.serifFamily,
+                                                fontSize: 22,
+                                                color: _dark,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => setState(() => _target += 1),
+                                      child: Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.82),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color:
+                                                _camel.withValues(alpha: 0.24),
+                                          ),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          CupertinoIcons.add,
+                                          size: 11,
+                                          color: _camel.withValues(alpha: 0.95),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: _showUnitBottomSheet,
+                                child: AbsorbPointer(
+                                  child: SizedBox(
+                                    height: 42,
+                                    child: TextField(
+                                      controller: _unitController,
+                                      readOnly: true,
+                                      minLines: 1,
+                                      maxLines: 1,
+                                      textAlignVertical:
+                                          TextAlignVertical.center,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: _dark,
+                                      ),
+                                      decoration: InputDecoration(
+                                        filled: true,
+                                        fillColor: Colors.white
+                                            .withValues(alpha: 0.80),
+                                        isDense: true,
+                                        hintText: l10n.editHabitUnitHint,
+                                        hintStyle: GoogleFonts.dmSans(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: _dark.withValues(alpha: 0.28),
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 11,
+                                        ),
+                                        suffixIconConstraints:
+                                            const BoxConstraints(
+                                          minWidth: 28,
+                                          minHeight: 28,
+                                        ),
+                                        suffixIcon: Icon(
+                                          Icons.expand_more_rounded,
+                                          color: _camel.withValues(alpha: 0.90),
+                                          size: 18,
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(11),
+                                          borderSide: BorderSide(
+                                            color: _camel.withValues(
+                                              alpha: 0.20,
+                                            ),
+                                          ),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(11),
+                                          borderSide: BorderSide(
+                                            color: _camel.withValues(
+                                              alpha: 0.20,
+                                            ),
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(11),
+                                          borderSide: BorderSide(
+                                            color: _camel.withValues(
+                                              alpha: 0.46,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          l10n.createHabitCounterQuickUnitsLabel,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: _dark.withValues(alpha: 0.40),
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            ...<String>[
+                              l10n.createHabitCounterQuickUnitMinutes,
+                              l10n.createHabitCounterQuickUnitPages,
+                              l10n.createHabitCounterQuickUnitGlasses,
+                              l10n.createHabitCounterQuickUnitReps,
+                            ].map((String quickUnit) {
+                              final bool isSelected =
+                                  _unit.trim().toLowerCase() ==
+                                      quickUnit.toLowerCase();
+                              return GestureDetector(
+                                onTap: () => _setUnit(quickUnit),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? _camel.withValues(alpha: 0.88)
+                                        : Colors.white.withValues(alpha: 0.76),
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? _camel.withValues(alpha: 0.88)
+                                          : _camel.withValues(alpha: 0.20),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    quickUnit,
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: isSelected
+                                          ? _cream
+                                          : _dark.withValues(alpha: 0.62),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                            GestureDetector(
+                              onTap: _showUnitBottomSheet,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.76),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: _camel.withValues(alpha: 0.20),
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.createHabitCounterQuickUnitCustom,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: _dark.withValues(alpha: 0.62),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 9),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.64),
+                            borderRadius: BorderRadius.circular(11),
+                            border: Border.all(
+                              color: _camel.withValues(alpha: 0.16),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: _camel.withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  CupertinoIcons.clock,
+                                  size: 12,
+                                  color: _camel.withValues(alpha: 0.90),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.createHabitCounterExampleTitle,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: _dark.withValues(alpha: 0.72),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      l10n.createHabitCounterExampleSubtitle,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w400,
+                                        color: _dark.withValues(alpha: 0.52),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -1248,7 +1536,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     final l10n = context.l10n;
 
     return GestureDetector(
-      onTap: _showRoutineComingSoonDialog,
+      onTap: _showRoutineSheet,
       child: _SurfaceCard(
         borderColor: _camel.withValues(alpha: 0.25),
         child: Row(
@@ -1272,7 +1560,10 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         l10n.createHabitRoutineTitle,
@@ -1282,7 +1573,6 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
                           color: _dark,
                         ),
                       ),
-                      const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -1446,113 +1736,308 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     await showCupertinoModalPopup<void>(
       context: context,
       builder: (BuildContext sheetContext) {
+        final double safeBottom = MediaQuery.of(sheetContext).padding.bottom;
+
         return Container(
-          height: 300,
           decoration: const BoxDecoration(
             color: _cream,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Row(
-                  children: [
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                      child: Text(
-                        l10n.commonCancel,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w500,
-                          color: _sage,
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 292 + (safeBottom > 10 ? 10 : safeBottom),
+              child: Column(
+                children: [
+                  const SizedBox(height: 6),
+                  Container(
+                    width: 34,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: _camel.withValues(alpha: 0.24),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+                    child: Row(
+                      children: [
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 32),
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                          child: Text(
+                            l10n.commonCancel,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: _sage,
+                            ),
+                          ),
                         ),
+                        Expanded(
+                          child: Text(
+                            l10n.createHabitReminderTimeTitle,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color: _dark,
+                              decoration: TextDecoration.none,
+                            ),
+                          ),
+                        ),
+                        CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 32),
+                          onPressed: () {
+                            setState(() => _reminderTime = selected);
+                            Navigator.of(sheetContext).pop();
+                          },
+                          child: Text(
+                            l10n.createHabitDone,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: _sage,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(
+                    height: 1,
+                    thickness: 0.9,
+                    color: _camel.withValues(alpha: 0.14),
+                  ),
+                  Expanded(
+                    child: Transform.scale(
+                      scale: 1.07,
+                      child: CupertinoDatePicker(
+                        mode: CupertinoDatePickerMode.time,
+                        itemExtent: 36,
+                        initialDateTime: _reminderTime,
+                        use24hFormat:
+                            MediaQuery.of(context).alwaysUse24HourFormat ||
+                                Localizations.localeOf(context).languageCode ==
+                                    'es',
+                        onDateTimeChanged: (DateTime value) {
+                          selected = value;
+                        },
                       ),
                     ),
-                    Expanded(
-                      child: Text(
-                        l10n.createHabitReminderTimeTitle,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: _dark,
-                        ),
-                      ),
-                    ),
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      onPressed: () {
-                        setState(() => _reminderTime = selected);
-                        Navigator.of(sheetContext).pop();
-                      },
-                      child: Text(
-                        l10n.createHabitDone,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w500,
-                          color: _sage,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.time,
-                  initialDateTime: _reminderTime,
-                  use24hFormat: MediaQuery.of(context).alwaysUse24HourFormat ||
-                      Localizations.localeOf(context).languageCode == 'es',
-                  onDateTimeChanged: (DateTime value) {
-                    selected = value;
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
     );
   }
 
-  Future<void> _showRoutineComingSoonDialog() async {
+  Future<void> _showRoutineSheet() async {
     final l10n = context.l10n;
-    await showCupertinoDialog<void>(
+    final List<_RoutinePreviewOption> options = <_RoutinePreviewOption>[
+      _RoutinePreviewOption(
+        emoji: '??',
+        title: l10n.createHabitRoutineMorningTitle,
+        subtitle: l10n.createHabitRoutineMorningSubtitle,
+      ),
+      _RoutinePreviewOption(
+        emoji: '??',
+        title: l10n.createHabitRoutineDeepFocusTitle,
+        subtitle: l10n.createHabitRoutineDeepFocusSubtitle,
+      ),
+      _RoutinePreviewOption(
+        emoji: '??',
+        title: l10n.createHabitRoutineEveningTitle,
+        subtitle: l10n.createHabitRoutineEveningSubtitle,
+      ),
+    ];
+
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (BuildContext dialogContext) {
-        return CupertinoAlertDialog(
-          title: Text(
-            l10n.createHabitRoutineTitle,
-            style: GoogleFonts.dmSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-            ),
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: _cream,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          content: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              l10n.createHabitRoutineComingSoonDialogBody,
-              style: GoogleFonts.dmSans(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: _dark.withValues(alpha: 0.74),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: _camel.withValues(alpha: 0.24),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    l10n.createHabitRoutineTitle,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: _dark,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.createHabitRoutineSheetSubtitle,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: _dark.withValues(alpha: 0.56),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...options.map(
+                    (_RoutinePreviewOption option) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(sheetContext).pop(),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.62),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: _camel.withValues(alpha: 0.22),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: _camel.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  option.emoji,
+                                  style: const TextStyle(fontSize: 18),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      option.title,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: _dark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      option.subtitle,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w400,
+                                        color: _dark.withValues(alpha: 0.55),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.82),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: _camel.withValues(alpha: 0.26),
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.createHabitRoutineSoon,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: _camel.withValues(alpha: 0.95),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: () => Navigator.of(sheetContext).pop(),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: _camel.withValues(alpha: 0.30),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_rounded,
+                            size: 16,
+                            color: _camel.withValues(alpha: 0.95),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            l10n.createHabitRoutineCreateNew,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: _dark.withValues(alpha: 0.82),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  CupertinoButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    child: Text(
+                      l10n.createHabitRoutineNotNow,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: _dark.withValues(alpha: 0.65),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(
-                l10n.commonClose,
-                style: GoogleFonts.dmSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );
@@ -1811,6 +2296,18 @@ class _SegmentOption {
 
   final String id;
   final String label;
+}
+
+class _RoutinePreviewOption {
+  const _RoutinePreviewOption({
+    required this.emoji,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String emoji;
+  final String title;
+  final String subtitle;
 }
 
 class _FrequencySegmentedControl extends StatelessWidget {
