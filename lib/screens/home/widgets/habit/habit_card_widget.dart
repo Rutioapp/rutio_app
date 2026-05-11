@@ -238,7 +238,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
 
     void openDefault() {
       if (widget.onOpenDetails != null) {
-        widget.onOpenDetails!.call(0);
+        widget.onOpenDetails!.call(1);
         return;
       }
       if (widget.onEditTap != null) {
