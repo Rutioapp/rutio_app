@@ -4395,6 +4395,84 @@ abstract class AppLocalizations {
   /// **'Registra cantidad, minutos, páginas...'**
   String get createHabitTrackingCountSubtitle;
 
+  /// No description provided for @createHabitCounterGoalTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo diario'**
+  String get createHabitCounterGoalTitle;
+
+  /// No description provided for @createHabitCounterGoalSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Define la cantidad que quieres alcanzar cada día.'**
+  String get createHabitCounterGoalSubtitle;
+
+  /// No description provided for @createHabitCounterGoalExamples.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejemplos: 8 vasos, 20 páginas, 30 minutos'**
+  String get createHabitCounterGoalExamples;
+
+  /// No description provided for @createHabitCounterTargetAmountLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cantidad objetivo'**
+  String get createHabitCounterTargetAmountLabel;
+
+  /// No description provided for @createHabitCounterUnitLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Unidad'**
+  String get createHabitCounterUnitLabel;
+
+  /// No description provided for @createHabitCounterQuickUnitsLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Unidades rápidas'**
+  String get createHabitCounterQuickUnitsLabel;
+
+  /// No description provided for @createHabitCounterQuickUnitMinutes.
+  ///
+  /// In es, this message translates to:
+  /// **'minutos'**
+  String get createHabitCounterQuickUnitMinutes;
+
+  /// No description provided for @createHabitCounterQuickUnitPages.
+  ///
+  /// In es, this message translates to:
+  /// **'páginas'**
+  String get createHabitCounterQuickUnitPages;
+
+  /// No description provided for @createHabitCounterQuickUnitGlasses.
+  ///
+  /// In es, this message translates to:
+  /// **'vasos'**
+  String get createHabitCounterQuickUnitGlasses;
+
+  /// No description provided for @createHabitCounterQuickUnitReps.
+  ///
+  /// In es, this message translates to:
+  /// **'reps'**
+  String get createHabitCounterQuickUnitReps;
+
+  /// No description provided for @createHabitCounterQuickUnitCustom.
+  ///
+  /// In es, this message translates to:
+  /// **'+ Personalizada'**
+  String get createHabitCounterQuickUnitCustom;
+
+  /// No description provided for @createHabitCounterExampleTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ejemplo: 10 minutos'**
+  String get createHabitCounterExampleTitle;
+
+  /// No description provided for @createHabitCounterExampleSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Registra el tiempo total que dedicas a meditar.'**
+  String get createHabitCounterExampleSubtitle;
+
   /// No description provided for @createHabitFrequencyDailyTitle.
   ///
   /// In es, this message translates to:
@@ -4449,6 +4527,66 @@ abstract class AppLocalizations {
   /// **'Coloca este hábito dentro de una rutina de mañana o noche.'**
   String get createHabitRoutineSubtitle;
 
+  /// No description provided for @createHabitRoutineSheetSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige dónde podría vivir este hábito más adelante.'**
+  String get createHabitRoutineSheetSubtitle;
+
+  /// No description provided for @createHabitRoutineMorningTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritual de mañana'**
+  String get createHabitRoutineMorningTitle;
+
+  /// No description provided for @createHabitRoutineMorningSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Empieza el día con intención.'**
+  String get createHabitRoutineMorningSubtitle;
+
+  /// No description provided for @createHabitRoutineDeepFocusTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Foco profundo'**
+  String get createHabitRoutineDeepFocusTitle;
+
+  /// No description provided for @createHabitRoutineDeepFocusSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Agrupa hábitos que te ayudan a concentrarte.'**
+  String get createHabitRoutineDeepFocusSubtitle;
+
+  /// No description provided for @createHabitRoutineEveningTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cierre del día'**
+  String get createHabitRoutineEveningTitle;
+
+  /// No description provided for @createHabitRoutineEveningSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Baja el ritmo y cierra el día.'**
+  String get createHabitRoutineEveningSubtitle;
+
+  /// No description provided for @createHabitRoutineSoon.
+  ///
+  /// In es, this message translates to:
+  /// **'Pronto'**
+  String get createHabitRoutineSoon;
+
+  /// No description provided for @createHabitRoutineCreateNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear nueva rutina'**
+  String get createHabitRoutineCreateNew;
+
+  /// No description provided for @createHabitRoutineNotNow.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahora no'**
+  String get createHabitRoutineNotNow;
+
   /// No description provided for @createHabitComingSoon.
   ///
   /// In es, this message translates to:
@@ -4488,7 +4626,7 @@ abstract class AppLocalizations {
   /// No description provided for @createHabitDone.
   ///
   /// In es, this message translates to:
-  /// **'Hecho'**
+  /// **'Listo'**
   String get createHabitDone;
 
   /// No description provided for @createHabitSaveHabit.
