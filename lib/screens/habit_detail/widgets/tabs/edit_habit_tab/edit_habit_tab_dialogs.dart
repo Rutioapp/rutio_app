@@ -10,139 +10,151 @@ Future<String?> showEditHabitUnitBottomSheet(
   BuildContext context, {
   required String currentUnit,
 }) async {
-  final customController = TextEditingController(text: currentUnit.trim());
-
+  String customValue = currentUnit.trim();
   final selected = await showModalBottomSheet<String>(
     context: context,
     useSafeArea: true,
+    isScrollControlled: true,
     backgroundColor: editHabitCream,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
     builder: (BuildContext bottomSheetContext) {
       final l10n = bottomSheetContext.l10n;
+      final double keyboardInset =
+          MediaQuery.of(bottomSheetContext).viewInsets.bottom;
 
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: editHabitCamel.withOpacitySafe(0.22),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              l10n.editHabitUnitPickerTitle,
-              style: AppTextStyles.welcomeTitle.copyWith(
-                fontSize: 28,
-                color: editHabitDark,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.editHabitUnitPickerSubtitle,
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                color: editHabitDark.withOpacitySafe(0.62),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: l10n.editHabitSuggestedUnits.map((String unit) {
-                final isSelected = currentUnit.trim() == unit;
-                return GestureDetector(
-                  onTap: () => Navigator.of(bottomSheetContext).pop(unit),
+      return AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(bottom: keyboardInset),
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? editHabitCamel.withOpacitySafe(0.12)
-                          : Colors.white.withOpacitySafe(0.55),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isSelected
-                            ? editHabitCamel
-                            : editHabitCamel.withOpacitySafe(0.24),
-                      ),
-                    ),
-                    child: Text(
-                      unit,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: editHabitDark,
-                      ),
+                      color: editHabitCamel.withOpacitySafe(0.22),
+                      borderRadius: BorderRadius.circular(999),
                     ),
                   ),
-                );
-              }).toList(growable: false),
-            ),
-            const SizedBox(height: 18),
-            TextField(
-              controller: customController,
-              autofocus: false,
-              style: GoogleFonts.dmSans(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: editHabitDark,
-              ),
-              decoration: InputDecoration(
-                hintText: l10n.editHabitTitleHint,
-                hintStyle: GoogleFonts.dmSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: editHabitDark.withOpacitySafe(0.35),
                 ),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide:
-                      BorderSide(color: editHabitCamel.withOpacitySafe(0.30)),
+                const SizedBox(height: 18),
+                Text(
+                  l10n.editHabitUnitPickerTitle,
+                  style: AppTextStyles.welcomeTitle.copyWith(
+                    fontSize: 28,
+                    color: editHabitDark,
+                  ),
                 ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide:
-                      BorderSide(color: editHabitCamel.withOpacitySafe(0.80)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              child: CupertinoButton(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                color: editHabitDark,
-                borderRadius: BorderRadius.circular(16),
-                onPressed: () => Navigator.of(bottomSheetContext)
-                    .pop(customController.text.trim()),
-                child: Text(
-                  l10n.editHabitUnitPickerAction,
+                const SizedBox(height: 8),
+                Text(
+                  l10n.editHabitUnitPickerSubtitle,
                   style: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: editHabitCream,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: editHabitDark.withOpacitySafe(0.62),
                   ),
                 ),
-              ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: l10n.editHabitSuggestedUnits.map((String unit) {
+                    final isSelected = currentUnit.trim() == unit;
+                    return GestureDetector(
+                      onTap: () => Navigator.of(bottomSheetContext).pop(unit),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? editHabitCamel.withOpacitySafe(0.12)
+                              : Colors.white.withOpacitySafe(0.55),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected
+                                ? editHabitCamel
+                                : editHabitCamel.withOpacitySafe(0.24),
+                          ),
+                        ),
+                        child: Text(
+                          unit,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: editHabitDark,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(growable: false),
+                ),
+                const SizedBox(height: 18),
+                TextFormField(
+                  autofocus: true,
+                  initialValue: customValue,
+                  onChanged: (String value) => customValue = value,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: editHabitDark,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: l10n.editHabitTitleHint,
+                    hintStyle: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: editHabitDark.withOpacitySafe(0.35),
+                    ),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: editHabitCamel.withOpacitySafe(0.30),
+                      ),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: editHabitCamel.withOpacitySafe(0.80),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    color: editHabitDark,
+                    borderRadius: BorderRadius.circular(16),
+                    onPressed: () => Navigator.of(bottomSheetContext)
+                        .pop(customValue.trim()),
+                    child: Text(
+                      l10n.editHabitUnitPickerAction,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: editHabitCream,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       );
     },
   );
 
-  customController.dispose();
   return selected;
 }
 
