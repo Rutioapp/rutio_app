@@ -2421,6 +2421,85 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{# día completado} other{# días completados}}'**
   String statisticsV3HighlightedCompletedDays(int count);
 
+  /// No description provided for @statisticsV3HabitListTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Hábitos'**
+  String get statisticsV3HabitListTitle;
+
+  /// No description provided for @statisticsV3HabitListSearchPlaceholder.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar hábitos'**
+  String get statisticsV3HabitListSearchPlaceholder;
+
+  /// No description provided for @statisticsV3HabitListAllChip.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos'**
+  String get statisticsV3HabitListAllChip;
+
+  /// No description provided for @statisticsV3HabitListMainDaysPercent.
+  ///
+  /// In es, this message translates to:
+  /// **'{completed} de {expected} días · {percent}%'**
+  String statisticsV3HabitListMainDaysPercent(
+      int completed, int expected, int percent);
+
+  /// No description provided for @statisticsV3HabitListMainTimesPerWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'{completed}/{target} esta semana'**
+  String statisticsV3HabitListMainTimesPerWeek(int completed, int target);
+
+  /// No description provided for @statisticsV3HabitListMainCountWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'{value} {unit} esta semana'**
+  String statisticsV3HabitListMainCountWeek(String value, String unit);
+
+  /// No description provided for @statisticsV3HabitListStreakDays.
+  ///
+  /// In es, this message translates to:
+  /// **'Racha: {days} días'**
+  String statisticsV3HabitListStreakDays(int days);
+
+  /// No description provided for @statisticsV3HabitListAvgPerDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Media: {value} {unit}/día'**
+  String statisticsV3HabitListAvgPerDay(String value, String unit);
+
+  /// No description provided for @statisticsV3HabitListEmptyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay hábitos activos.'**
+  String get statisticsV3HabitListEmptyTitle;
+
+  /// No description provided for @statisticsV3HabitListEmptySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea un hábito para empezar a ver progreso aquí.'**
+  String get statisticsV3HabitListEmptySubtitle;
+
+  /// No description provided for @statisticsV3HabitListNoResultsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay hábitos que coincidan con tu búsqueda.'**
+  String get statisticsV3HabitListNoResultsTitle;
+
+  /// No description provided for @statisticsV3HabitListNoResultsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Prueba con otro nombre o familia.'**
+  String get statisticsV3HabitListNoResultsSubtitle;
+
+  /// No description provided for @statisticsV3HabitListPlusComingSoon.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear hábitos desde esta vista llegará pronto.'**
+  String get statisticsV3HabitListPlusComingSoon;
+
   /// No description provided for @statisticsV3HabitViewPlaceholderTitle.
   ///
   /// In es, this message translates to:

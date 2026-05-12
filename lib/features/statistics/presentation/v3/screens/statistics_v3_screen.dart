@@ -8,6 +8,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_consistency_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_family_chips_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_header.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_habit_list_view.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_highlighted_habit_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_monthly_calendar_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_period_selector.dart';
@@ -20,6 +21,7 @@ import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/diary/diary_screen.dart';
 import 'package:rutio/screens/habit_archived_screen.dart';
+import 'package:rutio/screens/habit_detail/habit_detail_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
 import 'package:rutio/screens/habit_stats_overview_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
@@ -61,6 +63,10 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       period: _period,
       l10n: l10n,
     );
+    final habitListItems = buildStatisticsV3HabitListData(
+      store: store,
+      l10n: l10n,
+    );
     final currentStreakDays = _currentGlobalStreak(store);
     final highlightedHabitStreakDays =
         _highlightedHabitStreak(store, viewData.highlightedHabits);
@@ -100,17 +106,40 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                StatisticsV3PeriodSelector(
-                  value: _period,
-                  onChanged: (next) => setState(() => _period = next),
-                ),
-                const SizedBox(height: 12),
                 if (_showHabitView)
-                  _HabitViewPlaceholderCard(
-                    title: l10n.statisticsV3HabitViewPlaceholderTitle,
-                    body: l10n.statisticsV3HabitViewPlaceholderBody,
+                  StatisticsV3HabitListView(
+                    items: habitListItems,
+                    onPlusTap: () {
+                      final messenger = ScaffoldMessenger.maybeOf(context);
+                      if (messenger == null) return;
+                      messenger
+                        ..hideCurrentSnackBar()
+                        ..showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              l10n.statisticsV3HabitListPlusComingSoon,
+                            ),
+                          ),
+                        );
+                    },
+                    onHabitTap: (item) {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (_) => HabitDetailScreen(
+                            habit: item.habit,
+                            familyColor: item.familyColor,
+                            mode: HabitDetailScreenMode.statsOnly,
+                          ),
+                        ),
+                      );
+                    },
                   )
                 else ...[
+                  StatisticsV3PeriodSelector(
+                    value: _period,
+                    onChanged: (next) => setState(() => _period = next),
+                  ),
+                  const SizedBox(height: 12),
                   StatisticsV3SummaryCard(
                     title: l10n.statisticsV3SummaryCardTitle,
                     completedLabel: l10n.statisticsV3SummaryCompletedLabel,
@@ -360,50 +389,6 @@ class _StatisticsV3WeeklySection extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-class _HabitViewPlaceholderCard extends StatelessWidget {
-  const _HabitViewPlaceholderCard({
-    required this.title,
-    required this.body,
-  });
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE9E3D9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2F251C),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            body,
-            style: const TextStyle(
-              fontSize: 15,
-              height: 1.35,
-              color: Color(0xFF60574D),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

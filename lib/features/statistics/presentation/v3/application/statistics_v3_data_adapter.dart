@@ -223,6 +223,192 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
   );
 }
 
+List<StatisticsV3HabitListItem> buildStatisticsV3HabitListData({
+  required UserStateStore store,
+  required AppLocalizations l10n,
+  DateTime? now,
+}) {
+  final today = _dateOnly((now ?? DateTime.now()).toLocal());
+  final root = _map(store.state);
+  final userState = _map(root['userState']);
+  final history = _map(userState['history']);
+  final completionsRoot = _map(history['habitCompletions']);
+  final skipsRoot = _map(history['habitSkips']);
+  final countValuesRoot = _map(history['habitCountValues']);
+  final habits = store.activeHabits;
+
+  final habitsById = <String, Map<String, dynamic>>{};
+  for (final habit in habits) {
+    final id = _habitId(habit);
+    if (id.isEmpty) continue;
+    habitsById[id] = habit;
+  }
+
+  final windowStart = today.subtract(const Duration(days: 6));
+  final expectedByDay = <String, Set<String>>{};
+  final completedByDay = <String, Set<String>>{};
+  for (var offset = 0; offset < 7; offset++) {
+    final day = windowStart.add(Duration(days: offset));
+    final dayKey = _dateKey(day);
+    expectedByDay[dayKey] = _expectedHabitIdsForDay(
+      day: day,
+      today: today,
+      dayKey: dayKey,
+      userState: userState,
+      skipsRoot: skipsRoot,
+      habits: habits,
+    );
+    completedByDay[dayKey] = _completedHabitIdsForDay(
+      day: day,
+      today: today,
+      dayKey: dayKey,
+      userState: userState,
+      completionsRoot: completionsRoot,
+      skipsRoot: skipsRoot,
+      countValuesRoot: countValuesRoot,
+      habits: habits,
+      habitsById: habitsById,
+    );
+  }
+
+  final items = <StatisticsV3HabitListItem>[];
+  for (final habit in habits) {
+    if (_isArchivedHabit(habit)) continue;
+
+    final habitId = _habitId(habit);
+    if (habitId.isEmpty) continue;
+    final title =
+        _habitName(habit, fallback: l10n.habitStatsHabitFallbackTitle);
+    final familyId = _habitListFamilyId(habit);
+    final familyName = familyId == _noFamilyKey
+        ? l10n.statisticsV3NoFamily
+        : l10n.familyName(familyId);
+    final familyColor = familyId == _noFamilyKey
+        ? _noFamilyColor
+        : FamilyTheme.colorOf(familyId);
+    final emoji = _habitListEmoji(habit, familyId: familyId);
+    final isCount = _isCountHabit(habit);
+    final isTimesPerWeek = _isTimesPerWeekCheckHabit(habit);
+    final streak = store.habitStreakSnapshotForHabitId(habitId).currentStreak;
+
+    if (isCount) {
+      final weekStart = _startOfWeek(today);
+      final total = _sumCountHabitValueInRange(
+        habit: habit,
+        habitId: habitId,
+        from: weekStart,
+        to: today,
+        today: today,
+        userState: userState,
+        countValuesRoot: countValuesRoot,
+        skipsRoot: skipsRoot,
+      );
+      final unit = _habitUnitForMetrics(habit, l10n: l10n);
+      final mainMetric = l10n.statisticsV3HabitListMainCountWeek(
+        _formatHabitMetricValue(total),
+        unit,
+      );
+      final avgPerDay = total / 7;
+      final secondaryMetric = l10n.statisticsV3HabitListAvgPerDay(
+        _formatHabitMetricValue(avgPerDay, keepTrailingZero: true),
+        unit,
+      );
+
+      items.add(
+        StatisticsV3HabitListItem(
+          habitId: habitId,
+          habit: habit,
+          title: title,
+          emoji: emoji,
+          familyId: familyId,
+          familyName: familyName,
+          familyColor: familyColor,
+          mainMetric: mainMetric,
+          secondaryMetric: secondaryMetric,
+          metricKind: StatisticsV3HabitListMetricKind.count,
+        ),
+      );
+      continue;
+    }
+
+    if (isTimesPerWeek) {
+      final target = _timesPerWeekTargetOf(habit);
+      final weekStart = _weekStartForDate(
+        today,
+        weekStartsOn: _timesPerWeekWeekStartsOn(habit),
+      );
+      final completed = _completedCountForHabitInWeek(
+        habit: habit,
+        habitId: habitId,
+        weekStart: weekStart,
+        today: today,
+        userState: userState,
+        completionsRoot: completionsRoot,
+        skipsRoot: skipsRoot,
+      );
+      final clampedCompleted = math.min(completed, target);
+      final mainMetric =
+          l10n.statisticsV3HabitListMainTimesPerWeek(clampedCompleted, target);
+      final secondaryMetric = l10n.statisticsV3HabitListStreakDays(streak);
+
+      items.add(
+        StatisticsV3HabitListItem(
+          habitId: habitId,
+          habit: habit,
+          title: title,
+          emoji: emoji,
+          familyId: familyId,
+          familyName: familyName,
+          familyColor: familyColor,
+          mainMetric: mainMetric,
+          secondaryMetric: secondaryMetric,
+          metricKind: StatisticsV3HabitListMetricKind.timesPerWeekCheck,
+        ),
+      );
+      continue;
+    }
+
+    var expected = 0;
+    var completed = 0;
+    for (var offset = 0; offset < 7; offset++) {
+      final day = windowStart.add(Duration(days: offset));
+      final dayKey = _dateKey(day);
+      if (expectedByDay[dayKey]?.contains(habitId) == true) {
+        expected += 1;
+      }
+      if (completedByDay[dayKey]?.contains(habitId) == true) {
+        completed += 1;
+      }
+    }
+    final safeExpected = expected > 0 ? expected : 7;
+    final percentage = safeExpected == 0
+        ? 0
+        : ((completed / safeExpected) * 100).round().clamp(0, 100);
+
+    items.add(
+      StatisticsV3HabitListItem(
+        habitId: habitId,
+        habit: habit,
+        title: title,
+        emoji: emoji,
+        familyId: familyId,
+        familyName: familyName,
+        familyColor: familyColor,
+        mainMetric: l10n.statisticsV3HabitListMainDaysPercent(
+          completed,
+          safeExpected,
+          percentage,
+        ),
+        secondaryMetric: l10n.statisticsV3HabitListStreakDays(streak),
+        metricKind: StatisticsV3HabitListMetricKind.check,
+      ),
+    );
+  }
+
+  items.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+  return items;
+}
+
 StatisticsV3WeeklyImprovementData _buildWeeklyImprovementData({
   required DateTime today,
   required Map<String, dynamic> userState,
@@ -416,6 +602,121 @@ _ExpectedCompletedCounts _buildTimesPerWeekContribution({
     expectedCount: expectedCount,
     completedCount: completedCount,
   );
+}
+
+String _habitListFamilyId(Map<String, dynamic> habit) {
+  final familyId = (habit['familyId'] ?? habit['family'] ?? '')
+      .toString()
+      .trim()
+      .toLowerCase();
+  if (familyId.isEmpty || !FamilyTheme.colors.containsKey(familyId)) {
+    return _noFamilyKey;
+  }
+  return familyId;
+}
+
+String _habitListEmoji(
+  Map<String, dynamic> habit, {
+  required String familyId,
+}) {
+  final habitEmoji = (habit['emoji'] ?? '').toString().trim();
+  if (habitEmoji.isNotEmpty) return habitEmoji;
+  if (familyId == _noFamilyKey) return _habitEmoji(habit);
+  return FamilyTheme.emojiOf(familyId);
+}
+
+String _habitUnitForMetrics(
+  Map<String, dynamic> habit, {
+  required AppLocalizations l10n,
+}) {
+  final raw = (habit['unit'] ?? habit['unitLabel'] ?? habit['units'] ?? '')
+      .toString()
+      .trim();
+  if (raw.isEmpty) return l10n.unitTimesShort;
+  return l10n.habitUnitLabel(raw);
+}
+
+String _formatHabitMetricValue(
+  num value, {
+  int fractionDigits = 1,
+  bool keepTrailingZero = false,
+}) {
+  if (!value.isFinite) return '0';
+
+  final rounded = value.roundToDouble();
+  if ((value - rounded).abs() < 0.0001) {
+    if (keepTrailingZero && fractionDigits > 0) {
+      return rounded.toStringAsFixed(fractionDigits);
+    }
+    return rounded.toInt().toString();
+  }
+
+  final fixed = value.toStringAsFixed(fractionDigits);
+  if (keepTrailingZero) return fixed;
+  return fixed
+      .replaceFirst(RegExp(r'0+$'), '')
+      .replaceFirst(RegExp(r'\.$'), '');
+}
+
+num _sumCountHabitValueInRange({
+  required Map<String, dynamic> habit,
+  required String habitId,
+  required DateTime from,
+  required DateTime to,
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> countValuesRoot,
+  required Map<String, dynamic> skipsRoot,
+}) {
+  final start = _dateOnly(from);
+  final end = _dateOnly(to);
+  if (end.isBefore(start)) return 0;
+
+  var total = 0.0;
+  final dayCount = end.difference(start).inDays + 1;
+  for (var index = 0; index < dayCount; index++) {
+    final day = start.add(Duration(days: index));
+    total += _countHabitValueForDay(
+      habit: habit,
+      habitId: habitId,
+      day: day,
+      today: today,
+      userState: userState,
+      countValuesRoot: countValuesRoot,
+      skipsRoot: skipsRoot,
+    );
+  }
+  return total;
+}
+
+double _countHabitValueForDay({
+  required Map<String, dynamic> habit,
+  required String habitId,
+  required DateTime day,
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> countValuesRoot,
+  required Map<String, dynamic> skipsRoot,
+}) {
+  final dayKey = _dateKey(day);
+  final daySkips = _map(skipsRoot[dayKey]);
+  if (_isDone(daySkips[habitId])) return 0;
+
+  final dayCountValues = _map(countValuesRoot[dayKey]);
+  final historyValue =
+      _safeNum(dayCountValues[habitId], fallback: 0).toDouble();
+  final useCurrentHabitState = dayKey == _dateKey(today) &&
+      _activeViewDateKey(userState, fallbackKey: dayKey) == dayKey;
+  if (!useCurrentHabitState) {
+    return historyValue < 0 ? 0 : historyValue;
+  }
+
+  if (_isDone(habit['skippedToday'])) return 0;
+  final current = _safeNum(
+    habit['progress'] ?? habit['current'] ?? habit['value'],
+    fallback: historyValue,
+  ).toDouble();
+  return current < 0 ? 0 : current;
 }
 
 int _completedCountForHabitInWeek({
@@ -926,8 +1227,7 @@ bool _isTimesPerWeekCheckHabit(Map<String, dynamic> habit) {
   final type = (habit['type'] ?? 'check').toString().trim().toLowerCase();
   if (type != 'check') return false;
   final schedule = _map(habit['schedule']);
-  final scheduleType =
-      (schedule['type'] ?? '').toString().trim().toLowerCase();
+  final scheduleType = (schedule['type'] ?? '').toString().trim().toLowerCase();
   return scheduleType == 'timesperweek';
 }
 
