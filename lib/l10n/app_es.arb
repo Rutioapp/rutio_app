@@ -635,6 +635,69 @@
       }
     }
   },
+  "statisticsV3HabitListTitle": "Hábitos",
+  "statisticsV3HabitListSearchPlaceholder": "Buscar hábitos",
+  "statisticsV3HabitListAllChip": "Todos",
+  "statisticsV3HabitListMainDaysPercent": "{completed} de {expected} días · {percent}%",
+  "@statisticsV3HabitListMainDaysPercent": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "expected": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsV3HabitListMainTimesPerWeek": "{completed}/{target} esta semana",
+  "@statisticsV3HabitListMainTimesPerWeek": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsV3HabitListMainCountWeek": "{value} {unit} esta semana",
+  "@statisticsV3HabitListMainCountWeek": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "statisticsV3HabitListStreakDays": "Racha: {days} días",
+  "@statisticsV3HabitListStreakDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsV3HabitListAvgPerDay": "Media: {value} {unit}/día",
+  "@statisticsV3HabitListAvgPerDay": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "statisticsV3HabitListEmptyTitle": "Aún no hay hábitos activos.",
+  "statisticsV3HabitListEmptySubtitle": "Crea un hábito para empezar a ver progreso aquí.",
+  "statisticsV3HabitListNoResultsTitle": "No hay hábitos que coincidan con tu búsqueda.",
+  "statisticsV3HabitListNoResultsSubtitle": "Prueba con otro nombre o familia.",
+  "statisticsV3HabitListPlusComingSoon": "Crear hábitos desde esta vista llegará pronto.",
   "statisticsV3HabitViewPlaceholderTitle": "Vista por hábito",
   "statisticsV3HabitViewPlaceholderBody": "Esta sección queda reservada para la vista detallada por hábito en V3. Por ahora puedes usar el resumen general sin riesgos.",
   "statisticsV3ProgressMessageEmpty": "Aún estás a tiempo de empezar",

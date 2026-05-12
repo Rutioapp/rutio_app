@@ -21,10 +21,10 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
   String _homeSwipeDeleteConfirmTitle(BuildContext context) =>
       _isSpanishHomeSwipe(context) ? 'Eliminar hábito' : 'Delete habit';
 
-  String _homeSwipeDeleteConfirmBody(BuildContext context) =>
-      _isSpanishHomeSwipe(context)
-          ? 'Se borrará el hábito y su historial. Esta acción no se puede deshacer.'
-          : 'The habit and its history will be deleted. This action cannot be undone.';
+  String _homeSwipeDeleteConfirmBody(BuildContext context) => _isSpanishHomeSwipe(
+          context)
+      ? 'Se borrará el hábito y su historial. Esta acción no se puede deshacer.'
+      : 'The habit and its history will be deleted. This action cannot be undone.';
 
   String _homeSwipeDeleteConfirmAction(BuildContext context) =>
       _isSpanishHomeSwipe(context) ? 'Eliminar' : 'Delete';
@@ -74,7 +74,8 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     await _deleteHabitInStoreFromHome(store, normalizedId);
   }
 
-  Future<void> _deleteHabitInStoreFromHome(UserStateStore store, String id) async {
+  Future<void> _deleteHabitInStoreFromHome(
+      UserStateStore store, String id) async {
     final s = store as dynamic;
 
     for (final fn in <dynamic Function()>[
@@ -226,13 +227,17 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       }
     }
 
-    void openHabitDetails(int initialTab) {
+    void openHabitDetails({
+      required HabitDetailScreenMode mode,
+      int initialTab = 0,
+    }) {
       Navigator.push(
         context,
         CupertinoPageRoute(
           builder: (_) => HabitDetailScreen(
             habit: habit,
             familyColor: familyColor,
+            mode: mode,
             initialTab: initialTab,
             onSaveHabit: (updatedHabit) {
               if (updatedHabit is Map) {
@@ -378,7 +383,10 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       onOpenDetails: compact
           ? null
           : (initialTab) {
-              openHabitDetails(initialTab);
+              openHabitDetails(
+                mode: HabitDetailScreenMode.statsOnly,
+                initialTab: initialTab,
+              );
               // IOS-FIRST IMPROVEMENT END
             },
       onTap: isTrayOpen ? closeTrayIfOpen : null,
@@ -392,7 +400,8 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       editLabel: _homeSwipeEditLabel(context),
       deleteLabel: _homeSwipeDeleteLabel(context),
       onRequestCloseOthers: () {
-        if (_revealedHomeSwipeHabitId == null || _revealedHomeSwipeHabitId == id) {
+        if (_revealedHomeSwipeHabitId == null ||
+            _revealedHomeSwipeHabitId == id) {
           return;
         }
         _applyHomeState(() => _revealedHomeSwipeHabitId = null);
@@ -419,7 +428,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
               skipped: !skippedToday,
             );
       },
-      onEdit: () => openHabitDetails(0),
+      onEdit: () => openHabitDetails(mode: HabitDetailScreenMode.editOnly),
       onDelete: () async {
         await _confirmAndDeleteHabitFromHome(context, habitId: id);
       },
@@ -494,8 +503,7 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 220),
-    )
-      ..addListener(() {
+    )..addListener(() {
         setState(() {
           _offset = _offsetAnimation.value;
         });
@@ -562,15 +570,17 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
         return;
       }
 
-      if (!widget.canSwipeRightComplete || widget.onSwipeRightComplete == null) {
+      if (!widget.canSwipeRightComplete ||
+          widget.onSwipeRightComplete == null) {
         return;
       }
 
-      final dragFactor = _offset > (_HomeSwipeActionTray._rightVisualLimit * 0.55)
-          ? 0.42
-          : 0.72;
-      final nextOffset =
-          (_offset + (dx * dragFactor)).clamp(0.0, _HomeSwipeActionTray._rightVisualLimit);
+      final dragFactor =
+          _offset > (_HomeSwipeActionTray._rightVisualLimit * 0.55)
+              ? 0.42
+              : 0.72;
+      final nextOffset = (_offset + (dx * dragFactor))
+          .clamp(0.0, _HomeSwipeActionTray._rightVisualLimit);
       if (nextOffset == _offset) return;
       setState(() {
         _offset = nextOffset;
@@ -597,8 +607,9 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
         widget.onSwipeRightComplete != null;
     final passedRightThreshold =
         _offset >= _HomeSwipeActionTray._rightCompleteThreshold;
-    final flingRight = rightVelocity >= _HomeSwipeActionTray._rightFlingVelocity &&
-        _offset >= _HomeSwipeActionTray._rightFlingMinOffset;
+    final flingRight =
+        rightVelocity >= _HomeSwipeActionTray._rightFlingVelocity &&
+            _offset >= _HomeSwipeActionTray._rightFlingMinOffset;
 
     if (canCompleteFromSwipe && (passedRightThreshold || flingRight)) {
       _startedFromOpenTray = false;
@@ -613,9 +624,10 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
       return;
     }
 
-    final openThreshold = _revealWidth * _HomeSwipeActionTray._openThresholdRatio;
-    final shouldOpen =
-        _offset.abs() >= openThreshold || details.velocity.pixelsPerSecond.dx < -320;
+    final openThreshold =
+        _revealWidth * _HomeSwipeActionTray._openThresholdRatio;
+    final shouldOpen = _offset.abs() >= openThreshold ||
+        details.velocity.pixelsPerSecond.dx < -320;
 
     if (shouldOpen) {
       widget.onOpen();
@@ -632,8 +644,8 @@ class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
     final revealWidth = _revealWidth;
     final verticalInset = widget.compact ? 6.0 : 8.0;
     final radius = widget.compact ? 18.0 : 20.0;
-    final revealProgress = ((_offset < 0 ? _offset.abs() : 0.0) / revealWidth)
-        .clamp(0.0, 1.0);
+    final revealProgress =
+        ((_offset < 0 ? _offset.abs() : 0.0) / revealWidth).clamp(0.0, 1.0);
     final showTray = revealProgress > 0.001;
     final rightProgress =
         (_offset / _HomeSwipeActionTray._rightVisualLimit).clamp(0.0, 1.0);

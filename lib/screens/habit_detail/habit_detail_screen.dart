@@ -15,6 +15,12 @@ enum _HabitDetailMenuAction {
   archive,
 }
 
+enum HabitDetailScreenMode {
+  full,
+  editOnly,
+  statsOnly,
+}
+
 /// Habit detail with two tabs (Edit / Stats).
 ///
 /// Why stats was empty when navigating from Weekly:
@@ -32,6 +38,7 @@ class HabitDetailScreen extends StatefulWidget {
   final dynamic habit;
   final Color familyColor;
   final int initialTab; // 0=Editar, 1=Stats
+  final HabitDetailScreenMode mode;
 
   final void Function(dynamic updatedHabit)? onSaveHabit;
   final void Function(BuildContext context)? onOpenStats;
@@ -41,6 +48,7 @@ class HabitDetailScreen extends StatefulWidget {
     required this.habit,
     required this.familyColor,
     this.initialTab = 0,
+    this.mode = HabitDetailScreenMode.full,
     this.onSaveHabit,
     this.onOpenStats,
   });
@@ -59,6 +67,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
 
   String _familyId = FamilyTheme.fallbackId;
   Color get _currentFamilyColor => FamilyTheme.colorOf(_familyId);
+  bool get _isEditOnly => widget.mode == HabitDetailScreenMode.editOnly;
+  bool get _isStatsOnly => widget.mode == HabitDetailScreenMode.statsOnly;
+  bool get _isSingleMode => _isEditOnly || _isStatsOnly;
 
   @override
   void initState() {
@@ -69,9 +80,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
     _familyId = _habitFamilyId(_habit);
 
     _tabController = TabController(
-      length: 2,
+      length: _isSingleMode ? 1 : 2,
       vsync: this,
-      initialIndex: widget.initialTab.clamp(0, 1),
+      initialIndex: _isSingleMode ? 0 : widget.initialTab.clamp(0, 1),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -130,7 +141,9 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
   void _syncAndLoadForCurrentTab({bool force = false}) {
     // Always keep store in sync, but only force-refresh stats when stats tab selected.
     _syncSelectedHabitInStore();
-    if (_tabController.index == 1) {
+    final isStatsTabSelected =
+        _isStatsOnly || (!_isEditOnly && _tabController.index == 1);
+    if (isStatsTabSelected) {
       _requestStatsLoad();
       _refreshStats();
     } else if (force) {
@@ -478,50 +491,78 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_title),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            tooltip: context.l10n.habitDetailMoreOptionsTooltip,
-            icon: const Icon(CupertinoIcons.ellipsis_circle),
-            onPressed: () => _showHabitActionsSheet(context),
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: _currentFamilyColor,
-          labelColor: _currentFamilyColor,
-          unselectedLabelColor: Colors.black.withValues(alpha: 0.55),
-          tabs: [
-            Tab(text: context.l10n.habitDetailEditTab),
-            Tab(text: context.l10n.habitDetailStatsTab),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          EditHabitTab(
-            habit: effectiveHabit,
-            familyColor: _currentFamilyColor,
-            onFamilyIdLiveChanged: (id) {
-              if (id.trim().isEmpty) return;
-              setState(() => _familyId = id.trim());
-            },
-            onTitleLiveChanged: (t) {
-              if (t.trim().isEmpty) return;
-              setState(() => _title = t.trim());
-            },
-            onSaved: _handleSaved,
-          ),
-          HabitStatsTab(
-            key: ValueKey('${_habitId(_habit) ?? 'no-id'}_$_statsRefreshToken'),
-            habit: effectiveHabit,
-            familyColor: _currentFamilyColor,
-          ),
-        ],
-      ),
+      appBar: _isEditOnly
+          ? null
+          : AppBar(
+              title: Text(_title),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  tooltip: context.l10n.habitDetailMoreOptionsTooltip,
+                  icon: const Icon(CupertinoIcons.ellipsis_circle),
+                  onPressed: () => _showHabitActionsSheet(context),
+                ),
+              ],
+              bottom: _isStatsOnly
+                  ? null
+                  : TabBar(
+                      controller: _tabController,
+                      indicatorColor: _currentFamilyColor,
+                      labelColor: _currentFamilyColor,
+                      unselectedLabelColor:
+                          Colors.black.withValues(alpha: 0.55),
+                      tabs: [
+                        Tab(text: context.l10n.habitDetailEditTab),
+                        Tab(text: context.l10n.habitDetailStatsTab),
+                      ],
+                    ),
+            ),
+      body: _isStatsOnly
+          ? HabitStatsTab(
+              key: ValueKey(
+                  '${_habitId(_habit) ?? 'no-id'}_$_statsRefreshToken'),
+              habit: effectiveHabit,
+              familyColor: _currentFamilyColor,
+            )
+          : _isEditOnly
+              ? EditHabitTab(
+                  habit: effectiveHabit,
+                  familyColor: _currentFamilyColor,
+                  onFamilyIdLiveChanged: (id) {
+                    if (id.trim().isEmpty) return;
+                    setState(() => _familyId = id.trim());
+                  },
+                  onTitleLiveChanged: (t) {
+                    if (t.trim().isEmpty) return;
+                    setState(() => _title = t.trim());
+                  },
+                  onSaved: _handleSaved,
+                )
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    EditHabitTab(
+                      habit: effectiveHabit,
+                      familyColor: _currentFamilyColor,
+                      onFamilyIdLiveChanged: (id) {
+                        if (id.trim().isEmpty) return;
+                        setState(() => _familyId = id.trim());
+                      },
+                      onTitleLiveChanged: (t) {
+                        if (t.trim().isEmpty) return;
+                        setState(() => _title = t.trim());
+                      },
+                      onSaved: _handleSaved,
+                    ),
+                    HabitStatsTab(
+                      key: ValueKey(
+                        '${_habitId(_habit) ?? 'no-id'}_$_statsRefreshToken',
+                      ),
+                      habit: effectiveHabit,
+                      familyColor: _currentFamilyColor,
+                    ),
+                  ],
+                ),
     );
   }
 }

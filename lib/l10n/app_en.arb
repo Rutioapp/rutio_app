@@ -635,6 +635,69 @@
             }
         }
     },
+    "statisticsV3HabitListTitle": "Habits",
+    "statisticsV3HabitListSearchPlaceholder": "Search habits",
+    "statisticsV3HabitListAllChip": "All",
+    "statisticsV3HabitListMainDaysPercent": "{completed} of {expected} days · {percent}%",
+    "@statisticsV3HabitListMainDaysPercent": {
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "expected": {
+                "type": "int"
+            },
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV3HabitListMainTimesPerWeek": "{completed}/{target} this week",
+    "@statisticsV3HabitListMainTimesPerWeek": {
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "target": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV3HabitListMainCountWeek": "{value} {unit} this week",
+    "@statisticsV3HabitListMainCountWeek": {
+        "placeholders": {
+            "value": {
+                "type": "String"
+            },
+            "unit": {
+                "type": "String"
+            }
+        }
+    },
+    "statisticsV3HabitListStreakDays": "Streak: {days} days",
+    "@statisticsV3HabitListStreakDays": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsV3HabitListAvgPerDay": "Avg: {value} {unit}/day",
+    "@statisticsV3HabitListAvgPerDay": {
+        "placeholders": {
+            "value": {
+                "type": "String"
+            },
+            "unit": {
+                "type": "String"
+            }
+        }
+    },
+    "statisticsV3HabitListEmptyTitle": "No active habits yet.",
+    "statisticsV3HabitListEmptySubtitle": "Create a habit to start seeing progress here.",
+    "statisticsV3HabitListNoResultsTitle": "No habits match your search.",
+    "statisticsV3HabitListNoResultsSubtitle": "Try another name or family filter.",
+    "statisticsV3HabitListPlusComingSoon": "Habit creation from this view is coming soon.",
     "statisticsV3HabitViewPlaceholderTitle": "Per-habit view",
     "statisticsV3HabitViewPlaceholderBody": "This section is reserved for the detailed per-habit statistics view in V3. For now, you can use the general overview safely.",
     "statisticsV3MonthlyCalendarTitle": "Consistency calendar",

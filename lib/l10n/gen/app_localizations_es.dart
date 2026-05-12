@@ -1298,6 +1298,60 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get statisticsV3HabitListTitle => 'Hábitos';
+
+  @override
+  String get statisticsV3HabitListSearchPlaceholder => 'Buscar hábitos';
+
+  @override
+  String get statisticsV3HabitListAllChip => 'Todos';
+
+  @override
+  String statisticsV3HabitListMainDaysPercent(
+      int completed, int expected, int percent) {
+    return '$completed de $expected días · $percent%';
+  }
+
+  @override
+  String statisticsV3HabitListMainTimesPerWeek(int completed, int target) {
+    return '$completed/$target esta semana';
+  }
+
+  @override
+  String statisticsV3HabitListMainCountWeek(String value, String unit) {
+    return '$value $unit esta semana';
+  }
+
+  @override
+  String statisticsV3HabitListStreakDays(int days) {
+    return 'Racha: $days días';
+  }
+
+  @override
+  String statisticsV3HabitListAvgPerDay(String value, String unit) {
+    return 'Media: $value $unit/día';
+  }
+
+  @override
+  String get statisticsV3HabitListEmptyTitle => 'Aún no hay hábitos activos.';
+
+  @override
+  String get statisticsV3HabitListEmptySubtitle =>
+      'Crea un hábito para empezar a ver progreso aquí.';
+
+  @override
+  String get statisticsV3HabitListNoResultsTitle =>
+      'No hay hábitos que coincidan con tu búsqueda.';
+
+  @override
+  String get statisticsV3HabitListNoResultsSubtitle =>
+      'Prueba con otro nombre o familia.';
+
+  @override
+  String get statisticsV3HabitListPlusComingSoon =>
+      'Crear hábitos desde esta vista llegará pronto.';
+
+  @override
   String get statisticsV3HabitViewPlaceholderTitle => 'Vista por hábito';
 
   @override

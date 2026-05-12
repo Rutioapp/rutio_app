@@ -121,6 +121,38 @@ class StatisticsV3WeeklyImprovementData {
   final int deltaPercentage;
 }
 
+enum StatisticsV3HabitListMetricKind {
+  check,
+  timesPerWeekCheck,
+  count,
+}
+
+class StatisticsV3HabitListItem {
+  const StatisticsV3HabitListItem({
+    required this.habitId,
+    required this.habit,
+    required this.title,
+    required this.emoji,
+    required this.familyId,
+    required this.familyName,
+    required this.familyColor,
+    required this.mainMetric,
+    required this.secondaryMetric,
+    required this.metricKind,
+  });
+
+  final String habitId;
+  final Map<String, dynamic> habit;
+  final String title;
+  final String emoji;
+  final String familyId;
+  final String familyName;
+  final Color familyColor;
+  final String mainMetric;
+  final String secondaryMetric;
+  final StatisticsV3HabitListMetricKind metricKind;
+}
+
 class StatisticsV3ViewData {
   const StatisticsV3ViewData({
     required this.totalDays,

@@ -1295,6 +1295,60 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get statisticsV3HabitListTitle => 'Habits';
+
+  @override
+  String get statisticsV3HabitListSearchPlaceholder => 'Search habits';
+
+  @override
+  String get statisticsV3HabitListAllChip => 'All';
+
+  @override
+  String statisticsV3HabitListMainDaysPercent(
+      int completed, int expected, int percent) {
+    return '$completed of $expected days · $percent%';
+  }
+
+  @override
+  String statisticsV3HabitListMainTimesPerWeek(int completed, int target) {
+    return '$completed/$target this week';
+  }
+
+  @override
+  String statisticsV3HabitListMainCountWeek(String value, String unit) {
+    return '$value $unit this week';
+  }
+
+  @override
+  String statisticsV3HabitListStreakDays(int days) {
+    return 'Streak: $days days';
+  }
+
+  @override
+  String statisticsV3HabitListAvgPerDay(String value, String unit) {
+    return 'Avg: $value $unit/day';
+  }
+
+  @override
+  String get statisticsV3HabitListEmptyTitle => 'No active habits yet.';
+
+  @override
+  String get statisticsV3HabitListEmptySubtitle =>
+      'Create a habit to start seeing progress here.';
+
+  @override
+  String get statisticsV3HabitListNoResultsTitle =>
+      'No habits match your search.';
+
+  @override
+  String get statisticsV3HabitListNoResultsSubtitle =>
+      'Try another name or family filter.';
+
+  @override
+  String get statisticsV3HabitListPlusComingSoon =>
+      'Habit creation from this view is coming soon.';
+
+  @override
   String get statisticsV3HabitViewPlaceholderTitle => 'Per-habit view';
 
   @override
