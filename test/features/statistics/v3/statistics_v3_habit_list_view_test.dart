@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/achievements/domain/models/habit_streak_snapshot.dart';
+import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_habit_list_view.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/habit_detail/habit_detail_screen.dart';
 import 'package:rutio/stores/user_state_store.dart';
@@ -109,6 +111,63 @@ void main() {
 
       expect(find.text('No active habits yet.'), findsOneWidget);
     });
+
+    testWidgets('keeps long title visible and hides metrics from card UI',
+        (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 800);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const longTitle =
+          'Very long habit title that should never wrap into two lines in this card';
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              width: 320,
+              child: StatisticsV3HabitListView(
+                items: const [
+                  StatisticsV3HabitListItem(
+                    habitId: 'long-count',
+                    habit: <String, dynamic>{'id': 'long-count'},
+                    title: longTitle,
+                    emoji: '🥤',
+                    familyId: 'spirit',
+                    familyName: 'Spirit',
+                    familyColor: Color(0xFF72A481),
+                    mainMetric: '4 verylongcustomunitname',
+                    secondaryMetric: 'Avg: 0.6/day',
+                    metricKind: StatisticsV3HabitListMetricKind.count,
+                  ),
+                ],
+                onHabitTap: _noopHabitTap,
+                onPlusTap: _noopTap,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('statisticsV3HabitCard-long-count')),
+          findsOneWidget);
+      expect(tester.takeException(), isNull);
+      expect(find.text('4 verylongcustomunitname'), findsNothing);
+      expect(find.text('Avg: 0.6/day'), findsNothing);
+
+      final titleText = tester.widget<Text>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              widget.data == longTitle,
+        ),
+      );
+      expect(titleText.maxLines, 1);
+      expect(titleText.overflow, TextOverflow.ellipsis);
+    });
   });
 }
 
@@ -175,6 +234,10 @@ String _dateKey(DateTime date) {
   final day = date.day.toString().padLeft(2, '0');
   return '${date.year}-$month-$day';
 }
+
+void _noopTap() {}
+
+void _noopHabitTap(StatisticsV3HabitListItem _) {}
 
 class _FakeStatisticsV3Store implements UserStateStore {
   _FakeStatisticsV3Store(this.state);

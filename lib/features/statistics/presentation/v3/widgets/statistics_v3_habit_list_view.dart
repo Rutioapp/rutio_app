@@ -27,8 +27,6 @@ class _StatisticsV3HabitListViewState extends State<StatisticsV3HabitListView> {
 
   static const Color _titleColor = Color(0xFF573F2E);
   static const Color _cardBorder = Color(0xFFEDE4D8);
-  static const Color _metric = Color(0xFF574A3F);
-  static const Color _streak = Color(0xFFB87333);
 
   @override
   void dispose() {
@@ -221,109 +219,102 @@ class _HabitListCard extends StatelessWidget {
   final StatisticsV3HabitListItem item;
   final VoidCallback onTap;
 
+  static const double _cardMinHeight = 74;
+  static const double _emojiTileSize = 50;
+  static const double _radius = 18;
+
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        key: Key('statisticsV3HabitCard-${item.habitId}'),
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.78),
-            borderRadius: BorderRadius.circular(20),
-            border:
-                Border.all(color: _StatisticsV3HabitListViewState._cardBorder),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0x332F2418),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
+    final borderRadius = BorderRadius.circular(_radius);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x142F2418),
+            blurRadius: 10,
+            offset: Offset(0, 3),
           ),
-          child: Row(
-            children: [
-              _HabitEmojiTile(emoji: item.emoji),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 19,
-                        height: 1.1,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF3D3228),
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Row(
+        ],
+      ),
+      child: Material(
+        color: const Color(0xFFFDFBF8),
+        borderRadius: borderRadius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: Key('statisticsV3HabitCard-${item.habitId}'),
+          onTap: onTap,
+          borderRadius: borderRadius,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              border: Border.all(
+                color: _StatisticsV3HabitListViewState._cardBorder,
+              ),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: _cardMinHeight),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _HabitEmojiTile(emoji: item.emoji, size: _emojiTileSize),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            color: item.familyColor,
-                            shape: BoxShape.circle,
+                        Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF3D3228),
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            item.familyName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF7A6E63),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: item.familyColor,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                item.familyName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  height: 1.1,
+                                  color: Color(0xFF7A6E63),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: Color(0xFF9A8D80),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      item.mainMetric,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: _StatisticsV3HabitListViewState._metric,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      item.secondaryMetric,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: _StatisticsV3HabitListViewState._streak,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.chevron_right_rounded,
-                size: 24,
-                color: Color(0xFF978878),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -334,15 +325,17 @@ class _HabitListCard extends StatelessWidget {
 class _HabitEmojiTile extends StatelessWidget {
   const _HabitEmojiTile({
     required this.emoji,
+    required this.size,
   });
 
   final String emoji;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 50,
-      height: 50,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
@@ -357,7 +350,7 @@ class _HabitEmojiTile extends StatelessWidget {
       ),
       child: Text(
         emoji,
-        style: const TextStyle(fontSize: 25),
+        style: const TextStyle(fontSize: 23),
       ),
     );
   }
