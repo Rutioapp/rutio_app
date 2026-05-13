@@ -1784,6 +1784,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitStatsLastWeek => 'Last week';
 
   @override
+  String habitStatsIndividualObjectiveCountPerDay(String target) {
+    return 'Goal: $target per day';
+  }
+
+  @override
+  String habitStatsIndividualObjectiveTimesPerWeek(int count) {
+    return 'Goal: $count times per week';
+  }
+
+  @override
+  String habitStatsIndividualObjectiveDaysPerWeek(int count) {
+    return 'Goal: $count days per week';
+  }
+
+  @override
+  String get habitStatsIndividualObjectiveOnePerDay => 'Goal: 1 time per day';
+
+  @override
+  String get habitStatsIndividualPerDay => 'Per day';
+
+  @override
+  String get habitStatsIndividualPerWeek => 'Per week';
+
+  @override
+  String get habitStatsIndividualCompletionSubtitle => 'Completion';
+
+  @override
+  String get habitStatsIndividualMostFrequentTime => 'Most frequent time';
+
+  @override
+  String get habitStatsIndividualNoData => 'No data';
+
+  @override
+  String get habitStatsIndividualMomentMidday => 'Midday';
+
+  @override
+  String habitStatsIndividualTimes(int count) {
+    return '$count times';
+  }
+
+  @override
+  String habitStatsIndividualDays(int count) {
+    return '$count days';
+  }
+
+  @override
+  String get habitStatsIndividualVolume => 'Volume';
+
+  @override
+  String get habitStatsIndividualDailyAverage => 'Daily average';
+
+  @override
+  String get habitStatsIndividualAverage => 'Average';
+
+  @override
+  String get habitStatsIndividualCompletion => 'Completion';
+
+  @override
+  String get habitStatsIndividualOfGoal => 'Of goal';
+
+  @override
+  String get habitStatsIndividualBestDay => 'Best day';
+
+  @override
+  String get habitStatsIndividualNoComparisonYet => 'No comparison yet';
+
+  @override
+  String get habitStatsIndividualInsightTitle => 'Insight';
+
+  @override
+  String get habitStatsIndividualInsightCheckHigh =>
+      'You are building a steady routine.';
+
+  @override
+  String get habitStatsIndividualInsightCheckMedium => 'Good rhythm this week.';
+
+  @override
+  String get habitStatsIndividualInsightCheckLow => 'Every repetition counts.';
+
+  @override
+  String get habitStatsIndividualInsightCountHigh =>
+      'Your rhythm is staying close to the goal.';
+
+  @override
+  String get habitStatsIndividualInsightCountMedium =>
+      'Good progress toward your target.';
+
+  @override
+  String get habitStatsIndividualInsightCountLow =>
+      'Keep adjusting your pace calmly.';
+
+  @override
   String get habitStatsTimeSlotMorning => 'morning';
 
   @override

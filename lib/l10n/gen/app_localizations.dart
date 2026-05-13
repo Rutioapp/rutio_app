@@ -3286,6 +3286,162 @@ abstract class AppLocalizations {
   /// **'Semana pasada'**
   String get habitStatsLastWeek;
 
+  /// No description provided for @habitStatsIndividualObjectiveCountPerDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo: {target} al día'**
+  String habitStatsIndividualObjectiveCountPerDay(String target);
+
+  /// No description provided for @habitStatsIndividualObjectiveTimesPerWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo: {count} veces por semana'**
+  String habitStatsIndividualObjectiveTimesPerWeek(int count);
+
+  /// No description provided for @habitStatsIndividualObjectiveDaysPerWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo: {count} días por semana'**
+  String habitStatsIndividualObjectiveDaysPerWeek(int count);
+
+  /// No description provided for @habitStatsIndividualObjectiveOnePerDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo: 1 vez al día'**
+  String get habitStatsIndividualObjectiveOnePerDay;
+
+  /// No description provided for @habitStatsIndividualPerDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Por día'**
+  String get habitStatsIndividualPerDay;
+
+  /// No description provided for @habitStatsIndividualPerWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'Por semana'**
+  String get habitStatsIndividualPerWeek;
+
+  /// No description provided for @habitStatsIndividualCompletionSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cumplimiento'**
+  String get habitStatsIndividualCompletionSubtitle;
+
+  /// No description provided for @habitStatsIndividualMostFrequentTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora más frecuente'**
+  String get habitStatsIndividualMostFrequentTime;
+
+  /// No description provided for @habitStatsIndividualNoData.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos'**
+  String get habitStatsIndividualNoData;
+
+  /// No description provided for @habitStatsIndividualMomentMidday.
+  ///
+  /// In es, this message translates to:
+  /// **'Mediodía'**
+  String get habitStatsIndividualMomentMidday;
+
+  /// No description provided for @habitStatsIndividualTimes.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} veces'**
+  String habitStatsIndividualTimes(int count);
+
+  /// No description provided for @habitStatsIndividualDays.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} días'**
+  String habitStatsIndividualDays(int count);
+
+  /// No description provided for @habitStatsIndividualVolume.
+  ///
+  /// In es, this message translates to:
+  /// **'Volumen'**
+  String get habitStatsIndividualVolume;
+
+  /// No description provided for @habitStatsIndividualDailyAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Media diaria'**
+  String get habitStatsIndividualDailyAverage;
+
+  /// No description provided for @habitStatsIndividualAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedio'**
+  String get habitStatsIndividualAverage;
+
+  /// No description provided for @habitStatsIndividualCompletion.
+  ///
+  /// In es, this message translates to:
+  /// **'Cumplimiento'**
+  String get habitStatsIndividualCompletion;
+
+  /// No description provided for @habitStatsIndividualOfGoal.
+  ///
+  /// In es, this message translates to:
+  /// **'Del objetivo'**
+  String get habitStatsIndividualOfGoal;
+
+  /// No description provided for @habitStatsIndividualBestDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejor día'**
+  String get habitStatsIndividualBestDay;
+
+  /// No description provided for @habitStatsIndividualNoComparisonYet.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin comparación todavía'**
+  String get habitStatsIndividualNoComparisonYet;
+
+  /// No description provided for @habitStatsIndividualInsightTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Insight'**
+  String get habitStatsIndividualInsightTitle;
+
+  /// No description provided for @habitStatsIndividualInsightCheckHigh.
+  ///
+  /// In es, this message translates to:
+  /// **'Vas construyendo una rutina estable.'**
+  String get habitStatsIndividualInsightCheckHigh;
+
+  /// No description provided for @habitStatsIndividualInsightCheckMedium.
+  ///
+  /// In es, this message translates to:
+  /// **'Buen ritmo esta semana.'**
+  String get habitStatsIndividualInsightCheckMedium;
+
+  /// No description provided for @habitStatsIndividualInsightCheckLow.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada repetición cuenta.'**
+  String get habitStatsIndividualInsightCheckLow;
+
+  /// No description provided for @habitStatsIndividualInsightCountHigh.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu ritmo se mantiene muy cerca del objetivo.'**
+  String get habitStatsIndividualInsightCountHigh;
+
+  /// No description provided for @habitStatsIndividualInsightCountMedium.
+  ///
+  /// In es, this message translates to:
+  /// **'Buen progreso hacia tu objetivo.'**
+  String get habitStatsIndividualInsightCountMedium;
+
+  /// No description provided for @habitStatsIndividualInsightCountLow.
+  ///
+  /// In es, this message translates to:
+  /// **'Sigue ajustando el ritmo con calma.'**
+  String get habitStatsIndividualInsightCountLow;
+
   /// No description provided for @habitStatsTimeSlotMorning.
   ///
   /// In es, this message translates to:

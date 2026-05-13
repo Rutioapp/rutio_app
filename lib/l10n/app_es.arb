@@ -957,6 +957,67 @@
   },
   "habitStatsThisWeek": "Esta semana",
   "habitStatsLastWeek": "Semana pasada",
+  "habitStatsIndividualObjectiveCountPerDay": "Objetivo: {target} al d\u00eda",
+  "@habitStatsIndividualObjectiveCountPerDay": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "habitStatsIndividualObjectiveTimesPerWeek": "Objetivo: {count} veces por semana",
+  "@habitStatsIndividualObjectiveTimesPerWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsIndividualObjectiveDaysPerWeek": "Objetivo: {count} d\u00edas por semana",
+  "@habitStatsIndividualObjectiveDaysPerWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsIndividualObjectiveOnePerDay": "Objetivo: 1 vez al d\u00eda",
+  "habitStatsIndividualPerDay": "Por d\u00eda",
+  "habitStatsIndividualPerWeek": "Por semana",
+  "habitStatsIndividualCompletionSubtitle": "Cumplimiento",
+  "habitStatsIndividualMostFrequentTime": "Hora m\u00e1s frecuente",
+  "habitStatsIndividualNoData": "Sin datos",
+  "habitStatsIndividualMomentMidday": "Mediod\u00eda",
+  "habitStatsIndividualTimes": "{count} veces",
+  "@habitStatsIndividualTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsIndividualDays": "{count} d\u00edas",
+  "@habitStatsIndividualDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsIndividualVolume": "Volumen",
+  "habitStatsIndividualDailyAverage": "Media diaria",
+  "habitStatsIndividualAverage": "Promedio",
+  "habitStatsIndividualCompletion": "Cumplimiento",
+  "habitStatsIndividualOfGoal": "Del objetivo",
+  "habitStatsIndividualBestDay": "Mejor d\u00eda",
+  "habitStatsIndividualNoComparisonYet": "Sin comparaci\u00f3n todav\u00eda",
+  "habitStatsIndividualInsightTitle": "Insight",
+  "habitStatsIndividualInsightCheckHigh": "Vas construyendo una rutina estable.",
+  "habitStatsIndividualInsightCheckMedium": "Buen ritmo esta semana.",
+  "habitStatsIndividualInsightCheckLow": "Cada repetici\u00f3n cuenta.",
+  "habitStatsIndividualInsightCountHigh": "Tu ritmo se mantiene muy cerca del objetivo.",
+  "habitStatsIndividualInsightCountMedium": "Buen progreso hacia tu objetivo.",
+  "habitStatsIndividualInsightCountLow": "Sigue ajustando el ritmo con calma.",
   "habitStatsTimeSlotMorning": "manana",
   "habitStatsTimeSlotAfternoon": "tarde",
   "habitStatsTimeSlotEvening": "noche",

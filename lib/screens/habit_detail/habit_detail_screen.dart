@@ -491,7 +491,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
     }
 
     return Scaffold(
-      appBar: _isEditOnly
+      appBar: _isEditOnly || _isStatsOnly
           ? null
           : AppBar(
               title: Text(_title),
@@ -523,6 +523,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
                   '${_habitId(_habit) ?? 'no-id'}_$_statsRefreshToken'),
               habit: effectiveHabit,
               familyColor: _currentFamilyColor,
+              showHeader: true,
+              onMorePressed: () => _showHabitActionsSheet(context),
             )
           : _isEditOnly
               ? EditHabitTab(
@@ -560,6 +562,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
                       ),
                       habit: effectiveHabit,
                       familyColor: _currentFamilyColor,
+                      showHeader: false,
                     ),
                   ],
                 ),
