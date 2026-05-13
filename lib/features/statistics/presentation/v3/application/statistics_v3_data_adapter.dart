@@ -304,14 +304,11 @@ List<StatisticsV3HabitListItem> buildStatisticsV3HabitListData({
         skipsRoot: skipsRoot,
       );
       final unit = _habitUnitForMetrics(habit, l10n: l10n);
-      final mainMetric = l10n.statisticsV3HabitListMainCountWeek(
-        _formatHabitMetricValue(total),
-        unit,
-      );
+      final mainMetric = _compactCountMainMetric(total: total, unit: unit);
       final avgPerDay = total / 7;
-      final secondaryMetric = l10n.statisticsV3HabitListAvgPerDay(
-        _formatHabitMetricValue(avgPerDay, keepTrailingZero: true),
-        unit,
+      final secondaryMetric = _compactCountSecondaryMetric(
+        avgPerDay: avgPerDay,
+        l10n: l10n,
       );
 
       items.add(
@@ -346,9 +343,8 @@ List<StatisticsV3HabitListItem> buildStatisticsV3HabitListData({
         completionsRoot: completionsRoot,
         skipsRoot: skipsRoot,
       );
-      final clampedCompleted = math.min(completed, target);
       final mainMetric =
-          l10n.statisticsV3HabitListMainTimesPerWeek(clampedCompleted, target);
+          l10n.statisticsV3HabitListMainTimesPerWeek(completed, target);
       final secondaryMetric = l10n.statisticsV3HabitListStreakDays(streak);
 
       items.add(
@@ -634,6 +630,26 @@ String _habitUnitForMetrics(
       .trim();
   if (raw.isEmpty) return l10n.unitTimesShort;
   return l10n.habitUnitLabel(raw);
+}
+
+String _compactCountMainMetric({
+  required num total,
+  required String unit,
+}) {
+  final value = _formatHabitMetricValue(total);
+  final normalizedUnit = unit.trim();
+  if (normalizedUnit.isEmpty) return value;
+  return '$value $normalizedUnit';
+}
+
+String _compactCountSecondaryMetric({
+  required num avgPerDay,
+  required AppLocalizations l10n,
+}) {
+  final value = _formatHabitMetricValue(avgPerDay, keepTrailingZero: true);
+  final isSpanish = l10n.localeName.toLowerCase().startsWith('es');
+  if (isSpanish) return 'Media: $value/día';
+  return 'Avg: $value/day';
 }
 
 String _formatHabitMetricValue(
