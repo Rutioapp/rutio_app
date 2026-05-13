@@ -198,6 +198,14 @@
   "unitStepsShort": "pasos",
   "unitKilometersShort": "km",
   "unitLitersShort": "L",
+  "habitUnitLabel": "{unit, select, times{veces} minutes{min} mins{min} min{min} hours{h} hour{h} h{h} pages{páginas} page{páginas} steps{pasos} step{pasos} km{km} liters{L} liter{L} l{L} other{{unit}}}",
+  "@habitUnitLabel": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "familyMindName": "Mente",
   "familySpiritName": "Espíritu",
   "familyBodyName": "Cuerpo",

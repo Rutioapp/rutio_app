@@ -717,6 +717,12 @@ abstract class AppLocalizations {
   /// **'L'**
   String get unitLitersShort;
 
+  /// No description provided for @habitUnitLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'{unit, select, times{veces} minutes{min} mins{min} min{min} hours{h} hour{h} h{h} pages{páginas} page{páginas} steps{pasos} step{pasos} km{km} liters{L} liter{L} l{L} other{{unit}}}'**
+  String habitUnitLabel(String unit);
+
   /// No description provided for @familyMindName.
   ///
   /// In es, this message translates to:

@@ -346,6 +346,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitLitersShort => 'L';
 
   @override
+  String habitUnitLabel(String unit) {
+    String _temp0 = intl.Intl.selectLogic(
+      unit,
+      {
+        'times': 'times',
+        'minutes': 'min',
+        'mins': 'min',
+        'min': 'min',
+        'hours': 'h',
+        'hour': 'h',
+        'h': 'h',
+        'pages': 'pages',
+        'page': 'pages',
+        'steps': 'steps',
+        'step': 'steps',
+        'km': 'km',
+        'liters': 'L',
+        'liter': 'L',
+        'l': 'L',
+        'other': '$unit',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get familyMindName => 'Mind';
 
   @override
