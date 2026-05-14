@@ -5,6 +5,7 @@ import 'habit_stats/habit_stats_header.dart';
 import 'habit_stats/habit_stats_helpers.dart';
 import 'habit_stats/habit_stats_hero_card.dart';
 import 'habit_stats/habit_stats_insight_card.dart';
+import 'habit_stats/habit_stats_count_last7_days_chart.dart';
 import 'habit_stats/habit_stats_last7_days_card.dart';
 import 'habit_stats/habit_stats_metric_grid.dart';
 import 'habit_stats/habit_stats_models.dart';
@@ -70,12 +71,7 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
           title: context.l10n.habitStatsTabLastDaysTitle(7),
           child: shellData.isCheckHabit
               ? HabitStatsLast7DaysCard(days: shellData.last7Days)
-              : Text(
-                  context.l10n.habitStatsTabCounterHint,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: const Color(0xFF4D4137),
-                      ),
-                ),
+              : HabitStatsCountLast7DaysChart(days: shellData.countLast7Days),
         ),
         const SizedBox(height: 8),
         HabitStatsMetricGrid(shellData: shellData),

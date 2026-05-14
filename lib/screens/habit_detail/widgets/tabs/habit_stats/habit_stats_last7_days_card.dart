@@ -13,6 +13,7 @@ class HabitStatsLast7DaysCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      key: const Key('habit_stats_check_last7_days'),
       children: [
         for (final day in days)
           Expanded(
