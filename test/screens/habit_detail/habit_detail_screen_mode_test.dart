@@ -72,6 +72,8 @@ void main() {
       expect(find.text(l10n.habitDetailEditTab), findsNothing);
       expect(find.byType(AppBar), findsNothing);
       expect(find.byType(HabitStatsTab), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.more_horiz_rounded), findsOneWidget);
       expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsPeriodWeek), findsOneWidget);

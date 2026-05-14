@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:rutio/features/achievements/domain/models/habit_streak_snapshot.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_count_last7_days_chart.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_last7_days_card.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats_tab.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
@@ -50,6 +52,9 @@ void main() {
 
       final l10n = _l10n(tester);
       expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
+      expect(find.byType(HabitStatsLast7DaysCard), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_check_last7_days')), findsOneWidget);
+      expect(find.byType(HabitStatsCountLast7DaysChart), findsNothing);
       expect(find.text(l10n.habitConfigGoalSection), findsOneWidget);
       expect(find.text(l10n.habitStatsMetricCompleted), findsOneWidget);
       expect(find.text(l10n.habitStatsMetricConsistency), findsOneWidget);
@@ -88,15 +93,25 @@ void main() {
       expect(find.text('2/3'), findsOneWidget);
     });
 
-    testWidgets('count habit keeps safe placeholder and does not crash',
+    testWidgets('count habit renders last 7 days chart',
         (tester) async {
+      final now = DateTime.now();
       final habit = _habit(
         type: 'count',
         schedule: const {'type': 'daily'},
         target: 8,
         unit: 'glasses',
       );
-      final store = _FakeStore(_rootState(habit: habit));
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          countValues: {
+            _dateKey(now.subtract(const Duration(days: 2))): 4,
+            _dateKey(now.subtract(const Duration(days: 1))): 8,
+            _dateKey(now): 9,
+          },
+        ),
+      );
       await tester.pumpWidget(
         _app(
           store: store,
@@ -110,7 +125,87 @@ void main() {
 
       final l10n = _l10n(tester);
       expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
+      expect(find.byType(HabitStatsCountLast7DaysChart), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_count_last7_chart')), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('count habit chart does not crash with empty unit', (tester) async {
+      final habit = _habit(
+        type: 'count',
+        schedule: const {'type': 'daily'},
+        target: 3,
+        unit: '',
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HabitStatsCountLast7DaysChart), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('count habit chart does not crash with zero target', (tester) async {
+      final now = DateTime.now();
+      final habit = _habit(
+        type: 'count',
+        schedule: const {'type': 'daily'},
+        target: 0,
+        unit: 'times',
+      );
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          countValues: {
+            _dateKey(now.subtract(const Duration(days: 1))): 5,
+            _dateKey(now): 7,
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HabitStatsCountLast7DaysChart), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('check habit is not routed to any legacy widget', (tester) async {
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HabitStatsLast7DaysCard), findsOneWidget);
+      expect(find.byType(HabitStatsCountLast7DaysChart), findsNothing);
+      expect(tester.takeException(), isNull);
     });
   });
 }
@@ -140,14 +235,19 @@ AppLocalizations _l10n(WidgetTester tester) {
 Map<String, dynamic> _rootState({
   required Map<String, dynamic> habit,
   Map<String, bool> completions = const {},
+  Map<String, num> countValues = const {},
   Map<String, int> completionTimes = const {},
   Map<String, bool> skips = const {},
 }) {
   final completionsByDay = <String, dynamic>{};
+  final countValuesByDay = <String, dynamic>{};
   final completionTimesByDay = <String, dynamic>{};
   final skipsByDay = <String, dynamic>{};
   for (final entry in completions.entries) {
     completionsByDay[entry.key] = {'habit-1': entry.value};
+  }
+  for (final entry in countValues.entries) {
+    countValuesByDay[entry.key] = {'habit-1': entry.value};
   }
   for (final entry in completionTimes.entries) {
     completionTimesByDay[entry.key] = {'habit-1': entry.value};
@@ -159,6 +259,7 @@ Map<String, dynamic> _rootState({
     'userState': <String, dynamic>{
       'history': <String, dynamic>{
         'habitCompletions': completionsByDay,
+        'habitCountValues': countValuesByDay,
         'habitCompletionTimes': completionTimesByDay,
         'habitSkips': skipsByDay,
       },

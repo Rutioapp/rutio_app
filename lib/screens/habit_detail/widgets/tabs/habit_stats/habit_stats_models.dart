@@ -23,6 +23,22 @@ class HabitStatsLast7DayItem {
   });
 }
 
+class HabitStatsCountLast7DayItem {
+  final DateTime date;
+  final String weekdayLabel;
+  final num value;
+  final String valueLabel;
+  final double fillRatio;
+
+  const HabitStatsCountLast7DayItem({
+    required this.date,
+    required this.weekdayLabel,
+    required this.value,
+    required this.valueLabel,
+    required this.fillRatio,
+  });
+}
+
 class HabitStatsShellData {
   final String habitId;
   final String title;
@@ -39,7 +55,9 @@ class HabitStatsShellData {
   final String bestMomentLabel;
   final bool hasBestMomentData;
   final List<HabitStatsLast7DayItem> last7Days;
+  final List<HabitStatsCountLast7DayItem> countLast7Days;
   final Map<DateTime, int> countsByDay;
+  final Map<DateTime, num> countValuesByDay;
   final Map<DateTime, bool> skipsByDay;
 
   const HabitStatsShellData({
@@ -58,7 +76,9 @@ class HabitStatsShellData {
     required this.bestMomentLabel,
     required this.hasBestMomentData,
     required this.last7Days,
+    required this.countLast7Days,
     required this.countsByDay,
+    required this.countValuesByDay,
     required this.skipsByDay,
   });
 

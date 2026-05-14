@@ -19,6 +19,11 @@ HabitStatsShellData buildHabitStatsShellData(
     habitId: habitId,
     completionsRoot: history.completionsRoot,
   );
+  final countValuesByDay = _extractCountValuesByDay(
+    habitMap: habitMap,
+    habitId: habitId,
+    countValuesRoot: history.countValuesRoot,
+  );
   final skipsByDay = _extractSkipsByDay(
     habitId: habitId,
     skipsRoot: history.skipsRoot,
@@ -70,6 +75,7 @@ HabitStatsShellData buildHabitStatsShellData(
     isCounter: isCounter,
     weeklyTarget: weeklyTarget,
   );
+  final unitLabel = _safeHabitUnitLabel(l10n, _asString(habitMap['unit']));
 
   return HabitStatsShellData(
     habitId: habitId,
@@ -87,18 +93,27 @@ HabitStatsShellData buildHabitStatsShellData(
     bestMomentLabel: bestMoment.label,
     hasBestMomentData: bestMoment.hasData,
     last7Days: _buildLast7Days(context, countsByDay, skipsByDay),
+    countLast7Days: _buildCountLast7Days(
+      context,
+      countValuesByDay: countValuesByDay,
+      unitLabel: unitLabel,
+      target: _asNum(habitMap['target']) ?? 0,
+    ),
     countsByDay: countsByDay,
+    countValuesByDay: countValuesByDay,
     skipsByDay: skipsByDay,
   );
 }
 
 class _HistoryRoots {
   final Map<String, dynamic> completionsRoot;
+  final Map<String, dynamic> countValuesRoot;
   final Map<String, dynamic> completionTimesRoot;
   final Map<String, dynamic> skipsRoot;
 
   const _HistoryRoots({
     required this.completionsRoot,
+    required this.countValuesRoot,
     required this.completionTimesRoot,
     required this.skipsRoot,
   });
@@ -163,12 +178,14 @@ _HistoryRoots _extractHistoryFromStore(BuildContext context) {
     final history = _map(userState['history']);
     return _HistoryRoots(
       completionsRoot: _map(history['habitCompletions']),
+      countValuesRoot: _map(history['habitCountValues']),
       completionTimesRoot: _map(history['habitCompletionTimes']),
       skipsRoot: _map(history['habitSkips']),
     );
   } catch (_) {
     return const _HistoryRoots(
       completionsRoot: <String, dynamic>{},
+      countValuesRoot: <String, dynamic>{},
       completionTimesRoot: <String, dynamic>{},
       skipsRoot: <String, dynamic>{},
     );
@@ -333,6 +350,43 @@ Map<DateTime, int> _extractCountsByDay({
   return out;
 }
 
+Map<DateTime, num> _extractCountValuesByDay({
+  required Map<String, dynamic> habitMap,
+  required String habitId,
+  required Map<String, dynamic> countValuesRoot,
+}) {
+  final out = <DateTime, num>{};
+  if (habitId.isEmpty) return out;
+
+  final perHabit = _map(countValuesRoot[habitId]);
+  for (final entry in perHabit.entries) {
+    final date = _tryParseDate(entry.key);
+    final value = _asNum(entry.value);
+    if (date == null || value == null) continue;
+    out[_dateOnly(date)] = value < 0 ? 0 : value;
+  }
+
+  for (final entry in countValuesRoot.entries) {
+    final date = _tryParseDate(entry.key);
+    if (date == null) continue;
+    final dayMap = _map(entry.value);
+    final value = _asNum(dayMap[habitId]);
+    if (value == null) continue;
+    out[_dateOnly(date)] = value < 0 ? 0 : value;
+  }
+
+  final todayProgress = _asNum(habitMap['progress'] ?? habitMap['current'] ?? habitMap['value']);
+  if (todayProgress != null && todayProgress >= 0) {
+    final today = _dateOnly(DateTime.now());
+    final storedToday = _asNum(out[today]);
+    if (storedToday == null || todayProgress > storedToday) {
+      out[today] = todayProgress;
+    }
+  }
+
+  return out;
+}
+
 Map<DateTime, bool> _extractSkipsByDay({
   required String habitId,
   required Map<String, dynamic> skipsRoot,
@@ -448,6 +502,33 @@ List<HabitStatsLast7DayItem> _buildLast7Days(
         date: date,
         weekdayLabel: context.l10n.weekdayShort(date.weekday),
         state: state,
+      );
+    },
+    growable: false,
+  );
+}
+
+List<HabitStatsCountLast7DayItem> _buildCountLast7Days(
+  BuildContext context, {
+  required Map<DateTime, num> countValuesByDay,
+  required String unitLabel,
+  required num target,
+}) {
+  final today = _dateOnly(DateTime.now());
+  final safeTarget = target > 0 ? target : 0;
+  return List<HabitStatsCountLast7DayItem>.generate(
+    7,
+    (index) {
+      final date = today.subtract(Duration(days: 6 - index));
+      final rawValue = _asNum(countValuesByDay[date]) ?? 0;
+      final value = rawValue < 0 ? 0 : rawValue;
+      final ratio = safeTarget <= 0 ? 0.0 : (value / safeTarget).clamp(0, 1).toDouble();
+      return HabitStatsCountLast7DayItem(
+        date: date,
+        weekdayLabel: context.l10n.weekdayShort(date.weekday),
+        value: value,
+        valueLabel: _formatCountValueLabel(value, unitLabel: unitLabel),
+        fillRatio: ratio,
       );
     },
     growable: false,
@@ -632,8 +713,43 @@ int? _asInt(dynamic value) {
   return null;
 }
 
+num? _asNum(dynamic value) {
+  if (value is num) {
+    if (value is double && !value.isFinite) return null;
+    return value;
+  }
+  if (value is String) {
+    final parsed = num.tryParse(value.trim().replaceAll(',', '.'));
+    if (parsed is double && !parsed.isFinite) return null;
+    return parsed;
+  }
+  return null;
+}
+
 String? _asString(dynamic value) {
   if (value == null) return null;
   final text = value.toString();
   return text.trim().isEmpty ? null : text;
+}
+
+String _safeHabitUnitLabel(dynamic l10n, String? rawUnit) {
+  final unit = (rawUnit ?? '').trim();
+  if (unit.isEmpty) return '';
+  final normalized = unit.toLowerCase();
+  try {
+    final localized = l10n.habitUnitLabel(normalized).toString().trim();
+    return localized.isEmpty ? unit : localized;
+  } catch (_) {
+    return unit;
+  }
+}
+
+String _formatCountValueLabel(num value, {required String unitLabel}) {
+  final normalizedValue =
+      value is double && value.isFinite ? value : value.toDouble();
+  final text = normalizedValue % 1 == 0
+      ? normalizedValue.toInt().toString()
+      : normalizedValue.toStringAsFixed(1);
+  final unit = unitLabel.trim();
+  return unit.isEmpty ? text : '$text $unit';
 }
