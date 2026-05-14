@@ -198,6 +198,14 @@
     "unitStepsShort":  "steps",
     "unitKilometersShort":  "km",
     "unitLitersShort":  "L",
+    "habitUnitLabel": "{unit, select, times{times} minutes{min} mins{min} min{min} hours{h} hour{h} h{h} pages{pages} page{pages} steps{steps} step{steps} km{km} liters{L} liter{L} l{L} other{{unit}}}",
+    "@habitUnitLabel": {
+                             "placeholders": {
+                                                  "unit": {
+                                                              "type": "String"
+                                                          }
+                                              }
+                         },
     "familyMindName":  "Mind",
     "familySpiritName":  "Spirit",
     "familyBodyName":  "Body",
@@ -996,6 +1004,38 @@
     "habitStatsMotivationKeepTail": " and make it stick.",
     "habitStatsMotivationBestTimeLead": " Try doing it in the ",
     "habitStatsMotivationBestTimeTail": ", when you tend to be most consistent.",
+    "habitStatsObjectiveDaily": "{count, plural, one{Goal: # time per day} other{Goal: # times per day}}",
+    "@habitStatsObjectiveDaily": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsObjectiveWeekly": "{count, plural, one{Goal: # time per week} other{Goal: # times per week}}",
+    "@habitStatsObjectiveWeekly": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsTimesLabel": "{count, plural, one{# time} other{# times}}",
+    "@habitStatsTimesLabel": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsPerWeek": "Per week",
+    "habitStatsMetricCompletion": "Completion",
+    "habitStatsMostFrequentTime": "Most frequent time",
+    "habitStatsNoData": "No data",
+    "habitStatsInsightLabel": "Insight",
+    "habitStatsInsightSteadyRoutine": "You are building a steady routine.",
+    "habitStatsInsightGoodRhythm": "Good rhythm this week.",
+    "habitStatsInsightEveryRepetition": "Every repetition counts.",
     "editHabitSaveChanges": "Save changes",
     "editHabitSaving": "Saving...",
     "editHabitNotificationPermissionDenied": "Notification permissions denied.",

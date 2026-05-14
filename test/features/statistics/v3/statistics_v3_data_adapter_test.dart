@@ -3,9 +3,11 @@ import 'package:rutio/features/statistics/presentation/v3/application/statistics
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 import 'package:rutio/l10n/gen/app_localizations_en.dart';
+import 'package:rutio/l10n/gen/app_localizations_es.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
 final AppLocalizationsEn _l10n = AppLocalizationsEn();
+final AppLocalizationsEs _l10nEs = AppLocalizationsEs();
 final DateTime _now = DateTime.now();
 
 void main() {
@@ -13,6 +15,21 @@ void main() {
 
   final l10n = _l10n;
   final now = _now;
+
+  group('habitUnitLabel localization', () {
+    test('known unit maps to localized short label', () {
+      expect(_l10n.habitUnitLabel('minutes'), 'min');
+      expect(_l10nEs.habitUnitLabel('pages'), 'páginas');
+    });
+
+    test('unknown unit falls back to the provided value', () {
+      expect(_l10n.habitUnitLabel('custom-unit'), 'custom-unit');
+    });
+
+    test('empty unit returns empty string', () {
+      expect(_l10n.habitUnitLabel(''), '');
+    });
+  });
 
   group('buildStatisticsV3ViewData', () {
     group('day consistency', () {

@@ -70,7 +70,32 @@ void main() {
 
       final l10n = _l10n(tester);
       expect(find.text(l10n.habitDetailEditTab), findsNothing);
+      expect(find.byType(AppBar), findsNothing);
       expect(find.byType(HabitStatsTab), findsOneWidget);
+      expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
+      expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsPeriodWeek), findsOneWidget);
+      expect(find.text(l10n.habitStatsPeriodMonth), findsOneWidget);
+      expect(find.text(l10n.habitStatsPeriodYear), findsOneWidget);
+    });
+
+    testWidgets('statsOnly renders shell for count habits without crashing',
+        (tester) async {
+      final store = _FakeStore(_rootState());
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitDetailScreen(
+            habit: _habit(type: 'count', target: 8, unit: 'glasses'),
+            familyColor: Colors.blue,
+            mode: HabitDetailScreenMode.statsOnly,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HabitStatsTab), findsOneWidget);
+      expect(find.text(_l10n(tester).habitStatsPeriodWeek), findsOneWidget);
     });
 
     testWidgets('editOnly hides Statistics tab', (tester) async {
@@ -176,17 +201,21 @@ Map<String, dynamic> _rootState() {
 Map<String, dynamic> _habit({
   String id = 'habit-1',
   String title = 'Read',
+  String type = 'check',
+  int target = 1,
+  String unit = 'times',
 }) {
   return <String, dynamic>{
     'id': id,
     'title': title,
     'name': title,
     'familyId': 'mind',
-    'type': 'check',
+    'type': type,
     'doneToday': false,
     'skippedToday': false,
     'progress': 0,
-    'target': 1,
+    'target': target,
+    'unit': unit,
     'emoji': '✨',
     'schedule': <String, dynamic>{'type': 'daily'},
   };

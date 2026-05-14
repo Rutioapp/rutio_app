@@ -1658,36 +1658,6 @@ extension AppLocalizationsCatalogX on AppLocalizations {
     }
   }
 
-  String habitUnitLabel(String? unit) {
-    final normalized = (unit ?? '').trim().toLowerCase();
-    switch (normalized) {
-      case 'times':
-        return unitTimesShort;
-      case 'minutes':
-      case 'mins':
-      case 'min':
-        return unitMinutesShort;
-      case 'hours':
-      case 'hour':
-      case 'h':
-        return unitHoursShort;
-      case 'pages':
-      case 'page':
-        return unitPagesShort;
-      case 'steps':
-      case 'step':
-        return unitStepsShort;
-      case 'km':
-        return unitKilometersShort;
-      case 'liters':
-      case 'liter':
-      case 'l':
-        return unitLitersShort;
-      default:
-        return unit ?? '';
-    }
-  }
-
   String catalogHabitName(
     String habitId, {
     num? target,

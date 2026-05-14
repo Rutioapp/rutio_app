@@ -99,7 +99,7 @@ class _HabitTargetConfigSheetState extends State<HabitTargetConfigSheet> {
     final canChooseMode = _rawType == 'count_or_check';
 
     final unit = _readUnit(widget.habitDef);
-    final unitLabel = context.l10n.habitUnitLabel(unit);
+    final unitLabel = context.l10n.habitUnitLabel((unit ?? '').trim());
 
     return Padding(
       padding: EdgeInsets.only(

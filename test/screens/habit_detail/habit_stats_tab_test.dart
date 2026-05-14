@@ -1,0 +1,238 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:rutio/features/achievements/domain/models/habit_streak_snapshot.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
+import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats_tab.dart';
+import 'package:rutio/stores/user_state_store.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  Provider.debugCheckInvalidValueType = null;
+
+  group('HabitStatsTab', () {
+    testWidgets('check habit shows last 7 days, metrics and weekly comparison',
+        (tester) async {
+      final now = DateTime.now();
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          completions: {
+            _dateKey(now.subtract(const Duration(days: 4))): true,
+            _dateKey(now.subtract(const Duration(days: 3))): true,
+            _dateKey(now.subtract(const Duration(days: 2))): true,
+          },
+          completionTimes: {
+            _dateKey(now.subtract(const Duration(days: 4))): DateTime(
+              now.year,
+              now.month,
+              now.day,
+              7,
+            ).millisecondsSinceEpoch,
+          },
+        ),
+        streakByHabitId: const {'habit-1': 4},
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+            showHeaderControls: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
+      expect(find.text(l10n.habitConfigGoalSection), findsOneWidget);
+      expect(find.text(l10n.habitStatsMetricCompleted), findsOneWidget);
+      expect(find.text(l10n.habitStatsMetricConsistency), findsOneWidget);
+      expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
+    });
+
+    testWidgets('timesPerWeek check habit shows weekly completed/target',
+        (tester) async {
+      final now = DateTime.now();
+      final habit = _habit(
+        type: 'check',
+        schedule: const {'type': 'timesPerWeek', 'timesPerWeek': 3, 'weekStartsOn': 1},
+      );
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          completions: {
+            _dateKey(now.subtract(const Duration(days: 1))): true,
+            _dateKey(now): true,
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('2/3'), findsOneWidget);
+    });
+
+    testWidgets('count habit keeps safe placeholder and does not crash',
+        (tester) async {
+      final habit = _habit(
+        type: 'count',
+        schedule: const {'type': 'daily'},
+        target: 8,
+        unit: 'glasses',
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
+      expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsNothing);
+    });
+  });
+}
+
+Widget _app({
+  required UserStateStore store,
+  required Widget child,
+}) {
+  return Provider<UserStateStore>.value(
+    value: store,
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: MediaQuery(
+        data: const MediaQueryData(size: Size(430, 932)),
+        child: Scaffold(body: child),
+      ),
+    ),
+  );
+}
+
+AppLocalizations _l10n(WidgetTester tester) {
+  final context = tester.element(find.byType(HabitStatsTab));
+  return context.l10n;
+}
+
+Map<String, dynamic> _rootState({
+  required Map<String, dynamic> habit,
+  Map<String, bool> completions = const {},
+  Map<String, int> completionTimes = const {},
+  Map<String, bool> skips = const {},
+}) {
+  final completionsByDay = <String, dynamic>{};
+  final completionTimesByDay = <String, dynamic>{};
+  final skipsByDay = <String, dynamic>{};
+  for (final entry in completions.entries) {
+    completionsByDay[entry.key] = {'habit-1': entry.value};
+  }
+  for (final entry in completionTimes.entries) {
+    completionTimesByDay[entry.key] = {'habit-1': entry.value};
+  }
+  for (final entry in skips.entries) {
+    skipsByDay[entry.key] = {'habit-1': entry.value};
+  }
+  return <String, dynamic>{
+    'userState': <String, dynamic>{
+      'history': <String, dynamic>{
+        'habitCompletions': completionsByDay,
+        'habitCompletionTimes': completionTimesByDay,
+        'habitSkips': skipsByDay,
+      },
+      'activeHabits': [habit],
+    },
+  };
+}
+
+Map<String, dynamic> _habit({
+  String type = 'check',
+  int target = 1,
+  String unit = 'times',
+  Map<String, dynamic> schedule = const {'type': 'daily'},
+}) {
+  return <String, dynamic>{
+    'id': 'habit-1',
+    'title': 'Meditar',
+    'familyId': 'mind',
+    'type': type,
+    'target': target,
+    'unit': unit,
+    'schedule': schedule,
+  };
+}
+
+String _dateKey(DateTime date) {
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '${date.year}-$month-$day';
+}
+
+class _FakeStore implements UserStateStore {
+  _FakeStore(
+    this.state, {
+    this.streakByHabitId = const <String, int>{},
+  });
+
+  @override
+  final Map<String, dynamic>? state;
+
+  final Map<String, int> streakByHabitId;
+
+  @override
+  List<Map<String, dynamic>> get activeHabits {
+    final userState = state?['userState'];
+    if (userState is! Map) return const <Map<String, dynamic>>[];
+    final habits = userState['activeHabits'];
+    if (habits is! List) return const <Map<String, dynamic>>[];
+    return habits
+        .whereType<Map>()
+        .map(
+          (entry) => Map<String, dynamic>.from(entry.cast<String, dynamic>()),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Map<String, HabitStreakSnapshot> get achievementMetricSnapshots =>
+      const <String, HabitStreakSnapshot>{};
+
+  @override
+  HabitStreakSnapshot habitStreakSnapshotForHabitId(
+    String habitId, {
+    DateTime? today,
+  }) {
+    final streak = streakByHabitId[habitId] ?? 0;
+    return HabitStreakSnapshot(
+      habitId: habitId,
+      currentStreak: streak,
+      bestStreak: streak,
+      totalCompletedDays: streak,
+    );
+  }
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}

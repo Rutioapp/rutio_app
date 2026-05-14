@@ -717,6 +717,12 @@ abstract class AppLocalizations {
   /// **'L'**
   String get unitLitersShort;
 
+  /// No description provided for @habitUnitLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'{unit, select, times{veces} minutes{min} mins{min} min{min} hours{h} hour{h} h{h} pages{páginas} page{páginas} steps{pasos} step{pasos} km{km} liters{L} liter{L} l{L} other{{unit}}}'**
+  String habitUnitLabel(String unit);
+
   /// No description provided for @familyMindName.
   ///
   /// In es, this message translates to:
@@ -3435,6 +3441,72 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **', cuando sueles ser más constante.'**
   String get habitStatsMotivationBestTimeTail;
+
+  /// No description provided for @habitStatsObjectiveDaily.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{Objetivo: # vez al día} other{Objetivo: # veces al día}}'**
+  String habitStatsObjectiveDaily(int count);
+
+  /// No description provided for @habitStatsObjectiveWeekly.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{Objetivo: # vez por semana} other{Objetivo: # veces por semana}}'**
+  String habitStatsObjectiveWeekly(int count);
+
+  /// No description provided for @habitStatsTimesLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{# vez} other{# veces}}'**
+  String habitStatsTimesLabel(int count);
+
+  /// No description provided for @habitStatsPerWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'Por semana'**
+  String get habitStatsPerWeek;
+
+  /// No description provided for @habitStatsMetricCompletion.
+  ///
+  /// In es, this message translates to:
+  /// **'Cumplimiento'**
+  String get habitStatsMetricCompletion;
+
+  /// No description provided for @habitStatsMostFrequentTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora más frecuente'**
+  String get habitStatsMostFrequentTime;
+
+  /// No description provided for @habitStatsNoData.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos'**
+  String get habitStatsNoData;
+
+  /// No description provided for @habitStatsInsightLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Insight'**
+  String get habitStatsInsightLabel;
+
+  /// No description provided for @habitStatsInsightSteadyRoutine.
+  ///
+  /// In es, this message translates to:
+  /// **'Vas construyendo una rutina estable.'**
+  String get habitStatsInsightSteadyRoutine;
+
+  /// No description provided for @habitStatsInsightGoodRhythm.
+  ///
+  /// In es, this message translates to:
+  /// **'Buen ritmo esta semana.'**
+  String get habitStatsInsightGoodRhythm;
+
+  /// No description provided for @habitStatsInsightEveryRepetition.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada repetición cuenta.'**
+  String get habitStatsInsightEveryRepetition;
 
   /// No description provided for @editHabitSaveChanges.
   ///
