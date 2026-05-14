@@ -56,6 +56,8 @@ class HabitStatsShellData {
   final bool hasBestMomentData;
   final List<HabitStatsLast7DayItem> last7Days;
   final List<HabitStatsCountLast7DayItem> countLast7Days;
+  final num countDailyTarget;
+  final String countUnitLabel;
   final Map<DateTime, int> countsByDay;
   final Map<DateTime, num> countValuesByDay;
   final Map<DateTime, bool> skipsByDay;
@@ -77,6 +79,8 @@ class HabitStatsShellData {
     required this.hasBestMomentData,
     required this.last7Days,
     required this.countLast7Days,
+    required this.countDailyTarget,
+    required this.countUnitLabel,
     required this.countsByDay,
     required this.countValuesByDay,
     required this.skipsByDay,
@@ -97,4 +101,22 @@ class HabitStatsShellData {
     final key = DateTime(date.year, date.month, date.day);
     return skipsByDay[key] == true;
   }
+}
+
+class HabitStatsCountMetricSummary {
+  final num dailyTarget;
+  final num weeklyTotal;
+  final num dailyAverage;
+  final int completionPct;
+  final int expectedDays;
+  final String unitLabel;
+
+  const HabitStatsCountMetricSummary({
+    required this.dailyTarget,
+    required this.weeklyTotal,
+    required this.dailyAverage,
+    required this.completionPct,
+    required this.expectedDays,
+    required this.unitLabel,
+  });
 }

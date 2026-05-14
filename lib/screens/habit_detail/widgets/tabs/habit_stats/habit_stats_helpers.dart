@@ -75,6 +75,7 @@ HabitStatsShellData buildHabitStatsShellData(
     isCounter: isCounter,
     weeklyTarget: weeklyTarget,
   );
+  final countTarget = _asNum(habitMap['target']) ?? 0;
   final unitLabel = _safeHabitUnitLabel(l10n, _asString(habitMap['unit']));
 
   return HabitStatsShellData(
@@ -97,12 +98,44 @@ HabitStatsShellData buildHabitStatsShellData(
       context,
       countValuesByDay: countValuesByDay,
       unitLabel: unitLabel,
-      target: _asNum(habitMap['target']) ?? 0,
+      target: countTarget,
     ),
+    countDailyTarget: countTarget > 0 ? countTarget : 0,
+    countUnitLabel: unitLabel,
     countsByDay: countsByDay,
     countValuesByDay: countValuesByDay,
     skipsByDay: skipsByDay,
   );
+}
+
+HabitStatsCountMetricSummary buildCountMetricSummary(
+  HabitStatsShellData shellData, {
+  int expectedDays = 7,
+}) {
+  final safeExpectedDays = expectedDays < 1 ? 7 : expectedDays;
+  final weeklyTotal = shellData.countLast7Days.fold<num>(0, (sum, day) {
+    final value = day.value < 0 ? 0 : day.value;
+    return sum + value;
+  });
+  final dailyAverage = safeExpectedDays <= 0 ? 0 : weeklyTotal / safeExpectedDays;
+  final dailyTarget = shellData.countDailyTarget > 0 ? shellData.countDailyTarget : 0;
+  final weeklyGoal = dailyTarget * safeExpectedDays;
+  final completionPct = weeklyGoal <= 0
+      ? 0
+      : ((weeklyTotal / weeklyGoal) * 100).round().clamp(0, 100);
+
+  return HabitStatsCountMetricSummary(
+    dailyTarget: dailyTarget,
+    weeklyTotal: weeklyTotal,
+    dailyAverage: dailyAverage,
+    completionPct: completionPct,
+    expectedDays: safeExpectedDays,
+    unitLabel: shellData.countUnitLabel,
+  );
+}
+
+String formatCountMetricValue(num value, {required String unitLabel}) {
+  return _formatCountValueLabel(value, unitLabel: unitLabel);
 }
 
 class _HistoryRoots {

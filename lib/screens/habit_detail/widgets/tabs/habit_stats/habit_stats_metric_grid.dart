@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../l10n/l10n.dart';
+import 'habit_stats_helpers.dart';
 import 'habit_stats_models.dart';
 
 class HabitStatsMetricGrid extends StatelessWidget {
@@ -13,44 +14,16 @@ class HabitStatsMetricGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!shellData.isCheckHabit) {
-      return _CountPlaceholder(shellData: shellData);
-    }
-
-    final l10n = context.l10n;
-    final goalValue = _goalValueLabel(l10n, shellData.weeklyTarget);
-    final metrics = <_MetricItem>[
-      _MetricItem(
-        icon: Icons.gps_fixed_rounded,
-        title: l10n.habitConfigGoalSection,
-        value: goalValue,
-        subtitle: l10n.habitStatsPerWeek,
-        iconColor: const Color(0xFF5A3B23),
-      ),
-      _MetricItem(
-        icon: Icons.check_circle_outline_rounded,
-        title: l10n.habitStatsMetricCompleted,
-        value: '${shellData.weeklyCompleted}/${shellData.weeklyTarget}',
-        subtitle: l10n.habitStatsThisWeek,
-        iconColor: const Color(0xFF5A3B23),
-      ),
-      _MetricItem(
-        icon: Icons.trending_up_rounded,
-        title: l10n.habitStatsMetricConsistency,
-        value: '${shellData.weeklyConsistencyPct}%',
-        subtitle: l10n.habitStatsMetricCompletion,
-        iconColor: const Color(0xFF5B975A),
-      ),
-      _MetricItem(
-        icon: Icons.wb_sunny_rounded,
-        title: l10n.statisticsV3BestMomentCardTitle,
-        value: shellData.bestMomentLabel,
-        subtitle: l10n.habitStatsMostFrequentTime,
-        iconColor: const Color(0xFFDE8B21),
-      ),
-    ];
+    final metrics = shellData.isCheckHabit
+        ? _checkMetricItems(context, shellData)
+        : _countMetricItems(context, shellData);
 
     return GridView.builder(
+      key: Key(
+        shellData.isCheckHabit
+            ? 'habit_stats_check_metric_grid'
+            : 'habit_stats_count_metric_grid',
+      ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: metrics.length,
@@ -63,6 +36,76 @@ class HabitStatsMetricGrid extends StatelessWidget {
       itemBuilder: (context, index) => _MetricCard(metric: metrics[index]),
     );
   }
+}
+
+List<_MetricItem> _checkMetricItems(BuildContext context, HabitStatsShellData shellData) {
+  final l10n = context.l10n;
+  final goalValue = _goalValueLabel(l10n, shellData.weeklyTarget);
+  return <_MetricItem>[
+    _MetricItem(
+      icon: Icons.gps_fixed_rounded,
+      title: l10n.habitConfigGoalSection,
+      value: goalValue,
+      subtitle: l10n.habitStatsPerWeek,
+      iconColor: const Color(0xFF5A3B23),
+    ),
+    _MetricItem(
+      icon: Icons.check_circle_outline_rounded,
+      title: l10n.habitStatsMetricCompleted,
+      value: '${shellData.weeklyCompleted}/${shellData.weeklyTarget}',
+      subtitle: l10n.habitStatsThisWeek,
+      iconColor: const Color(0xFF5A3B23),
+    ),
+    _MetricItem(
+      icon: Icons.trending_up_rounded,
+      title: l10n.habitStatsMetricConsistency,
+      value: '${shellData.weeklyConsistencyPct}%',
+      subtitle: l10n.habitStatsMetricCompletion,
+      iconColor: const Color(0xFF5B975A),
+    ),
+    _MetricItem(
+      icon: Icons.wb_sunny_rounded,
+      title: l10n.statisticsV3BestMomentCardTitle,
+      value: shellData.bestMomentLabel,
+      subtitle: l10n.habitStatsMostFrequentTime,
+      iconColor: const Color(0xFFDE8B21),
+    ),
+  ];
+}
+
+List<_MetricItem> _countMetricItems(BuildContext context, HabitStatsShellData shellData) {
+  final l10n = context.l10n;
+  final summary = buildCountMetricSummary(shellData);
+  return <_MetricItem>[
+    _MetricItem(
+      icon: Icons.flag_rounded,
+      title: l10n.habitStatsCountObjectiveTitle,
+      value: formatCountMetricValue(summary.dailyTarget, unitLabel: summary.unitLabel),
+      subtitle: _countPerDayLabel(context),
+      iconColor: const Color(0xFF5A3B23),
+    ),
+    _MetricItem(
+      icon: Icons.water_drop_rounded,
+      title: l10n.habitStatsCountVolumeTitle,
+      value: formatCountMetricValue(summary.weeklyTotal, unitLabel: summary.unitLabel),
+      subtitle: l10n.habitStatsThisWeek,
+      iconColor: const Color(0xFF3E7B7A),
+    ),
+    _MetricItem(
+      icon: Icons.bar_chart_rounded,
+      title: l10n.habitStatsCountDailyAverage,
+      value: formatCountMetricValue(summary.dailyAverage, unitLabel: summary.unitLabel),
+      subtitle: _countAverageLabel(context),
+      iconColor: const Color(0xFF5B975A),
+    ),
+    _MetricItem(
+      icon: Icons.check_circle_outline_rounded,
+      title: l10n.habitStatsMetricCompletion,
+      value: '${summary.completionPct}%',
+      subtitle: _countOfGoalLabel(context),
+      iconColor: const Color(0xFF8A5B2C),
+    ),
+  ];
 }
 
 class _MetricItem {
@@ -155,47 +198,23 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _CountPlaceholder extends StatelessWidget {
-  final HabitStatsShellData shellData;
-
-  const _CountPlaceholder({required this.shellData});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(9),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFCF7),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEEE5D9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.habitStatsTabCounterHint,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF3F3124),
-                  fontWeight: FontWeight.w500,
-                ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${shellData.weeklyCompleted}/${shellData.weeklyTarget}',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: const Color(0xFF2A211A),
-                  fontFamily: 'Georgia',
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 String _goalValueLabel(dynamic l10n, int weeklyTarget) {
   if (weeklyTarget <= 0) return '0';
   return l10n.habitStatsTimesLabel(weeklyTarget);
+}
+
+String _countPerDayLabel(BuildContext context) {
+  return _isSpanish(context) ? 'Por dia' : 'Per day';
+}
+
+String _countAverageLabel(BuildContext context) {
+  return _isSpanish(context) ? 'Promedio' : 'Average';
+}
+
+String _countOfGoalLabel(BuildContext context) {
+  return _isSpanish(context) ? 'Del objetivo' : 'Of goal';
+}
+
+bool _isSpanish(BuildContext context) {
+  return Localizations.localeOf(context).languageCode.toLowerCase() == 'es';
 }
