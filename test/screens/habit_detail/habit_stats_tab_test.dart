@@ -99,16 +99,16 @@ void main() {
       final habit = _habit(
         type: 'count',
         schedule: const {'type': 'daily'},
-        target: 8,
-        unit: 'glasses',
+        target: 2,
+        unit: 'L',
       );
       final store = _FakeStore(
         _rootState(
           habit: habit,
           countValues: {
-            _dateKey(now.subtract(const Duration(days: 2))): 4,
-            _dateKey(now.subtract(const Duration(days: 1))): 8,
-            _dateKey(now): 9,
+            _dateKey(now.subtract(const Duration(days: 2))): 4.1,
+            _dateKey(now.subtract(const Duration(days: 1))): 3.7,
+            _dateKey(now): 5.0,
           },
         ),
       );
@@ -127,6 +127,16 @@ void main() {
       expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
       expect(find.byType(HabitStatsCountLast7DaysChart), findsOneWidget);
       expect(find.byKey(const Key('habit_stats_count_last7_chart')), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_count_metric_grid')), findsOneWidget);
+      expect(find.text(l10n.habitStatsCountObjectiveTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsCountVolumeTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsCountDailyAverage), findsOneWidget);
+      expect(find.text(l10n.habitStatsMetricCompletion), findsOneWidget);
+      expect(find.text(_countPerDayLabel(l10n)), findsOneWidget);
+      expect(find.text(_countAverageLabel(l10n)), findsOneWidget);
+      expect(find.text(_countOfGoalLabel(l10n)), findsOneWidget);
+      expect(find.text('12.8 L'), findsWidgets);
+      expect(find.text('91%'), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsNothing);
       expect(tester.takeException(), isNull);
     });
@@ -152,6 +162,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(HabitStatsCountLast7DaysChart), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_count_metric_grid')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -185,6 +196,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(HabitStatsCountLast7DaysChart), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_count_metric_grid')), findsOneWidget);
+      expect(find.text('0%'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -336,4 +349,16 @@ class _FakeStore implements UserStateStore {
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+String _countPerDayLabel(AppLocalizations l10n) {
+  return l10n.localeName.startsWith('es') ? 'Por dia' : 'Per day';
+}
+
+String _countAverageLabel(AppLocalizations l10n) {
+  return l10n.localeName.startsWith('es') ? 'Promedio' : 'Average';
+}
+
+String _countOfGoalLabel(AppLocalizations l10n) {
+  return l10n.localeName.startsWith('es') ? 'Del objetivo' : 'Of goal';
 }
