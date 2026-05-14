@@ -5,21 +5,29 @@ import 'habit_stats/habit_stats_header.dart';
 import 'habit_stats/habit_stats_helpers.dart';
 import 'habit_stats/habit_stats_hero_card.dart';
 import 'habit_stats/habit_stats_insight_card.dart';
+import 'habit_stats/habit_stats_last7_days_card.dart';
 import 'habit_stats/habit_stats_metric_grid.dart';
 import 'habit_stats/habit_stats_models.dart';
 import 'habit_stats/habit_stats_period_selector.dart';
 import 'habit_stats/habit_stats_section_card.dart';
+import 'habit_stats/habit_stats_weekly_comparison_card.dart';
 
 class HabitStatsTab extends StatefulWidget {
   final dynamic habit;
   final Color familyColor;
   final bool scrollable;
+  final bool showHeaderControls;
+  final VoidCallback? onBackPressed;
+  final VoidCallback? onMorePressed;
 
   const HabitStatsTab({
     super.key,
     required this.habit,
     required this.familyColor,
     this.scrollable = true,
+    this.showHeaderControls = false,
+    this.onBackPressed,
+    this.onMorePressed,
   });
 
   @override
@@ -31,152 +39,71 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final shellData = buildHabitStatsShellData(context, widget.habit);
-    final borderColor = widget.familyColor.withValues(alpha: 0.18);
+    final shellData = buildHabitStatsShellData(
+      context,
+      widget.habit,
+      period: _selectedPeriod,
+    );
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         HabitStatsHeader(
           title: shellData.title,
-          subtitle: shellData.subtitle,
-          typeLabel: shellData.typeLabel,
+          familyAndObjective: shellData.familyAndObjective,
           familyColor: widget.familyColor,
+          showControls: widget.showHeaderControls,
+          onBackPressed: widget.onBackPressed,
+          onMorePressed: widget.onMorePressed,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         HabitStatsPeriodSelector(
           selectedPeriod: _selectedPeriod,
-          familyColor: widget.familyColor,
-          onPeriodChanged: (period) {
-            setState(() => _selectedPeriod = period);
-          },
+          onPeriodChanged: (period) => setState(() => _selectedPeriod = period),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         HabitStatsHeroCard(
           shellData: shellData,
-          selectedPeriod: _selectedPeriod,
           familyColor: widget.familyColor,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 8),
         HabitStatsSectionCard(
           title: context.l10n.habitStatsTabLastDaysTitle(7),
-          familyColor: widget.familyColor,
-          borderColor: borderColor,
-          child: _LastSevenDaysPlaceholder(
-            shellData: shellData,
-            familyColor: widget.familyColor,
-          ),
+          child: shellData.isCheckHabit
+              ? HabitStatsLast7DaysCard(days: shellData.last7Days)
+              : Text(
+                  context.l10n.habitStatsTabCounterHint,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: const Color(0xFF4D4137),
+                      ),
+                ),
         ),
-        const SizedBox(height: 14),
-        HabitStatsSectionCard(
-          title: context.l10n.habitStatsTabSummaryTitle,
-          familyColor: widget.familyColor,
-          borderColor: borderColor,
-          child: HabitStatsMetricGrid(
-            shellData: shellData,
-            selectedPeriod: _selectedPeriod,
-            familyColor: widget.familyColor,
-          ),
-        ),
-        const SizedBox(height: 14),
-        HabitStatsInsightCard(
-          shellData: shellData,
-          selectedPeriod: _selectedPeriod,
-          familyColor: widget.familyColor,
-        ),
+        const SizedBox(height: 8),
+        HabitStatsMetricGrid(shellData: shellData),
+        const SizedBox(height: 8),
+        if (shellData.isCheckHabit)
+          HabitStatsWeeklyComparisonCard(deltaPct: shellData.weeklyComparisonDeltaPct),
+        if (shellData.isCheckHabit) const SizedBox(height: 8),
+        HabitStatsInsightCard(shellData: shellData),
       ],
     );
 
-    final body = widget.scrollable
+    const horizontalPadding = 15.0;
+    final topPadding = widget.showHeaderControls ? 4.0 : 10.0;
+    final child = widget.scrollable
         ? SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+            padding: EdgeInsets.fromLTRB(horizontalPadding, topPadding, horizontalPadding, 16),
             child: content,
           )
         : Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+            padding: EdgeInsets.fromLTRB(horizontalPadding, topPadding, horizontalPadding, 16),
             child: content,
           );
-
     return ColoredBox(
-      color: const Color(0xFFF7F1E7),
-      child: body,
-    );
-  }
-}
-
-class _LastSevenDaysPlaceholder extends StatelessWidget {
-  final HabitStatsShellData shellData;
-  final Color familyColor;
-
-  const _LastSevenDaysPlaceholder({
-    required this.shellData,
-    required this.familyColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final week = List<DateTime>.generate(
-      7,
-      (i) => DateTime(today.year, today.month, today.day - (6 - i)),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.l10n.habitStatsTabCheckHint,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.black.withValues(alpha: 0.58),
-              ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            for (final day in week)
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: _DayDot(
-                    active: shellData.countForDate(day) > 0,
-                    familyColor: familyColor,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _DayDot extends StatelessWidget {
-  final bool active;
-  final Color familyColor;
-
-  const _DayDot({
-    required this.active,
-    required this.familyColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 34,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: active
-            ? familyColor.withValues(alpha: 0.22)
-            : const Color(0xFFF4EDE1),
-        border: Border.all(
-          color:
-              active ? familyColor.withValues(alpha: 0.36) : const Color(0xFFE7DBC9),
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          active ? Icons.check_rounded : Icons.remove_rounded,
-          size: 16,
-          color: active ? familyColor : Colors.black.withValues(alpha: 0.38),
-        ),
+      color: const Color(0xFFFAF6EF),
+      child: SafeArea(
+        top: widget.showHeaderControls,
+        bottom: false,
+        child: child,
       ),
     );
   }

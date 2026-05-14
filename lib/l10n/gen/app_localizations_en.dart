@@ -1890,6 +1890,64 @@ class AppLocalizationsEn extends AppLocalizations {
       ', when you tend to be most consistent.';
 
   @override
+  String habitStatsObjectiveDaily(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Goal: # times per day',
+      one: 'Goal: # time per day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitStatsObjectiveWeekly(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Goal: # times per week',
+      one: 'Goal: # time per week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitStatsTimesLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# times',
+      one: '# time',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitStatsPerWeek => 'Per week';
+
+  @override
+  String get habitStatsMetricCompletion => 'Completion';
+
+  @override
+  String get habitStatsMostFrequentTime => 'Most frequent time';
+
+  @override
+  String get habitStatsNoData => 'No data';
+
+  @override
+  String get habitStatsInsightLabel => 'Insight';
+
+  @override
+  String get habitStatsInsightSteadyRoutine =>
+      'You are building a steady routine.';
+
+  @override
+  String get habitStatsInsightGoodRhythm => 'Good rhythm this week.';
+
+  @override
+  String get habitStatsInsightEveryRepetition => 'Every repetition counts.';
+
+  @override
   String get editHabitSaveChanges => 'Save changes';
 
   @override

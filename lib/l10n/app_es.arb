@@ -1004,6 +1004,38 @@
   "habitStatsMotivationKeepTail": " y consolidarlo.",
   "habitStatsMotivationBestTimeLead": " Prueba a hacerlo en la ",
   "habitStatsMotivationBestTimeTail": ", cuando sueles ser más constante.",
+  "habitStatsObjectiveDaily": "{count, plural, one{Objetivo: # vez al día} other{Objetivo: # veces al día}}",
+  "@habitStatsObjectiveDaily": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsObjectiveWeekly": "{count, plural, one{Objetivo: # vez por semana} other{Objetivo: # veces por semana}}",
+  "@habitStatsObjectiveWeekly": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsTimesLabel": "{count, plural, one{# vez} other{# veces}}",
+  "@habitStatsTimesLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsPerWeek": "Por semana",
+  "habitStatsMetricCompletion": "Cumplimiento",
+  "habitStatsMostFrequentTime": "Hora más frecuente",
+  "habitStatsNoData": "Sin datos",
+  "habitStatsInsightLabel": "Insight",
+  "habitStatsInsightSteadyRoutine": "Vas construyendo una rutina estable.",
+  "habitStatsInsightGoodRhythm": "Buen ritmo esta semana.",
+  "habitStatsInsightEveryRepetition": "Cada repetición cuenta.",
   "editHabitSaveChanges": "Guardar cambios",
   "editHabitSaving": "Guardando...",
   "editHabitNotificationPermissionDenied": "Permisos de notificación denegados.",

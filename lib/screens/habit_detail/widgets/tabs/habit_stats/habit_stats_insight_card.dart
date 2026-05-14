@@ -5,69 +5,62 @@ import 'habit_stats_models.dart';
 
 class HabitStatsInsightCard extends StatelessWidget {
   final HabitStatsShellData shellData;
-  final HabitStatsPeriod selectedPeriod;
-  final Color familyColor;
 
   const HabitStatsInsightCard({
     super.key,
     required this.shellData,
-    required this.selectedPeriod,
-    required this.familyColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final title = shellData.currentStreak == 0
-        ? l10n.habitStatsHeadlineStartToday
-        : shellData.currentStreak < 3
-            ? l10n.habitStatsHeadlineGoodStart
-            : l10n.habitStatsHeadlineOnStreak;
-    final periodLabel = switch (selectedPeriod) {
-      HabitStatsPeriod.week => l10n.habitStatsPeriodWeek,
-      HabitStatsPeriod.month => l10n.habitStatsPeriodMonth,
-      HabitStatsPeriod.year => l10n.habitStatsPeriodYear,
-    };
+    final message = _insightMessage(l10n, shellData.weeklyConsistencyPct);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(9),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEFAF2),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE9DDCC)),
+        color: const Color(0xFFFFF8ED),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1E2CC)),
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              color: familyColor.withValues(alpha: 0.15),
               shape: BoxShape.circle,
+              color: const Color(0xFFF4E4C5),
+              border: Border.all(color: const Color(0xFFECD7B4)),
             ),
-            child: Icon(
-              Icons.lightbulb_outline_rounded,
-              color: familyColor.withValues(alpha: 0.92),
-              size: 20,
+            child: const Icon(
+              Icons.lightbulb_rounded,
+              color: Color(0xFFC58A2D),
+              size: 17,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFF2F261D),
-                        fontWeight: FontWeight.w700,
+                  l10n.habitStatsInsightLabel,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontSize: 13,
+                        color: const Color(0xFF251D16),
+                        fontWeight: FontWeight.w600,
                       ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 1),
                 Text(
-                  '$periodLabel · ${l10n.habitStatsMotivationKeepTail}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF6E5E4B),
+                  message,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontSize: 17,
+                        fontFamily: 'Georgia',
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF2E251C),
                       ),
                 ),
               ],
@@ -77,4 +70,14 @@ class HabitStatsInsightCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _insightMessage(dynamic l10n, int consistencyPct) {
+  if (consistencyPct >= 80) {
+    return l10n.habitStatsInsightSteadyRoutine;
+  }
+  if (consistencyPct >= 50) {
+    return l10n.habitStatsInsightGoodRhythm;
+  }
+  return l10n.habitStatsInsightEveryRepetition;
 }

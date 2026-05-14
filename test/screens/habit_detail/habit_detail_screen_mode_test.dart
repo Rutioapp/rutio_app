@@ -70,8 +70,10 @@ void main() {
 
       final l10n = _l10n(tester);
       expect(find.text(l10n.habitDetailEditTab), findsNothing);
+      expect(find.byType(AppBar), findsNothing);
       expect(find.byType(HabitStatsTab), findsOneWidget);
-      expect(find.text(l10n.habitStatsTabSummaryTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
+      expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsPeriodWeek), findsOneWidget);
       expect(find.text(l10n.habitStatsPeriodMonth), findsOneWidget);
       expect(find.text(l10n.habitStatsPeriodYear), findsOneWidget);
@@ -93,7 +95,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(HabitStatsTab), findsOneWidget);
-      expect(find.text(_l10n(tester).habitStatsTabSummaryTitle), findsOneWidget);
+      expect(find.text(_l10n(tester).habitStatsPeriodWeek), findsOneWidget);
     });
 
     testWidgets('editOnly hides Statistics tab', (tester) async {
