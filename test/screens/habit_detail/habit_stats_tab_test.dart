@@ -60,6 +60,7 @@ void main() {
       expect(find.text(l10n.habitStatsMetricConsistency), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
+      expect(find.text(l10n.habitStatsInsightEveryRepetition), findsOneWidget);
     });
 
     testWidgets('timesPerWeek check habit shows weekly completed/target',
@@ -138,6 +139,15 @@ void main() {
       expect(find.text('12.8 L'), findsWidgets);
       expect(find.text('91%'), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsNothing);
+      expect(find.text(l10n.habitStatsCountBestDayTitle), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_count_best_day_card')), findsOneWidget);
+      expect(
+        find.text(
+          '${_capitalizedWeekday(l10n, now.weekday)} ${String.fromCharCode(0x00B7)} 5 L',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.habitStatsCountInsightCloseToGoal), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -163,6 +173,11 @@ void main() {
 
       expect(find.byType(HabitStatsCountLast7DaysChart), findsOneWidget);
       expect(find.byKey(const Key('habit_stats_count_metric_grid')), findsOneWidget);
+      expect(find.text(_l10n(tester).habitStatsCountBestDayNoDataYet), findsOneWidget);
+      expect(
+        find.text(_l10n(tester).habitStatsCountInsightAdjustPace),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -361,4 +376,10 @@ String _countAverageLabel(AppLocalizations l10n) {
 
 String _countOfGoalLabel(AppLocalizations l10n) {
   return l10n.localeName.startsWith('es') ? 'Del objetivo' : 'Of goal';
+}
+
+String _capitalizedWeekday(AppLocalizations l10n, int weekday) {
+  final raw = l10n.weekdayFull(weekday);
+  if (raw.isEmpty) return raw;
+  return '${raw[0].toUpperCase()}${raw.substring(1)}';
 }

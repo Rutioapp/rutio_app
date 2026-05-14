@@ -120,3 +120,17 @@ class HabitStatsCountMetricSummary {
     required this.unitLabel,
   });
 }
+
+class HabitStatsCountBestDaySummary {
+  final bool hasData;
+  final String weekdayLabel;
+  final num value;
+  final String valueLabel;
+
+  const HabitStatsCountBestDaySummary({
+    required this.hasData,
+    required this.weekdayLabel,
+    required this.value,
+    required this.valueLabel,
+  });
+}

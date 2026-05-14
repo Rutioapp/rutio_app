@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../l10n/gen/app_localizations.dart';
 import '../../../../../l10n/l10n.dart';
+import 'habit_stats_helpers.dart';
 import 'habit_stats_models.dart';
 
 class HabitStatsInsightCard extends StatelessWidget {
@@ -14,7 +16,9 @@ class HabitStatsInsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final message = _insightMessage(l10n, shellData.weeklyConsistencyPct);
+    final message = shellData.isCheckHabit
+        ? _checkInsightMessage(l10n, shellData.weeklyConsistencyPct)
+        : _countInsightMessage(l10n, buildCountMetricSummary(shellData).completionPct);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(9),
@@ -72,7 +76,7 @@ class HabitStatsInsightCard extends StatelessWidget {
   }
 }
 
-String _insightMessage(dynamic l10n, int consistencyPct) {
+String _checkInsightMessage(AppLocalizations l10n, int consistencyPct) {
   if (consistencyPct >= 80) {
     return l10n.habitStatsInsightSteadyRoutine;
   }
@@ -80,4 +84,14 @@ String _insightMessage(dynamic l10n, int consistencyPct) {
     return l10n.habitStatsInsightGoodRhythm;
   }
   return l10n.habitStatsInsightEveryRepetition;
+}
+
+String _countInsightMessage(AppLocalizations l10n, int completionPct) {
+  if (completionPct >= 80) {
+    return l10n.habitStatsCountInsightCloseToGoal;
+  }
+  if (completionPct >= 50) {
+    return l10n.habitStatsCountInsightGoodProgress;
+  }
+  return l10n.habitStatsCountInsightAdjustPace;
 }

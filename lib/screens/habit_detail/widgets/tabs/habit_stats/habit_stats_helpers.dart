@@ -138,6 +138,35 @@ String formatCountMetricValue(num value, {required String unitLabel}) {
   return _formatCountValueLabel(value, unitLabel: unitLabel);
 }
 
+HabitStatsCountBestDaySummary buildCountBestDaySummary(
+  BuildContext context,
+  HabitStatsShellData shellData,
+) {
+  HabitStatsCountLast7DayItem? bestDay;
+  for (final day in shellData.countLast7Days) {
+    if (day.value <= 0) continue;
+    if (bestDay == null || day.value > bestDay.value) {
+      bestDay = day;
+    }
+  }
+
+  if (bestDay == null) {
+    return const HabitStatsCountBestDaySummary(
+      hasData: false,
+      weekdayLabel: '',
+      value: 0,
+      valueLabel: '',
+    );
+  }
+
+  return HabitStatsCountBestDaySummary(
+    hasData: true,
+    weekdayLabel: _capitalizeFirst(context.l10n.weekdayFull(bestDay.date.weekday)),
+    value: bestDay.value,
+    valueLabel: _formatCountValueLabel(bestDay.value, unitLabel: shellData.countUnitLabel),
+  );
+}
+
 class _HistoryRoots {
   final Map<String, dynamic> completionsRoot;
   final Map<String, dynamic> countValuesRoot;
@@ -785,4 +814,9 @@ String _formatCountValueLabel(num value, {required String unitLabel}) {
       : normalizedValue.toStringAsFixed(1);
   final unit = unitLabel.trim();
   return unit.isEmpty ? text : '$text $unit';
+}
+
+String _capitalizeFirst(String text) {
+  if (text.isEmpty) return text;
+  return '${text[0].toUpperCase()}${text.substring(1)}';
 }

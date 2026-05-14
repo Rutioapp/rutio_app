@@ -5,6 +5,7 @@ import 'habit_stats/habit_stats_header.dart';
 import 'habit_stats/habit_stats_helpers.dart';
 import 'habit_stats/habit_stats_hero_card.dart';
 import 'habit_stats/habit_stats_insight_card.dart';
+import 'habit_stats/habit_stats_count_best_day_card.dart';
 import 'habit_stats/habit_stats_count_last7_days_chart.dart';
 import 'habit_stats/habit_stats_last7_days_card.dart';
 import 'habit_stats/habit_stats_metric_grid.dart';
@@ -78,7 +79,8 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
         const SizedBox(height: 8),
         if (shellData.isCheckHabit)
           HabitStatsWeeklyComparisonCard(deltaPct: shellData.weeklyComparisonDeltaPct),
-        if (shellData.isCheckHabit) const SizedBox(height: 8),
+        if (!shellData.isCheckHabit) HabitStatsCountBestDayCard(shellData: shellData),
+        const SizedBox(height: 8),
         HabitStatsInsightCard(shellData: shellData),
       ],
     );

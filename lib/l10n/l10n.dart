@@ -1165,6 +1165,28 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
   String get habitStatsCountBestDay =>
       _isSpanishHabitStats ? 'Mejor dia' : 'Best day';
 
+  String get habitStatsCountBestDayTitle =>
+      _isSpanishHabitStats ? 'Mejor día' : 'Best day';
+
+  String get habitStatsCountBestDayNoDataYet =>
+      _isSpanishHabitStats ? 'Sin datos todavía' : 'No data yet';
+
+  String get habitStatsCountBestDaySubtitle => _isSpanishHabitStats
+      ? 'Día con más progreso esta semana'
+      : 'Highest progress this week';
+
+  String get habitStatsCountInsightCloseToGoal => _isSpanishHabitStats
+      ? 'Tu ritmo se mantiene muy cerca del objetivo.'
+      : 'Your rhythm is staying close to the goal.';
+
+  String get habitStatsCountInsightGoodProgress => _isSpanishHabitStats
+      ? 'Buen progreso hacia tu objetivo.'
+      : 'Good progress toward your target.';
+
+  String get habitStatsCountInsightAdjustPace => _isSpanishHabitStats
+      ? 'Sigue ajustando el ritmo con calma.'
+      : 'Keep adjusting your pace calmly.';
+
   String get habitStatsCountActiveDays =>
       _isSpanishHabitStats ? 'Dias con actividad' : 'Active days';
 
