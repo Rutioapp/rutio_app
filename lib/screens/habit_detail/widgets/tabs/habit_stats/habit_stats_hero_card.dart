@@ -22,78 +22,113 @@ class HabitStatsHeroCard extends StatelessWidget {
     final streak = shellData.currentStreak < 0 ? 0 : shellData.currentStreak;
     final milestone = habitStatsHeroMilestoneProgressForStreak(streak);
     final daysUnit = _daysUnit(l10n, streak);
+    final cardWidth = MediaQuery.sizeOf(context).width - 30;
+    final isCompact = cardWidth < 380;
+    final streakFontSize = isCompact ? 70.0 : 78.0;
+    final streakLabelFontSize = isCompact ? 17.0 : 19.0;
+    final headlineFontSize = isCompact ? 20.0 : 23.0;
+    final milestoneFontSize = isCompact ? 15.0 : 16.0;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
-      child: SizedBox(
-        width: double.infinity,
-        height: 124,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF8F2E7),
-                Color(0xFFF4EBDD),
-              ],
-            ),
-            border: Border.all(color: const Color(0xFFE7DAC7)),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF4ECDE), Color(0xFFEDE2D1)],
           ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: -6,
-                top: -12,
+          border: Border.all(color: const Color(0xFFE1D3BF)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x2213120F),
+              blurRadius: 20,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: 38,
+              bottom: 20,
+              child: Transform.rotate(
+                angle: -0.12,
                 child: Icon(
                   Icons.local_fire_department_rounded,
-                  size: 72,
-                  color: familyColor.withValues(alpha: 0.10),
+                  size: isCompact ? 112 : 126,
+                  color: const Color(0xFFE9A24A).withValues(alpha: 0.15),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.habitStatsCurrentStreakUpper,
-                      style: const TextStyle(
-                        fontFamily: AppTextStyles.sansFamily,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                        color: Color(0xFF7C6649),
-                      ),
+            ),
+            Positioned(
+              right: 56,
+              bottom: 35,
+              child: Transform.rotate(
+                angle: -0.10,
+                child: Icon(
+                  Icons.local_fire_department_rounded,
+                  size: isCompact ? 72 : 84,
+                  color: const Color(0xFFF3BE72).withValues(alpha: 0.10),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.habitStatsCurrentStreakUpper,
+                    style: const TextStyle(
+                      fontFamily: AppTextStyles.sansFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 3.0,
+                      color: Color(0xFF6B6156),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '$streak',
-                          style: const TextStyle(
-                            fontFamily: AppTextStyles.serifFamily,
-                            fontSize: 40,
-                            height: 0.94,
-                            color: Color(0xFF1F1A15),
-                          ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minWidth: 92,
+                          maxWidth: 112,
                         ),
-                        const SizedBox(width: 4),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 5),
-                          child: Text(
-                            daysUnit,
-                            style: const TextStyle(
-                              fontFamily: AppTextStyles.sansFamily,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF6F5F4C),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '$streak',
+                              style: TextStyle(
+                                fontFamily: AppTextStyles.serifFamily,
+                                fontSize: streakFontSize,
+                                height: 0.92,
+                                color: Color(0xFF1F1A15),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 4),
+                            Text(
+                              daysUnit,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily: AppTextStyles.sansFamily,
+                                fontSize: streakLabelFontSize,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6A5F52),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 2),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
@@ -102,14 +137,15 @@ class HabitStatsHeroCard extends StatelessWidget {
                                 _motivationHeadline(l10n, streak),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: AppTextStyles.sansFamily,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: headlineFontSize,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.08,
                                   color: Color(0xFF2D241B),
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 8),
                               Text(
                                 l10n.habitStatsMilestoneProgress(
                                   l10n.habitStatsNextMilestone,
@@ -117,67 +153,100 @@ class HabitStatsHeroCard extends StatelessWidget {
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: AppTextStyles.sansFamily,
-                                  fontSize: 12,
+                                  fontSize: milestoneFontSize,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF78634A),
+                                  color: Color(0xFF6F6458),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: Container(
-                        height: 6,
-                        color: const Color(0x29B29167),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: FractionallySizedBox(
-                            widthFactor: milestone.progress,
-                            child: Container(
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFCB9155),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
-                          ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _MilestoneProgressBar(progress: milestone.progress),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _daysLabel(l10n, milestone.from),
+                        style: const TextStyle(
+                          fontFamily: AppTextStyles.sansFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF776B5F),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _daysLabel(l10n, milestone.from),
-                          style: const TextStyle(
-                            fontFamily: AppTextStyles.sansFamily,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF8A755C),
-                          ),
+                      Text(
+                        _daysLabel(l10n, milestone.to),
+                        style: const TextStyle(
+                          fontFamily: AppTextStyles.sansFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF776B5F),
                         ),
-                        Text(
-                          _daysLabel(l10n, milestone.to),
-                          style: const TextStyle(
-                            fontFamily: AppTextStyles.sansFamily,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF8A755C),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MilestoneProgressBar extends StatelessWidget {
+  const _MilestoneProgressBar({
+    required this.progress,
+  });
+
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final clamped = progress.clamp(0.0, 1.0);
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(
+        height: 8,
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xFFD7CCBD),
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              var widthFactor = clamped;
+              if (widthFactor > 0 && constraints.maxWidth > 0) {
+                final minVisibleWidthFactor =
+                    (4 / constraints.maxWidth).clamp(0.0, 1.0);
+                widthFactor = widthFactor < minVisibleWidthFactor
+                    ? minVisibleWidthFactor
+                    : widthFactor;
+              }
+
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: widthFactor,
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFE5B678), Color(0xFFD39A55)],
+                      ),
+                    ),
+                    child: SizedBox.expand(),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -188,7 +257,7 @@ class HabitStatsHeroCard extends StatelessWidget {
 String _motivationHeadline(AppLocalizations l10n, int streak) {
   final isSpanish = l10n.localeName.toLowerCase().startsWith('es');
   if (isSpanish) {
-    if (streak <= 0) return 'Empezamos hoy';
+    if (streak <= 0) return 'Empezamos hoy!';
     if (streak == 1) return 'Primer día completado';
     if (streak == 2) return 'Ya estás en marcha';
     if (streak < 7) return 'Primer hito conseguido';
