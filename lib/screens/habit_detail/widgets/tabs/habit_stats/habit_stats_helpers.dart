@@ -558,11 +558,13 @@ List<HabitStatsLast7DayItem> _buildLast7Days(
       final date = today.subtract(Duration(days: 6 - index));
       final completed = (countsByDay[date] ?? 0) > 0;
       final skipped = skipsByDay[date] == true;
-      final state = completed
-          ? HabitStatsDayState.completed
-          : skipped
-              ? HabitStatsDayState.skipped
-              : HabitStatsDayState.pending;
+      final state = skipped
+          ? HabitStatsDayState.skipped
+          : completed
+              ? HabitStatsDayState.completed
+              : date.isAfter(today)
+                  ? HabitStatsDayState.future
+                  : HabitStatsDayState.pending;
       return HabitStatsLast7DayItem(
         date: date,
         weekdayLabel: context.l10n.weekdayShort(date.weekday),
@@ -763,7 +765,14 @@ int _bestStreakFromCompletions(Map<DateTime, int> countsByDay) {
   return best;
 }
 
-bool _isTrue(dynamic value) => value == true || value == 1 || value == '1';
+bool _isTrue(dynamic value) {
+  if (value == true || value == 1) return true;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    return normalized == '1' || normalized == 'true';
+  }
+  return false;
+}
 
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 

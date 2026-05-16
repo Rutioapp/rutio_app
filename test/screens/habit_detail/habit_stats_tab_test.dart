@@ -235,11 +235,63 @@ void main() {
       expect(find.byType(HabitStatsCountLast7DaysChart), findsNothing);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('skip state is shown and overrides completion on the same day', (tester) async {
+      final now = DateTime.now();
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          completions: {
+            _dateKey(now): true,
+          },
+          skips: {
+            _dateKey(now): true,
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('habit_stats_day_circle_6_skipped')), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_day_circle_6_completed')), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('last 7 days stays stable on compact iPhone width', (tester) async {
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          size: const Size(320, 568),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HabitStatsLast7DaysCard), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 
 Widget _app({
   required UserStateStore store,
+  Size size = const Size(430, 932),
   required Widget child,
 }) {
   return Provider<UserStateStore>.value(
@@ -248,7 +300,7 @@ Widget _app({
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: MediaQuery(
-        data: const MediaQueryData(size: Size(430, 932)),
+        data: MediaQueryData(size: size),
         child: Scaffold(body: child),
       ),
     ),

@@ -9,7 +9,7 @@ class HabitStatsSectionCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.child,
-    this.padding = const EdgeInsets.all(10),
+    this.padding = const EdgeInsets.fromLTRB(12, 10, 12, 12),
   });
 
   @override
@@ -18,29 +18,23 @@ class HabitStatsSectionCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFECE4D8)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14000000),
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
-        ],
+        color: const Color(0xFFFDFBF7).withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE9E3D9)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 17,
-                  color: const Color(0xFF1F1913),
-                  fontWeight: FontWeight.w600,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: 14.2,
+                  height: 1,
+                  color: const Color(0xFF2F251C),
+                  fontWeight: FontWeight.w700,
                 ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           child,
         ],
       ),
