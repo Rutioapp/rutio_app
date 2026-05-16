@@ -26,8 +26,11 @@ class HabitStatsHeroCard extends StatelessWidget {
     final isCompact = cardWidth < 380;
     final streakFontSize = isCompact ? 70.0 : 78.0;
     final streakLabelFontSize = isCompact ? 17.0 : 19.0;
-    final headlineFontSize = isCompact ? 20.0 : 23.0;
+    final headlineFontSize = isCompact ? 19.0 : 23.0;
+    final headlineLineHeight = isCompact ? 1.03 : 1.08;
     final milestoneFontSize = isCompact ? 15.0 : 16.0;
+    final streakColumnMaxWidth = isCompact ? 104.0 : 112.0;
+    final streakToMessageSpacing = isCompact ? 10.0 : 14.0;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
@@ -94,9 +97,9 @@ class HabitStatsHeroCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ConstrainedBox(
-                        constraints: const BoxConstraints(
+                        constraints: BoxConstraints(
                           minWidth: 92,
-                          maxWidth: 112,
+                          maxWidth: streakColumnMaxWidth,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +128,7 @@ class HabitStatsHeroCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      SizedBox(width: streakToMessageSpacing),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(top: 2),
@@ -135,13 +138,14 @@ class HabitStatsHeroCard extends StatelessWidget {
                             children: [
                               Text(
                                 _motivationHeadline(l10n, streak),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                                softWrap: true,
+                                overflow: TextOverflow.clip,
                                 style: TextStyle(
                                   fontFamily: AppTextStyles.sansFamily,
                                   fontSize: headlineFontSize,
                                   fontWeight: FontWeight.w800,
-                                  height: 1.08,
+                                  height: headlineLineHeight,
                                   color: Color(0xFF2D241B),
                                 ),
                               ),

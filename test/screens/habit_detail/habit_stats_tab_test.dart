@@ -703,6 +703,44 @@ void main() {
       expect(find.byType(HabitStatsLast7DaysCard), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('hero first milestone headline wraps without ellipsis in Spanish',
+        (tester) async {
+      final now = DateTime.now();
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          completions: {
+            _dateKey(now.subtract(const Duration(days: 1))): true,
+            _dateKey(now.subtract(const Duration(days: 2))): true,
+            _dateKey(now.subtract(const Duration(days: 3))): true,
+            _dateKey(now.subtract(const Duration(days: 4))): true,
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          size: const Size(320, 568),
+          locale: const Locale('es'),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final headlineFinder = find.text('Primer hito conseguido');
+      expect(headlineFinder, findsOneWidget);
+      final headlineText = tester.widget<Text>(headlineFinder);
+      expect(headlineText.maxLines, 2);
+      expect(headlineText.softWrap, isTrue);
+      expect(headlineText.overflow, isNot(TextOverflow.ellipsis));
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 
