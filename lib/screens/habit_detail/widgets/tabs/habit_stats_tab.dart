@@ -38,6 +38,8 @@ class HabitStatsTab extends StatefulWidget {
 
 class _HabitStatsTabState extends State<HabitStatsTab> {
   HabitStatsPeriod _selectedPeriod = HabitStatsPeriod.week;
+  static const _sectionSpacing = 8.0;
+  static const _lowerSectionSpacing = 8.0;
 
   @override
   Widget build(BuildContext context) {
@@ -57,30 +59,30 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
           onBackPressed: widget.onBackPressed,
           onMorePressed: widget.onMorePressed,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: _sectionSpacing),
         HabitStatsPeriodSelector(
           selectedPeriod: _selectedPeriod,
           onPeriodChanged: (period) => setState(() => _selectedPeriod = period),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: _sectionSpacing),
         HabitStatsHeroCard(
           shellData: shellData,
           familyColor: widget.familyColor,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: _sectionSpacing),
         HabitStatsSectionCard(
           title: context.l10n.habitStatsTabLastDaysTitle(7),
           child: shellData.isCheckHabit
               ? HabitStatsLast7DaysCard(days: shellData.last7Days)
               : HabitStatsCountLast7DaysChart(days: shellData.countLast7Days),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: _sectionSpacing),
         HabitStatsMetricGrid(shellData: shellData),
-        const SizedBox(height: 8),
+        const SizedBox(height: _lowerSectionSpacing),
         if (shellData.isCheckHabit)
           HabitStatsWeeklyComparisonCard(deltaPct: shellData.weeklyComparisonDeltaPct),
         if (!shellData.isCheckHabit) HabitStatsCountBestDayCard(shellData: shellData),
-        const SizedBox(height: 8),
+        const SizedBox(height: _lowerSectionSpacing),
         HabitStatsInsightCard(shellData: shellData),
       ],
     );

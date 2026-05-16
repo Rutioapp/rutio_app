@@ -7,6 +7,9 @@ import 'habit_stats_models.dart';
 
 class HabitStatsInsightCard extends StatelessWidget {
   final HabitStatsShellData shellData;
+  static const _cardBorder = Color(0xFFE9E3D9);
+  static const _cardText = Color(0xFF2F251C);
+  static const _cardMuted = Color(0xFF746A60);
 
   const HabitStatsInsightCard({
     super.key,
@@ -21,11 +24,11 @@ class HabitStatsInsightCard extends StatelessWidget {
         : _countInsightMessage(l10n, buildCountMetricSummary(shellData).completionPct);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(9),
+      padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8ED),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1E2CC)),
+        color: const Color(0xFFFDFBF7).withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _cardBorder),
       ),
       child: Row(
         children: [
@@ -34,12 +37,12 @@ class HabitStatsInsightCard extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFF4E4C5),
-              border: Border.all(color: const Color(0xFFECD7B4)),
+              color: const Color(0xFFF5EEDF),
+              border: Border.all(color: const Color(0xFFE6D7BE)),
             ),
             child: const Icon(
               Icons.lightbulb_rounded,
-              color: Color(0xFFC58A2D),
+              color: Color(0xFFB57A2C),
               size: 17,
             ),
           ),
@@ -52,7 +55,7 @@ class HabitStatsInsightCard extends StatelessWidget {
                   l10n.habitStatsInsightLabel,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontSize: 13,
-                        color: const Color(0xFF251D16),
+                        color: _cardText,
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -64,7 +67,7 @@ class HabitStatsInsightCard extends StatelessWidget {
                         fontFamily: 'Georgia',
                         fontStyle: FontStyle.italic,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFF2E251C),
+                        color: _cardMuted,
                       ),
                 ),
               ],

@@ -28,6 +28,7 @@ class HabitStatsMetricGrid extends StatelessWidget {
       ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
       itemCount: metrics.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
