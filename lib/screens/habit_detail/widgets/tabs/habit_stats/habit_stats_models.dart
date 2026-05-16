@@ -19,6 +19,26 @@ enum HabitStatsBestMomentSlot {
   unknown,
 }
 
+enum HabitStatsInsightTone {
+  neutral,
+  positive,
+  amber,
+  recovery,
+  paused,
+}
+
+class HabitStatsInsight {
+  final String title;
+  final String body;
+  final HabitStatsInsightTone tone;
+
+  const HabitStatsInsight({
+    required this.title,
+    required this.body,
+    required this.tone,
+  });
+}
+
 class HabitStatsLast7DayItem {
   final DateTime date;
   final String weekdayLabel;

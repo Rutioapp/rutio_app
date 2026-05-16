@@ -3490,6 +3490,78 @@ abstract class AppLocalizations {
   /// **'Insight'**
   String get habitStatsInsightLabel;
 
+  /// No description provided for @habitStatsInsightTodaySkippedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Día pausado.'**
+  String get habitStatsInsightTodaySkippedTitle;
+
+  /// No description provided for @habitStatsInsightTodaySkippedBody.
+  ///
+  /// In es, this message translates to:
+  /// **'La pausa mantiene el contexto sin contar como una repetición.'**
+  String get habitStatsInsightTodaySkippedBody;
+
+  /// No description provided for @habitStatsInsightTodayCompletedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Buen cierre de hoy.'**
+  String get habitStatsInsightTodayCompletedTitle;
+
+  /// No description provided for @habitStatsInsightTodayCompletedBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu progreso queda protegido por un día más.'**
+  String get habitStatsInsightTodayCompletedBody;
+
+  /// No description provided for @habitStatsInsightPendingStreakTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mantén tu ritmo.'**
+  String get habitStatsInsightPendingStreakTitle;
+
+  /// No description provided for @habitStatsInsightPendingStreakBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Completar hoy llevaría tu racha a {days, plural, one{# día} other{# días}}.'**
+  String habitStatsInsightPendingStreakBody(int days);
+
+  /// No description provided for @habitStatsInsightWeeklyGoalTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo semanal cubierto.'**
+  String get habitStatsInsightWeeklyGoalTitle;
+
+  /// No description provided for @habitStatsInsightWeeklyGoalBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya cumpliste lo previsto para esta semana.'**
+  String get habitStatsInsightWeeklyGoalBody;
+
+  /// No description provided for @habitStatsInsightLowConsistencyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Vuelve a lo simple.'**
+  String get habitStatsInsightLowConsistencyTitle;
+
+  /// No description provided for @habitStatsInsightLowConsistencyBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Una repetición pequeña puede ayudarte a recuperar ritmo.'**
+  String get habitStatsInsightLowConsistencyBody;
+
+  /// No description provided for @habitStatsInsightFallbackTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada repetición cuenta.'**
+  String get habitStatsInsightFallbackTitle;
+
+  /// No description provided for @habitStatsInsightFallbackBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Empieza con una acción pequeña hoy.'**
+  String get habitStatsInsightFallbackBody;
+
   /// No description provided for @habitStatsInsightSteadyRoutine.
   ///
   /// In es, this message translates to:

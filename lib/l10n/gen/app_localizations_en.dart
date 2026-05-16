@@ -1938,6 +1938,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitStatsInsightLabel => 'Insight';
 
   @override
+  String get habitStatsInsightTodaySkippedTitle => 'Paused day.';
+
+  @override
+  String get habitStatsInsightTodaySkippedBody =>
+      'The pause keeps context without counting as a repetition.';
+
+  @override
+  String get habitStatsInsightTodayCompletedTitle => 'Good close today.';
+
+  @override
+  String get habitStatsInsightTodayCompletedBody =>
+      'Your progress is protected for one more day.';
+
+  @override
+  String get habitStatsInsightPendingStreakTitle => 'Keep your rhythm.';
+
+  @override
+  String habitStatsInsightPendingStreakBody(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '# days',
+      one: '# day',
+    );
+    return 'Completing today would bring your streak to $_temp0.';
+  }
+
+  @override
+  String get habitStatsInsightWeeklyGoalTitle => 'Weekly goal covered.';
+
+  @override
+  String get habitStatsInsightWeeklyGoalBody =>
+      'You have already completed what you planned this week.';
+
+  @override
+  String get habitStatsInsightLowConsistencyTitle => 'Return to simple.';
+
+  @override
+  String get habitStatsInsightLowConsistencyBody =>
+      'One small repetition can help you recover rhythm.';
+
+  @override
+  String get habitStatsInsightFallbackTitle => 'Every repetition counts.';
+
+  @override
+  String get habitStatsInsightFallbackBody =>
+      'Start with one small action today.';
+
+  @override
   String get habitStatsInsightSteadyRoutine =>
       'You are building a steady routine.';
 

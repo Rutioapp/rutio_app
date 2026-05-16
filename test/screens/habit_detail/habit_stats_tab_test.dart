@@ -63,7 +63,7 @@ void main() {
       expect(find.text(l10n.habitStatsMetricConsistency), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
-      expect(find.text(l10n.habitStatsInsightEveryRepetition), findsOneWidget);
+      expect(find.text(l10n.habitStatsInsightFallbackTitle), findsOneWidget);
     });
 
     testWidgets('timesPerWeek check habit shows weekly completed/target',
@@ -156,7 +156,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text(l10n.habitStatsCountInsightCloseToGoal), findsOneWidget);
+      expect(find.text(l10n.habitStatsInsightTodayCompletedTitle), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -187,7 +187,7 @@ void main() {
       expect(find.text(_l10n(tester).habitStatsCountBestDayNoDataYet),
           findsOneWidget);
       expect(
-        find.text(_l10n(tester).habitStatsCountInsightAdjustPace),
+        find.text(_l10n(tester).habitStatsInsightLowConsistencyTitle),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);

@@ -1033,6 +1033,25 @@
     "habitStatsMostFrequentTime": "Most frequent time",
     "habitStatsNoData": "No data",
     "habitStatsInsightLabel": "Insight",
+    "habitStatsInsightTodaySkippedTitle": "Paused day.",
+    "habitStatsInsightTodaySkippedBody": "The pause keeps context without counting as a repetition.",
+    "habitStatsInsightTodayCompletedTitle": "Good close today.",
+    "habitStatsInsightTodayCompletedBody": "Your progress is protected for one more day.",
+    "habitStatsInsightPendingStreakTitle": "Keep your rhythm.",
+    "habitStatsInsightPendingStreakBody": "Completing today would bring your streak to {days, plural, one{# day} other{# days}}.",
+    "@habitStatsInsightPendingStreakBody": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsInsightWeeklyGoalTitle": "Weekly goal covered.",
+    "habitStatsInsightWeeklyGoalBody": "You have already completed what you planned this week.",
+    "habitStatsInsightLowConsistencyTitle": "Return to simple.",
+    "habitStatsInsightLowConsistencyBody": "One small repetition can help you recover rhythm.",
+    "habitStatsInsightFallbackTitle": "Every repetition counts.",
+    "habitStatsInsightFallbackBody": "Start with one small action today.",
     "habitStatsInsightSteadyRoutine": "You are building a steady routine.",
     "habitStatsInsightGoodRhythm": "Good rhythm this week.",
     "habitStatsInsightEveryRepetition": "Every repetition counts.",

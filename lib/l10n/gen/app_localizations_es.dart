@@ -1949,6 +1949,55 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsInsightLabel => 'Insight';
 
   @override
+  String get habitStatsInsightTodaySkippedTitle => 'Día pausado.';
+
+  @override
+  String get habitStatsInsightTodaySkippedBody =>
+      'La pausa mantiene el contexto sin contar como una repetición.';
+
+  @override
+  String get habitStatsInsightTodayCompletedTitle => 'Buen cierre de hoy.';
+
+  @override
+  String get habitStatsInsightTodayCompletedBody =>
+      'Tu progreso queda protegido por un día más.';
+
+  @override
+  String get habitStatsInsightPendingStreakTitle => 'Mantén tu ritmo.';
+
+  @override
+  String habitStatsInsightPendingStreakBody(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '# días',
+      one: '# día',
+    );
+    return 'Completar hoy llevaría tu racha a $_temp0.';
+  }
+
+  @override
+  String get habitStatsInsightWeeklyGoalTitle => 'Objetivo semanal cubierto.';
+
+  @override
+  String get habitStatsInsightWeeklyGoalBody =>
+      'Ya cumpliste lo previsto para esta semana.';
+
+  @override
+  String get habitStatsInsightLowConsistencyTitle => 'Vuelve a lo simple.';
+
+  @override
+  String get habitStatsInsightLowConsistencyBody =>
+      'Una repetición pequeña puede ayudarte a recuperar ritmo.';
+
+  @override
+  String get habitStatsInsightFallbackTitle => 'Cada repetición cuenta.';
+
+  @override
+  String get habitStatsInsightFallbackBody =>
+      'Empieza con una acción pequeña hoy.';
+
+  @override
   String get habitStatsInsightSteadyRoutine =>
       'Vas construyendo una rutina estable.';
 
