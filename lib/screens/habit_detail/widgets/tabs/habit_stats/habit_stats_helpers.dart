@@ -65,9 +65,14 @@ HabitStatsShellData buildHabitStatsShellData(
     range: period == HabitStatsPeriod.week ? weekRange : _allTimeRange(),
   );
   final streakSnapshot = _readStreakSnapshot(context, habitId);
-  final currentStreak = streakSnapshot.current ??
-      _currentStreakFromCompletions(countsByDay: countsByDay, skipsByDay: skipsByDay);
-  final bestStreak = streakSnapshot.best ?? _bestStreakFromCompletions(countsByDay);
+  final currentStreak = _currentStreakFromDayStates(
+    habitMap: habitMap,
+    countsByDay: countsByDay,
+    countValuesByDay: countValuesByDay,
+    skipsByDay: skipsByDay,
+  );
+  final bestStreak =
+      streakSnapshot.best ?? _bestStreakFromCompletions(countsByDay);
   final objectiveSummary = _objectiveSummary(
     l10n: l10n,
     habitMap: habitMap,
@@ -83,7 +88,8 @@ HabitStatsShellData buildHabitStatsShellData(
     title: _habitTitle(l10n, habitMap),
     familyName: familyName,
     objectiveSummary: objectiveSummary,
-    typeLabel: isCounter ? l10n.habitConfigCounterOption : l10n.habitConfigCheckOption,
+    typeLabel:
+        isCounter ? l10n.habitConfigCounterOption : l10n.habitConfigCheckOption,
     isCounter: isCounter,
     currentStreak: currentStreak,
     bestStreak: bestStreak,
@@ -94,7 +100,13 @@ HabitStatsShellData buildHabitStatsShellData(
     bestMomentLabel: bestMoment.label,
     bestMomentSlot: bestMoment.slot,
     hasBestMomentData: bestMoment.hasData,
-    last7Days: _buildLast7Days(context, countsByDay, skipsByDay),
+    last7Days: _buildLast7Days(
+      context,
+      habitMap: habitMap,
+      countsByDay: countsByDay,
+      countValuesByDay: countValuesByDay,
+      skipsByDay: skipsByDay,
+    ),
     countLast7Days: _buildCountLast7Days(
       context,
       countValuesByDay: countValuesByDay,
@@ -118,8 +130,10 @@ HabitStatsCountMetricSummary buildCountMetricSummary(
     final value = day.value < 0 ? 0 : day.value;
     return sum + value;
   });
-  final dailyAverage = safeExpectedDays <= 0 ? 0 : weeklyTotal / safeExpectedDays;
-  final dailyTarget = shellData.countDailyTarget > 0 ? shellData.countDailyTarget : 0;
+  final dailyAverage =
+      safeExpectedDays <= 0 ? 0 : weeklyTotal / safeExpectedDays;
+  final dailyTarget =
+      shellData.countDailyTarget > 0 ? shellData.countDailyTarget : 0;
   final weeklyGoal = dailyTarget * safeExpectedDays;
   final completionPct = weeklyGoal <= 0
       ? 0
@@ -162,9 +176,11 @@ HabitStatsCountBestDaySummary buildCountBestDaySummary(
 
   return HabitStatsCountBestDaySummary(
     hasData: true,
-    weekdayLabel: _capitalizeFirst(context.l10n.weekdayFull(bestDay.date.weekday)),
+    weekdayLabel:
+        _capitalizeFirst(context.l10n.weekdayFull(bestDay.date.weekday)),
     value: bestDay.value,
-    valueLabel: _formatCountValueLabel(bestDay.value, unitLabel: shellData.countUnitLabel),
+    valueLabel: _formatCountValueLabel(bestDay.value,
+        unitLabel: shellData.countUnitLabel),
   );
 }
 
@@ -275,17 +291,25 @@ Map<String, dynamic> _map(dynamic value) {
 }
 
 String _habitId(Map<String, dynamic> habit) {
-  final raw = habit['id'] ?? habit['habitId'] ?? habit['uuid'] ?? habit['key'] ?? '';
+  final raw =
+      habit['id'] ?? habit['habitId'] ?? habit['uuid'] ?? habit['key'] ?? '';
   return raw.toString().trim();
 }
 
 bool _isCountHabit(Map<String, dynamic> habit) {
-  final raw = (habit['type'] ?? habit['habitType'] ?? '').toString().trim().toLowerCase();
+  final raw = (habit['type'] ?? habit['habitType'] ?? '')
+      .toString()
+      .trim()
+      .toLowerCase();
   return raw == 'count' || raw == 'counter';
 }
 
 String _habitTitle(dynamic l10n, Map<String, dynamic> habit) {
-  final raw = habit['title'] ?? habit['name'] ?? habit['habitTitle'] ?? habit['label'] ?? '';
+  final raw = habit['title'] ??
+      habit['name'] ??
+      habit['habitTitle'] ??
+      habit['label'] ??
+      '';
   final title = raw.toString().trim();
   return title.isEmpty ? l10n.habitStatsHabitFallbackTitle : title;
 }
@@ -327,10 +351,13 @@ int _weeklyTarget(
   if (isCounter) {
     return _asInt(habit['target']) ?? 0;
   }
-  final scheduleType = (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
+  final scheduleType =
+      (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
   if (scheduleType == 'timesperweek') {
     final target = _asInt(
-      schedule['timesPerWeek'] ?? schedule['timesPerWeekTarget'] ?? habit['timesPerWeekTarget'],
+      schedule['timesPerWeek'] ??
+          schedule['timesPerWeekTarget'] ??
+          habit['timesPerWeekTarget'],
     );
     return target == null || target < 1 ? 1 : target;
   }
@@ -354,17 +381,21 @@ String _objectiveSummary({
   required bool isCounter,
   required int weeklyTarget,
 }) {
-  final explicit = _asString(habitMap['objective']) ?? _asString(habitMap['description']);
+  final explicit =
+      _asString(habitMap['objective']) ?? _asString(habitMap['description']);
   if (explicit != null && explicit.trim().isNotEmpty) {
     return explicit.trim();
   }
   if (isCounter) {
     final target = _asInt(habitMap['target']) ?? 1;
     final unit = (_asString(habitMap['unit']) ?? '').trim();
-    return unit.isEmpty ? '${l10n.habitConfigGoalSection}: $target' : '$target $unit';
+    return unit.isEmpty
+        ? '${l10n.habitConfigGoalSection}: $target'
+        : '$target $unit';
   }
 
-  final scheduleType = (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
+  final scheduleType =
+      (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
   if (scheduleType == 'timesperweek') {
     return l10n.habitStatsObjectiveWeekly(weeklyTarget < 1 ? 1 : weeklyTarget);
   }
@@ -406,7 +437,8 @@ Map<DateTime, int> _extractCountsByDay({
     _consumeAnyHistoryValue(habitMap[key], out);
   }
 
-  final lastDone = _tryParseDate(habitMap['lastDoneAt'] ?? habitMap['lastCompletedAt']);
+  final lastDone =
+      _tryParseDate(habitMap['lastDoneAt'] ?? habitMap['lastCompletedAt']);
   if (lastDone != null) {
     final day = _dateOnly(lastDone);
     out[day] = (out[day] ?? 0) + 1;
@@ -440,7 +472,8 @@ Map<DateTime, num> _extractCountValuesByDay({
     out[_dateOnly(date)] = value < 0 ? 0 : value;
   }
 
-  final todayProgress = _asNum(habitMap['progress'] ?? habitMap['current'] ?? habitMap['value']);
+  final todayProgress =
+      _asNum(habitMap['progress'] ?? habitMap['current'] ?? habitMap['value']);
   if (todayProgress != null && todayProgress >= 0) {
     final today = _dateOnly(DateTime.now());
     final storedToday = _asNum(out[today]);
@@ -507,10 +540,15 @@ void _consumeAnyHistoryValue(dynamic value, Map<DateTime, int> out) {
   if (value is List) {
     for (final item in value) {
       if (item is Map) {
-        final done = item['done'] ?? item['completed'] ?? item['isDone'] ?? true;
+        final done =
+            item['done'] ?? item['completed'] ?? item['isDone'] ?? true;
         if (done == false) continue;
         final date = _tryParseDate(
-          item['date'] ?? item['day'] ?? item['ts'] ?? item['time'] ?? item['completedAt'],
+          item['date'] ??
+              item['day'] ??
+              item['ts'] ??
+              item['time'] ??
+              item['completedAt'],
         );
         if (date == null) continue;
         final count = _asInt(item['count']) ?? 1;
@@ -535,7 +573,8 @@ void _consumeAnyHistoryValue(dynamic value, Map<DateTime, int> out) {
   }
 }
 
-void _addHistoryValueAtDate(Map<DateTime, int> out, DateTime date, dynamic value) {
+void _addHistoryValueAtDate(
+    Map<DateTime, int> out, DateTime date, dynamic value) {
   if (_isTrue(value)) {
     out[date] = (out[date] ?? 0) + 1;
     return;
@@ -547,24 +586,25 @@ void _addHistoryValueAtDate(Map<DateTime, int> out, DateTime date, dynamic value
 }
 
 List<HabitStatsLast7DayItem> _buildLast7Days(
-  BuildContext context,
-  Map<DateTime, int> countsByDay,
-  Map<DateTime, bool> skipsByDay,
-) {
+  BuildContext context, {
+  required Map<String, dynamic> habitMap,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, num> countValuesByDay,
+  required Map<DateTime, bool> skipsByDay,
+}) {
   final today = _dateOnly(DateTime.now());
   return List<HabitStatsLast7DayItem>.generate(
     7,
     (index) {
       final date = today.subtract(Duration(days: 6 - index));
-      final completed = (countsByDay[date] ?? 0) > 0;
-      final skipped = skipsByDay[date] == true;
-      final state = skipped
-          ? HabitStatsDayState.skipped
-          : completed
-              ? HabitStatsDayState.completed
-              : date.isAfter(today)
-                  ? HabitStatsDayState.future
-                  : HabitStatsDayState.pending;
+      final state = _dayStateForDate(
+        date: date,
+        today: today,
+        habitMap: habitMap,
+        countsByDay: countsByDay,
+        countValuesByDay: countValuesByDay,
+        skipsByDay: skipsByDay,
+      );
       return HabitStatsLast7DayItem(
         date: date,
         weekdayLabel: context.l10n.weekdayShort(date.weekday),
@@ -589,7 +629,8 @@ List<HabitStatsCountLast7DayItem> _buildCountLast7Days(
       final date = today.subtract(Duration(days: 6 - index));
       final rawValue = _asNum(countValuesByDay[date]) ?? 0;
       final value = rawValue < 0 ? 0 : rawValue;
-      final ratio = safeTarget <= 0 ? 0.0 : (value / safeTarget).clamp(0, 1).toDouble();
+      final ratio =
+          safeTarget <= 0 ? 0.0 : (value / safeTarget).clamp(0, 1).toDouble();
       return HabitStatsCountLast7DayItem(
         date: date,
         weekdayLabel: context.l10n.weekdayShort(date.weekday),
@@ -641,15 +682,17 @@ int? _weeklyComparisonDelta({
   );
   if (!previousHasAnyData) return null;
 
-  final currentCompleted =
-      _countCompletedDays(countsByDay: countsByDay, skipsByDay: skipsByDay, range: currentRange);
+  final currentCompleted = _countCompletedDays(
+      countsByDay: countsByDay, skipsByDay: skipsByDay, range: currentRange);
   final previousCompleted = _countCompletedDays(
     countsByDay: countsByDay,
     skipsByDay: skipsByDay,
     range: previousRange,
   );
-  final currentPct = ((currentCompleted / currentTarget) * 100).round().clamp(0, 100);
-  final previousPct = ((previousCompleted / previousTarget) * 100).round().clamp(0, 100);
+  final currentPct =
+      ((currentCompleted / currentTarget) * 100).round().clamp(0, 100);
+  final previousPct =
+      ((previousCompleted / previousTarget) * 100).round().clamp(0, 100);
   return currentPct - previousPct;
 }
 
@@ -659,9 +702,11 @@ _BestMomentResult _bestMomentLabel({
   required _DateRange range,
 }) {
   final buckets = <String, _MomentBucket>{
-    'morning': _MomentBucket(priority: 0, label: l10n.statisticsV3MomentMorning),
+    'morning':
+        _MomentBucket(priority: 0, label: l10n.statisticsV3MomentMorning),
     'noon': _MomentBucket(priority: 1, label: l10n.statisticsV3MomentAfternoon),
-    'afternoon': _MomentBucket(priority: 2, label: l10n.statisticsV3MomentEvening),
+    'afternoon':
+        _MomentBucket(priority: 2, label: l10n.statisticsV3MomentEvening),
     'night': _MomentBucket(priority: 3, label: l10n.statisticsV3MomentNight),
   };
   final counts = <String, int>{for (final key in buckets.keys) key: 0};
@@ -721,34 +766,119 @@ String _bucketForHour(int hour) {
   return 'night';
 }
 
-_StreakSnapshotResult _readStreakSnapshot(BuildContext context, String habitId) {
+_StreakSnapshotResult _readStreakSnapshot(
+    BuildContext context, String habitId) {
   if (habitId.isEmpty) return const _StreakSnapshotResult();
   try {
     final store = context.read<UserStateStore>();
     final dynamic snapshot = store.habitStreakSnapshotForHabitId(habitId);
-    final current = _asInt(snapshot.currentStreak ?? snapshot.streak ?? snapshot.current);
-    final best = _asInt(snapshot.bestStreak ?? snapshot.best ?? snapshot.longestStreak);
+    final current =
+        _asInt(snapshot.currentStreak ?? snapshot.streak ?? snapshot.current);
+    final best =
+        _asInt(snapshot.bestStreak ?? snapshot.best ?? snapshot.longestStreak);
     return _StreakSnapshotResult(current: current, best: best);
   } catch (_) {
     return const _StreakSnapshotResult();
   }
 }
 
-int _currentStreakFromCompletions({
+int _currentStreakFromDayStates({
+  required Map<String, dynamic> habitMap,
   required Map<DateTime, int> countsByDay,
+  required Map<DateTime, num> countValuesByDay,
   required Map<DateTime, bool> skipsByDay,
 }) {
+  final today = _dateOnly(DateTime.now());
+  final todayState = _dayStateForDate(
+    date: today,
+    today: today,
+    habitMap: habitMap,
+    countsByDay: countsByDay,
+    countValuesByDay: countValuesByDay,
+    skipsByDay: skipsByDay,
+  );
+
+  // Pending today is neutral for the current streak.
+  // We only start from yesterday when today is still pending.
+  var cursor = todayState == HabitStatsDayState.pending
+      ? today.subtract(const Duration(days: 1))
+      : today;
   var streak = 0;
-  var cursor = _dateOnly(DateTime.now());
-  while ((countsByDay[cursor] ?? 0) > 0 && skipsByDay[cursor] != true) {
+
+  while (_dayStateForDate(
+        date: cursor,
+        today: today,
+        habitMap: habitMap,
+        countsByDay: countsByDay,
+        countValuesByDay: countValuesByDay,
+        skipsByDay: skipsByDay,
+      ) ==
+      HabitStatsDayState.completed) {
     streak += 1;
     cursor = cursor.subtract(const Duration(days: 1));
   }
   return streak;
 }
 
+HabitStatsDayState _dayStateForDate({
+  required DateTime date,
+  required DateTime today,
+  required Map<String, dynamic> habitMap,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, num> countValuesByDay,
+  required Map<DateTime, bool> skipsByDay,
+}) {
+  final day = _dateOnly(date);
+  if (skipsByDay[day] == true) {
+    return HabitStatsDayState.skipped;
+  }
+  if (_isHabitCompletedOnDate(
+    date: day,
+    habitMap: habitMap,
+    countsByDay: countsByDay,
+    countValuesByDay: countValuesByDay,
+    skipsByDay: skipsByDay,
+  )) {
+    return HabitStatsDayState.completed;
+  }
+  return day.isAfter(today)
+      ? HabitStatsDayState.future
+      : HabitStatsDayState.pending;
+}
+
+bool _isHabitCompletedOnDate({
+  required DateTime date,
+  required Map<String, dynamic> habitMap,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, num> countValuesByDay,
+  required Map<DateTime, bool> skipsByDay,
+}) {
+  final day = _dateOnly(date);
+  if (skipsByDay[day] == true) return false;
+
+  final completedFromHistory = (countsByDay[day] ?? 0) > 0;
+  final today = _dateOnly(DateTime.now());
+  final completedFromTodayState = _isSameDate(day, today) &&
+      habitMap['doneToday'] == true &&
+      habitMap['skippedToday'] != true;
+
+  if (!_isCountHabit(habitMap)) {
+    return completedFromHistory || completedFromTodayState;
+  }
+
+  final targetValue = (_asNum(habitMap['target']) ?? 1).toDouble();
+  final safeTarget = targetValue > 0 ? targetValue : 1.0;
+  final todayValue = (_asNum(countValuesByDay[day]) ?? 0).toDouble();
+  final completedFromCountTarget = todayValue >= safeTarget;
+  return completedFromHistory ||
+      completedFromTodayState ||
+      completedFromCountTarget;
+}
+
 int _bestStreakFromCompletions(Map<DateTime, int> countsByDay) {
-  final doneDays = countsByDay.keys.where((day) => (countsByDay[day] ?? 0) > 0).toList()
+  final doneDays = countsByDay.keys
+      .where((day) => (countsByDay[day] ?? 0) > 0)
+      .toList()
     ..sort();
   if (doneDays.isEmpty) return 0;
 
@@ -775,6 +905,9 @@ bool _isTrue(dynamic value) {
 }
 
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
+
+bool _isSameDate(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
 
 DateTime? _tryParseDate(dynamic value) {
   if (value == null) return null;
