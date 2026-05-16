@@ -92,6 +92,7 @@ HabitStatsShellData buildHabitStatsShellData(
     weeklyConsistencyPct: weeklyConsistencyPct,
     weeklyComparisonDeltaPct: weeklyComparisonDeltaPct,
     bestMomentLabel: bestMoment.label,
+    bestMomentSlot: bestMoment.slot,
     hasBestMomentData: bestMoment.hasData,
     last7Days: _buildLast7Days(context, countsByDay, skipsByDay),
     countLast7Days: _buildCountLast7Days(
@@ -184,10 +185,12 @@ class _HistoryRoots {
 class _BestMomentResult {
   final bool hasData;
   final String label;
+  final HabitStatsBestMomentSlot slot;
 
   const _BestMomentResult({
     required this.hasData,
     required this.label,
+    required this.slot,
   });
 }
 
@@ -671,7 +674,11 @@ _BestMomentResult _bestMomentLabel({
 
   final hasData = counts.values.any((count) => count > 0);
   if (!hasData) {
-    return _BestMomentResult(hasData: false, label: l10n.habitStatsNoData);
+    return _BestMomentResult(
+      hasData: false,
+      label: l10n.habitStatsNoData,
+      slot: HabitStatsBestMomentSlot.unknown,
+    );
   }
 
   final ordered = counts.entries.toList()
@@ -686,7 +693,23 @@ _BestMomentResult _bestMomentLabel({
   return _BestMomentResult(
     hasData: true,
     label: buckets[winner]?.label ?? l10n.habitStatsNoData,
+    slot: _slotFromBucketKey(winner),
   );
+}
+
+HabitStatsBestMomentSlot _slotFromBucketKey(String key) {
+  switch (key) {
+    case 'morning':
+      return HabitStatsBestMomentSlot.morning;
+    case 'noon':
+      return HabitStatsBestMomentSlot.noon;
+    case 'afternoon':
+      return HabitStatsBestMomentSlot.afternoon;
+    case 'night':
+      return HabitStatsBestMomentSlot.night;
+    default:
+      return HabitStatsBestMomentSlot.unknown;
+  }
 }
 
 String _bucketForHour(int hour) {

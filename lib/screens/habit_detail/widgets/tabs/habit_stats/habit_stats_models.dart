@@ -11,6 +11,14 @@ enum HabitStatsDayState {
   future,
 }
 
+enum HabitStatsBestMomentSlot {
+  morning,
+  noon,
+  afternoon,
+  night,
+  unknown,
+}
+
 class HabitStatsLast7DayItem {
   final DateTime date;
   final String weekdayLabel;
@@ -53,6 +61,7 @@ class HabitStatsShellData {
   final int weeklyConsistencyPct;
   final int? weeklyComparisonDeltaPct;
   final String bestMomentLabel;
+  final HabitStatsBestMomentSlot bestMomentSlot;
   final bool hasBestMomentData;
   final List<HabitStatsLast7DayItem> last7Days;
   final List<HabitStatsCountLast7DayItem> countLast7Days;
@@ -76,6 +85,7 @@ class HabitStatsShellData {
     required this.weeklyConsistencyPct,
     required this.weeklyComparisonDeltaPct,
     required this.bestMomentLabel,
+    required this.bestMomentSlot,
     required this.hasBestMomentData,
     required this.last7Days,
     required this.countLast7Days,
