@@ -3448,11 +3448,41 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{Objetivo: # vez al día} other{Objetivo: # veces al día}}'**
   String habitStatsObjectiveDaily(int count);
 
+  /// No description provided for @habitStatsObjectiveDailySingular.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo: {count} vez al día'**
+  String habitStatsObjectiveDailySingular(int count);
+
+  /// No description provided for @habitStatsObjectiveDailyPlural.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo: {count} veces al día'**
+  String habitStatsObjectiveDailyPlural(int count);
+
   /// No description provided for @habitStatsObjectiveWeekly.
   ///
   /// In es, this message translates to:
   /// **'{count, plural, one{Objetivo: # vez por semana} other{Objetivo: # veces por semana}}'**
   String habitStatsObjectiveWeekly(int count);
+
+  /// No description provided for @habitStatsObjectiveWeeklySingular.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo: {count} vez por semana'**
+  String habitStatsObjectiveWeeklySingular(int count);
+
+  /// No description provided for @habitStatsObjectiveWeeklyPlural.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo: {count} veces por semana'**
+  String habitStatsObjectiveWeeklyPlural(int count);
+
+  /// No description provided for @habitStatsObjectiveFallback.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo configurado'**
+  String get habitStatsObjectiveFallback;
 
   /// No description provided for @habitStatsTimesLabel.
   ///

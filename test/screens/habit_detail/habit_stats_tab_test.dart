@@ -101,6 +101,108 @@ void main() {
       expect(find.text('2/3'), findsOneWidget);
     });
 
+    testWidgets(
+        'header replaces unresolved weekly # template with formatted value',
+        (tester) async {
+      final habit = _habit(
+        type: 'check',
+        familyId: 'spirit',
+        target: 3,
+        objective: 'Objetivo: # veces por semana',
+        schedule: const {
+          'type': 'timesPerWeek',
+          'timesPerWeek': 7,
+          'weekStartsOn': 1,
+        },
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          locale: const Locale('es'),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(
+        find.text(
+          '${l10n.familySpiritName} ${String.fromCharCode(0x00B7)} ${l10n.habitStatsObjectiveWeeklyPlural(7)}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('#'), findsNothing);
+    });
+
+    testWidgets(
+        'header replaces unresolved daily # template with formatted value',
+        (tester) async {
+      final habit = _habit(
+        type: 'check',
+        target: 3,
+        objective: 'Objetivo: # veces al día',
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          locale: const Locale('es'),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(
+        find.text(
+          '${l10n.familyMindName} ${String.fromCharCode(0x00B7)} ${l10n.habitStatsObjectiveDailyPlural(3)}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('#'), findsNothing);
+    });
+
+    testWidgets(
+        'header uses fallback text when objective is invalid and target is missing',
+        (tester) async {
+      final habit = _habit(
+        type: 'check',
+        target: 0,
+        objective: 'Objetivo: # veces por semana',
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          locale: const Locale('es'),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(
+        find.text(
+          '${l10n.familyMindName} ${String.fromCharCode(0x00B7)} ${l10n.habitStatsObjectiveFallback}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('#'), findsNothing);
+    });
+
     testWidgets('count habit renders last 7 days chart', (tester) async {
       final now = DateTime.now();
       final habit = _habit(
@@ -156,7 +258,8 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text(l10n.habitStatsInsightTodayCompletedTitle), findsOneWidget);
+      expect(
+          find.text(l10n.habitStatsInsightTodayCompletedTitle), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -326,7 +429,8 @@ void main() {
       expect(milestone.progress, closeTo(1 / 3, 0.0001));
     });
 
-    testWidgets('today pending keeps previous consecutive streak', (tester) async {
+    testWidgets('today pending keeps previous consecutive streak',
+        (tester) async {
       final now = DateTime.now();
       final habit = _habit(type: 'check');
       final store = _FakeStore(
@@ -605,11 +709,13 @@ void main() {
 Widget _app({
   required UserStateStore store,
   Size size = const Size(430, 932),
+  Locale? locale,
   required Widget child,
 }) {
   return Provider<UserStateStore>.value(
     value: store,
     child: MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: MediaQuery(
@@ -663,16 +769,19 @@ Map<String, dynamic> _rootState({
 
 Map<String, dynamic> _habit({
   String type = 'check',
+  String familyId = 'mind',
   int target = 1,
+  String? objective,
   String unit = 'times',
   Map<String, dynamic> schedule = const {'type': 'daily'},
 }) {
   return <String, dynamic>{
     'id': 'habit-1',
     'title': 'Meditar',
-    'familyId': 'mind',
+    'familyId': familyId,
     'type': type,
     'target': target,
+    if (objective != null) 'objective': objective,
     'unit': unit,
     'schedule': schedule,
   };

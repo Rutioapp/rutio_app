@@ -1012,6 +1012,22 @@
             }
         }
     },
+    "habitStatsObjectiveDailySingular": "Goal: {count} time per day",
+    "@habitStatsObjectiveDailySingular": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsObjectiveDailyPlural": "Goal: {count} times per day",
+    "@habitStatsObjectiveDailyPlural": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "habitStatsObjectiveWeekly": "{count, plural, one{Goal: # time per week} other{Goal: # times per week}}",
     "@habitStatsObjectiveWeekly": {
         "placeholders": {
@@ -1020,6 +1036,23 @@
             }
         }
     },
+    "habitStatsObjectiveWeeklySingular": "Goal: {count} time per week",
+    "@habitStatsObjectiveWeeklySingular": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsObjectiveWeeklyPlural": "Goal: {count} times per week",
+    "@habitStatsObjectiveWeeklyPlural": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsObjectiveFallback": "Goal set",
     "habitStatsTimesLabel": "{count, plural, one{# time} other{# times}}",
     "@habitStatsTimesLabel": {
         "placeholders": {

@@ -1901,6 +1901,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String habitStatsObjectiveDailySingular(int count) {
+    return 'Goal: $count time per day';
+  }
+
+  @override
+  String habitStatsObjectiveDailyPlural(int count) {
+    return 'Goal: $count times per day';
+  }
+
+  @override
   String habitStatsObjectiveWeekly(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1910,6 +1920,19 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String habitStatsObjectiveWeeklySingular(int count) {
+    return 'Goal: $count time per week';
+  }
+
+  @override
+  String habitStatsObjectiveWeeklyPlural(int count) {
+    return 'Goal: $count times per week';
+  }
+
+  @override
+  String get habitStatsObjectiveFallback => 'Goal set';
 
   @override
   String habitStatsTimesLabel(int count) {

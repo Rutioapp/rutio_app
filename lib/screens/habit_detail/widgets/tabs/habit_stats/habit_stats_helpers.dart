@@ -388,27 +388,78 @@ String _objectiveSummary({
   required bool isCounter,
   required int weeklyTarget,
 }) {
-  final explicit =
-      _asString(habitMap['objective']) ?? _asString(habitMap['description']);
-  if (explicit != null && explicit.trim().isNotEmpty) {
-    return explicit.trim();
+  final explicit = _sanitizeObjectiveSummaryText(
+    _asString(habitMap['objective']) ?? _asString(habitMap['description']),
+  );
+  if (explicit != null) {
+    return explicit;
   }
+
+  final fallback = l10n.habitStatsObjectiveFallback;
   if (isCounter) {
-    final target = _asInt(habitMap['target']) ?? 1;
+    final target = _asInt(habitMap['target']);
     final unit = (_asString(habitMap['unit']) ?? '').trim();
-    return unit.isEmpty
+    if (target == null || target < 1) {
+      return fallback;
+    }
+    final counterSummary = unit.isEmpty
         ? '${l10n.habitConfigGoalSection}: $target'
         : '$target $unit';
+    return _sanitizeObjectiveSummaryText(counterSummary) ?? fallback;
   }
 
   final scheduleType =
       (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
   if (scheduleType == 'timesperweek') {
-    return l10n.habitStatsObjectiveWeekly(weeklyTarget < 1 ? 1 : weeklyTarget);
+    if (weeklyTarget < 1) {
+      return fallback;
+    }
+    return _sanitizeObjectiveSummaryText(
+          _formatWeeklyObjective(l10n, weeklyTarget),
+        ) ??
+        fallback;
   }
 
-  final perDayTarget = _asInt(habitMap['target']) ?? 1;
-  return l10n.habitStatsObjectiveDaily(perDayTarget < 1 ? 1 : perDayTarget);
+  final perDayTarget = _asInt(habitMap['target']);
+  if (perDayTarget == null || perDayTarget < 1) {
+    return fallback;
+  }
+  return _sanitizeObjectiveSummaryText(
+          _formatDailyObjective(l10n, perDayTarget)) ??
+      fallback;
+}
+
+String? _sanitizeObjectiveSummaryText(String? raw) {
+  if (raw == null) return null;
+  final text = raw.trim();
+  if (text.isEmpty) return null;
+  if (_looksLikeUnresolvedObjectiveTemplate(text)) return null;
+  return text;
+}
+
+bool _looksLikeUnresolvedObjectiveTemplate(String text) {
+  final normalized = text.toLowerCase();
+  if (normalized.contains('#')) {
+    return true;
+  }
+  if (normalized.contains('{count') && normalized.contains('plural')) {
+    return true;
+  }
+  return false;
+}
+
+String _formatDailyObjective(dynamic l10n, int count) {
+  final safeCount = count < 1 ? 1 : count;
+  return safeCount == 1
+      ? l10n.habitStatsObjectiveDailySingular(safeCount)
+      : l10n.habitStatsObjectiveDailyPlural(safeCount);
+}
+
+String _formatWeeklyObjective(dynamic l10n, int count) {
+  final safeCount = count < 1 ? 1 : count;
+  return safeCount == 1
+      ? l10n.habitStatsObjectiveWeeklySingular(safeCount)
+      : l10n.habitStatsObjectiveWeeklyPlural(safeCount);
 }
 
 Map<DateTime, int> _extractCountsByDay({
