@@ -1038,7 +1038,7 @@
   "habitStatsInsightTodayCompletedTitle": "Buen cierre de hoy.",
   "habitStatsInsightTodayCompletedBody": "Tu progreso queda protegido por un día más.",
   "habitStatsInsightPendingStreakTitle": "Mantén tu ritmo.",
-  "habitStatsInsightPendingStreakBody": "Completar hoy llevaría tu racha a {days, plural, one{# día} other{# días}}.",
+  "habitStatsInsightPendingStreakBody": "{days, plural, =1{Completar hoy llevaría tu racha a 1 día.} other{Completar hoy llevaría tu racha a {days} días.}}",
   "@habitStatsInsightPendingStreakBody": {
     "placeholders": {
       "days": {
@@ -1046,6 +1046,37 @@
       }
     }
   },
+  "habitStatsInsightNearMilestoneTitle": "Hito cerca.",
+  "habitStatsInsightNearMilestoneBody": "{days, plural, =1{Est\u00e1s a 1 d\u00eda de alcanzar {milestone} d\u00edas.} other{Est\u00e1s a {days} d\u00edas de alcanzar {milestone} d\u00edas.}}",
+  "@habitStatsInsightNearMilestoneBody": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "milestone": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsInsightCountPartialTitle": "Ya has empezado.",
+  "habitStatsInsightCountPartialBody": "Te falta poco para cerrar el objetivo de hoy.",
+  "habitStatsInsightWeeklyTrendPositiveTitle": "Mejor que la semana pasada.",
+  "habitStatsInsightWeeklyTrendPositiveBody": "Esta semana est\u00e1s sumando m\u00e1s ritmo.",
+  "habitStatsInsightWeeklyTrendNegativeTitle": "Ritmo m\u00e1s bajo.",
+  "habitStatsInsightWeeklyTrendNegativeBody": "Esta semana vas algo por debajo de la anterior.",
+  "habitStatsInsightStrongConsistencyTitle": "Ritmo s\u00f3lido.",
+  "habitStatsInsightStrongConsistencyBody": "Este h\u00e1bito ya empieza a tener una base estable.",
+  "habitStatsInsightBestMomentTitle": "Tu patr\u00f3n es claro.",
+  "habitStatsInsightBestMomentBody": "La {moment} suele ser tu mejor franja.",
+  "@habitStatsInsightBestMomentBody": {
+    "placeholders": {
+      "moment": {
+        "type": "String"
+      }
+    }
+  },
+  "habitStatsInsightRecoveryTitle": "Vuelve con calma.",
+  "habitStatsInsightRecoveryBody": "Una repetici\u00f3n peque\u00f1a puede reactivar el h\u00e1bito.",
   "habitStatsInsightWeeklyGoalTitle": "Objetivo semanal cubierto.",
   "habitStatsInsightWeeklyGoalBody": "Ya cumpliste lo previsto para esta semana.",
   "habitStatsInsightLowConsistencyTitle": "Vuelve a lo simple.",

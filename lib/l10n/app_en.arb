@@ -1038,7 +1038,7 @@
     "habitStatsInsightTodayCompletedTitle": "Good close today.",
     "habitStatsInsightTodayCompletedBody": "Your progress is protected for one more day.",
     "habitStatsInsightPendingStreakTitle": "Keep your rhythm.",
-    "habitStatsInsightPendingStreakBody": "Completing today would bring your streak to {days, plural, one{# day} other{# days}}.",
+    "habitStatsInsightPendingStreakBody": "{days, plural, =1{Completing today would bring your streak to 1 day.} other{Completing today would bring your streak to {days} days.}}",
     "@habitStatsInsightPendingStreakBody": {
         "placeholders": {
             "days": {
@@ -1046,8 +1046,39 @@
             }
         }
     },
+    "habitStatsInsightNearMilestoneTitle": "Milestone nearby.",
+    "habitStatsInsightNearMilestoneBody": "{days, plural, =1{You are 1 day away from reaching {milestone} days.} other{You are {days} days away from reaching {milestone} days.}}",
+    "@habitStatsInsightNearMilestoneBody": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            },
+            "milestone": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsInsightCountPartialTitle": "You have started.",
+    "habitStatsInsightCountPartialBody": "You are close to closing today's goal.",
     "habitStatsInsightWeeklyGoalTitle": "Weekly goal covered.",
     "habitStatsInsightWeeklyGoalBody": "You have already completed what you planned this week.",
+    "habitStatsInsightWeeklyTrendPositiveTitle": "Better than last week.",
+    "habitStatsInsightWeeklyTrendPositiveBody": "This week you are building more rhythm.",
+    "habitStatsInsightWeeklyTrendNegativeTitle": "Lower rhythm.",
+    "habitStatsInsightWeeklyTrendNegativeBody": "This week is a little below the previous one.",
+    "habitStatsInsightStrongConsistencyTitle": "Solid rhythm.",
+    "habitStatsInsightStrongConsistencyBody": "This habit is starting to build a stable base.",
+    "habitStatsInsightBestMomentTitle": "Your pattern is clear.",
+    "habitStatsInsightBestMomentBody": "{moment} is usually your strongest time.",
+    "@habitStatsInsightBestMomentBody": {
+        "placeholders": {
+            "moment": {
+                "type": "String"
+            }
+        }
+    },
+    "habitStatsInsightRecoveryTitle": "Return calmly.",
+    "habitStatsInsightRecoveryBody": "One small repetition can reactivate the habit.",
     "habitStatsInsightLowConsistencyTitle": "Return to simple.",
     "habitStatsInsightLowConsistencyBody": "One small repetition can help you recover rhythm.",
     "habitStatsInsightFallbackTitle": "Every repetition counts.",

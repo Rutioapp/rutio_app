@@ -78,6 +78,8 @@ class HabitStatsShellData {
   final int bestStreak;
   final int weeklyTarget;
   final int weeklyCompleted;
+  final int? previousWeekCompleted;
+  final int? currentWeekCompleted;
   final int weeklyConsistencyPct;
   final int? weeklyComparisonDeltaPct;
   final String bestMomentLabel;
@@ -102,6 +104,8 @@ class HabitStatsShellData {
     required this.bestStreak,
     required this.weeklyTarget,
     required this.weeklyCompleted,
+    required this.previousWeekCompleted,
+    required this.currentWeekCompleted,
     required this.weeklyConsistencyPct,
     required this.weeklyComparisonDeltaPct,
     required this.bestMomentLabel,
@@ -125,6 +129,13 @@ class HabitStatsShellData {
   int countForDate(DateTime date) {
     final key = DateTime(date.year, date.month, date.day);
     return countsByDay[key] ?? 0;
+  }
+
+  num countValueForDate(DateTime date) {
+    final key = DateTime(date.year, date.month, date.day);
+    final value = countValuesByDay[key];
+    if (value == null || value < 0) return 0;
+    return value;
   }
 
   bool skippedForDate(DateTime date) {

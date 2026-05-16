@@ -63,7 +63,7 @@ void main() {
       expect(find.text(l10n.habitStatsMetricConsistency), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
-      expect(find.text(l10n.habitStatsInsightFallbackTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsInsightBestMomentTitle), findsOneWidget);
     });
 
     testWidgets('timesPerWeek check habit shows weekly completed/target',

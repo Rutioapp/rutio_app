@@ -1970,11 +1970,69 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       days,
       locale: localeName,
-      other: '# días',
-      one: '# día',
+      other: 'Completar hoy llevaría tu racha a $days días.',
+      one: 'Completar hoy llevaría tu racha a 1 día.',
     );
-    return 'Completar hoy llevaría tu racha a $_temp0.';
+    return '$_temp0';
   }
+
+  @override
+  String get habitStatsInsightNearMilestoneTitle => 'Hito cerca.';
+
+  @override
+  String habitStatsInsightNearMilestoneBody(int days, int milestone) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Estás a $days días de alcanzar $milestone días.',
+      one: 'Estás a 1 día de alcanzar $milestone días.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitStatsInsightCountPartialTitle => 'Ya has empezado.';
+
+  @override
+  String get habitStatsInsightCountPartialBody =>
+      'Te falta poco para cerrar el objetivo de hoy.';
+
+  @override
+  String get habitStatsInsightWeeklyTrendPositiveTitle =>
+      'Mejor que la semana pasada.';
+
+  @override
+  String get habitStatsInsightWeeklyTrendPositiveBody =>
+      'Esta semana estás sumando más ritmo.';
+
+  @override
+  String get habitStatsInsightWeeklyTrendNegativeTitle => 'Ritmo más bajo.';
+
+  @override
+  String get habitStatsInsightWeeklyTrendNegativeBody =>
+      'Esta semana vas algo por debajo de la anterior.';
+
+  @override
+  String get habitStatsInsightStrongConsistencyTitle => 'Ritmo sólido.';
+
+  @override
+  String get habitStatsInsightStrongConsistencyBody =>
+      'Este hábito ya empieza a tener una base estable.';
+
+  @override
+  String get habitStatsInsightBestMomentTitle => 'Tu patrón es claro.';
+
+  @override
+  String habitStatsInsightBestMomentBody(String moment) {
+    return 'La $moment suele ser tu mejor franja.';
+  }
+
+  @override
+  String get habitStatsInsightRecoveryTitle => 'Vuelve con calma.';
+
+  @override
+  String get habitStatsInsightRecoveryBody =>
+      'Una repetición pequeña puede reactivar el hábito.';
 
   @override
   String get habitStatsInsightWeeklyGoalTitle => 'Objetivo semanal cubierto.';

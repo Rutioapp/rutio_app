@@ -3523,8 +3523,92 @@ abstract class AppLocalizations {
   /// No description provided for @habitStatsInsightPendingStreakBody.
   ///
   /// In es, this message translates to:
-  /// **'Completar hoy llevaría tu racha a {days, plural, one{# día} other{# días}}.'**
+  /// **'{days, plural, =1{Completar hoy llevaría tu racha a 1 día.} other{Completar hoy llevaría tu racha a {days} días.}}'**
   String habitStatsInsightPendingStreakBody(int days);
+
+  /// No description provided for @habitStatsInsightNearMilestoneTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Hito cerca.'**
+  String get habitStatsInsightNearMilestoneTitle;
+
+  /// No description provided for @habitStatsInsightNearMilestoneBody.
+  ///
+  /// In es, this message translates to:
+  /// **'{days, plural, =1{Estás a 1 día de alcanzar {milestone} días.} other{Estás a {days} días de alcanzar {milestone} días.}}'**
+  String habitStatsInsightNearMilestoneBody(int days, int milestone);
+
+  /// No description provided for @habitStatsInsightCountPartialTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya has empezado.'**
+  String get habitStatsInsightCountPartialTitle;
+
+  /// No description provided for @habitStatsInsightCountPartialBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Te falta poco para cerrar el objetivo de hoy.'**
+  String get habitStatsInsightCountPartialBody;
+
+  /// No description provided for @habitStatsInsightWeeklyTrendPositiveTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejor que la semana pasada.'**
+  String get habitStatsInsightWeeklyTrendPositiveTitle;
+
+  /// No description provided for @habitStatsInsightWeeklyTrendPositiveBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana estás sumando más ritmo.'**
+  String get habitStatsInsightWeeklyTrendPositiveBody;
+
+  /// No description provided for @habitStatsInsightWeeklyTrendNegativeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritmo más bajo.'**
+  String get habitStatsInsightWeeklyTrendNegativeTitle;
+
+  /// No description provided for @habitStatsInsightWeeklyTrendNegativeBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana vas algo por debajo de la anterior.'**
+  String get habitStatsInsightWeeklyTrendNegativeBody;
+
+  /// No description provided for @habitStatsInsightStrongConsistencyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritmo sólido.'**
+  String get habitStatsInsightStrongConsistencyTitle;
+
+  /// No description provided for @habitStatsInsightStrongConsistencyBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito ya empieza a tener una base estable.'**
+  String get habitStatsInsightStrongConsistencyBody;
+
+  /// No description provided for @habitStatsInsightBestMomentTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu patrón es claro.'**
+  String get habitStatsInsightBestMomentTitle;
+
+  /// No description provided for @habitStatsInsightBestMomentBody.
+  ///
+  /// In es, this message translates to:
+  /// **'La {moment} suele ser tu mejor franja.'**
+  String habitStatsInsightBestMomentBody(String moment);
+
+  /// No description provided for @habitStatsInsightRecoveryTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Vuelve con calma.'**
+  String get habitStatsInsightRecoveryTitle;
+
+  /// No description provided for @habitStatsInsightRecoveryBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Una repetición pequeña puede reactivar el hábito.'**
+  String get habitStatsInsightRecoveryBody;
 
   /// No description provided for @habitStatsInsightWeeklyGoalTitle.
   ///

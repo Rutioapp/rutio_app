@@ -48,6 +48,11 @@ HabitStatsShellData buildHabitStatsShellData(
     skipsByDay: skipsByDay,
     range: weekRange,
   );
+  final previousWeekCompleted = _countCompletedDays(
+    countsByDay: countsByDay,
+    skipsByDay: skipsByDay,
+    range: previousWeekRange,
+  );
   final weeklyConsistencyPct = weeklyTarget <= 0
       ? 0
       : ((weeklyCompleted / weeklyTarget) * 100).round().clamp(0, 100);
@@ -95,6 +100,8 @@ HabitStatsShellData buildHabitStatsShellData(
     bestStreak: bestStreak,
     weeklyTarget: weeklyTarget,
     weeklyCompleted: weeklyCompleted,
+    previousWeekCompleted: previousWeekCompleted,
+    currentWeekCompleted: weeklyCompleted,
     weeklyConsistencyPct: weeklyConsistencyPct,
     weeklyComparisonDeltaPct: weeklyComparisonDeltaPct,
     bestMomentLabel: bestMoment.label,
