@@ -175,3 +175,55 @@ class HabitStatsCountBestDaySummary {
     required this.valueLabel,
   });
 }
+
+class HabitStatsBestMoment {
+  final HabitStatsBestMomentSlot slot;
+  final int completionCount;
+
+  const HabitStatsBestMoment({
+    required this.slot,
+    required this.completionCount,
+  });
+}
+
+enum HabitStatsMonthDayStatus {
+  completed,
+  skipped,
+  missed,
+  future,
+  notScheduled,
+}
+
+class HabitStatsMonthDayState {
+  final DateTime date;
+  final HabitStatsMonthDayStatus status;
+
+  const HabitStatsMonthDayState({
+    required this.date,
+    required this.status,
+  });
+}
+
+class HabitStatsMonthlyData {
+  final int completedDays;
+  final int skippedDays;
+  final int missedDays;
+  final int totalTrackableDays;
+  final double consistency;
+  final int bestStreak;
+  final int totalDone;
+  final HabitStatsBestMoment? bestMoment;
+  final List<HabitStatsMonthDayState> days;
+
+  const HabitStatsMonthlyData({
+    required this.completedDays,
+    required this.skippedDays,
+    required this.missedDays,
+    required this.totalTrackableDays,
+    required this.consistency,
+    required this.bestStreak,
+    required this.totalDone,
+    required this.bestMoment,
+    required this.days,
+  });
+}

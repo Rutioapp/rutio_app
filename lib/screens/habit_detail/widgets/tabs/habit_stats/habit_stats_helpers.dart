@@ -128,6 +128,99 @@ HabitStatsShellData buildHabitStatsShellData(
   );
 }
 
+HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
+  required dynamic habit,
+  required DateTime month,
+  required DateTime now,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, bool> skipsByDay,
+  Map<DateTime, int> completionTimesByDay = const <DateTime, int>{},
+}) {
+  final habitMap = _habitToMap(habit);
+  final monthStart = DateTime(month.year, month.month, 1);
+  final daysInMonth = _daysInMonth(month.year, month.month);
+  final today = _dateOnly(now.toLocal());
+  final normalizedCountsByDay = _normalizeCountMap(countsByDay);
+  final normalizedSkipsByDay = _normalizeSkipMap(skipsByDay);
+  final normalizedCompletionTimesByDay =
+      _normalizeCountMap(completionTimesByDay);
+  final isTimesPerWeekCheck = _isTimesPerWeekCheckHabit(habitMap);
+
+  final days = List<HabitStatsMonthDayState>.generate(
+    daysInMonth,
+    (index) {
+      final day = _dateOnly(monthStart.add(Duration(days: index)));
+      return HabitStatsMonthDayState(
+        date: day,
+        status: _buildMonthDayStatusForCheck(
+          day: day,
+          today: today,
+          habitMap: habitMap,
+          countsByDay: normalizedCountsByDay,
+          skipsByDay: normalizedSkipsByDay,
+          isTimesPerWeekCheck: isTimesPerWeekCheck,
+        ),
+      );
+    },
+    growable: false,
+  );
+
+  var completedDays = 0;
+  var skippedDays = 0;
+  var missedDays = 0;
+  var futureDays = 0;
+  var bestStreak = 0;
+  var currentStreak = 0;
+
+  for (final dayState in days) {
+    switch (dayState.status) {
+      case HabitStatsMonthDayStatus.completed:
+        completedDays += 1;
+        currentStreak += 1;
+        if (currentStreak > bestStreak) bestStreak = currentStreak;
+        break;
+      case HabitStatsMonthDayStatus.skipped:
+        skippedDays += 1;
+        currentStreak = 0;
+        break;
+      case HabitStatsMonthDayStatus.missed:
+        missedDays += 1;
+        currentStreak = 0;
+        break;
+      case HabitStatsMonthDayStatus.future:
+        futureDays += 1;
+        currentStreak = 0;
+        break;
+      case HabitStatsMonthDayStatus.notScheduled:
+        currentStreak = 0;
+        break;
+    }
+  }
+
+  final consideredDays = completedDays + skippedDays + missedDays;
+  final consistency =
+      consideredDays == 0 ? 0.0 : (completedDays / consideredDays);
+  final totalTrackableDays = completedDays + skippedDays + missedDays + futureDays;
+
+  return HabitStatsMonthlyData(
+    completedDays: completedDays,
+    skippedDays: skippedDays,
+    missedDays: missedDays,
+    totalTrackableDays: totalTrackableDays,
+    consistency: consistency,
+    bestStreak: bestStreak,
+    totalDone: completedDays,
+    // TODO(phase-3): Wire best-moment data for monthly check habits once the
+    // monthly card surfaces this metric and we define UI copy requirements.
+    bestMoment: _buildMonthlyBestMoment(
+      monthStart: monthStart,
+      daysInMonth: daysInMonth,
+      completionTimesByDay: normalizedCompletionTimesByDay,
+    ),
+    days: days,
+  );
+}
+
 HabitStatsCountMetricSummary buildCountMetricSummary(
   HabitStatsShellData shellData, {
   int expectedDays = 7,
@@ -1042,4 +1135,177 @@ String _formatCountValueLabel(num value, {required String unitLabel}) {
 String _capitalizeFirst(String text) {
   if (text.isEmpty) return text;
   return '${text[0].toUpperCase()}${text.substring(1)}';
+}
+
+Map<DateTime, int> _normalizeCountMap(Map<DateTime, int> source) {
+  final out = <DateTime, int>{};
+  for (final entry in source.entries) {
+    out[_dateOnly(entry.key.toLocal())] = entry.value;
+  }
+  return out;
+}
+
+Map<DateTime, bool> _normalizeSkipMap(Map<DateTime, bool> source) {
+  final out = <DateTime, bool>{};
+  for (final entry in source.entries) {
+    out[_dateOnly(entry.key.toLocal())] = entry.value;
+  }
+  return out;
+}
+
+HabitStatsMonthDayStatus _buildMonthDayStatusForCheck({
+  required DateTime day,
+  required DateTime today,
+  required Map<String, dynamic> habitMap,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, bool> skipsByDay,
+  required bool isTimesPerWeekCheck,
+}) {
+  final completed = _isCheckHabitCompletedOnDate(
+    day: day,
+    today: today,
+    habitMap: habitMap,
+    countsByDay: countsByDay,
+  );
+  final skipped = skipsByDay[day] == true;
+
+  if (isTimesPerWeekCheck) {
+    // We cannot derive exact scheduled days from weekly quotas, so we only
+    // mark explicit completion/skip records as trackable in this phase.
+    if (completed) return HabitStatsMonthDayStatus.completed;
+    if (skipped) return HabitStatsMonthDayStatus.skipped;
+    return HabitStatsMonthDayStatus.notScheduled;
+  }
+
+  if (!_isCheckHabitScheduledOnDay(habitMap, day)) {
+    return HabitStatsMonthDayStatus.notScheduled;
+  }
+
+  if (completed) return HabitStatsMonthDayStatus.completed;
+  if (skipped) return HabitStatsMonthDayStatus.skipped;
+  if (day.isAfter(today)) return HabitStatsMonthDayStatus.future;
+  return HabitStatsMonthDayStatus.missed;
+}
+
+bool _isCheckHabitCompletedOnDate({
+  required DateTime day,
+  required DateTime today,
+  required Map<String, dynamic> habitMap,
+  required Map<DateTime, int> countsByDay,
+}) {
+  final completedFromHistory = (countsByDay[day] ?? 0) > 0;
+  final completedFromTodayState = _isSameDate(day, today) &&
+      habitMap['doneToday'] == true &&
+      habitMap['skippedToday'] != true;
+  return completedFromHistory || completedFromTodayState;
+}
+
+bool _isCheckHabitScheduledOnDay(Map<String, dynamic> habitMap, DateTime day) {
+  if (!_wasHabitCreatedByDay(habitMap, day)) return false;
+  final schedule = _map(habitMap['schedule']);
+  final scheduleType =
+      (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
+
+  if (scheduleType == 'once') {
+    final onceDate = _tryParseDate(schedule['date']);
+    if (onceDate == null) return false;
+    return _isSameDate(_dateOnly(onceDate.toLocal()), day);
+  }
+
+  if (scheduleType == 'weekly') {
+    final weekdays = schedule['weekdays'];
+    if (weekdays is! List) return false;
+    return weekdays
+        .whereType<num>()
+        .map((weekday) => weekday.toInt())
+        .contains(day.weekday);
+  }
+
+  if (scheduleType == 'timesperweek') {
+    return false;
+  }
+
+  return true;
+}
+
+bool _isTimesPerWeekCheckHabit(Map<String, dynamic> habitMap) {
+  if (_isCountHabit(habitMap)) return false;
+  final type = (habitMap['type'] ?? 'check').toString().trim().toLowerCase();
+  if (type != 'check') return false;
+  final schedule = _map(habitMap['schedule']);
+  final scheduleType = (schedule['type'] ?? '').toString().trim().toLowerCase();
+  return scheduleType == 'timesperweek';
+}
+
+bool _wasHabitCreatedByDay(Map<String, dynamic> habitMap, DateTime day) {
+  final createdAt = _tryParseDate(
+    habitMap['createdAt'] ??
+        habitMap['created_at'] ??
+        habitMap['createdDate'] ??
+        habitMap['dateCreated'],
+  );
+  if (createdAt == null) return true;
+  return !_dateOnly(createdAt.toLocal()).isAfter(_dateOnly(day));
+}
+
+HabitStatsBestMoment? _buildMonthlyBestMoment({
+  required DateTime monthStart,
+  required int daysInMonth,
+  required Map<DateTime, int> completionTimesByDay,
+}) {
+  if (completionTimesByDay.isEmpty) return null;
+
+  final bucketCounts = <String, int>{
+    'morning': 0,
+    'noon': 0,
+    'afternoon': 0,
+    'night': 0,
+  };
+
+  for (var index = 0; index < daysInMonth; index++) {
+    final day = monthStart.add(Duration(days: index));
+    final epoch = completionTimesByDay[_dateOnly(day)];
+    if (epoch == null || epoch <= 0) continue;
+    final local = DateTime.fromMillisecondsSinceEpoch(epoch).toLocal();
+    final bucket = _bucketForHour(local.hour);
+    bucketCounts[bucket] = (bucketCounts[bucket] ?? 0) + 1;
+  }
+
+  final hasData = bucketCounts.values.any((value) => value > 0);
+  if (!hasData) return null;
+
+  final ordered = bucketCounts.entries.toList()
+    ..sort((a, b) {
+      final byCount = b.value.compareTo(a.value);
+      if (byCount != 0) return byCount;
+      return _bestMomentBucketPriority(a.key)
+          .compareTo(_bestMomentBucketPriority(b.key));
+    });
+  final winner = ordered.first;
+  return HabitStatsBestMoment(
+    slot: _slotFromBucketKey(winner.key),
+    completionCount: winner.value,
+  );
+}
+
+int _bestMomentBucketPriority(String key) {
+  switch (key) {
+    case 'morning':
+      return 0;
+    case 'noon':
+      return 1;
+    case 'afternoon':
+      return 2;
+    case 'night':
+      return 3;
+    default:
+      return 99;
+  }
+}
+
+int _daysInMonth(int year, int month) {
+  if (month == DateTime.december) {
+    return DateTime(year + 1, DateTime.january, 0).day;
+  }
+  return DateTime(year, month + 1, 0).day;
 }
