@@ -7,6 +7,7 @@ import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_hero_card.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_hero_milestone.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_count_last7_days_chart.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_helpers.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_last7_days_card.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_monthly_activity_placeholder.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats_tab.dart';
@@ -93,12 +94,197 @@ void main() {
       expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsNothing);
       expect(find.byType(HabitStatsLast7DaysCard), findsNothing);
       expect(find.byType(HabitStatsCountLast7DaysChart), findsNothing);
+      expect(find.byKey(const Key('habit_stats_monthly_check_metric_grid')),
+          findsOneWidget);
+      expect(find.text(l10n.habitStatsThisMonth), findsNWidgets(2));
+      expect(find.text(l10n.habitStatsMonthlyConsistency), findsOneWidget);
+      expect(find.text(l10n.habitStatsThisWeek), findsNothing);
       expect(find.byType(HabitStatsMonthlyActivityPlaceholder), findsOneWidget);
       expect(find.text(l10n.habitStatsMonthlyActivityTitle), findsOneWidget);
       expect(
         find.text(l10n.habitStatsMonthlyActivityPlaceholderBody),
         findsOneWidget,
       );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('month check metrics use monthly completed and consistency',
+        (tester) async {
+      final now = DateTime.now();
+      final monthStart = DateTime(now.year, now.month, 1);
+      final createdAt = _dateKey(monthStart);
+      final completionDates = <DateTime>[
+        if (now.day > 2) now.subtract(const Duration(days: 2)) else now,
+        if (now.day > 1) now.subtract(const Duration(days: 1)) else now,
+      ];
+      final completionKeys = completionDates.map(_dateKey).toSet();
+      final habit = _habit(
+        type: 'check',
+        schedule: const {'type': 'daily'},
+      )..['createdAt'] = createdAt;
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          completions: {
+            for (final key in completionKeys) key: true,
+          },
+        ),
+      );
+
+      final expectedMonthly = buildHabitStatsMonthlyDataForCheck(
+        habit: habit,
+        month: monthStart,
+        now: now,
+        countsByDay: {
+          for (final key in completionKeys) DateTime.parse(key): 1,
+        },
+        skipsByDay: const <DateTime, bool>{},
+      );
+      final expectedObjective = expectedMonthly.monthlyObjective;
+      final expectedConsistencyPct = expectedObjective <= 0
+          ? 0
+          : ((expectedMonthly.completedDays / expectedObjective) * 100)
+              .round()
+              .clamp(0, 100);
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodMonth));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.habitStatsThisWeek), findsNothing);
+      expect(
+        find.text(
+          '$expectedObjective ${l10n.habitStatsDaysUnitLabel(expectedObjective)}',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('$expectedObjective $expectedObjective'),
+        findsNothing,
+      );
+      expect(
+        find.text('${expectedMonthly.completedDays}/$expectedObjective'),
+        findsOneWidget,
+      );
+      expect(find.text('$expectedConsistencyPct%'), findsWidgets);
+      expect(find.text(l10n.habitStatsMonthlyConsistency), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('month check metrics stay stable with empty monthly data',
+        (tester) async {
+      final now = DateTime.now();
+      final nextMonth = DateTime(now.year, now.month + 1, 5);
+      final habit = _habit(
+        type: 'check',
+        schedule: const {'type': 'daily'},
+      )..['createdAt'] = _dateKey(nextMonth);
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodMonth));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0/0'), findsOneWidget);
+      expect(find.text('0 ${l10n.habitStatsDaysUnitLabel(0)}'), findsWidgets);
+      expect(find.text('0%'), findsWidgets);
+      expect(find.byType(HabitStatsMonthlyActivityPlaceholder), findsOneWidget);
+      expect(find.byType(HabitStatsLast7DaysCard), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('month times-per-week metrics use monthly quota objective',
+        (tester) async {
+      final now = DateTime.now();
+      final monthStart = DateTime(now.year, now.month, 1);
+      final habit = _habit(
+        type: 'check',
+        schedule: const {
+          'type': 'timesPerWeek',
+          'timesPerWeek': 4,
+          'weekStartsOn': 1,
+        },
+      )..['createdAt'] = '2025-01-01';
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          completions: {
+            _dateKey(now.subtract(const Duration(days: 2))): true,
+            _dateKey(now.subtract(const Duration(days: 1))): true,
+          },
+        ),
+      );
+
+      final expectedMonthly = buildHabitStatsMonthlyDataForCheck(
+        habit: habit,
+        month: monthStart,
+        now: now,
+        countsByDay: {
+          DateTime(
+              now.subtract(const Duration(days: 2)).year,
+              now.subtract(const Duration(days: 2)).month,
+              now.subtract(const Duration(days: 2)).day): 1,
+          DateTime(
+              now.subtract(const Duration(days: 1)).year,
+              now.subtract(const Duration(days: 1)).month,
+              now.subtract(const Duration(days: 1)).day): 1,
+        },
+        skipsByDay: const <DateTime, bool>{},
+      );
+      final expectedObjective = expectedMonthly.monthlyObjective;
+      final expectedConsistencyPct = expectedObjective <= 0
+          ? 0
+          : ((expectedMonthly.completedDays / expectedObjective) * 100)
+              .round()
+              .clamp(0, 100);
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodMonth));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          '$expectedObjective ${l10n.habitStatsTimesUnitLabel(expectedObjective)}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('2/$expectedObjective'), findsOneWidget);
+      expect(find.text('$expectedConsistencyPct%'), findsWidgets);
+      expect(find.textContaining('$expectedObjective $expectedObjective'),
+          findsNothing);
       expect(tester.takeException(), isNull);
     });
 

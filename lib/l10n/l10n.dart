@@ -1036,6 +1036,14 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
       ? (count == 1 ? 'd\u00eda' : 'd\u00edas')
       : (count == 1 ? 'day' : 'days');
 
+  String habitStatsDaysUnitLabel(int count) => _isSpanishHabitStats
+      ? (count == 1 ? 'd\u00eda' : 'd\u00edas')
+      : (count == 1 ? 'day' : 'days');
+
+  String habitStatsTimesUnitLabel(int count) => _isSpanishHabitStats
+      ? (count == 1 ? 'vez' : 'veces')
+      : (count == 1 ? 'time' : 'times');
+
   String get habitStatsTabTotalLabel => 'total';
 
   String habitStatsTabCompletionWindow(int done, int total) =>
@@ -1127,6 +1135,13 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
 
   String get habitStatsThisWeek =>
       _isSpanishHabitStats ? 'Esta semana' : 'This week';
+
+  String get habitStatsThisMonth =>
+      _isSpanishHabitStats ? 'Este mes' : 'This month';
+
+  String get habitStatsMonthlyConsistency => _isSpanishHabitStats
+      ? 'Cumplimiento mensual'
+      : 'Monthly consistency';
 
   String get habitStatsLastWeek =>
       _isSpanishHabitStats ? 'Semana pasada' : 'Last week';

@@ -92,6 +92,7 @@ class HabitStatsShellData {
   final Map<DateTime, int> countsByDay;
   final Map<DateTime, num> countValuesByDay;
   final Map<DateTime, bool> skipsByDay;
+  final Map<DateTime, int> completionTimesByDay;
 
   const HabitStatsShellData({
     required this.habitId,
@@ -118,6 +119,7 @@ class HabitStatsShellData {
     required this.countsByDay,
     required this.countValuesByDay,
     required this.skipsByDay,
+    required this.completionTimesByDay,
   });
 
   bool get isCheckHabit => !isCounter;
@@ -194,6 +196,11 @@ enum HabitStatsMonthDayStatus {
   notScheduled,
 }
 
+enum HabitStatsMonthlyObjectiveUnit {
+  days,
+  times,
+}
+
 class HabitStatsMonthDayState {
   final DateTime date;
   final HabitStatsMonthDayStatus status;
@@ -205,6 +212,11 @@ class HabitStatsMonthDayState {
 }
 
 class HabitStatsMonthlyData {
+  final int monthlyObjective;
+  final int elapsedTrackableDays;
+  final int expectedToDate;
+  final int futureScheduledDays;
+  final HabitStatsMonthlyObjectiveUnit objectiveUnit;
   final int completedDays;
   final int skippedDays;
   final int missedDays;
@@ -216,6 +228,11 @@ class HabitStatsMonthlyData {
   final List<HabitStatsMonthDayState> days;
 
   const HabitStatsMonthlyData({
+    required this.monthlyObjective,
+    required this.elapsedTrackableDays,
+    required this.expectedToDate,
+    required this.futureScheduledDays,
+    required this.objectiveUnit,
     required this.completedDays,
     required this.skippedDays,
     required this.missedDays,
