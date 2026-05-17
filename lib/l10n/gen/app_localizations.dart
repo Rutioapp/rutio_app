@@ -2680,6 +2680,18 @@ abstract class AppLocalizations {
   /// **'Calendario del mes'**
   String get habitStatsMonthCalendarTitle;
 
+  /// No description provided for @habitStatsMonthlyActivityTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actividad mensual'**
+  String get habitStatsMonthlyActivityTitle;
+
+  /// No description provided for @habitStatsMonthlyActivityPlaceholderBody.
+  ///
+  /// In es, this message translates to:
+  /// **'El calendario mensual estará disponible en la siguiente fase.'**
+  String get habitStatsMonthlyActivityPlaceholderBody;
+
   /// No description provided for @habitStatsTabSummaryTitle.
   ///
   /// In es, this message translates to:

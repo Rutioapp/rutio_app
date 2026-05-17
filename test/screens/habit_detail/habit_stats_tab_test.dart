@@ -8,6 +8,7 @@ import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_hero_milestone.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_count_last7_days_chart.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_last7_days_card.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_monthly_activity_placeholder.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats_tab.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
@@ -64,6 +65,41 @@ void main() {
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
       expect(find.text(l10n.habitStatsInsightBestMomentTitle), findsOneWidget);
+    });
+
+    testWidgets(
+        'switching to month hides last 7 days block and shows monthly placeholder',
+        (tester) async {
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(find.byType(HabitStatsLast7DaysCard), findsOneWidget);
+
+      await tester.tap(find.text(l10n.habitStatsPeriodMonth));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsNothing);
+      expect(find.byType(HabitStatsLast7DaysCard), findsNothing);
+      expect(find.byType(HabitStatsCountLast7DaysChart), findsNothing);
+      expect(find.byType(HabitStatsMonthlyActivityPlaceholder), findsOneWidget);
+      expect(find.text(l10n.habitStatsMonthlyActivityTitle), findsOneWidget);
+      expect(
+        find.text(l10n.habitStatsMonthlyActivityPlaceholderBody),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('timesPerWeek check habit shows weekly completed/target',

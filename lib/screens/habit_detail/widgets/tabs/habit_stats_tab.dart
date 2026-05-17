@@ -5,6 +5,7 @@ import 'habit_stats/habit_stats_header.dart';
 import 'habit_stats/habit_stats_helpers.dart';
 import 'habit_stats/habit_stats_hero_card.dart';
 import 'habit_stats/habit_stats_insight_card.dart';
+import 'habit_stats/habit_stats_monthly_activity_placeholder.dart';
 import 'habit_stats/habit_stats_count_best_day_card.dart';
 import 'habit_stats/habit_stats_count_last7_days_chart.dart';
 import 'habit_stats/habit_stats_last7_days_card.dart';
@@ -64,26 +65,7 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
           selectedPeriod: _selectedPeriod,
           onPeriodChanged: (period) => setState(() => _selectedPeriod = period),
         ),
-        const SizedBox(height: _sectionSpacing),
-        HabitStatsHeroCard(
-          shellData: shellData,
-          familyColor: widget.familyColor,
-        ),
-        const SizedBox(height: _sectionSpacing),
-        HabitStatsSectionCard(
-          title: context.l10n.habitStatsTabLastDaysTitle(7),
-          child: shellData.isCheckHabit
-              ? HabitStatsLast7DaysCard(days: shellData.last7Days)
-              : HabitStatsCountLast7DaysChart(days: shellData.countLast7Days),
-        ),
-        const SizedBox(height: _sectionSpacing),
-        HabitStatsMetricGrid(shellData: shellData),
-        const SizedBox(height: _lowerSectionSpacing),
-        if (shellData.isCheckHabit)
-          HabitStatsWeeklyComparisonCard(deltaPct: shellData.weeklyComparisonDeltaPct),
-        if (!shellData.isCheckHabit) HabitStatsCountBestDayCard(shellData: shellData),
-        const SizedBox(height: _lowerSectionSpacing),
-        HabitStatsInsightCard(shellData: shellData),
+        ..._buildPeriodContent(shellData),
       ],
     );
 
@@ -106,5 +88,58 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
         child: child,
       ),
     );
+  }
+
+  List<Widget> _buildPeriodContent(HabitStatsShellData shellData) {
+    switch (_selectedPeriod) {
+      case HabitStatsPeriod.month:
+        return _buildMonthlyContent(shellData);
+      case HabitStatsPeriod.week:
+      case HabitStatsPeriod.year:
+        return _buildWeeklyContent(shellData);
+    }
+  }
+
+  List<Widget> _buildWeeklyContent(HabitStatsShellData shellData) {
+    return [
+      const SizedBox(height: _sectionSpacing),
+      HabitStatsHeroCard(
+        shellData: shellData,
+        familyColor: widget.familyColor,
+      ),
+      const SizedBox(height: _sectionSpacing),
+      HabitStatsSectionCard(
+        title: context.l10n.habitStatsTabLastDaysTitle(7),
+        child: shellData.isCheckHabit
+            ? HabitStatsLast7DaysCard(days: shellData.last7Days)
+            : HabitStatsCountLast7DaysChart(days: shellData.countLast7Days),
+      ),
+      const SizedBox(height: _sectionSpacing),
+      HabitStatsMetricGrid(shellData: shellData),
+      const SizedBox(height: _lowerSectionSpacing),
+      if (shellData.isCheckHabit)
+        HabitStatsWeeklyComparisonCard(deltaPct: shellData.weeklyComparisonDeltaPct),
+      if (!shellData.isCheckHabit) HabitStatsCountBestDayCard(shellData: shellData),
+      const SizedBox(height: _lowerSectionSpacing),
+      HabitStatsInsightCard(shellData: shellData),
+    ];
+  }
+
+  List<Widget> _buildMonthlyContent(HabitStatsShellData shellData) {
+    return [
+      const SizedBox(height: _sectionSpacing),
+      HabitStatsHeroCard(
+        shellData: shellData,
+        familyColor: widget.familyColor,
+      ),
+      const SizedBox(height: _sectionSpacing),
+      // TODO Phase 2: Replace reused weekly data with monthly data helpers.
+      HabitStatsMetricGrid(shellData: shellData),
+      const SizedBox(height: _sectionSpacing),
+      // TODO Phase 4: Replace placeholder with monthly activity grid.
+      const HabitStatsMonthlyActivityPlaceholder(),
+      // TODO Phase 5: Add monthly comparison.
+      // TODO Phase 6: Add monthly insight resolver.
+    ];
   }
 }
