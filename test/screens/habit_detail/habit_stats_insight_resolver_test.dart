@@ -404,5 +404,6 @@ HabitStatsShellData _shell({
     countsByDay: countsByDay,
     countValuesByDay: countValuesByDay,
     skipsByDay: const <DateTime, bool>{},
+    completionTimesByDay: const <DateTime, int>{},
   );
 }

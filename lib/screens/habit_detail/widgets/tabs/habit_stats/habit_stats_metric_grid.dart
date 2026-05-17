@@ -7,59 +7,79 @@ import 'habit_stats_helpers.dart';
 import 'habit_stats_models.dart';
 
 class HabitStatsMetricGrid extends StatelessWidget {
-  final HabitStatsShellData shellData;
+  final HabitStatsShellData? shellData;
+  final List<HabitStatsMetricGridItem>? metrics;
+  final Key? gridKey;
 
   const HabitStatsMetricGrid({
     super.key,
     required this.shellData,
-  });
+  })  : assert(shellData != null),
+        metrics = null,
+        gridKey = null;
+
+  const HabitStatsMetricGrid.custom({
+    super.key,
+    required this.metrics,
+    this.gridKey,
+  }) : shellData = null;
 
   @override
   Widget build(BuildContext context) {
-    final metrics = shellData.isCheckHabit
-        ? _checkMetricItems(context, shellData)
-        : _countMetricItems(context, shellData);
+    final resolvedShellData = shellData;
+    final resolvedMetrics = metrics ??
+        (resolvedShellData!.isCheckHabit
+            ? _checkMetricItems(context, resolvedShellData)
+            : _countMetricItems(context, resolvedShellData));
+    final resolvedKey = gridKey ??
+        (resolvedShellData == null
+            ? const Key('habit_stats_custom_metric_grid')
+            : Key(
+                resolvedShellData.isCheckHabit
+                    ? 'habit_stats_check_metric_grid'
+                    : 'habit_stats_count_metric_grid',
+              ));
 
     return GridView.builder(
-      key: Key(
-        shellData.isCheckHabit
-            ? 'habit_stats_check_metric_grid'
-            : 'habit_stats_count_metric_grid',
-      ),
+      key: resolvedKey,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
-      itemCount: metrics.length,
+      itemCount: resolvedMetrics.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.94,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
       ),
-      itemBuilder: (context, index) => _MetricCard(metric: metrics[index]),
+      itemBuilder: (context, index) =>
+          _MetricCard(metric: resolvedMetrics[index]),
     );
   }
 }
 
-List<_MetricItem> _checkMetricItems(BuildContext context, HabitStatsShellData shellData) {
+List<HabitStatsMetricGridItem> _checkMetricItems(
+  BuildContext context,
+  HabitStatsShellData shellData,
+) {
   final l10n = context.l10n;
   final goalValue = _goalValueLabel(context, shellData.weeklyTarget);
-  return <_MetricItem>[
-    _MetricItem(
+  return <HabitStatsMetricGridItem>[
+    HabitStatsMetricGridItem(
       icon: Icons.gps_fixed_rounded,
       title: l10n.habitConfigGoalSection,
       value: goalValue,
       subtitle: l10n.habitStatsPerWeek,
       iconColor: const Color(0xFF5A3B23),
     ),
-    _MetricItem(
+    HabitStatsMetricGridItem(
       icon: Icons.check_circle_outline_rounded,
       title: l10n.habitStatsMetricCompleted,
       value: '${shellData.weeklyCompleted}/${shellData.weeklyTarget}',
       subtitle: l10n.habitStatsThisWeek,
       iconColor: const Color(0xFF5A3B23),
     ),
-    _MetricItem(
+    HabitStatsMetricGridItem(
       icon: Icons.trending_up_rounded,
       title: l10n.habitStatsMetricConsistency,
       value: '${shellData.weeklyConsistencyPct}%',
@@ -67,7 +87,7 @@ List<_MetricItem> _checkMetricItems(BuildContext context, HabitStatsShellData sh
       iconColor: const Color(0xFF5B975A),
       valueColor: const Color(0xFF4E7D35),
     ),
-    _MetricItem(
+    HabitStatsMetricGridItem(
       icon: Icons.schedule_rounded,
       title: l10n.statisticsV3BestMomentCardTitle,
       value: shellData.bestMomentLabel,
@@ -79,32 +99,35 @@ List<_MetricItem> _checkMetricItems(BuildContext context, HabitStatsShellData sh
   ];
 }
 
-List<_MetricItem> _countMetricItems(BuildContext context, HabitStatsShellData shellData) {
+List<HabitStatsMetricGridItem> _countMetricItems(
+  BuildContext context,
+  HabitStatsShellData shellData,
+) {
   final l10n = context.l10n;
   final summary = buildCountMetricSummary(shellData);
-  return <_MetricItem>[
-    _MetricItem(
+  return <HabitStatsMetricGridItem>[
+    HabitStatsMetricGridItem(
       icon: Icons.flag_rounded,
       title: l10n.habitStatsCountObjectiveTitle,
       value: formatCountMetricValue(summary.dailyTarget, unitLabel: summary.unitLabel),
       subtitle: _countPerDayLabel(context),
       iconColor: const Color(0xFF5A3B23),
     ),
-    _MetricItem(
+    HabitStatsMetricGridItem(
       icon: Icons.water_drop_rounded,
       title: l10n.habitStatsCountVolumeTitle,
       value: formatCountMetricValue(summary.weeklyTotal, unitLabel: summary.unitLabel),
       subtitle: l10n.habitStatsThisWeek,
       iconColor: const Color(0xFF3E7B7A),
     ),
-    _MetricItem(
+    HabitStatsMetricGridItem(
       icon: Icons.bar_chart_rounded,
       title: l10n.habitStatsCountDailyAverage,
       value: formatCountMetricValue(summary.dailyAverage, unitLabel: summary.unitLabel),
       subtitle: _countAverageLabel(context),
       iconColor: const Color(0xFF5B975A),
     ),
-    _MetricItem(
+    HabitStatsMetricGridItem(
       icon: Icons.check_circle_outline_rounded,
       title: l10n.habitStatsMetricCompletion,
       value: '${summary.completionPct}%',
@@ -114,7 +137,7 @@ List<_MetricItem> _countMetricItems(BuildContext context, HabitStatsShellData sh
   ];
 }
 
-class _MetricItem {
+class HabitStatsMetricGridItem {
   final IconData icon;
   final String title;
   final String value;
@@ -124,7 +147,7 @@ class _MetricItem {
   final HabitStatsBestMomentSlot? bestMomentSlot;
   final bool useBestMomentVisual;
 
-  const _MetricItem({
+  const HabitStatsMetricGridItem({
     required this.icon,
     required this.title,
     required this.value,
@@ -137,7 +160,7 @@ class _MetricItem {
 }
 
 class _MetricCard extends StatelessWidget {
-  final _MetricItem metric;
+  final HabitStatsMetricGridItem metric;
 
   const _MetricCard({
     required this.metric,
@@ -178,7 +201,7 @@ class _MetricHeader extends StatelessWidget {
     required this.metric,
   });
 
-  final _MetricItem metric;
+  final HabitStatsMetricGridItem metric;
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +245,7 @@ class _StandardMetricBody extends StatelessWidget {
     required this.metric,
   });
 
-  final _MetricItem metric;
+  final HabitStatsMetricGridItem metric;
 
   @override
   Widget build(BuildContext context) {
@@ -269,7 +292,7 @@ class _BestMomentMetricBody extends StatelessWidget {
     required this.metric,
   });
 
-  final _MetricItem metric;
+  final HabitStatsMetricGridItem metric;
 
   @override
   Widget build(BuildContext context) {

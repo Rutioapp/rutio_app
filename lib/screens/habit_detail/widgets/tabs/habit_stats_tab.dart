@@ -115,7 +115,7 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
             : HabitStatsCountLast7DaysChart(days: shellData.countLast7Days),
       ),
       const SizedBox(height: _sectionSpacing),
-      HabitStatsMetricGrid(shellData: shellData),
+      _buildWeeklyMetricGrid(shellData),
       const SizedBox(height: _lowerSectionSpacing),
       if (shellData.isCheckHabit)
         HabitStatsWeeklyComparisonCard(deltaPct: shellData.weeklyComparisonDeltaPct),
@@ -133,13 +133,91 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
         familyColor: widget.familyColor,
       ),
       const SizedBox(height: _sectionSpacing),
-      // TODO Phase 2: Replace reused weekly data with monthly data helpers.
-      HabitStatsMetricGrid(shellData: shellData),
+      _buildMonthlyMetricGrid(shellData),
       const SizedBox(height: _sectionSpacing),
       // TODO Phase 4: Replace placeholder with monthly activity grid.
       const HabitStatsMonthlyActivityPlaceholder(),
       // TODO Phase 5: Add monthly comparison.
       // TODO Phase 6: Add monthly insight resolver.
     ];
+  }
+
+  Widget _buildWeeklyMetricGrid(HabitStatsShellData shellData) {
+    return HabitStatsMetricGrid(shellData: shellData);
+  }
+
+  Widget _buildMonthlyMetricGrid(HabitStatsShellData shellData) {
+    if (!shellData.isCheckHabit) {
+      return HabitStatsMetricGrid(shellData: shellData);
+    }
+
+    final now = DateTime.now();
+    final month = DateTime(now.year, now.month, 1);
+    final monthlyData = buildHabitStatsMonthlyDataForCheck(
+      habit: widget.habit,
+      month: month,
+      now: now,
+      countsByDay: shellData.countsByDay,
+      skipsByDay: shellData.skipsByDay,
+      completionTimesByDay: shellData.completionTimesByDay,
+    );
+    final objective = buildHabitStatsMonthlyObjectiveForCheck(
+      monthlyData: monthlyData,
+    );
+    // Metric card consistency is based on full monthly objective to match the
+    // Objective and Completed cards shown in this same monthly grid.
+    final consistencyPct = buildHabitStatsMonthlyMetricCardConsistencyPct(
+      monthlyData: monthlyData,
+    );
+    final l10n = context.l10n;
+    final objectiveUnit = monthlyData.objectiveUnit == HabitStatsMonthlyObjectiveUnit.times
+        ? l10n.habitStatsTimesUnitLabel(objective)
+        : l10n.habitStatsDaysUnitLabel(objective);
+    final bestMoment = monthlyData.bestMoment;
+    final bestMomentValue = bestMoment == null
+        // TODO(phase-6): Replace this fallback once we add a dedicated monthly
+        // insight resolver and product copy for sparse best-moment data.
+        ? '—'
+        : habitStatsBestMomentLabelForSlot(
+            l10n: l10n,
+            slot: bestMoment.slot,
+          );
+
+    return HabitStatsMetricGrid.custom(
+      gridKey: const Key('habit_stats_monthly_check_metric_grid'),
+      metrics: <HabitStatsMetricGridItem>[
+        HabitStatsMetricGridItem(
+          icon: Icons.gps_fixed_rounded,
+          title: l10n.habitConfigGoalSection,
+          value: '$objective $objectiveUnit',
+          subtitle: l10n.habitStatsThisMonth,
+          iconColor: const Color(0xFF5A3B23),
+        ),
+        HabitStatsMetricGridItem(
+          icon: Icons.check_circle_outline_rounded,
+          title: l10n.habitStatsMetricCompleted,
+          value: '${monthlyData.completedDays}/$objective',
+          subtitle: l10n.habitStatsThisMonth,
+          iconColor: const Color(0xFF5A3B23),
+        ),
+        HabitStatsMetricGridItem(
+          icon: Icons.trending_up_rounded,
+          title: l10n.habitStatsMetricConsistency,
+          value: '$consistencyPct%',
+          subtitle: l10n.habitStatsMonthlyConsistency,
+          iconColor: const Color(0xFF5B975A),
+          valueColor: const Color(0xFF4E7D35),
+        ),
+        HabitStatsMetricGridItem(
+          icon: Icons.schedule_rounded,
+          title: l10n.statisticsV3BestMomentCardTitle,
+          value: bestMomentValue,
+          subtitle: l10n.statisticsV3BestMomentSubtitle,
+          iconColor: const Color(0xFF4E7D35),
+          bestMomentSlot: bestMoment?.slot,
+          useBestMomentVisual: bestMoment != null,
+        ),
+      ],
+    );
   }
 }

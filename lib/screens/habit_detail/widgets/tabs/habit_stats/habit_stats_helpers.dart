@@ -125,6 +125,7 @@ HabitStatsShellData buildHabitStatsShellData(
     countsByDay: countsByDay,
     countValuesByDay: countValuesByDay,
     skipsByDay: skipsByDay,
+    completionTimesByDay: completionTimesByDay,
   );
 }
 
@@ -145,6 +146,10 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
   final normalizedCompletionTimesByDay =
       _normalizeCountMap(completionTimesByDay);
   final isTimesPerWeekCheck = _isTimesPerWeekCheckHabit(habitMap);
+  final monthEnd = DateTime(month.year, month.month + 1, 0);
+  final activeStart = _activeStartInMonth(habitMap: habitMap, monthStart: monthStart);
+  final hasActiveRangeInMonth = !activeStart.isAfter(monthEnd);
+  final safeToday = _dateOnly(today);
 
   final days = List<HabitStatsMonthDayState>.generate(
     daysInMonth,
@@ -197,16 +202,60 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
     }
   }
 
-  final consideredDays = completedDays + skippedDays + missedDays;
-  final consistency =
-      consideredDays == 0 ? 0.0 : (completedDays / consideredDays);
-  final totalTrackableDays = completedDays + skippedDays + missedDays + futureDays;
+  final scheduledDaysInMonth =
+      completedDays + skippedDays + missedDays + futureDays;
+  final elapsedScheduledDays = completedDays + skippedDays + missedDays;
+
+  int monthlyObjective;
+  int expectedToDate;
+  int futureScheduledDays;
+  HabitStatsMonthlyObjectiveUnit objectiveUnit;
+
+  if (!isTimesPerWeekCheck) {
+    monthlyObjective = scheduledDaysInMonth;
+    expectedToDate = elapsedScheduledDays;
+    futureScheduledDays = futureDays;
+    objectiveUnit = HabitStatsMonthlyObjectiveUnit.days;
+  } else {
+    final weeklyTarget = _timesPerWeekTargetForCheck(habitMap);
+    final activeDaysInMonth = hasActiveRangeInMonth
+        ? _inclusiveDayCount(activeStart, monthEnd)
+        : 0;
+    final elapsedEnd = safeToday.isBefore(monthEnd) ? safeToday : monthEnd;
+    final activeElapsedDays =
+        hasActiveRangeInMonth && !elapsedEnd.isBefore(activeStart)
+            ? _inclusiveDayCount(activeStart, elapsedEnd)
+            : 0;
+    monthlyObjective = _timesPerWeekExpectedCount(
+      activeDays: activeDaysInMonth,
+      weeklyTarget: weeklyTarget,
+    );
+    expectedToDate = _timesPerWeekExpectedCount(
+      activeDays: activeElapsedDays,
+      weeklyTarget: weeklyTarget,
+    );
+    if (expectedToDate > monthlyObjective) {
+      expectedToDate = monthlyObjective;
+    }
+    if (completedDays > expectedToDate) {
+      expectedToDate = completedDays;
+    }
+    futureScheduledDays = activeDaysInMonth - activeElapsedDays;
+    objectiveUnit = HabitStatsMonthlyObjectiveUnit.times;
+  }
+
+  final consistency = expectedToDate == 0 ? 0.0 : (completedDays / expectedToDate);
 
   return HabitStatsMonthlyData(
+    monthlyObjective: monthlyObjective,
+    elapsedTrackableDays: expectedToDate,
+    expectedToDate: expectedToDate,
+    futureScheduledDays: futureScheduledDays,
+    objectiveUnit: objectiveUnit,
     completedDays: completedDays,
     skippedDays: skippedDays,
     missedDays: missedDays,
-    totalTrackableDays: totalTrackableDays,
+    totalTrackableDays: monthlyObjective,
     consistency: consistency,
     bestStreak: bestStreak,
     totalDone: completedDays,
@@ -247,6 +296,38 @@ HabitStatsCountMetricSummary buildCountMetricSummary(
     expectedDays: safeExpectedDays,
     unitLabel: shellData.countUnitLabel,
   );
+}
+
+int buildHabitStatsMonthlyObjectiveForCheck({
+  required HabitStatsMonthlyData monthlyData,
+}) {
+  return monthlyData.monthlyObjective;
+}
+
+int buildHabitStatsMonthlyMetricCardConsistencyPct({
+  required HabitStatsMonthlyData monthlyData,
+}) {
+  final objective = monthlyData.monthlyObjective;
+  if (objective <= 0) return 0;
+  return ((monthlyData.completedDays / objective) * 100).round().clamp(0, 100);
+}
+
+String habitStatsBestMomentLabelForSlot({
+  required dynamic l10n,
+  required HabitStatsBestMomentSlot slot,
+}) {
+  switch (slot) {
+    case HabitStatsBestMomentSlot.morning:
+      return l10n.statisticsV3MomentMorning;
+    case HabitStatsBestMomentSlot.noon:
+      return l10n.statisticsV3MomentAfternoon;
+    case HabitStatsBestMomentSlot.afternoon:
+      return l10n.statisticsV3MomentEvening;
+    case HabitStatsBestMomentSlot.night:
+      return l10n.statisticsV3MomentNight;
+    case HabitStatsBestMomentSlot.unknown:
+      return l10n.habitStatsNoData;
+  }
 }
 
 String formatCountMetricValue(num value, {required String unitLabel}) {
@@ -1235,6 +1316,50 @@ bool _isTimesPerWeekCheckHabit(Map<String, dynamic> habitMap) {
   final schedule = _map(habitMap['schedule']);
   final scheduleType = (schedule['type'] ?? '').toString().trim().toLowerCase();
   return scheduleType == 'timesperweek';
+}
+
+DateTime _activeStartInMonth({
+  required Map<String, dynamic> habitMap,
+  required DateTime monthStart,
+}) {
+  final createdAt = _tryParseDate(
+    habitMap['createdAt'] ??
+        habitMap['created_at'] ??
+        habitMap['createdDate'] ??
+        habitMap['dateCreated'],
+  );
+  if (createdAt == null) return monthStart;
+  final createdDay = _dateOnly(createdAt.toLocal());
+  return createdDay.isAfter(monthStart) ? createdDay : monthStart;
+}
+
+int _timesPerWeekTargetForCheck(Map<String, dynamic> habitMap) {
+  final schedule = _map(habitMap['schedule']);
+  final raw = _asInt(
+    schedule['timesPerWeek'] ??
+        schedule['timesPerWeekTarget'] ??
+        habitMap['timesPerWeekTarget'] ??
+        habitMap['targetCount'] ??
+        habitMap['target'],
+  );
+  if (raw == null || raw < 1) return 1;
+  return raw;
+}
+
+int _inclusiveDayCount(DateTime start, DateTime end) {
+  if (end.isBefore(start)) return 0;
+  return end.difference(start).inDays + 1;
+}
+
+int _timesPerWeekExpectedCount({
+  required int activeDays,
+  required int weeklyTarget,
+}) {
+  if (activeDays <= 0 || weeklyTarget <= 0) return 0;
+  var expected = ((activeDays / 7) * weeklyTarget).round();
+  if (expected < 1) expected = 1;
+  if (expected > activeDays) expected = activeDays;
+  return expected;
 }
 
 bool _wasHabitCreatedByDay(Map<String, dynamic> habitMap, DateTime day) {
