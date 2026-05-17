@@ -1477,6 +1477,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsMonthCalendarTitle => 'Calendario del mes';
 
   @override
+  String get habitStatsMonthlyActivityTitle => 'Actividad mensual';
+
+  @override
+  String get habitStatsMonthlyActivityPlaceholderBody =>
+      'El calendario mensual estará disponible en la siguiente fase.';
+
+  @override
   String get habitStatsTabSummaryTitle => 'Resumen';
 
   @override

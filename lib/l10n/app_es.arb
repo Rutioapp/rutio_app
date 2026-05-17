@@ -752,6 +752,8 @@
   "habitStatsBestTimeSectionTitle": "¿Cuándo lo cumples mejor?",
   "habitStatsBestTimeSectionSubtitle": "Basado en tus registros, tus momentos más consistentes",
   "habitStatsMonthCalendarTitle": "Calendario del mes",
+  "habitStatsMonthlyActivityTitle": "Actividad mensual",
+  "habitStatsMonthlyActivityPlaceholderBody": "El calendario mensual estará disponible en la siguiente fase.",
   "habitStatsTabSummaryTitle": "Resumen",
   "habitStatsTabLastDaysTitle": "Últimos {days} días",
   "@habitStatsTabLastDaysTitle": {

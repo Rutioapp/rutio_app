@@ -1468,6 +1468,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitStatsMonthCalendarTitle => 'Monthly calendar';
 
   @override
+  String get habitStatsMonthlyActivityTitle => 'Monthly activity';
+
+  @override
+  String get habitStatsMonthlyActivityPlaceholderBody =>
+      'The monthly calendar will be available in the next phase.';
+
+  @override
   String get habitStatsTabSummaryTitle => 'Summary';
 
   @override
