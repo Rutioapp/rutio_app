@@ -1143,6 +1143,15 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
       ? 'Cumplimiento mensual'
       : 'Monthly consistency';
 
+  String get habitStatsMonthlyLegendDone =>
+      _isSpanishHabitStats ? 'Hecho' : 'Done';
+
+  String get habitStatsMonthlyLegendSkipped =>
+      _isSpanishHabitStats ? 'Pausado' : 'Skipped';
+
+  String get habitStatsMonthlyLegendPending =>
+      _isSpanishHabitStats ? 'Pendiente' : 'Pending';
+
   String get habitStatsLastWeek =>
       _isSpanishHabitStats ? 'Semana pasada' : 'Last week';
 

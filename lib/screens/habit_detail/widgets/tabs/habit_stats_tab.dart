@@ -5,12 +5,12 @@ import 'habit_stats/habit_stats_header.dart';
 import 'habit_stats/habit_stats_helpers.dart';
 import 'habit_stats/habit_stats_hero_card.dart';
 import 'habit_stats/habit_stats_insight_card.dart';
-import 'habit_stats/habit_stats_monthly_activity_placeholder.dart';
 import 'habit_stats/habit_stats_count_best_day_card.dart';
 import 'habit_stats/habit_stats_count_last7_days_chart.dart';
 import 'habit_stats/habit_stats_last7_days_card.dart';
 import 'habit_stats/habit_stats_metric_grid.dart';
 import 'habit_stats/habit_stats_models.dart';
+import 'habit_stats/habit_stats_monthly_activity_grid.dart';
 import 'habit_stats/habit_stats_period_selector.dart';
 import 'habit_stats/habit_stats_section_card.dart';
 import 'habit_stats/habit_stats_weekly_comparison_card.dart';
@@ -126,6 +126,19 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
   }
 
   List<Widget> _buildMonthlyContent(HabitStatsShellData shellData) {
+    final now = DateTime.now();
+    final month = DateTime(now.year, now.month, 1);
+    final monthlyData = shellData.isCheckHabit
+        ? buildHabitStatsMonthlyDataForCheck(
+            habit: widget.habit,
+            month: month,
+            now: now,
+            countsByDay: shellData.countsByDay,
+            skipsByDay: shellData.skipsByDay,
+            completionTimesByDay: shellData.completionTimesByDay,
+          )
+        : null;
+
     return [
       const SizedBox(height: _sectionSpacing),
       HabitStatsHeroCard(
@@ -133,10 +146,13 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
         familyColor: widget.familyColor,
       ),
       const SizedBox(height: _sectionSpacing),
-      _buildMonthlyMetricGrid(shellData),
+      _buildMonthlyMetricGrid(shellData, monthlyData: monthlyData),
       const SizedBox(height: _sectionSpacing),
-      // TODO Phase 4: Replace placeholder with monthly activity grid.
-      const HabitStatsMonthlyActivityPlaceholder(),
+      if (shellData.isCheckHabit && monthlyData != null)
+        HabitStatsMonthlyActivityGrid(
+          monthlyData: monthlyData,
+          month: month,
+        ),
       // TODO Phase 5: Add monthly comparison.
       // TODO Phase 6: Add monthly insight resolver.
     ];
@@ -146,34 +162,36 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
     return HabitStatsMetricGrid(shellData: shellData);
   }
 
-  Widget _buildMonthlyMetricGrid(HabitStatsShellData shellData) {
+  Widget _buildMonthlyMetricGrid(
+    HabitStatsShellData shellData, {
+    HabitStatsMonthlyData? monthlyData,
+  }) {
     if (!shellData.isCheckHabit) {
       return HabitStatsMetricGrid(shellData: shellData);
     }
 
-    final now = DateTime.now();
-    final month = DateTime(now.year, now.month, 1);
-    final monthlyData = buildHabitStatsMonthlyDataForCheck(
-      habit: widget.habit,
-      month: month,
-      now: now,
-      countsByDay: shellData.countsByDay,
-      skipsByDay: shellData.skipsByDay,
-      completionTimesByDay: shellData.completionTimesByDay,
-    );
+    final resolvedMonthlyData = monthlyData ??
+        buildHabitStatsMonthlyDataForCheck(
+          habit: widget.habit,
+          month: DateTime(DateTime.now().year, DateTime.now().month, 1),
+          now: DateTime.now(),
+          countsByDay: shellData.countsByDay,
+          skipsByDay: shellData.skipsByDay,
+          completionTimesByDay: shellData.completionTimesByDay,
+        );
     final objective = buildHabitStatsMonthlyObjectiveForCheck(
-      monthlyData: monthlyData,
+      monthlyData: resolvedMonthlyData,
     );
     // Metric card consistency is based on full monthly objective to match the
     // Objective and Completed cards shown in this same monthly grid.
     final consistencyPct = buildHabitStatsMonthlyMetricCardConsistencyPct(
-      monthlyData: monthlyData,
+      monthlyData: resolvedMonthlyData,
     );
     final l10n = context.l10n;
-    final objectiveUnit = monthlyData.objectiveUnit == HabitStatsMonthlyObjectiveUnit.times
+    final objectiveUnit = resolvedMonthlyData.objectiveUnit == HabitStatsMonthlyObjectiveUnit.times
         ? l10n.habitStatsTimesUnitLabel(objective)
         : l10n.habitStatsDaysUnitLabel(objective);
-    final bestMoment = monthlyData.bestMoment;
+    final bestMoment = resolvedMonthlyData.bestMoment;
     final bestMomentValue = bestMoment == null
         // TODO(phase-6): Replace this fallback once we add a dedicated monthly
         // insight resolver and product copy for sparse best-moment data.
@@ -196,7 +214,7 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
         HabitStatsMetricGridItem(
           icon: Icons.check_circle_outline_rounded,
           title: l10n.habitStatsMetricCompleted,
-          value: '${monthlyData.completedDays}/$objective',
+          value: '${resolvedMonthlyData.completedDays}/$objective',
           subtitle: l10n.habitStatsThisMonth,
           iconColor: const Color(0xFF5A3B23),
         ),
