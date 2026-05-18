@@ -942,6 +942,8 @@
   "habitStatsPeriodYear": "Año",
   "habitStatsYearSummaryTitle": "Resumen anual",
   "habitStatsYearSummaryBody": "Pronto verás tus meses, actividad e insights de este hábito durante el año.",
+  "habitStatsYearMonthsTitle": "Meses del año",
+  "habitStatsYearMonthsBody": "Un vistazo rápido a cómo ha ido este hábito mes a mes.",
   "habitStatsPeriodThreeMonths": "3 meses",
   "habitStatsPeriodAll": "Todo",
   "habitStatsDaysLabel": "{count} día",

@@ -1800,6 +1800,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Pronto verás tus meses, actividad e insights de este hábito durante el año.';
 
   @override
+  String get habitStatsYearMonthsTitle => 'Meses del año';
+
+  @override
+  String get habitStatsYearMonthsBody =>
+      'Un vistazo rápido a cómo ha ido este hábito mes a mes.';
+
+  @override
   String get habitStatsPeriodThreeMonths => '3 meses';
 
   @override

@@ -523,6 +523,103 @@ HabitStatsYearMetrics resolveHabitStatsYearMetrics({
   );
 }
 
+List<HabitStatsYearMonthSummary> resolveHabitStatsYearMonthSummaries({
+  required dynamic habit,
+  required HabitStatsYearMetrics yearMetrics,
+  required int year,
+  required DateTime now,
+}) {
+  final habitMap = _habitToMap(habit);
+  final isCounter = _isCountHabit(habitMap);
+  final safeNow = _dateOnly(now.toLocal());
+  final currentMonth = DateTime(safeNow.year, safeNow.month, 1);
+  final createdAt = _tryParseDate(
+    habitMap['createdAt'] ??
+        habitMap['created_at'] ??
+        habitMap['createdDate'] ??
+        habitMap['dateCreated'],
+  );
+  final createdDay = createdAt == null ? null : _dateOnly(createdAt.toLocal());
+
+  final maxAccumulated = yearMetrics.months.fold<double>(
+    0,
+    (best, month) {
+      final value = month.accumulatedValue.toDouble();
+      return value > best ? value : best;
+    },
+  );
+
+  return List<HabitStatsYearMonthSummary>.generate(12, (index) {
+    final source = yearMetrics.months[index];
+    final month = source.month;
+    final monthStart = DateTime(year, month, 1);
+    final monthEnd = DateTime(year, month + 1, 0);
+    final isCurrentMonth = year == safeNow.year && month == safeNow.month;
+
+    final isUnavailable = createdDay != null && createdDay.isAfter(monthEnd);
+    if (isUnavailable) {
+      return source.copyWith(
+        status: HabitStatsYearMonthStatus.unavailable,
+        clearPerformancePct: true,
+        isCurrentMonth: isCurrentMonth,
+      );
+    }
+
+    final isFuture = year > safeNow.year ||
+        (year == safeNow.year && monthStart.isAfter(currentMonth));
+    if (isFuture) {
+      return source.copyWith(
+        status: HabitStatsYearMonthStatus.future,
+        clearPerformancePct: true,
+        isCurrentMonth: isCurrentMonth,
+      );
+    }
+
+    if (!isCounter) {
+      if (source.trackableDays <= 0) {
+        return source.copyWith(
+          status: HabitStatsYearMonthStatus.unavailable,
+          clearPerformancePct: true,
+          isCurrentMonth: isCurrentMonth,
+        );
+      }
+      final performance = source.completedDays <= 0
+          ? 0.0
+          : source.completedDays / source.trackableDays;
+      final performancePct = (performance * 100).round().clamp(0, 100).toInt();
+      final status = _resolveYearMonthStatusFromPerformance(performance);
+      return source.copyWith(
+        status: status,
+        performancePct: performancePct,
+        isCurrentMonth: isCurrentMonth,
+      );
+    }
+
+    final accumulatedValue = source.accumulatedValue.toDouble();
+    if (accumulatedValue <= 0) {
+      return source.copyWith(
+        status: HabitStatsYearMonthStatus.empty,
+        performancePct: 0,
+        isCurrentMonth: isCurrentMonth,
+      );
+    }
+    final performancePct = maxAccumulated <= 0
+        ? 0
+        : ((accumulatedValue / maxAccumulated) * 100)
+            .round()
+            .clamp(0, 100)
+            .toInt();
+    final status = _resolveYearMonthStatusFromPerformance(
+      maxAccumulated <= 0 ? 0 : accumulatedValue / maxAccumulated,
+    );
+    return source.copyWith(
+      status: status,
+      performancePct: performancePct,
+      isCurrentMonth: isCurrentMonth,
+    );
+  }, growable: false);
+}
+
 String habitStatsBestMomentLabelForSlot({
   required dynamic l10n,
   required HabitStatsBestMomentSlot slot,
@@ -598,6 +695,15 @@ int _resolveYearTrackableTotal({
     end: end,
     treatTimesPerWeekAsDaily: isCounter,
   );
+}
+
+HabitStatsYearMonthStatus _resolveYearMonthStatusFromPerformance(
+  double performance,
+) {
+  if (performance >= 0.80) return HabitStatsYearMonthStatus.high;
+  if (performance >= 0.45) return HabitStatsYearMonthStatus.medium;
+  if (performance > 0) return HabitStatsYearMonthStatus.low;
+  return HabitStatsYearMonthStatus.empty;
 }
 
 HabitStatsYearMonthSummary? _resolveBestYearMonth(

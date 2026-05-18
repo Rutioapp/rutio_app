@@ -203,6 +203,23 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
   }
 
   List<Widget> _buildYearlyContent(HabitStatsShellData shellData) {
+    final now = DateTime.now();
+    final year = now.year;
+    final yearMetrics = resolveHabitStatsYearMetrics(
+      habit: widget.habit,
+      year: year,
+      now: now,
+      countsByDay: shellData.countsByDay,
+      countValuesByDay: shellData.countValuesByDay,
+      skipsByDay: shellData.skipsByDay,
+    );
+    final yearMonthSummaries = resolveHabitStatsYearMonthSummaries(
+      habit: widget.habit,
+      yearMetrics: yearMetrics,
+      year: year,
+      now: now,
+    );
+
     return [
       const SizedBox(height: _sectionSpacing),
       HabitStatsHeroCard(
@@ -210,9 +227,14 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
         familyColor: widget.familyColor,
       ),
       const SizedBox(height: _sectionSpacing),
-      _buildYearlyMetricGrid(shellData),
+      _buildYearlyMetricGrid(shellData, yearMetrics: yearMetrics),
       const SizedBox(height: _sectionSpacing),
-      const HabitStatsYearSection(),
+      HabitStatsYearSection(
+        monthSummaries: yearMonthSummaries,
+        isCounter: shellData.isCounter,
+        accentColor: widget.familyColor,
+        countUnitLabel: shellData.countUnitLabel,
+      ),
     ];
   }
 
@@ -298,16 +320,10 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
     );
   }
 
-  Widget _buildYearlyMetricGrid(HabitStatsShellData shellData) {
-    final now = DateTime.now();
-    final yearMetrics = resolveHabitStatsYearMetrics(
-      habit: widget.habit,
-      year: now.year,
-      now: now,
-      countsByDay: shellData.countsByDay,
-      countValuesByDay: shellData.countValuesByDay,
-      skipsByDay: shellData.skipsByDay,
-    );
+  Widget _buildYearlyMetricGrid(
+    HabitStatsShellData shellData, {
+    required HabitStatsYearMetrics yearMetrics,
+  }) {
     final l10n = context.l10n;
     final bestMonthValue = yearMetrics.bestMonth == null
         ? '\u2014'

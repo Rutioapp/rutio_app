@@ -142,7 +142,7 @@ void main() {
     });
 
     testWidgets(
-        'switching to year hides last 7 days block and shows yearly summary section',
+        'switching to year hides last 7 days block and shows yearly month grid section',
         (tester) async {
       final now = DateTime.now();
       final habit = _habit(type: 'check');
@@ -194,10 +194,13 @@ void main() {
       );
       expect(find.text(l10n.habitStatsYearMetricBestMonth), findsOneWidget);
       expect(find.text(l10n.habitStatsYearMetricActiveMonths), findsOneWidget);
-      expect(find.byKey(const Key('habit_stats_year_summary_card')),
+      expect(find.byKey(const Key('habit_stats_year_months_card')),
           findsOneWidget);
-      expect(find.text(l10n.habitStatsYearSummaryTitle), findsOneWidget);
-      expect(find.text(l10n.habitStatsYearSummaryBody), findsOneWidget);
+      expect(find.text(l10n.habitStatsYearMonthsTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsYearMonthsBody), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_year_month_grid')), findsOneWidget);
+      expect(find.text('Jan'), findsOneWidget);
+      expect(find.text('Dec'), findsOneWidget);
       expect(find.text(l10n.habitStatsInsightLabel), findsNothing);
       expect(tester.takeException(), isNull);
     });

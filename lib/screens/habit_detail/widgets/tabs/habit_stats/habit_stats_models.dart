@@ -273,13 +273,54 @@ class HabitStatsYearMonthSummary {
   final int completedDays;
   final num accumulatedValue;
   final int trackableDays;
+  final HabitStatsYearMonthStatus status;
+  final int? performancePct;
+  final bool isCurrentMonth;
 
   const HabitStatsYearMonthSummary({
     required this.month,
     required this.completedDays,
     required this.accumulatedValue,
     required this.trackableDays,
+    this.status = HabitStatsYearMonthStatus.empty,
+    this.performancePct,
+    this.isCurrentMonth = false,
   });
+
+  HabitStatsYearMonthSummary copyWith({
+    HabitStatsYearMonthStatus? status,
+    int? performancePct,
+    bool clearPerformancePct = false,
+    bool? isCurrentMonth,
+  }) {
+    return HabitStatsYearMonthSummary(
+      month: month,
+      completedDays: completedDays,
+      accumulatedValue: accumulatedValue,
+      trackableDays: trackableDays,
+      status: status ?? this.status,
+      performancePct: clearPerformancePct
+          ? null
+          : (performancePct ?? this.performancePct),
+      isCurrentMonth: isCurrentMonth ?? this.isCurrentMonth,
+    );
+  }
+}
+
+enum HabitStatsYearMonthStatus {
+  unavailable,
+  future,
+  empty,
+  low,
+  medium,
+  high,
+}
+
+extension HabitStatsYearMonthStatusX on HabitStatsYearMonthStatus {
+  bool get hasActivity =>
+      this == HabitStatsYearMonthStatus.low ||
+      this == HabitStatsYearMonthStatus.medium ||
+      this == HabitStatsYearMonthStatus.high;
 }
 
 class HabitStatsYearMetrics {
