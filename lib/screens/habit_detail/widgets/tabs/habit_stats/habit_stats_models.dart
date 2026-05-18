@@ -299,9 +299,8 @@ class HabitStatsYearMonthSummary {
       accumulatedValue: accumulatedValue,
       trackableDays: trackableDays,
       status: status ?? this.status,
-      performancePct: clearPerformancePct
-          ? null
-          : (performancePct ?? this.performancePct),
+      performancePct:
+          clearPerformancePct ? null : (performancePct ?? this.performancePct),
       isCurrentMonth: isCurrentMonth ?? this.isCurrentMonth,
     );
   }
@@ -342,5 +341,27 @@ class HabitStatsYearMetrics {
     required this.activeMonths,
     required this.bestMonth,
     required this.months,
+  });
+}
+
+enum HabitStatsYearTrend {
+  improving,
+  stable,
+  declining,
+  starting,
+  noData,
+}
+
+class HabitStatsYearActivitySummary {
+  final HabitStatsYearMonthSummary? bestMonth;
+  final HabitStatsYearMonthSummary? weakestMonth;
+  final int activeMonths;
+  final HabitStatsYearTrend trend;
+
+  const HabitStatsYearActivitySummary({
+    required this.bestMonth,
+    required this.weakestMonth,
+    required this.activeMonths,
+    required this.trend,
   });
 }

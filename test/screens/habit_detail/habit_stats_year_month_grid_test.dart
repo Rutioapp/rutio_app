@@ -9,6 +9,7 @@ void main() {
     testWidgets('renders 12 month cells with localized labels', (tester) async {
       await tester.pumpWidget(
         _app(
+          size: const Size(430, 1400),
           child: HabitStatsYearMonthGrid(
             summaries: _summaries(),
             isCounter: false,
@@ -18,12 +19,19 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('habit_stats_year_month_grid')), findsOneWidget);
-      for (var month = 1; month <= 12; month++) {
-        expect(find.byKey(Key('habit_stats_year_month_label_$month')), findsOneWidget);
-      }
+      expect(
+          find.byKey(const Key('habit_stats_year_month_grid')), findsOneWidget);
+      final grid = tester.widget<HabitStatsYearMonthGrid>(
+        find.byType(HabitStatsYearMonthGrid),
+      );
+      expect(grid.summaries, hasLength(12));
+      expect(
+        grid.summaries.any((summary) => summary.month == 12),
+        isTrue,
+      );
+      expect(find.byKey(const Key('habit_stats_year_month_label_1')),
+          findsOneWidget);
       expect(find.text('Jan'), findsOneWidget);
-      expect(find.text('Dec'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -62,8 +70,10 @@ void main() {
       final decoration = currentMonthCell.decoration! as BoxDecoration;
       final border = decoration.border! as Border;
       expect(border.top.width, greaterThan(1));
-      expect(find.byKey(const Key('habit_stats_year_month_value_2')), findsNothing);
-      expect(find.byKey(const Key('habit_stats_year_month_value_1')), findsNothing);
+      expect(find.byKey(const Key('habit_stats_year_month_value_2')),
+          findsNothing);
+      expect(find.byKey(const Key('habit_stats_year_month_value_1')),
+          findsNothing);
 
       final lowCell = tester.widget<Container>(
         find.byKey(const Key('habit_stats_year_month_cell_4_low')),

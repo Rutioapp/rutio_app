@@ -70,6 +70,8 @@ void main() {
       expect(find.text(l10n.habitStatsMetricConsistency), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsMonthlyComparisonTitle), findsNothing);
+      expect(find.byKey(const Key('habit_stats_year_activity_card')),
+          findsNothing);
       expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
       final insight = resolveHabitStatsInsight(
         l10n,
@@ -118,6 +120,8 @@ void main() {
       expect(find.text(l10n.habitStatsMonthlyConsistency), findsOneWidget);
       expect(find.text(l10n.habitStatsThisWeek), findsNothing);
       expect(find.byType(HabitStatsMonthlyActivityGrid), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_year_activity_card')),
+          findsNothing);
       expect(find.text(l10n.habitStatsMonthlyActivityTitle), findsOneWidget);
       expect(
         find.text(l10n.habitStatsMonthlyActivityPlaceholderBody),
@@ -190,17 +194,26 @@ void main() {
       expect(find.textContaining('/'), findsNothing);
       expect(
         find.text('${expectedYearMetrics.consistencyPct}%'),
-        findsOneWidget,
+        findsWidgets,
       );
-      expect(find.text(l10n.habitStatsYearMetricBestMonth), findsOneWidget);
-      expect(find.text(l10n.habitStatsYearMetricActiveMonths), findsOneWidget);
+      expect(find.text(l10n.habitStatsYearMetricBestMonth), findsWidgets);
+      expect(find.text(l10n.habitStatsYearMetricActiveMonths), findsWidgets);
       expect(find.byKey(const Key('habit_stats_year_months_card')),
           findsOneWidget);
       expect(find.text(l10n.habitStatsYearMonthsTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsYearMonthsBody), findsOneWidget);
-      expect(find.byKey(const Key('habit_stats_year_month_grid')), findsOneWidget);
-      expect(find.text('Jan'), findsOneWidget);
-      expect(find.text('Dec'), findsOneWidget);
+      expect(
+          find.byKey(const Key('habit_stats_year_month_grid')), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_year_activity_card')),
+          findsOneWidget);
+      expect(find.text(l10n.yearlyActivityTitle), findsOneWidget);
+      expect(find.text(l10n.yearlyActivitySubtitle), findsOneWidget);
+      expect(find.text(l10n.yearlyActivityBestMonth), findsWidgets);
+      expect(find.text(l10n.yearlyActivityWeakestMonth), findsOneWidget);
+      expect(find.text(l10n.yearlyActivityActiveMonths), findsWidgets);
+      expect(find.text(l10n.yearlyActivityTrend), findsOneWidget);
+      expect(find.text('Jan'), findsWidgets);
+      expect(find.text('Dec'), findsWidgets);
       expect(find.text(l10n.habitStatsInsightLabel), findsNothing);
       expect(tester.takeException(), isNull);
     });
@@ -232,6 +245,8 @@ void main() {
       expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
       expect(find.byType(HabitStatsLast7DaysCard), findsOneWidget);
       expect(find.byType(HabitStatsYearSection), findsNothing);
+      expect(find.byKey(const Key('habit_stats_year_activity_card')),
+          findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -322,9 +337,8 @@ void main() {
         findsWidgets,
       );
       expect(find.textContaining('/'), findsNothing);
-      expect(
-          find.text('${expectedYearMetrics.consistencyPct}%'), findsOneWidget);
-      expect(find.text(bestMonthLabel), findsOneWidget);
+      expect(find.text('${expectedYearMetrics.consistencyPct}%'), findsWidgets);
+      expect(find.text(bestMonthLabel), findsWidgets);
       expect(find.text('${expectedYearMetrics.activeMonths}'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
@@ -395,9 +409,8 @@ void main() {
 
       expect(find.text(l10n.habitStatsCountTotalAccumulated), findsOneWidget);
       expect(find.text(expectedAccumulated), findsOneWidget);
-      expect(
-          find.text('${expectedYearMetrics.consistencyPct}%'), findsOneWidget);
-      expect(find.text(bestMonthLabel), findsOneWidget);
+      expect(find.text('${expectedYearMetrics.consistencyPct}%'), findsWidgets);
+      expect(find.text(bestMonthLabel), findsWidgets);
       expect(find.byType(HabitStatsMonthlyActivityGrid), findsNothing);
       expect(find.byType(HabitStatsMonthlyComparisonCard), findsNothing);
       expect(tester.takeException(), isNull);

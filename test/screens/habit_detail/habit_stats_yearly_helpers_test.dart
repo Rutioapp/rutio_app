@@ -309,7 +309,8 @@ void main() {
       expect(summaries[0].status, HabitStatsYearMonthStatus.empty);
     });
 
-    test('always returns 12 months and marks future months in current year', () {
+    test('always returns 12 months and marks future months in current year',
+        () {
       final yearMetrics = resolveHabitStatsYearMetrics(
         habit: _habit(
           type: 'check',
@@ -374,7 +375,8 @@ void main() {
       expect(summaries[0].status, isNot(HabitStatsYearMonthStatus.low));
     });
 
-    test('expected zero does not divide by zero and resolves as unavailable', () {
+    test('expected zero does not divide by zero and resolves as unavailable',
+        () {
       final habit = _habit(
         type: 'check',
         target: 1,
@@ -402,7 +404,8 @@ void main() {
       expect(summaries[0].status, HabitStatsYearMonthStatus.unavailable);
     });
 
-    test('check habits classify activity months and keep monthly completed totals',
+    test(
+        'check habits classify activity months and keep monthly completed totals',
         () {
       final habit = _habit(
         type: 'check',
@@ -472,6 +475,269 @@ void main() {
       expect(summaries[3].status, HabitStatsYearMonthStatus.future);
     });
   });
+
+  group('resolveHabitStatsYearActivitySummary', () {
+    test('best month ignores future and unavailable months', () {
+      final summary = resolveHabitStatsYearActivitySummary(
+        monthSummaries: <HabitStatsYearMonthSummary>[
+          _yearMonth(
+            month: 1,
+            status: HabitStatsYearMonthStatus.unavailable,
+          ),
+          _yearMonth(
+            month: 2,
+            status: HabitStatsYearMonthStatus.high,
+            performancePct: 88,
+          ),
+          _yearMonth(
+            month: 3,
+            status: HabitStatsYearMonthStatus.future,
+          ),
+          _yearMonth(
+            month: 4,
+            status: HabitStatsYearMonthStatus.medium,
+            performancePct: 60,
+          ),
+        ],
+      );
+
+      expect(summary.bestMonth?.month, 2);
+      expect(summary.bestMonth?.performancePct, 88);
+    });
+
+    test('weakest month ignores future and unavailable months', () {
+      final summary = resolveHabitStatsYearActivitySummary(
+        monthSummaries: <HabitStatsYearMonthSummary>[
+          _yearMonth(
+            month: 1,
+            status: HabitStatsYearMonthStatus.unavailable,
+          ),
+          _yearMonth(
+            month: 2,
+            status: HabitStatsYearMonthStatus.low,
+            performancePct: 22,
+          ),
+          _yearMonth(
+            month: 3,
+            status: HabitStatsYearMonthStatus.future,
+          ),
+          _yearMonth(
+            month: 4,
+            status: HabitStatsYearMonthStatus.high,
+            performancePct: 84,
+          ),
+        ],
+      );
+
+      expect(summary.weakestMonth?.month, 2);
+      expect(summary.weakestMonth?.performancePct, 22);
+    });
+
+    test('active months counts only months with activity', () {
+      final summary = resolveHabitStatsYearActivitySummary(
+        monthSummaries: <HabitStatsYearMonthSummary>[
+          _yearMonth(
+            month: 1,
+            status: HabitStatsYearMonthStatus.high,
+            performancePct: 90,
+          ),
+          _yearMonth(
+            month: 2,
+            status: HabitStatsYearMonthStatus.low,
+            performancePct: 18,
+          ),
+          _yearMonth(
+            month: 3,
+            status: HabitStatsYearMonthStatus.empty,
+            performancePct: 0,
+          ),
+          _yearMonth(
+            month: 4,
+            status: HabitStatsYearMonthStatus.future,
+          ),
+        ],
+      );
+
+      expect(summary.activeMonths, 2);
+    });
+
+    test('trend returns noData when there is no valid activity', () {
+      final summary = resolveHabitStatsYearActivitySummary(
+        monthSummaries: <HabitStatsYearMonthSummary>[
+          _yearMonth(
+            month: 1,
+            status: HabitStatsYearMonthStatus.unavailable,
+          ),
+          _yearMonth(
+            month: 2,
+            status: HabitStatsYearMonthStatus.empty,
+            performancePct: 0,
+          ),
+          _yearMonth(
+            month: 3,
+            status: HabitStatsYearMonthStatus.future,
+          ),
+        ],
+      );
+
+      expect(summary.trend, HabitStatsYearTrend.noData);
+    });
+
+    test('trend returns starting when there is only one active month', () {
+      final summary = resolveHabitStatsYearActivitySummary(
+        monthSummaries: <HabitStatsYearMonthSummary>[
+          _yearMonth(
+            month: 1,
+            status: HabitStatsYearMonthStatus.medium,
+            performancePct: 58,
+          ),
+          _yearMonth(
+            month: 2,
+            status: HabitStatsYearMonthStatus.empty,
+            performancePct: 0,
+          ),
+        ],
+      );
+
+      expect(summary.trend, HabitStatsYearTrend.starting);
+    });
+
+    test(
+        'trend returns improving when later active months perform meaningfully better',
+        () {
+      final summary = resolveHabitStatsYearActivitySummary(
+        monthSummaries: <HabitStatsYearMonthSummary>[
+          _yearMonth(
+            month: 2,
+            status: HabitStatsYearMonthStatus.low,
+            performancePct: 20,
+          ),
+          _yearMonth(
+            month: 4,
+            status: HabitStatsYearMonthStatus.medium,
+            performancePct: 40,
+          ),
+          _yearMonth(
+            month: 8,
+            status: HabitStatsYearMonthStatus.high,
+            performancePct: 70,
+          ),
+          _yearMonth(
+            month: 10,
+            status: HabitStatsYearMonthStatus.high,
+            performancePct: 80,
+          ),
+        ],
+      );
+
+      expect(summary.trend, HabitStatsYearTrend.improving);
+    });
+
+    test(
+        'trend returns declining when later active months perform meaningfully worse',
+        () {
+      final summary = resolveHabitStatsYearActivitySummary(
+        monthSummaries: <HabitStatsYearMonthSummary>[
+          _yearMonth(
+            month: 1,
+            status: HabitStatsYearMonthStatus.high,
+            performancePct: 82,
+          ),
+          _yearMonth(
+            month: 3,
+            status: HabitStatsYearMonthStatus.high,
+            performancePct: 74,
+          ),
+          _yearMonth(
+            month: 7,
+            status: HabitStatsYearMonthStatus.low,
+            performancePct: 30,
+          ),
+          _yearMonth(
+            month: 9,
+            status: HabitStatsYearMonthStatus.low,
+            performancePct: 20,
+          ),
+        ],
+      );
+
+      expect(summary.trend, HabitStatsYearTrend.declining);
+    });
+
+    test('trend returns stable when performance difference is small', () {
+      final summary = resolveHabitStatsYearActivitySummary(
+        monthSummaries: <HabitStatsYearMonthSummary>[
+          _yearMonth(
+            month: 1,
+            status: HabitStatsYearMonthStatus.medium,
+            performancePct: 50,
+          ),
+          _yearMonth(
+            month: 2,
+            status: HabitStatsYearMonthStatus.medium,
+            performancePct: 54,
+          ),
+          _yearMonth(
+            month: 3,
+            status: HabitStatsYearMonthStatus.medium,
+            performancePct: 56,
+          ),
+          _yearMonth(
+            month: 4,
+            status: HabitStatsYearMonthStatus.medium,
+            performancePct: 58,
+          ),
+        ],
+      );
+
+      expect(summary.trend, HabitStatsYearTrend.stable);
+    });
+
+    test('habit created mid-year does not make previous months weak months',
+        () {
+      final summary = resolveHabitStatsYearActivitySummary(
+        monthSummaries: <HabitStatsYearMonthSummary>[
+          _yearMonth(
+            month: 1,
+            status: HabitStatsYearMonthStatus.unavailable,
+          ),
+          _yearMonth(
+            month: 2,
+            status: HabitStatsYearMonthStatus.unavailable,
+          ),
+          _yearMonth(
+            month: 3,
+            status: HabitStatsYearMonthStatus.low,
+            performancePct: 24,
+          ),
+          _yearMonth(
+            month: 4,
+            status: HabitStatsYearMonthStatus.medium,
+            performancePct: 52,
+          ),
+        ],
+      );
+
+      expect(summary.weakestMonth?.month, 3);
+      expect(summary.weakestMonth?.status,
+          isNot(HabitStatsYearMonthStatus.unavailable));
+    });
+  });
+}
+
+HabitStatsYearMonthSummary _yearMonth({
+  required int month,
+  required HabitStatsYearMonthStatus status,
+  int? performancePct,
+}) {
+  return HabitStatsYearMonthSummary(
+    month: month,
+    completedDays: status.hasActivity ? 1 : 0,
+    accumulatedValue: status.hasActivity ? 1 : 0,
+    trackableDays: status == HabitStatsYearMonthStatus.unavailable ? 0 : 30,
+    status: status,
+    performancePct: performancePct,
+  );
 }
 
 Map<String, dynamic> _habit({

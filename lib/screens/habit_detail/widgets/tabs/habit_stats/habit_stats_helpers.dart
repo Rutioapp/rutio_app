@@ -620,6 +620,81 @@ List<HabitStatsYearMonthSummary> resolveHabitStatsYearMonthSummaries({
   }, growable: false);
 }
 
+const double _yearTrendMeaningfulDifferenceThreshold = 0.15;
+
+HabitStatsYearActivitySummary resolveHabitStatsYearActivitySummary({
+  required List<HabitStatsYearMonthSummary> monthSummaries,
+}) {
+  final activeMonths = monthSummaries
+      .where((month) => month.status.hasActivity)
+      .toList(growable: false);
+  final validActivityMonths = activeMonths
+      .where((month) => month.performancePct != null)
+      .toList(growable: false);
+
+  HabitStatsYearMonthSummary? bestMonth;
+  HabitStatsYearMonthSummary? weakestMonth;
+  for (final month in validActivityMonths) {
+    final performance = month.performancePct ?? 0;
+    final bestPerformance = bestMonth?.performancePct ?? -1;
+    final weakestPerformance = weakestMonth?.performancePct ?? 101;
+
+    if (bestMonth == null ||
+        performance > bestPerformance ||
+        (performance == bestPerformance && month.month < bestMonth.month)) {
+      bestMonth = month;
+    }
+    if (weakestMonth == null ||
+        performance < weakestPerformance ||
+        (performance == weakestPerformance &&
+            month.month < weakestMonth.month)) {
+      weakestMonth = month;
+    }
+  }
+
+  HabitStatsYearTrend trend;
+  if (validActivityMonths.isEmpty) {
+    trend = HabitStatsYearTrend.noData;
+  } else if (validActivityMonths.length < 2) {
+    trend = HabitStatsYearTrend.starting;
+  } else {
+    final sorted = [...validActivityMonths]
+      ..sort((a, b) => a.month.compareTo(b.month));
+    final splitIndex = sorted.length ~/ 2;
+    final earlier = sorted.take(splitIndex).toList(growable: false);
+    final later = sorted.skip(splitIndex).toList(growable: false);
+
+    if (earlier.isEmpty || later.isEmpty) {
+      trend = HabitStatsYearTrend.stable;
+    } else {
+      final earlierAvg = earlier
+              .map((month) => (month.performancePct ?? 0) / 100)
+              .fold<double>(0, (sum, value) => sum + value) /
+          earlier.length;
+      final laterAvg = later
+              .map((month) => (month.performancePct ?? 0) / 100)
+              .fold<double>(0, (sum, value) => sum + value) /
+          later.length;
+      final difference = laterAvg - earlierAvg;
+
+      if (difference >= _yearTrendMeaningfulDifferenceThreshold) {
+        trend = HabitStatsYearTrend.improving;
+      } else if (difference <= -_yearTrendMeaningfulDifferenceThreshold) {
+        trend = HabitStatsYearTrend.declining;
+      } else {
+        trend = HabitStatsYearTrend.stable;
+      }
+    }
+  }
+
+  return HabitStatsYearActivitySummary(
+    bestMonth: bestMonth,
+    weakestMonth: weakestMonth,
+    activeMonths: validActivityMonths.length,
+    trend: trend,
+  );
+}
+
 String habitStatsBestMomentLabelForSlot({
   required dynamic l10n,
   required HabitStatsBestMomentSlot slot,

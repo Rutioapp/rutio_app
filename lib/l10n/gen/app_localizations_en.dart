@@ -1849,6 +1849,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitStatsYearMetricActiveMonthsSubtitle => 'With activity';
 
   @override
+  String get yearlyActivityTitle => 'Yearly activity';
+
+  @override
+  String get yearlyActivitySubtitle =>
+      'A calm summary of how this habit moved through the year.';
+
+  @override
+  String get yearlyActivityBestMonth => 'Best month';
+
+  @override
+  String get yearlyActivityWeakestMonth => 'Quietest month';
+
+  @override
+  String get yearlyActivityActiveMonths => 'Active months';
+
+  @override
+  String yearlyActivityActiveMonthsValue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count months',
+      one: '1 month',
+      zero: '0 months',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get yearlyActivityTrend => 'Rhythm';
+
+  @override
+  String get yearlyActivityTrendImproving => 'Improving';
+
+  @override
+  String get yearlyActivityTrendStable => 'Stable';
+
+  @override
+  String get yearlyActivityTrendDeclining => 'Slowing down';
+
+  @override
+  String get yearlyActivityTrendStarting => 'Starting';
+
+  @override
+  String get yearlyActivityTrendNoData => 'No data yet';
+
+  @override
   String get habitStatsLastWeek => 'Last week';
 
   @override

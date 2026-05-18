@@ -3364,6 +3364,78 @@ abstract class AppLocalizations {
   /// **'Con actividad'**
   String get habitStatsYearMetricActiveMonthsSubtitle;
 
+  /// No description provided for @yearlyActivityTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Actividad anual'**
+  String get yearlyActivityTitle;
+
+  /// No description provided for @yearlyActivitySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Un resumen claro de cómo ha evolucionado este hábito durante el año.'**
+  String get yearlyActivitySubtitle;
+
+  /// No description provided for @yearlyActivityBestMonth.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejor mes'**
+  String get yearlyActivityBestMonth;
+
+  /// No description provided for @yearlyActivityWeakestMonth.
+  ///
+  /// In es, this message translates to:
+  /// **'Mes más tranquilo'**
+  String get yearlyActivityWeakestMonth;
+
+  /// No description provided for @yearlyActivityActiveMonths.
+  ///
+  /// In es, this message translates to:
+  /// **'Meses activos'**
+  String get yearlyActivityActiveMonths;
+
+  /// Value for active months in yearly habit stats activity section
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =0{0 meses} =1{1 mes} other{{count} meses}}'**
+  String yearlyActivityActiveMonthsValue(int count);
+
+  /// No description provided for @yearlyActivityTrend.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritmo'**
+  String get yearlyActivityTrend;
+
+  /// No description provided for @yearlyActivityTrendImproving.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejorando'**
+  String get yearlyActivityTrendImproving;
+
+  /// No description provided for @yearlyActivityTrendStable.
+  ///
+  /// In es, this message translates to:
+  /// **'Estable'**
+  String get yearlyActivityTrendStable;
+
+  /// No description provided for @yearlyActivityTrendDeclining.
+  ///
+  /// In es, this message translates to:
+  /// **'Bajando el ritmo'**
+  String get yearlyActivityTrendDeclining;
+
+  /// No description provided for @yearlyActivityTrendStarting.
+  ///
+  /// In es, this message translates to:
+  /// **'Empezando'**
+  String get yearlyActivityTrendStarting;
+
+  /// No description provided for @yearlyActivityTrendNoData.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos aún'**
+  String get yearlyActivityTrendNoData;
+
   /// No description provided for @habitStatsLastWeek.
   ///
   /// In es, this message translates to:

@@ -977,6 +977,26 @@
   "habitStatsYearMetricBestMonthSubtitle": "Mayor rendimiento",
   "habitStatsYearMetricActiveMonths": "Meses activos",
   "habitStatsYearMetricActiveMonthsSubtitle": "Con actividad",
+  "yearlyActivityTitle": "Actividad anual",
+  "yearlyActivitySubtitle": "Un resumen claro de c\u00f3mo ha evolucionado este h\u00e1bito durante el a\u00f1o.",
+  "yearlyActivityBestMonth": "Mejor mes",
+  "yearlyActivityWeakestMonth": "Mes m\u00e1s tranquilo",
+  "yearlyActivityActiveMonths": "Meses activos",
+  "yearlyActivityActiveMonthsValue": "{count, plural, =0{0 meses} =1{1 mes} other{{count} meses}}",
+  "@yearlyActivityActiveMonthsValue": {
+    "description": "Value for active months in yearly habit stats activity section",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yearlyActivityTrend": "Ritmo",
+  "yearlyActivityTrendImproving": "Mejorando",
+  "yearlyActivityTrendStable": "Estable",
+  "yearlyActivityTrendDeclining": "Bajando el ritmo",
+  "yearlyActivityTrendStarting": "Empezando",
+  "yearlyActivityTrendNoData": "Sin datos a\u00fan",
   "habitStatsLastWeek": "Semana pasada",
   "habitStatsTimeSlotMorning": "manana",
   "habitStatsTimeSlotAfternoon": "tarde",
