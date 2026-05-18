@@ -9,7 +9,7 @@ import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_count_last7_days_chart.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_helpers.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_last7_days_card.dart';
-import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_monthly_activity_placeholder.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_monthly_activity_grid.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats_tab.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
@@ -60,6 +60,7 @@ void main() {
       expect(find.byKey(const Key('habit_stats_check_last7_days')),
           findsOneWidget);
       expect(find.byType(HabitStatsCountLast7DaysChart), findsNothing);
+      expect(find.byType(HabitStatsMonthlyActivityGrid), findsNothing);
       expect(find.text(l10n.habitConfigGoalSection), findsOneWidget);
       expect(find.text(l10n.habitStatsMetricCompleted), findsOneWidget);
       expect(find.text(l10n.habitStatsMetricConsistency), findsOneWidget);
@@ -69,7 +70,7 @@ void main() {
     });
 
     testWidgets(
-        'switching to month hides last 7 days block and shows monthly placeholder',
+        'switching to month hides last 7 days block and shows monthly activity grid',
         (tester) async {
       final habit = _habit(type: 'check');
       final store = _FakeStore(_rootState(habit: habit));
@@ -99,11 +100,11 @@ void main() {
       expect(find.text(l10n.habitStatsThisMonth), findsNWidgets(2));
       expect(find.text(l10n.habitStatsMonthlyConsistency), findsOneWidget);
       expect(find.text(l10n.habitStatsThisWeek), findsNothing);
-      expect(find.byType(HabitStatsMonthlyActivityPlaceholder), findsOneWidget);
+      expect(find.byType(HabitStatsMonthlyActivityGrid), findsOneWidget);
       expect(find.text(l10n.habitStatsMonthlyActivityTitle), findsOneWidget);
       expect(
         find.text(l10n.habitStatsMonthlyActivityPlaceholderBody),
-        findsOneWidget,
+        findsNothing,
       );
       expect(tester.takeException(), isNull);
     });
@@ -210,7 +211,7 @@ void main() {
       expect(find.text('0/0'), findsOneWidget);
       expect(find.text('0 ${l10n.habitStatsDaysUnitLabel(0)}'), findsWidgets);
       expect(find.text('0%'), findsWidgets);
-      expect(find.byType(HabitStatsMonthlyActivityPlaceholder), findsOneWidget);
+      expect(find.byType(HabitStatsMonthlyActivityGrid), findsOneWidget);
       expect(find.byType(HabitStatsLast7DaysCard), findsNothing);
       expect(tester.takeException(), isNull);
     });
