@@ -1152,6 +1152,44 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
   String get habitStatsMonthlyLegendPending =>
       _isSpanishHabitStats ? 'Pendiente' : 'Pending';
 
+  String get habitStatsMonthlyComparisonTitle =>
+      _isSpanishHabitStats ? 'Comparaci\u00f3n mensual' : 'Monthly comparison';
+
+  String get habitStatsMonthlyComparisonUnavailableTitle =>
+      _isSpanishHabitStats ? 'Sin comparaci\u00f3n todav\u00eda' : 'No comparison yet';
+
+  String get habitStatsMonthlyComparisonUnavailableBody => _isSpanishHabitStats
+      ? 'Cuando haya datos del mes anterior, ver\u00e1s tu evoluci\u00f3n.'
+      : 'Once there is previous month data, you\u2019ll see your progress.';
+
+  String get habitStatsMonthlyComparisonBetterTitle =>
+      _isSpanishHabitStats ? 'Mejor que el mes pasado' : 'Better than last month';
+
+  String habitStatsMonthlyComparisonBetterDelta(int count) {
+    final safeCount = count < 0 ? count.abs() : count;
+    return _isSpanishHabitStats
+        ? '+$safeCount vs mes anterior'
+        : '+$safeCount vs previous month';
+  }
+
+  String get habitStatsMonthlyComparisonSameTitle => _isSpanishHabitStats
+      ? 'Ritmo similar al mes anterior'
+      : 'Similar pace to last month';
+
+  String get habitStatsMonthlyComparisonSameDelta =>
+      _isSpanishHabitStats ? 'Sin cambios vs mes anterior' : 'No change vs previous month';
+
+  String get habitStatsMonthlyComparisonWorseTitle => _isSpanishHabitStats
+      ? 'Algo por debajo del mes anterior'
+      : 'A bit below last month';
+
+  String habitStatsMonthlyComparisonWorseDelta(int count) {
+    final safeCount = count < 0 ? count.abs() : count;
+    return _isSpanishHabitStats
+        ? '-$safeCount vs mes anterior'
+        : '-$safeCount vs previous month';
+  }
+
   String get habitStatsLastWeek =>
       _isSpanishHabitStats ? 'Semana pasada' : 'Last week';
 

@@ -312,6 +312,53 @@ int buildHabitStatsMonthlyMetricCardConsistencyPct({
   return ((monthlyData.completedDays / objective) * 100).round().clamp(0, 100);
 }
 
+HabitStatsMonthlyComparisonData buildHabitStatsMonthlyComparisonDataForCheck({
+  required dynamic habit,
+  required DateTime month,
+  required DateTime now,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, bool> skipsByDay,
+}) {
+  final currentMonth = DateTime(month.year, month.month, 1);
+  final previousMonth = DateTime(currentMonth.year, currentMonth.month - 1, 1);
+
+  final currentMonthData = buildHabitStatsMonthlyDataForCheck(
+    habit: habit,
+    month: currentMonth,
+    now: now,
+    countsByDay: countsByDay,
+    skipsByDay: skipsByDay,
+  );
+  final previousMonthData = buildHabitStatsMonthlyDataForCheck(
+    habit: habit,
+    month: previousMonth,
+    now: now,
+    countsByDay: countsByDay,
+    skipsByDay: skipsByDay,
+  );
+
+  final currentCompleted = currentMonthData.completedDays;
+  final previousCompleted = previousMonthData.completedDays;
+  final delta = currentCompleted - previousCompleted;
+  final hasComparison = previousMonthData.monthlyObjective > 0;
+
+  final trend = !hasComparison
+      ? HabitStatsComparisonTrend.unavailable
+      : delta > 0
+          ? HabitStatsComparisonTrend.better
+          : delta < 0
+              ? HabitStatsComparisonTrend.worse
+              : HabitStatsComparisonTrend.same;
+
+  return HabitStatsMonthlyComparisonData(
+    currentCompleted: currentCompleted,
+    previousCompleted: previousCompleted,
+    delta: delta,
+    hasComparison: hasComparison,
+    trend: trend,
+  );
+}
+
 String habitStatsBestMomentLabelForSlot({
   required dynamic l10n,
   required HabitStatsBestMomentSlot slot,

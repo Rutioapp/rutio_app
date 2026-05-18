@@ -12,6 +12,7 @@ import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_last7_days_card.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_models.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_monthly_activity_grid.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_monthly_comparison_card.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats_tab.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
@@ -67,6 +68,7 @@ void main() {
       expect(find.text(l10n.habitStatsMetricCompleted), findsOneWidget);
       expect(find.text(l10n.habitStatsMetricConsistency), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsMonthlyComparisonTitle), findsNothing);
       expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
       final insight = resolveHabitStatsInsight(
         l10n,
@@ -116,6 +118,46 @@ void main() {
         find.text(l10n.habitStatsMonthlyActivityPlaceholderBody),
         findsNothing,
       );
+      expect(find.byType(HabitStatsMonthlyComparisonCard), findsOneWidget);
+      expect(find.text(l10n.habitStatsMonthlyComparisonTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('month mode shows unavailable monthly comparison for new habits',
+        (tester) async {
+      final now = DateTime.now();
+      final habit = _habit(type: 'check')
+        ..['createdAt'] = _dateKey(DateTime(now.year, now.month, now.day));
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          locale: const Locale('es'),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodMonth));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HabitStatsMonthlyComparisonCard), findsOneWidget);
+      expect(find.text(l10n.habitStatsMonthlyComparisonTitle), findsOneWidget);
+      expect(
+        find.text(l10n.habitStatsMonthlyComparisonUnavailableTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.habitStatsMonthlyComparisonUnavailableBody),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
