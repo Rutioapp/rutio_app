@@ -72,6 +72,9 @@ void main() {
       expect(find.text(l10n.habitStatsMonthlyComparisonTitle), findsNothing);
       expect(find.byKey(const Key('habit_stats_year_activity_card')),
           findsNothing);
+      expect(find.byKey(const Key('habit_stats_year_comparison_card')),
+          findsNothing);
+      expect(find.text(l10n.habitStatsYearlyInsightTitle), findsNothing);
       expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
       final insight = resolveHabitStatsInsight(
         l10n,
@@ -130,6 +133,9 @@ void main() {
       expect(find.byType(HabitStatsMonthlyComparisonCard), findsOneWidget);
       expect(find.text(l10n.habitStatsMonthlyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsNothing);
+      expect(find.byKey(const Key('habit_stats_year_comparison_card')),
+          findsNothing);
+      expect(find.text(l10n.habitStatsYearlyInsightTitle), findsNothing);
       expect(
         find.text(l10n.habitStatsInsightMonthlyNotStartedTitle),
         findsOneWidget,
@@ -212,9 +218,12 @@ void main() {
       expect(find.text(l10n.yearlyActivityWeakestMonth), findsOneWidget);
       expect(find.text(l10n.yearlyActivityActiveMonths), findsWidgets);
       expect(find.text(l10n.yearlyActivityTrend), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_year_comparison_card')),
+          findsOneWidget);
+      expect(find.text(l10n.habitStatsYearlyComparisonTitle), findsOneWidget);
       expect(find.text('Jan'), findsWidgets);
       expect(find.text('Dec'), findsWidgets);
-      expect(find.text(l10n.habitStatsInsightLabel), findsNothing);
+      expect(find.text(l10n.habitStatsYearlyInsightTitle), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

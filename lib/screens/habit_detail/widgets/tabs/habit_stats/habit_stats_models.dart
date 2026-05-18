@@ -365,3 +365,49 @@ class HabitStatsYearActivitySummary {
     required this.trend,
   });
 }
+
+enum HabitStatsYearComparisonState {
+  improving,
+  stable,
+  declining,
+  aboveAverage,
+  belowAverage,
+  starting,
+  noData,
+}
+
+class HabitStatsYearComparison {
+  final HabitStatsYearComparisonState state;
+  final int? earlierAvgPct;
+  final int? laterAvgPct;
+  final int? annualAvgPct;
+  final int? latestMonthPct;
+
+  const HabitStatsYearComparison({
+    required this.state,
+    this.earlierAvgPct,
+    this.laterAvgPct,
+    this.annualAvgPct,
+    this.latestMonthPct,
+  });
+}
+
+enum HabitStatsYearInsightState {
+  strongYear,
+  improvingYear,
+  steadyYear,
+  irregularYear,
+  quietYear,
+  startingYear,
+  noData,
+}
+
+class HabitStatsYearInsightResult {
+  final HabitStatsYearInsightState state;
+  final HabitStatsInsight insight;
+
+  const HabitStatsYearInsightResult({
+    required this.state,
+    required this.insight,
+  });
+}

@@ -230,6 +230,7 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
       _buildYearlyMetricGrid(shellData, yearMetrics: yearMetrics),
       const SizedBox(height: _sectionSpacing),
       HabitStatsYearSection(
+        shellData: shellData,
         monthSummaries: yearMonthSummaries,
         isCounter: shellData.isCounter,
         accentColor: widget.familyColor,

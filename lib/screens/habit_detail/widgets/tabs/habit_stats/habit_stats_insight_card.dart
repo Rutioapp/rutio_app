@@ -7,6 +7,7 @@ import 'habit_stats_models.dart';
 class HabitStatsInsightCard extends StatelessWidget {
   final HabitStatsShellData shellData;
   final HabitStatsInsight? insight;
+  final String? insightLabel;
   final bool adaptiveLayout;
   static const _cardBorder = Color(0xFFE9E3D9);
   static const _cardText = Color(0xFF2F251C);
@@ -21,18 +22,20 @@ class HabitStatsInsightCard extends StatelessWidget {
     super.key,
     required this.shellData,
     this.insight,
+    this.insightLabel,
     this.adaptiveLayout = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final resolvedInsight = insight ?? resolveHabitStatsInsight(l10n, shellData);
+    final resolvedInsight =
+        insight ?? resolveHabitStatsInsight(l10n, shellData);
     final badgeToneColor = _badgeColorForTone(resolvedInsight.tone);
     if (!adaptiveLayout) {
       return _buildCompactCard(
         context,
-        l10n.habitStatsInsightLabel,
+        insightLabel ?? l10n.habitStatsInsightLabel,
         resolvedInsight,
         badgeToneColor,
       );
@@ -47,7 +50,7 @@ class HabitStatsInsightCard extends StatelessWidget {
         final layout = _layoutForDensity(density);
         return _buildAdaptiveCard(
           context,
-          l10n.habitStatsInsightLabel,
+          insightLabel ?? l10n.habitStatsInsightLabel,
           resolvedInsight,
           badgeToneColor,
           layout,

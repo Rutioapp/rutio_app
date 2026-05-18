@@ -7,18 +7,21 @@ import 'habit_stats_section_card.dart';
 
 class HabitStatsYearActivitySection extends StatelessWidget {
   final List<HabitStatsYearMonthSummary> monthSummaries;
+  final HabitStatsYearActivitySummary? activitySummary;
 
   const HabitStatsYearActivitySection({
     super.key,
     required this.monthSummaries,
+    this.activitySummary,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final summary = resolveHabitStatsYearActivitySummary(
-      monthSummaries: monthSummaries,
-    );
+    final summary = activitySummary ??
+        resolveHabitStatsYearActivitySummary(
+          monthSummaries: monthSummaries,
+        );
 
     return HabitStatsSectionCard(
       key: const Key('habit_stats_year_activity_card'),

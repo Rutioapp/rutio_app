@@ -1905,6 +1905,85 @@ class AppLocalizationsEs extends AppLocalizations {
   String get yearlyActivityTrendNoData => 'Sin datos aún';
 
   @override
+  String get habitStatsYearlyInsightTitle => 'Insight anual';
+
+  @override
+  String get habitStatsYearlyComparisonTitle => 'Comparación anual';
+
+  @override
+  String get habitStatsYearlyComparisonImproving =>
+      'Los últimos meses van mejor';
+
+  @override
+  String get habitStatsYearlyComparisonStable => 'Un año estable por ahora';
+
+  @override
+  String get habitStatsYearlyComparisonDeclining => 'El ritmo está bajando';
+
+  @override
+  String get habitStatsYearlyComparisonAboveAverage =>
+      'Este mes está por encima de tu media anual';
+
+  @override
+  String get habitStatsYearlyComparisonBelowAverage =>
+      'Este mes está por debajo de tu media anual';
+
+  @override
+  String get habitStatsYearlyComparisonStarting => 'Aún construyendo historial';
+
+  @override
+  String get habitStatsYearlyComparisonNoData => 'Sin datos anuales aún';
+
+  @override
+  String get habitStatsYearlyInsightStrongTitle => 'Año sólido';
+
+  @override
+  String get habitStatsYearlyInsightStrongBody =>
+      'Este hábito está teniendo un año sólido. Tus mejores meses empiezan a destacar.';
+
+  @override
+  String get habitStatsYearlyInsightImprovingTitle => 'Ritmo en mejora';
+
+  @override
+  String get habitStatsYearlyInsightImprovingBody =>
+      'Tu ritmo está mejorando. Los últimos meses empiezan a ser más constantes.';
+
+  @override
+  String get habitStatsYearlyInsightSteadyTitle => 'Ritmo estable';
+
+  @override
+  String get habitStatsYearlyInsightSteadyBody =>
+      'Mantienes un ritmo estable. Las pequeñas repeticiones están sosteniendo el hábito durante el año.';
+
+  @override
+  String get habitStatsYearlyInsightIrregularTitle => 'Año irregular';
+
+  @override
+  String get habitStatsYearlyInsightIrregularBody =>
+      'Este año ha sido algo irregular. Un pequeño reinicio el próximo mes puede ayudarte a recuperar impulso.';
+
+  @override
+  String get habitStatsYearlyInsightQuietTitle => 'Año tranquilo';
+
+  @override
+  String get habitStatsYearlyInsightQuietBody =>
+      'Este hábito ha estado tranquilo este año. Una sola vez completado puede volver a activar el ritmo.';
+
+  @override
+  String get habitStatsYearlyInsightStartingTitle => 'Base anual iniciada';
+
+  @override
+  String get habitStatsYearlyInsightStartingBody =>
+      'Aún hay poco historial anual, pero ya tienes una base sobre la que construir.';
+
+  @override
+  String get habitStatsYearlyInsightNoDataTitle => 'Sin datos anuales';
+
+  @override
+  String get habitStatsYearlyInsightNoDataBody =>
+      'Todavía no hay actividad anual. Cuando completes este hábito, aparecerá aquí tu insight del año.';
+
+  @override
   String get habitStatsLastWeek => 'Semana pasada';
 
   @override

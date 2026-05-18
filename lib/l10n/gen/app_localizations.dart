@@ -3436,6 +3436,144 @@ abstract class AppLocalizations {
   /// **'Sin datos aún'**
   String get yearlyActivityTrendNoData;
 
+  /// No description provided for @habitStatsYearlyInsightTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Insight anual'**
+  String get habitStatsYearlyInsightTitle;
+
+  /// No description provided for @habitStatsYearlyComparisonTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Comparación anual'**
+  String get habitStatsYearlyComparisonTitle;
+
+  /// No description provided for @habitStatsYearlyComparisonImproving.
+  ///
+  /// In es, this message translates to:
+  /// **'Los últimos meses van mejor'**
+  String get habitStatsYearlyComparisonImproving;
+
+  /// No description provided for @habitStatsYearlyComparisonStable.
+  ///
+  /// In es, this message translates to:
+  /// **'Un año estable por ahora'**
+  String get habitStatsYearlyComparisonStable;
+
+  /// No description provided for @habitStatsYearlyComparisonDeclining.
+  ///
+  /// In es, this message translates to:
+  /// **'El ritmo está bajando'**
+  String get habitStatsYearlyComparisonDeclining;
+
+  /// No description provided for @habitStatsYearlyComparisonAboveAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Este mes está por encima de tu media anual'**
+  String get habitStatsYearlyComparisonAboveAverage;
+
+  /// No description provided for @habitStatsYearlyComparisonBelowAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Este mes está por debajo de tu media anual'**
+  String get habitStatsYearlyComparisonBelowAverage;
+
+  /// No description provided for @habitStatsYearlyComparisonStarting.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún construyendo historial'**
+  String get habitStatsYearlyComparisonStarting;
+
+  /// No description provided for @habitStatsYearlyComparisonNoData.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos anuales aún'**
+  String get habitStatsYearlyComparisonNoData;
+
+  /// No description provided for @habitStatsYearlyInsightStrongTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Año sólido'**
+  String get habitStatsYearlyInsightStrongTitle;
+
+  /// No description provided for @habitStatsYearlyInsightStrongBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito está teniendo un año sólido. Tus mejores meses empiezan a destacar.'**
+  String get habitStatsYearlyInsightStrongBody;
+
+  /// No description provided for @habitStatsYearlyInsightImprovingTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritmo en mejora'**
+  String get habitStatsYearlyInsightImprovingTitle;
+
+  /// No description provided for @habitStatsYearlyInsightImprovingBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu ritmo está mejorando. Los últimos meses empiezan a ser más constantes.'**
+  String get habitStatsYearlyInsightImprovingBody;
+
+  /// No description provided for @habitStatsYearlyInsightSteadyTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritmo estable'**
+  String get habitStatsYearlyInsightSteadyTitle;
+
+  /// No description provided for @habitStatsYearlyInsightSteadyBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Mantienes un ritmo estable. Las pequeñas repeticiones están sosteniendo el hábito durante el año.'**
+  String get habitStatsYearlyInsightSteadyBody;
+
+  /// No description provided for @habitStatsYearlyInsightIrregularTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Año irregular'**
+  String get habitStatsYearlyInsightIrregularTitle;
+
+  /// No description provided for @habitStatsYearlyInsightIrregularBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Este año ha sido algo irregular. Un pequeño reinicio el próximo mes puede ayudarte a recuperar impulso.'**
+  String get habitStatsYearlyInsightIrregularBody;
+
+  /// No description provided for @habitStatsYearlyInsightQuietTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Año tranquilo'**
+  String get habitStatsYearlyInsightQuietTitle;
+
+  /// No description provided for @habitStatsYearlyInsightQuietBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito ha estado tranquilo este año. Una sola vez completado puede volver a activar el ritmo.'**
+  String get habitStatsYearlyInsightQuietBody;
+
+  /// No description provided for @habitStatsYearlyInsightStartingTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Base anual iniciada'**
+  String get habitStatsYearlyInsightStartingTitle;
+
+  /// No description provided for @habitStatsYearlyInsightStartingBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún hay poco historial anual, pero ya tienes una base sobre la que construir.'**
+  String get habitStatsYearlyInsightStartingBody;
+
+  /// No description provided for @habitStatsYearlyInsightNoDataTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos anuales'**
+  String get habitStatsYearlyInsightNoDataTitle;
+
+  /// No description provided for @habitStatsYearlyInsightNoDataBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay actividad anual. Cuando completes este hábito, aparecerá aquí tu insight del año.'**
+  String get habitStatsYearlyInsightNoDataBody;
+
   /// No description provided for @habitStatsLastWeek.
   ///
   /// In es, this message translates to:
