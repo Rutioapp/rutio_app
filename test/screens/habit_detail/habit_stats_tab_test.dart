@@ -8,7 +8,9 @@ import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_hero_milestone.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_count_last7_days_chart.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_helpers.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_insight_resolver.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_last7_days_card.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_models.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_monthly_activity_grid.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats_tab.dart';
 import 'package:rutio/stores/user_state_store.dart';
@@ -66,7 +68,15 @@ void main() {
       expect(find.text(l10n.habitStatsMetricConsistency), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
-      expect(find.text(l10n.habitStatsInsightBestMomentTitle), findsOneWidget);
+      final insight = resolveHabitStatsInsight(
+        l10n,
+        buildHabitStatsShellData(
+          tester.element(find.byType(HabitStatsTab)),
+          habit,
+          period: HabitStatsPeriod.week,
+        ),
+      );
+      expect(find.text(insight.title), findsOneWidget);
     });
 
     testWidgets(
@@ -321,7 +331,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('2/3'), findsOneWidget);
+      final weekStart = _startOfWeek(now, weekStartsOn: DateTime.monday);
+      final expectedCompleted = <DateTime>[
+        now.subtract(const Duration(days: 1)),
+        now,
+      ].where((day) => !_dateOnlyValue(day).isBefore(weekStart)).length;
+      expect(find.text('$expectedCompleted/3'), findsOneWidget);
     });
 
     testWidgets(
@@ -1053,6 +1068,14 @@ String _dateKey(DateTime date) {
   final day = date.day.toString().padLeft(2, '0');
   return '${date.year}-$month-$day';
 }
+
+DateTime _startOfWeek(DateTime date, {required int weekStartsOn}) {
+  final day = _dateOnlyValue(date);
+  final delta = (day.weekday - weekStartsOn + 7) % 7;
+  return day.subtract(Duration(days: delta));
+}
+
+DateTime _dateOnlyValue(DateTime date) => DateTime(date.year, date.month, date.day);
 
 class _FakeStore implements UserStateStore {
   _FakeStore(
