@@ -79,6 +79,10 @@ void main() {
         ),
       );
       expect(find.text(insight.title), findsOneWidget);
+      expect(
+        find.text(l10n.habitStatsInsightMonthlyNotStartedTitle),
+        findsNothing,
+      );
     });
 
     testWidgets(
@@ -121,6 +125,45 @@ void main() {
       expect(find.byType(HabitStatsMonthlyComparisonCard), findsOneWidget);
       expect(find.text(l10n.habitStatsMonthlyComparisonTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsNothing);
+      expect(
+        find.text(l10n.habitStatsInsightMonthlyNotStartedTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('this week', findRichText: true),
+        findsNothing,
+      );
+      expect(
+        find.textContaining('last 7 days', findRichText: true),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('month mode builds on compact screen without overflow',
+        (tester) async {
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          size: const Size(320, 568),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodMonth));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HabitStatsMonthlyActivityGrid), findsOneWidget);
+      expect(find.byType(HabitStatsMonthlyComparisonCard), findsOneWidget);
+      expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

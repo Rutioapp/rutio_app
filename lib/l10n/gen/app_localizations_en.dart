@@ -2085,6 +2085,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitStatsInsightEveryRepetition => 'Every repetition counts.';
 
   @override
+  String get habitStatsInsightMonthlyNotStartedTitle => 'Month not started yet';
+
+  @override
+  String get habitStatsInsightMonthlyNotStartedBody =>
+      'There are no logs yet this month. One first check is enough to start building rhythm.';
+
+  @override
+  String get habitStatsInsightMonthlyInConstructionTitle => 'Month in progress';
+
+  @override
+  String habitStatsInsightMonthlyInConstructionBody(
+      int completed, int objective) {
+    return 'You\'\'re at $completed/$objective. A few steady days can still rebuild the rhythm.';
+  }
+
+  @override
+  String get habitStatsInsightMonthlyInProgressTitle => 'Good month in motion';
+
+  @override
+  String habitStatsInsightMonthlyInProgressBody(int completed) {
+    return 'You\'\'ve completed this $completed times this month. Keep the rhythm without forcing it.';
+  }
+
+  @override
+  String get habitStatsInsightMonthlyStrongTitle => 'Solid monthly rhythm';
+
+  @override
+  String habitStatsInsightMonthlyStrongBody(int completed, int objective) {
+    return 'You\'\'re doing very well this month: $completed/$objective completed.';
+  }
+
+  @override
+  String get habitStatsInsightMonthlyGoalCompletedTitle =>
+      'Monthly goal completed';
+
+  @override
+  String get habitStatsInsightMonthlyGoalCompletedBody =>
+      'You\'\'ve already completed this month\'\'s goal. Anything extra is a bonus.';
+
+  @override
+  String habitStatsInsightMonthlyBestMomentBody(String bestMoment) {
+    return 'Your strongest time is still $bestMoment.';
+  }
+
+  @override
+  String get habitStatsInsightMonthlyComparisonBetter =>
+      'You\'\'re also ahead of last month.';
+
+  @override
+  String get habitStatsInsightMonthlyComparisonSame =>
+      'Your rhythm is similar to last month.';
+
+  @override
+  String get habitStatsInsightMonthlyComparisonWorse =>
+      'You\'\'re a bit below last month, but there is still room.';
+
+  @override
   String get editHabitSaveChanges => 'Save changes';
 
   @override

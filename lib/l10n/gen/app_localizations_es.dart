@@ -2096,6 +2096,64 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitStatsInsightEveryRepetition => 'Cada repetición cuenta.';
 
   @override
+  String get habitStatsInsightMonthlyNotStartedTitle => 'Mes por empezar';
+
+  @override
+  String get habitStatsInsightMonthlyNotStartedBody =>
+      'Todavía no hay registros este mes. Un primer check ya empieza a construir ritmo.';
+
+  @override
+  String get habitStatsInsightMonthlyInConstructionTitle =>
+      'Mes en construcción';
+
+  @override
+  String habitStatsInsightMonthlyInConstructionBody(
+      int completed, int objective) {
+    return 'Llevas $completed/$objective. Todavía puedes recuperar ritmo con unos días constantes.';
+  }
+
+  @override
+  String get habitStatsInsightMonthlyInProgressTitle => 'Buen mes en marcha';
+
+  @override
+  String habitStatsInsightMonthlyInProgressBody(int completed) {
+    return 'Ya completaste $completed veces este mes. Mantén este ritmo sin forzarlo.';
+  }
+
+  @override
+  String get habitStatsInsightMonthlyStrongTitle => 'Ritmo mensual sólido';
+
+  @override
+  String habitStatsInsightMonthlyStrongBody(int completed, int objective) {
+    return 'Vas muy bien este mes: $completed/$objective completado.';
+  }
+
+  @override
+  String get habitStatsInsightMonthlyGoalCompletedTitle =>
+      'Objetivo mensual completado';
+
+  @override
+  String get habitStatsInsightMonthlyGoalCompletedBody =>
+      'Ya has cumplido el objetivo de este mes. Todo lo extra suma sin presión.';
+
+  @override
+  String habitStatsInsightMonthlyBestMomentBody(String bestMoment) {
+    return 'Tu mejor franja sigue siendo $bestMoment.';
+  }
+
+  @override
+  String get habitStatsInsightMonthlyComparisonBetter =>
+      'Además, vas mejor que el mes pasado.';
+
+  @override
+  String get habitStatsInsightMonthlyComparisonSame =>
+      'Tu ritmo es parecido al mes pasado.';
+
+  @override
+  String get habitStatsInsightMonthlyComparisonWorse =>
+      'Vas algo por debajo del mes pasado, pero aún hay margen.';
+
+  @override
   String get editHabitSaveChanges => 'Guardar cambios';
 
   @override

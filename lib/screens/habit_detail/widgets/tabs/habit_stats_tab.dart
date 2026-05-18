@@ -13,6 +13,7 @@ import 'habit_stats/habit_stats_models.dart';
 import 'habit_stats/habit_stats_monthly_activity_grid.dart';
 import 'habit_stats/habit_stats_monthly_comparison_card.dart';
 import 'habit_stats/habit_stats_monthly_comparison_resolver.dart';
+import 'habit_stats/habit_stats_monthly_insight_resolver.dart';
 import 'habit_stats/habit_stats_period_selector.dart';
 import 'habit_stats/habit_stats_section_card.dart';
 import 'habit_stats/habit_stats_weekly_comparison_card.dart';
@@ -155,6 +156,13 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
             context.l10n,
             monthlyComparisonData,
           );
+    final monthlyInsight = shellData.isCheckHabit && monthlyData != null
+        ? resolveHabitStatsMonthlyInsight(
+            context.l10n,
+            monthlyData: monthlyData,
+            monthlyComparisonData: monthlyComparisonData,
+          )
+        : null;
 
     return [
       const SizedBox(height: _sectionSpacing),
@@ -178,7 +186,13 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
           comparison: monthlyComparisonData,
           copy: monthlyComparisonCopy,
         ),
-      // TODO Phase 6: Add monthly insight resolver.
+      const SizedBox(height: _lowerSectionSpacing),
+      if (monthlyInsight != null)
+        HabitStatsInsightCard(
+          shellData: shellData,
+          insight: monthlyInsight,
+          adaptiveLayout: true,
+        ),
     ];
   }
 

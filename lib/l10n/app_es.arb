@@ -1121,6 +1121,54 @@
   "habitStatsInsightSteadyRoutine": "Vas construyendo una rutina estable.",
   "habitStatsInsightGoodRhythm": "Buen ritmo esta semana.",
   "habitStatsInsightEveryRepetition": "Cada repetición cuenta.",
+  "habitStatsInsightMonthlyNotStartedTitle": "Mes por empezar",
+  "habitStatsInsightMonthlyNotStartedBody": "Todavía no hay registros este mes. Un primer check ya empieza a construir ritmo.",
+  "habitStatsInsightMonthlyInConstructionTitle": "Mes en construcción",
+  "habitStatsInsightMonthlyInConstructionBody": "Llevas {completed}/{objective}. Todavía puedes recuperar ritmo con unos días constantes.",
+  "@habitStatsInsightMonthlyInConstructionBody": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "objective": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsInsightMonthlyInProgressTitle": "Buen mes en marcha",
+  "habitStatsInsightMonthlyInProgressBody": "Ya completaste {completed} veces este mes. Mantén este ritmo sin forzarlo.",
+  "@habitStatsInsightMonthlyInProgressBody": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsInsightMonthlyStrongTitle": "Ritmo mensual sólido",
+  "habitStatsInsightMonthlyStrongBody": "Vas muy bien este mes: {completed}/{objective} completado.",
+  "@habitStatsInsightMonthlyStrongBody": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "objective": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStatsInsightMonthlyGoalCompletedTitle": "Objetivo mensual completado",
+  "habitStatsInsightMonthlyGoalCompletedBody": "Ya has cumplido el objetivo de este mes. Todo lo extra suma sin presión.",
+  "habitStatsInsightMonthlyBestMomentBody": "Tu mejor franja sigue siendo {bestMoment}.",
+  "@habitStatsInsightMonthlyBestMomentBody": {
+    "placeholders": {
+      "bestMoment": {
+        "type": "String"
+      }
+    }
+  },
+  "habitStatsInsightMonthlyComparisonBetter": "Además, vas mejor que el mes pasado.",
+  "habitStatsInsightMonthlyComparisonSame": "Tu ritmo es parecido al mes pasado.",
+  "habitStatsInsightMonthlyComparisonWorse": "Vas algo por debajo del mes pasado, pero aún hay margen.",
   "editHabitSaveChanges": "Guardar cambios",
   "editHabitSaving": "Guardando...",
   "editHabitNotificationPermissionDenied": "Permisos de notificación denegados.",

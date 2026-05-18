@@ -1121,6 +1121,54 @@
     "habitStatsInsightSteadyRoutine": "You are building a steady routine.",
     "habitStatsInsightGoodRhythm": "Good rhythm this week.",
     "habitStatsInsightEveryRepetition": "Every repetition counts.",
+    "habitStatsInsightMonthlyNotStartedTitle": "Month not started yet",
+    "habitStatsInsightMonthlyNotStartedBody": "There are no logs yet this month. One first check is enough to start building rhythm.",
+    "habitStatsInsightMonthlyInConstructionTitle": "Month in progress",
+    "habitStatsInsightMonthlyInConstructionBody": "You''re at {completed}/{objective}. A few steady days can still rebuild the rhythm.",
+    "@habitStatsInsightMonthlyInConstructionBody": {
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "objective": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsInsightMonthlyInProgressTitle": "Good month in motion",
+    "habitStatsInsightMonthlyInProgressBody": "You''ve completed this {completed} times this month. Keep the rhythm without forcing it.",
+    "@habitStatsInsightMonthlyInProgressBody": {
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsInsightMonthlyStrongTitle": "Solid monthly rhythm",
+    "habitStatsInsightMonthlyStrongBody": "You''re doing very well this month: {completed}/{objective} completed.",
+    "@habitStatsInsightMonthlyStrongBody": {
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "objective": {
+                "type": "int"
+            }
+        }
+    },
+    "habitStatsInsightMonthlyGoalCompletedTitle": "Monthly goal completed",
+    "habitStatsInsightMonthlyGoalCompletedBody": "You''ve already completed this month''s goal. Anything extra is a bonus.",
+    "habitStatsInsightMonthlyBestMomentBody": "Your strongest time is still {bestMoment}.",
+    "@habitStatsInsightMonthlyBestMomentBody": {
+        "placeholders": {
+            "bestMoment": {
+                "type": "String"
+            }
+        }
+    },
+    "habitStatsInsightMonthlyComparisonBetter": "You''re also ahead of last month.",
+    "habitStatsInsightMonthlyComparisonSame": "Your rhythm is similar to last month.",
+    "habitStatsInsightMonthlyComparisonWorse": "You''re a bit below last month, but there is still room.",
     "editHabitSaveChanges": "Save changes",
     "editHabitSaving": "Saving...",
     "editHabitNotificationPermissionDenied": "Notification permissions denied.",

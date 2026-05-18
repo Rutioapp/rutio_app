@@ -3706,6 +3706,91 @@ abstract class AppLocalizations {
   /// **'Cada repetición cuenta.'**
   String get habitStatsInsightEveryRepetition;
 
+  /// No description provided for @habitStatsInsightMonthlyNotStartedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mes por empezar'**
+  String get habitStatsInsightMonthlyNotStartedTitle;
+
+  /// No description provided for @habitStatsInsightMonthlyNotStartedBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay registros este mes. Un primer check ya empieza a construir ritmo.'**
+  String get habitStatsInsightMonthlyNotStartedBody;
+
+  /// No description provided for @habitStatsInsightMonthlyInConstructionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mes en construcción'**
+  String get habitStatsInsightMonthlyInConstructionTitle;
+
+  /// No description provided for @habitStatsInsightMonthlyInConstructionBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Llevas {completed}/{objective}. Todavía puedes recuperar ritmo con unos días constantes.'**
+  String habitStatsInsightMonthlyInConstructionBody(
+      int completed, int objective);
+
+  /// No description provided for @habitStatsInsightMonthlyInProgressTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Buen mes en marcha'**
+  String get habitStatsInsightMonthlyInProgressTitle;
+
+  /// No description provided for @habitStatsInsightMonthlyInProgressBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya completaste {completed} veces este mes. Mantén este ritmo sin forzarlo.'**
+  String habitStatsInsightMonthlyInProgressBody(int completed);
+
+  /// No description provided for @habitStatsInsightMonthlyStrongTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritmo mensual sólido'**
+  String get habitStatsInsightMonthlyStrongTitle;
+
+  /// No description provided for @habitStatsInsightMonthlyStrongBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Vas muy bien este mes: {completed}/{objective} completado.'**
+  String habitStatsInsightMonthlyStrongBody(int completed, int objective);
+
+  /// No description provided for @habitStatsInsightMonthlyGoalCompletedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo mensual completado'**
+  String get habitStatsInsightMonthlyGoalCompletedTitle;
+
+  /// No description provided for @habitStatsInsightMonthlyGoalCompletedBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya has cumplido el objetivo de este mes. Todo lo extra suma sin presión.'**
+  String get habitStatsInsightMonthlyGoalCompletedBody;
+
+  /// No description provided for @habitStatsInsightMonthlyBestMomentBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu mejor franja sigue siendo {bestMoment}.'**
+  String habitStatsInsightMonthlyBestMomentBody(String bestMoment);
+
+  /// No description provided for @habitStatsInsightMonthlyComparisonBetter.
+  ///
+  /// In es, this message translates to:
+  /// **'Además, vas mejor que el mes pasado.'**
+  String get habitStatsInsightMonthlyComparisonBetter;
+
+  /// No description provided for @habitStatsInsightMonthlyComparisonSame.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu ritmo es parecido al mes pasado.'**
+  String get habitStatsInsightMonthlyComparisonSame;
+
+  /// No description provided for @habitStatsInsightMonthlyComparisonWorse.
+  ///
+  /// In es, this message translates to:
+  /// **'Vas algo por debajo del mes pasado, pero aún hay margen.'**
+  String get habitStatsInsightMonthlyComparisonWorse;
+
   /// No description provided for @editHabitSaveChanges.
   ///
   /// In es, this message translates to:
