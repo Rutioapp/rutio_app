@@ -3244,6 +3244,18 @@ abstract class AppLocalizations {
   /// **'Año'**
   String get habitStatsPeriodYear;
 
+  /// No description provided for @habitStatsYearSummaryTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen anual'**
+  String get habitStatsYearSummaryTitle;
+
+  /// No description provided for @habitStatsYearSummaryBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Pronto verás tus meses, actividad e insights de este hábito durante el año.'**
+  String get habitStatsYearSummaryBody;
+
   /// No description provided for @habitStatsPeriodThreeMonths.
   ///
   /// In es, this message translates to:

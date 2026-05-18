@@ -940,6 +940,8 @@
     "habitStatsPeriodWeek": "Week",
     "habitStatsPeriodMonth": "Month",
     "habitStatsPeriodYear": "Year",
+    "habitStatsYearSummaryTitle": "Yearly summary",
+    "habitStatsYearSummaryBody": "Soon you'll see your months, activity and insights for this habit across the year.",
     "habitStatsPeriodThreeMonths": "3 months",
     "habitStatsPeriodAll": "All",
     "habitStatsDaysLabel": "{count} day",

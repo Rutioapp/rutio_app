@@ -13,6 +13,7 @@ import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_models.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_monthly_activity_grid.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_monthly_comparison_card.dart';
+import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_year_section.dart';
 import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats_tab.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
@@ -137,6 +138,73 @@ void main() {
         find.textContaining('last 7 days', findRichText: true),
         findsNothing,
       );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'switching to year hides last 7 days block and shows yearly summary section',
+        (tester) async {
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          size: const Size(320, 568),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(find.byType(HabitStatsLast7DaysCard), findsOneWidget);
+
+      await tester.tap(find.text(l10n.habitStatsPeriodYear));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsNothing);
+      expect(find.byType(HabitStatsLast7DaysCard), findsNothing);
+      expect(find.byType(HabitStatsCountLast7DaysChart), findsNothing);
+      expect(find.byType(HabitStatsMonthlyActivityGrid), findsNothing);
+      expect(find.byType(HabitStatsMonthlyComparisonCard), findsNothing);
+      expect(find.byType(HabitStatsYearSection), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_year_summary_card')), findsOneWidget);
+      expect(find.text(l10n.habitStatsYearSummaryTitle), findsOneWidget);
+      expect(find.text(l10n.habitStatsYearSummaryBody), findsOneWidget);
+      expect(find.text(l10n.habitStatsInsightLabel), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('switching year then week restores weekly 7-day section',
+        (tester) async {
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodYear));
+      await tester.pumpAndSettle();
+      expect(find.byType(HabitStatsLast7DaysCard), findsNothing);
+
+      await tester.tap(find.text(l10n.habitStatsPeriodWeek));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.habitStatsTabLastDaysTitle(7)), findsOneWidget);
+      expect(find.byType(HabitStatsLast7DaysCard), findsOneWidget);
+      expect(find.byType(HabitStatsYearSection), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

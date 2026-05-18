@@ -17,6 +17,7 @@ import 'habit_stats/habit_stats_monthly_insight_resolver.dart';
 import 'habit_stats/habit_stats_period_selector.dart';
 import 'habit_stats/habit_stats_section_card.dart';
 import 'habit_stats/habit_stats_weekly_comparison_card.dart';
+import 'habit_stats/habit_stats_year_section.dart';
 
 class HabitStatsTab extends StatefulWidget {
   final dynamic habit;
@@ -98,8 +99,9 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
       case HabitStatsPeriod.month:
         return _buildMonthlyContent(shellData);
       case HabitStatsPeriod.week:
-      case HabitStatsPeriod.year:
         return _buildWeeklyContent(shellData);
+      case HabitStatsPeriod.year:
+        return _buildYearlyContent(shellData);
     }
   }
 
@@ -193,6 +195,18 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
           insight: monthlyInsight,
           adaptiveLayout: true,
         ),
+    ];
+  }
+
+  List<Widget> _buildYearlyContent(HabitStatsShellData shellData) {
+    return [
+      const SizedBox(height: _sectionSpacing),
+      HabitStatsHeroCard(
+        shellData: shellData,
+        familyColor: widget.familyColor,
+      ),
+      const SizedBox(height: _sectionSpacing),
+      const HabitStatsYearSection(),
     ];
   }
 
