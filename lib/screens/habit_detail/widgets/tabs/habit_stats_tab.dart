@@ -11,6 +11,8 @@ import 'habit_stats/habit_stats_last7_days_card.dart';
 import 'habit_stats/habit_stats_metric_grid.dart';
 import 'habit_stats/habit_stats_models.dart';
 import 'habit_stats/habit_stats_monthly_activity_grid.dart';
+import 'habit_stats/habit_stats_monthly_comparison_card.dart';
+import 'habit_stats/habit_stats_monthly_comparison_resolver.dart';
 import 'habit_stats/habit_stats_period_selector.dart';
 import 'habit_stats/habit_stats_section_card.dart';
 import 'habit_stats/habit_stats_weekly_comparison_card.dart';
@@ -138,6 +140,21 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
             completionTimesByDay: shellData.completionTimesByDay,
           )
         : null;
+    final monthlyComparisonData = shellData.isCheckHabit
+        ? buildHabitStatsMonthlyComparisonDataForCheck(
+            habit: widget.habit,
+            month: month,
+            now: now,
+            countsByDay: shellData.countsByDay,
+            skipsByDay: shellData.skipsByDay,
+          )
+        : null;
+    final monthlyComparisonCopy = monthlyComparisonData == null
+        ? null
+        : resolveHabitStatsMonthlyComparisonCopy(
+            context.l10n,
+            monthlyComparisonData,
+          );
 
     return [
       const SizedBox(height: _sectionSpacing),
@@ -153,7 +170,14 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
           monthlyData: monthlyData,
           month: month,
         ),
-      // TODO Phase 5: Add monthly comparison.
+      const SizedBox(height: _lowerSectionSpacing),
+      if (shellData.isCheckHabit &&
+          monthlyComparisonData != null &&
+          monthlyComparisonCopy != null)
+        HabitStatsMonthlyComparisonCard(
+          comparison: monthlyComparisonData,
+          copy: monthlyComparisonCopy,
+        ),
       // TODO Phase 6: Add monthly insight resolver.
     ];
   }

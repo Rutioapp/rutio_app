@@ -201,6 +201,13 @@ enum HabitStatsMonthlyObjectiveUnit {
   times,
 }
 
+enum HabitStatsComparisonTrend {
+  better,
+  same,
+  worse,
+  unavailable,
+}
+
 class HabitStatsMonthDayState {
   final DateTime date;
   final HabitStatsMonthDayStatus status;
@@ -208,6 +215,22 @@ class HabitStatsMonthDayState {
   const HabitStatsMonthDayState({
     required this.date,
     required this.status,
+  });
+}
+
+class HabitStatsMonthlyComparisonData {
+  final int currentCompleted;
+  final int previousCompleted;
+  final int delta;
+  final bool hasComparison;
+  final HabitStatsComparisonTrend trend;
+
+  const HabitStatsMonthlyComparisonData({
+    required this.currentCompleted,
+    required this.previousCompleted,
+    required this.delta,
+    required this.hasComparison,
+    required this.trend,
   });
 }
 

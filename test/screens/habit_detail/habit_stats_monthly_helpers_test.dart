@@ -256,6 +256,137 @@ void main() {
       );
     });
   });
+
+  group('buildHabitStatsMonthlyComparisonDataForCheck', () {
+    test('returns unavailable when habit was not active in previous month', () {
+      final comparison = buildHabitStatsMonthlyComparisonDataForCheck(
+        habit: _habit(
+          schedule: const {'type': 'daily'},
+          createdAt: '2026-05-10',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 20),
+        countsByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(comparison.hasComparison, isFalse);
+      expect(comparison.currentCompleted, 0);
+      expect(comparison.previousCompleted, 0);
+      expect(comparison.delta, 0);
+      expect(comparison.trend, HabitStatsComparisonTrend.unavailable);
+    });
+
+    test('returns better when current month completed is higher than previous', () {
+      final comparison = buildHabitStatsMonthlyComparisonDataForCheck(
+        habit: _habit(
+          schedule: const {'type': 'daily'},
+          createdAt: '2025-01-01',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 31),
+        countsByDay: {
+          ..._completedDaysInMonth(year: 2026, month: 5, total: 12),
+          ..._completedDaysInMonth(year: 2026, month: 4, total: 8),
+        },
+        skipsByDay: const {},
+      );
+
+      expect(comparison.hasComparison, isTrue);
+      expect(comparison.currentCompleted, 12);
+      expect(comparison.previousCompleted, 8);
+      expect(comparison.delta, 4);
+      expect(comparison.trend, HabitStatsComparisonTrend.better);
+    });
+
+    test('returns same when completed counts match previous month', () {
+      final comparison = buildHabitStatsMonthlyComparisonDataForCheck(
+        habit: _habit(
+          schedule: const {'type': 'daily'},
+          createdAt: '2025-01-01',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 31),
+        countsByDay: {
+          ..._completedDaysInMonth(year: 2026, month: 5, total: 8),
+          ..._completedDaysInMonth(year: 2026, month: 4, total: 8),
+        },
+        skipsByDay: const {},
+      );
+
+      expect(comparison.hasComparison, isTrue);
+      expect(comparison.currentCompleted, 8);
+      expect(comparison.previousCompleted, 8);
+      expect(comparison.delta, 0);
+      expect(comparison.trend, HabitStatsComparisonTrend.same);
+    });
+
+    test('returns worse when completed count is below previous month', () {
+      final comparison = buildHabitStatsMonthlyComparisonDataForCheck(
+        habit: _habit(
+          schedule: const {'type': 'daily'},
+          createdAt: '2025-01-01',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 31),
+        countsByDay: {
+          ..._completedDaysInMonth(year: 2026, month: 5, total: 6),
+          ..._completedDaysInMonth(year: 2026, month: 4, total: 9),
+        },
+        skipsByDay: const {},
+      );
+
+      expect(comparison.hasComparison, isTrue);
+      expect(comparison.currentCompleted, 6);
+      expect(comparison.previousCompleted, 9);
+      expect(comparison.delta, -3);
+      expect(comparison.trend, HabitStatsComparisonTrend.worse);
+    });
+
+    test('resolves previous month correctly across year boundary', () {
+      final comparison = buildHabitStatsMonthlyComparisonDataForCheck(
+        habit: _habit(
+          schedule: const {'type': 'daily'},
+          createdAt: '2025-01-01',
+        ),
+        month: DateTime(2026, 1, 1),
+        now: DateTime(2026, 1, 31),
+        countsByDay: {
+          ..._completedDaysInMonth(year: 2026, month: 1, total: 5),
+          ..._completedDaysInMonth(year: 2025, month: 12, total: 3),
+        },
+        skipsByDay: const {},
+      );
+
+      expect(comparison.hasComparison, isTrue);
+      expect(comparison.currentCompleted, 5);
+      expect(comparison.previousCompleted, 3);
+      expect(comparison.delta, 2);
+      expect(comparison.trend, HabitStatsComparisonTrend.better);
+    });
+
+    test('times-per-week habits compare completed counts only', () {
+      final comparison = buildHabitStatsMonthlyComparisonDataForCheck(
+        habit: _habit(
+          schedule: const {'type': 'timesPerWeek', 'timesPerWeek': 3},
+          createdAt: '2025-01-01',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 31),
+        countsByDay: {
+          ..._completedDaysInMonth(year: 2026, month: 5, total: 2),
+          ..._completedDaysInMonth(year: 2026, month: 4, total: 5),
+        },
+        skipsByDay: const {},
+      );
+
+      expect(comparison.hasComparison, isTrue);
+      expect(comparison.currentCompleted, 2);
+      expect(comparison.previousCompleted, 5);
+      expect(comparison.delta, -3);
+      expect(comparison.trend, HabitStatsComparisonTrend.worse);
+    });
+  });
 }
 
 HabitStatsMonthDayStatus _statusForDate(
@@ -302,4 +433,14 @@ HabitStatsMonthlyData _monthlyData({
     bestMoment: null,
     days: const <HabitStatsMonthDayState>[],
   );
+}
+
+Map<DateTime, int> _completedDaysInMonth({
+  required int year,
+  required int month,
+  required int total,
+}) {
+  return <DateTime, int>{
+    for (var day = 1; day <= total; day++) DateTime(year, month, day): 1,
+  };
 }
