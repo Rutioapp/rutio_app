@@ -1821,6 +1821,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitStatsThisWeek => 'This week';
 
   @override
+  String get habitStatsThisYear => 'This year';
+
+  @override
+  String get habitStatsYearMetricCompletedTotal => 'Done / Total';
+
+  @override
+  String get habitStatsYearMetricConsistencySubtitle => 'Yearly consistency';
+
+  @override
+  String get habitStatsYearMetricBestMonth => 'Best month';
+
+  @override
+  String get habitStatsYearMetricBestMonthSubtitle => 'Top performance';
+
+  @override
+  String get habitStatsYearMetricActiveMonths => 'Active months';
+
+  @override
+  String get habitStatsYearMetricActiveMonthsSubtitle => 'With activity';
+
+  @override
   String get habitStatsLastWeek => 'Last week';
 
   @override

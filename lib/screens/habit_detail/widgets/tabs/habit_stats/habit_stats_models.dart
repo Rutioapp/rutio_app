@@ -267,3 +267,39 @@ class HabitStatsMonthlyData {
     required this.days,
   });
 }
+
+class HabitStatsYearMonthSummary {
+  final int month;
+  final int completedDays;
+  final num accumulatedValue;
+  final int trackableDays;
+
+  const HabitStatsYearMonthSummary({
+    required this.month,
+    required this.completedDays,
+    required this.accumulatedValue,
+    required this.trackableDays,
+  });
+}
+
+class HabitStatsYearMetrics {
+  final int year;
+  final int completedTotal;
+  final int trackableTotal;
+  final num accumulatedTotal;
+  final int consistencyPct;
+  final int activeMonths;
+  final HabitStatsYearMonthSummary? bestMonth;
+  final List<HabitStatsYearMonthSummary> months;
+
+  const HabitStatsYearMetrics({
+    required this.year,
+    required this.completedTotal,
+    required this.trackableTotal,
+    required this.accumulatedTotal,
+    required this.consistencyPct,
+    required this.activeMonths,
+    required this.bestMonth,
+    required this.months,
+  });
+}

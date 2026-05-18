@@ -147,7 +147,8 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
       _normalizeCountMap(completionTimesByDay);
   final isTimesPerWeekCheck = _isTimesPerWeekCheckHabit(habitMap);
   final monthEnd = DateTime(month.year, month.month + 1, 0);
-  final activeStart = _activeStartInMonth(habitMap: habitMap, monthStart: monthStart);
+  final activeStart =
+      _activeStartInMonth(habitMap: habitMap, monthStart: monthStart);
   final hasActiveRangeInMonth = !activeStart.isAfter(monthEnd);
   final safeToday = _dateOnly(today);
 
@@ -218,9 +219,8 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
     objectiveUnit = HabitStatsMonthlyObjectiveUnit.days;
   } else {
     final weeklyTarget = _timesPerWeekTargetForCheck(habitMap);
-    final activeDaysInMonth = hasActiveRangeInMonth
-        ? _inclusiveDayCount(activeStart, monthEnd)
-        : 0;
+    final activeDaysInMonth =
+        hasActiveRangeInMonth ? _inclusiveDayCount(activeStart, monthEnd) : 0;
     final elapsedEnd = safeToday.isBefore(monthEnd) ? safeToday : monthEnd;
     final activeElapsedDays =
         hasActiveRangeInMonth && !elapsedEnd.isBefore(activeStart)
@@ -244,7 +244,8 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
     objectiveUnit = HabitStatsMonthlyObjectiveUnit.times;
   }
 
-  final consistency = expectedToDate == 0 ? 0.0 : (completedDays / expectedToDate);
+  final consistency =
+      expectedToDate == 0 ? 0.0 : (completedDays / expectedToDate);
 
   return HabitStatsMonthlyData(
     monthlyObjective: monthlyObjective,
@@ -359,6 +360,169 @@ HabitStatsMonthlyComparisonData buildHabitStatsMonthlyComparisonDataForCheck({
   );
 }
 
+HabitStatsYearMetrics resolveHabitStatsYearMetrics({
+  required dynamic habit,
+  required int year,
+  required DateTime now,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, num> countValuesByDay,
+  required Map<DateTime, bool> skipsByDay,
+}) {
+  final habitMap = _habitToMap(habit);
+  final isCounter = _isCountHabit(habitMap);
+  final safeNow = _dateOnly(now.toLocal());
+  final yearStart = DateTime(year, 1, 1);
+  final yearEnd = DateTime(year, 12, 31);
+  final effectiveEnd =
+      year == safeNow.year && safeNow.isBefore(yearEnd) ? safeNow : yearEnd;
+  final activeStart =
+      _activeStartInMonth(habitMap: habitMap, monthStart: yearStart);
+
+  if (effectiveEnd.isBefore(yearStart) || activeStart.isAfter(effectiveEnd)) {
+    return HabitStatsYearMetrics(
+      year: year,
+      completedTotal: 0,
+      trackableTotal: 0,
+      accumulatedTotal: 0,
+      consistencyPct: 0,
+      activeMonths: 0,
+      bestMonth: null,
+      months: List<HabitStatsYearMonthSummary>.generate(
+        12,
+        (index) => HabitStatsYearMonthSummary(
+          month: index + 1,
+          completedDays: 0,
+          accumulatedValue: 0,
+          trackableDays: 0,
+        ),
+        growable: false,
+      ),
+    );
+  }
+
+  final normalizedCountsByDay = _normalizeCountMap(countsByDay);
+  final normalizedSkipsByDay = _normalizeSkipMap(skipsByDay);
+  final normalizedCountValuesByDay = <DateTime, num>{
+    for (final entry in countValuesByDay.entries)
+      _dateOnly(entry.key.toLocal()): entry.value,
+  };
+  final isTimesPerWeekCheck = _isTimesPerWeekCheckHabit(habitMap);
+  final totalTrackable = _resolveYearTrackableTotal(
+    habitMap: habitMap,
+    isCounter: isCounter,
+    isTimesPerWeekCheck: isTimesPerWeekCheck,
+    start: activeStart,
+    end: effectiveEnd,
+  );
+
+  var completedThisYear = 0;
+  var countGoalCompletedThisYear = 0;
+  var accumulatedTotal = 0.0;
+  for (var cursor = activeStart;
+      !cursor.isAfter(effectiveEnd);
+      cursor = cursor.add(const Duration(days: 1))) {
+    final day = _dateOnly(cursor);
+    final completedCount = normalizedCountsByDay[day] ?? 0;
+    if (completedCount > 0) {
+      completedThisYear += 1;
+    }
+    final rawValue = _asNum(normalizedCountValuesByDay[day]) ?? 0;
+    if (rawValue > 0) {
+      accumulatedTotal += rawValue.toDouble();
+    }
+    if (isCounter &&
+        _isExpectedDayForYearlyConsistency(
+          habitMap: habitMap,
+          day: day,
+          treatTimesPerWeekAsDaily: true,
+        ) &&
+        _isHabitCompletedOnDate(
+          date: day,
+          habitMap: habitMap,
+          countsByDay: normalizedCountsByDay,
+          countValuesByDay: normalizedCountValuesByDay,
+          skipsByDay: normalizedSkipsByDay,
+        )) {
+      countGoalCompletedThisYear += 1;
+    }
+  }
+
+  final months = List<HabitStatsYearMonthSummary>.generate(
+    12,
+    (index) {
+      final month = index + 1;
+      final monthStart = DateTime(year, month, 1);
+      final monthEnd = DateTime(year, month + 1, 0);
+      final rangeStart =
+          monthStart.isBefore(activeStart) ? activeStart : monthStart;
+      final rangeEnd = monthEnd.isAfter(effectiveEnd) ? effectiveEnd : monthEnd;
+      if (rangeStart.isAfter(rangeEnd)) {
+        return HabitStatsYearMonthSummary(
+          month: month,
+          completedDays: 0,
+          accumulatedValue: 0,
+          trackableDays: 0,
+        );
+      }
+
+      var monthCompletedDays = 0;
+      var monthAccumulatedValue = 0.0;
+      for (var cursor = rangeStart;
+          !cursor.isAfter(rangeEnd);
+          cursor = cursor.add(const Duration(days: 1))) {
+        final day = _dateOnly(cursor);
+        if (normalizedSkipsByDay[day] == true) continue;
+        if ((normalizedCountsByDay[day] ?? 0) > 0) {
+          monthCompletedDays += 1;
+        }
+        final rawValue = _asNum(normalizedCountValuesByDay[day]) ?? 0;
+        if (rawValue > 0) {
+          monthAccumulatedValue += rawValue.toDouble();
+        }
+      }
+
+      final monthTrackable = _resolveYearTrackableTotal(
+        habitMap: habitMap,
+        isCounter: isCounter,
+        isTimesPerWeekCheck: isTimesPerWeekCheck,
+        start: rangeStart,
+        end: rangeEnd,
+      );
+      return HabitStatsYearMonthSummary(
+        month: month,
+        completedDays: monthCompletedDays,
+        accumulatedValue: monthAccumulatedValue,
+        trackableDays: monthTrackable,
+      );
+    },
+    growable: false,
+  );
+
+  final bestMonth = _resolveBestYearMonth(months, isCounter: isCounter);
+  final activeMonths = months
+      .where((summary) =>
+          isCounter ? summary.accumulatedValue > 0 : summary.completedDays > 0)
+      .length;
+  final consistencyPct = _resolveYearConsistencyPct(
+    habitMap: habitMap,
+    isCounter: isCounter,
+    completedThisYear: completedThisYear,
+    countGoalCompletedThisYear: countGoalCompletedThisYear,
+    trackableTotal: totalTrackable,
+  );
+
+  return HabitStatsYearMetrics(
+    year: year,
+    completedTotal: completedThisYear,
+    trackableTotal: totalTrackable,
+    accumulatedTotal: accumulatedTotal,
+    consistencyPct: consistencyPct,
+    activeMonths: activeMonths,
+    bestMonth: bestMonth,
+    months: months,
+  );
+}
+
 String habitStatsBestMomentLabelForSlot({
   required dynamic l10n,
   required HabitStatsBestMomentSlot slot,
@@ -410,6 +574,146 @@ HabitStatsCountBestDaySummary buildCountBestDaySummary(
     valueLabel: _formatCountValueLabel(bestDay.value,
         unitLabel: shellData.countUnitLabel),
   );
+}
+
+int _resolveYearTrackableTotal({
+  required Map<String, dynamic> habitMap,
+  required bool isCounter,
+  required bool isTimesPerWeekCheck,
+  required DateTime start,
+  required DateTime end,
+}) {
+  if (end.isBefore(start)) return 0;
+  if (isTimesPerWeekCheck) {
+    final weeklyTarget = _timesPerWeekTargetForCheck(habitMap);
+    final activeDays = _inclusiveDayCount(start, end);
+    return _timesPerWeekExpectedCount(
+      activeDays: activeDays,
+      weeklyTarget: weeklyTarget,
+    );
+  }
+  return _countScheduledDaysInRange(
+    habitMap: habitMap,
+    start: start,
+    end: end,
+    treatTimesPerWeekAsDaily: isCounter,
+  );
+}
+
+HabitStatsYearMonthSummary? _resolveBestYearMonth(
+  List<HabitStatsYearMonthSummary> months, {
+  required bool isCounter,
+}) {
+  HabitStatsYearMonthSummary? best;
+  for (final month in months) {
+    final score = isCounter ? month.accumulatedValue : month.completedDays;
+    final bestScore =
+        isCounter ? (best?.accumulatedValue ?? 0) : (best?.completedDays ?? 0);
+    if (score <= 0) continue;
+    if (best == null || score > bestScore) {
+      best = month;
+    }
+  }
+  return best;
+}
+
+int _resolveYearConsistencyPct({
+  required Map<String, dynamic> habitMap,
+  required bool isCounter,
+  required int completedThisYear,
+  required int countGoalCompletedThisYear,
+  required int trackableTotal,
+}) {
+  if (trackableTotal <= 0) return 0;
+  if (!isCounter) {
+    return ((completedThisYear / trackableTotal) * 100).round().clamp(0, 100);
+  }
+  return ((countGoalCompletedThisYear / trackableTotal) * 100)
+      .round()
+      .clamp(0, 100);
+}
+
+int _countScheduledDaysInRange({
+  required Map<String, dynamic> habitMap,
+  required DateTime start,
+  required DateTime end,
+  required bool treatTimesPerWeekAsDaily,
+}) {
+  if (end.isBefore(start)) return 0;
+  final schedule = _map(habitMap['schedule']);
+  final scheduleType =
+      (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
+  final onceDate = _tryParseDate(schedule['date']);
+  final weekdays = (schedule['weekdays'] is List)
+      ? (schedule['weekdays'] as List)
+          .whereType<num>()
+          .map((day) => day.toInt())
+          .where((day) => day >= DateTime.monday && day <= DateTime.sunday)
+          .toSet()
+      : const <int>{};
+
+  var total = 0;
+  for (var cursor = _dateOnly(start);
+      !cursor.isAfter(end);
+      cursor = cursor.add(const Duration(days: 1))) {
+    if (!_wasHabitCreatedByDay(habitMap, cursor)) continue;
+    switch (scheduleType) {
+      case 'once':
+        if (onceDate == null) continue;
+        if (_isSameDate(_dateOnly(onceDate.toLocal()), cursor)) {
+          total += 1;
+        }
+        continue;
+      case 'weekly':
+        if (weekdays.contains(cursor.weekday)) {
+          total += 1;
+        }
+        continue;
+      case 'timesperweek':
+        if (treatTimesPerWeekAsDaily) {
+          total += 1;
+        }
+        continue;
+      default:
+        total += 1;
+        continue;
+    }
+  }
+  return total;
+}
+
+bool _isExpectedDayForYearlyConsistency({
+  required Map<String, dynamic> habitMap,
+  required DateTime day,
+  required bool treatTimesPerWeekAsDaily,
+}) {
+  if (!_wasHabitCreatedByDay(habitMap, day)) return false;
+  final schedule = _map(habitMap['schedule']);
+  final scheduleType =
+      (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
+
+  switch (scheduleType) {
+    case 'once':
+      final onceDate = _tryParseDate(schedule['date']);
+      return onceDate != null &&
+          _isSameDate(_dateOnly(onceDate.toLocal()), _dateOnly(day));
+    case 'weekly':
+      final weekdays = (schedule['weekdays'] is List)
+          ? (schedule['weekdays'] as List)
+              .whereType<num>()
+              .map((entry) => entry.toInt())
+              .where(
+                (weekday) =>
+                    weekday >= DateTime.monday && weekday <= DateTime.sunday,
+              )
+              .toSet()
+          : const <int>{};
+      return weekdays.contains(day.weekday);
+    case 'timesperweek':
+      return treatTimesPerWeekAsDaily;
+    default:
+      return true;
+  }
 }
 
 class _HistoryRoots {

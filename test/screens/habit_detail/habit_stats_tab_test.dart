@@ -144,8 +144,17 @@ void main() {
     testWidgets(
         'switching to year hides last 7 days block and shows yearly summary section',
         (tester) async {
+      final now = DateTime.now();
       final habit = _habit(type: 'check');
       final store = _FakeStore(_rootState(habit: habit));
+      final expectedYearMetrics = resolveHabitStatsYearMetrics(
+        habit: habit,
+        year: now.year,
+        now: now,
+        countsByDay: const <DateTime, int>{},
+        countValuesByDay: const <DateTime, num>{},
+        skipsByDay: const <DateTime, bool>{},
+      );
 
       await tester.pumpWidget(
         _app(
@@ -171,7 +180,22 @@ void main() {
       expect(find.byType(HabitStatsMonthlyActivityGrid), findsNothing);
       expect(find.byType(HabitStatsMonthlyComparisonCard), findsNothing);
       expect(find.byType(HabitStatsYearSection), findsOneWidget);
-      expect(find.byKey(const Key('habit_stats_year_summary_card')), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_yearly_metric_grid')),
+          findsOneWidget);
+      expect(find.text(l10n.habitStatsMetricCompleted), findsOneWidget);
+      expect(
+        find.text('${expectedYearMetrics.completedTotal}'),
+        findsWidgets,
+      );
+      expect(find.textContaining('/'), findsNothing);
+      expect(
+        find.text('${expectedYearMetrics.consistencyPct}%'),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.habitStatsYearMetricBestMonth), findsOneWidget);
+      expect(find.text(l10n.habitStatsYearMetricActiveMonths), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_year_summary_card')),
+          findsOneWidget);
       expect(find.text(l10n.habitStatsYearSummaryTitle), findsOneWidget);
       expect(find.text(l10n.habitStatsYearSummaryBody), findsOneWidget);
       expect(find.text(l10n.habitStatsInsightLabel), findsNothing);
@@ -235,7 +259,149 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('month mode shows unavailable monthly comparison for new habits',
+    testWidgets(
+        'year check metrics use yearly completed, consistency, best month and active months',
+        (tester) async {
+      final now = DateTime.now();
+      final habit = _habit(type: 'check');
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          completions: {
+            _dateKey(now): true,
+            _dateKey(now.subtract(const Duration(days: 10))): true,
+            _dateKey(now.subtract(const Duration(days: 35))): true,
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodYear));
+      await tester.pumpAndSettle();
+
+      final expectedYearMetrics = resolveHabitStatsYearMetrics(
+        habit: habit,
+        year: now.year,
+        now: now,
+        countsByDay: {
+          DateTime(now.year, now.month, now.day): 1,
+          DateTime(
+            now.subtract(const Duration(days: 10)).year,
+            now.subtract(const Duration(days: 10)).month,
+            now.subtract(const Duration(days: 10)).day,
+          ): 1,
+          DateTime(
+            now.subtract(const Duration(days: 35)).year,
+            now.subtract(const Duration(days: 35)).month,
+            now.subtract(const Duration(days: 35)).day,
+          ): 1,
+        },
+        countValuesByDay: const <DateTime, num>{},
+        skipsByDay: const <DateTime, bool>{},
+      );
+
+      final bestMonthLabel = expectedYearMetrics.bestMonth == null
+          ? '\u2014'
+          : _capitalizedMonthShort(l10n, expectedYearMetrics.bestMonth!.month);
+      expect(
+        find.text('${expectedYearMetrics.completedTotal}'),
+        findsWidgets,
+      );
+      expect(find.textContaining('/'), findsNothing);
+      expect(
+          find.text('${expectedYearMetrics.consistencyPct}%'), findsOneWidget);
+      expect(find.text(bestMonthLabel), findsOneWidget);
+      expect(find.text('${expectedYearMetrics.activeMonths}'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'year count metrics use yearly accumulated value and best month by accumulation',
+        (tester) async {
+      final now = DateTime.now();
+      final habit = _habit(
+        type: 'count',
+        target: 5,
+        unit: 'L',
+        schedule: const {'type': 'daily'},
+      );
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          countValues: {
+            _dateKey(now): 4,
+            _dateKey(now.subtract(const Duration(days: 10))): 6,
+            _dateKey(now.subtract(const Duration(days: 35))): 3,
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodYear));
+      await tester.pumpAndSettle();
+
+      final expectedYearMetrics = resolveHabitStatsYearMetrics(
+        habit: habit,
+        year: now.year,
+        now: now,
+        countsByDay: const <DateTime, int>{},
+        countValuesByDay: {
+          DateTime(now.year, now.month, now.day): 4,
+          DateTime(
+            now.subtract(const Duration(days: 10)).year,
+            now.subtract(const Duration(days: 10)).month,
+            now.subtract(const Duration(days: 10)).day,
+          ): 6,
+          DateTime(
+            now.subtract(const Duration(days: 35)).year,
+            now.subtract(const Duration(days: 35)).month,
+            now.subtract(const Duration(days: 35)).day,
+          ): 3,
+        },
+        skipsByDay: const <DateTime, bool>{},
+      );
+      final expectedAccumulated = formatCountMetricValue(
+        expectedYearMetrics.accumulatedTotal,
+        unitLabel: 'L',
+      );
+      final bestMonthLabel = expectedYearMetrics.bestMonth == null
+          ? '\u2014'
+          : _capitalizedMonthShort(l10n, expectedYearMetrics.bestMonth!.month);
+
+      expect(find.text(l10n.habitStatsCountTotalAccumulated), findsOneWidget);
+      expect(find.text(expectedAccumulated), findsOneWidget);
+      expect(
+          find.text('${expectedYearMetrics.consistencyPct}%'), findsOneWidget);
+      expect(find.text(bestMonthLabel), findsOneWidget);
+      expect(find.byType(HabitStatsMonthlyActivityGrid), findsNothing);
+      expect(find.byType(HabitStatsMonthlyComparisonCard), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'month mode shows unavailable monthly comparison for new habits',
         (tester) async {
       final now = DateTime.now();
       final habit = _habit(type: 'check')
@@ -1095,7 +1261,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('hero first milestone headline wraps without ellipsis in Spanish',
+    testWidgets(
+        'hero first milestone headline wraps without ellipsis in Spanish',
         (tester) async {
       final now = DateTime.now();
       final habit = _habit(type: 'check');
@@ -1228,7 +1395,8 @@ DateTime _startOfWeek(DateTime date, {required int weekStartsOn}) {
   return day.subtract(Duration(days: delta));
 }
 
-DateTime _dateOnlyValue(DateTime date) => DateTime(date.year, date.month, date.day);
+DateTime _dateOnlyValue(DateTime date) =>
+    DateTime(date.year, date.month, date.day);
 
 class _FakeStore implements UserStateStore {
   _FakeStore(
@@ -1291,6 +1459,12 @@ String _countOfGoalLabel(AppLocalizations l10n) {
 
 String _capitalizedWeekday(AppLocalizations l10n, int weekday) {
   final raw = l10n.weekdayFull(weekday);
+  if (raw.isEmpty) return raw;
+  return '${raw[0].toUpperCase()}${raw.substring(1)}';
+}
+
+String _capitalizedMonthShort(AppLocalizations l10n, int month) {
+  final raw = l10n.monthShort(month);
   if (raw.isEmpty) return raw;
   return '${raw[0].toUpperCase()}${raw.substring(1)}';
 }

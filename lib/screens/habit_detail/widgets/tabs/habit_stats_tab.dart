@@ -77,11 +77,13 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
     final topPadding = widget.showHeaderControls ? 4.0 : 10.0;
     final child = widget.scrollable
         ? SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(horizontalPadding, topPadding, horizontalPadding, 16),
+            padding: EdgeInsets.fromLTRB(
+                horizontalPadding, topPadding, horizontalPadding, 16),
             child: content,
           )
         : Padding(
-            padding: EdgeInsets.fromLTRB(horizontalPadding, topPadding, horizontalPadding, 16),
+            padding: EdgeInsets.fromLTRB(
+                horizontalPadding, topPadding, horizontalPadding, 16),
             child: content,
           );
     return ColoredBox(
@@ -123,8 +125,10 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
       _buildWeeklyMetricGrid(shellData),
       const SizedBox(height: _lowerSectionSpacing),
       if (shellData.isCheckHabit)
-        HabitStatsWeeklyComparisonCard(deltaPct: shellData.weeklyComparisonDeltaPct),
-      if (!shellData.isCheckHabit) HabitStatsCountBestDayCard(shellData: shellData),
+        HabitStatsWeeklyComparisonCard(
+            deltaPct: shellData.weeklyComparisonDeltaPct),
+      if (!shellData.isCheckHabit)
+        HabitStatsCountBestDayCard(shellData: shellData),
       const SizedBox(height: _lowerSectionSpacing),
       HabitStatsInsightCard(shellData: shellData),
     ];
@@ -206,6 +210,8 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
         familyColor: widget.familyColor,
       ),
       const SizedBox(height: _sectionSpacing),
+      _buildYearlyMetricGrid(shellData),
+      const SizedBox(height: _sectionSpacing),
       const HabitStatsYearSection(),
     ];
   }
@@ -240,7 +246,8 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
       monthlyData: resolvedMonthlyData,
     );
     final l10n = context.l10n;
-    final objectiveUnit = resolvedMonthlyData.objectiveUnit == HabitStatsMonthlyObjectiveUnit.times
+    final objectiveUnit = resolvedMonthlyData.objectiveUnit ==
+            HabitStatsMonthlyObjectiveUnit.times
         ? l10n.habitStatsTimesUnitLabel(objective)
         : l10n.habitStatsDaysUnitLabel(objective);
     final bestMoment = resolvedMonthlyData.bestMoment;
@@ -289,5 +296,72 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
         ),
       ],
     );
+  }
+
+  Widget _buildYearlyMetricGrid(HabitStatsShellData shellData) {
+    final now = DateTime.now();
+    final yearMetrics = resolveHabitStatsYearMetrics(
+      habit: widget.habit,
+      year: now.year,
+      now: now,
+      countsByDay: shellData.countsByDay,
+      countValuesByDay: shellData.countValuesByDay,
+      skipsByDay: shellData.skipsByDay,
+    );
+    final l10n = context.l10n;
+    final bestMonthValue = yearMetrics.bestMonth == null
+        ? '\u2014'
+        : _capitalizeFirst(
+            l10n.monthShort(yearMetrics.bestMonth!.month),
+          );
+    final completedValue = shellData.isCheckHabit
+        ? '${yearMetrics.completedTotal}'
+        : formatCountMetricValue(
+            yearMetrics.accumulatedTotal,
+            unitLabel: shellData.countUnitLabel,
+          );
+    final completedTitle = shellData.isCheckHabit
+        ? l10n.habitStatsMetricCompleted
+        : l10n.habitStatsCountTotalAccumulated;
+
+    return HabitStatsMetricGrid.custom(
+      gridKey: const Key('habit_stats_yearly_metric_grid'),
+      metrics: <HabitStatsMetricGridItem>[
+        HabitStatsMetricGridItem(
+          icon: Icons.check_circle_outline_rounded,
+          title: completedTitle,
+          value: completedValue,
+          subtitle: l10n.habitStatsThisYear,
+          iconColor: const Color(0xFF5A3B23),
+        ),
+        HabitStatsMetricGridItem(
+          icon: Icons.trending_up_rounded,
+          title: l10n.habitStatsMetricConsistency,
+          value: '${yearMetrics.consistencyPct}%',
+          subtitle: l10n.habitStatsYearMetricConsistencySubtitle,
+          iconColor: const Color(0xFF5B975A),
+          valueColor: const Color(0xFF4E7D35),
+        ),
+        HabitStatsMetricGridItem(
+          icon: Icons.calendar_month_rounded,
+          title: l10n.habitStatsYearMetricBestMonth,
+          value: bestMonthValue,
+          subtitle: l10n.habitStatsYearMetricBestMonthSubtitle,
+          iconColor: const Color(0xFF3E7B7A),
+        ),
+        HabitStatsMetricGridItem(
+          icon: Icons.stacked_line_chart_rounded,
+          title: l10n.habitStatsYearMetricActiveMonths,
+          value: '${yearMetrics.activeMonths}',
+          subtitle: l10n.habitStatsYearMetricActiveMonthsSubtitle,
+          iconColor: const Color(0xFF8A5B2C),
+        ),
+      ],
+    );
+  }
+
+  String _capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return '${text[0].toUpperCase()}${text.substring(1)}';
   }
 }

@@ -968,6 +968,13 @@
         }
     },
     "habitStatsThisWeek": "This week",
+    "habitStatsThisYear": "This year",
+    "habitStatsYearMetricCompletedTotal": "Done / Total",
+    "habitStatsYearMetricConsistencySubtitle": "Yearly consistency",
+    "habitStatsYearMetricBestMonth": "Best month",
+    "habitStatsYearMetricBestMonthSubtitle": "Top performance",
+    "habitStatsYearMetricActiveMonths": "Active months",
+    "habitStatsYearMetricActiveMonthsSubtitle": "With activity",
     "habitStatsLastWeek": "Last week",
     "habitStatsTimeSlotMorning": "morning",
     "habitStatsTimeSlotAfternoon": "afternoon",

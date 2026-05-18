@@ -3310,6 +3310,48 @@ abstract class AppLocalizations {
   /// **'Esta semana'**
   String get habitStatsThisWeek;
 
+  /// No description provided for @habitStatsThisYear.
+  ///
+  /// In es, this message translates to:
+  /// **'Este año'**
+  String get habitStatsThisYear;
+
+  /// No description provided for @habitStatsYearMetricCompletedTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Hecho / Total'**
+  String get habitStatsYearMetricCompletedTotal;
+
+  /// No description provided for @habitStatsYearMetricConsistencySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Consistencia anual'**
+  String get habitStatsYearMetricConsistencySubtitle;
+
+  /// No description provided for @habitStatsYearMetricBestMonth.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejor mes'**
+  String get habitStatsYearMetricBestMonth;
+
+  /// No description provided for @habitStatsYearMetricBestMonthSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mayor rendimiento'**
+  String get habitStatsYearMetricBestMonthSubtitle;
+
+  /// No description provided for @habitStatsYearMetricActiveMonths.
+  ///
+  /// In es, this message translates to:
+  /// **'Meses activos'**
+  String get habitStatsYearMetricActiveMonths;
+
+  /// No description provided for @habitStatsYearMetricActiveMonthsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Con actividad'**
+  String get habitStatsYearMetricActiveMonthsSubtitle;
+
   /// No description provided for @habitStatsLastWeek.
   ///
   /// In es, this message translates to:
