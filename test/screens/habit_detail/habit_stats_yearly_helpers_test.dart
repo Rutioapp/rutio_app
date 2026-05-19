@@ -723,6 +723,250 @@ void main() {
           isNot(HabitStatsYearMonthStatus.unavailable));
     });
   });
+
+  group('resolveHabitStatsYearCalendarMonths', () {
+    test('returns 12 months', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'check',
+          target: 1,
+          createdAt: '2026-01-01',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(months, hasLength(12));
+    });
+
+    test('month day counts are correct for january, february and april', () {
+      final commonArgs = (
+        habit: _habit(
+          type: 'check',
+          target: 1,
+          createdAt: '2024-01-01',
+          schedule: const {'type': 'daily'},
+        ),
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: <DateTime, int>{},
+        countValuesByDay: <DateTime, num>{},
+        skipsByDay: <DateTime, bool>{},
+      );
+      final months2025 = resolveHabitStatsYearCalendarMonths(
+        habit: commonArgs.habit,
+        year: 2025,
+        now: commonArgs.now,
+        countsByDay: commonArgs.countsByDay,
+        countValuesByDay: commonArgs.countValuesByDay,
+        skipsByDay: commonArgs.skipsByDay,
+      );
+      final months2024 = resolveHabitStatsYearCalendarMonths(
+        habit: commonArgs.habit,
+        year: 2024,
+        now: commonArgs.now,
+        countsByDay: commonArgs.countsByDay,
+        countValuesByDay: commonArgs.countValuesByDay,
+        skipsByDay: commonArgs.skipsByDay,
+      );
+
+      expect(months2025[0].days, hasLength(31));
+      expect(months2025[1].days, hasLength(28));
+      expect(months2024[1].days, hasLength(29));
+      expect(months2025[3].days, hasLength(30));
+    });
+
+    test('completed dates resolve to completed', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'check',
+          target: 1,
+          createdAt: '2026-01-01',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: {
+          DateTime(2026, 4, 2): 1,
+        },
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _calendarStatus(months, month: 4, day: 2),
+        HabitStatsYearCalendarDayStatus.completed,
+      );
+    });
+
+    test('skipped dates resolve to skipped', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'check',
+          target: 1,
+          createdAt: '2026-01-01',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: {
+          DateTime(2026, 4, 3): true,
+        },
+      );
+
+      expect(
+        _calendarStatus(months, month: 4, day: 3),
+        HabitStatsYearCalendarDayStatus.skipped,
+      );
+    });
+
+    test('future dates resolve to future', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'check',
+          target: 1,
+          createdAt: '2026-01-01',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _calendarStatus(months, month: 10, day: 1),
+        HabitStatsYearCalendarDayStatus.future,
+      );
+    });
+
+    test('dates before habit creation resolve to unavailable', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'check',
+          target: 1,
+          createdAt: '2026-03-15',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _calendarStatus(months, month: 2, day: 10),
+        HabitStatsYearCalendarDayStatus.unavailable,
+      );
+    });
+
+    test('valid past scheduled dates with no completion or skip resolve to missed', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'check',
+          target: 1,
+          createdAt: '2026-01-01',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _calendarStatus(months, month: 4, day: 8),
+        HabitStatsYearCalendarDayStatus.missed,
+      );
+    });
+
+    test('future dates are not marked as missed', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'check',
+          target: 1,
+          createdAt: '2026-01-01',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _calendarStatus(months, month: 9, day: 1),
+        isNot(HabitStatsYearCalendarDayStatus.missed),
+      );
+    });
+
+    test('dates before creation are not marked as missed', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'check',
+          target: 1,
+          createdAt: '2026-04-01',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _calendarStatus(months, month: 1, day: 10),
+        isNot(HabitStatsYearCalendarDayStatus.missed),
+      );
+    });
+
+    test('count habits are safe and represent activity days as completed', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'count',
+          target: 10,
+          createdAt: '2026-01-01',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: {
+          DateTime(2026, 1, 5): 3,
+        },
+        skipsByDay: const {},
+      );
+
+      expect(
+        _calendarStatus(months, month: 1, day: 5),
+        HabitStatsYearCalendarDayStatus.completed,
+      );
+      expect(
+        _calendarStatus(months, month: 1, day: 6),
+        HabitStatsYearCalendarDayStatus.missed,
+      );
+    });
+  });
+}
+
+HabitStatsYearCalendarDayStatus _calendarStatus(
+  List<HabitStatsYearCalendarMonth> months, {
+  required int month,
+  required int day,
+}) {
+  final targetMonth = months.firstWhere((item) => item.month == month);
+  final targetDay = targetMonth.days.firstWhere((item) => item.date.day == day);
+  return targetDay.status;
 }
 
 HabitStatsYearMonthSummary _yearMonth({

@@ -219,6 +219,14 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
       year: year,
       now: now,
     );
+    final yearCalendarMonths = resolveHabitStatsYearCalendarMonths(
+      habit: widget.habit,
+      year: year,
+      now: now,
+      countsByDay: shellData.countsByDay,
+      countValuesByDay: shellData.countValuesByDay,
+      skipsByDay: shellData.skipsByDay,
+    );
 
     return [
       const SizedBox(height: _sectionSpacing),
@@ -231,10 +239,10 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
       const SizedBox(height: _sectionSpacing),
       HabitStatsYearSection(
         shellData: shellData,
+        year: year,
         monthSummaries: yearMonthSummaries,
-        isCounter: shellData.isCounter,
+        calendarMonths: yearCalendarMonths,
         accentColor: widget.familyColor,
-        countUnitLabel: shellData.countUnitLabel,
       ),
     ];
   }

@@ -315,6 +315,38 @@ enum HabitStatsYearMonthStatus {
   high,
 }
 
+enum HabitStatsYearCalendarDayStatus {
+  completed,
+  skipped,
+  missed,
+  future,
+  unavailable,
+}
+
+class HabitStatsYearCalendarDay {
+  final DateTime date;
+  final HabitStatsYearCalendarDayStatus status;
+
+  const HabitStatsYearCalendarDay({
+    required this.date,
+    required this.status,
+  });
+}
+
+class HabitStatsYearCalendarMonth {
+  final int year;
+  final int month;
+  final int leadingEmptyDays;
+  final List<HabitStatsYearCalendarDay> days;
+
+  const HabitStatsYearCalendarMonth({
+    required this.year,
+    required this.month,
+    required this.leadingEmptyDays,
+    required this.days,
+  });
+}
+
 extension HabitStatsYearMonthStatusX on HabitStatsYearMonthStatus {
   bool get hasActivity =>
       this == HabitStatsYearMonthStatus.low ||

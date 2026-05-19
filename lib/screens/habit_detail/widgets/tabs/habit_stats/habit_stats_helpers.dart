@@ -620,6 +620,57 @@ List<HabitStatsYearMonthSummary> resolveHabitStatsYearMonthSummaries({
   }, growable: false);
 }
 
+List<HabitStatsYearCalendarMonth> resolveHabitStatsYearCalendarMonths({
+  required dynamic habit,
+  required int year,
+  required DateTime now,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, num> countValuesByDay,
+  required Map<DateTime, bool> skipsByDay,
+}) {
+  final habitMap = _habitToMap(habit);
+  final isCounter = _isCountHabit(habitMap);
+  final isTimesPerWeekCheck = _isTimesPerWeekCheckHabit(habitMap);
+  final safeNow = _dateOnly(now.toLocal());
+  final normalizedCountsByDay = _normalizeCountMap(countsByDay);
+  final normalizedSkipsByDay = _normalizeSkipMap(skipsByDay);
+  final normalizedCountValuesByDay = <DateTime, num>{
+    for (final entry in countValuesByDay.entries)
+      _dateOnly(entry.key.toLocal()): entry.value,
+  };
+
+  return List<HabitStatsYearCalendarMonth>.generate(12, (index) {
+    final month = index + 1;
+    final monthStart = DateTime(year, month, 1);
+    final daysInMonth = _daysInMonth(year, month);
+    final leadingEmptyDays =
+        (monthStart.weekday - DateTime.monday + 7) % DateTime.daysPerWeek;
+    final days = List<HabitStatsYearCalendarDay>.generate(daysInMonth, (offset) {
+      final day = _dateOnly(monthStart.add(Duration(days: offset)));
+      return HabitStatsYearCalendarDay(
+        date: day,
+        status: _resolveYearCalendarDayStatus(
+          day: day,
+          safeNow: safeNow,
+          habitMap: habitMap,
+          countsByDay: normalizedCountsByDay,
+          countValuesByDay: normalizedCountValuesByDay,
+          skipsByDay: normalizedSkipsByDay,
+          isCounter: isCounter,
+          isTimesPerWeekCheck: isTimesPerWeekCheck,
+        ),
+      );
+    }, growable: false);
+
+    return HabitStatsYearCalendarMonth(
+      year: year,
+      month: month,
+      leadingEmptyDays: leadingEmptyDays,
+      days: days,
+    );
+  }, growable: false);
+}
+
 const double _yearTrendMeaningfulDifferenceThreshold = 0.15;
 
 HabitStatsYearActivitySummary resolveHabitStatsYearActivitySummary({
@@ -770,6 +821,54 @@ int _resolveYearTrackableTotal({
     end: end,
     treatTimesPerWeekAsDaily: isCounter,
   );
+}
+
+HabitStatsYearCalendarDayStatus _resolveYearCalendarDayStatus({
+  required DateTime day,
+  required DateTime safeNow,
+  required Map<String, dynamic> habitMap,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, num> countValuesByDay,
+  required Map<DateTime, bool> skipsByDay,
+  required bool isCounter,
+  required bool isTimesPerWeekCheck,
+}) {
+  if (!_wasHabitCreatedByDay(habitMap, day)) {
+    return HabitStatsYearCalendarDayStatus.unavailable;
+  }
+
+  final isToday = _isSameDate(day, safeNow);
+  final skipped = skipsByDay[day] == true || (isToday && habitMap['skippedToday'] == true);
+  final completed = isCounter
+      ? ((countsByDay[day] ?? 0) > 0 ||
+          (_asNum(countValuesByDay[day]) ?? 0) > 0 ||
+          (isToday && habitMap['doneToday'] == true && habitMap['skippedToday'] != true))
+      : _isCheckHabitCompletedOnDate(
+          day: day,
+          today: safeNow,
+          habitMap: habitMap,
+          countsByDay: countsByDay,
+        );
+
+  if (isTimesPerWeekCheck && !isCounter) {
+    if (skipped) return HabitStatsYearCalendarDayStatus.skipped;
+    if (completed) return HabitStatsYearCalendarDayStatus.completed;
+    if (day.isAfter(safeNow)) return HabitStatsYearCalendarDayStatus.future;
+    return HabitStatsYearCalendarDayStatus.unavailable;
+  }
+
+  final isScheduled = _isExpectedDayForYearlyConsistency(
+    habitMap: habitMap,
+    day: day,
+    treatTimesPerWeekAsDaily: isCounter,
+  );
+  if (!isScheduled) {
+    return HabitStatsYearCalendarDayStatus.unavailable;
+  }
+  if (day.isAfter(safeNow)) return HabitStatsYearCalendarDayStatus.future;
+  if (skipped) return HabitStatsYearCalendarDayStatus.skipped;
+  if (completed) return HabitStatsYearCalendarDayStatus.completed;
+  return HabitStatsYearCalendarDayStatus.missed;
 }
 
 HabitStatsYearMonthStatus _resolveYearMonthStatusFromPerformance(

@@ -1807,6 +1807,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Un vistazo rápido a cómo ha ido este hábito mes a mes.';
 
   @override
+  String get habitStatsYearCalendarTitle => 'Calendario anual';
+
+  @override
+  String get habitStatsYearCalendarDone => 'Hecho';
+
+  @override
+  String get habitStatsYearCalendarSkipped => 'Omitido';
+
+  @override
+  String get habitStatsYearCalendarMissed => 'Pendiente';
+
+  @override
   String get habitStatsPeriodThreeMonths => '3 meses';
 
   @override

@@ -3268,6 +3268,30 @@ abstract class AppLocalizations {
   /// **'Un vistazo rápido a cómo ha ido este hábito mes a mes.'**
   String get habitStatsYearMonthsBody;
 
+  /// No description provided for @habitStatsYearCalendarTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Calendario anual'**
+  String get habitStatsYearCalendarTitle;
+
+  /// No description provided for @habitStatsYearCalendarDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Hecho'**
+  String get habitStatsYearCalendarDone;
+
+  /// No description provided for @habitStatsYearCalendarSkipped.
+  ///
+  /// In es, this message translates to:
+  /// **'Omitido'**
+  String get habitStatsYearCalendarSkipped;
+
+  /// No description provided for @habitStatsYearCalendarMissed.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente'**
+  String get habitStatsYearCalendarMissed;
+
   /// No description provided for @habitStatsPeriodThreeMonths.
   ///
   /// In es, this message translates to:

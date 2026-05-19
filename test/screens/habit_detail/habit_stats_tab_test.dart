@@ -74,6 +74,7 @@ void main() {
           findsNothing);
       expect(find.byKey(const Key('habit_stats_year_comparison_card')),
           findsNothing);
+      expect(find.text(l10n.habitStatsYearCalendarTitle), findsNothing);
       expect(find.text(l10n.habitStatsYearlyInsightTitle), findsNothing);
       expect(find.text(l10n.habitStatsInsightLabel), findsOneWidget);
       final insight = resolveHabitStatsInsight(
@@ -135,6 +136,7 @@ void main() {
       expect(find.text(l10n.habitStatsWeeklyComparisonTitle), findsNothing);
       expect(find.byKey(const Key('habit_stats_year_comparison_card')),
           findsNothing);
+      expect(find.text(l10n.habitStatsYearCalendarTitle), findsNothing);
       expect(find.text(l10n.habitStatsYearlyInsightTitle), findsNothing);
       expect(
         find.text(l10n.habitStatsInsightMonthlyNotStartedTitle),
@@ -206,10 +208,11 @@ void main() {
       expect(find.text(l10n.habitStatsYearMetricActiveMonths), findsWidgets);
       expect(find.byKey(const Key('habit_stats_year_months_card')),
           findsOneWidget);
-      expect(find.text(l10n.habitStatsYearMonthsTitle), findsOneWidget);
-      expect(find.text(l10n.habitStatsYearMonthsBody), findsOneWidget);
+      expect(find.text(l10n.habitStatsYearCalendarTitle), findsOneWidget);
       expect(
-          find.byKey(const Key('habit_stats_year_month_grid')), findsOneWidget);
+          find.byKey(const Key('habit_stats_year_calendar_grid')), findsOneWidget);
+      expect(find.text(l10n.habitStatsYearCalendarDone), findsOneWidget);
+      expect(find.text(l10n.habitStatsYearCalendarSkipped), findsOneWidget);
       expect(find.byKey(const Key('habit_stats_year_activity_card')),
           findsOneWidget);
       expect(find.text(l10n.yearlyActivityTitle), findsOneWidget);
