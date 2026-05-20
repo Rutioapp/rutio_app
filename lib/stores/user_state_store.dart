@@ -15,6 +15,8 @@ import '../data/services/user_progress_sync_service.dart';
 import '../data/repositories/journal_entry_repository.dart';
 import '../data/repositories/profile_repository.dart';
 import '../data/repositories/user_state_repository.dart';
+import '../devtools/demo_seed/demo_seed_models.dart';
+import '../devtools/rutio_runtime_profile.dart';
 import '../features/achievements/application/achievement_catalog.dart';
 import '../features/achievements/application/achievement_rewards.dart';
 import '../features/achievements/domain/models/achievement.dart';
