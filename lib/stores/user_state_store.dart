@@ -100,6 +100,7 @@ class UserStateStore extends ChangeNotifier {
   bool get shouldShowGamificationOverlays =>
       !_isLoggingOut &&
       !_isResettingUserState &&
+      !RutioRuntimeProfile.isScreenshotMode &&
       !_suppressGamificationOverlays &&
       ((userId ?? '').trim().isNotEmpty);
   String? get activeLocalScopeUserId => _activeLocalScopeUserId;

@@ -51,6 +51,24 @@ void main() {
 
       expect(habits.length, inInclusiveRange(10, 14));
       expect(ids.toSet().length, equals(ids.length));
+
+      final profileState =
+          ((demoState['userState'] as Map<String, dynamic>)['profile']
+              as Map<String, dynamic>);
+      final achievements =
+          profileState['achievements'] as Map<String, dynamic>;
+      final unlockedIds = (achievements['unlocked'] as List)
+          .cast<Map<String, dynamic>>()
+          .map((entry) => entry['id'].toString())
+          .toList();
+      final rewardAppliedIds = (achievements['rewardAppliedAchievementIds']
+              as List)
+          .map((entry) => entry.toString())
+          .toList();
+
+      expect(unlockedIds.toSet().length, equals(unlockedIds.length));
+      expect(rewardAppliedIds.toSet().length, equals(rewardAppliedIds.length));
+      expect(rewardAppliedIds.toSet(), equals(unlockedIds.toSet()));
     });
 
     test('reset mode clears and reseeds deterministic demo state', () async {
@@ -83,6 +101,33 @@ void main() {
       expect(beforeReset, isNotNull);
       expect(afterReset, isNotNull);
       expect(afterReset, equals(beforeReset));
+    });
+
+    test('uses RUTIO_DEMO_NOW when provided in runtime profile', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final storage = UserStateStorage();
+      final repository = UserStateRepository(storage: storage);
+      final runner = DemoSeedRunner(
+        repository: repository,
+        storage: storage,
+        runtimeProfile: RutioRuntimeProfile.parse(
+          profileValue: 'demo',
+          demoNowValue: '2026-05-20',
+        ),
+        nowProvider: () => DateTime(2030, 1, 1, 9, 0),
+      );
+
+      await runner.prepare();
+
+      final demoState = await storage.read(userId: DemoSeedScope.userId);
+      expect(demoState, isNotNull);
+
+      final userState = (demoState!['userState'] as Map<String, dynamic>);
+      final daily = userState['daily'] as Map<String, dynamic>;
+      final meta = userState['meta'] as Map<String, dynamic>;
+
+      expect(daily['lastResetDate'], equals('2026-05-20'));
+      expect(meta['activeViewDateKey'], equals('2026-05-20'));
     });
   });
 }

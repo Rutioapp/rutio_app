@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/devtools/demo_seed/demo_seed_data.dart';
 import 'package:rutio/devtools/demo_seed/demo_seed_dates.dart';
+import 'package:rutio/features/gamification/domain/level_progression.dart';
 
 void main() {
   group('DemoSeedData', () {
@@ -187,6 +188,54 @@ void main() {
         final date = _dateFromKey(key);
         expect(date.isAfter(DemoSeedDates.dateOnly(now)), isFalse);
       }
+    });
+
+    test('seeds canonical gamification state for a progressed demo user', () {
+      final payload = DemoSeedData.build(now: DateTime(2026, 5, 20));
+      final root = payload.state['userState'] as Map<String, dynamic>;
+      final progression = root['progression'] as Map<String, dynamic>;
+      final wallet = root['wallet'] as Map<String, dynamic>;
+      final meta = root['meta'] as Map<String, dynamic>;
+
+      final totalXp = (progression['xp'] as num).toInt();
+      final level = (progression['level'] as num).toInt();
+      final progress = LevelProgression.fromTotalXp(totalXp);
+
+      expect(level, equals(progress.level));
+      expect(level, equals(12));
+      expect(progress.currentLevelXp, greaterThan(0));
+      expect(progress.currentLevelXp, lessThan(progress.xpForNextLevel));
+      expect((wallet['coins'] as num).toInt(), equals(1240));
+      expect((meta['lastCelebratedLevel'] as num).toInt(), equals(level));
+    });
+
+    test('seeds stable achievement unlock and reward-applied state', () {
+      final payload = DemoSeedData.build(now: DateTime(2026, 5, 20));
+      final root = payload.state['userState'] as Map<String, dynamic>;
+      final profile = root['profile'] as Map<String, dynamic>;
+      final achievements = profile['achievements'] as Map<String, dynamic>;
+
+      final unlocked = (achievements['unlocked'] as List)
+          .cast<Map<String, dynamic>>();
+      final unlockedIds = unlocked
+          .map((entry) => (entry['id'] ?? '').toString())
+          .toSet();
+      final rewardAppliedIds =
+          (achievements['rewardAppliedAchievementIds'] as List)
+              .map((entry) => entry.toString())
+              .toSet();
+
+      expect(unlockedIds, contains('family_consistency:mind:madera'));
+      expect(unlockedIds, contains('family_consistency:mind:bronce'));
+      expect(unlockedIds, contains('special:el_centurion'));
+      expect(unlockedIds, contains('special:flash'));
+      expect(unlockedIds, contains('special:imparable'));
+
+      // Keep some achievements out of the seeded unlock list for in-progress UI.
+      expect(unlockedIds, isNot(contains('special:plusmarquista')));
+      expect(unlockedIds, isNot(contains('special:perfeccionista')));
+
+      expect(rewardAppliedIds, equals(unlockedIds));
     });
   });
 }
