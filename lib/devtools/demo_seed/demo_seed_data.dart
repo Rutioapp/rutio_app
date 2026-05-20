@@ -1,18 +1,16 @@
 import 'demo_seed_models.dart';
+import 'demo_seed_dates.dart';
+import 'demo_seed_habits.dart';
+import 'demo_seed_history.dart';
 
 class DemoSeedData {
   const DemoSeedData._();
 
   static DemoSeedPayload build({required DateTime now}) {
-    final today = _dayOnly(now);
-    final todayKey = _dateKey(today);
-    final yesterdayKey = _dateKey(today.subtract(const Duration(days: 1)));
-    final twoDaysAgoKey = _dateKey(today.subtract(const Duration(days: 2)));
-    final threeDaysAgoKey = _dateKey(today.subtract(const Duration(days: 3)));
-
-    const waterId = 'demo_habit_water';
-    const readId = 'demo_habit_read';
-    const stepsId = 'demo_habit_steps';
+    final today = DemoSeedDates.dateOnly(now.toLocal());
+    final todayKey = DemoSeedDates.dateKey(today);
+    final habits = DemoSeedHabits.build(now: today);
+    final history = DemoSeedHistory.build(now: today, habits: habits);
 
     return DemoSeedPayload(
       userId: DemoSeedScope.userId,
@@ -35,7 +33,7 @@ class DemoSeedData {
           'wallet': <String, dynamic>{'coins': 0},
           'inventory': <String, dynamic>{'items': <dynamic>[]},
           'profile': <String, dynamic>{
-            'displayName': 'Demo User',
+            'displayName': 'Alex',
             'email': 'demo@rutio.local',
             'equipped': <String, dynamic>{
               'avatar_skin': null,
@@ -76,94 +74,14 @@ class DemoSeedData {
             'professional': 0,
           },
           'history': <String, dynamic>{
-            'habitCompletions': <String, dynamic>{
-              yesterdayKey: <String, dynamic>{
-                waterId: true,
-                readId: true,
-                stepsId: true,
-              },
-              twoDaysAgoKey: <String, dynamic>{
-                waterId: true,
-                readId: false,
-                stepsId: false,
-              },
-              threeDaysAgoKey: <String, dynamic>{
-                readId: false,
-              },
-            },
-            'habitCountValues': <String, dynamic>{
-              yesterdayKey: <String, dynamic>{stepsId: 9200},
-              twoDaysAgoKey: <String, dynamic>{stepsId: 5100},
-            },
-            'habitSkips': <String, dynamic>{
-              threeDaysAgoKey: <String, dynamic>{readId: true},
-            },
+            'habitCompletions': history.completions,
+            'habitCountValues': history.countValues,
+            'habitSkips': history.skips,
+            'habitCompletionTimes': history.completionTimes,
           },
-          'activeHabits': <Map<String, dynamic>>[
-            <String, dynamic>{
-              'id': waterId,
-              'createdAt': threeDaysAgoKey,
-              'name': 'Drink Water',
-              'emoji': 'W',
-              'description': 'Finish your water bottle',
-              'familyId': 'body',
-              'allFamilies': false,
-              'type': 'check',
-              'target': 1,
-              'progress': 0,
-              'doneToday': false,
-              'skippedToday': false,
-              'schedule': <String, dynamic>{'type': 'daily'},
-              'isCustom': true,
-            },
-            <String, dynamic>{
-              'id': readId,
-              'createdAt': threeDaysAgoKey,
-              'name': 'Read 10 min',
-              'emoji': 'R',
-              'description': 'Read at least 10 minutes',
-              'familyId': 'mind',
-              'allFamilies': false,
-              'type': 'check',
-              'target': 1,
-              'progress': 0,
-              'doneToday': false,
-              'skippedToday': false,
-              'schedule': <String, dynamic>{
-                'type': 'weekly',
-                'weekdays': <int>[1, 2, 3, 4, 5],
-              },
-              'isCustom': true,
-            },
-            <String, dynamic>{
-              'id': stepsId,
-              'createdAt': threeDaysAgoKey,
-              'name': 'Walk Steps',
-              'emoji': 'S',
-              'description': 'Reach 8000 steps',
-              'familyId': 'discipline',
-              'allFamilies': false,
-              'type': 'count',
-              'unit': 'steps',
-              'target': 8000,
-              'progress': 0,
-              'doneToday': false,
-              'skippedToday': false,
-              'schedule': <String, dynamic>{'type': 'daily'},
-              'isCustom': true,
-            },
-          ],
+          'activeHabits': DemoSeedHabits.asStateActiveHabits(habits),
         },
       },
     );
-  }
-
-  static DateTime _dayOnly(DateTime date) =>
-      DateTime(date.year, date.month, date.day);
-
-  static String _dateKey(DateTime date) {
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '${date.year}-$month-$day';
   }
 }
