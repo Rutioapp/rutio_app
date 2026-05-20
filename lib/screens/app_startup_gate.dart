@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../application/auth/auth_controller.dart';
+import '../devtools/rutio_runtime_profile.dart';
 import '../stores/user_state_store.dart';
 import 'auth/sign_in_screen.dart';
 import 'root_gate.dart';
@@ -38,10 +39,11 @@ class _AppStartupGateState extends State<AppStartupGate> {
     required String decision,
     required bool hasSupabaseUser,
     required bool welcomeSeen,
+    required bool isDemoProfile,
   }) {
     if (!kDebugMode) return;
 
-    final snapshot = '$decision|$hasSupabaseUser|$welcomeSeen';
+    final snapshot = '$decision|$hasSupabaseUser|$welcomeSeen|$isDemoProfile';
     if (_lastDebugSnapshot == snapshot) return;
     _lastDebugSnapshot = snapshot;
 
@@ -49,6 +51,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
       '[startup] Supabase currentUser exists: ${hasSupabaseUser ? 'yes' : 'no'}',
     );
     debugPrint('[startup] welcome seen flag: $welcomeSeen');
+    debugPrint('[startup] demo profile active: ${isDemoProfile ? 'yes' : 'no'}');
     debugPrint('[startup] startup decision: $decision');
   }
 
@@ -56,6 +59,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
   Widget build(BuildContext context) {
     return Consumer2<AuthController, UserStateStore>(
       builder: (context, authController, store, _) {
+        final isDemoProfile = RutioRuntimeProfile.isDemo;
         final hasSupabaseUser = authController.currentUser != null;
         final welcomeSeen = store.onboardingDone;
         final isCheckingStartup =
@@ -66,15 +70,17 @@ class _AppStartupGateState extends State<AppStartupGate> {
             decision: 'splash',
             hasSupabaseUser: hasSupabaseUser,
             welcomeSeen: welcomeSeen,
+            isDemoProfile: isDemoProfile,
           );
           return SplashScreen(onFinished: _handleSplashFinished);
         }
 
-        if (hasSupabaseUser) {
+        if (hasSupabaseUser || isDemoProfile) {
           _logSnapshot(
             decision: 'home',
             hasSupabaseUser: hasSupabaseUser,
             welcomeSeen: welcomeSeen,
+            isDemoProfile: isDemoProfile,
           );
           return const RootGate();
         }
@@ -84,6 +90,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
             decision: 'welcome',
             hasSupabaseUser: hasSupabaseUser,
             welcomeSeen: welcomeSeen,
+            isDemoProfile: isDemoProfile,
           );
           return const WelcomeScreen();
         }
@@ -92,6 +99,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
           decision: 'auth',
           hasSupabaseUser: hasSupabaseUser,
           welcomeSeen: welcomeSeen,
+          isDemoProfile: isDemoProfile,
         );
         return const SignInScreen();
       },

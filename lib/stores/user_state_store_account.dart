@@ -37,6 +37,8 @@ void _clearDeleteAccountError(UserStateStore store) {
 }
 
 Future<void> _signOutSupabaseSessionIfPresent() async {
+  if (RutioRuntimeProfile.isDemo) return;
+
   try {
     final client = Supabase.instance.client;
     if (client.auth.currentSession == null) return;
@@ -87,6 +89,16 @@ Future<void> _clearLocalAccountData(
 
 Future<void> _clearAuthSessionState(UserStateStore store) async {
   _suppressGamificationOverlaysDuringLogout(store);
+
+  if (RutioRuntimeProfile.isDemo) {
+    await _switchLocalScope(
+      store,
+      userId: DemoSeedScope.userId,
+      forceReload: true,
+    );
+    return;
+  }
+
   await _signOutSupabaseSessionIfPresent();
   await _switchLocalScope(
     store,

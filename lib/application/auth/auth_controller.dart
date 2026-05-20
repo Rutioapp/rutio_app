@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../devtools/rutio_runtime_profile.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../../stores/user_state_store.dart';
@@ -14,6 +15,17 @@ class AuthController extends ChangeNotifier {
     ProfileRepository? profileRepository,
   })  : _userStateStore = userStateStore,
         _profileRepository = profileRepository {
+    if (RutioRuntimeProfile.isDemo) {
+      // Demo profile is intentionally local-only: avoid binding to any live
+      // Supabase session so real accounts are never mutated during demos.
+      _currentUser = null;
+      if (kDebugMode) {
+        debugPrint('[auth] demo profile active: skipping Supabase auth sync');
+      }
+      _finishSessionCheck();
+      return;
+    }
+
     _currentUser = _authRepository.currentUser;
     if (kDebugMode) {
       debugPrint(

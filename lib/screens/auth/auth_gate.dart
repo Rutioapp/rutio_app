@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
 import '../../application/auth/auth_controller.dart';
+import '../../devtools/rutio_runtime_profile.dart';
 import '../../utils/app_theme.dart';
 import 'sign_in_screen.dart';
 
@@ -33,6 +34,20 @@ class _AuthGateState extends State<AuthGate> {
   Widget build(BuildContext context) {
     return Consumer<AuthController>(
       builder: (context, authController, _) {
+        if (RutioRuntimeProfile.isDemo) {
+          _logDecision('showing app (demo profile)');
+          return widget.authenticatedBuilder?.call(context) ??
+              const Scaffold(
+                backgroundColor: AppColors.cream,
+                body: Center(
+                  child: Text(
+                    'Demo profile ready.',
+                    style: TextStyle(color: AppColors.inkSoft),
+                  ),
+                ),
+              );
+        }
+
         if (authController.isCheckingSession) {
           _logDecision('checking session');
           return const Scaffold(

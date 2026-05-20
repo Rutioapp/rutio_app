@@ -7,6 +7,9 @@ import 'application/auth/auth_controller.dart';
 import 'core/supabase/rutio_supabase_client.dart';
 import 'services/notification_runtime.dart';
 import 'services/notification_service.dart';
+import 'devtools/demo_seed/demo_seed_models.dart';
+import 'devtools/demo_seed/demo_seed_runner.dart';
+import 'devtools/rutio_runtime_profile.dart';
 
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/profile_repository.dart';
@@ -38,6 +41,14 @@ import 'screens/auth/sign_up_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RutioSupabaseClient.initialize();
+
+  final userStateStorage = UserStateStorage();
+  final userStateRepository = UserStateRepository(storage: userStateStorage);
+  await DemoSeedRunner(
+    repository: userStateRepository,
+    storage: userStateStorage,
+  ).prepare();
+
   try {
     await NotificationService.instance.init();
   } catch (error, stackTrace) {
@@ -73,8 +84,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<UserStateStore>(
           create: (context) {
             final userStateRepository = context.read<UserStateRepository>();
-            final initialUserId =
-                RutioSupabaseClient.instance.auth.currentUser?.id;
+            final initialUserId = RutioRuntimeProfile.isDemo
+                ? DemoSeedScope.userId
+                : RutioSupabaseClient.instance.auth.currentUser?.id;
             userStateRepository.setActiveUserScope(initialUserId);
 
             return UserStateStore(
