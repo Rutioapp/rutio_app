@@ -42,13 +42,16 @@ class DemoSeedRunner {
       await _repository.clearActiveScopeState();
     }
 
-    final payload = DemoSeedData.build(now: _nowProvider());
+    final seedNow = _runtimeProfile.demoNowDate ?? _nowProvider();
+    final payload = DemoSeedData.build(now: seedNow);
     await _repository.save(payload.state);
 
     if (kDebugMode) {
       final action =
           _runtimeProfile.shouldResetDemoProfile ? 'reset+seeded' : 'seeded';
-      debugPrint('[demo_seed] $action scope=${payload.userId}');
+      debugPrint(
+        '[demo_seed] $action scope=${payload.userId} now=${seedNow.toIso8601String()}',
+      );
     }
   }
 }
