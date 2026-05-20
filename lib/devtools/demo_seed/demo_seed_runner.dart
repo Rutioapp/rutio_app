@@ -10,23 +10,26 @@ class DemoSeedRunner {
   DemoSeedRunner({
     required UserStateRepository repository,
     required UserStateStorage storage,
+    RutioRuntimeProfile? runtimeProfile,
     DateTime Function()? nowProvider,
   })  : _repository = repository,
         _storage = storage,
+        _runtimeProfile = runtimeProfile ?? RutioRuntimeProfile.current,
         _nowProvider = nowProvider ?? DateTime.now;
 
   final UserStateRepository _repository;
   final UserStateStorage _storage;
+  final RutioRuntimeProfile _runtimeProfile;
   final DateTime Function() _nowProvider;
 
   Future<void> prepare() async {
-    if (!RutioRuntimeProfile.isDemo) return;
+    if (!_runtimeProfile.isDemoProfile) return;
 
     _repository.setActiveUserScope(DemoSeedScope.userId);
 
     final hasScopedState =
         await _storage.read(userId: DemoSeedScope.userId) != null;
-    final shouldReseed = RutioRuntimeProfile.shouldResetDemo || !hasScopedState;
+    final shouldReseed = _runtimeProfile.shouldResetDemoProfile || !hasScopedState;
 
     if (!shouldReseed) {
       if (kDebugMode) {
@@ -35,7 +38,7 @@ class DemoSeedRunner {
       return;
     }
 
-    if (RutioRuntimeProfile.shouldResetDemo) {
+    if (_runtimeProfile.shouldResetDemoProfile) {
       await _repository.clearActiveScopeState();
     }
 
@@ -44,7 +47,7 @@ class DemoSeedRunner {
 
     if (kDebugMode) {
       final action =
-          RutioRuntimeProfile.shouldResetDemo ? 'reset+seeded' : 'seeded';
+          _runtimeProfile.shouldResetDemoProfile ? 'reset+seeded' : 'seeded';
       debugPrint('[demo_seed] $action scope=${payload.userId}');
     }
   }
