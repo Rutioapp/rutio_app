@@ -2162,6 +2162,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get habitStatsPerDayCompact => 'al día';
+
+  @override
   String get habitStatsObjectiveFallback => 'Objetivo configurado';
 
   @override

@@ -645,7 +645,8 @@ List<HabitStatsYearCalendarMonth> resolveHabitStatsYearCalendarMonths({
     final daysInMonth = _daysInMonth(year, month);
     final leadingEmptyDays =
         (monthStart.weekday - DateTime.monday + 7) % DateTime.daysPerWeek;
-    final days = List<HabitStatsYearCalendarDay>.generate(daysInMonth, (offset) {
+    final days =
+        List<HabitStatsYearCalendarDay>.generate(daysInMonth, (offset) {
       final day = _dateOnly(monthStart.add(Duration(days: offset)));
       return HabitStatsYearCalendarDay(
         date: day,
@@ -838,11 +839,14 @@ HabitStatsYearCalendarDayStatus _resolveYearCalendarDayStatus({
   }
 
   final isToday = _isSameDate(day, safeNow);
-  final skipped = skipsByDay[day] == true || (isToday && habitMap['skippedToday'] == true);
+  final skipped =
+      skipsByDay[day] == true || (isToday && habitMap['skippedToday'] == true);
   final completed = isCounter
       ? ((countsByDay[day] ?? 0) > 0 ||
           (_asNum(countValuesByDay[day]) ?? 0) > 0 ||
-          (isToday && habitMap['doneToday'] == true && habitMap['skippedToday'] != true))
+          (isToday &&
+              habitMap['doneToday'] == true &&
+              habitMap['skippedToday'] != true))
       : _isCheckHabitCompletedOnDate(
           day: day,
           today: safeNow,
@@ -1193,28 +1197,27 @@ String _objectiveSummary({
   required bool isCounter,
   required int weeklyTarget,
 }) {
-  final explicit = _sanitizeObjectiveSummaryText(
-    _asString(habitMap['objective']) ?? _asString(habitMap['description']),
-  );
-  if (explicit != null) {
-    return explicit;
-  }
-
   final fallback = l10n.habitStatsObjectiveFallback;
   if (isCounter) {
-    final target = _asInt(habitMap['target']);
-    final unit = (_asString(habitMap['unit']) ?? '').trim();
-    if (target == null || target < 1) {
+    final target = _asNum(habitMap['target']);
+    if (target == null || target <= 0) {
       return fallback;
     }
-    final counterSummary = unit.isEmpty
-        ? '${l10n.habitConfigGoalSection}: $target'
-        : '$target $unit';
+    final unitLabel = _safeHabitUnitLabel(l10n, _asString(habitMap['unit']));
+    final targetLabel = _formatCountValueLabel(
+      target,
+      unitLabel: unitLabel,
+    );
+    final counterSummary = '$targetLabel ${l10n.habitStatsPerDayCompact}';
     return _sanitizeObjectiveSummaryText(counterSummary) ?? fallback;
   }
 
   final scheduleType =
       (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
+  if (scheduleType == 'once') {
+    return _sanitizeObjectiveSummaryText(l10n.habitConfigOnceOption) ??
+        fallback;
+  }
   if (scheduleType == 'timesperweek') {
     if (weeklyTarget < 1) {
       return fallback;
@@ -1223,6 +1226,15 @@ String _objectiveSummary({
           _formatWeeklyObjective(l10n, weeklyTarget),
         ) ??
         fallback;
+  }
+  if (scheduleType == 'weekly') {
+    final weekdays = _sortedWeekdays(schedule['weekdays']);
+    if (weekdays.isNotEmpty && weekdays.length < DateTime.daysPerWeek) {
+      return _sanitizeObjectiveSummaryText(
+            _formatWeeklyDaysObjective(l10n, weekdays),
+          ) ??
+          fallback;
+    }
   }
 
   final perDayTarget = _asInt(habitMap['target']);
@@ -1265,6 +1277,44 @@ String _formatWeeklyObjective(dynamic l10n, int count) {
   return safeCount == 1
       ? l10n.habitStatsObjectiveWeeklySingular(safeCount)
       : l10n.habitStatsObjectiveWeeklyPlural(safeCount);
+}
+
+List<int> _sortedWeekdays(dynamic rawWeekdays) {
+  if (rawWeekdays is! List) return const <int>[];
+  final valid = rawWeekdays
+      .whereType<num>()
+      .map((day) => day.toInt())
+      .where((day) => day >= DateTime.monday && day <= DateTime.sunday)
+      .toSet()
+      .toList();
+  valid.sort();
+  return valid;
+}
+
+String _formatWeeklyDaysObjective(dynamic l10n, List<int> weekdays) {
+  final labels = weekdays.map((day) => _weekdayShortLabel(l10n, day)).toList();
+  return labels.join(', ');
+}
+
+String _weekdayShortLabel(dynamic l10n, int weekday) {
+  switch (weekday) {
+    case DateTime.monday:
+      return l10n.weekdayShortMon;
+    case DateTime.tuesday:
+      return l10n.weekdayShortTue;
+    case DateTime.wednesday:
+      return l10n.weekdayShortWed;
+    case DateTime.thursday:
+      return l10n.weekdayShortThu;
+    case DateTime.friday:
+      return l10n.weekdayShortFri;
+    case DateTime.saturday:
+      return l10n.weekdayShortSat;
+    case DateTime.sunday:
+      return l10n.weekdayShortSun;
+    default:
+      return weekday.toString();
+  }
 }
 
 Map<DateTime, int> _extractCountsByDay({
