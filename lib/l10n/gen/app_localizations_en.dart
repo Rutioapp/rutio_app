@@ -1192,6 +1192,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsV3SummaryAmberLabel => 'Amber';
 
   @override
+  String get statisticsV3RewardBreakdownTitle => 'Reward breakdown';
+
+  @override
+  String get statisticsV3RewardBreakdownSubtitle =>
+      'Rewards earned in this period.';
+
+  @override
+  String get statisticsV3RewardBreakdownHabits => 'Habits';
+
+  @override
+  String get statisticsV3RewardBreakdownDiary => 'Diary';
+
+  @override
+  String get statisticsV3RewardBreakdownAchievements => 'Achievements';
+
+  @override
+  String get statisticsV3RewardBreakdownLevelUps => 'Level ups';
+
+  @override
+  String get statisticsV3RewardBreakdownTotal => 'Total';
+
+  @override
+  String get statisticsV3RewardBreakdownEmpty =>
+      'No rewards recorded in this period.';
+
+  @override
+  String get statisticsV3RewardBreakdownHint => 'Long press to view details';
+
+  @override
+  String get statisticsV3RewardBreakdownLevelUpFootnote =>
+      'Level-up rewards will appear here when dated reward history is available.';
+
+  @override
   String get statisticsV3ConsistencyCardTitle => 'Consistency';
 
   @override

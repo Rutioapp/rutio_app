@@ -1195,6 +1195,40 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statisticsV3SummaryAmberLabel => 'Ámbar';
 
   @override
+  String get statisticsV3RewardBreakdownTitle => 'Desglose de recompensas';
+
+  @override
+  String get statisticsV3RewardBreakdownSubtitle =>
+      'Recompensas obtenidas en este periodo.';
+
+  @override
+  String get statisticsV3RewardBreakdownHabits => 'Hábitos';
+
+  @override
+  String get statisticsV3RewardBreakdownDiary => 'Diario';
+
+  @override
+  String get statisticsV3RewardBreakdownAchievements => 'Logros';
+
+  @override
+  String get statisticsV3RewardBreakdownLevelUps => 'Subidas de nivel';
+
+  @override
+  String get statisticsV3RewardBreakdownTotal => 'Total';
+
+  @override
+  String get statisticsV3RewardBreakdownEmpty =>
+      'No hay recompensas registradas en este periodo.';
+
+  @override
+  String get statisticsV3RewardBreakdownHint =>
+      'Mantén pulsado para ver el detalle';
+
+  @override
+  String get statisticsV3RewardBreakdownLevelUpFootnote =>
+      'Las recompensas por subida de nivel se mostrarán aquí cuando exista historial fechado de recompensas.';
+
+  @override
   String get statisticsV3ConsistencyCardTitle => 'Consistencia';
 
   @override

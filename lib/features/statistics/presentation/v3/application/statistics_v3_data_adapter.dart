@@ -27,8 +27,6 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
   final root = _map(store.state);
   final userState = _map(root['userState']);
   final history = _map(userState['history']);
-  final daily = _map(userState['daily']);
-
   final completionsRoot = _map(history['habitCompletions']);
   final completionTimesRoot = _map(history['habitCompletionTimes']);
   final skipsRoot = _map(history['habitSkips']);
@@ -161,7 +159,7 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
       : ((totalCompletedHabitInstances / totalExpectedHabitInstances) * 100)
           .round();
 
-  final periodRewards = _buildPeriodRewardSummary(
+  final rewardBreakdown = _buildPeriodRewardBreakdown(
     start: periodRange.start,
     end: periodRange.end,
     today: today,
@@ -172,12 +170,8 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     habitsById: habitsById,
   );
 
-  final xpGained = period == StatisticsV3Period.day
-      ? _safeInt(daily['xpEarnedToday'], fallback: 0).clamp(0, 1 << 30)
-      : periodRewards.xp;
-  final amberGained = period == StatisticsV3Period.day
-      ? _safeInt(daily['coinsEarnedToday'], fallback: 0).clamp(0, 1 << 30)
-      : periodRewards.amber;
+  final xpGained = rewardBreakdown.totalXp;
+  final amberGained = rewardBreakdown.totalAmber;
   final weeklyActivity = period == StatisticsV3Period.week
       ? _buildWeeklyActivityData(
           today: today,
@@ -233,6 +227,7 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     monthlyCalendarDays: monthlyCalendarDays,
     yearlyConsistencyMonths: yearlyConsistencyMonths,
     weeklyImprovement: weeklyImprovement,
+    rewardBreakdown: rewardBreakdown,
   );
 }
 
@@ -622,7 +617,7 @@ _ExpectedCompletedCounts _buildTimesPerWeekContribution({
   );
 }
 
-_PeriodRewardSummary _buildPeriodRewardSummary({
+StatisticsV3RewardBreakdown _buildPeriodRewardBreakdown({
   required DateTime start,
   required DateTime end,
   required DateTime today,
@@ -632,7 +627,9 @@ _PeriodRewardSummary _buildPeriodRewardSummary({
   required Map<String, dynamic> countValuesRoot,
   required Map<String, Map<String, dynamic>> habitsById,
 }) {
-  if (end.isBefore(start)) return const _PeriodRewardSummary(xp: 0, amber: 0);
+  if (end.isBefore(start)) {
+    return const StatisticsV3RewardBreakdown(rows: <StatisticsV3RewardBreakdownRow>[]);
+  }
 
   final habitsRewards = _aggregateHabitRewardsForPeriod(
     start: start,
@@ -658,18 +655,25 @@ _PeriodRewardSummary _buildPeriodRewardSummary({
 
   // TODO: Track level-up milestone rewards with dated local events so period
   // summary can attribute milestone Amber gains exactly.
-  final xp =
-      (habitsRewards.xp + diaryRewards.xp + achievementRewards.xp).clamp(
-    0,
-    1 << 30,
-  );
-  final amber = (habitsRewards.amber +
-          diaryRewards.amber +
-          achievementRewards.amber)
-      .clamp(0, 1 << 30);
-  return _PeriodRewardSummary(
-    xp: xp,
-    amber: amber,
+  return StatisticsV3RewardBreakdown(
+    rows: <StatisticsV3RewardBreakdownRow>[
+      StatisticsV3RewardBreakdownRow(
+        source: StatisticsV3RewardBreakdownSource.habits,
+        xp: habitsRewards.xp,
+        amber: habitsRewards.amber,
+      ),
+      StatisticsV3RewardBreakdownRow(
+        source: StatisticsV3RewardBreakdownSource.diary,
+        xp: diaryRewards.xp,
+        amber: diaryRewards.amber,
+      ),
+      StatisticsV3RewardBreakdownRow(
+        source: StatisticsV3RewardBreakdownSource.achievements,
+        xp: achievementRewards.xp,
+        amber: achievementRewards.amber,
+      ),
+    ],
+    hasUnavailableLevelUpAttribution: true,
   );
 }
 

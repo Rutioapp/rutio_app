@@ -2223,6 +2223,66 @@ abstract class AppLocalizations {
   /// **'Ámbar'**
   String get statisticsV3SummaryAmberLabel;
 
+  /// No description provided for @statisticsV3RewardBreakdownTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Desglose de recompensas'**
+  String get statisticsV3RewardBreakdownTitle;
+
+  /// No description provided for @statisticsV3RewardBreakdownSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recompensas obtenidas en este periodo.'**
+  String get statisticsV3RewardBreakdownSubtitle;
+
+  /// No description provided for @statisticsV3RewardBreakdownHabits.
+  ///
+  /// In es, this message translates to:
+  /// **'Hábitos'**
+  String get statisticsV3RewardBreakdownHabits;
+
+  /// No description provided for @statisticsV3RewardBreakdownDiary.
+  ///
+  /// In es, this message translates to:
+  /// **'Diario'**
+  String get statisticsV3RewardBreakdownDiary;
+
+  /// No description provided for @statisticsV3RewardBreakdownAchievements.
+  ///
+  /// In es, this message translates to:
+  /// **'Logros'**
+  String get statisticsV3RewardBreakdownAchievements;
+
+  /// No description provided for @statisticsV3RewardBreakdownLevelUps.
+  ///
+  /// In es, this message translates to:
+  /// **'Subidas de nivel'**
+  String get statisticsV3RewardBreakdownLevelUps;
+
+  /// No description provided for @statisticsV3RewardBreakdownTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Total'**
+  String get statisticsV3RewardBreakdownTotal;
+
+  /// No description provided for @statisticsV3RewardBreakdownEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay recompensas registradas en este periodo.'**
+  String get statisticsV3RewardBreakdownEmpty;
+
+  /// No description provided for @statisticsV3RewardBreakdownHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Mantén pulsado para ver el detalle'**
+  String get statisticsV3RewardBreakdownHint;
+
+  /// No description provided for @statisticsV3RewardBreakdownLevelUpFootnote.
+  ///
+  /// In es, this message translates to:
+  /// **'Las recompensas por subida de nivel se mostrarán aquí cuando exista historial fechado de recompensas.'**
+  String get statisticsV3RewardBreakdownLevelUpFootnote;
+
   /// No description provided for @statisticsV3ConsistencyCardTitle.
   ///
   /// In es, this message translates to:

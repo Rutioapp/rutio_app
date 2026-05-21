@@ -121,6 +121,50 @@ class StatisticsV3WeeklyImprovementData {
   final int deltaPercentage;
 }
 
+enum StatisticsV3RewardBreakdownSource {
+  habits,
+  diary,
+  achievements,
+  levelUps,
+}
+
+class StatisticsV3RewardBreakdownRow {
+  const StatisticsV3RewardBreakdownRow({
+    required this.source,
+    required this.xp,
+    required this.amber,
+  });
+
+  final StatisticsV3RewardBreakdownSource source;
+  final int xp;
+  final int amber;
+
+  bool get hasRewards => xp > 0 || amber > 0;
+}
+
+class StatisticsV3RewardBreakdown {
+  const StatisticsV3RewardBreakdown({
+    required this.rows,
+    this.hasUnavailableLevelUpAttribution = false,
+  });
+
+  final List<StatisticsV3RewardBreakdownRow> rows;
+  final bool hasUnavailableLevelUpAttribution;
+
+  int get totalXp =>
+      rows.fold<int>(0, (sum, row) => sum + row.xp).clamp(0, 1 << 30).toInt();
+  int get totalAmber =>
+      rows
+          .fold<int>(0, (sum, row) => sum + row.amber)
+          .clamp(0, 1 << 30)
+          .toInt();
+  bool get hasRewards => rows.any((row) => row.hasRewards);
+  bool get isEmpty => !hasRewards;
+
+  List<StatisticsV3RewardBreakdownRow> get visibleRows =>
+      rows.where((row) => row.hasRewards).toList(growable: false);
+}
+
 enum StatisticsV3HabitListMetricKind {
   check,
   timesPerWeekCheck,
@@ -168,6 +212,7 @@ class StatisticsV3ViewData {
     required this.monthlyCalendarDays,
     required this.yearlyConsistencyMonths,
     required this.weeklyImprovement,
+    required this.rewardBreakdown,
   });
 
   final int totalDays;
@@ -183,4 +228,5 @@ class StatisticsV3ViewData {
   final List<StatisticsV3MonthlyCalendarDay> monthlyCalendarDays;
   final List<StatisticsV3YearlyConsistencyMonth> yearlyConsistencyMonths;
   final StatisticsV3WeeklyImprovementData weeklyImprovement;
+  final StatisticsV3RewardBreakdown rewardBreakdown;
 }
