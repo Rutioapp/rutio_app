@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_consistency_legend.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_consistency_palette.dart';
 
 class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
   const StatisticsV3YearlyConsistencyShell({
@@ -16,10 +18,6 @@ class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
 
   static const _border = Color(0xFFE9E3D9);
   static const _cream = Color(0xFFFDFBF7);
-  static const _text = Color(0xFF2F251C);
-  static const _mutedText = Color(0xFF6A6155);
-  static const _cellBorder = Color(0xFFE5DED3);
-  static const _futureFill = Color(0xFFF0EBE3);
   static const _todayBorder = Color(0xFF9AA789);
 
   @override
@@ -27,109 +25,63 @@ class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
     final localeName = Localizations.localeOf(context).toLanguageTag();
     final data = months.isEmpty ? _fallbackMonths() : months;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final useFourColumns = constraints.maxWidth >= 336;
-        final crossAxisCount = useFourColumns ? 4 : 3;
-        final gridSpacing = useFourColumns ? 6.0 : 5.0;
-        final childAspectRatio = useFourColumns ? 1.58 : 1.82;
+    return Container(
+      key: const Key('statisticsV3YearlyConsistencyShell'),
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+      decoration: BoxDecoration(
+        color: _cream.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const columnSpacing = 10.0;
+          const rowSpacing = 10.0;
+          final columns = constraints.maxWidth < 295 ? 2 : 3;
+          final monthWidth =
+              (constraints.maxWidth - (columnSpacing * (columns - 1))) / columns;
+          final dayGap = monthWidth < 96 ? 1.5 : 2.0;
+          final daySize =
+              ((monthWidth - (dayGap * 6)) / 7).clamp(4.0, 9.0).toDouble();
 
-        return Container(
-          padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
-          decoration: BoxDecoration(
-            color: _cream.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: _border),
-          ),
-          child: Column(
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                height: 24,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: _todayBorder.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.calendar_view_month_rounded,
-                        size: 16,
-                        color: _todayBorder,
-                      ),
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14.2,
-                          height: 1,
-                          fontWeight: FontWeight.w700,
-                          color: _text,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 11,
-                  height: 1.1,
-                  fontWeight: FontWeight.w500,
-                  color: _mutedText,
-                ),
-              ),
-              const SizedBox(height: 9),
+              _Header(title: title, subtitle: subtitle),
+              const SizedBox(height: 11),
               GridView.builder(
+                key: const Key('statisticsV3YearCalendarGrid'),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 padding: EdgeInsets.zero,
                 itemCount: data.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  mainAxisSpacing: gridSpacing,
-                  crossAxisSpacing: gridSpacing,
-                  childAspectRatio: childAspectRatio,
+                  crossAxisCount: columns,
+                  crossAxisSpacing: columnSpacing,
+                  mainAxisSpacing: rowSpacing,
+                  childAspectRatio: columns == 3 ? 0.92 : 1.14,
                 ),
                 itemBuilder: (context, index) {
                   final month = data[index];
-                  final label = _monthLabel(
-                    localeName: localeName,
-                    year: month.year,
-                    month: month.month,
-                  );
-                  final tone = _toneForMonth(month);
-                  final percentageLabel =
-                      month.isFuture ? null : '${month.percentage}%';
-
-                  return _YearMonthCell(
-                    label: label,
-                    percentageLabel: percentageLabel,
-                    fillColor: tone.fillColor,
-                    borderColor: month.isCurrentMonth
-                        ? _todayBorder.withValues(alpha: 0.52)
-                        : tone.borderColor,
-                    textColor: tone.textColor,
-                    isFuture: month.isFuture,
-                    isCurrentMonth: month.isCurrentMonth,
+                  return _MonthMiniCalendar(
+                    month: month,
+                    monthLabel: _monthLabel(
+                      localeName: localeName,
+                      year: month.year,
+                      month: month.month,
+                    ),
+                    daySize: daySize,
+                    dayGap: dayGap,
+                    todayBorderColor: _todayBorder,
                   );
                 },
               ),
+              const SizedBox(height: 10),
+              const StatisticsV3ConsistencyLegend(),
             ],
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -137,6 +89,27 @@ class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
     final now = DateTime.now();
     return List<StatisticsV3YearlyConsistencyMonth>.generate(12, (index) {
       final month = index + 1;
+      final monthStart = DateTime(now.year, month, 1);
+      final daysInMonth = DateUtils.getDaysInMonth(now.year, month);
+      final days = List<StatisticsV3YearlyConsistencyDay>.generate(
+        daysInMonth,
+        (dayIndex) {
+          final date = monthStart.add(Duration(days: dayIndex));
+          final isFuture = date.isAfter(now);
+          final isToday = date.year == now.year &&
+              date.month == now.month &&
+              date.day == now.day;
+          return StatisticsV3YearlyConsistencyDay(
+            date: date,
+            completedCount: 0,
+            expectedCount: 0,
+            percentage: 0,
+            isToday: isToday,
+            isFuture: isFuture,
+          );
+        },
+        growable: false,
+      );
       return StatisticsV3YearlyConsistencyMonth(
         month: month,
         year: now.year,
@@ -145,32 +118,9 @@ class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
         percentage: 0,
         isCurrentMonth: month == now.month,
         isFuture: month > now.month,
+        days: days,
       );
     }, growable: false);
-  }
-
-  _YearMonthTone _toneForMonth(StatisticsV3YearlyConsistencyMonth month) {
-    if (month.isFuture) {
-      return _YearMonthTone.future;
-    }
-    return _YearMonthTone.fromBucket(_bucketForPercentage(month.percentage));
-  }
-
-  _YearlyIntensityBucket _bucketForPercentage(int percentage) {
-    final value = percentage.clamp(0, 100);
-    if (value <= 24) {
-      return _YearlyIntensityBucket.zero;
-    }
-    if (value <= 49) {
-      return _YearlyIntensityBucket.low;
-    }
-    if (value <= 74) {
-      return _YearlyIntensityBucket.medium;
-    }
-    if (value <= 89) {
-      return _YearlyIntensityBucket.high;
-    }
-    return _YearlyIntensityBucket.full;
   }
 
   String _monthLabel({
@@ -186,75 +136,65 @@ class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
   }
 }
 
-class _YearMonthCell extends StatelessWidget {
-  const _YearMonthCell({
-    required this.label,
-    required this.percentageLabel,
-    required this.fillColor,
-    required this.borderColor,
-    required this.textColor,
-    required this.isFuture,
-    required this.isCurrentMonth,
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.title,
+    required this.subtitle,
   });
 
-  final String label;
-  final String? percentageLabel;
-  final Color fillColor;
-  final Color borderColor;
-  final Color textColor;
-  final bool isFuture;
-  final bool isCurrentMonth;
+  final String title;
+  final String subtitle;
+
+  static const _todayBorder = Color(0xFF9AA789);
 
   @override
   Widget build(BuildContext context) {
-    final alpha = isFuture ? 0.58 : 0.94;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 6.5, 8, 6.5),
-      decoration: BoxDecoration(
-        color: fillColor,
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(
-          color: borderColor,
-          width: isCurrentMonth ? 1.25 : 1,
-        ),
-        boxShadow: isCurrentMonth
-            ? [
-                BoxShadow(
-                  color: borderColor.withValues(alpha: 0.12),
-                  blurRadius: 7,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: Column(
+    return SizedBox(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10.6,
-              height: 1,
-              fontWeight: FontWeight.w700,
-              color: textColor.withValues(alpha: alpha),
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _todayBorder.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.calendar_view_month_rounded,
+              size: 16,
+              color: _todayBorder,
             ),
           ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              percentageLabel ?? '—',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11.8,
-                height: 1,
-                fontWeight: FontWeight.w800,
-                color: textColor.withValues(alpha: alpha),
-              ),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14.2,
+                    height: 1,
+                    fontWeight: FontWeight.w700,
+                    color: StatisticsV3ConsistencyPalette.text,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    height: 1.1,
+                    fontWeight: FontWeight.w500,
+                    color: StatisticsV3ConsistencyPalette.mutedText,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -263,92 +203,128 @@ class _YearMonthCell extends StatelessWidget {
   }
 }
 
-class _YearMonthTone {
-  const _YearMonthTone({
-    required this.fillColor,
-    required this.borderColor,
-    required this.textColor,
+class _MonthMiniCalendar extends StatelessWidget {
+  const _MonthMiniCalendar({
+    required this.month,
+    required this.monthLabel,
+    required this.daySize,
+    required this.dayGap,
+    required this.todayBorderColor,
   });
 
-  final Color fillColor;
-  final Color borderColor;
-  final Color textColor;
+  final StatisticsV3YearlyConsistencyMonth month;
+  final String monthLabel;
+  final double daySize;
+  final double dayGap;
+  final Color todayBorderColor;
 
-  factory _YearMonthTone.fromBucket(_YearlyIntensityBucket bucket) {
-    final fillColor = Color.alphaBlend(
-      bucket.color.withValues(alpha: bucket.fillAlpha),
-      StatisticsV3YearlyConsistencyShell._cream,
-    );
-    final borderColor = Color.alphaBlend(
-      bucket.color.withValues(alpha: bucket.borderAlpha),
-      StatisticsV3YearlyConsistencyShell._cellBorder,
-    );
-    final textColor = Color.lerp(
-      StatisticsV3YearlyConsistencyShell._text,
-      bucket.color,
-      bucket.textBlend,
-    )!;
-
-    return _YearMonthTone(
-      fillColor: fillColor,
-      borderColor: borderColor,
-      textColor: textColor,
+  @override
+  Widget build(BuildContext context) {
+    final rows = _buildRows(month.days);
+    return Column(
+      key: Key('statisticsV3YearMonth_${month.month}'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          monthLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontSize: 13,
+                height: 1,
+                fontWeight: FontWeight.w700,
+                color: StatisticsV3ConsistencyPalette.text.withValues(alpha: 0.9),
+              ),
+        ),
+        const SizedBox(height: 6),
+        for (var row = 0; row < rows.length; row++) ...[
+          if (row > 0) SizedBox(height: dayGap),
+          Row(
+            children: [
+              for (var column = 0; column < rows[row].length; column++) ...[
+                if (column > 0) SizedBox(width: dayGap),
+                _YearDayDot(
+                  day: rows[row][column],
+                  size: daySize,
+                  todayBorderColor: todayBorderColor,
+                ),
+              ],
+            ],
+          ),
+        ],
+      ],
     );
   }
-
-  static final future = _YearMonthTone(
-    fillColor: Color.alphaBlend(
-      StatisticsV3YearlyConsistencyShell._futureFill.withValues(alpha: 0.82),
-      StatisticsV3YearlyConsistencyShell._cream,
-    ),
-    borderColor:
-        StatisticsV3YearlyConsistencyShell._cellBorder.withValues(alpha: 0.88),
-    textColor:
-        StatisticsV3YearlyConsistencyShell._mutedText.withValues(alpha: 0.90),
-  );
 }
 
-class _YearlyIntensityBucket {
-  const _YearlyIntensityBucket._(
-    this.color, {
-    required this.fillAlpha,
-    required this.borderAlpha,
-    required this.textBlend,
+class _YearDayDot extends StatelessWidget {
+  const _YearDayDot({
+    required this.day,
+    required this.size,
+    required this.todayBorderColor,
   });
 
-  final Color color;
-  final double fillAlpha;
-  final double borderAlpha;
-  final double textBlend;
+  final StatisticsV3YearlyConsistencyDay? day;
+  final double size;
+  final Color todayBorderColor;
 
-  static const zero = _YearlyIntensityBucket._(
-    Color(0xFFF4EAD7),
-    fillAlpha: 0.18,
-    borderAlpha: 0.24,
-    textBlend: 0.10,
-  );
-  static const low = _YearlyIntensityBucket._(
-    Color(0xFFEEDDAF),
-    fillAlpha: 0.24,
-    borderAlpha: 0.30,
-    textBlend: 0.14,
-  );
-  static const medium = _YearlyIntensityBucket._(
-    Color(0xFFD9A947),
-    fillAlpha: 0.31,
-    borderAlpha: 0.40,
-    textBlend: 0.20,
-  );
-  static const high = _YearlyIntensityBucket._(
-    Color(0xFF8FA36C),
-    fillAlpha: 0.36,
-    borderAlpha: 0.46,
-    textBlend: 0.26,
-  );
-  static const full = _YearlyIntensityBucket._(
-    Color(0xFF4F743B),
-    fillAlpha: 0.42,
-    borderAlpha: 0.52,
-    textBlend: 0.33,
-  );
+  @override
+  Widget build(BuildContext context) {
+    if (day == null) {
+      return SizedBox.square(dimension: size);
+    }
+
+    final intensity = StatisticsV3ConsistencyPalette.intensityFor(
+      percentage: day!.percentage,
+      expectedCount: day!.expectedCount,
+      isFuture: day!.isFuture,
+    );
+    final tone = StatisticsV3ConsistencyPalette.toneFor(intensity);
+
+    return Container(
+      key: Key('statisticsV3YearDay_${_dateKey(day!.date)}'),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: tone.fillColor,
+        borderRadius: BorderRadius.circular(size * 0.36),
+        border: Border.all(
+          color: day!.isToday ? todayBorderColor : tone.borderColor,
+          width: day!.isToday ? 0.95 : 0.6,
+        ),
+      ),
+    );
+  }
+}
+
+List<List<StatisticsV3YearlyConsistencyDay?>> _buildRows(
+  List<StatisticsV3YearlyConsistencyDay> days,
+) {
+  if (days.isEmpty) return const <List<StatisticsV3YearlyConsistencyDay?>>[];
+  final leading =
+      (days.first.date.weekday - DateTime.monday + DateTime.daysPerWeek) %
+          DateTime.daysPerWeek;
+  final slots = <StatisticsV3YearlyConsistencyDay?>[
+    for (var i = 0; i < leading; i++) null,
+    ...days,
+  ];
+  final remainder = slots.length % DateTime.daysPerWeek;
+  if (remainder != 0) {
+    final trailing = DateTime.daysPerWeek - remainder;
+    for (var i = 0; i < trailing; i++) {
+      slots.add(null);
+    }
+  }
+
+  final rows = <List<StatisticsV3YearlyConsistencyDay?>>[];
+  for (var index = 0; index < slots.length; index += DateTime.daysPerWeek) {
+    rows.add(slots.sublist(index, index + DateTime.daysPerWeek));
+  }
+  return rows;
+}
+
+String _dateKey(DateTime date) {
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '${date.year}-$month-$day';
 }

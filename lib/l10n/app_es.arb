@@ -727,6 +727,8 @@
     "statisticsV3WeeklyImprovementSameAsLastWeek": "Igual que la semana anterior",
     "statisticsV3MonthlyCalendarTitle": "Calendario de constancia",
     "statisticsV3MonthlyCalendarSubtitle": "Tu ritmo mensual de un vistazo",
+    "statisticsV3ConsistencyLegendFuture": "Futuro",
+    "statisticsV3ConsistencyLegendNoData": "Sin datos",
     "habitStatsMetricCompleted": "Completado",
   "habitStatsMetricCompletionDescription": "{done}/{total} días",
   "@habitStatsMetricCompletionDescription": {

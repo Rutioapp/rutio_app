@@ -2632,6 +2632,18 @@ abstract class AppLocalizations {
   /// **'Tu ritmo mensual de un vistazo'**
   String get statisticsV3MonthlyCalendarSubtitle;
 
+  /// No description provided for @statisticsV3ConsistencyLegendFuture.
+  ///
+  /// In es, this message translates to:
+  /// **'Futuro'**
+  String get statisticsV3ConsistencyLegendFuture;
+
+  /// No description provided for @statisticsV3ConsistencyLegendNoData.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin datos'**
+  String get statisticsV3ConsistencyLegendNoData;
+
   /// No description provided for @habitStatsMetricCompleted.
   ///
   /// In es, this message translates to:

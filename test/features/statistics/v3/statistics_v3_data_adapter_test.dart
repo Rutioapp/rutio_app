@@ -1069,6 +1069,12 @@ void main() {
         expect(result.monthlyCalendarDays, hasLength(31));
         expect(result.monthlyCalendarDays.every((day) => day.isCurrentMonth),
             isTrue);
+        expect(
+          result.monthlyCalendarDays.every(
+            (day) => day.date.year == 2026 && day.date.month == 5,
+          ),
+          isTrue,
+        );
       });
 
       test(
@@ -1232,6 +1238,61 @@ void main() {
         expect(todayItem.percentage, 0);
       });
 
+      test('count habit at target is completed for that day', () async {
+        final monthNow = DateTime(2026, 5, 6, 10);
+
+        final result = await _buildMonthViewData(
+          now: monthNow,
+          activeHabits: [
+            _habit(
+              id: 'count-monthly-ok',
+              title: 'Count Monthly OK',
+              type: 'count',
+              target: 5,
+              progress: 5,
+              doneToday: true,
+            ),
+          ],
+          history: _historyForDay(
+            monthNow,
+            countValues: {'count-monthly-ok': 5},
+          ),
+        );
+
+        final todayItem =
+            result.monthlyCalendarDays.firstWhere((item) => item.isToday);
+        expect(todayItem.expectedCount, 1);
+        expect(todayItem.completedCount, 1);
+        expect(todayItem.percentage, 100);
+      });
+
+      test(
+          'days before habit createdAt are not counted as missed in monthly calendar',
+          () async {
+        final monthNow = DateTime(2026, 5, 20, 10);
+
+        final result = await _buildMonthViewData(
+          now: monthNow,
+          activeHabits: [
+            _habit(
+              id: 'habit-created-mid-month',
+              title: 'Created Mid Month',
+              createdAt: DateTime(2026, 5, 15),
+            ),
+          ],
+        );
+
+        final mayTenth =
+            result.monthlyCalendarDays.firstWhere((item) => item.date.day == 10);
+        final maySixteenth = result.monthlyCalendarDays
+            .firstWhere((item) => item.date.day == 16);
+
+        expect(mayTenth.expectedCount, 0);
+        expect(mayTenth.completedCount, 0);
+        expect(mayTenth.percentage, 0);
+        expect(maySixteenth.expectedCount, 1);
+      });
+
       test('future days are marked as future and rendered neutral data',
           () async {
         final monthNow = DateTime(2026, 5, 6, 10);
@@ -1288,6 +1349,10 @@ void main() {
 
         expect(result.totalDays, greaterThan(0));
         expect(
+          result.monthlyCalendarDays.any((day) => day.expectedCount > 0),
+          isTrue,
+        );
+        expect(
           result.yearlyConsistencyMonths.any(
             (month) => !month.isFuture && month.expectedCount > 0,
           ),
@@ -1297,6 +1362,10 @@ void main() {
           result.yearlyConsistencyMonths.any((month) => month.completedCount > 0),
           isTrue,
         );
+        final monthsWithData = result.yearlyConsistencyMonths
+            .where((month) => month.expectedCount > 0)
+            .length;
+        expect(monthsWithData, greaterThan(2));
         expect(result.xpGained, greaterThan(0));
         expect(result.amberGained, greaterThan(0));
       });
@@ -1315,6 +1384,14 @@ void main() {
         expect(result.yearlyConsistencyMonths, hasLength(12));
         expect(result.yearlyConsistencyMonths.first.month, 1);
         expect(result.yearlyConsistencyMonths.last.month, 12);
+        expect(
+          result.yearlyConsistencyMonths.every((month) => month.year == 2026),
+          isTrue,
+        );
+        expect(
+          result.yearlyConsistencyMonths.every((month) => month.days.isNotEmpty),
+          isTrue,
+        );
       });
 
       test('calculates completed expected percentage for a past month',
@@ -1452,7 +1529,31 @@ void main() {
           expect(month.completedCount, 0);
           expect(month.expectedCount, 0);
           expect(month.percentage, 0);
+          expect(month.days.every((day) => day.isFuture), isTrue);
+          expect(month.days.every((day) => day.percentage == 0), isTrue);
         }
+      });
+
+      test('future days in current month are excluded from yearly month days',
+          () async {
+        final yearNow = DateTime(2026, 5, 20, 10);
+
+        final result = await _buildYearViewData(
+          now: yearNow,
+          activeHabits: [
+            _habit(id: 'habit-a', title: 'Habit A'),
+          ],
+        );
+
+        final may = result.yearlyConsistencyMonths.firstWhere(
+          (item) => item.month == 5,
+        );
+        final futureDays = may.days.where((day) => day.isFuture).toList();
+        expect(futureDays, isNotEmpty);
+        expect(futureDays.every((day) => day.date.day > 20), isTrue);
+        expect(futureDays.every((day) => day.completedCount == 0), isTrue);
+        expect(futureDays.every((day) => day.expectedCount == 0), isTrue);
+        expect(futureDays.every((day) => day.percentage == 0), isTrue);
       });
 
       test('unticking a habit reduces current month percentage', () async {

@@ -1203,6 +1203,16 @@ List<StatisticsV3YearlyConsistencyMonth> _buildYearlyConsistencyData({
     final monthStart = DateTime(year, month, 1);
     final isCurrentMonth = month == today.month;
     final isFuture = monthStart.isAfter(today);
+    final monthDays = _buildYearlyConsistencyMonthDays(
+      monthStart: monthStart,
+      today: today,
+      userState: userState,
+      completionsRoot: completionsRoot,
+      skipsRoot: skipsRoot,
+      countValuesRoot: countValuesRoot,
+      habits: habits,
+      habitsById: habitsById,
+    );
 
     if (isFuture) {
       return StatisticsV3YearlyConsistencyMonth(
@@ -1213,6 +1223,7 @@ List<StatisticsV3YearlyConsistencyMonth> _buildYearlyConsistencyData({
         percentage: 0,
         isCurrentMonth: false,
         isFuture: true,
+        days: monthDays,
       );
     }
 
@@ -1238,6 +1249,59 @@ List<StatisticsV3YearlyConsistencyMonth> _buildYearlyConsistencyData({
       expectedCount: monthStats.expectedCount,
       percentage: monthStats.percentage,
       isCurrentMonth: isCurrentMonth,
+      isFuture: false,
+      days: monthDays,
+    );
+  }, growable: false);
+}
+
+List<StatisticsV3YearlyConsistencyDay> _buildYearlyConsistencyMonthDays({
+  required DateTime monthStart,
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required Map<String, dynamic> countValuesRoot,
+  required List<Map<String, dynamic>> habits,
+  required Map<String, Map<String, dynamic>> habitsById,
+}) {
+  final daysInMonth = DateUtils.getDaysInMonth(monthStart.year, monthStart.month);
+
+  return List<StatisticsV3YearlyConsistencyDay>.generate(daysInMonth, (index) {
+    final day = monthStart.add(Duration(days: index));
+    final dayKey = _dateKey(day);
+    final isToday = _dateOnly(day) == _dateOnly(today);
+    final isFuture = day.isAfter(today);
+
+    if (isFuture) {
+      return StatisticsV3YearlyConsistencyDay(
+        date: day,
+        completedCount: 0,
+        expectedCount: 0,
+        percentage: 0,
+        isToday: isToday,
+        isFuture: true,
+      );
+    }
+
+    final dayStats = _buildDayCompletionStats(
+      day: day,
+      today: today,
+      dayKey: dayKey,
+      userState: userState,
+      completionsRoot: completionsRoot,
+      skipsRoot: skipsRoot,
+      countValuesRoot: countValuesRoot,
+      habits: habits,
+      habitsById: habitsById,
+    );
+
+    return StatisticsV3YearlyConsistencyDay(
+      date: day,
+      completedCount: dayStats.completedCount,
+      expectedCount: dayStats.expectedCount,
+      percentage: dayStats.percentage,
+      isToday: isToday,
       isFuture: false,
     );
   }, growable: false);
