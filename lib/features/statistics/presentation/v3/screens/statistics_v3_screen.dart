@@ -13,6 +13,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_monthly_calendar_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_period_selector.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_progress_message_chip.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_reward_breakdown_sheet.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_activity_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_improvement_chip.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_summary_card.dart';
@@ -148,6 +149,11 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                     xpGained: viewData.xpGained,
                     amberLabel: l10n.statisticsV3SummaryAmberLabel,
                     amberGained: viewData.amberGained,
+                    longPressHint: l10n.statisticsV3RewardBreakdownHint,
+                    onXpLongPress: () =>
+                        _showRewardBreakdown(viewData: viewData, l10n: l10n),
+                    onAmberLongPress: () =>
+                        _showRewardBreakdown(viewData: viewData, l10n: l10n),
                   ),
                   const SizedBox(height: 14),
                   GridView.count(
@@ -252,6 +258,19 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       return l10n.statisticsV3ProgressMessageComplete;
     }
     return l10n.statisticsV3ProgressMessageInProgress;
+  }
+
+  void _showRewardBreakdown({
+    required StatisticsV3ViewData viewData,
+    required AppLocalizations l10n,
+  }) {
+    showStatisticsV3RewardBreakdownSheet(
+      context,
+      l10n: l10n,
+      breakdown: viewData.rewardBreakdown,
+      totalXp: viewData.xpGained,
+      totalAmber: viewData.amberGained,
+    );
   }
 
   int _currentGlobalStreak(UserStateStore store) {

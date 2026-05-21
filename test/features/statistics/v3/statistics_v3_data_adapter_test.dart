@@ -1,4 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/constants/reward_constants.dart';
 import 'package:rutio/devtools/demo_seed/demo_seed_data.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
@@ -314,19 +315,17 @@ void main() {
     });
 
     group('summary rewards by period', () {
-      test('day summary uses current day XP/Ámbar values when present', () async {
+      test('day summary returns empty reward breakdown when no dated rewards',
+          () async {
         final fixedNow = DateTime(2026, 5, 20, 10);
         final result = await _buildDayViewData(
           now: fixedNow,
           activeHabits: const <Map<String, dynamic>>[],
-          daily: <String, dynamic>{
-            'xpEarnedToday': 23,
-            'coinsEarnedToday': 11,
-          },
         );
 
-        expect(result.xpGained, 23);
-        expect(result.amberGained, 11);
+        expect(result.xpGained, 0);
+        expect(result.amberGained, 0);
+        expect(result.rewardBreakdown.visibleRows, isEmpty);
       });
 
       test('week summary aggregates rewards inside current week only', () async {
@@ -352,6 +351,14 @@ void main() {
 
         expect(result.xpGained, 17);
         expect(result.amberGained, 8);
+        expect(result.rewardBreakdown.totalXp, result.xpGained);
+        expect(result.rewardBreakdown.totalAmber, result.amberGained);
+
+        final habitRow = result.rewardBreakdown.rows.firstWhere(
+          (row) => row.source == StatisticsV3RewardBreakdownSource.habits,
+        );
+        expect(habitRow.xp, 17);
+        expect(habitRow.amber, 8);
       });
 
       test('month summary aggregates diary rewards and excludes future keys',
@@ -372,6 +379,12 @@ void main() {
 
         expect(result.xpGained, 20);
         expect(result.amberGained, 10);
+
+        final diaryRow = result.rewardBreakdown.rows.firstWhere(
+          (row) => row.source == StatisticsV3RewardBreakdownSource.diary,
+        );
+        expect(diaryRow.xp, 20);
+        expect(diaryRow.amber, 10);
       });
 
       test('year summary aggregates applied achievement rewards for the year',
@@ -410,6 +423,54 @@ void main() {
 
         expect(result.xpGained, 200);
         expect(result.amberGained, 100);
+
+        final achievementRow = result.rewardBreakdown.rows.firstWhere(
+          (row) =>
+              row.source == StatisticsV3RewardBreakdownSource.achievements,
+        );
+        expect(achievementRow.xp, 200);
+        expect(achievementRow.amber, 100);
+      });
+
+      test('future reward entries are excluded from breakdown rows', () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final result = await _buildMonthViewData(
+          now: fixedNow,
+          activeHabits: const <Map<String, dynamic>>[],
+          meta: <String, dynamic>{
+            'diaryRewardAppliedDateKeys': [
+              '2026-05-19',
+              '2026-05-28',
+            ],
+          },
+        );
+
+        final diaryRow = result.rewardBreakdown.rows.firstWhere(
+          (row) => row.source == StatisticsV3RewardBreakdownSource.diary,
+        );
+        expect(diaryRow.xp, RewardConstants.dailyDiaryXpReward);
+        expect(diaryRow.amber, RewardConstants.dailyDiaryAmbarReward);
+        expect(result.xpGained, RewardConstants.dailyDiaryXpReward);
+        expect(result.amberGained, RewardConstants.dailyDiaryAmbarReward);
+      });
+
+      test('level-up rewards are not attributed without dated local ledger',
+          () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final result = await _buildWeekViewData(
+          now: fixedNow,
+          activeHabits: const <Map<String, dynamic>>[],
+        );
+
+        expect(
+          result.rewardBreakdown.rows.any(
+            (row) =>
+                row.source == StatisticsV3RewardBreakdownSource.levelUps &&
+                row.hasRewards,
+          ),
+          isFalse,
+        );
+        expect(result.rewardBreakdown.hasUnavailableLevelUpAttribution, isTrue);
       });
     });
 
@@ -2281,7 +2342,7 @@ Map<String, dynamic> _habit({
   num progress = 0,
   bool doneToday = false,
   String? familyId,
-  String emoji = '✨',
+  String emoji = 'âœ¨',
   Map<String, dynamic>? schedule,
   DateTime? createdAt,
 }) {

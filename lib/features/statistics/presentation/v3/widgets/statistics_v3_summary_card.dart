@@ -10,6 +10,9 @@ class StatisticsV3SummaryCard extends StatelessWidget {
     required this.xpGained,
     required this.amberLabel,
     required this.amberGained,
+    this.onXpLongPress,
+    this.onAmberLongPress,
+    this.longPressHint,
   });
 
   final String title;
@@ -19,6 +22,9 @@ class StatisticsV3SummaryCard extends StatelessWidget {
   final int xpGained;
   final String amberLabel;
   final int amberGained;
+  final VoidCallback? onXpLongPress;
+  final VoidCallback? onAmberLongPress;
+  final String? longPressHint;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +65,8 @@ class StatisticsV3SummaryCard extends StatelessWidget {
                 iconColor: const Color(0xFFC58D2A),
                 value: '+$xpGained',
                 label: xpLabel,
+                touchKey: const Key('statisticsV3SummaryMetricXp'),
+                onLongPress: onXpLongPress,
               ),
               const _VerticalSeparator(),
               _SummaryMetric(
@@ -66,9 +74,22 @@ class StatisticsV3SummaryCard extends StatelessWidget {
                 iconColor: const Color(0xFFB88937),
                 value: '+$amberGained',
                 label: amberLabel,
+                touchKey: const Key('statisticsV3SummaryMetricAmber'),
+                onLongPress: onAmberLongPress,
               ),
             ],
           ),
+          if ((longPressHint ?? '').trim().isNotEmpty &&
+              (onXpLongPress != null || onAmberLongPress != null)) ...[
+            const SizedBox(height: 10),
+            Text(
+              longPressHint!.trim(),
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xCC6F6356),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -81,40 +102,55 @@ class _SummaryMetric extends StatelessWidget {
     required this.iconColor,
     required this.value,
     required this.label,
+    this.touchKey,
+    this.onLongPress,
   });
 
   final IconData icon;
   final Color iconColor;
   final String value;
   final String label;
+  final Key? touchKey;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
+    final body = Column(
+      children: [
+        Icon(icon, color: iconColor, size: 25),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 29,
+            height: 1.0,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF2E241A),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF5F554A),
+          ),
+        ),
+      ],
+    );
+
+    if (onLongPress == null) {
+      return Expanded(child: body);
+    }
+
     return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, color: iconColor, size: 25),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 29,
-              height: 1.0,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF2E241A),
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF5F554A),
-            ),
-          ),
-        ],
+      child: GestureDetector(
+        key: touchKey,
+        behavior: HitTestBehavior.opaque,
+        onLongPress: onLongPress,
+        child: body,
       ),
     );
   }
