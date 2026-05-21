@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:rutio/constants/reward_constants.dart';
+import 'package:rutio/features/achievements/application/achievement_rewards.dart';
+import 'package:rutio/features/achievements/domain/models/achievement.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 import 'package:rutio/l10n/l10n.dart';
@@ -158,12 +161,23 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
       : ((totalCompletedHabitInstances / totalExpectedHabitInstances) * 100)
           .round();
 
+  final periodRewards = _buildPeriodRewardSummary(
+    start: periodRange.start,
+    end: periodRange.end,
+    today: today,
+    userState: userState,
+    completionsRoot: completionsRoot,
+    skipsRoot: skipsRoot,
+    countValuesRoot: countValuesRoot,
+    habitsById: habitsById,
+  );
+
   final xpGained = period == StatisticsV3Period.day
       ? _safeInt(daily['xpEarnedToday'], fallback: 0).clamp(0, 1 << 30)
-      : 0;
+      : periodRewards.xp;
   final amberGained = period == StatisticsV3Period.day
       ? _safeInt(daily['coinsEarnedToday'], fallback: 0).clamp(0, 1 << 30)
-      : 0;
+      : periodRewards.amber;
   final weeklyActivity = period == StatisticsV3Period.week
       ? _buildWeeklyActivityData(
           today: today,
@@ -205,7 +219,6 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     habitsById: habitsById,
   );
 
-  // TODO: Add reliable per-period XP/Amber history once local data stores it.
   return StatisticsV3ViewData(
     totalDays: totalExpectedHabitInstances,
     completedHabits: totalCompletedHabitInstances,
@@ -537,9 +550,18 @@ _ExpectedCompletedCounts _buildTimesPerWeekContribution({
     );
   }
 
+  final normalizedFrom = _dateOnly(from);
+  final normalizedTo = _dateOnly(to);
+  final boundedTo = _minDate(normalizedTo, _dateOnly(today));
+  if (boundedTo.isBefore(normalizedFrom)) {
+    return const _ExpectedCompletedCounts(
+      expectedCount: 0,
+      completedCount: 0,
+    );
+  }
+
   var expectedCount = 0;
   var completedCount = 0;
-  final isCompactWeekWindow = to.difference(from).inDays < 7;
 
   for (final habit in habits) {
     if (!_isTimesPerWeekCheckHabit(habit)) continue;
@@ -550,47 +572,47 @@ _ExpectedCompletedCounts _buildTimesPerWeekContribution({
 
     final target = _timesPerWeekTargetOf(habit);
     final weekStartsOn = _timesPerWeekWeekStartsOn(habit);
-
-    if (isCompactWeekWindow) {
-      if (!_wasHabitCreatedByDay(habit, to)) continue;
-
-      final weekStart = _weekStartForDate(to, weekStartsOn: weekStartsOn);
-      expectedCount += target;
-      final completedInWeek = _completedCountForHabitInWeek(
-        habit: habit,
-        habitId: habitId,
-        weekStart: weekStart,
-        today: today,
-        userState: userState,
-        completionsRoot: completionsRoot,
-        skipsRoot: skipsRoot,
-      );
-      completedCount += math.min(completedInWeek, target);
-      continue;
-    }
-
     final includedWeekStarts = <String>{};
-    final totalDays = to.difference(from).inDays + 1;
+    final totalDays = boundedTo.difference(normalizedFrom).inDays + 1;
 
     for (var index = 0; index < totalDays; index++) {
-      final day = from.add(Duration(days: index));
+      final day = normalizedFrom.add(Duration(days: index));
       if (!_wasHabitCreatedByDay(habit, day)) continue;
 
       final weekStart = _weekStartForDate(day, weekStartsOn: weekStartsOn);
       final weekKey = _dateKey(weekStart);
       if (!includedWeekStarts.add(weekKey)) continue;
 
-      expectedCount += target;
-      final completedInWeek = _completedCountForHabitInWeek(
+      final weekEnd = weekStart.add(const Duration(days: 6));
+      final windowStart = _maxDate(normalizedFrom, weekStart);
+      final windowEnd = _minDate(boundedTo, weekEnd);
+      if (windowEnd.isBefore(windowStart)) continue;
+
+      final activeDays = _timesPerWeekActiveDaysInRange(
+        habit: habit,
+        from: windowStart,
+        to: windowEnd,
+      );
+      if (activeDays <= 0) continue;
+
+      final expectedForWindow = _timesPerWeekExpectedCount(
+        activeDays: activeDays,
+        weeklyTarget: target,
+      );
+      if (expectedForWindow <= 0) continue;
+
+      expectedCount += expectedForWindow;
+      final completedInWindow = _completedCountForHabitInDateRange(
         habit: habit,
         habitId: habitId,
-        weekStart: weekStart,
+        from: windowStart,
+        to: windowEnd,
         today: today,
         userState: userState,
         completionsRoot: completionsRoot,
         skipsRoot: skipsRoot,
       );
-      completedCount += math.min(completedInWeek, target);
+      completedCount += math.min(completedInWindow, expectedForWindow);
     }
   }
 
@@ -598,6 +620,240 @@ _ExpectedCompletedCounts _buildTimesPerWeekContribution({
     expectedCount: expectedCount,
     completedCount: completedCount,
   );
+}
+
+_PeriodRewardSummary _buildPeriodRewardSummary({
+  required DateTime start,
+  required DateTime end,
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required Map<String, dynamic> countValuesRoot,
+  required Map<String, Map<String, dynamic>> habitsById,
+}) {
+  if (end.isBefore(start)) return const _PeriodRewardSummary(xp: 0, amber: 0);
+
+  final habitsRewards = _aggregateHabitRewardsForPeriod(
+    start: start,
+    end: end,
+    today: today,
+    completionsRoot: completionsRoot,
+    skipsRoot: skipsRoot,
+    countValuesRoot: countValuesRoot,
+    habitsById: habitsById,
+  );
+  final diaryRewards = _aggregateDiaryRewardsForPeriod(
+    start: start,
+    end: end,
+    today: today,
+    userState: userState,
+  );
+  final achievementRewards = _aggregateAchievementRewardsForPeriod(
+    start: start,
+    end: end,
+    today: today,
+    userState: userState,
+  );
+
+  // TODO: Track level-up milestone rewards with dated local events so period
+  // summary can attribute milestone Amber gains exactly.
+  final xp =
+      (habitsRewards.xp + diaryRewards.xp + achievementRewards.xp).clamp(
+    0,
+    1 << 30,
+  );
+  final amber = (habitsRewards.amber +
+          diaryRewards.amber +
+          achievementRewards.amber)
+      .clamp(0, 1 << 30);
+  return _PeriodRewardSummary(
+    xp: xp,
+    amber: amber,
+  );
+}
+
+_PeriodRewardSummary _aggregateHabitRewardsForPeriod({
+  required DateTime start,
+  required DateTime end,
+  required DateTime today,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required Map<String, dynamic> countValuesRoot,
+  required Map<String, Map<String, dynamic>> habitsById,
+}) {
+  var xp = 0;
+  var amber = 0;
+  for (var day = start;
+      !day.isAfter(end);
+      day = day.add(const Duration(days: 1))) {
+    if (day.isAfter(today)) break;
+    final dayKey = _dateKey(day);
+    final dayCompletions = _map(completionsRoot[dayKey]);
+    final daySkips = _map(skipsRoot[dayKey]);
+    final dayCountValues = _map(countValuesRoot[dayKey]);
+    final rewardedHabitIds = <String>{};
+
+    for (final entry in dayCompletions.entries) {
+      final habitId = entry.key.toString().trim();
+      if (habitId.isEmpty) continue;
+      if (_isDone(daySkips[habitId])) continue;
+      if (!_isDone(entry.value)) continue;
+
+      final habit = habitsById[habitId];
+      if (habit == null) {
+        xp += _xpForCheckCompletionReward();
+        amber += _amberForCheckCompletionReward();
+        rewardedHabitIds.add(habitId);
+        continue;
+      }
+
+      if (!_wasHabitCreatedByDay(habit, day)) continue;
+      if (_isCountHabit(habit)) {
+        final target = _safePositiveNum(habit['target'], fallback: 1);
+        final progress = _safeNum(
+          dayCountValues[habitId],
+          fallback: target,
+        );
+        if (progress >= target) {
+          final xpGain = _xpForCountCompletionReward(target);
+          xp += xpGain;
+          amber += _amberForCountCompletionReward(xpGain);
+          rewardedHabitIds.add(habitId);
+        }
+        continue;
+      }
+
+      xp += _xpForCheckCompletionReward();
+      amber += _amberForCheckCompletionReward();
+      rewardedHabitIds.add(habitId);
+    }
+
+    for (final entry in dayCountValues.entries) {
+      final habitId = entry.key.toString().trim();
+      if (habitId.isEmpty) continue;
+      if (rewardedHabitIds.contains(habitId)) continue;
+      if (_isDone(daySkips[habitId])) continue;
+
+      final habit = habitsById[habitId];
+      if (habit == null || !_isCountHabit(habit)) continue;
+      if (!_wasHabitCreatedByDay(habit, day)) continue;
+      final target = _safePositiveNum(habit['target'], fallback: 1);
+      final progress = _safeNum(entry.value, fallback: 0);
+      if (progress < target) continue;
+
+      final xpGain = _xpForCountCompletionReward(target);
+      xp += xpGain;
+      amber += _amberForCountCompletionReward(xpGain);
+      rewardedHabitIds.add(habitId);
+    }
+  }
+
+  return _PeriodRewardSummary(xp: xp, amber: amber);
+}
+
+_PeriodRewardSummary _aggregateDiaryRewardsForPeriod({
+  required DateTime start,
+  required DateTime end,
+  required DateTime today,
+  required Map<String, dynamic> userState,
+}) {
+  var xp = 0;
+  var amber = 0;
+  final meta = _map(userState['meta']);
+  final rawKeys = _list(meta['diaryRewardAppliedDateKeys']);
+  for (final rawKey in rawKeys) {
+    final key = rawKey.toString().trim();
+    final day = _parseDateKey(key);
+    if (day == null) continue;
+    if (day.isBefore(start) || day.isAfter(end) || day.isAfter(today)) {
+      continue;
+    }
+    xp += RewardConstants.dailyDiaryXpReward;
+    amber += RewardConstants.dailyDiaryAmbarReward;
+  }
+  return _PeriodRewardSummary(xp: xp, amber: amber);
+}
+
+_PeriodRewardSummary _aggregateAchievementRewardsForPeriod({
+  required DateTime start,
+  required DateTime end,
+  required DateTime today,
+  required Map<String, dynamic> userState,
+}) {
+  var xp = 0;
+  var amber = 0;
+
+  final profile = _map(userState['profile']);
+  final achievements = _map(profile['achievements']);
+  final unlocked = _list(achievements['unlocked']);
+  final rewardAppliedIds = _list(achievements['rewardAppliedAchievementIds'])
+      .map((id) => id.toString().trim())
+      .where((id) => id.isNotEmpty)
+      .toSet();
+  final assumeLegacyApplied = rewardAppliedIds.isEmpty;
+  final countedAchievementIds = <String>{};
+
+  for (final rawEntry in unlocked) {
+    if (rawEntry is! Map) continue;
+    final entry = _map(rawEntry);
+    final id = (entry['id'] ?? '').toString().trim();
+    if (id.isEmpty || countedAchievementIds.contains(id)) continue;
+
+    final unlockedAtRaw = (entry['unlockedAt'] ?? '').toString().trim();
+    final unlockedAt = DateTime.tryParse(unlockedAtRaw)?.toLocal();
+    if (unlockedAt == null) continue;
+
+    final unlockedDay = _dateOnly(unlockedAt);
+    if (unlockedDay.isBefore(start) ||
+        unlockedDay.isAfter(end) ||
+        unlockedDay.isAfter(today)) {
+      continue;
+    }
+
+    if (!assumeLegacyApplied && !rewardAppliedIds.contains(id)) continue;
+
+    final explicitXp = _safeInt(entry['rewardXp'] ?? entry['xpReward']);
+    final explicitAmber = _safeInt(entry['rewardAmber'] ?? entry['ambarReward']);
+    final tier = _safeAchievementTierForRewards(entry['tier']);
+    final tierReward = AchievementRewards.getAchievementReward(tier);
+    xp += explicitXp > 0 ? explicitXp : tierReward.rewardXp;
+    amber += explicitAmber > 0 ? explicitAmber : tierReward.rewardAmber;
+    countedAchievementIds.add(id);
+  }
+
+  return _PeriodRewardSummary(xp: xp, amber: amber);
+}
+
+int _timesPerWeekActiveDaysInRange({
+  required Map<String, dynamic> habit,
+  required DateTime from,
+  required DateTime to,
+}) {
+  final start = _dateOnly(from);
+  final end = _dateOnly(to);
+  if (end.isBefore(start)) return 0;
+
+  var activeDays = 0;
+  final dayCount = end.difference(start).inDays + 1;
+  for (var index = 0; index < dayCount; index++) {
+    final day = start.add(Duration(days: index));
+    if (_wasHabitCreatedByDay(habit, day)) {
+      activeDays += 1;
+    }
+  }
+  return activeDays;
+}
+
+int _timesPerWeekExpectedCount({
+  required int activeDays,
+  required int weeklyTarget,
+}) {
+  if (activeDays <= 0 || weeklyTarget <= 0) return 0;
+  var expected = ((activeDays / 7) * weeklyTarget).round();
+  if (expected < 1) expected = 1;
+  if (expected > activeDays) expected = activeDays;
+  return expected;
 }
 
 String _habitListFamilyId(Map<String, dynamic> habit) {
@@ -747,6 +1003,40 @@ int _completedCountForHabitInWeek({
   var completed = 0;
   for (var offset = 0; offset < 7; offset++) {
     final day = weekStart.add(Duration(days: offset));
+    if (!_wasHabitCreatedByDay(habit, day)) continue;
+    if (_isTimesPerWeekCompletedOnDay(
+      habit: habit,
+      habitId: habitId,
+      day: day,
+      today: today,
+      userState: userState,
+      completionsRoot: completionsRoot,
+      skipsRoot: skipsRoot,
+    )) {
+      completed += 1;
+    }
+  }
+  return completed;
+}
+
+int _completedCountForHabitInDateRange({
+  required Map<String, dynamic> habit,
+  required String habitId,
+  required DateTime from,
+  required DateTime to,
+  required DateTime today,
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+}) {
+  final start = _dateOnly(from);
+  final end = _dateOnly(to);
+  if (end.isBefore(start)) return 0;
+
+  var completed = 0;
+  final dayCount = end.difference(start).inDays + 1;
+  for (var index = 0; index < dayCount; index++) {
+    final day = start.add(Duration(days: index));
     if (!_wasHabitCreatedByDay(habit, day)) continue;
     if (_isTimesPerWeekCompletedOnDay(
       habit: habit,
@@ -1019,6 +1309,10 @@ DateTime _weekStartForDate(DateTime day, {required int weekStartsOn}) {
   return normalizedDay.subtract(Duration(days: delta));
 }
 
+DateTime _minDate(DateTime a, DateTime b) => a.isBefore(b) ? a : b;
+
+DateTime _maxDate(DateTime a, DateTime b) => a.isAfter(b) ? a : b;
+
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
 String _dateKey(DateTime date) {
@@ -1033,11 +1327,62 @@ Map<String, dynamic> _map(dynamic value) {
   return <String, dynamic>{};
 }
 
+List<dynamic> _list(dynamic value) {
+  if (value is List<dynamic>) return value;
+  if (value is List) return value.toList(growable: false);
+  return const <dynamic>[];
+}
+
 int _safeInt(dynamic value, {int fallback = 0}) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   final parsed = int.tryParse((value ?? '').toString().trim());
   return parsed ?? fallback;
+}
+
+DateTime? _parseDateKey(String raw) {
+  final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(raw);
+  if (match == null) return null;
+  final year = int.tryParse(match.group(1)!);
+  final month = int.tryParse(match.group(2)!);
+  final day = int.tryParse(match.group(3)!);
+  if (year == null || month == null || day == null) return null;
+  if (month < 1 || month > 12) return null;
+  if (day < 1 || day > DateUtils.getDaysInMonth(year, month)) return null;
+  return DateTime(year, month, day);
+}
+
+int _xpForCheckCompletionReward() => 10;
+
+int _amberForCheckCompletionReward() => 5;
+
+int _xpForCountCompletionReward(num target) =>
+    ((target / 5).ceil() * 2 + 5).clamp(5, 15);
+
+int _amberForCountCompletionReward(num xp) => (xp / 2).floor().clamp(0, 10);
+
+AchievementTier _safeAchievementTierForRewards(dynamic rawTier) {
+  final key = (rawTier ?? '').toString().trim().toLowerCase();
+  switch (key) {
+    case 'madera_vieja':
+      return AchievementTier.oldWood;
+    case 'madera':
+      return AchievementTier.wood;
+    case 'piedra':
+      return AchievementTier.stone;
+    case 'bronce':
+      return AchievementTier.bronze;
+    case 'plata':
+      return AchievementTier.silver;
+    case 'oro':
+      return AchievementTier.gold;
+    case 'diamante':
+      return AchievementTier.diamond;
+    case 'diamante_prismatico':
+      return AchievementTier.prismaticDiamond;
+    default:
+      return AchievementTier.wood;
+  }
 }
 
 bool _isDone(dynamic value) {
@@ -1481,4 +1826,14 @@ class _ExpectedCompletedCounts {
 
   final int expectedCount;
   final int completedCount;
+}
+
+class _PeriodRewardSummary {
+  const _PeriodRewardSummary({
+    required this.xp,
+    required this.amber,
+  });
+
+  final int xp;
+  final int amber;
 }
