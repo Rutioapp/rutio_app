@@ -3862,6 +3862,12 @@ abstract class AppLocalizations {
   /// **'Objetivo: {count} veces por semana'**
   String habitStatsObjectiveWeeklyPlural(int count);
 
+  /// No description provided for @habitStatsPerDayCompact.
+  ///
+  /// In es, this message translates to:
+  /// **'al día'**
+  String get habitStatsPerDayCompact;
+
   /// No description provided for @habitStatsObjectiveFallback.
   ///
   /// In es, this message translates to:

@@ -1124,6 +1124,7 @@
       }
     }
   },
+  "habitStatsPerDayCompact": "al día",
   "habitStatsObjectiveFallback": "Objetivo configurado",
   "habitStatsTimesLabel": "{count, plural, one{# vez} other{# veces}}",
   "@habitStatsTimesLabel": {

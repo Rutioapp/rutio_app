@@ -209,8 +209,8 @@ void main() {
       expect(find.byKey(const Key('habit_stats_year_months_card')),
           findsOneWidget);
       expect(find.text(l10n.habitStatsYearCalendarTitle), findsOneWidget);
-      expect(
-          find.byKey(const Key('habit_stats_year_calendar_grid')), findsOneWidget);
+      expect(find.byKey(const Key('habit_stats_year_calendar_grid')),
+          findsOneWidget);
       expect(find.text(l10n.habitStatsYearCalendarDone), findsOneWidget);
       expect(find.text(l10n.habitStatsYearCalendarSkipped), findsOneWidget);
       expect(find.byKey(const Key('habit_stats_year_activity_card')),
@@ -782,6 +782,139 @@ void main() {
       expect(
         find.text(
           '${l10n.familyMindName} ${String.fromCharCode(0x00B7)} ${l10n.habitStatsObjectiveFallback}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('#'), findsNothing);
+    });
+
+    testWidgets('header uses generated daily objective for check habits',
+        (tester) async {
+      final habit = _habit(
+        type: 'check',
+        target: 1,
+        objective: 'Caminar más',
+        schedule: const {'type': 'daily'},
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          locale: const Locale('en'),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(
+        find.text(
+          '${l10n.familyMindName} ${String.fromCharCode(0x00B7)} ${l10n.habitStatsObjectiveDailySingular(1)}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Caminar más'), findsNothing);
+    });
+
+    testWidgets(
+        'header uses generated times-per-week objective for check habits',
+        (tester) async {
+      final habit = _habit(
+        type: 'check',
+        schedule: const {'type': 'timesPerWeek', 'timesPerWeek': 3},
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          locale: const Locale('en'),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(
+        find.text(
+          '${l10n.familyMindName} ${String.fromCharCode(0x00B7)} ${l10n.habitStatsObjectiveWeeklyPlural(3)}',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'header shows specific weekdays objective for weekly check habits',
+        (tester) async {
+      final habit = _habit(
+        type: 'check',
+        schedule: const {
+          'type': 'weekly',
+          'weekdays': [DateTime.monday, DateTime.wednesday, DateTime.friday],
+        },
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          locale: const Locale('es'),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      final expectedDays = [
+        l10n.weekdayShort(DateTime.monday),
+        l10n.weekdayShort(DateTime.wednesday),
+        l10n.weekdayShort(DateTime.friday),
+      ].join(', ');
+
+      expect(
+        find.text(
+          '${l10n.familyMindName} ${String.fromCharCode(0x00B7)} $expectedDays',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('header shows localized daily target for count habits',
+        (tester) async {
+      final habit = _habit(
+        type: 'count',
+        target: 8,
+        unit: 'liters',
+        schedule: const {'type': 'daily'},
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          locale: const Locale('es'),
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      expect(
+        find.text(
+          '${l10n.familyMindName} ${String.fromCharCode(0x00B7)} 8 L ${l10n.habitStatsPerDayCompact}',
         ),
         findsOneWidget,
       );
