@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+﻿import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
@@ -224,7 +224,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                   ] else if (_period == StatisticsV3Period.year) ...[
                     const SizedBox(height: 12),
                     StatisticsV3YearlyConsistencyShell(
-                      title: _yearlyConsistencyTitle(context),
+                      title: l10n.habitStatsYearMetricConsistencySubtitle,
                       subtitle: _yearlyConsistencySubtitle(context),
                       months: viewData.yearlyConsistencyMonths,
                     ),
@@ -324,11 +324,6 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
     return l10n.statisticsV3WeeklyImprovementVsLastWeek;
   }
 
-  String _yearlyConsistencyTitle(BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode.toLowerCase();
-    return locale == 'es' ? 'Constancia anual' : 'Yearly consistency';
-  }
-
   String _yearlyConsistencySubtitle(BuildContext context) {
     final locale = Localizations.localeOf(context).languageCode.toLowerCase();
     return locale == 'es'
@@ -411,3 +406,5 @@ class _StatisticsV3WeeklySection extends StatelessWidget {
     );
   }
 }
+
+

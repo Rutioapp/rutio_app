@@ -1452,6 +1452,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu ritmo mensual de un vistazo';
 
   @override
+  String get statisticsV3ConsistencyLegendFuture => 'Futuro';
+
+  @override
+  String get statisticsV3ConsistencyLegendNoData => 'Sin datos';
+
+  @override
   String get habitStatsMetricCompleted => 'Completado';
 
   @override

@@ -2,6 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_consistency_legend.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_consistency_palette.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
   const StatisticsV3MonthlyCalendarShell({
@@ -17,48 +20,22 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
 
   static const _border = Color(0xFFE9E3D9);
   static const _cream = Color(0xFFFDFBF7);
-  static const _text = Color(0xFF2F251C);
-  static const _mutedText = Color(0xFF6A6155);
-  static const _cellBase = Color(0xFFD8D1C5);
-  static const _cellBorder = Color(0xFFE5DED3);
   static const _todayBorder = Color(0xFF9AA789);
-  static const _futureFill = Color(0xFFF0EBE3);
-  static final _legendEntries = <_CalendarLegendEntry>[
-    _CalendarLegendEntry(
-      label: '0–24%',
-      color: _CalendarIntensityBucket.zero.color,
-    ),
-    _CalendarLegendEntry(
-      label: '25–49%',
-      color: _CalendarIntensityBucket.low.color,
-    ),
-    _CalendarLegendEntry(
-      label: '50–74%',
-      color: _CalendarIntensityBucket.medium.color,
-    ),
-    _CalendarLegendEntry(
-      label: '75–89%',
-      color: _CalendarIntensityBucket.high.color,
-    ),
-    _CalendarLegendEntry(
-      label: '90–100%',
-      color: _CalendarIntensityBucket.full.color,
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
     final calendarDays = days.isEmpty ? _fallbackDays() : days;
     final firstDay = calendarDays.first.date;
     final daysInMonth = calendarDays.length;
-    const daysPerWeek = 7;
+    const daysPerWeek = DateTime.daysPerWeek;
     final leadingDays =
         (firstDay.weekday - DateTime.monday + daysPerWeek) % daysPerWeek;
     final totalCells = leadingDays + daysInMonth;
-    final rows = math.max(4, (totalCells / daysPerWeek).ceil());
+    final rows = math.max(5, (totalCells / daysPerWeek).ceil());
     final cellCount = rows * daysPerWeek;
 
     return Container(
+      key: const Key('statisticsV3MonthlyCalendarShell'),
       padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
       decoration: BoxDecoration(
         color: _cream.withValues(alpha: 0.92),
@@ -68,98 +45,53 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _Header(title: title, subtitle: subtitle),
+          _WeekdayHeader(),
+          const SizedBox(height: 8),
           LayoutBuilder(
             builder: (context, constraints) {
-              final compact = constraints.maxWidth < 172;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    height: compact ? 23 : 24,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: compact ? 22 : 24,
-                          height: compact ? 22 : 24,
-                          decoration: BoxDecoration(
-                            color: _todayBorder.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.calendar_month_rounded,
-                            size: compact ? 15 : 16,
-                            color: _todayBorder,
-                          ),
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              title,
-                              maxLines: 1,
-                              style: TextStyle(
-                                fontSize: compact ? 13.4 : 14.2,
-                                height: 1,
-                                fontWeight: FontWeight.w700,
-                                color: _text,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      height: 1.1,
-                      fontWeight: FontWeight.w500,
-                      color: _mutedText,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-              );
-            },
-          ),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            itemCount: cellCount,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 5,
-              crossAxisSpacing: 5,
-              childAspectRatio: 1,
-            ),
-            itemBuilder: (context, index) {
-              if (index < leadingDays || index >= leadingDays + daysInMonth) {
-                return const _CalendarPlaceholderCell();
-              }
+              const spacing = 6.0;
+              final rawCellWidth = (constraints.maxWidth - (spacing * 6)) / 7;
+              final markerSize = rawCellWidth.clamp(30.0, 34.0).toDouble();
+              final cellHeight = markerSize + 4;
 
-              final day = calendarDays[index - leadingDays];
-              final tone = _calendarToneFor(day);
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                itemCount: cellCount,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  mainAxisSpacing: spacing,
+                  crossAxisSpacing: spacing,
+                  childAspectRatio: rawCellWidth / cellHeight,
+                ),
+                itemBuilder: (context, index) {
+                  if (index < leadingDays || index >= leadingDays + daysInMonth) {
+                    return const SizedBox.shrink();
+                  }
 
-              return _CalendarCell(
-                dayNumber: day.date.day,
-                fillColor: tone.fillColor,
-                borderColor: day.isToday ? _todayBorder.withValues(alpha: 0.82) : tone.borderColor,
-                dayColor: tone.textColor,
-                dotColor: tone.dotColor,
-                isToday: day.isToday,
-                isFuture: day.isFuture,
+                  final day = calendarDays[index - leadingDays];
+                  final intensity = StatisticsV3ConsistencyPalette.intensityFor(
+                    percentage: day.percentage,
+                    expectedCount: day.expectedCount,
+                    isFuture: day.isFuture,
+                  );
+                  final tone =
+                      StatisticsV3ConsistencyPalette.toneFor(intensity);
+
+                  return _MonthDayCell(
+                    day: day,
+                    markerSize: markerSize,
+                    tone: tone,
+                    todayBorderColor: _todayBorder,
+                  );
+                },
               );
             },
           ),
           const SizedBox(height: 10),
-          _CalendarLegend(entries: _legendEntries),
+          const StatisticsV3ConsistencyLegend(),
         ],
       ),
     );
@@ -188,212 +120,165 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
       );
     }, growable: false);
   }
-
-  _CalendarTone _calendarToneFor(StatisticsV3MonthlyCalendarDay day) {
-    if (day.isFuture) {
-      return _CalendarTone.future;
-    }
-
-    final bucket = _calendarBucketForPercentage(day.percentage);
-    return _CalendarTone.fromBucket(bucket);
-  }
-
-  _CalendarIntensityBucket _calendarBucketForPercentage(int percentage) {
-    final value = percentage.clamp(0, 100);
-    if (value <= 24) {
-      return _CalendarIntensityBucket.zero;
-    }
-    if (value <= 49) {
-      return _CalendarIntensityBucket.low;
-    }
-    if (value <= 74) {
-      return _CalendarIntensityBucket.medium;
-    }
-    if (value <= 89) {
-      return _CalendarIntensityBucket.high;
-    }
-    return _CalendarIntensityBucket.full;
-  }
 }
 
-class _CalendarPlaceholderCell extends StatelessWidget {
-  const _CalendarPlaceholderCell();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: StatisticsV3MonthlyCalendarShell._cellBorder.withValues(alpha: 0.25)),
-      ),
-    );
-  }
-}
-
-class _CalendarCell extends StatelessWidget {
-  const _CalendarCell({
-    required this.dayNumber,
-    required this.fillColor,
-    required this.borderColor,
-    required this.dayColor,
-    required this.dotColor,
-    required this.isToday,
-    required this.isFuture,
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.title,
+    required this.subtitle,
   });
 
-  final int dayNumber;
-  final Color fillColor;
-  final Color borderColor;
-  final Color dayColor;
-  final Color dotColor;
-  final bool isToday;
-  final bool isFuture;
+  final String title;
+  final String subtitle;
+
+  static const _todayBorder = Color(0xFF9AA789);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: fillColor,
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: borderColor),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: 4,
-            left: 4,
-            child: Text(
-              '$dayNumber',
-              style: TextStyle(
-                fontSize: 10.5,
-                height: 1,
-                fontWeight: FontWeight.w700,
-                color: dayColor.withValues(
-                  alpha: isFuture ? 0.50 : (isToday ? 0.95 : 0.88),
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 172;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: compact ? 23 : 24,
+              child: Row(
+                children: [
+                  Container(
+                    width: compact ? 22 : 24,
+                    height: compact ? 22 : 24,
+                    decoration: BoxDecoration(
+                      color: _todayBorder.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.calendar_month_rounded,
+                      size: compact ? 15 : 16,
+                      color: _todayBorder,
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: compact ? 13.4 : 14.2,
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                          color: StatisticsV3ConsistencyPalette.text,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          Positioned(
-            right: 4,
-            bottom: 4,
-            child: Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(
-                color: dotColor,
-                shape: BoxShape.circle,
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                height: 1.1,
+                fontWeight: FontWeight.w500,
+                color: StatisticsV3ConsistencyPalette.mutedText,
               ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 9),
+          ],
+        );
+      },
     );
   }
 }
 
-class _CalendarTone {
-  const _CalendarTone({
-    required this.fillColor,
-    required this.borderColor,
-    required this.textColor,
-    required this.dotColor,
-  });
-
-  final Color fillColor;
-  final Color borderColor;
-  final Color textColor;
-  final Color dotColor;
-
-  factory _CalendarTone.fromBucket(_CalendarIntensityBucket bucket) {
-    return _CalendarTone(
-      fillColor: bucket.color,
-      borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
-      textColor: StatisticsV3MonthlyCalendarShell._text,
-      dotColor: bucket.color.withValues(alpha: 0.64),
-    );
-  }
-
-  static const future = _CalendarTone(
-    fillColor: StatisticsV3MonthlyCalendarShell._futureFill,
-    borderColor: StatisticsV3MonthlyCalendarShell._cellBorder,
-    textColor: StatisticsV3MonthlyCalendarShell._mutedText,
-    dotColor: StatisticsV3MonthlyCalendarShell._cellBase,
-  );
-}
-
-class _CalendarIntensityBucket {
-  const _CalendarIntensityBucket._(this.color);
-
-  final Color color;
-
-  static const zero = _CalendarIntensityBucket._(Color(0xFFF4EAD7));
-  static const low = _CalendarIntensityBucket._(Color(0xFFEEDDAF));
-  static const medium = _CalendarIntensityBucket._(Color(0xFFD9A947));
-  static const high = _CalendarIntensityBucket._(Color(0xFF8FA36C));
-  static const full = _CalendarIntensityBucket._(Color(0xFF4F743B));
-}
-
-class _CalendarLegend extends StatelessWidget {
-  const _CalendarLegend({required this.entries});
-
-  final List<_CalendarLegendEntry> entries;
-
+class _WeekdayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 6,
-      children: entries
-          .map(
-            (entry) => _CalendarLegendItem(
-              label: entry.label,
-              color: entry.color,
-            ),
-          )
-          .toList(growable: false),
-    );
-  }
-}
-
-class _CalendarLegendEntry {
-  const _CalendarLegendEntry({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-}
-
-class _CalendarLegendItem extends StatelessWidget {
-  const _CalendarLegendItem({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
+    final labels = <String>[
+      context.l10n.weekdayLetter(DateTime.monday),
+      context.l10n.weekdayLetter(DateTime.tuesday),
+      context.l10n.weekdayLetter(DateTime.wednesday),
+      context.l10n.weekdayLetter(DateTime.thursday),
+      context.l10n.weekdayLetter(DateTime.friday),
+      context.l10n.weekdayLetter(DateTime.saturday),
+      context.l10n.weekdayLetter(DateTime.sunday),
+    ];
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
+        for (final label in labels)
+          Expanded(
+            child: Center(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 10.5,
+                      height: 1,
+                      color: const Color(0xFF8B7D6E),
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ),
           ),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10.5,
-            height: 1,
-            fontWeight: FontWeight.w500,
-            color: StatisticsV3MonthlyCalendarShell._mutedText,
-          ),
-        ),
       ],
     );
   }
+}
+
+class _MonthDayCell extends StatelessWidget {
+  const _MonthDayCell({
+    required this.day,
+    required this.markerSize,
+    required this.tone,
+    required this.todayBorderColor,
+  });
+
+  final StatisticsV3MonthlyCalendarDay day;
+  final double markerSize;
+  final StatisticsV3ConsistencyTone tone;
+  final Color todayBorderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        key: Key('statisticsV3MonthDay_${_dateKey(day.date)}'),
+        width: markerSize,
+        height: markerSize,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: tone.fillColor,
+          border: Border.all(
+            color: day.isToday ? todayBorderColor : tone.borderColor,
+            width: day.isToday ? 1.25 : 1.05,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            '${day.date.day}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontSize: markerSize >= 32 ? 12.0 : 11.3,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                  color: tone.textColor.withValues(
+                    alpha: day.isFuture ? 0.58 : 0.95,
+                  ),
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _dateKey(DateTime date) {
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '${date.year}-$month-$day';
 }
