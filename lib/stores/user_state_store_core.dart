@@ -106,6 +106,8 @@ bool _isSameDay(DateTime a, DateTime b) =>
 
 String _normalizeFamilyId(String id) => id.trim().toLowerCase();
 
+const String _templateUserIdPlaceholder = 'user_123';
+
 bool _onboardingDone(UserStateStore store) {
   if (store._state == null) return false;
   final userState = _ensureUserStateRoot(store._state!);
@@ -180,6 +182,38 @@ Future<void> _setOnboardingDone(
 
   await store._repo.save(root);
   store._emitChanged();
+}
+
+void _normalizeUserIdForActiveScope(
+  UserStateStore store,
+  Map<String, dynamic> userState,
+) {
+  final activeScopeUserId = _normalizedScopeUserId(
+    store._activeLocalScopeUserId ?? store._repo.activeUserId,
+  );
+  final currentUserId = _normalizedScopeUserId(
+    (userState['userId'] ?? userState['id'] ?? '').toString(),
+  );
+
+  final isTemplatePlaceholder = currentUserId == _templateUserIdPlaceholder;
+
+  if (activeScopeUserId != null) {
+    // Keep cross-account stale-write protection intact. We only rewrite
+    // placeholder/empty ids that come from templates before auth identity
+    // has been applied to local state.
+    if (currentUserId == null || isTemplatePlaceholder) {
+      userState['userId'] = activeScopeUserId;
+      userState.remove('id');
+    }
+    return;
+  }
+
+  // In guest scope, strip template placeholder ids so persistence is not
+  // blocked by repository guest-scope guards.
+  if (isTemplatePlaceholder) {
+    userState.remove('userId');
+    userState.remove('id');
+  }
 }
 
 String _activeViewDateKey(Map<String, dynamic> userState) {
@@ -583,6 +617,7 @@ Future<void> _loadStore(
 
     if (store._state != null) {
       final userState = _ensureUserStateRoot(store._state!);
+      _normalizeUserIdForActiveScope(store, userState);
       _ensureDailyReset(userState);
       _ensureActiveHabitIds(userState);
       _ensureDiaryEntriesRoot(userState);
@@ -628,6 +663,7 @@ Future<void> _saveStore(
   store._state = newState;
 
   final userState = _ensureUserStateRoot(store._state!);
+  _normalizeUserIdForActiveScope(store, userState);
   _ensureDailyReset(userState);
   _ensureActiveHabitIds(userState);
   _ensureDiaryEntriesRoot(userState);

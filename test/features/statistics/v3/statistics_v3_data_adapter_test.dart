@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/devtools/demo_seed/demo_seed_data.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
@@ -176,6 +177,242 @@ void main() {
       });
     });
 
+    group('period-aware summary windows', () {
+      test('week summary uses only the current week window', () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 5, 17, 8), 'habit-week');
+        _setCheckCompletion(history, DateTime(2026, 5, 19, 8), 'habit-week');
+        _setCheckCompletion(history, DateTime(2026, 5, 21, 8), 'habit-week');
+
+        final result = await _buildWeekViewData(
+          now: fixedNow,
+          activeHabits: [
+            _habit(id: 'habit-week', title: 'Habit Week'),
+          ],
+          history: history,
+        );
+
+        expect(result.totalDays, 3);
+        expect(result.completedHabits, 1);
+        expect(result.consistencyPct, 33);
+      });
+
+      test('month summary uses only current month up to today', () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 4, 30, 8), 'habit-month');
+        _setCheckCompletion(history, DateTime(2026, 5, 17, 8), 'habit-month');
+        _setCheckCompletion(history, DateTime(2026, 5, 19, 8), 'habit-month');
+        _setCheckCompletion(history, DateTime(2026, 5, 21, 8), 'habit-month');
+
+        final result = await _buildMonthViewData(
+          now: fixedNow,
+          activeHabits: [
+            _habit(id: 'habit-month', title: 'Habit Month'),
+          ],
+          history: history,
+        );
+
+        expect(result.totalDays, 20);
+        expect(result.completedHabits, 2);
+        expect(result.consistencyPct, 10);
+      });
+
+      test('year summary uses only current year up to today', () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2025, 12, 31, 8), 'habit-year');
+        _setCheckCompletion(history, DateTime(2026, 1, 10, 8), 'habit-year');
+        _setCheckCompletion(history, DateTime(2026, 5, 19, 8), 'habit-year');
+        _setCheckCompletion(history, DateTime(2026, 5, 21, 8), 'habit-year');
+
+        final result = await _buildYearViewData(
+          now: fixedNow,
+          activeHabits: [
+            _habit(id: 'habit-year', title: 'Habit Year'),
+          ],
+          history: history,
+        );
+
+        expect(result.totalDays, 139);
+        expect(result.completedHabits, 2);
+        expect(result.consistencyPct, 1);
+      });
+
+      test('habit created mid-period is counted only from its creation date',
+          () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 5, 16, 8), 'habit-new');
+        _setCheckCompletion(history, DateTime(2026, 5, 20, 8), 'habit-new');
+
+        final result = await _buildMonthViewData(
+          now: fixedNow,
+          activeHabits: [
+            _habit(
+              id: 'habit-new',
+              title: 'Habit New',
+              createdAt: DateTime(2026, 5, 15),
+              doneToday: true,
+              progress: 1,
+            ),
+          ],
+          history: history,
+        );
+
+        expect(result.totalDays, 6);
+        expect(result.completedHabits, 2);
+        expect(result.consistencyPct, 33);
+      });
+
+      test('count habits treat over-target values as completed in period',
+          () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCountValue(history, DateTime(2026, 5, 18, 8), 'count-over', 3);
+        _setCountValue(history, DateTime(2026, 5, 19, 8), 'count-over', 7);
+
+        final result = await _buildWeekViewData(
+          now: fixedNow,
+          activeHabits: [
+            _habit(
+              id: 'count-over',
+              title: 'Count Over',
+              type: 'count',
+              target: 5,
+            ),
+          ],
+          history: history,
+        );
+
+        expect(result.totalDays, 3);
+        expect(result.completedHabits, 1);
+        expect(result.consistencyPct, 33);
+      });
+
+      test('skipped days do not count as completed in period summaries',
+          () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 5, 18, 8), 'habit-skip');
+        _setCheckCompletion(history, DateTime(2026, 5, 19, 8), 'habit-skip');
+        _setSkip(history, DateTime(2026, 5, 19, 8), 'habit-skip');
+
+        final result = await _buildWeekViewData(
+          now: fixedNow,
+          activeHabits: [
+            _habit(id: 'habit-skip', title: 'Habit Skip'),
+          ],
+          history: history,
+        );
+
+        expect(result.totalDays, 2);
+        expect(result.completedHabits, 1);
+        expect(result.consistencyPct, 50);
+      });
+    });
+
+    group('summary rewards by period', () {
+      test('day summary uses current day XP/Ámbar values when present', () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final result = await _buildDayViewData(
+          now: fixedNow,
+          activeHabits: const <Map<String, dynamic>>[],
+          daily: <String, dynamic>{
+            'xpEarnedToday': 23,
+            'coinsEarnedToday': 11,
+          },
+        );
+
+        expect(result.xpGained, 23);
+        expect(result.amberGained, 11);
+      });
+
+      test('week summary aggregates rewards inside current week only', () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 5, 18, 8), 'check-week');
+        _setCountValue(history, DateTime(2026, 5, 19, 8), 'count-week', 5);
+        _setCheckCompletion(history, DateTime(2026, 5, 21, 8), 'check-week');
+
+        final result = await _buildWeekViewData(
+          now: fixedNow,
+          activeHabits: [
+            _habit(id: 'check-week', title: 'Check Week'),
+            _habit(
+              id: 'count-week',
+              title: 'Count Week',
+              type: 'count',
+              target: 5,
+            ),
+          ],
+          history: history,
+        );
+
+        expect(result.xpGained, 17);
+        expect(result.amberGained, 8);
+      });
+
+      test('month summary aggregates diary rewards and excludes future keys',
+          () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final result = await _buildMonthViewData(
+          now: fixedNow,
+          activeHabits: const <Map<String, dynamic>>[],
+          meta: <String, dynamic>{
+            'diaryRewardAppliedDateKeys': [
+              '2026-04-30',
+              '2026-05-01',
+              '2026-05-20',
+              '2026-05-30',
+            ],
+          },
+        );
+
+        expect(result.xpGained, 20);
+        expect(result.amberGained, 10);
+      });
+
+      test('year summary aggregates applied achievement rewards for the year',
+          () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final result = await _buildYearViewData(
+          now: fixedNow,
+          activeHabits: const <Map<String, dynamic>>[],
+          profile: <String, dynamic>{
+            'achievements': <String, dynamic>{
+              'rewardAppliedAchievementIds': [
+                'ach-jan',
+                'ach-future',
+                'ach-last-year',
+              ],
+              'unlocked': [
+                {
+                  'id': 'ach-jan',
+                  'tier': 'bronce',
+                  'unlockedAt': '2026-01-10T08:00:00.000Z',
+                },
+                {
+                  'id': 'ach-future',
+                  'tier': 'piedra',
+                  'unlockedAt': '2026-06-02T08:00:00.000Z',
+                },
+                {
+                  'id': 'ach-last-year',
+                  'tier': 'oro',
+                  'unlockedAt': '2025-12-31T08:00:00.000Z',
+                },
+              ],
+            },
+          },
+        );
+
+        expect(result.xpGained, 200);
+        expect(result.amberGained, 100);
+      });
+    });
+
     group('count habits', () {
       test('count below target does not count as completed', () async {
         final habit = _habit(
@@ -285,7 +522,7 @@ void main() {
     });
 
     group('timesPerWeek check habits', () {
-      test('week period uses weekly target and completion count (1/3 => 33%)',
+      test('week period uses elapsed weekly window without future-day penalty',
           () async {
         final weekNow = DateTime(2026, 5, 8, 10);
         final history = _emptyHistory();
@@ -307,9 +544,9 @@ void main() {
           history: history,
         );
 
-        expect(result.totalDays, 3);
+        expect(result.totalDays, 2);
         expect(result.completedHabits, 1);
-        expect(result.consistencyPct, 33);
+        expect(result.consistencyPct, 50);
       });
 
       test('week period hits 100% when weekly target is met (3/3)', () async {
@@ -335,8 +572,8 @@ void main() {
           history: history,
         );
 
-        expect(result.totalDays, 3);
-        expect(result.completedHabits, 3);
+        expect(result.totalDays, 2);
+        expect(result.completedHabits, 2);
         expect(result.consistencyPct, 100);
       });
 
@@ -364,8 +601,8 @@ void main() {
           history: history,
         );
 
-        expect(result.totalDays, 3);
-        expect(result.completedHabits, 3);
+        expect(result.totalDays, 2);
+        expect(result.completedHabits, 2);
         expect(result.consistencyPct, 100);
       });
 
@@ -420,9 +657,9 @@ void main() {
           history: history,
         );
 
-        expect(result.totalDays, 3);
+        expect(result.totalDays, 4);
         expect(result.completedHabits, 1);
-        expect(result.consistencyPct, 33);
+        expect(result.consistencyPct, 25);
       });
 
       test('day period does not penalize flexible weekly habits as daily expected',
@@ -971,6 +1208,38 @@ void main() {
     });
 
     group('yearly consistency', () {
+      test('demo profile year data returns non-empty yearly statistics',
+          () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final payload = DemoSeedData.build(now: fixedNow);
+        final userState = payload.state['userState'] as Map<String, dynamic>;
+        final activeHabits = (userState['activeHabits'] as List)
+            .whereType<Map>()
+            .map((entry) => Map<String, dynamic>.from(entry.cast<String, dynamic>()))
+            .toList(growable: false);
+        final history = Map<String, dynamic>.from(userState['history'] as Map);
+
+        final result = await _buildYearViewData(
+          now: fixedNow,
+          activeHabits: activeHabits,
+          history: history,
+        );
+
+        expect(result.totalDays, greaterThan(0));
+        expect(
+          result.yearlyConsistencyMonths.any(
+            (month) => !month.isFuture && month.expectedCount > 0,
+          ),
+          isTrue,
+        );
+        expect(
+          result.yearlyConsistencyMonths.any((month) => month.completedCount > 0),
+          isTrue,
+        );
+        expect(result.xpGained, greaterThan(0));
+        expect(result.amberGained, greaterThan(0));
+      });
+
       test('returns 12 month entries for year period', () async {
         final yearNow = DateTime(2026, 5, 20, 10);
 
@@ -1069,7 +1338,7 @@ void main() {
         expect(may.percentage, 67);
       });
 
-      test('timesPerWeek monthly aggregation caps over-completion at 100%',
+      test('timesPerWeek monthly aggregation uses elapsed window per week',
           () async {
         final yearNow = DateTime(2026, 5, 20, 10);
         final history = _emptyHistory();
@@ -1099,8 +1368,8 @@ void main() {
         final may = result.yearlyConsistencyMonths.firstWhere(
           (item) => item.month == 5,
         );
-        expect(may.expectedCount, 12);
-        expect(may.completedCount, 12);
+        expect(may.expectedCount, 8);
+        expect(may.completedCount, 8);
         expect(may.percentage, 100);
       });
 
@@ -1688,12 +1957,18 @@ Future<StatisticsV3ViewData> _buildDayViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
   Map<String, dynamic>? history,
+  Map<String, dynamic>? daily,
+  Map<String, dynamic>? meta,
+  Map<String, dynamic>? profile,
 }) async {
   return _buildViewData(
     period: StatisticsV3Period.day,
     now: now,
     activeHabits: activeHabits,
     history: history,
+    daily: daily,
+    meta: meta,
+    profile: profile,
   );
 }
 
@@ -1701,12 +1976,18 @@ Future<StatisticsV3ViewData> _buildWeekViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
   Map<String, dynamic>? history,
+  Map<String, dynamic>? daily,
+  Map<String, dynamic>? meta,
+  Map<String, dynamic>? profile,
 }) async {
   return _buildViewData(
     period: StatisticsV3Period.week,
     now: now,
     activeHabits: activeHabits,
     history: history,
+    daily: daily,
+    meta: meta,
+    profile: profile,
   );
 }
 
@@ -1714,12 +1995,18 @@ Future<StatisticsV3ViewData> _buildMonthViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
   Map<String, dynamic>? history,
+  Map<String, dynamic>? daily,
+  Map<String, dynamic>? meta,
+  Map<String, dynamic>? profile,
 }) async {
   return _buildViewData(
     period: StatisticsV3Period.month,
     now: now,
     activeHabits: activeHabits,
     history: history,
+    daily: daily,
+    meta: meta,
+    profile: profile,
   );
 }
 
@@ -1727,12 +2014,18 @@ Future<StatisticsV3ViewData> _buildYearViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
   Map<String, dynamic>? history,
+  Map<String, dynamic>? daily,
+  Map<String, dynamic>? meta,
+  Map<String, dynamic>? profile,
 }) async {
   return _buildViewData(
     period: StatisticsV3Period.year,
     now: now,
     activeHabits: activeHabits,
     history: history,
+    daily: daily,
+    meta: meta,
+    profile: profile,
   );
 }
 
@@ -1741,10 +2034,16 @@ Future<StatisticsV3ViewData> _buildViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
   Map<String, dynamic>? history,
+  Map<String, dynamic>? daily,
+  Map<String, dynamic>? meta,
+  Map<String, dynamic>? profile,
 }) async {
   final root = _rootState(
     activeHabits: activeHabits,
     history: history ?? <String, dynamic>{},
+    daily: daily ?? <String, dynamic>{},
+    meta: meta ?? <String, dynamic>{},
+    profile: profile ?? <String, dynamic>{},
     activeViewDateKey: _dateKey(now),
   );
   final store = _FakeStatisticsV3Store(root);
@@ -1760,15 +2059,21 @@ Future<StatisticsV3ViewData> _buildViewData({
 Map<String, dynamic> _rootState({
   required List<Map<String, dynamic>> activeHabits,
   required Map<String, dynamic> history,
+  required Map<String, dynamic> daily,
+  required Map<String, dynamic> meta,
+  required Map<String, dynamic> profile,
   required String activeViewDateKey,
 }) {
+  final mergedMeta = <String, dynamic>{
+    ...meta,
+    if ((meta['activeViewDateKey'] ?? '').toString().trim().isEmpty)
+      'activeViewDateKey': activeViewDateKey,
+  };
   return <String, dynamic>{
     'userState': <String, dynamic>{
       'userId': 'test-user',
-      'meta': <String, dynamic>{
-        'activeViewDateKey': activeViewDateKey,
-      },
-      'daily': <String, dynamic>{},
+      'meta': mergedMeta,
+      'daily': daily,
       'history': <String, dynamic>{
         'habitCompletions': history['habitCompletions'] ?? <String, dynamic>{},
         'habitCompletionTimes':
@@ -1780,7 +2085,7 @@ Map<String, dynamic> _rootState({
       'progression': <String, dynamic>{},
       'wallet': <String, dynamic>{},
       'familyXp': <String, dynamic>{},
-      'profile': <String, dynamic>{},
+      'profile': profile,
     },
   };
 }
