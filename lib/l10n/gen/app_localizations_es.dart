@@ -1300,6 +1300,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get statisticsV3NoFamily => 'Sin familia';
 
   @override
+  String get statisticsV3InsightCardTitle => 'Insight';
+
+  @override
+  String get statisticsV3InsightEmptyState =>
+      'Cuando completes algunos hábitos, aquí verás una lectura útil de tu progreso.';
+
+  @override
+  String get statisticsV3InsightPositiveConsistency =>
+      'Estás manteniendo un ritmo sólido en este periodo. Continúa con la misma calma.';
+
+  @override
+  String statisticsV3InsightFeaturedFamily(String family) {
+    return '$family lidera este periodo. Apóyate en ese impulso.';
+  }
+
+  @override
+  String statisticsV3InsightBestMoment(String moment) {
+    return '$moment es tu franja más fuerte. Protégela con una acción simple.';
+  }
+
+  @override
+  String get statisticsV3InsightLowActivity =>
+      'Este periodo sigue con poca actividad. Mantén un objetivo pequeño y claro para recuperar ritmo.';
+
+  @override
   String get statisticsV3HighlightedHabitCardTitle => 'Hábito destacado';
 
   @override

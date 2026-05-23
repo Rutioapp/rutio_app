@@ -1296,6 +1296,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsV3NoFamily => 'No family';
 
   @override
+  String get statisticsV3InsightCardTitle => 'Insight';
+
+  @override
+  String get statisticsV3InsightEmptyState =>
+      'When you complete a few habits, you\'ll see a useful reading of your progress here.';
+
+  @override
+  String get statisticsV3InsightPositiveConsistency =>
+      'You are keeping a solid rhythm in this period. Stay with the same calm pace.';
+
+  @override
+  String statisticsV3InsightFeaturedFamily(String family) {
+    return '$family is leading this period. Lean on that momentum.';
+  }
+
+  @override
+  String statisticsV3InsightBestMoment(String moment) {
+    return '$moment is your strongest slot. Protect that window with one simple action.';
+  }
+
+  @override
+  String get statisticsV3InsightLowActivity =>
+      'This period is still light. Keep one small and clear goal to rebuild rhythm.';
+
+  @override
   String get statisticsV3HighlightedHabitCardTitle => 'Featured habit';
 
   @override

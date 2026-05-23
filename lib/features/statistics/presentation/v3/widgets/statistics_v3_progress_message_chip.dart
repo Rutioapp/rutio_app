@@ -4,9 +4,11 @@ class StatisticsV3ProgressMessageChip extends StatelessWidget {
   const StatisticsV3ProgressMessageChip({
     super.key,
     required this.message,
+    this.maxLines = 1,
   });
 
   final String message;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +23,9 @@ class StatisticsV3ProgressMessageChip extends StatelessWidget {
         ),
         child: Text(
           message,
-          maxLines: 1,
+          maxLines: maxLines,
           overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 12,
             height: 1,

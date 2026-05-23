@@ -1,18 +1,20 @@
-﻿import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
+import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_global_insight_resolver.dart';
+import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_global_insight.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_best_moment_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_consistency_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_family_chips_card.dart';
+import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_global_insight_footer.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_header.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_habit_list_view.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_highlighted_habit_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_monthly_calendar_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_period_selector.dart';
-import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_progress_message_chip.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_reward_breakdown_sheet.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_activity_shell.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_improvement_chip.dart';
@@ -68,6 +70,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       store: store,
       l10n: l10n,
     );
+    final globalInsight = resolveStatisticsV3GlobalInsight(viewData);
     final currentStreakDays = _currentGlobalStreak(store);
     final highlightedHabitStreakDays =
         _highlightedHabitStreak(store, viewData.highlightedHabits);
@@ -206,20 +209,12 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       activitySubtitle: l10n.statisticsV3DailyActivitySubtitle,
                       activityDays: viewData.weeklyActivity,
                     ),
-                    const SizedBox(height: 12),
-                    StatisticsV3ProgressMessageChip(
-                      message: _progressMessage(viewData, l10n),
-                    ),
                   ] else if (_period == StatisticsV3Period.month) ...[
                     const SizedBox(height: 12),
                     StatisticsV3MonthlyCalendarShell(
                       title: l10n.statisticsV3MonthlyCalendarTitle,
                       subtitle: l10n.statisticsV3MonthlyCalendarSubtitle,
                       days: viewData.monthlyCalendarDays,
-                    ),
-                    const SizedBox(height: 12),
-                    StatisticsV3ProgressMessageChip(
-                      message: _progressMessage(viewData, l10n),
                     ),
                   ] else if (_period == StatisticsV3Period.year) ...[
                     const SizedBox(height: 12),
@@ -228,16 +223,16 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       subtitle: _yearlyConsistencySubtitle(context),
                       months: viewData.yearlyConsistencyMonths,
                     ),
-                    const SizedBox(height: 12),
-                    StatisticsV3ProgressMessageChip(
-                      message: _progressMessage(viewData, l10n),
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 12),
-                    StatisticsV3ProgressMessageChip(
-                      message: _progressMessage(viewData, l10n),
-                    ),
                   ],
+                  const SizedBox(height: 12),
+                  StatisticsV3GlobalInsightFooter(
+                    label: l10n.statisticsV3InsightCardTitle,
+                    emoji: _globalInsightEmoji(globalInsight),
+                    message: _globalInsightMessage(
+                      insight: globalInsight,
+                      l10n: l10n,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -247,17 +242,49 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
     );
   }
 
-  String _progressMessage(
-    StatisticsV3ViewData viewData,
-    AppLocalizations l10n,
-  ) {
-    if (viewData.consistencyPct <= 0) {
-      return l10n.statisticsV3ProgressMessageEmpty;
+  String _globalInsightMessage({
+    required StatisticsV3GlobalInsight insight,
+    required AppLocalizations l10n,
+  }) {
+    switch (insight.type) {
+      case StatisticsV3GlobalInsightType.noData:
+        return l10n.statisticsV3InsightEmptyState;
+      case StatisticsV3GlobalInsightType.positiveConsistency:
+        return l10n.statisticsV3InsightPositiveConsistency;
+      case StatisticsV3GlobalInsightType.featuredFamily:
+        final familyName = insight.familyName?.trim();
+        if (familyName == null || familyName.isEmpty) {
+          return l10n.statisticsV3InsightPositiveConsistency;
+        }
+        return l10n.statisticsV3InsightFeaturedFamily(familyName);
+      case StatisticsV3GlobalInsightType.bestMoment:
+        final momentLabel = insight.momentLabel?.trim();
+        if (momentLabel == null || momentLabel.isEmpty) {
+          return l10n.statisticsV3InsightPositiveConsistency;
+        }
+        return l10n.statisticsV3InsightBestMoment(momentLabel);
+      case StatisticsV3GlobalInsightType.lowActivity:
+        return l10n.statisticsV3InsightLowActivity;
     }
-    if (viewData.consistencyPct >= 100) {
-      return l10n.statisticsV3ProgressMessageComplete;
+  }
+
+  String _globalInsightEmoji(StatisticsV3GlobalInsight insight) {
+    switch (insight.type) {
+      case StatisticsV3GlobalInsightType.noData:
+        return '🌱';
+      case StatisticsV3GlobalInsightType.positiveConsistency:
+        return '✨';
+      case StatisticsV3GlobalInsightType.featuredFamily:
+        return '🧩';
+      case StatisticsV3GlobalInsightType.bestMoment:
+        final slot = insight.momentSlot;
+        if (slot == StatisticsV3BestMomentSlot.night) {
+          return '🌙';
+        }
+        return '☀️';
+      case StatisticsV3GlobalInsightType.lowActivity:
+        return '🍃';
     }
-    return l10n.statisticsV3ProgressMessageInProgress;
   }
 
   void _showRewardBreakdown({
@@ -406,5 +433,3 @@ class _StatisticsV3WeeklySection extends StatelessWidget {
     );
   }
 }
-
-
