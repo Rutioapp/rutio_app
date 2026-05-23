@@ -1,6 +1,5 @@
-﻿import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:rutio/features/statistics/presentation/shared/statistics_best_moment_illustrations.dart';
 
 import '../../../../../l10n/l10n.dart';
 import 'habit_stats_helpers.dart';
@@ -109,21 +108,24 @@ List<HabitStatsMetricGridItem> _countMetricItems(
     HabitStatsMetricGridItem(
       icon: Icons.flag_rounded,
       title: l10n.habitStatsCountObjectiveTitle,
-      value: formatCountMetricValue(summary.dailyTarget, unitLabel: summary.unitLabel),
+      value: formatCountMetricValue(summary.dailyTarget,
+          unitLabel: summary.unitLabel),
       subtitle: _countPerDayLabel(context),
       iconColor: const Color(0xFF5A3B23),
     ),
     HabitStatsMetricGridItem(
       icon: Icons.water_drop_rounded,
       title: l10n.habitStatsCountVolumeTitle,
-      value: formatCountMetricValue(summary.weeklyTotal, unitLabel: summary.unitLabel),
+      value: formatCountMetricValue(summary.weeklyTotal,
+          unitLabel: summary.unitLabel),
       subtitle: l10n.habitStatsThisWeek,
       iconColor: const Color(0xFF3E7B7A),
     ),
     HabitStatsMetricGridItem(
       icon: Icons.bar_chart_rounded,
       title: l10n.habitStatsCountDailyAverage,
-      value: formatCountMetricValue(summary.dailyAverage, unitLabel: summary.unitLabel),
+      value: formatCountMetricValue(summary.dailyAverage,
+          unitLabel: summary.unitLabel),
       subtitle: _countAverageLabel(context),
       iconColor: const Color(0xFF5B975A),
     ),
@@ -307,7 +309,8 @@ class _BestMomentMetricBody extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _BestMomentPill(
-                    slot: metric.bestMomentSlot ?? HabitStatsBestMomentSlot.unknown,
+                    slot: metric.bestMomentSlot ??
+                        HabitStatsBestMomentSlot.unknown,
                     compact: true,
                   ),
                   const SizedBox(width: 6),
@@ -419,186 +422,47 @@ class _BestMomentPill extends StatelessWidget {
       );
     }
 
+    final asset = _assetFor(slot);
     return Container(
       width: pillWidth,
       height: pillHeight,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(9999),
         border: Border.all(color: Colors.white.withValues(alpha: 0.82)),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: _paletteFor(slot),
-        ),
       ),
-      child: CustomPaint(
-        painter: _BestMomentPainter(slot),
+      clipBehavior: Clip.antiAlias,
+      child: Image.asset(
+        asset,
+        key: Key('habitStatsBestMomentIllustration-${slot.name}'),
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.medium,
       ),
     );
   }
 
-  List<Color> _paletteFor(HabitStatsBestMomentSlot slot) {
+  String _assetFor(HabitStatsBestMomentSlot slot) {
     switch (slot) {
       case HabitStatsBestMomentSlot.morning:
-        return const [Color(0xFFFFF5E8), Color(0xFFFFE8CA)];
+        return statisticsBestMomentIllustrationAssetForBucket(
+          StatisticsBestMomentBucket.morning,
+        );
       case HabitStatsBestMomentSlot.noon:
-        return const [Color(0xFFFFF8DF), Color(0xFFFFEDB7)];
+        return statisticsBestMomentIllustrationAssetForBucket(
+          StatisticsBestMomentBucket.midday,
+        );
       case HabitStatsBestMomentSlot.afternoon:
-        return const [Color(0xFFFFF5D8), Color(0xFFFFDCA6)];
+        return statisticsBestMomentIllustrationAssetForBucket(
+          StatisticsBestMomentBucket.afternoon,
+        );
       case HabitStatsBestMomentSlot.night:
-        return const [Color(0xFFEDEEFF), Color(0xFFD7DAF6)];
+        return statisticsBestMomentIllustrationAssetForBucket(
+          StatisticsBestMomentBucket.night,
+        );
       case HabitStatsBestMomentSlot.unknown:
-        return const [Color(0xFFF2F2F2), Color(0xFFEAEAEA)];
+        return statisticsBestMomentIllustrationAssetForBucket(
+          StatisticsBestMomentBucket.morning,
+        );
     }
-  }
-}
-
-class _BestMomentPainter extends CustomPainter {
-  const _BestMomentPainter(this.slot);
-
-  static const _gold = Color(0xFFE2A13B);
-  static const _night = Color(0xFF7077B8);
-
-  final HabitStatsBestMomentSlot slot;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    switch (slot) {
-      case HabitStatsBestMomentSlot.morning:
-        _paintMorning(canvas, size);
-        break;
-      case HabitStatsBestMomentSlot.noon:
-        _paintNoon(canvas, size);
-        break;
-      case HabitStatsBestMomentSlot.afternoon:
-        _paintAfternoon(canvas, size);
-        break;
-      case HabitStatsBestMomentSlot.night:
-        _paintNight(canvas, size);
-        break;
-      case HabitStatsBestMomentSlot.unknown:
-        break;
-    }
-  }
-
-  void _paintMorning(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFF2A65B).withValues(alpha: 0.55)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round;
-    final center = Offset(size.width / 2, size.height * 0.62);
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: size.height * 0.22),
-      math.pi,
-      math.pi,
-      false,
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.30, size.height * 0.68),
-      Offset(size.width * 0.70, size.height * 0.68),
-      paint,
-    );
-    _paintRays(canvas, size, center.translate(0, -size.height * 0.03));
-  }
-
-  void _paintNoon(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    _paintSun(canvas, center, size.height * 0.13);
-    _paintRays(canvas, size, center, radius: size.height * 0.23);
-  }
-
-  void _paintAfternoon(Canvas canvas, Size size) {
-    final hill = Paint()
-      ..color = const Color(0xFFF3C27A).withValues(alpha: 0.30)
-      ..style = PaintingStyle.fill;
-    final path = Path()
-      ..moveTo(0, size.height * 0.78)
-      ..quadraticBezierTo(
-        size.width * 0.30,
-        size.height * 0.60,
-        size.width * 0.52,
-        size.height * 0.74,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.78,
-        size.height * 0.90,
-        size.width,
-        size.height * 0.72,
-      )
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(path, hill);
-    final center = Offset(size.width / 2, size.height * 0.45);
-    _paintSun(canvas, center, size.height * 0.12);
-    _paintRays(canvas, size, center, radius: size.height * 0.22);
-  }
-
-  void _paintNight(Canvas canvas, Size size) {
-    final moon = Paint()
-      ..color = _night
-      ..style = PaintingStyle.fill;
-    final center = Offset(size.width * 0.50, size.height * 0.48);
-    canvas.drawCircle(center, size.height * 0.18, moon);
-    canvas.drawCircle(
-      center.translate(size.height * 0.07, -size.height * 0.06),
-      size.height * 0.18,
-      Paint()
-        ..color = const Color(0xFFEDEEFF)
-        ..style = PaintingStyle.fill,
-    );
-    final star = Paint()
-      ..color = _night.withValues(alpha: 0.78)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(size.width * 0.26, size.height * 0.42), 1.4, star);
-    canvas.drawCircle(Offset(size.width * 0.72, size.height * 0.40), 1.2, star);
-    canvas.drawCircle(Offset(size.width * 0.76, size.height * 0.61), 1.5, star);
-  }
-
-  void _paintSun(Canvas canvas, Offset center, double radius) {
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF6C55A), Color(0xFFE89A1F)],
-        ).createShader(Rect.fromCircle(center: center, radius: radius)),
-    );
-  }
-
-  void _paintRays(
-    Canvas canvas,
-    Size size,
-    Offset center, {
-    double? radius,
-  }) {
-    final rayRadius = radius ?? size.height * 0.24;
-    final paint = Paint()
-      ..color = _gold.withValues(alpha: 0.80)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.45
-      ..strokeCap = StrokeCap.round;
-    for (var i = 0; i < 8; i += 1) {
-      final angle = (math.pi * 2 / 8) * i;
-      final start = Offset(
-        center.dx + math.cos(angle) * rayRadius * 0.68,
-        center.dy + math.sin(angle) * rayRadius * 0.68,
-      );
-      final end = Offset(
-        center.dx + math.cos(angle) * rayRadius,
-        center.dy + math.sin(angle) * rayRadius,
-      );
-      canvas.drawLine(start, end, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _BestMomentPainter oldDelegate) {
-    return oldDelegate.slot != slot;
   }
 }
 
@@ -624,4 +488,3 @@ String _countOfGoalLabel(BuildContext context) {
 bool _isSpanish(BuildContext context) {
   return Localizations.localeOf(context).languageCode.toLowerCase() == 'es';
 }
-
