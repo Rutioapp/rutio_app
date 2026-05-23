@@ -626,6 +626,26 @@
   "statisticsV3MomentEvening": "Tarde",
   "statisticsV3MomentNight": "Noche",
   "statisticsV3NoFamily": "Sin familia",
+  "statisticsV3InsightCardTitle": "Insight",
+  "statisticsV3InsightEmptyState": "Cuando completes algunos hábitos, aquí verás una lectura útil de tu progreso.",
+  "statisticsV3InsightPositiveConsistency": "Estás manteniendo un ritmo sólido en este periodo. Continúa con la misma calma.",
+  "statisticsV3InsightFeaturedFamily": "{family} lidera este periodo. Apóyate en ese impulso.",
+  "@statisticsV3InsightFeaturedFamily": {
+    "placeholders": {
+      "family": {
+        "type": "String"
+      }
+    }
+  },
+  "statisticsV3InsightBestMoment": "{moment} es tu franja más fuerte. Protégela con una acción simple.",
+  "@statisticsV3InsightBestMoment": {
+    "placeholders": {
+      "moment": {
+        "type": "String"
+      }
+    }
+  },
+  "statisticsV3InsightLowActivity": "Este periodo sigue con poca actividad. Mantén un objetivo pequeño y claro para recuperar ritmo.",
   "statisticsV3HighlightedHabitCardTitle": "Hábito destacado",
   "statisticsV3HighlightedHabitSubtitleDay": "El hábito con más actividad hoy",
   "statisticsV3HighlightedHabitSubtitleWeek": "El hábito con más actividad esta semana",

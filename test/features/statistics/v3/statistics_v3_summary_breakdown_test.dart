@@ -25,7 +25,8 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.longPress(find.byKey(const Key('statisticsV3SummaryMetricXp')));
+      await tester
+          .longPress(find.byKey(const Key('statisticsV3SummaryMetricXp')));
       await tester.pumpAndSettle();
 
       expect(find.text('Reward breakdown'), findsOneWidget);
@@ -74,7 +75,8 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.longPress(find.byKey(const Key('statisticsV3SummaryMetricXp')));
+      await tester
+          .longPress(find.byKey(const Key('statisticsV3SummaryMetricXp')));
       await tester.pumpAndSettle();
 
       expect(find.text('No rewards recorded in this period.'), findsOneWidget);
@@ -99,11 +101,109 @@ void main() {
       await tester.pumpWidget(_app(store));
       await tester.pumpAndSettle();
 
-      await tester.longPress(find.byKey(const Key('statisticsV3SummaryMetricXp')));
+      await tester
+          .longPress(find.byKey(const Key('statisticsV3SummaryMetricXp')));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
       expect(find.text('Reward breakdown'), findsOneWidget);
+    });
+
+    testWidgets(
+      'global footer shows fallback insight and removes legacy footer phrase',
+      (tester) async {
+        final store = _FakeStatisticsV3Store(
+          _rootState(
+            now: DateTime.now(),
+            activeHabits: [_habit(id: 'habit-empty', title: 'Habit Empty')],
+            history: <String, dynamic>{
+              'habitCompletions': <String, dynamic>{},
+              'habitCompletionTimes': <String, dynamic>{},
+              'habitSkips': <String, dynamic>{},
+              'habitCountValues': <String, dynamic>{},
+            },
+          ),
+        );
+
+        await tester.pumpWidget(_app(store));
+        await tester.pumpAndSettle();
+        await _scrollToGlobalInsightFooter(tester);
+
+        expect(
+          find.byKey(const Key('statisticsV3GlobalInsightFooter')),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining("you'll see a useful reading"),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('statisticsV3GlobalInsightEmoji')),
+            findsOneWidget);
+        expect(find.text('🌱'), findsOneWidget);
+        expect(find.text('There is still time to begin'), findsNothing);
+      },
+    );
+
+    testWidgets('global footer shows high consistency insight', (tester) async {
+      final now = DateTime.now();
+      final completions = List<_CompletionSeed>.generate(
+        7,
+        (index) => _CompletionSeed(
+          day: now.subtract(Duration(days: index)),
+          habitId: 'habit-consistent',
+        ),
+      );
+      final store = _FakeStatisticsV3Store(
+        _rootState(
+          now: now,
+          activeHabits: [
+            _habit(id: 'habit-consistent', title: 'Habit Consistent'),
+          ],
+          history: _historyWithCompletions(completions),
+        ),
+      );
+
+      await tester.pumpWidget(_app(store));
+      await tester.pumpAndSettle();
+      await _scrollToGlobalInsightFooter(tester);
+
+      expect(
+        find.textContaining('keeping a solid rhythm'),
+        findsOneWidget,
+      );
+      expect(find.text('✨'), findsOneWidget);
+    });
+
+    testWidgets('global footer can show featured family insight',
+        (tester) async {
+      final now = DateTime.now();
+      final completions = List<_CompletionSeed>.generate(
+        7,
+        (index) => _CompletionSeed(
+          day: now.subtract(Duration(days: index)),
+          habitId: 'habit-body',
+        ),
+      );
+      final store = _FakeStatisticsV3Store(
+        _rootState(
+          now: now,
+          activeHabits: [
+            _habit(id: 'habit-body', title: 'Habit Body', familyId: 'body'),
+            _habit(id: 'habit-mind', title: 'Habit Mind', familyId: 'mind'),
+          ],
+          history: _historyWithCompletions(completions),
+        ),
+      );
+
+      await tester.pumpWidget(_app(store));
+      await tester.pumpAndSettle();
+      await _scrollToGlobalInsightFooter(tester);
+
+      expect(
+        find.textContaining('is leading this period'),
+        findsOneWidget,
+      );
+      expect(find.text('🧩'), findsOneWidget);
     });
   });
 }
@@ -150,12 +250,13 @@ Map<String, dynamic> _historyWithCheckCompletion(DateTime now, String habitId) {
 Map<String, dynamic> _habit({
   required String id,
   required String title,
+  String familyId = 'mind',
 }) {
   return <String, dynamic>{
     'id': id,
     'title': title,
     'name': title,
-    'familyId': 'mind',
+    'familyId': familyId,
     'type': 'check',
     'doneToday': false,
     'skippedToday': false,
@@ -164,6 +265,43 @@ Map<String, dynamic> _habit({
     'emoji': '*',
     'schedule': <String, dynamic>{'type': 'daily'},
   };
+}
+
+Map<String, dynamic> _historyWithCompletions(List<_CompletionSeed> seeds) {
+  final completions = <String, Map<String, dynamic>>{};
+
+  for (final seed in seeds) {
+    final dayKey = _dateKey(seed.day);
+    final dayCompletions =
+        completions.putIfAbsent(dayKey, () => <String, dynamic>{});
+    dayCompletions[seed.habitId] = true;
+  }
+
+  return <String, dynamic>{
+    'habitCompletions': completions,
+    'habitCompletionTimes': <String, dynamic>{},
+    'habitSkips': <String, dynamic>{},
+    'habitCountValues': <String, dynamic>{},
+  };
+}
+
+class _CompletionSeed {
+  _CompletionSeed({
+    required this.day,
+    required this.habitId,
+  });
+
+  final DateTime day;
+  final String habitId;
+}
+
+Future<void> _scrollToGlobalInsightFooter(WidgetTester tester) async {
+  final list = find.byType(ListView).first;
+  for (var i = 0; i < 6; i++) {
+    await tester.drag(list, const Offset(0, -420));
+    await tester.pump();
+  }
+  await tester.pumpAndSettle();
 }
 
 String _dateKey(DateTime date) {

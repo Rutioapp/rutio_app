@@ -2409,6 +2409,42 @@ abstract class AppLocalizations {
   /// **'Sin familia'**
   String get statisticsV3NoFamily;
 
+  /// No description provided for @statisticsV3InsightCardTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Insight'**
+  String get statisticsV3InsightCardTitle;
+
+  /// No description provided for @statisticsV3InsightEmptyState.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuando completes algunos hábitos, aquí verás una lectura útil de tu progreso.'**
+  String get statisticsV3InsightEmptyState;
+
+  /// No description provided for @statisticsV3InsightPositiveConsistency.
+  ///
+  /// In es, this message translates to:
+  /// **'Estás manteniendo un ritmo sólido en este periodo. Continúa con la misma calma.'**
+  String get statisticsV3InsightPositiveConsistency;
+
+  /// No description provided for @statisticsV3InsightFeaturedFamily.
+  ///
+  /// In es, this message translates to:
+  /// **'{family} lidera este periodo. Apóyate en ese impulso.'**
+  String statisticsV3InsightFeaturedFamily(String family);
+
+  /// No description provided for @statisticsV3InsightBestMoment.
+  ///
+  /// In es, this message translates to:
+  /// **'{moment} es tu franja más fuerte. Protégela con una acción simple.'**
+  String statisticsV3InsightBestMoment(String moment);
+
+  /// No description provided for @statisticsV3InsightLowActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Este periodo sigue con poca actividad. Mantén un objetivo pequeño y claro para recuperar ritmo.'**
+  String get statisticsV3InsightLowActivity;
+
   /// No description provided for @statisticsV3HighlightedHabitCardTitle.
   ///
   /// In es, this message translates to:

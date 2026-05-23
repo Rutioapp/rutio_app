@@ -626,6 +626,26 @@
     "statisticsV3MomentEvening": "Afternoon",
     "statisticsV3MomentNight": "Night",
     "statisticsV3NoFamily": "No family",
+    "statisticsV3InsightCardTitle": "Insight",
+    "statisticsV3InsightEmptyState": "When you complete a few habits, you'll see a useful reading of your progress here.",
+    "statisticsV3InsightPositiveConsistency": "You are keeping a solid rhythm in this period. Stay with the same calm pace.",
+    "statisticsV3InsightFeaturedFamily": "{family} is leading this period. Lean on that momentum.",
+    "@statisticsV3InsightFeaturedFamily": {
+        "placeholders": {
+            "family": {
+                "type": "String"
+            }
+        }
+    },
+    "statisticsV3InsightBestMoment": "{moment} is your strongest slot. Protect that window with one simple action.",
+    "@statisticsV3InsightBestMoment": {
+        "placeholders": {
+            "moment": {
+                "type": "String"
+            }
+        }
+    },
+    "statisticsV3InsightLowActivity": "This period is still light. Keep one small and clear goal to rebuild rhythm.",
     "statisticsV3HighlightedHabitCardTitle": "Featured habit",
     "statisticsV3HighlightedHabitSubtitleDay": "The habit with the most activity today",
     "statisticsV3HighlightedHabitSubtitleWeek": "The habit with the most activity this week",
