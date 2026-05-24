@@ -60,6 +60,8 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final listBottomPadding = (bottomInset + 32).clamp(48.0, 88.0).toDouble();
     final store = context.watch<UserStateStore>();
     final viewData = buildStatisticsV3ViewData(
       store: store,
@@ -97,7 +99,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
           body: SafeArea(
             bottom: false,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 104),
+              padding: EdgeInsets.fromLTRB(14, 8, 14, listBottomPadding),
               children: [
                 Builder(
                   builder: (ctx) => StatisticsV3Header(
