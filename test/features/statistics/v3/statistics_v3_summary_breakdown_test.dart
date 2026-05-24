@@ -205,13 +205,114 @@ void main() {
       );
       expect(find.text('🧩'), findsOneWidget);
     });
+
+    testWidgets('global insight appears once and is hidden in per-habit mode',
+        (tester) async {
+      final store = _FakeStatisticsV3Store(
+        _rootState(
+          now: DateTime.now(),
+          activeHabits: [
+            _habit(id: 'habit-a', title: 'Habit A'),
+            _habit(id: 'habit-b', title: 'Habit B'),
+          ],
+          history: <String, dynamic>{
+            'habitCompletions': <String, dynamic>{},
+            'habitCompletionTimes': <String, dynamic>{},
+            'habitSkips': <String, dynamic>{},
+            'habitCountValues': <String, dynamic>{},
+          },
+        ),
+      );
+
+      await tester.pumpWidget(_app(store));
+      await tester.pumpAndSettle();
+      await _scrollToGlobalInsightFooter(tester);
+
+      expect(
+        find.byKey(const Key('statisticsV3GlobalInsightFooter')),
+        findsOneWidget,
+      );
+
+      await tester.drag(find.byType(ListView).first, const Offset(0, 2400));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.bar_chart_rounded));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('statisticsV3GlobalInsightFooter')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('statisticsV3HabitSearchField')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('period selector remains stable on compact screen',
+        (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(375, 812);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final now = DateTime.now();
+      final store = _FakeStatisticsV3Store(
+        _rootState(
+          now: now,
+          activeHabits: [_habit(id: 'habit-periods', title: 'Habit Periods')],
+          history: _historyWithCheckCompletion(now, 'habit-periods'),
+        ),
+      );
+
+      await tester.pumpWidget(_app(store, locale: const Locale('es')));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('statisticsV3MonthlyCalendarShell')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('statisticsV3YearlyConsistencyShell')),
+        findsNothing,
+      );
+
+      await tester.tap(find.text('Mes'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('statisticsV3MonthlyCalendarShell')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('A\u00f1o'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('statisticsV3YearlyConsistencyShell')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Semana'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('statisticsV3MonthlyCalendarShell')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('statisticsV3YearlyConsistencyShell')),
+        findsNothing,
+      );
+
+      await tester.tap(find.text('D\u00eda'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 
-Widget _app(UserStateStore store) {
+Widget _app(UserStateStore store, {Locale? locale}) {
   return Provider<UserStateStore>.value(
     value: store,
     child: MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: const StatisticsV3Screen(),
