@@ -867,7 +867,9 @@ void main() {
       );
     });
 
-    test('valid past scheduled dates with no completion or skip resolve to missed', () {
+    test(
+        'valid past scheduled dates with no completion or skip resolve to missed',
+        () {
       final months = resolveHabitStatsYearCalendarMonths(
         habit: _habit(
           type: 'check',
@@ -930,7 +932,8 @@ void main() {
       );
     });
 
-    test('count habits are safe and represent activity days as completed', () {
+    test('count habits mark partial and completed according to daily target',
+        () {
       final months = resolveHabitStatsYearCalendarMonths(
         habit: _habit(
           type: 'count',
@@ -943,17 +946,67 @@ void main() {
         countsByDay: const {},
         countValuesByDay: {
           DateTime(2026, 1, 5): 3,
+          DateTime(2026, 1, 6): 10,
         },
         skipsByDay: const {},
       );
 
       expect(
         _calendarStatus(months, month: 1, day: 5),
-        HabitStatsYearCalendarDayStatus.completed,
+        HabitStatsYearCalendarDayStatus.partial,
       );
       expect(
         _calendarStatus(months, month: 1, day: 6),
-        HabitStatsYearCalendarDayStatus.missed,
+        HabitStatsYearCalendarDayStatus.completed,
+      );
+    });
+
+    test('count habits keep non-scheduled days as unavailable', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'count',
+          target: 5,
+          createdAt: '2026-01-01',
+          schedule: const {
+            'type': 'weekly',
+            'weekdays': [DateTime.monday],
+          },
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _calendarStatus(months, month: 5, day: 5), // Tuesday
+        HabitStatsYearCalendarDayStatus.unavailable,
+      );
+    });
+
+    test('count habits keep future days out of missed state', () {
+      final months = resolveHabitStatsYearCalendarMonths(
+        habit: _habit(
+          type: 'count',
+          target: 5,
+          createdAt: '2026-01-01',
+          schedule: const {'type': 'daily'},
+        ),
+        year: 2026,
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _calendarStatus(months, month: 9, day: 1),
+        HabitStatsYearCalendarDayStatus.future,
+      );
+      expect(
+        _calendarStatus(months, month: 9, day: 1),
+        isNot(HabitStatsYearCalendarDayStatus.missed),
       );
     });
   });

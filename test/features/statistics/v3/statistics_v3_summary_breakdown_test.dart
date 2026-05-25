@@ -139,26 +139,34 @@ void main() {
         );
         expect(find.byKey(const Key('statisticsV3GlobalInsightEmoji')),
             findsOneWidget);
-        expect(find.text('🌱'), findsOneWidget);
+        expect(find.text('\u{1F331}'), findsOneWidget);
         expect(find.text('There is still time to begin'), findsNothing);
       },
     );
 
     testWidgets('global footer shows high consistency insight', (tester) async {
       final now = DateTime.now();
-      final completions = List<_CompletionSeed>.generate(
-        7,
-        (index) => _CompletionSeed(
-          day: now.subtract(Duration(days: index)),
-          habitId: 'habit-consistent',
-        ),
-      );
+      final weekDays = _daysInCurrentWeek(now);
+      final highConsistencyHabitIds = [
+        'habit-consistent-a',
+        'habit-consistent-b',
+        'habit-consistent-c',
+      ];
+      final completions = <_CompletionSeed>[
+        for (final day in weekDays)
+          for (final habitId in highConsistencyHabitIds)
+            _CompletionSeed(day: day, habitId: habitId),
+      ];
       final store = _FakeStatisticsV3Store(
         _rootState(
           now: now,
-          activeHabits: [
-            _habit(id: 'habit-consistent', title: 'Habit Consistent'),
-          ],
+          activeHabits: highConsistencyHabitIds
+              .map((id) => _habit(
+                    id: id,
+                    title: 'Habit ${id.toUpperCase()}',
+                    doneToday: true,
+                  ))
+              .toList(growable: false),
           history: _historyWithCompletions(completions),
         ),
       );
@@ -168,27 +176,42 @@ void main() {
       await _scrollToGlobalInsightFooter(tester);
 
       expect(
+        find.byKey(const Key('statisticsV3GlobalInsightFooter')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('statisticsV3GlobalInsightEmoji')),
+        findsOneWidget,
+      );
+      expect(
         find.textContaining('keeping a solid rhythm'),
         findsOneWidget,
       );
-      expect(find.text('✨'), findsOneWidget);
+      expect(find.text('\u2728'), findsOneWidget);
     });
-
     testWidgets('global footer can show featured family insight',
         (tester) async {
       final now = DateTime.now();
-      final completions = List<_CompletionSeed>.generate(
-        7,
-        (index) => _CompletionSeed(
-          day: now.subtract(Duration(days: index)),
-          habitId: 'habit-body',
-        ),
-      );
+      final completions = <_CompletionSeed>[
+        _CompletionSeed(day: now, habitId: 'habit-body-a'),
+        _CompletionSeed(day: now, habitId: 'habit-body-b'),
+      ];
       final store = _FakeStatisticsV3Store(
         _rootState(
           now: now,
           activeHabits: [
-            _habit(id: 'habit-body', title: 'Habit Body', familyId: 'body'),
+            _habit(
+              id: 'habit-body-a',
+              title: 'Habit Body A',
+              familyId: 'body',
+              doneToday: true,
+            ),
+            _habit(
+              id: 'habit-body-b',
+              title: 'Habit Body B',
+              familyId: 'body',
+              doneToday: true,
+            ),
             _habit(id: 'habit-mind', title: 'Habit Mind', familyId: 'mind'),
           ],
           history: _historyWithCompletions(completions),
@@ -200,12 +223,19 @@ void main() {
       await _scrollToGlobalInsightFooter(tester);
 
       expect(
+        find.byKey(const Key('statisticsV3GlobalInsightFooter')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('statisticsV3GlobalInsightEmoji')),
+        findsOneWidget,
+      );
+      expect(
         find.textContaining('is leading this period'),
         findsOneWidget,
       );
-      expect(find.text('🧩'), findsOneWidget);
+      expect(find.text('\u{1F9E9}'), findsOneWidget);
     });
-
     testWidgets('global insight appears once and is hidden in per-habit mode',
         (tester) async {
       final store = _FakeStatisticsV3Store(
@@ -352,6 +382,7 @@ Map<String, dynamic> _habit({
   required String id,
   required String title,
   String familyId = 'mind',
+  bool doneToday = false,
 }) {
   return <String, dynamic>{
     'id': id,
@@ -359,7 +390,7 @@ Map<String, dynamic> _habit({
     'name': title,
     'familyId': familyId,
     'type': 'check',
-    'doneToday': false,
+    'doneToday': doneToday,
     'skippedToday': false,
     'progress': 0,
     'target': 1,
@@ -403,6 +434,18 @@ Future<void> _scrollToGlobalInsightFooter(WidgetTester tester) async {
     await tester.pump();
   }
   await tester.pumpAndSettle();
+}
+
+List<DateTime> _daysInCurrentWeek(DateTime now) {
+  final local = now.toLocal();
+  final today = DateTime(local.year, local.month, local.day);
+  final weekStart =
+      today.subtract(Duration(days: today.weekday - DateTime.monday));
+  return List<DateTime>.generate(
+    today.difference(weekStart).inDays + 1,
+    (index) => weekStart.add(Duration(days: index)),
+    growable: false,
+  );
 }
 
 String _dateKey(DateTime date) {

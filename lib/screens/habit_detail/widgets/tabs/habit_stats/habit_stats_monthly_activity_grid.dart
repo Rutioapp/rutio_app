@@ -128,7 +128,8 @@ class _MonthDayMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _markerStyleFor(day.status);
-    final key = Key('habitStatsMonthDay_${day.status.name}_${_dateKey(day.date)}');
+    final key =
+        Key('habitStatsMonthDay_${day.status.name}_${_dateKey(day.date)}');
     return Center(
       child: Container(
         key: key,
@@ -166,6 +167,14 @@ class _MonthDayMarker extends StatelessWidget {
           fillColor: Color(0xFF6D9660),
           borderColor: Color(0xFF628957),
           textColor: Color(0xFFFFFAF1),
+          borderWidth: 1.2,
+          fontWeight: FontWeight.w700,
+        );
+      case HabitStatsMonthDayStatus.partial:
+        return const _MonthDayMarkerStyle(
+          fillColor: Color(0xFFEAF1E5),
+          borderColor: Color(0xFF9BB991),
+          textColor: Color(0xFF5E7957),
           borderWidth: 1.2,
           fontWeight: FontWeight.w700,
         );

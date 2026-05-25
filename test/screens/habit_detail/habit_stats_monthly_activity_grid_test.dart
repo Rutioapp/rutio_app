@@ -15,6 +15,7 @@ void main() {
         3: HabitStatsMonthDayStatus.missed,
         4: HabitStatsMonthDayStatus.future,
         5: HabitStatsMonthDayStatus.notScheduled,
+        6: HabitStatsMonthDayStatus.partial,
       });
 
       await tester.pumpWidget(
@@ -27,22 +28,25 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final completedKey = find.byKey(
-          const Key('habitStatsMonthDay_completed_2026-05-01'));
+      final completedKey =
+          find.byKey(const Key('habitStatsMonthDay_completed_2026-05-01'));
       final skippedKey =
           find.byKey(const Key('habitStatsMonthDay_skipped_2026-05-02'));
       final missedKey =
           find.byKey(const Key('habitStatsMonthDay_missed_2026-05-03'));
       final futureKey =
           find.byKey(const Key('habitStatsMonthDay_future_2026-05-04'));
-      final notScheduledKey = find.byKey(
-          const Key('habitStatsMonthDay_notScheduled_2026-05-05'));
+      final notScheduledKey =
+          find.byKey(const Key('habitStatsMonthDay_notScheduled_2026-05-05'));
+      final partialKey =
+          find.byKey(const Key('habitStatsMonthDay_partial_2026-05-06'));
 
       expect(completedKey, findsOneWidget);
       expect(skippedKey, findsOneWidget);
       expect(missedKey, findsOneWidget);
       expect(futureKey, findsOneWidget);
       expect(notScheduledKey, findsOneWidget);
+      expect(partialKey, findsOneWidget);
 
       final completedContainer = tester.widget<Container>(completedKey);
       final missedContainer = tester.widget<Container>(missedKey);
@@ -80,8 +84,8 @@ void main() {
           findsOneWidget);
       expect(find.byKey(const Key('habitStatsMonthLeadingCell_1')),
           findsOneWidget);
-      expect(find.byKey(const Key('habitStatsMonthLeadingCell_2')),
-          findsNothing);
+      expect(
+          find.byKey(const Key('habitStatsMonthLeadingCell_2')), findsNothing);
     });
 
     testWidgets('month starting on Monday has no leading empty cells',
@@ -97,8 +101,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('habitStatsMonthLeadingCell_0')),
-          findsNothing);
+      expect(
+          find.byKey(const Key('habitStatsMonthLeadingCell_0')), findsNothing);
     });
   });
 }

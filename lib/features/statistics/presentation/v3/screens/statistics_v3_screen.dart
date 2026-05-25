@@ -273,19 +273,19 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
   String _globalInsightEmoji(StatisticsV3GlobalInsight insight) {
     switch (insight.type) {
       case StatisticsV3GlobalInsightType.noData:
-        return '🌱';
+        return '\u{1F331}';
       case StatisticsV3GlobalInsightType.positiveConsistency:
-        return '✨';
+        return '\u2728';
       case StatisticsV3GlobalInsightType.featuredFamily:
-        return '🧩';
+        return '\u{1F9E9}';
       case StatisticsV3GlobalInsightType.bestMoment:
         final slot = insight.momentSlot;
         if (slot == StatisticsV3BestMomentSlot.night) {
-          return '🌙';
+          return '\u{1F319}';
         }
-        return '☀️';
+        return '\u2600\uFE0F';
       case StatisticsV3GlobalInsightType.lowActivity:
-        return '🍃';
+        return '\u{1F343}';
     }
   }
 

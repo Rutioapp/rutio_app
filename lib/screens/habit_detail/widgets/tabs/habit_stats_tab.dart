@@ -146,7 +146,14 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
             skipsByDay: shellData.skipsByDay,
             completionTimesByDay: shellData.completionTimesByDay,
           )
-        : null;
+        : buildHabitStatsMonthlyDataForCount(
+            habit: widget.habit,
+            month: month,
+            now: now,
+            countsByDay: shellData.countsByDay,
+            countValuesByDay: shellData.countValuesByDay,
+            skipsByDay: shellData.skipsByDay,
+          );
     final monthlyComparisonData = shellData.isCheckHabit
         ? buildHabitStatsMonthlyComparisonDataForCheck(
             habit: widget.habit,
@@ -162,7 +169,7 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
             context.l10n,
             monthlyComparisonData,
           );
-    final monthlyInsight = shellData.isCheckHabit && monthlyData != null
+    final monthlyInsight = shellData.isCheckHabit
         ? resolveHabitStatsMonthlyInsight(
             context.l10n,
             monthlyData: monthlyData,
@@ -179,11 +186,10 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
       const SizedBox(height: _sectionSpacing),
       _buildMonthlyMetricGrid(shellData, monthlyData: monthlyData),
       const SizedBox(height: _sectionSpacing),
-      if (shellData.isCheckHabit && monthlyData != null)
-        HabitStatsMonthlyActivityGrid(
-          monthlyData: monthlyData,
-          month: month,
-        ),
+      HabitStatsMonthlyActivityGrid(
+        monthlyData: monthlyData,
+        month: month,
+      ),
       const SizedBox(height: _lowerSectionSpacing),
       if (shellData.isCheckHabit &&
           monthlyComparisonData != null &&

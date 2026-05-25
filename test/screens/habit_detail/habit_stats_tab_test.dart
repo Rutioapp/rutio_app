@@ -981,6 +981,39 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('count habit month view shows monthly activity calendar',
+        (tester) async {
+      final habit = _habit(
+        type: 'count',
+        schedule: const {'type': 'daily'},
+        target: 5,
+        unit: 'L',
+      );
+      final store = _FakeStore(_rootState(habit: habit));
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodMonth));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HabitStatsMonthlyActivityGrid), findsOneWidget);
+      expect(find.byKey(const Key('habitStatsMonthlyActivityGrid')),
+          findsOneWidget);
+      expect(find.byType(HabitStatsMonthlyComparisonCard), findsNothing);
+      expect(find.text(l10n.habitStatsMonthlyComparisonTitle), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('count habit chart does not crash with empty unit',
         (tester) async {
       final habit = _habit(
@@ -1048,6 +1081,47 @@ void main() {
       expect(find.byKey(const Key('habit_stats_count_metric_grid')),
           findsOneWidget);
       expect(find.text('0%'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('count yearly calendar marks partial progress days',
+        (tester) async {
+      final now = DateTime.now();
+      final habit = _habit(
+        type: 'count',
+        schedule: const {'type': 'daily'},
+        target: 5,
+        unit: 'L',
+      );
+      final store = _FakeStore(
+        _rootState(
+          habit: habit,
+          countValues: {
+            _dateKey(now): 4,
+          },
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: HabitStatsTab(
+            habit: habit,
+            familyColor: Colors.green,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = _l10n(tester);
+      await tester.tap(find.text(l10n.habitStatsPeriodYear));
+      await tester.pumpAndSettle();
+
+      final monthKey =
+          'habit_stats_year_calendar_day_${now.year}_${now.month}_${now.day}_partial';
+      expect(find.byKey(const Key('habit_stats_year_calendar_grid')),
+          findsOneWidget);
+      expect(find.byKey(Key(monthKey)), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
