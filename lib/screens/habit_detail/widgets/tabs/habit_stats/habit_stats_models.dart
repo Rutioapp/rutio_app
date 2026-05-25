@@ -190,6 +190,7 @@ class HabitStatsBestMoment {
 
 enum HabitStatsMonthDayStatus {
   completed,
+  partial,
   skipped,
   missed,
   future,
@@ -241,6 +242,7 @@ class HabitStatsMonthlyData {
   final int futureScheduledDays;
   final HabitStatsMonthlyObjectiveUnit objectiveUnit;
   final int completedDays;
+  final int partialDays;
   final int skippedDays;
   final int missedDays;
   final int totalTrackableDays;
@@ -257,6 +259,7 @@ class HabitStatsMonthlyData {
     required this.futureScheduledDays,
     required this.objectiveUnit,
     required this.completedDays,
+    this.partialDays = 0,
     required this.skippedDays,
     required this.missedDays,
     required this.totalTrackableDays,
@@ -317,6 +320,7 @@ enum HabitStatsYearMonthStatus {
 
 enum HabitStatsYearCalendarDayStatus {
   completed,
+  partial,
   skipped,
   missed,
   future,

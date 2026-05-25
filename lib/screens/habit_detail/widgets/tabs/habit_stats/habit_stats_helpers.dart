@@ -172,6 +172,7 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
   );
 
   var completedDays = 0;
+  var partialDays = 0;
   var skippedDays = 0;
   var missedDays = 0;
   var futureDays = 0;
@@ -184,6 +185,10 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
         completedDays += 1;
         currentStreak += 1;
         if (currentStreak > bestStreak) bestStreak = currentStreak;
+        break;
+      case HabitStatsMonthDayStatus.partial:
+        partialDays += 1;
+        currentStreak = 0;
         break;
       case HabitStatsMonthDayStatus.skipped:
         skippedDays += 1;
@@ -204,8 +209,9 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
   }
 
   final scheduledDaysInMonth =
-      completedDays + skippedDays + missedDays + futureDays;
-  final elapsedScheduledDays = completedDays + skippedDays + missedDays;
+      completedDays + partialDays + skippedDays + missedDays + futureDays;
+  final elapsedScheduledDays =
+      completedDays + partialDays + skippedDays + missedDays;
 
   int monthlyObjective;
   int expectedToDate;
@@ -254,6 +260,7 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
     futureScheduledDays: futureScheduledDays,
     objectiveUnit: objectiveUnit,
     completedDays: completedDays,
+    partialDays: partialDays,
     skippedDays: skippedDays,
     missedDays: missedDays,
     totalTrackableDays: monthlyObjective,
@@ -267,6 +274,107 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
       daysInMonth: daysInMonth,
       completionTimesByDay: normalizedCompletionTimesByDay,
     ),
+    days: days,
+  );
+}
+
+HabitStatsMonthlyData buildHabitStatsMonthlyDataForCount({
+  required dynamic habit,
+  required DateTime month,
+  required DateTime now,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, num> countValuesByDay,
+  required Map<DateTime, bool> skipsByDay,
+}) {
+  final habitMap = _habitToMap(habit);
+  final monthStart = DateTime(month.year, month.month, 1);
+  final daysInMonth = _daysInMonth(month.year, month.month);
+  final today = _dateOnly(now.toLocal());
+  final normalizedCountsByDay = _normalizeCountMap(countsByDay);
+  final normalizedSkipsByDay = _normalizeSkipMap(skipsByDay);
+  final normalizedCountValuesByDay = <DateTime, num>{
+    for (final entry in countValuesByDay.entries)
+      _dateOnly(entry.key.toLocal()): entry.value,
+  };
+
+  final days = List<HabitStatsMonthDayState>.generate(
+    daysInMonth,
+    (index) {
+      final day = _dateOnly(monthStart.add(Duration(days: index)));
+      return HabitStatsMonthDayState(
+        date: day,
+        status: _buildMonthDayStatusForCount(
+          day: day,
+          today: today,
+          habitMap: habitMap,
+          countsByDay: normalizedCountsByDay,
+          countValuesByDay: normalizedCountValuesByDay,
+          skipsByDay: normalizedSkipsByDay,
+        ),
+      );
+    },
+    growable: false,
+  );
+
+  var completedDays = 0;
+  var partialDays = 0;
+  var skippedDays = 0;
+  var missedDays = 0;
+  var futureDays = 0;
+  var bestStreak = 0;
+  var currentStreak = 0;
+
+  for (final dayState in days) {
+    switch (dayState.status) {
+      case HabitStatsMonthDayStatus.completed:
+        completedDays += 1;
+        currentStreak += 1;
+        if (currentStreak > bestStreak) bestStreak = currentStreak;
+        break;
+      case HabitStatsMonthDayStatus.partial:
+        partialDays += 1;
+        currentStreak = 0;
+        break;
+      case HabitStatsMonthDayStatus.skipped:
+        skippedDays += 1;
+        currentStreak = 0;
+        break;
+      case HabitStatsMonthDayStatus.missed:
+        missedDays += 1;
+        currentStreak = 0;
+        break;
+      case HabitStatsMonthDayStatus.future:
+        futureDays += 1;
+        currentStreak = 0;
+        break;
+      case HabitStatsMonthDayStatus.notScheduled:
+        currentStreak = 0;
+        break;
+    }
+  }
+
+  final scheduledDaysInMonth =
+      completedDays + partialDays + skippedDays + missedDays + futureDays;
+  final elapsedScheduledDays =
+      completedDays + partialDays + skippedDays + missedDays;
+  final consistency =
+      elapsedScheduledDays == 0 ? 0.0 : (completedDays / elapsedScheduledDays);
+
+  return HabitStatsMonthlyData(
+    monthlyObjective: scheduledDaysInMonth,
+    elapsedTrackableDays: elapsedScheduledDays,
+    expectedToDate: elapsedScheduledDays,
+    futureScheduledDays: futureDays,
+    objectiveUnit: HabitStatsMonthlyObjectiveUnit.days,
+    completedDays: completedDays,
+    partialDays: partialDays,
+    skippedDays: skippedDays,
+    missedDays: missedDays,
+    totalTrackableDays: scheduledDaysInMonth,
+    consistency: consistency,
+    bestStreak: bestStreak,
+    totalDone: completedDays,
+    bestMoment: null,
     days: days,
   );
 }
@@ -842,17 +950,25 @@ HabitStatsYearCalendarDayStatus _resolveYearCalendarDayStatus({
   final skipped =
       skipsByDay[day] == true || (isToday && habitMap['skippedToday'] == true);
   final completed = isCounter
-      ? ((countsByDay[day] ?? 0) > 0 ||
-          (_asNum(countValuesByDay[day]) ?? 0) > 0 ||
-          (isToday &&
-              habitMap['doneToday'] == true &&
-              habitMap['skippedToday'] != true))
+      ? _isHabitCompletedOnDate(
+          date: day,
+          habitMap: habitMap,
+          countsByDay: countsByDay,
+          countValuesByDay: countValuesByDay,
+          skipsByDay: skipsByDay,
+        )
       : _isCheckHabitCompletedOnDate(
           day: day,
           today: safeNow,
           habitMap: habitMap,
           countsByDay: countsByDay,
         );
+  final partialForCount = isCounter &&
+      !completed &&
+      _hasCountProgressOnDate(
+        day: day,
+        countValuesByDay: countValuesByDay,
+      );
 
   if (isTimesPerWeekCheck && !isCounter) {
     if (skipped) return HabitStatsYearCalendarDayStatus.skipped;
@@ -869,9 +985,11 @@ HabitStatsYearCalendarDayStatus _resolveYearCalendarDayStatus({
   if (!isScheduled) {
     return HabitStatsYearCalendarDayStatus.unavailable;
   }
+  if (isCounter && skipped) return HabitStatsYearCalendarDayStatus.skipped;
   if (day.isAfter(safeNow)) return HabitStatsYearCalendarDayStatus.future;
   if (skipped) return HabitStatsYearCalendarDayStatus.skipped;
   if (completed) return HabitStatsYearCalendarDayStatus.completed;
+  if (partialForCount) return HabitStatsYearCalendarDayStatus.partial;
   return HabitStatsYearCalendarDayStatus.missed;
 }
 
@@ -1949,6 +2067,46 @@ HabitStatsMonthDayStatus _buildMonthDayStatusForCheck({
   return HabitStatsMonthDayStatus.missed;
 }
 
+HabitStatsMonthDayStatus _buildMonthDayStatusForCount({
+  required DateTime day,
+  required DateTime today,
+  required Map<String, dynamic> habitMap,
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, num> countValuesByDay,
+  required Map<DateTime, bool> skipsByDay,
+}) {
+  if (!_isExpectedDayForYearlyConsistency(
+    habitMap: habitMap,
+    day: day,
+    treatTimesPerWeekAsDaily: true,
+  )) {
+    return HabitStatsMonthDayStatus.notScheduled;
+  }
+
+  final skipped = skipsByDay[day] == true;
+  if (skipped) return HabitStatsMonthDayStatus.skipped;
+  if (day.isAfter(today)) return HabitStatsMonthDayStatus.future;
+
+  if (_isHabitCompletedOnDate(
+    date: day,
+    habitMap: habitMap,
+    countsByDay: countsByDay,
+    countValuesByDay: countValuesByDay,
+    skipsByDay: skipsByDay,
+  )) {
+    return HabitStatsMonthDayStatus.completed;
+  }
+
+  if (_hasCountProgressOnDate(
+    day: day,
+    countValuesByDay: countValuesByDay,
+  )) {
+    return HabitStatsMonthDayStatus.partial;
+  }
+
+  return HabitStatsMonthDayStatus.missed;
+}
+
 bool _isCheckHabitCompletedOnDate({
   required DateTime day,
   required DateTime today,
@@ -1960,6 +2118,14 @@ bool _isCheckHabitCompletedOnDate({
       habitMap['doneToday'] == true &&
       habitMap['skippedToday'] != true;
   return completedFromHistory || completedFromTodayState;
+}
+
+bool _hasCountProgressOnDate({
+  required DateTime day,
+  required Map<DateTime, num> countValuesByDay,
+}) {
+  final value = _asNum(countValuesByDay[day]) ?? 0;
+  return value > 0;
 }
 
 bool _isCheckHabitScheduledOnDay(Map<String, dynamic> habitMap, DateTime day) {

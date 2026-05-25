@@ -21,7 +21,8 @@ class HabitStatsYearMonthGrid extends StatelessWidget {
     final panel = theme.colorScheme.surface.withValues(
       alpha: theme.brightness == Brightness.dark ? 0.42 : 0.72,
     );
-    final panelBorder = theme.colorScheme.outlineVariant.withValues(alpha: 0.32);
+    final panelBorder =
+        theme.colorScheme.outlineVariant.withValues(alpha: 0.32);
 
     return Container(
       key: const Key('habit_stats_year_calendar_grid'),
@@ -38,7 +39,8 @@ class HabitStatsYearMonthGrid extends StatelessWidget {
           const rowSpacing = 10.0;
           final columns = constraints.maxWidth < 295 ? 2 : 3;
           final monthWidth =
-              (constraints.maxWidth - (columnSpacing * (columns - 1))) / columns;
+              (constraints.maxWidth - (columnSpacing * (columns - 1))) /
+                  columns;
           final dayGap = monthWidth < 96 ? 1.5 : 2.0;
           final daySize =
               ((monthWidth - (dayGap * 6)) / 7).clamp(4.0, 9.0).toDouble();
@@ -96,7 +98,8 @@ class _YearHeader extends StatelessWidget {
     final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           fontSize: 11.5,
           fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72),
+          color:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72),
         );
 
     return Row(
@@ -107,7 +110,10 @@ class _YearHeader extends StatelessWidget {
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.94),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.94),
               ),
         ),
         const Spacer(),
@@ -130,7 +136,10 @@ class _YearHeader extends StatelessWidget {
             ),
             _LegendDot(
               key: const Key('habit_stats_year_calendar_legend_missed'),
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.24),
               label: l10n.habitStatsYearCalendarMissed,
               labelStyle: labelStyle,
             ),
@@ -171,7 +180,10 @@ class _YearCalendarMonthCell extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.88),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.88),
               ),
         ),
         const SizedBox(height: 6),
@@ -261,7 +273,9 @@ class _DayDot extends StatelessWidget {
 
   bool _isToday(DateTime day) {
     final today = DateTime.now();
-    return day.year == today.year && day.month == today.month && day.day == today.day;
+    return day.year == today.year &&
+        day.month == today.month &&
+        day.day == today.day;
   }
 
   Color _colorForStatus(
@@ -273,16 +287,18 @@ class _DayDot extends StatelessWidget {
     final brightness = Theme.of(context).brightness;
 
     return switch (status) {
-      HabitStatsYearCalendarDayStatus.completed =>
-        accentColor.withValues(alpha: brightness == Brightness.dark ? 0.90 : 0.84),
-      HabitStatsYearCalendarDayStatus.skipped =>
-        accentColor.withValues(alpha: brightness == Brightness.dark ? 0.52 : 0.44),
-      HabitStatsYearCalendarDayStatus.missed =>
-        onSurface.withValues(alpha: brightness == Brightness.dark ? 0.26 : 0.18),
-      HabitStatsYearCalendarDayStatus.future =>
-        onSurface.withValues(alpha: brightness == Brightness.dark ? 0.18 : 0.11),
-      HabitStatsYearCalendarDayStatus.unavailable =>
-        onSurface.withValues(alpha: brightness == Brightness.dark ? 0.11 : 0.06),
+      HabitStatsYearCalendarDayStatus.completed => accentColor.withValues(
+          alpha: brightness == Brightness.dark ? 0.90 : 0.84),
+      HabitStatsYearCalendarDayStatus.partial => accentColor.withValues(
+          alpha: brightness == Brightness.dark ? 0.68 : 0.58),
+      HabitStatsYearCalendarDayStatus.skipped => accentColor.withValues(
+          alpha: brightness == Brightness.dark ? 0.52 : 0.44),
+      HabitStatsYearCalendarDayStatus.missed => onSurface.withValues(
+          alpha: brightness == Brightness.dark ? 0.26 : 0.18),
+      HabitStatsYearCalendarDayStatus.future => onSurface.withValues(
+          alpha: brightness == Brightness.dark ? 0.18 : 0.11),
+      HabitStatsYearCalendarDayStatus.unavailable => onSurface.withValues(
+          alpha: brightness == Brightness.dark ? 0.11 : 0.06),
     };
   }
 }

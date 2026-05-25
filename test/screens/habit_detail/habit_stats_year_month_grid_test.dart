@@ -40,7 +40,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('renders day state dots and builds without overflow on compact width',
+    testWidgets(
+        'renders day state dots and builds without overflow on compact width',
         (tester) async {
       await tester.pumpWidget(
         _app(
@@ -60,18 +61,19 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.byKey(
-            const Key('habit_stats_year_calendar_day_2026_1_2_skipped')),
+        find.byKey(const Key('habit_stats_year_calendar_day_2026_1_2_skipped')),
         findsOneWidget,
       );
       expect(
-        find.byKey(
-            const Key('habit_stats_year_calendar_day_2026_1_3_missed')),
+        find.byKey(const Key('habit_stats_year_calendar_day_2026_1_6_partial')),
         findsOneWidget,
       );
       expect(
-        find.byKey(
-            const Key('habit_stats_year_calendar_day_2026_1_4_future')),
+        find.byKey(const Key('habit_stats_year_calendar_day_2026_1_3_missed')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('habit_stats_year_calendar_day_2026_1_4_future')),
         findsOneWidget,
       );
       expect(
@@ -114,14 +116,27 @@ List<HabitStatsYearCalendarMonth> _calendarMonths(int year) {
     final leadingEmptyDays =
         (monthStart.weekday - DateTime.monday + 7) % DateTime.daysPerWeek;
 
-    final days = List<HabitStatsYearCalendarDay>.generate(daysInMonth, (offset) {
+    final days =
+        List<HabitStatsYearCalendarDay>.generate(daysInMonth, (offset) {
       final day = offset + 1;
       final date = DateTime(year, month, day);
-      HabitStatsYearCalendarDayStatus status = HabitStatsYearCalendarDayStatus.missed;
-      if (month == 1 && day == 1) status = HabitStatsYearCalendarDayStatus.completed;
-      if (month == 1 && day == 2) status = HabitStatsYearCalendarDayStatus.skipped;
-      if (month == 1 && day == 3) status = HabitStatsYearCalendarDayStatus.missed;
-      if (month == 1 && day == 4) status = HabitStatsYearCalendarDayStatus.future;
+      HabitStatsYearCalendarDayStatus status =
+          HabitStatsYearCalendarDayStatus.missed;
+      if (month == 1 && day == 1) {
+        status = HabitStatsYearCalendarDayStatus.completed;
+      }
+      if (month == 1 && day == 2) {
+        status = HabitStatsYearCalendarDayStatus.skipped;
+      }
+      if (month == 1 && day == 3) {
+        status = HabitStatsYearCalendarDayStatus.missed;
+      }
+      if (month == 1 && day == 4) {
+        status = HabitStatsYearCalendarDayStatus.future;
+      }
+      if (month == 1 && day == 6) {
+        status = HabitStatsYearCalendarDayStatus.partial;
+      }
       if (month == 1 && day == 5) {
         status = HabitStatsYearCalendarDayStatus.unavailable;
       }

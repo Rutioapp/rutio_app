@@ -4,7 +4,9 @@ import 'package:rutio/screens/habit_detail/widgets/tabs/habit_stats/habit_stats_
 
 void main() {
   group('buildHabitStatsMonthlyDataForCheck', () {
-    test('daily habit uses full-month objective and excludes future from consistency', () {
+    test(
+        'daily habit uses full-month objective and excludes future from consistency',
+        () {
       final data = buildHabitStatsMonthlyDataForCheck(
         habit: _habit(
           schedule: const {'type': 'daily'},
@@ -60,7 +62,8 @@ void main() {
       expect(april.monthlyObjective, 30);
     });
 
-    test('daily habit created mid-month only counts active days from createdAt', () {
+    test('daily habit created mid-month only counts active days from createdAt',
+        () {
       final data = buildHabitStatsMonthlyDataForCheck(
         habit: _habit(
           schedule: const {'type': 'daily'},
@@ -85,7 +88,8 @@ void main() {
       );
     });
 
-    test('specific weekdays objective counts only scheduled weekdays in month', () {
+    test('specific weekdays objective counts only scheduled weekdays in month',
+        () {
       final data = buildHabitStatsMonthlyDataForCheck(
         habit: _habit(
           schedule: const {
@@ -114,7 +118,8 @@ void main() {
       );
     });
 
-    test('times-per-week objective uses monthly quota formula for 31-day month', () {
+    test('times-per-week objective uses monthly quota formula for 31-day month',
+        () {
       final data = buildHabitStatsMonthlyDataForCheck(
         habit: _habit(
           schedule: const {'type': 'timesPerWeek', 'timesPerWeek': 4},
@@ -139,7 +144,8 @@ void main() {
       expect(data.consistency, closeTo(2 / 6, 0.000001));
     });
 
-    test('times-per-week objective uses monthly quota formula for 30-day month', () {
+    test('times-per-week objective uses monthly quota formula for 30-day month',
+        () {
       final data = buildHabitStatsMonthlyDataForCheck(
         habit: _habit(
           schedule: const {'type': 'timesPerWeek', 'timesPerWeek': 4},
@@ -154,7 +160,8 @@ void main() {
       expect(data.monthlyObjective, 17);
     });
 
-    test('times-per-week objective uses monthly quota formula for target 3', () {
+    test('times-per-week objective uses monthly quota formula for target 3',
+        () {
       final data = buildHabitStatsMonthlyDataForCheck(
         habit: _habit(
           schedule: const {'type': 'timesPerWeek', 'timesPerWeek': 3},
@@ -195,6 +202,123 @@ void main() {
     });
   });
 
+  group('buildHabitStatsMonthlyDataForCount', () {
+    test('marks day as completed when value reaches target', () {
+      final data = buildHabitStatsMonthlyDataForCount(
+        habit: _countHabit(
+          target: 5,
+          schedule: const {'type': 'daily'},
+          createdAt: '2026-05-01',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: {
+          DateTime(2026, 5, 5): 5,
+        },
+        skipsByDay: const {},
+      );
+
+      expect(
+        _statusForDate(data.days, DateTime(2026, 5, 5)),
+        HabitStatsMonthDayStatus.completed,
+      );
+    });
+
+    test('marks day as partial when value is below target but above zero', () {
+      final data = buildHabitStatsMonthlyDataForCount(
+        habit: _countHabit(
+          target: 5,
+          schedule: const {'type': 'daily'},
+          createdAt: '2026-05-01',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: {
+          DateTime(2026, 5, 6): 3,
+        },
+        skipsByDay: const {},
+      );
+
+      expect(
+        _statusForDate(data.days, DateTime(2026, 5, 6)),
+        HabitStatsMonthDayStatus.partial,
+      );
+    });
+
+    test('marks day as skipped when skip exists', () {
+      final data = buildHabitStatsMonthlyDataForCount(
+        habit: _countHabit(
+          target: 5,
+          schedule: const {'type': 'daily'},
+          createdAt: '2026-05-01',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: {
+          DateTime(2026, 5, 7): 4,
+        },
+        skipsByDay: {
+          DateTime(2026, 5, 7): true,
+        },
+      );
+
+      expect(
+        _statusForDate(data.days, DateTime(2026, 5, 7)),
+        HabitStatsMonthDayStatus.skipped,
+      );
+    });
+
+    test('future days are not marked as missed', () {
+      final data = buildHabitStatsMonthlyDataForCount(
+        habit: _countHabit(
+          target: 5,
+          schedule: const {'type': 'daily'},
+          createdAt: '2026-05-01',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _statusForDate(data.days, DateTime(2026, 5, 29)),
+        HabitStatsMonthDayStatus.future,
+      );
+      expect(
+        _statusForDate(data.days, DateTime(2026, 5, 29)),
+        isNot(HabitStatsMonthDayStatus.missed),
+      );
+    });
+
+    test('weekly schedule keeps non-programmed days as not scheduled', () {
+      final data = buildHabitStatsMonthlyDataForCount(
+        habit: _countHabit(
+          target: 5,
+          schedule: const {
+            'type': 'weekly',
+            'weekdays': [DateTime.monday, DateTime.wednesday],
+          },
+          createdAt: '2026-05-01',
+        ),
+        month: DateTime(2026, 5, 1),
+        now: DateTime(2026, 5, 20, 10),
+        countsByDay: const {},
+        countValuesByDay: const {},
+        skipsByDay: const {},
+      );
+
+      expect(
+        _statusForDate(data.days, DateTime(2026, 5, 5)), // Tuesday
+        HabitStatsMonthDayStatus.notScheduled,
+      );
+    });
+  });
+
   group('buildHabitStatsMonthlyMetricCardConsistencyPct', () {
     test('returns 11 for completed 2 of monthly objective 18', () {
       final monthlyData = _monthlyData(
@@ -203,7 +327,8 @@ void main() {
       );
 
       expect(
-        buildHabitStatsMonthlyMetricCardConsistencyPct(monthlyData: monthlyData),
+        buildHabitStatsMonthlyMetricCardConsistencyPct(
+            monthlyData: monthlyData),
         11,
       );
     });
@@ -215,7 +340,8 @@ void main() {
       );
 
       expect(
-        buildHabitStatsMonthlyMetricCardConsistencyPct(monthlyData: monthlyData),
+        buildHabitStatsMonthlyMetricCardConsistencyPct(
+            monthlyData: monthlyData),
         15,
       );
     });
@@ -227,7 +353,8 @@ void main() {
       );
 
       expect(
-        buildHabitStatsMonthlyMetricCardConsistencyPct(monthlyData: monthlyData),
+        buildHabitStatsMonthlyMetricCardConsistencyPct(
+            monthlyData: monthlyData),
         13,
       );
     });
@@ -239,7 +366,8 @@ void main() {
       );
 
       expect(
-        buildHabitStatsMonthlyMetricCardConsistencyPct(monthlyData: monthlyData),
+        buildHabitStatsMonthlyMetricCardConsistencyPct(
+            monthlyData: monthlyData),
         18,
       );
     });
@@ -251,7 +379,8 @@ void main() {
       );
 
       expect(
-        buildHabitStatsMonthlyMetricCardConsistencyPct(monthlyData: monthlyData),
+        buildHabitStatsMonthlyMetricCardConsistencyPct(
+            monthlyData: monthlyData),
         0,
       );
     });
@@ -277,7 +406,8 @@ void main() {
       expect(comparison.trend, HabitStatsComparisonTrend.unavailable);
     });
 
-    test('returns better when current month completed is higher than previous', () {
+    test('returns better when current month completed is higher than previous',
+        () {
       final comparison = buildHabitStatsMonthlyComparisonDataForCheck(
         habit: _habit(
           schedule: const {'type': 'daily'},
@@ -408,6 +538,21 @@ Map<String, dynamic> _habit({
     'id': 'habit-1',
     'type': 'check',
     'title': 'Habit',
+    if (createdAt != null) 'createdAt': createdAt,
+    'schedule': schedule,
+  };
+}
+
+Map<String, dynamic> _countHabit({
+  required int target,
+  required Map<String, dynamic> schedule,
+  String? createdAt,
+}) {
+  return {
+    'id': 'habit-1',
+    'type': 'count',
+    'title': 'Habit',
+    'target': target,
     if (createdAt != null) 'createdAt': createdAt,
     'schedule': schedule,
   };
