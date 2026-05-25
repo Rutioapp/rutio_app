@@ -6,8 +6,8 @@ import 'package:rutio/features/gamification/domain/level_progression.dart';
 import '../l10n/l10n.dart';
 import '../stores/user_state_store.dart';
 import 'package:rutio/constants/color_palette.dart';
+import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 import 'package:rutio/screens/habit_monthly/widgets/monthly_filter_bar.dart';
-import 'package:rutio/screens/habit_stats_overview_screen.dart';
 import 'package:rutio/screens/home/ui/header/home_stats_header.dart';
 import 'package:rutio/screens/home_screen.dart' show HomeScreen;
 import 'package:rutio/ui/behaviours/ios_feedback.dart';
@@ -215,7 +215,7 @@ class _HabitWeeklyScreenState extends State<HabitWeeklyScreen>
             onGoTodo: () => Navigator.pushNamed(context, '/todo'),
             onGoDiary: () => _replaceNamedAny(const ['/diary']),
             onGoArchived: () => _replaceNamedAny(const ['/archived']),
-            onGoStats: () => _replaceWith(const HabitStatsOverviewHost()),
+            onGoStats: () => _replaceWith(const StatisticsV3Screen()),
             onGoProfile: () => _replaceNamed('/profile'),
           ),
           body: SafeArea(

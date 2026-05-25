@@ -26,7 +26,6 @@ import 'package:rutio/screens/diary/diary_screen.dart';
 import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/habit_detail/habit_detail_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
-import 'package:rutio/screens/habit_stats_overview_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/home/home_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
@@ -83,7 +82,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
         Scaffold(
           backgroundColor: Colors.transparent,
           drawer: AppViewDrawer(
-            selected: 'stats_v3',
+            selected: 'stats',
             onGoDaily: () => _navReplace(context, const HomeScreen()),
             onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
             onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
@@ -91,9 +90,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
             onGoDiary: () => _navReplace(context, const DiaryScreen()),
             onGoArchived: () =>
                 _navReplace(context, const ArchivedHabitsScreen()),
-            onGoStats: () =>
-                _navReplace(context, const HabitStatsOverviewHost()),
-            onGoStatsV3: () {},
+            onGoStats: () {},
             onGoProfile: () => _navReplace(context, const ProfileScreen()),
           ),
           body: SafeArea(

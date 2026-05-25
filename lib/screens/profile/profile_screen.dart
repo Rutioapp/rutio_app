@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 
 import '../../features/notifications/application/notification_permission_controller.dart';
 import '../../features/notifications/presentation/notification_permission_recovery_sheet.dart';
@@ -22,7 +23,6 @@ import '../diary/diary_screen.dart';
 import '../edit_profile/edit_profile_screen.dart';
 import '../habit_archived_screen.dart';
 import '../habit_monthly_screen.dart';
-import '../habit_stats_overview_screen.dart';
 import '../habit_weekly_screen.dart';
 import '../home/home_screen.dart';
 import 'models/family_color_ref.dart';
@@ -289,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         onGoTodo: () => Navigator.pushNamed(context, '/todo'),
         onGoDiary: () => _navReplace(context, const DiaryScreen()),
         onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
-        onGoStats: () => _navReplace(context, const HabitStatsOverviewHost()),
+        onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),
       ),
       backgroundColor: bg,

@@ -2,10 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 
 import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
-import 'package:rutio/screens/habit_stats_overview_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/home/home_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
@@ -170,7 +170,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         onGoTodo: () => Navigator.pushNamed(context, '/todo'),
         onGoDiary: () => _navReplace(context, const DiaryScreen()),
         onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
-        onGoStats: () => _navReplace(context, const HabitStatsOverviewHost()),
+        onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),
       ),
       backgroundColor: Colors.transparent,
