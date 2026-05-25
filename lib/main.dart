@@ -28,7 +28,6 @@ import 'screens/root_gate.dart';
 
 import 'screens/diary/diary_screen.dart';
 import 'screens/habit_archived_screen.dart';
-import 'screens/habit_stats_overview_screen.dart';
 import 'screens/todo/todo_screen.dart';
 import 'features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 
@@ -144,7 +143,7 @@ class MyApp extends StatelessWidget {
               AchievementsScreen.route: (_) => const AchievementsScreen(),
               '/diary': (_) => DiaryScreen(),
               '/archived': (_) => ArchivedHabitsScreen(),
-              '/stats': (_) => HabitStatsOverviewHost(),
+              '/stats': (_) => const StatisticsV3Screen(),
               StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
             },
           ),

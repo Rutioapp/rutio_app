@@ -19,65 +19,10 @@ extension _HomeScreenNavigation on _HomeScreenState {
   }
 
   void _openStatsOverview(BuildContext context) {
-    // Construimos una lista de habitos con historial embebido para stats.
-    final store = context.read<UserStateStore>();
-    final root = store.state;
-    final rootMap = (root is Map) ? (root as Map) : <dynamic, dynamic>{};
-    final userState = _map(rootMap['userState']);
-    final activeHabits = _listMap(userState['activeHabits']);
-
-    final history = _map(userState['history']);
-    final habitCompletions = _map(history['habitCompletions']);
-    final habitCountValues = _map(history['habitCountValues']);
-
-    final habitsWithHistory = <Map<String, dynamic>>[];
-
-    for (final h in activeHabits) {
-      final id = (h['id'] ?? '').toString();
-      final out = Map<String, dynamic>.from(h);
-
-      final completedDates = <String>[];
-      habitCompletions.forEach((dateKey, dayMap) {
-        final dm = _map(dayMap);
-        if (dm[id] == true) completedDates.add(dateKey.toString());
-      });
-      out['completedDates'] = completedDates;
-
-      final records = <Map<String, dynamic>>[];
-      habitCountValues.forEach((dateKey, dayMap) {
-        final dm = _map(dayMap);
-        final v = dm[id];
-        if (v is num && v > 0) {
-          records.add({'date': dateKey.toString(), 'count': v});
-        }
-      });
-      if (records.isNotEmpty) out['records'] = records;
-
-      habitsWithHistory.add(out);
-    }
-
     Navigator.push(
       context,
       CupertinoPageRoute(
-        builder: (_) => HabitStatsOverviewScreen(
-          habits: habitsWithHistory,
-          familyColorResolver: (h) {
-            if (h is Map) {
-              final fid = (h['familyId'] ?? '').toString();
-              return _familyColor(fid);
-            }
-            return const Color(0xFF6C5CE7);
-          },
-          titleResolver: (h) {
-            if (h is Map) {
-              final v = h['name'] ?? h['title'] ?? h['habitName'] ?? h['label'];
-              return (v?.toString().trim().isNotEmpty ?? false)
-                  ? v.toString()
-                  : context.l10n.homeFallbackHabitTitle;
-            }
-            return context.l10n.homeFallbackHabitTitle;
-          },
-        ),
+        builder: (_) => const StatisticsV3Screen(),
       ),
     );
   }

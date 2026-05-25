@@ -25,6 +25,7 @@ import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/diary/diary_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
+import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 
 void _navReplace(BuildContext context, Widget screen) {
   final st = Scaffold.maybeOf(context);
@@ -108,7 +109,7 @@ class _HabitStatsOverviewScreenState extends State<HabitStatsOverviewScreen> {
       onGoTodo: () => Navigator.pushNamed(context, '/todo'),
       onGoDiary: () => _navReplace(context, const DiaryScreen()),
       onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
-      onGoStats: () => _navReplace(context, const HabitStatsOverviewHost()),
+      onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
       onGoProfile: () => _navReplace(context, const ProfileScreen()),
     );
 
