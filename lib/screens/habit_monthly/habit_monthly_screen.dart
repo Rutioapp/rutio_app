@@ -164,6 +164,8 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
             onGoMonthly: () => Navigator.of(context).pop(),
             onGoTodo: () => Navigator.pushNamed(context, '/todo'),
             onGoDiary: () => _navReplace(context, const DiaryScreen()),
+            onGoDiaryV2: () =>
+                Navigator.of(context).pushReplacementNamed('/diary-v2'),
             onGoArchived: () =>
                 _navReplace(context, const ArchivedHabitsScreen()),
             onGoStats: () => _navReplace(context, const StatisticsV3Screen()),

@@ -75,6 +75,7 @@ class _TodoScreenState extends State<TodoScreen> {
         onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
         onGoTodo: () => Navigator.pop(context),
         onGoDiary: () => _navReplace(context, const DiaryScreen()),
+        onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary-v2'),
         onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
         onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),

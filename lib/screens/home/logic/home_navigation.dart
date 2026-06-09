@@ -46,6 +46,7 @@ extension _HomeScreenNavigation on _HomeScreenState {
           CupertinoPageRoute(builder: (_) => const DiaryScreen()),
         );
       },
+      onGoDiaryV2: () => Navigator.pushNamed(context, '/diary-v2'),
       onGoArchived: () {
         Navigator.push(
           context,

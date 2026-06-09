@@ -21,6 +21,7 @@ class AppViewDrawer extends StatelessWidget {
     required this.onGoMonthly,
     required this.onGoTodo,
     required this.onGoDiary,
+    required this.onGoDiaryV2,
     required this.onGoArchived,
     required this.onGoStats,
     required this.onGoProfile,
@@ -32,6 +33,7 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoMonthly;
   final VoidCallback onGoTodo;
   final VoidCallback onGoDiary;
+  final VoidCallback onGoDiaryV2;
   final VoidCallback onGoArchived;
   final VoidCallback onGoStats;
   final VoidCallback onGoProfile;
@@ -136,6 +138,15 @@ class AppViewDrawer extends StatelessWidget {
                       label: context.l10n.drawerDiary,
                       isSelected: selected == 'diary',
                       onTap: () => _go(context, onGoDiary),
+                    ),
+                    const _DrawerDivider(),
+                    // Temporary internal preview entry for Diary V2.
+                    // Remove once /diary-v2 is replaced by the production diary route.
+                    _DrawerTile(
+                      icon: Icons.edit_note_rounded,
+                      label: 'Diario V2',
+                      isSelected: selected == 'diary_v2',
+                      onTap: () => _go(context, onGoDiaryV2),
                     ),
                     const SizedBox(height: 18),
                     _DrawerSectionLabel(context.l10n.drawerSectionArchive),

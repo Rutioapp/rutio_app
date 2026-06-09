@@ -35,6 +35,7 @@ void main() {
             onGoMonthly: () {},
             onGoTodo: () {},
             onGoDiary: () {},
+            onGoDiaryV2: () {},
             onGoArchived: () {},
             onGoStats: () {},
             onGoProfile: () {},
@@ -88,6 +89,7 @@ void main() {
             onGoMonthly: () {},
             onGoTodo: () {},
             onGoDiary: () {},
+            onGoDiaryV2: () {},
             onGoArchived: () {},
             onGoStats: () => statsTapCount++,
             onGoProfile: () {},
@@ -144,6 +146,7 @@ void main() {
             onGoMonthly: () {},
             onGoTodo: () {},
             onGoDiary: () {},
+            onGoDiaryV2: () {},
             onGoArchived: () {},
             onGoStats: () =>
                 Navigator.of(scaffoldKey.currentContext!).pushNamed('/stats'),
