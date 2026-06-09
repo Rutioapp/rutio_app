@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary/diary_screen.dart';
-import 'package:rutio/screens/diary/helpers/diary_screen_actions.dart';
 import 'package:rutio/screens/diary/models/diary_types.dart';
 import 'package:rutio/screens/diary/widgets/diary_screen_background.dart';
 import 'package:rutio/screens/habit_archived_screen.dart';
@@ -17,6 +16,7 @@ import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/widgets/app_view_drawer.dart';
 
 import 'diary_v2_day_entries_screen.dart';
+import 'diary_v2_entry_editor_screen.dart';
 import 'widgets/diary_v2_explore_grid.dart';
 import 'widgets/diary_v2_header.dart';
 import 'widgets/diary_v2_month_preview_card.dart';
@@ -56,9 +56,9 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
   }
 
   void _openComposer(BuildContext context) {
-    showDiaryEntryComposerBottomSheet(
+    openDiaryV2EntryEditor(
       context,
-      successMessage: context.l10n.diaryEntrySaved,
+      initialDate: _selectedDay,
     );
   }
 
@@ -76,7 +76,7 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
           entries: viewData.selectedDayEntries,
           onCreateEntry: DateUtils.isSameDay(_selectedDay, DateTime.now())
               ? () => _openComposer(context)
-              : null,
+              : () => _openComposer(context),
           createLabel: isSpanish ? 'Nueva entrada' : 'New entry',
         ),
       ),

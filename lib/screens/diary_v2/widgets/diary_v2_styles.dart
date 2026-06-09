@@ -22,6 +22,7 @@ class DiaryV2Styles {
   static const Color shadowWarm = Color(0x1F8A5A23);
   static const Color shadow = Color(0x14261A12);
   static const double cardRadius = 28;
+  static const double compactCardRadius = 24;
   static const double sectionGap = 18;
   static const double weekStripOuterVerticalPadding = 5;
   static const double weekStripOuterHorizontalPadding = 4;
@@ -49,6 +50,21 @@ class DiaryV2Styles {
     );
   }
 
+  static BoxDecoration compactCardDecoration({bool accented = false}) {
+    return BoxDecoration(
+      color: accented ? creamStrong : creamGlass,
+      borderRadius: BorderRadius.circular(compactCardRadius),
+      border: Border.all(color: border.withValues(alpha: 0.9)),
+      boxShadow: const [
+        BoxShadow(
+          color: shadow,
+          blurRadius: 16,
+          offset: Offset(0, 6),
+        ),
+      ],
+    );
+  }
+
   static BoxDecoration softButtonDecoration() {
     return BoxDecoration(
       color: Colors.white.withValues(alpha: 0.78),
@@ -59,6 +75,21 @@ class DiaryV2Styles {
           color: shadow,
           blurRadius: 16,
           offset: Offset(0, 7),
+        ),
+      ],
+    );
+  }
+
+  static BoxDecoration subtleButtonDecoration() {
+    return BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.72),
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(color: border.withValues(alpha: 0.5)),
+      boxShadow: const [
+        BoxShadow(
+          color: shadow,
+          blurRadius: 12,
+          offset: Offset(0, 4),
         ),
       ],
     );

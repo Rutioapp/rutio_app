@@ -25,7 +25,8 @@ class DiaryV2DayEntriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final showCreateAction = onCreateEntry != null && (createLabel?.isNotEmpty ?? false);
+    final showCreateAction =
+        onCreateEntry != null && (createLabel?.isNotEmpty ?? false);
     final locale = Localizations.localeOf(context);
     final isSpanish = locale.languageCode == 'es';
 
