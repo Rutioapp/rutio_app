@@ -6,15 +6,15 @@ class DiaryV2EditorWriteCard extends StatelessWidget {
   const DiaryV2EditorWriteCard({
     super.key,
     required this.title,
-    required this.helperText,
     required this.controller,
+    required this.focusNode,
     required this.currentLength,
     required this.maxLength,
   });
 
   final String title;
-  final String helperText;
   final TextEditingController controller;
+  final FocusNode focusNode;
   final int currentLength;
   final int maxLength;
 
@@ -44,23 +44,15 @@ class DiaryV2EditorWriteCard extends StatelessWidget {
               color: DiaryV2Styles.textStrong,
             ),
           ),
-          const SizedBox(height: 10),
-          Text(
-            helperText,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: DiaryV2Styles.mutedTextStrong,
-                  fontStyle: FontStyle.italic,
-                  fontSize: 15,
-                  height: 1.55,
-                ),
-          ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           TextField(
             controller: controller,
+            focusNode: focusNode,
             maxLines: null,
             minLines: 7,
             keyboardType: TextInputType.multiline,
             textCapitalization: TextCapitalization.sentences,
+            scrollPadding: const EdgeInsets.fromLTRB(0, 24, 0, 160),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: DiaryV2Styles.textStrong,
                   fontSize: 17,

@@ -7,7 +7,6 @@ import 'package:rutio/screens/diary/helpers/diary_screen_actions.dart';
 import 'package:rutio/screens/diary/widgets/diary_screen_background.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
-import 'widgets/diary_v2_editor_action_grid.dart';
 import 'widgets/diary_v2_editor_header.dart';
 import 'widgets/diary_v2_editor_mood_selector.dart';
 import 'widgets/diary_v2_editor_write_card.dart';
@@ -50,9 +49,13 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
 
   late final TextEditingController _titleController;
   late final TextEditingController _bodyController;
+  late final ScrollController _scrollController;
+  late final FocusNode _titleFocusNode;
+  late final FocusNode _bodyFocusNode;
   late final DateTime _entryDate;
+  final GlobalKey _titleFieldKey = GlobalKey();
+  final GlobalKey _writeCardKey = GlobalKey();
   int? _selectedMood;
-  bool _isPinned = false;
   final Set<String> _selectedTags = <String>{};
 
   @override
@@ -60,12 +63,16 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
     super.initState();
     final initialText = widget.editing?.text.trim() ?? '';
     final splitText = _splitInitialText(initialText);
+    _scrollController = ScrollController();
+    _titleFocusNode = FocusNode()
+      ..addListener(() => _handleFocusChanged(_titleFocusNode, _titleFieldKey));
+    _bodyFocusNode = FocusNode()
+      ..addListener(() => _handleFocusChanged(_bodyFocusNode, _writeCardKey));
     _titleController = TextEditingController(text: splitText.$1)
       ..addListener(_handleTextChanged);
     _bodyController = TextEditingController(text: splitText.$2)
       ..addListener(_handleTextChanged);
     _selectedMood = widget.editing?.mood;
-    _isPinned = widget.editing?.isPinned ?? false;
     _entryDate = DateUtils.dateOnly(
       widget.initialDate ??
           (widget.editing != null
@@ -76,9 +83,33 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
 
   @override
   void dispose() {
+    _titleFocusNode.dispose();
+    _bodyFocusNode.dispose();
+    _scrollController.dispose();
     _titleController.dispose();
     _bodyController.dispose();
     super.dispose();
+  }
+
+  void _handleFocusChanged(FocusNode focusNode, GlobalKey targetKey) {
+    if (!focusNode.hasFocus || !mounted) return;
+    _scrollFocusedFieldIntoView(targetKey);
+  }
+
+  void _scrollFocusedFieldIntoView(GlobalKey targetKey) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final targetContext = targetKey.currentContext;
+      if (targetContext == null) return;
+
+      Scrollable.ensureVisible(
+        targetContext,
+        alignment: 0.12,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   void _handleTextChanged() {
@@ -134,7 +165,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
       habitId: existing?.habitId,
       familyId: existing?.familyId,
       mood: _selectedMood,
-      isPinned: _isPinned,
+      isPinned: existing?.isPinned ?? false,
     );
 
     if (existing == null) {
@@ -157,151 +188,105 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final bodyCount = _bodyController.text.characters.length;
-    final keyboardVisible = bottomInset > 0;
+    final contentBottomPadding = bottomInset > 0
+        ? bottomInset + 24
+        : bottomPadding + 28;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: true,
       body: DiaryScreenBackground(
         child: SafeArea(
-          bottom: false,
-          child: AnimatedPadding(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            padding: EdgeInsets.only(bottom: bottomInset),
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      14,
-                      10,
-                      14,
-                      (keyboardVisible ? 20 : 112) + bottomPadding,
-                    ),
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        DiaryV2EditorHeader(
-                          title: copy.screenTitle,
-                          saveLabel: copy.topSaveLabel,
-                          onClose: () => Navigator.of(context).maybePop(),
-                          onSave: _save,
-                        ),
-                        const SizedBox(height: 16),
-                        _DateStatusCard(
-                          dateLabel: _formatDateLabel(_entryDate, copy.localeTag),
-                          statusLabel: copy.autoSaveLabel,
-                        ),
-                        const SizedBox(height: 12),
-                        DiaryV2EditorMoodSelector(
-                          title: copy.moodTitle,
-                          selectedMood: _selectedMood,
-                          onMoodSelected: (value) {
-                            setState(() => _selectedMood = value);
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        _TitleField(
-                          controller: _titleController,
-                          hintText: copy.titleHint,
-                        ),
-                        const SizedBox(height: 12),
-                        DiaryV2EditorWriteCard(
-                          title: copy.promptTitle,
-                          helperText: copy.promptHelper,
-                          controller: _bodyController,
-                          currentLength: bodyCount,
-                          maxLength: _maxCharacters,
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          copy.tagsLabel,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: DiaryV2Styles.textStrong,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 17,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                controller: _scrollController,
+                padding: EdgeInsets.fromLTRB(14, 10, 14, contentBottomPadding),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DiaryV2EditorHeader(
+                        title: copy.screenTitle,
+                        saveLabel: copy.topSaveLabel,
+                        onClose: () => Navigator.of(context).maybePop(),
+                        onSave: _save,
+                      ),
+                      const SizedBox(height: 16),
+                      _DateStatusCard(
+                        dateLabel: _formatDateLabel(_entryDate, copy.localeTag),
+                        statusLabel: copy.autoSaveLabel,
+                      ),
+                      const SizedBox(height: 12),
+                      DiaryV2EditorMoodSelector(
+                        title: copy.moodTitle,
+                        selectedMood: _selectedMood,
+                        onMoodSelected: (value) {
+                          setState(() => _selectedMood = value);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _TitleField(
+                        key: _titleFieldKey,
+                        controller: _titleController,
+                        focusNode: _titleFocusNode,
+                        hintText: copy.titleHint,
+                      ),
+                      const SizedBox(height: 12),
+                      DiaryV2EditorWriteCard(
+                        key: _writeCardKey,
+                        title: copy.promptTitle,
+                        controller: _bodyController,
+                        focusNode: _bodyFocusNode,
+                        currentLength: bodyCount,
+                        maxLength: _maxCharacters,
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        copy.tagsLabel,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: DiaryV2Styles.textStrong,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 17,
+                            ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: copy.tags
+                            .map(
+                              (tag) => _SelectableTagChip(
+                                label: tag,
+                                selected: _selectedTags.contains(tag),
+                                onTap: () {
+                                  setState(() {
+                                    if (_selectedTags.contains(tag)) {
+                                      _selectedTags.remove(tag);
+                                    } else {
+                                      _selectedTags.add(tag);
+                                    }
+                                  });
+                                },
                               ),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: copy.tags
-                              .map(
-                                (tag) => _SelectableTagChip(
-                                  label: tag,
-                                  selected: _selectedTags.contains(tag),
-                                  onTap: () {
-                                    setState(() {
-                                      if (_selectedTags.contains(tag)) {
-                                        _selectedTags.remove(tag);
-                                      } else {
-                                        _selectedTags.add(tag);
-                                      }
-                                    });
-                                  },
-                                ),
-                              )
-                              .toList(growable: false),
-                        ),
-                        const SizedBox(height: 14),
-                        DiaryV2EditorActionGrid(
-                          items: [
-                            DiaryV2EditorActionItem(
-                              icon: CupertinoIcons.photo,
-                              label: copy.photoLabel,
-                              enabled: false,
-                            ),
-                            DiaryV2EditorActionItem(
-                              icon: CupertinoIcons.mic,
-                              label: copy.voiceLabel,
-                              enabled: false,
-                            ),
-                            DiaryV2EditorActionItem(
-                              icon: _isPinned
-                                  ? CupertinoIcons.bookmark_fill
-                                  : CupertinoIcons.bookmark,
-                              label: copy.favoriteLabel,
-                              selected: _isPinned,
-                              onTap: () {
-                                setState(() => _isPinned = !_isPinned);
-                              },
-                            ),
-                            DiaryV2EditorActionItem(
-                              icon: CupertinoIcons.sparkles,
-                              label: copy.promptActionLabel,
-                              enabled: false,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                AnimatedSlide(
-                  duration: const Duration(milliseconds: 180),
-                  offset: keyboardVisible ? const Offset(0, 1.2) : Offset.zero,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 180),
-                    opacity: keyboardVisible ? 0 : 1,
-                    child: IgnorePointer(
-                      ignoring: keyboardVisible,
-                      child: Padding(
-                        padding:
-                            EdgeInsets.fromLTRB(14, 0, 14, 14 + bottomPadding),
+                            )
+                            .toList(growable: false),
+                      ),
+                      SizedBox(height: bodyCount > 0 ? 22 : 18),
+                      Center(
                         child: DiaryV2WriteButton(
                           label: copy.bottomSaveLabel,
                           onPressed: _save,
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -379,11 +364,14 @@ class _DateStatusCard extends StatelessWidget {
 
 class _TitleField extends StatelessWidget {
   const _TitleField({
+    super.key,
     required this.controller,
+    required this.focusNode,
     required this.hintText,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final String hintText;
 
   @override
@@ -392,8 +380,10 @@ class _TitleField extends StatelessWidget {
       decoration: DiaryV2Styles.compactCardDecoration(),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         textCapitalization: TextCapitalization.sentences,
         textInputAction: TextInputAction.next,
+        scrollPadding: const EdgeInsets.fromLTRB(0, 24, 0, 120),
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: DiaryV2Styles.textStrong,
               fontWeight: FontWeight.w500,
@@ -471,14 +461,8 @@ class _DiaryV2EditorCopy {
         moodTitle = '\u00bfC\u00f3mo te sientes hoy?',
         titleHint = 'T\u00edtulo opcional',
         promptTitle = '\u00bfQu\u00e9 quieres recordar de hoy?',
-        promptHelper =
-            'Escribe libremente. Guarda una emoci\u00f3n, una idea o un momento importante de tu d\u00eda.',
         tagsLabel = 'Etiquetas (opcional)',
         tags = const ['Gratitud', 'Energ\u00eda', 'Foco', 'Sue\u00f1o', 'Ideas'],
-        photoLabel = 'Foto',
-        voiceLabel = 'Voz',
-        favoriteLabel = 'Favorito',
-        promptActionLabel = 'Prompt',
         bottomSaveLabel = 'Guardar entrada',
         savedMessage = 'Entrada guardada',
         writeSomethingError = 'Escribe algo antes de guardar.';
@@ -491,14 +475,8 @@ class _DiaryV2EditorCopy {
         moodTitle = 'How do you feel today?',
         titleHint = 'Optional title',
         promptTitle = 'What would you like to remember today?',
-        promptHelper =
-            'Write freely here. You can describe your day, appreciate something, unload your thoughts, or capture an important moment. This is your space. No rules, just honesty.',
         tagsLabel = 'Tags (optional)',
         tags = const ['Gratitude', 'Energy', 'Focus', 'Sleep', 'Ideas'],
-        photoLabel = 'Photo',
-        voiceLabel = 'Voice',
-        favoriteLabel = 'Favorite',
-        promptActionLabel = 'Prompt',
         bottomSaveLabel = 'Save entry',
         savedMessage = 'Entry saved',
         writeSomethingError = 'Write something before saving.';
@@ -510,13 +488,8 @@ class _DiaryV2EditorCopy {
   final String moodTitle;
   final String titleHint;
   final String promptTitle;
-  final String promptHelper;
   final String tagsLabel;
   final List<String> tags;
-  final String photoLabel;
-  final String voiceLabel;
-  final String favoriteLabel;
-  final String promptActionLabel;
   final String bottomSaveLabel;
   final String savedMessage;
   final String writeSomethingError;

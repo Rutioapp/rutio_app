@@ -20,7 +20,6 @@ import 'diary_v2_entry_editor_screen.dart';
 import 'widgets/diary_v2_explore_grid.dart';
 import 'widgets/diary_v2_header.dart';
 import 'widgets/diary_v2_month_preview_card.dart';
-import 'widgets/diary_v2_prompt_card.dart';
 import 'widgets/diary_v2_stats_summary_card.dart';
 import 'widgets/diary_v2_styles.dart';
 import 'widgets/diary_v2_today_entry_card.dart';
@@ -71,12 +70,10 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
     await Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (_) => DiaryV2DayEntriesScreen(
-          title: isSpanish ? 'Entradas del día' : 'Day entries',
+          title: isSpanish ? 'Entradas del d\u00eda' : 'Day entries',
           dateLabel: viewData.selectedDayLabel,
           entries: viewData.selectedDayEntries,
-          onCreateEntry: DateUtils.isSameDay(_selectedDay, DateTime.now())
-              ? () => _openComposer(context)
-              : () => _openComposer(context),
+          onCreateEntry: () => _openComposer(context),
           createLabel: isSpanish ? 'Nueva entrada' : 'New entry',
         ),
       ),
@@ -96,7 +93,7 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
     );
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final subtitle = isSpanish
-        ? 'Tu espacio para recordar el día.'
+        ? 'Tu espacio para recordar el d\u00eda.'
         : 'Your space to remember the day.';
 
     return Scaffold(
@@ -137,16 +134,13 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
                   ),
                   const SizedBox(height: 18),
                   DiaryV2TodayEntryCard(
-                    title: isSpanish ? 'Entrada de hoy' : 'Today entry',
+                    title: viewData.previewTitle,
                     dateLabel: viewData.selectedDayLabel,
                     excerpt: viewData.todayExcerpt,
                     emptyTitle: viewData.emptyStateTitle,
                     emptyBody: viewData.emptyStateBody,
-                    moodPrompt: isSpanish
-                        ? '¿Cómo te sientes hoy?'
-                        : 'How do you feel today?',
-                    chips: viewData.placeholderChips,
-                    moods: viewData.moods,
+                    selectedMood: viewData.selectedMood,
+                    metadataLabels: viewData.metadataLabels,
                     isEmpty: viewData.selectedEntry == null,
                     extraEntriesLabel: viewData.extraEntriesLabel,
                     onViewAllTap: viewData.selectedDayEntries.length > 1
@@ -162,55 +156,13 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
                   ),
                   const SizedBox(height: 12),
                   const DiaryV2ExploreGrid(items: _exploreItems),
-                  const SizedBox(height: 12),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final stacked = constraints.maxWidth < 390;
-                      if (stacked) {
-                        return Column(
-                          children: [
-                            DiaryV2MonthPreviewCard(
-                              title: isSpanish ? 'Tu mes' : 'Your month',
-                              summary: viewData.monthSummary,
-                              moodLabel: viewData.monthMoodLabel,
-                              dots: viewData.monthDots,
-                            ),
-                            const SizedBox(height: 10),
-                            DiaryV2PromptCard(
-                              title: isSpanish
-                                  ? 'Prompt de hoy'
-                                  : 'Today prompt',
-                              prompt: viewData.promptText,
-                              onTap: () => _openComposer(context),
-                            ),
-                          ],
-                        );
-                      }
-
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: DiaryV2MonthPreviewCard(
-                              title: isSpanish ? 'Tu mes' : 'Your month',
-                              summary: viewData.monthSummary,
-                              moodLabel: viewData.monthMoodLabel,
-                              dots: viewData.monthDots,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: DiaryV2PromptCard(
-                              title: isSpanish
-                                  ? 'Prompt de hoy'
-                                  : 'Today prompt',
-                              prompt: viewData.promptText,
-                              onTap: () => _openComposer(context),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                  const SizedBox(height: 14),
+                  DiaryV2MonthPreviewCard(
+                    title: isSpanish ? 'Tu mes' : 'Your month',
+                    summary: viewData.monthSummary,
+                    moodLabel: viewData.monthMoodLabel,
+                    dominantMood: viewData.monthDominantMood,
+                    dots: viewData.monthDots,
                   ),
                 ],
               ),
@@ -235,34 +187,36 @@ class _DiaryV2ViewData {
   const _DiaryV2ViewData({
     required this.weekDays,
     required this.selectedDayLabel,
+    required this.previewTitle,
     required this.todayExcerpt,
     required this.emptyStateTitle,
     required this.emptyStateBody,
     required this.selectedEntry,
-    required this.moods,
+    required this.selectedMood,
     required this.stats,
     required this.monthSummary,
     required this.monthMoodLabel,
+    required this.monthDominantMood,
     required this.monthDots,
-    required this.promptText,
-    required this.placeholderChips,
+    required this.metadataLabels,
     required this.selectedDayEntries,
     required this.extraEntriesLabel,
   });
 
   final List<DiaryV2WeekDay> weekDays;
   final String selectedDayLabel;
+  final String previewTitle;
   final String todayExcerpt;
   final String emptyStateTitle;
   final String emptyStateBody;
   final DiaryEntryUi? selectedEntry;
-  final List<DiaryV2MoodOption> moods;
+  final int? selectedMood;
   final List<DiaryV2StatItem> stats;
   final String monthSummary;
   final String monthMoodLabel;
+  final int? monthDominantMood;
   final List<DiaryV2MonthDot> monthDots;
-  final String promptText;
-  final List<String> placeholderChips;
+  final List<String> metadataLabels;
   final List<DiaryV2DayEntryItem> selectedDayEntries;
   final String? extraEntriesLabel;
 
@@ -311,25 +265,28 @@ class _DiaryV2ViewData {
         .toSet()
         .length;
     final isSpanish = localeTag.startsWith('es');
+    final previewText = _splitPreviewText(selectedEntry?.text ?? '');
+    final fallbackTitle = isSpanish ? 'Entrada de hoy' : 'Today entry';
 
     return _DiaryV2ViewData(
       weekDays: _buildWeekDays(normalizedSelectedDay, localeTag),
       selectedDayLabel: _formatLongDate(normalizedSelectedDay, localeTag),
-      todayExcerpt: _excerptFor(selectedEntry?.text ?? ''),
+      previewTitle: previewText.$1.isNotEmpty ? previewText.$1 : fallbackTitle,
+      todayExcerpt: _excerptFor(previewText.$2),
       emptyStateTitle: isSpanish
-          ? 'Aún no has escrito hoy'
+          ? 'A\u00fan no has escrito hoy'
           : 'You have not written today yet',
       emptyStateBody: isSpanish
-          ? 'Cuando quieras, puedes capturar un momento, una emoción o una idea con el flujo actual del diario.'
-          : 'When you are ready, you can capture a moment, feeling, or idea using the current diary flow.',
+          ? 'Guarda un momento cuando quieras.'
+          : 'Save a moment whenever you want.',
       selectedEntry: selectedEntry,
-      moods: _buildMoods(selectedEntry?.mood),
+      selectedMood: selectedEntry?.mood,
       stats: [
         DiaryV2StatItem(
           icon: CupertinoIcons.flame,
           value: _currentStreak(uiEntries, normalizedSelectedDay).toString(),
           label: isSpanish ? 'Racha actual' : 'Current streak',
-          detail: isSpanish ? 'días' : 'days',
+          detail: isSpanish ? 'd\u00edas' : 'days',
         ),
         DiaryV2StatItem(
           icon: CupertinoIcons.calendar,
@@ -345,16 +302,12 @@ class _DiaryV2ViewData {
         ),
       ],
       monthSummary: isSpanish
-          ? '$monthlyEntryDays días escritos'
+          ? '$monthlyEntryDays d\u00edas escritos'
           : '$monthlyEntryDays written days',
       monthMoodLabel: _monthMoodLabel(monthEntries, localeTag),
+      monthDominantMood: _dominantMood(monthEntries),
       monthDots: _buildMonthDots(monthEntries, normalizedSelectedDay),
-      promptText: isSpanish
-          ? '¿Qué pequeño momento te gustaría recordar hoy?'
-          : 'What small moment would you like to remember today?',
-      placeholderChips: isSpanish
-          ? const ['Gratitud', 'Energía', 'Foco', 'Sueño']
-          : const ['Gratitude', 'Energy', 'Focus', 'Sleep'],
+      metadataLabels: _metadataLabels(selectedEntry, isSpanish),
       selectedDayEntries: selectedDayEntries,
       extraEntriesLabel: _extraEntriesLabel(
         count: selectedDayEntries.length,
@@ -369,7 +322,7 @@ const _exploreItems = [
   DiaryV2ExploreItem(
     icon: CupertinoIcons.heart,
     title: 'Gratitud',
-    subtitle: 'Enfócate en lo que te suma',
+    subtitle: 'Enf\u00f3cate en lo que te suma',
   ),
   DiaryV2ExploreItem(
     icon: CupertinoIcons.chat_bubble_2,
@@ -379,12 +332,12 @@ const _exploreItems = [
   DiaryV2ExploreItem(
     icon: CupertinoIcons.leaf_arrow_circlepath,
     title: 'Aprendizajes',
-    subtitle: 'Lo que hoy te dejó una enseñanza',
+    subtitle: 'Lo que hoy te dej\u00f3 una ense\u00f1anza',
   ),
   DiaryV2ExploreItem(
     icon: CupertinoIcons.bookmark,
     title: 'Momentos guardados',
-    subtitle: 'Tus recuerdos más valiosos',
+    subtitle: 'Tus recuerdos m\u00e1s valiosos',
   ),
 ];
 
@@ -434,6 +387,22 @@ String _excerptFor(String text) {
   return '${compact.substring(0, 162).trimRight()}...';
 }
 
+(String, String) _splitPreviewText(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return ('', '');
+
+  final parts = trimmed
+      .split('\n')
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty)
+      .toList(growable: false);
+
+  if (parts.isEmpty) return ('', '');
+  if (parts.length == 1) return (parts.first, '');
+
+  return (parts.first, parts.skip(1).join(' '));
+}
+
 String? _extraEntriesLabel({
   required int count,
   required String localeTag,
@@ -445,23 +414,11 @@ String? _extraEntriesLabel({
   if (isSpanish) {
     return isToday
         ? 'Ver $count entradas de hoy'
-        : 'Ver $count entradas del día';
+        : 'Ver $count entradas del d\u00eda';
   }
   return isToday
       ? 'View $count entries today'
       : 'View $count entries for this day';
-}
-
-List<DiaryV2MoodOption> _buildMoods(int? selectedMood) {
-  const moodScale = [-2, -1, 0, 1, 2];
-  return moodScale
-      .map(
-        (value) => DiaryV2MoodOption(
-          moodValue: value,
-          isSelected: selectedMood == value,
-        ),
-      )
-      .toList(growable: false);
 }
 
 int _currentStreak(List<DiaryEntryUi> entries, DateTime anchorDay) {
@@ -476,6 +433,17 @@ int _currentStreak(List<DiaryEntryUi> entries, DateTime anchorDay) {
   return streak;
 }
 
+List<String> _metadataLabels(DiaryEntryUi? entry, bool isSpanish) {
+  if (entry == null) return const [];
+
+  final labels = <String>[];
+  if (entry.type == DiaryEntryType.habit) {
+    labels.add(isSpanish ? 'H\u00e1bito' : 'Habit');
+  }
+
+  return labels;
+}
+
 String _monthMoodLabel(List<DiaryEntryUi> monthEntries, String localeTag) {
   final moods = monthEntries
       .map((entry) => entry.mood)
@@ -483,7 +451,7 @@ String _monthMoodLabel(List<DiaryEntryUi> monthEntries, String localeTag) {
       .toList(growable: false);
   if (moods.isEmpty) {
     return localeTag.startsWith('es')
-        ? 'Estado más repetido: por definir'
+        ? 'Estado m\u00e1s repetido: por definir'
         : 'Most common mood: to be defined';
   }
 
@@ -494,7 +462,7 @@ String _monthMoodLabel(List<DiaryEntryUi> monthEntries, String localeTag) {
   final dominantMood =
       counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   return localeTag.startsWith('es')
-      ? 'Estado más repetido: ${_moodWord(dominantMood, true)}'
+      ? 'Estado m\u00e1s repetido: ${_moodWord(dominantMood, true)}'
       : 'Most common mood: ${_moodWord(dominantMood, false)}';
 }
 
@@ -526,17 +494,17 @@ List<DiaryV2MonthDot> _buildMonthDots(
       DateUtils.getDaysInMonth(selectedDay.year, selectedDay.month);
   return List.generate(daysInMonth, (index) {
     final dayNumber = index + 1;
-    final entries = groupedByDay[dayNumber] ?? const <DiaryEntryUi>[];
+    final entriesForDay = groupedByDay[dayNumber] ?? const <DiaryEntryUi>[];
     // TODO(v2-diary): This month preview temporarily uses diary entry mood as a
     // proxy for the global day mood. Replace this with a first-class DailyMood
     // source later, and do not mix habit-specific mood data into that model.
-    final mood = entries
+    final mood = entriesForDay
         .map((entry) => entry.mood)
         .whereType<int>()
         .cast<int?>()
         .firstWhere((value) => value != null, orElse: () => null);
     return DiaryV2MonthDot(
-      active: entries.isNotEmpty,
+      active: entriesForDay.isNotEmpty,
       moodValue: mood,
       highlighted: DateUtils.isSameDay(
         DateTime(selectedDay.year, selectedDay.month, dayNumber),
@@ -549,7 +517,25 @@ List<DiaryV2MonthDot> _buildMonthDots(
 
 DiaryV2MonthDotTone _toneForMood(int? mood) {
   if (mood == null) return DiaryV2MonthDotTone.neutral;
-  if (mood >= 1) return DiaryV2MonthDotTone.warm;
-  if (mood <= -1) return DiaryV2MonthDotTone.soft;
-  return DiaryV2MonthDotTone.calm;
+  return switch (mood) {
+    <= -2 => DiaryV2MonthDotTone.red,
+    -1 => DiaryV2MonthDotTone.orange,
+    0 => DiaryV2MonthDotTone.camel,
+    1 => DiaryV2MonthDotTone.greenSoft,
+    _ => DiaryV2MonthDotTone.greenStrong,
+  };
+}
+
+int? _dominantMood(List<DiaryEntryUi> monthEntries) {
+  final moods = monthEntries
+      .map((entry) => entry.mood)
+      .whereType<int>()
+      .toList(growable: false);
+  if (moods.isEmpty) return null;
+
+  final counts = <int, int>{};
+  for (final mood in moods) {
+    counts[mood] = (counts[mood] ?? 0) + 1;
+  }
+  return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
 }

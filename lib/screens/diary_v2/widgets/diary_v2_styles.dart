@@ -111,4 +111,53 @@ class DiaryV2Styles {
       letterSpacing: -0.6,
     );
   }
+
+  static DiaryV2MoodSelectorTone editorMoodTone(int mood) {
+    switch (mood) {
+      case -2:
+        return const DiaryV2MoodSelectorTone(
+          selectedFill: Color(0xFFF8E4DE),
+          selectedBorder: Color(0xFFD08C7D),
+          selectedIndicator: Color(0xFF8F5146),
+        );
+      case -1:
+        return const DiaryV2MoodSelectorTone(
+          selectedFill: Color(0xFFF8E8D7),
+          selectedBorder: Color(0xFFD8A36A),
+          selectedIndicator: Color(0xFF976739),
+        );
+      case 0:
+        return const DiaryV2MoodSelectorTone(
+          selectedFill: Color(0xFFF5E7D2),
+          selectedBorder: Color(0xFFC89A62),
+          selectedIndicator: Color(0xFF8C6339),
+        );
+      case 1:
+        return const DiaryV2MoodSelectorTone(
+          selectedFill: Color(0xFFEAF2E3),
+          selectedBorder: Color(0xFFA9BC8E),
+          selectedIndicator: Color(0xFF667B4D),
+        );
+      case 2:
+        return const DiaryV2MoodSelectorTone(
+          selectedFill: Color(0xFFE2EED9),
+          selectedBorder: Color(0xFF8EAA73),
+          selectedIndicator: Color(0xFF4F6B38),
+        );
+      default:
+        return editorMoodTone(0);
+    }
+  }
+}
+
+class DiaryV2MoodSelectorTone {
+  const DiaryV2MoodSelectorTone({
+    required this.selectedFill,
+    required this.selectedBorder,
+    required this.selectedIndicator,
+  });
+
+  final Color selectedFill;
+  final Color selectedBorder;
+  final Color selectedIndicator;
 }

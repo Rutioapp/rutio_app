@@ -62,7 +62,8 @@ class _MoodButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tone = _toneForMood(moodValue);
+    final moodFace = _faceForMood(moodValue);
+    final selectorTone = DiaryV2Styles.editorMoodTone(moodValue);
 
     return Material(
       color: Colors.transparent,
@@ -82,28 +83,34 @@ class _MoodButton extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: selected ? tone.fill : Colors.transparent,
+                      color: selected
+                          ? selectorTone.selectedFill
+                          : DiaryV2Styles.cream.withValues(alpha: 0.72),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: selected ? tone.active : tone.base,
+                        color: selected
+                            ? selectorTone.selectedBorder
+                            : DiaryV2Styles.border.withValues(alpha: 0.92),
                         width: selected ? 1.8 : 1.1,
                       ),
                       boxShadow: selected
                           ? [
                               BoxShadow(
-                                color: tone.active.withValues(alpha: 0.16),
+                                color:
+                                    selectorTone.selectedBorder.withValues(alpha: 0.14),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
                             ]
                           : null,
                     ),
-                  ),
-                  Text(
-                    tone.emoji,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      height: 1,
+                    alignment: Alignment.center,
+                    child: Text(
+                      moodFace,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        height: 1,
+                      ),
                     ),
                   ),
                 ],
@@ -115,9 +122,9 @@ class _MoodButton extends StatelessWidget {
                 child: Container(
                   width: 6,
                   height: 6,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: DiaryV2Styles.accentDeep,
+                    color: selectorTone.selectedIndicator,
                   ),
                 ),
               ),
@@ -128,59 +135,20 @@ class _MoodButton extends StatelessWidget {
     );
   }
 
-  _MoodTone _toneForMood(int mood) {
+  String _faceForMood(int mood) {
     switch (mood) {
       case -2:
-        return const _MoodTone(
-          emoji: '😕',
-          base: Color(0xFF92A36F),
-          active: Color(0xFF7D9258),
-          fill: Color(0xFFEAF1E0),
-        );
+        return '\u{1F615}';
       case -1:
-        return const _MoodTone(
-          emoji: '🙁',
-          base: Color(0xFF92A36F),
-          active: Color(0xFF7D9258),
-          fill: Color(0xFFF1F5E9),
-        );
+        return '\u{1F641}';
       case 0:
-        return const _MoodTone(
-          emoji: '😐',
-          base: DiaryV2Styles.accentDeep,
-          active: DiaryV2Styles.accentDeep,
-          fill: Color(0xFFF2C487),
-        );
+        return '\u{1F610}';
       case 1:
-        return const _MoodTone(
-          emoji: '🙂',
-          base: Color(0xFF92A36F),
-          active: Color(0xFF7D9258),
-          fill: Color(0xFFF3F6ED),
-        );
+        return '\u{1F642}';
       case 2:
-        return const _MoodTone(
-          emoji: '😊',
-          base: Color(0xFF92A36F),
-          active: Color(0xFF7D9258),
-          fill: Color(0xFFEDEFE6),
-        );
+        return '\u{1F60A}';
       default:
-        return _toneForMood(0);
+        return _faceForMood(0);
     }
   }
-}
-
-class _MoodTone {
-  const _MoodTone({
-    required this.emoji,
-    required this.base,
-    required this.active,
-    required this.fill,
-  });
-
-  final String emoji;
-  final Color base;
-  final Color active;
-  final Color fill;
 }
