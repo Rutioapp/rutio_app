@@ -117,6 +117,57 @@ void main() {
     expect(statsTapCount, 1);
   });
 
+  testWidgets('AppViewDrawer exposes a single Diary entry without Diary V2', (
+    WidgetTester tester,
+  ) async {
+    final scaffoldKey = GlobalKey<ScaffoldState>();
+    var diaryTapCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('es'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          key: scaffoldKey,
+          drawer: AppViewDrawer(
+            onGoDaily: () {},
+            onGoWeekly: () {},
+            onGoMonthly: () {},
+            onGoTodo: () {},
+            onGoDiary: () => diaryTapCount++,
+            onGoDiaryV2: () {},
+            onGoArchived: () {},
+            onGoStats: () {},
+            onGoProfile: () {},
+          ),
+          body: const SizedBox.shrink(),
+        ),
+      ),
+    );
+
+    scaffoldKey.currentState!.openDrawer();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+    final diaryFinder = find.byIcon(Icons.menu_book_outlined);
+
+    expect(diaryFinder, findsOneWidget);
+    expect(find.text('Diario V2'), findsNothing);
+
+    await tester.tap(diaryFinder);
+    await tester.pumpAndSettle();
+
+    expect(diaryTapCount, 1);
+  });
+
   testWidgets('AppViewDrawer statistics entry can open StatisticsV3Screen', (
     WidgetTester tester,
   ) async {

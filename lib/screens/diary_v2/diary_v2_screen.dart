@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/models/diary_entry.dart';
-import 'package:rutio/screens/diary/diary_screen.dart';
 import 'package:rutio/screens/diary/models/diary_types.dart';
 import 'package:rutio/screens/diary/widgets/diary_screen_background.dart';
 import 'package:rutio/screens/habit_archived_screen.dart';
@@ -98,13 +97,13 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
 
     return Scaffold(
       drawer: AppViewDrawer(
-        selected: 'diary_v2',
+        selected: 'diary',
         onGoDaily: () => _navReplace(context, const HomeScreen()),
         onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
         onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
         onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-        onGoDiary: () => _navReplace(context, const DiaryScreen()),
-        onGoDiaryV2: () {},
+        onGoDiary: () {},
+        onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
         onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
         onGoStats: () => Navigator.pushNamed(context, '/stats'),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),

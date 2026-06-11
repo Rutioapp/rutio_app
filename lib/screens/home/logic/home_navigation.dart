@@ -43,10 +43,10 @@ extension _HomeScreenNavigation on _HomeScreenState {
       onGoDiary: () {
         Navigator.push(
           context,
-          CupertinoPageRoute(builder: (_) => const DiaryScreen()),
+          CupertinoPageRoute(builder: (_) => const DiaryV2Screen()),
         );
       },
-      onGoDiaryV2: () => Navigator.pushNamed(context, '/diary-v2'),
+      onGoDiaryV2: () => Navigator.pushNamed(context, '/diary'),
       onGoArchived: () {
         Navigator.push(
           context,

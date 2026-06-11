@@ -5,7 +5,7 @@ import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_
 import 'package:rutio/screens/home/home_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/habit_archived_screen.dart';
-import 'package:rutio/screens/diary/diary_screen.dart';
+import 'package:rutio/screens/diary_v2/diary_v2_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
 
@@ -52,8 +52,8 @@ class _ShopScreenState extends State<ShopScreen> {
         onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
         onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
         onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-        onGoDiary: () => _navReplace(context, const DiaryScreen()),
-        onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary-v2'),
+        onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
+        onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
         onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
         onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),

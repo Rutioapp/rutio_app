@@ -135,18 +135,9 @@ class AppViewDrawer extends StatelessWidget {
                     const _DrawerDivider(),
                     _DrawerTile(
                       icon: Icons.menu_book_outlined,
-                      label: context.l10n.drawerDiary,
+                      label: context.l10n.diaryTitle,
                       isSelected: selected == 'diary',
                       onTap: () => _go(context, onGoDiary),
-                    ),
-                    const _DrawerDivider(),
-                    // Temporary internal preview entry for Diary V2.
-                    // Remove once /diary-v2 is replaced by the production diary route.
-                    _DrawerTile(
-                      icon: Icons.edit_note_rounded,
-                      label: 'Diario V2',
-                      isSelected: selected == 'diary_v2',
-                      onTap: () => _go(context, onGoDiaryV2),
                     ),
                     const SizedBox(height: 18),
                     _DrawerSectionLabel(context.l10n.drawerSectionArchive),

@@ -22,7 +22,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_yearly_consistency_shell.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
-import 'package:rutio/screens/diary/diary_screen.dart';
+import 'package:rutio/screens/diary_v2/diary_v2_screen.dart';
 import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/habit_detail/habit_detail_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
@@ -87,9 +87,9 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
             onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
             onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
             onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-            onGoDiary: () => _navReplace(context, const DiaryScreen()),
+            onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
             onGoDiaryV2: () =>
-                Navigator.of(context).pushReplacementNamed('/diary-v2'),
+                Navigator.of(context).pushReplacementNamed('/diary'),
             onGoArchived: () =>
                 _navReplace(context, const ArchivedHabitsScreen()),
             onGoStats: () {},
