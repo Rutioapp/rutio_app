@@ -56,7 +56,6 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
   final GlobalKey _titleFieldKey = GlobalKey();
   final GlobalKey _writeCardKey = GlobalKey();
   int? _selectedMood;
-  final Set<String> _selectedTags = <String>{};
 
   @override
   void initState() {
@@ -244,37 +243,6 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
                         currentLength: bodyCount,
                         maxLength: _maxCharacters,
                       ),
-                      const SizedBox(height: 18),
-                      Text(
-                        copy.tagsLabel,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: DiaryV2Styles.textStrong,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 17,
-                            ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: copy.tags
-                            .map(
-                              (tag) => _SelectableTagChip(
-                                label: tag,
-                                selected: _selectedTags.contains(tag),
-                                onTap: () {
-                                  setState(() {
-                                    if (_selectedTags.contains(tag)) {
-                                      _selectedTags.remove(tag);
-                                    } else {
-                                      _selectedTags.add(tag);
-                                    }
-                                  });
-                                },
-                              ),
-                            )
-                            .toList(growable: false),
-                      ),
                       SizedBox(height: bodyCount > 0 ? 22 : 18),
                       Center(
                         child: DiaryV2WriteButton(
@@ -405,53 +373,6 @@ class _TitleField extends StatelessWidget {
   }
 }
 
-class _SelectableTagChip extends StatelessWidget {
-  const _SelectableTagChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? DiaryV2Styles.accentSoftMuted
-                : Colors.white.withValues(alpha: 0.42),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected
-                  ? DiaryV2Styles.accent.withValues(alpha: 0.4)
-                  : DiaryV2Styles.border.withValues(alpha: 0.72),
-            ),
-          ),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: selected
-                      ? DiaryV2Styles.accentDeep
-                      : DiaryV2Styles.mutedTextStrong,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _DiaryV2EditorCopy {
   const _DiaryV2EditorCopy.spanish()
       : localeTag = 'es',
@@ -461,8 +382,6 @@ class _DiaryV2EditorCopy {
         moodTitle = '\u00bfC\u00f3mo te sientes hoy?',
         titleHint = 'T\u00edtulo opcional',
         promptTitle = '\u00bfQu\u00e9 quieres recordar de hoy?',
-        tagsLabel = 'Etiquetas (opcional)',
-        tags = const ['Gratitud', 'Energ\u00eda', 'Foco', 'Sue\u00f1o', 'Ideas'],
         bottomSaveLabel = 'Guardar entrada',
         savedMessage = 'Entrada guardada',
         writeSomethingError = 'Escribe algo antes de guardar.';
@@ -475,8 +394,6 @@ class _DiaryV2EditorCopy {
         moodTitle = 'How do you feel today?',
         titleHint = 'Optional title',
         promptTitle = 'What would you like to remember today?',
-        tagsLabel = 'Tags (optional)',
-        tags = const ['Gratitude', 'Energy', 'Focus', 'Sleep', 'Ideas'],
         bottomSaveLabel = 'Save entry',
         savedMessage = 'Entry saved',
         writeSomethingError = 'Write something before saving.';
@@ -488,8 +405,6 @@ class _DiaryV2EditorCopy {
   final String moodTitle;
   final String titleHint;
   final String promptTitle;
-  final String tagsLabel;
-  final List<String> tags;
   final String bottomSaveLabel;
   final String savedMessage;
   final String writeSomethingError;

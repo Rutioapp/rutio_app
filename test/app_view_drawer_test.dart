@@ -155,8 +155,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    final context = tester.element(find.byType(Scaffold));
-    final l10n = AppLocalizations.of(context);
     final diaryFinder = find.byIcon(Icons.menu_book_outlined);
 
     expect(diaryFinder, findsOneWidget);

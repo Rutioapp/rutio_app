@@ -44,6 +44,7 @@ class DiaryV2MonthPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final labels = _weekLabelsForLocale(Localizations.localeOf(context));
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 15),
       decoration: DiaryV2Styles.cardDecoration(),
@@ -69,7 +70,7 @@ class DiaryV2MonthPreviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          const _WeekLabels(),
+          _WeekLabels(labels: labels),
           const SizedBox(height: 12),
           _MonthDotGrid(dots: dots),
           const SizedBox(height: 15),
@@ -107,11 +108,14 @@ class DiaryV2MonthPreviewCard extends StatelessWidget {
 }
 
 class _WeekLabels extends StatelessWidget {
-  const _WeekLabels();
+  const _WeekLabels({
+    required this.labels,
+  });
+
+  final List<String> labels;
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: labels
@@ -205,22 +209,16 @@ class _MonthDot extends StatelessWidget {
           width: dot.highlighted ? 1.8 : showsMood ? 1.2 : dot.active ? 0.9 : 0,
         ),
       ),
-      child: showsMood
-          ? Icon(
-              _iconForMood(dot.moodValue!),
-              size: (baseSize - 5).clamp(8.5, 11.0),
-              color: tone.border,
+      child: dot.active && !showsMood
+          ? Container(
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: DiaryV2Styles.mutedTextStrong.withValues(alpha: 0.52),
+                shape: BoxShape.circle,
+              ),
             )
-          : dot.active
-              ? Container(
-                  width: 4,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: DiaryV2Styles.mutedTextStrong.withValues(alpha: 0.52),
-                    shape: BoxShape.circle,
-                  ),
-                )
-              : null,
+          : null,
     );
   }
 
@@ -259,20 +257,6 @@ class _MonthDot extends StatelessWidget {
     }
   }
 
-  IconData _iconForMood(int moodValue) {
-    switch (moodValue) {
-      case -2:
-        return CupertinoIcons.cloud_rain;
-      case -1:
-        return CupertinoIcons.moon_zzz;
-      case 1:
-        return CupertinoIcons.sun_max;
-      case 2:
-        return CupertinoIcons.heart_circle;
-      default:
-        return CupertinoIcons.smiley;
-    }
-  }
 }
 
 class _MonthMoodBadge extends StatelessWidget {
@@ -286,8 +270,8 @@ class _MonthMoodBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final tone = _toneForMood(moodValue);
     return Container(
-      width: 26,
-      height: 26,
+      width: 14,
+      height: 14,
       decoration: BoxDecoration(
         color: tone.fill,
         shape: BoxShape.circle,
@@ -295,11 +279,6 @@ class _MonthMoodBadge extends StatelessWidget {
           color: tone.border,
           width: 1.1,
         ),
-      ),
-      child: Icon(
-        _iconForMood(moodValue),
-        color: tone.border,
-        size: 12.5,
       ),
     );
   }
@@ -333,21 +312,6 @@ class _MonthMoodBadge extends StatelessWidget {
         );
     }
   }
-
-  IconData _iconForMood(int moodValue) {
-    switch (moodValue) {
-      case -2:
-        return CupertinoIcons.cloud_rain;
-      case -1:
-        return CupertinoIcons.moon_zzz;
-      case 1:
-        return CupertinoIcons.sun_max;
-      case 2:
-        return CupertinoIcons.heart_circle;
-      default:
-        return CupertinoIcons.smiley;
-    }
-  }
 }
 
 class _MonthToneStyle {
@@ -358,4 +322,11 @@ class _MonthToneStyle {
 
   final Color fill;
   final Color border;
+}
+
+List<String> _weekLabelsForLocale(Locale locale) {
+  if (locale.languageCode == 'es') {
+    return const ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+  }
+  return const ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 }
