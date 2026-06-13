@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../diary_v2_mood_visuals.dart';
 import 'diary_v2_styles.dart';
 
 enum DiaryV2MonthDotTone {
@@ -183,6 +184,7 @@ class _MonthDot extends StatelessWidget {
     final tone = _toneStyle(dot.tone);
     final showsMood = dot.active && dot.moodValue != null;
     final baseSize = dot.highlighted ? size + 2 : size - 0.5;
+    final moodValue = dot.moodValue;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -209,16 +211,27 @@ class _MonthDot extends StatelessWidget {
           width: dot.highlighted ? 1.8 : showsMood ? 1.2 : dot.active ? 0.9 : 0,
         ),
       ),
-      child: dot.active && !showsMood
-          ? Container(
-              width: 4,
-              height: 4,
-              decoration: BoxDecoration(
-                color: DiaryV2Styles.mutedTextStrong.withValues(alpha: 0.52),
-                shape: BoxShape.circle,
+      child: showsMood && moodValue != null
+          ? Text(
+              DiaryMoodVisuals.emojiFor(moodValue),
+              style: TextStyle(
+                fontSize: moodValue == 0 ? baseSize + 1.5 : baseSize - 1,
+                height: 1,
+                color: tone.border,
+                fontWeight:
+                    moodValue == 0 ? FontWeight.w700 : FontWeight.w400,
               ),
             )
-          : null,
+          : dot.active
+              ? Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: DiaryV2Styles.mutedTextStrong.withValues(alpha: 0.52),
+                    shape: BoxShape.circle,
+                  ),
+                )
+              : null,
     );
   }
 
@@ -270,14 +283,24 @@ class _MonthMoodBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final tone = _toneForMood(moodValue);
     return Container(
-      width: 14,
-      height: 14,
+      width: 20,
+      height: 20,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: tone.fill,
         shape: BoxShape.circle,
         border: Border.all(
           color: tone.border,
           width: 1.1,
+        ),
+      ),
+      child: Text(
+        DiaryMoodVisuals.emojiFor(moodValue),
+        style: TextStyle(
+          fontSize: moodValue == 0 ? 14 : 11,
+          height: 1,
+          color: tone.border,
+          fontWeight: moodValue == 0 ? FontWeight.w700 : FontWeight.w400,
         ),
       ),
     );

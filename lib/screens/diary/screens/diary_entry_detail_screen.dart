@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../l10n/gen/app_localizations.dart';
+import '../../diary_v2/diary_v2_mood_visuals.dart';
 import '../models/diary_types.dart';
 import '../../../stores/user_state_store.dart';
 import '../../../utils/family_theme.dart';
@@ -309,18 +310,8 @@ class _DetailBackground extends StatelessWidget {
 }
 
 String _moodEmoji(int? mood, {required bool isHabit}) {
-  switch (mood) {
-    case -2:
-      return '\uD83C\uDF27\uFE0F';
-    case -1:
-      return '\uD83C\uDF42';
-    case 0:
-      return '\u2601\uFE0F';
-    case 1:
-      return '\u2600\uFE0F';
-    case 2:
-      return '\uD83C\uDF31';
-    default:
-      return isHabit ? '\uD83C\uDF31' : '\u270D\uFE0F';
+  if (mood == null) {
+    return isHabit ? '\uD83C\uDF31' : '\u270D\uFE0F';
   }
+  return DiaryMoodVisuals.emojiFor(mood);
 }

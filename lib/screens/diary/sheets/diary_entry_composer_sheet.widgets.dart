@@ -493,11 +493,11 @@ class _MoodRow extends StatelessWidget {
   });
 
   static const moods = [
-    (-2, '\u{1F327}\uFE0F'),
-    (-1, '\u{1F342}'),
-    (0, '\u2601\uFE0F'),
-    (1, '\u2600\uFE0F'),
-    (2, '\u{1F331}'),
+    (-2, '☁️'),
+    (-1, '🌙'),
+    (0, '○'),
+    (1, '☀️'),
+    (2, '♥️'),
   ];
 
   final int? value;
@@ -511,7 +511,7 @@ class _MoodRow extends StatelessWidget {
       children: [
         for (final mood in moods)
           _MoodButton(
-            emoji: mood.$2,
+            emoji: DiaryMoodVisuals.emojiFor(mood.$1),
             selected: value == mood.$1,
             onTap: () => onChanged(value == mood.$1 ? null : mood.$1),
           ),
@@ -550,7 +550,13 @@ class _MoodButton extends StatelessWidget {
             width: selected ? 1.25 : 1,
           ),
         ),
-        child: Text(emoji, style: const TextStyle(fontSize: 24)),
+        child: Text(
+          emoji,
+          style: TextStyle(
+            fontSize: emoji == '○' ? 25 : 24,
+            fontWeight: emoji == '○' ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
       ),
     );
   }

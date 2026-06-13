@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../diary_v2/diary_v2_mood_visuals.dart';
 import '../../../stores/user_state_store.dart';
 import '../models/diary_types.dart' as dt;
 

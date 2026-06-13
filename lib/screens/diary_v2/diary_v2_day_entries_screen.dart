@@ -6,6 +6,7 @@ import 'package:rutio/screens/diary/models/diary_types.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
 import 'diary_v2_entry_editor_screen.dart';
+import 'diary_v2_mood_visuals.dart';
 import 'widgets/diary_v2_styles.dart';
 import 'widgets/diary_v2_write_button.dart';
 
@@ -294,7 +295,7 @@ class _DayEntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = entry.displayTitle;
     final body = entry.displayBody;
-    final chips = entry.metadataChips;
+    final chips = entry.metadataChips(Localizations.localeOf(context));
 
     return Container(
       decoration: BoxDecoration(
@@ -387,30 +388,30 @@ class _MoodBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = switch (mood) {
-      -2 => CupertinoIcons.cloud_rain,
-      -1 => CupertinoIcons.moon_zzz,
-      1 => CupertinoIcons.sun_max,
-      2 => CupertinoIcons.heart_circle,
-      _ => CupertinoIcons.smiley,
-    };
-    final color = switch (mood) {
-      -2 || -1 => DiaryV2Styles.sage,
-      1 || 2 => DiaryV2Styles.accentDeep,
-      _ => DiaryV2Styles.accentDeep,
-    };
+    final emoji = DiaryMoodVisuals.emojiFor(mood);
+    final borderColor = DiaryMoodVisuals.borderColorFor(mood);
 
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.72),
+        color: DiaryMoodVisuals.fillColorFor(mood),
         shape: BoxShape.circle,
         border: Border.all(
-          color: DiaryV2Styles.border.withValues(alpha: 0.7),
+          color: borderColor.withValues(alpha: 0.45),
         ),
       ),
-      child: Icon(icon, size: 20, color: color),
+      child: Center(
+        child: Text(
+          emoji,
+          style: TextStyle(
+            fontSize: mood == 0 ? 19 : 16,
+            height: 1,
+            color: borderColor,
+            fontWeight: mood == 0 ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -524,10 +525,10 @@ class DiaryV2DayEntryItem {
     return compact;
   }
 
-  List<String> get metadataChips {
+  List<String> metadataChips(Locale locale) {
     final chips = <String>[];
     if (mood != null) {
-      chips.add(_moodWord(mood!));
+      chips.add(DiaryMoodVisuals.labelForLocale(mood!, locale));
     }
     if ((ui.familyName ?? '').trim().isNotEmpty) {
       chips.add(ui.familyName!.trim());
@@ -539,21 +540,6 @@ class DiaryV2DayEntryItem {
 
   static String _compactText(String value) {
     return value.replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
-
-  static String _moodWord(int mood) {
-    switch (mood) {
-      case -2:
-        return 'Sueño';
-      case -1:
-        return 'Calma';
-      case 1:
-        return 'Foco';
-      case 2:
-        return 'Energía';
-      default:
-        return 'Gratitud';
-    }
   }
 }
 

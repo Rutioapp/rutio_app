@@ -10,6 +10,7 @@ import 'package:rutio/stores/user_state_store.dart';
 
 import 'diary_v2_daily_mood_resolver.dart';
 import 'diary_v2_entry_editor_screen.dart';
+import 'diary_v2_mood_visuals.dart';
 import 'widgets/diary_v2_styles.dart';
 
 class DiaryV2AllEntriesScreen extends StatelessWidget {
@@ -252,25 +253,27 @@ class _MoodPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = switch (mood) {
-      -2 => CupertinoIcons.cloud_rain,
-      -1 => CupertinoIcons.moon,
-      1 => CupertinoIcons.sun_max,
-      2 => CupertinoIcons.heart,
-      _ => CupertinoIcons.smiley,
-    };
+    final emoji = DiaryMoodVisuals.emojiFor(mood);
+    final borderColor = DiaryMoodVisuals.borderColorFor(mood);
 
     return Container(
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.82),
+        color: DiaryMoodVisuals.fillColorFor(mood),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor.withValues(alpha: 0.34)),
       ),
-      child: Icon(
-        icon,
-        size: 18,
-        color: DiaryV2Styles.accentDeep,
+      child: Center(
+        child: Text(
+          emoji,
+          style: TextStyle(
+            fontSize: mood == 0 ? 18 : 15,
+            height: 1,
+            color: borderColor,
+            fontWeight: mood == 0 ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
       ),
     );
   }

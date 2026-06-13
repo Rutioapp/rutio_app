@@ -19,6 +19,7 @@ import 'diary_v2_day_entries_screen.dart';
 import 'diary_v2_all_entries_screen.dart';
 import 'diary_v2_daily_mood_resolver.dart';
 import 'diary_v2_entry_editor_screen.dart';
+import 'diary_v2_mood_visuals.dart';
 import 'widgets/diary_v2_explore_grid.dart';
 import 'widgets/diary_v2_header.dart';
 import 'widgets/diary_v2_month_preview_card.dart';
@@ -278,6 +279,11 @@ class _DiaryV2ViewData {
         )
         .toList(growable: false);
     final dailyMoodsByDate = dailyMoodMapByDate(dailyMoods);
+    final selectedMood = resolvePreferredMoodForDay(
+      day: normalizedSelectedDay,
+      dailyMoodsByDate: dailyMoodsByDate,
+      fallbackEntries: selectedDayEntries.map((item) => item.entry).toList(),
+    );
 
     final pinnedCount = entries.where((entry) => entry.isPinned).length;
     final monthlyEntryDays = monthEntries
@@ -302,7 +308,7 @@ class _DiaryV2ViewData {
           ? 'Guarda un momento cuando quieras.'
           : 'Save a moment whenever you want.',
       selectedEntry: selectedEntry,
-      selectedMood: selectedEntry?.mood,
+      selectedMood: selectedMood,
       stats: [
         DiaryV2StatItem(
           icon: CupertinoIcons.flame,
@@ -493,18 +499,7 @@ String _monthMoodLabel({
 }
 
 String _moodWord(int mood, bool spanish) {
-  switch (mood) {
-    case -2:
-      return spanish ? 'agotado' : 'drained';
-    case -1:
-      return spanish ? 'sensible' : 'low';
-    case 1:
-      return spanish ? 'enfocado' : 'steady';
-    case 2:
-      return spanish ? 'inspirado' : 'uplifted';
-    default:
-      return spanish ? 'calma' : 'calm';
-  }
+  return DiaryMoodVisuals.labelForLocaleTag(mood, spanish ? 'es' : 'en');
 }
 
 List<DiaryV2MonthDot> _buildMonthDots({

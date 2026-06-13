@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../diary_v2/diary_v2_mood_visuals.dart';
 import '../../../stores/user_state_store.dart';
 import '../../../utils/app_theme.dart';
 import '../../../utils/family_theme.dart';
@@ -279,20 +280,9 @@ class _DiaryEntryCardState extends State<DiaryEntryCard> {
 }
 
 String? _entryEmoji(DiaryEntryUi entry) {
-  switch (entry.mood) {
-    case -2:
-      return '\uD83C\uDF27\uFE0F';
-    case -1:
-      return '\uD83C\uDF42';
-    case 0:
-      return '\u2601\uFE0F';
-    case 1:
-      return '\u2600\uFE0F';
-    case 2:
-      return '\uD83C\uDF31';
-    default:
-      return null;
-  }
+  final mood = entry.mood;
+  if (mood == null) return null;
+  return DiaryMoodVisuals.emojiFor(mood);
 }
 
 _ResolvedEntryMeta _resolveEntryMeta(

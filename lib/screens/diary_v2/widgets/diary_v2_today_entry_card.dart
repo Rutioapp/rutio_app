@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../diary_v2_mood_visuals.dart';
 import 'diary_v2_styles.dart';
 
 class DiaryV2TodayEntryCard extends StatelessWidget {
@@ -245,72 +246,33 @@ class _MoodIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tone = _toneForMood(moodValue);
+    final emoji = DiaryMoodVisuals.emojiFor(moodValue);
+    final borderColor = DiaryMoodVisuals.borderColorFor(moodValue);
+    final fillColor = DiaryMoodVisuals.fillColorFor(moodValue);
     return Container(
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        color: tone.fill,
+        color: fillColor,
         shape: BoxShape.circle,
         border: Border.all(
-          color: tone.borderStrong,
+          color: borderColor,
           width: 1.3,
         ),
       ),
-      child: Icon(
-        tone.icon,
-        color: tone.borderStrong,
-        size: 17,
+      child: Center(
+        child: Text(
+          emoji,
+          style: TextStyle(
+            fontSize: moodValue == 0 ? 16 : 14,
+            height: 1,
+            color: borderColor,
+            fontWeight: moodValue == 0 ? FontWeight.w700 : FontWeight.w400,
+          ),
+        ),
       ),
     );
   }
-
-  _MoodTone _toneForMood(int moodValue) {
-    switch (moodValue) {
-      case -2:
-        return const _MoodTone(
-          icon: CupertinoIcons.cloud_rain,
-          borderStrong: Color(0xFF8F5146),
-          fill: Color(0xFFF8E4DE),
-        );
-      case -1:
-        return const _MoodTone(
-          icon: CupertinoIcons.moon_zzz,
-          borderStrong: Color(0xFF976739),
-          fill: Color(0xFFF8E8D7),
-        );
-      case 1:
-        return const _MoodTone(
-          icon: CupertinoIcons.sun_max,
-          borderStrong: Color(0xFF667B4D),
-          fill: Color(0xFFEAF2E3),
-        );
-      case 2:
-        return const _MoodTone(
-          icon: CupertinoIcons.heart_circle,
-          borderStrong: Color(0xFF4F6B38),
-          fill: Color(0xFFE2EED9),
-        );
-      default:
-        return const _MoodTone(
-          icon: CupertinoIcons.smiley,
-          borderStrong: Color(0xFF8C6339),
-          fill: Color(0xFFF5E7D2),
-        );
-    }
-  }
-}
-
-class _MoodTone {
-  const _MoodTone({
-    required this.icon,
-    required this.borderStrong,
-    required this.fill,
-  });
-
-  final IconData icon;
-  final Color borderStrong;
-  final Color fill;
 }
 
 class _TagChip extends StatelessWidget {

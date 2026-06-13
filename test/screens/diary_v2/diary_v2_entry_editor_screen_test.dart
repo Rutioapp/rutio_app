@@ -38,6 +38,24 @@ void main() {
       expect(store.addedEntries.single.body, 'Fresh body');
     });
 
+    testWidgets('renders standardized mood icons in the selector',
+        (tester) async {
+      final store = _FakeDiaryEditorStore();
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: const DiaryV2EntryEditorScreen(),
+        ),
+      );
+
+      expect(find.text('☁️'), findsOneWidget);
+      expect(find.text('🌙'), findsOneWidget);
+      expect(find.text('○'), findsOneWidget);
+      expect(find.text('☀️'), findsOneWidget);
+      expect(find.text('♥️'), findsOneWidget);
+    });
+
     testWidgets('edit mode preloads content and updates existing entry',
         (tester) async {
       final store = _FakeDiaryEditorStore();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../diary_v2_mood_visuals.dart';
 import 'diary_v2_styles.dart';
 
 class DiaryV2EditorMoodSelector extends StatelessWidget {
@@ -62,7 +63,7 @@ class _MoodButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final moodFace = _faceForMood(moodValue);
+    final moodFace = DiaryMoodVisuals.emojiFor(moodValue);
     final selectorTone = DiaryV2Styles.editorMoodTone(moodValue);
 
     return Material(
@@ -107,9 +108,11 @@ class _MoodButton extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Text(
                       moodFace,
-                      style: const TextStyle(
-                        fontSize: 17,
+                      style: TextStyle(
+                        fontSize: moodValue == 0 ? 18 : 17,
                         height: 1,
+                        fontWeight:
+                            moodValue == 0 ? FontWeight.w700 : FontWeight.w400,
                       ),
                     ),
                   ),
@@ -135,20 +138,4 @@ class _MoodButton extends StatelessWidget {
     );
   }
 
-  String _faceForMood(int mood) {
-    switch (mood) {
-      case -2:
-        return '\u{1F615}';
-      case -1:
-        return '\u{1F641}';
-      case 0:
-        return '\u{1F610}';
-      case 1:
-        return '\u{1F642}';
-      case 2:
-        return '\u{1F60A}';
-      default:
-        return _faceForMood(0);
-    }
-  }
 }

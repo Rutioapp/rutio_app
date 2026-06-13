@@ -74,6 +74,7 @@ void main() {
       expect(find.text('Newest entry'), findsOneWidget);
       expect(find.text('Newer same day'), findsOneWidget);
       expect(find.text('Older same day'), findsOneWidget);
+      expect(find.text('♥️'), findsOneWidget);
     });
 
     testWidgets('tap opens editor in edit mode', (tester) async {
