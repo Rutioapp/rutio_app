@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/models/diary_entry.dart';
+import 'package:rutio/data/mappers/journal_entry_remote_mapper.dart';
 
 void main() {
   group('DiaryEntry', () {
@@ -65,6 +66,115 @@ void main() {
 
       expect(entry.title, 'Deporte');
       expect(entry.body, 'Hoy me senti mejor.\nSali a caminar.');
+    });
+
+    test('whitespace-only legacy text stays safe and null-friendly', () {
+      final entry = DiaryEntry.fromJson({
+        'id': 'blank',
+        'createdAt': '123',
+        'text': '  \n \n  ',
+        'title': '   ',
+        'body': '\n\n',
+      });
+
+      expect(entry.title, isNull);
+      expect(entry.body, isNull);
+      expect(entry.text, isEmpty);
+      expect(entry.legacyText, isEmpty);
+      expect(entry.textParts.title, isEmpty);
+      expect(entry.textParts.body, isEmpty);
+    });
+
+    test('body-only entries keep body without fabricating a title in json', () {
+      const entry = DiaryEntry(
+        id: 'body-only',
+        createdAt: 123,
+        text: '',
+        body: 'Hoy me senti sin energia pero sali a caminar.',
+      );
+
+      final json = entry.toJson();
+
+      expect(json['title'], isNull);
+      expect(json['body'], 'Hoy me senti sin energia pero sali a caminar.');
+      expect(json['text'], 'Hoy me senti sin energia pero sali a caminar.');
+    });
+
+    test('serialization round-trip preserves legacy compatibility fields', () {
+      const entry = DiaryEntry(
+        id: 'round-trip',
+        createdAt: 123,
+        text: '',
+        title: 'Deporte',
+        body: 'Hoy me senti mejor.',
+        remoteId: 'remote-1',
+        habitId: 'habit-1',
+        familyId: 'body',
+        mood: 1,
+        isPinned: true,
+      );
+
+      final restored = DiaryEntry.fromJson(entry.toJson());
+
+      expect(restored.id, 'round-trip');
+      expect(restored.createdAt, 123);
+      expect(restored.title, 'Deporte');
+      expect(restored.body, 'Hoy me senti mejor.');
+      expect(restored.text, 'Deporte\n\nHoy me senti mejor.');
+      expect(restored.remoteId, 'remote-1');
+      expect(restored.habitId, 'habit-1');
+      expect(restored.familyId, 'body');
+      expect(restored.mood, 1);
+      expect(restored.isPinned, isTrue);
+    });
+  });
+
+  group('JournalEntryRemoteMapper', () {
+    test('maps legacy text entries without requiring title/body columns', () {
+      final localEntryMap = <String, dynamic>{
+        'id': 'legacy',
+        'createdAt': 1718236800000,
+        'text': 'Deporte\n\nHoy sali a caminar.',
+      };
+
+      final localEntry = DiaryEntry.fromJson(localEntryMap);
+      final remote = JournalEntryRemoteMapper.toRemoteJournalEntry(
+        localEntry: localEntry,
+        localEntryMap: localEntryMap,
+        userId: 'user-1',
+        activeHabits: const [],
+      );
+
+      expect(remote, isNotNull);
+      expect(remote!.content, 'Deporte\n\nHoy sali a caminar.');
+      expect(remote.title, 'Deporte');
+      expect(remote.toUpsertMap().containsKey('body'), isFalse);
+    });
+
+    test('maps new title/body entries while preserving legacy content', () {
+      final localEntryMap = <String, dynamic>{
+        'id': 'new',
+        'createdAt': 1718236800000,
+        'title': 'Deporte',
+        'body': 'Hoy sali a caminar.',
+        'text': 'Deporte\n\nHoy sali a caminar.',
+        'updatedAtRemote': '2026-06-13T10:15:00Z',
+      };
+
+      final localEntry = DiaryEntry.fromJson(localEntryMap);
+      final remote = JournalEntryRemoteMapper.toRemoteJournalEntry(
+        localEntry: localEntry,
+        localEntryMap: localEntryMap,
+        userId: 'user-1',
+        activeHabits: const [],
+      );
+
+      expect(remote, isNotNull);
+      expect(remote!.title, 'Deporte');
+      expect(remote.content, 'Deporte\n\nHoy sali a caminar.');
+      expect(remote.updatedAt?.toUtc().toIso8601String(), '2026-06-13T10:15:00.000Z');
+      expect(remote.toUpsertMap()['content'], 'Deporte\n\nHoy sali a caminar.');
+      expect(remote.toUpsertMap().containsKey('body'), isFalse);
     });
   });
 }
