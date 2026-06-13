@@ -117,20 +117,29 @@ class _WeekLabels extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: labels
-          .map(
-            (label) => Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: DiaryV2Styles.mutedTextStrong.withValues(alpha: 0.78),
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.1,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final metrics = _MonthPreviewGridMetrics.fromWidth(constraints.maxWidth);
+        return Row(
+          children: labels
+              .map(
+                (label) => SizedBox(
+                  width: metrics.cellExtent,
+                  child: Center(
+                    child: Text(
+                      label,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: DiaryV2Styles.mutedTextStrong.withValues(alpha: 0.78),
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.1,
+                          ),
+                    ),
                   ),
-            ),
-          )
-          .toList(),
+                ),
+              )
+              .toList(),
+        );
+      },
     );
   }
 }
@@ -145,21 +154,18 @@ class _MonthDotGrid extends StatelessWidget {
     final visibleDots = dots.take(21).toList(growable: false);
     return LayoutBuilder(
       builder: (context, constraints) {
-        const columns = 7;
-        final cellWidth = (constraints.maxWidth - (columns - 1) * 7) / columns;
-        final dotSize = cellWidth.clamp(12.0, 15.0);
+        final metrics = _MonthPreviewGridMetrics.fromWidth(constraints.maxWidth);
         return Wrap(
-          spacing: 7,
-          runSpacing: 9,
+          spacing: metrics.spacing,
+          runSpacing: metrics.runSpacing,
           children: visibleDots
               .map(
                 (dot) => SizedBox(
-                  width: cellWidth,
-                  child: Center(
-                    child: _MonthDot(
-                      dot: dot,
-                      size: dotSize,
-                    ),
+                  width: metrics.cellExtent,
+                  height: metrics.cellExtent,
+                  child: _MonthDayCell(
+                    dot: dot,
+                    metrics: metrics,
                   ),
                 ),
               )
@@ -170,68 +176,41 @@ class _MonthDotGrid extends StatelessWidget {
   }
 }
 
-class _MonthDot extends StatelessWidget {
-  const _MonthDot({
+class _MonthDayCell extends StatelessWidget {
+  const _MonthDayCell({
     required this.dot,
-    required this.size,
+    required this.metrics,
   });
 
   final DiaryV2MonthDot dot;
-  final double size;
+  final _MonthPreviewGridMetrics metrics;
 
   @override
   Widget build(BuildContext context) {
     final tone = _toneStyle(dot.tone);
     final showsMood = dot.active && dot.moodValue != null;
-    final baseSize = dot.highlighted ? size + 2 : size - 0.5;
-    final moodValue = dot.moodValue;
+    final circleSize =
+        dot.highlighted ? metrics.dotSize + 2 : metrics.dotSize;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: baseSize,
-      height: baseSize,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: showsMood
-            ? tone.fill
-            : dot.highlighted
-                ? Colors.white
-                : dot.active
-                    ? const Color(0xFFE8DDD0)
-                    : const Color(0xFFF1EAE0),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: dot.highlighted
-              ? (showsMood ? tone.border : DiaryV2Styles.accent.withValues(alpha: 0.62))
-              : showsMood
-                  ? tone.border.withValues(alpha: 0.96)
-                  : dot.active
-                      ? DiaryV2Styles.border.withValues(alpha: 0.92)
-                      : Colors.transparent,
-          width: dot.highlighted ? 1.8 : showsMood ? 1.2 : dot.active ? 0.9 : 0,
+    return SizedBox.square(
+      dimension: metrics.cellExtent,
+      child: Center(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: circleSize,
+          height: circleSize,
+          child: _MonthMoodCircle(
+            size: circleSize,
+            tone: tone,
+            moodValue: dot.moodValue,
+            isActive: dot.active,
+            isHighlighted: dot.highlighted,
+            inactiveDotSize: metrics.inactiveDotSize,
+            showMood: showsMood,
+            moodScale: 0.72,
+          ),
         ),
       ),
-      child: showsMood && moodValue != null
-          ? Text(
-              DiaryMoodVisuals.emojiFor(moodValue),
-              style: TextStyle(
-                fontSize: moodValue == 0 ? baseSize + 1.5 : baseSize - 1,
-                height: 1,
-                color: tone.border,
-                fontWeight:
-                    moodValue == 0 ? FontWeight.w700 : FontWeight.w400,
-              ),
-            )
-          : dot.active
-              ? Container(
-                  width: 4,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: DiaryV2Styles.mutedTextStrong.withValues(alpha: 0.52),
-                    shape: BoxShape.circle,
-                  ),
-                )
-              : null,
     );
   }
 
@@ -269,7 +248,190 @@ class _MonthDot extends StatelessWidget {
         );
     }
   }
+}
 
+class _MonthMoodCircle extends StatelessWidget {
+  const _MonthMoodCircle({
+    required this.size,
+    required this.tone,
+    required this.moodValue,
+    required this.isActive,
+    required this.isHighlighted,
+    required this.inactiveDotSize,
+    required this.showMood,
+    required this.moodScale,
+  });
+
+  final double size;
+  final _MonthToneStyle tone;
+  final int? moodValue;
+  final bool isActive;
+  final bool isHighlighted;
+  final double inactiveDotSize;
+  final bool showMood;
+  final double moodScale;
+
+  @override
+  Widget build(BuildContext context) {
+    final fillColor = showMood
+        ? tone.fill
+        : isHighlighted
+            ? Colors.white
+            : isActive
+                ? const Color(0xFFE8DDD0)
+                : const Color(0xFFF1EAE0);
+    final borderColor = isHighlighted
+        ? (showMood
+            ? tone.border
+            : DiaryV2Styles.accent.withValues(alpha: 0.62))
+        : showMood
+            ? tone.border.withValues(alpha: 0.96)
+            : isActive
+                ? DiaryV2Styles.border.withValues(alpha: 0.92)
+                : Colors.transparent;
+    final borderWidth =
+        isHighlighted ? 1.8 : showMood ? 1.2 : isActive ? 0.9 : 0.0;
+
+    return SizedBox.square(
+      dimension: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox.square(
+            dimension: size,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: fillColor,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: borderColor,
+                  width: borderWidth,
+                ),
+              ),
+            ),
+          ),
+          if (showMood && moodValue != null)
+            _CenteredMoodEmoji(
+              moodValue: moodValue!,
+              boxSize: size * moodScale,
+              color: tone.border,
+              fontSize: moodValue == 0 ? size * 0.68 : size * 0.64,
+            )
+          else if (isActive)
+            SizedBox.square(
+              dimension: inactiveDotSize,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: DiaryV2Styles.mutedTextStrong.withValues(alpha: 0.52),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CenteredMoodEmoji extends StatelessWidget {
+  const _CenteredMoodEmoji({
+    required this.moodValue,
+    required this.boxSize,
+    required this.color,
+    required this.fontSize,
+  });
+
+  final int moodValue;
+  final double boxSize;
+  final Color color;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconOffset = _moodIconOffset(moodValue, boxSize);
+
+    return Center(
+      child: Transform.translate(
+        offset: iconOffset,
+        child: SizedBox.square(
+          dimension: boxSize,
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Text(
+                DiaryMoodVisuals.emojiFor(moodValue),
+                textAlign: TextAlign.center,
+                textScaler: TextScaler.noScaling,
+                strutStyle: const StrutStyle(
+                  height: 1,
+                  forceStrutHeight: true,
+                  leading: 0,
+                ),
+                textHeightBehavior: const TextHeightBehavior(
+                  applyHeightToFirstAscent: false,
+                  applyHeightToLastDescent: false,
+                ),
+                style: TextStyle(
+                  fontSize: fontSize,
+                  height: 1,
+                  leadingDistribution: TextLeadingDistribution.even,
+                  color: color,
+                  fontWeight:
+                      moodValue == 0 ? FontWeight.w700 : FontWeight.w400,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Offset _moodIconOffset(int moodValue, double boxSize) {
+  switch (moodValue) {
+    case -2:
+      return Offset(0, boxSize <= 14 ? 0.8 : 1.1);
+    case -1:
+      return Offset(0, boxSize <= 14 ? 0.8 : 1.0);
+    case 1:
+      return Offset(0, boxSize <= 14 ? 1.1 : 1.4);
+    case 2:
+      return Offset(0, boxSize <= 14 ? 1.8 : 2.2);
+    default:
+      return Offset(0, boxSize <= 14 ? 0.3 : 0.5);
+  }
+}
+
+class _MonthPreviewGridMetrics {
+  const _MonthPreviewGridMetrics({
+    required this.cellExtent,
+    required this.dotSize,
+    required this.inactiveDotSize,
+    required this.spacing,
+    required this.runSpacing,
+  });
+
+  final double cellExtent;
+  final double dotSize;
+  final double inactiveDotSize;
+  final double spacing;
+  final double runSpacing;
+
+  static _MonthPreviewGridMetrics fromWidth(double width) {
+    const columns = 7;
+    final spacing = width < 300 ? 4.0 : width < 340 ? 5.0 : 6.0;
+    final cellExtent = (width - (columns - 1) * spacing) / columns;
+    final dotSize = cellExtent.clamp(25.0, 31.0);
+
+    return _MonthPreviewGridMetrics(
+      cellExtent: cellExtent,
+      dotSize: dotSize,
+      inactiveDotSize: dotSize >= 28 ? 6.0 : 5.0,
+      spacing: spacing,
+      runSpacing: width < 300 ? 8.0 : 10.0,
+    );
+  }
 }
 
 class _MonthMoodBadge extends StatelessWidget {
@@ -282,26 +444,18 @@ class _MonthMoodBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tone = _toneForMood(moodValue);
-    return Container(
+    return SizedBox(
       width: 20,
       height: 20,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: tone.fill,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: tone.border,
-          width: 1.1,
-        ),
-      ),
-      child: Text(
-        DiaryMoodVisuals.emojiFor(moodValue),
-        style: TextStyle(
-          fontSize: moodValue == 0 ? 14 : 11,
-          height: 1,
-          color: tone.border,
-          fontWeight: moodValue == 0 ? FontWeight.w700 : FontWeight.w400,
-        ),
+      child: _MonthMoodCircle(
+        size: 20,
+        tone: tone,
+        moodValue: moodValue,
+        isActive: true,
+        isHighlighted: false,
+        inactiveDotSize: 0,
+        showMood: true,
+        moodScale: 0.7,
       ),
     );
   }
