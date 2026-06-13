@@ -108,7 +108,6 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
       CupertinoPageRoute(
         builder: (_) => DiaryV2AllEntriesScreen(
           entries: store.diaryEntries,
-          dailyMoods: store.dailyMoods,
         ),
       ),
     );

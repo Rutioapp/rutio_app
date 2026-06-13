@@ -3,38 +3,45 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/l10n/l10n.dart';
-import 'package:rutio/models/daily_mood.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary/models/diary_types.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
-import 'diary_v2_daily_mood_resolver.dart';
 import 'diary_v2_entry_editor_screen.dart';
 import 'diary_v2_mood_visuals.dart';
 import 'diary_v2_tags.dart';
 import 'widgets/diary_v2_styles.dart';
 
-class DiaryV2AllEntriesScreen extends StatelessWidget {
+class DiaryV2AllEntriesScreen extends StatefulWidget {
   const DiaryV2AllEntriesScreen({
     super.key,
     required this.entries,
-    required this.dailyMoods,
   });
 
   final List<DiaryEntry> entries;
-  final List<DailyMood> dailyMoods;
+
+  @override
+  State<DiaryV2AllEntriesScreen> createState() => _DiaryV2AllEntriesScreenState();
+}
+
+class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
+  Future<void> _openEntryEditor(DiaryEntry entry) async {
+    final didChange = await openDiaryV2EntryEditor(
+      context,
+      editing: entry,
+    );
+    if (didChange == true && mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final store = Provider.of<UserStateStore?>(context);
     final locale = Localizations.localeOf(context);
     final localeTag = locale.toLanguageTag();
-    final effectiveEntries = store?.diaryEntries ?? entries;
-    final effectiveDailyMoods = store?.dailyMoods ?? dailyMoods;
-    final groups = _groupEntries(
-      entries: effectiveEntries,
-      dailyMoods: effectiveDailyMoods,
-    );
+    final effectiveEntries = store?.diaryEntries ?? widget.entries;
+    final groups = _groupEntries(entries: effectiveEntries);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F0E7),
@@ -57,6 +64,7 @@ class DiaryV2AllEntriesScreen extends StatelessWidget {
                   child: _AllEntriesGroup(
                     label: _formatGroupDate(group.day, localeTag),
                     items: group.items,
+                    onEntryTap: _openEntryEditor,
                   ),
                 ),
               ),
@@ -143,10 +151,12 @@ class _AllEntriesGroup extends StatelessWidget {
   const _AllEntriesGroup({
     required this.label,
     required this.items,
+    required this.onEntryTap,
   });
 
   final String label;
   final List<_AllEntriesItemVm> items;
+  final ValueChanged<DiaryEntry> onEntryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +177,10 @@ class _AllEntriesGroup extends StatelessWidget {
         ...items.map(
           (item) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _AllEntriesCard(item: item),
+            child: _AllEntriesCard(
+              item: item,
+              onTap: () => onEntryTap(item.entry),
+            ),
           ),
         ),
       ],
@@ -176,9 +189,13 @@ class _AllEntriesGroup extends StatelessWidget {
 }
 
 class _AllEntriesCard extends StatelessWidget {
-  const _AllEntriesCard({required this.item});
+  const _AllEntriesCard({
+    required this.item,
+    required this.onTap,
+  });
 
   final _AllEntriesItemVm item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -188,10 +205,7 @@ class _AllEntriesCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(DiaryV2Styles.compactCardRadius),
-          onTap: () => openDiaryV2EntryEditor(
-            context,
-            editing: item.entry,
-          ),
+          onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
             child: Column(
@@ -405,9 +419,7 @@ class _AllEntriesItemVm {
 
 List<_AllEntriesGroupVm> _groupEntries({
   required List<DiaryEntry> entries,
-  required List<DailyMood> dailyMoods,
 }) {
-  final dailyMoodsByDate = dailyMoodMapByDate(dailyMoods);
   final sortedEntries = [...entries]
     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   final groups = <DateTime, List<_AllEntriesItemVm>>{};
@@ -415,18 +427,13 @@ List<_AllEntriesGroupVm> _groupEntries({
   for (final entry in sortedEntries) {
     final ui = _toUi(entry);
     final day = DateUtils.dateOnly(ui.createdAt);
-    final mood = resolvePreferredMoodForDay(
-      day: day,
-      dailyMoodsByDate: dailyMoodsByDate,
-      fallbackEntries: [entry],
-    );
 
     groups.putIfAbsent(day, () => <_AllEntriesItemVm>[]).add(
           _AllEntriesItemVm(
             entry: entry,
             ui: ui,
             isPinned: entry.isPinned,
-            mood: mood,
+            mood: entry.mood,
           ),
         );
   }

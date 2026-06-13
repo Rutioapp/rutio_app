@@ -5,6 +5,7 @@ import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/models/daily_mood.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_all_entries_screen.dart';
+import 'package:rutio/screens/diary_v2/diary_v2_mood_visuals.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
 void main() {
@@ -16,7 +17,6 @@ void main() {
         _app(
           child: const DiaryV2AllEntriesScreen(
             entries: [],
-            dailyMoods: [],
           ),
         ),
       );
@@ -55,14 +55,6 @@ void main() {
                 body: 'Body 3',
               ),
             ],
-            dailyMoods: [
-              DailyMood(
-                date: DateTime(2026, 6, 13),
-                mood: 2,
-                createdAt: 1,
-                updatedAt: 1,
-              ),
-            ],
           ),
         ),
       );
@@ -94,7 +86,6 @@ void main() {
                 body: 'Body',
               ),
             ],
-            dailyMoods: const [],
           ),
         ),
       );
@@ -117,7 +108,6 @@ void main() {
           store: _FakeDiaryStore(entries: [entry]),
           child: DiaryV2AllEntriesScreen(
             entries: [entry],
-            dailyMoods: const [],
           ),
         ),
       );
@@ -152,7 +142,6 @@ void main() {
           store: store,
           child: DiaryV2AllEntriesScreen(
             entries: [firstEntry, secondEntry],
-            dailyMoods: const [],
           ),
         ),
       );
@@ -171,6 +160,94 @@ void main() {
         store.diaryEntries.map((entry) => entry.id).toList(),
         <String>['keep-me'],
       );
+    });
+
+    testWidgets('renders DiaryEntry mood instead of DailyMood for the same day',
+        (tester) async {
+      final entry = _entry(
+        id: 'mood-mismatch',
+        createdAt: DateTime(2026, 6, 13, 20, 15),
+        title: 'Mood mismatch',
+        body: 'Body',
+        mood: -1,
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: _FakeDiaryStore(
+            entries: [entry],
+            dailyMoods: [
+              DailyMood(
+                date: DateTime(2026, 6, 13),
+                mood: 1,
+                createdAt: 1,
+                updatedAt: 1,
+              ),
+            ],
+          ),
+          child: DiaryV2AllEntriesScreen(
+            entries: [entry],
+          ),
+        ),
+      );
+
+      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsOneWidget);
+      expect(find.text(DiaryMoodVisuals.emojiFor(1)), findsNothing);
+    });
+
+    testWidgets('updates displayed mood after editing from all entries',
+        (tester) async {
+      final entry = _entry(
+        id: 'edit-mood',
+        createdAt: DateTime(2026, 6, 13, 20, 15),
+        title: 'Edit mood',
+        body: 'Body',
+        mood: -1,
+      );
+      final store = _MutableFakeDiaryStore(
+        entries: [entry],
+        dailyMoods: [
+          DailyMood(
+            date: DateTime(2026, 6, 13),
+            mood: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: DiaryV2AllEntriesScreen(
+            entries: [entry],
+          ),
+        ),
+      );
+
+      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsOneWidget);
+      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsNothing);
+
+      await tester.tap(find.text('Edit mood'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(DiaryMoodVisuals.emojiFor(2)));
+      await tester.pumpAndSettle();
+
+      final editSaveButton = tester.widget<InkWell>(
+        find.ancestor(
+          of: find.text('Guardar cambios'),
+          matching: find.byType(InkWell),
+        ).first,
+      );
+      editSaveButton.onTap!.call();
+      await tester.pumpAndSettle();
+
+      expect(store.updatedEntries, hasLength(1));
+      expect(store.updatedEntries.single.mood, 2);
+      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsOneWidget);
+      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsNothing);
+      expect(store.diaryEntries, hasLength(1));
+      expect(store.diaryEntries.single.id, 'edit-mood');
     });
   });
 }
@@ -204,6 +281,7 @@ DiaryEntry _entry({
   required DateTime createdAt,
   required String title,
   required String body,
+  int? mood,
   List<String> tags = const <String>[],
 }) {
   return DiaryEntry(
@@ -212,6 +290,7 @@ DiaryEntry _entry({
     text: '$title\n\n$body',
     title: title,
     body: body,
+    mood: mood,
     tags: tags,
   );
 }
@@ -219,15 +298,15 @@ DiaryEntry _entry({
 class _FakeDiaryStore extends ChangeNotifier implements UserStateStore {
   _FakeDiaryStore({
     required this.entries,
+    this.dailyMoods = const [],
   });
 
   final List<DiaryEntry> entries;
+  @override
+  final List<DailyMood> dailyMoods;
 
   @override
   List<DiaryEntry> get diaryEntries => entries;
-
-  @override
-  List<DailyMood> get dailyMoods => const [];
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -236,16 +315,32 @@ class _FakeDiaryStore extends ChangeNotifier implements UserStateStore {
 class _MutableFakeDiaryStore extends ChangeNotifier implements UserStateStore {
   _MutableFakeDiaryStore({
     required List<DiaryEntry> entries,
-  }) : _entries = List<DiaryEntry>.from(entries);
+    List<DailyMood> dailyMoods = const [],
+  })  : _entries = List<DiaryEntry>.from(entries),
+        _dailyMoods = List<DailyMood>.from(dailyMoods);
 
   final List<DiaryEntry> _entries;
+  final List<DailyMood> _dailyMoods;
   final List<String> deletedEntryIds = <String>[];
+  final List<DiaryEntry> updatedEntries = <DiaryEntry>[];
 
   @override
   List<DiaryEntry> get diaryEntries => List<DiaryEntry>.unmodifiable(_entries);
 
   @override
-  List<DailyMood> get dailyMoods => const [];
+  List<DailyMood> get dailyMoods => List<DailyMood>.unmodifiable(_dailyMoods);
+
+  @override
+  Future<void> updateDiaryEntry(DiaryEntry entry) async {
+    updatedEntries.add(entry);
+    final index = _entries.indexWhere((current) => current.id == entry.id);
+    if (index >= 0) {
+      _entries[index] = entry;
+    } else {
+      _entries.add(entry);
+    }
+    notifyListeners();
+  }
 
   @override
   Future<void> deleteDiaryEntry(String id) async {
