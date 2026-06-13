@@ -36,6 +36,51 @@ List<DiaryEntry> _diaryEntries(UserStateStore store) {
   return entries;
 }
 
+List<DailyMood> _dailyMoods(UserStateStore store) {
+  final root = store._state;
+  if (root == null) return const <DailyMood>[];
+
+  final userState = _ensureUserStateRoot(root);
+  final rawMoods = _ensureDailyMoodsRoot(userState);
+  final moods = rawMoods.entries
+      .where((entry) => entry.value is Map)
+      .map(
+        (entry) => DailyMood.fromJson({
+          ..._map(entry.value),
+          if (!_map(entry.value).containsKey('date')) 'date': entry.key,
+        }),
+      )
+      .toList(growable: false)
+    ..sort((a, b) => b.date.compareTo(a.date));
+  return moods;
+}
+
+DailyMood? _dailyMoodForDate(UserStateStore store, DateTime date) {
+  final root = store._state;
+  if (root == null) return null;
+
+  final userState = _ensureUserStateRoot(root);
+  final rawMoods = _ensureDailyMoodsRoot(userState);
+  final key = _dateKey(date);
+  final value = rawMoods[key];
+  if (value is! Map) return null;
+  return DailyMood.fromJson({
+    ..._map(value),
+    if (!_map(value).containsKey('date')) 'date': key,
+  });
+}
+
+List<DailyMood> _dailyMoodsForMonth(UserStateStore store, DateTime month) {
+  final normalizedMonth = _dateOnly(month);
+  return _dailyMoods(store)
+      .where(
+        (dailyMood) =>
+            dailyMood.date.year == normalizedMonth.year &&
+            dailyMood.date.month == normalizedMonth.month,
+      )
+      .toList(growable: false);
+}
+
 List<String> _ensureDiaryRewardAppliedDateKeys(Map<String, dynamic> userState) {
   final meta = _map(userState['meta']);
   final normalized = _list(meta[_diaryRewardAppliedDateKeysMetaKey])
@@ -289,6 +334,36 @@ Future<void> _deleteDiaryEntry(UserStateStore store, String id) async {
       ),
     );
   }
+}
+
+Future<void> _setDailyMood(UserStateStore store, DailyMood dailyMood) async {
+  final root = store._state;
+  if (root == null) return;
+
+  final userState = _ensureUserStateRoot(root);
+  _ensureDailyReset(userState);
+  final rawMoods = _ensureDailyMoodsRoot(userState);
+  final key = _dateKey(dailyMood.date);
+  final existing = _dailyMoodForDate(store, dailyMood.date);
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final persisted = dailyMood.copyWith(
+    date: _dateOnly(dailyMood.date),
+    createdAt: existing?.createdAt ?? dailyMood.createdAt,
+    updatedAt: dailyMood.updatedAt == 0 ? now : dailyMood.updatedAt,
+  );
+
+  rawMoods[key] = persisted
+      .copyWith(
+        createdAt: persisted.createdAt == 0 ? now : persisted.createdAt,
+      )
+      .toJson();
+  _touchLastSavedAt(userState);
+
+  root['userState'] = userState;
+  store._state = root;
+
+  await store._repo.save(root);
+  store._emitChanged();
 }
 
 Future<JournalEntryBackfillSummary> _syncExistingLocalJournalEntriesOnce(

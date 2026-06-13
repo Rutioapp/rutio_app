@@ -457,6 +457,12 @@ List<Map<String, dynamic>> _ensureDiaryEntriesRoot(
   return entries;
 }
 
+Map<String, dynamic> _ensureDailyMoodsRoot(Map<String, dynamic> userState) {
+  final moods = _map(userState['dailyMoods']);
+  userState['dailyMoods'] = moods;
+  return moods;
+}
+
 bool _ensureActiveHabitIds(Map<String, dynamic> userState) {
   final activeHabits = _list(userState['activeHabits'])
       .whereType<Map>()
@@ -621,6 +627,7 @@ Future<void> _loadStore(
       _ensureDailyReset(userState);
       _ensureActiveHabitIds(userState);
       _ensureDiaryEntriesRoot(userState);
+      _ensureDailyMoodsRoot(userState);
       _ensureDiaryRewardAppliedDateKeys(userState);
       _ensureTodosRoot(userState);
       _ensureAchievementsRoot(userState);
@@ -667,6 +674,7 @@ Future<void> _saveStore(
   _ensureDailyReset(userState);
   _ensureActiveHabitIds(userState);
   _ensureDiaryEntriesRoot(userState);
+  _ensureDailyMoodsRoot(userState);
   _ensureDiaryRewardAppliedDateKeys(userState);
   _ensureTodosRoot(userState);
   _ensureAchievementsRoot(userState);

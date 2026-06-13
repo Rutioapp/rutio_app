@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/models/daily_mood.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary/models/diary_types.dart';
 import 'package:rutio/screens/diary/widgets/diary_screen_background.dart';
@@ -15,6 +16,7 @@ import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/widgets/app_view_drawer.dart';
 
 import 'diary_v2_day_entries_screen.dart';
+import 'diary_v2_daily_mood_resolver.dart';
 import 'diary_v2_entry_editor_screen.dart';
 import 'widgets/diary_v2_explore_grid.dart';
 import 'widgets/diary_v2_header.dart';
@@ -85,8 +87,10 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
     final locale = Localizations.localeOf(context);
     final localeTag = locale.toLanguageTag();
     final isSpanish = locale.languageCode == 'es';
+    final dailyMoods = store.dailyMoodsForMonth(_selectedDay);
     final viewData = _DiaryV2ViewData.fromEntries(
       entries: store.diaryEntries,
+      dailyMoods: dailyMoods,
       selectedDay: _selectedDay,
       localeTag: localeTag,
     );
@@ -221,6 +225,7 @@ class _DiaryV2ViewData {
 
   static _DiaryV2ViewData fromEntries({
     required List<DiaryEntry> entries,
+    required List<DailyMood> dailyMoods,
     required DateTime selectedDay,
     required String localeTag,
   }) {
@@ -257,6 +262,16 @@ class _DiaryV2ViewData {
               entry.createdAt.month == normalizedSelectedDay.month,
         )
         .toList(growable: false);
+    final rawMonthEntries = entries
+        .where(
+          (entry) =>
+              DateTime.fromMillisecondsSinceEpoch(entry.createdAt).year ==
+                  normalizedSelectedDay.year &&
+              DateTime.fromMillisecondsSinceEpoch(entry.createdAt).month ==
+                  normalizedSelectedDay.month,
+        )
+        .toList(growable: false);
+    final dailyMoodsByDate = dailyMoodMapByDate(dailyMoods);
 
     final pinnedCount = entries.where((entry) => entry.isPinned).length;
     final monthlyEntryDays = monthEntries
@@ -305,9 +320,22 @@ class _DiaryV2ViewData {
       monthSummary: isSpanish
           ? '$monthlyEntryDays d\u00edas escritos'
           : '$monthlyEntryDays written days',
-      monthMoodLabel: _monthMoodLabel(monthEntries, localeTag),
-      monthDominantMood: _dominantMood(monthEntries),
-      monthDots: _buildMonthDots(monthEntries, normalizedSelectedDay),
+      monthMoodLabel: _monthMoodLabel(
+        month: normalizedSelectedDay,
+        monthEntries: rawMonthEntries,
+        dailyMoodsByDate: dailyMoodsByDate,
+        localeTag: localeTag,
+      ),
+      monthDominantMood: _dominantMood(
+        month: normalizedSelectedDay,
+        monthEntries: rawMonthEntries,
+        dailyMoodsByDate: dailyMoodsByDate,
+      ),
+      monthDots: _buildMonthDots(
+        monthEntries: rawMonthEntries,
+        dailyMoodsByDate: dailyMoodsByDate,
+        selectedDay: normalizedSelectedDay,
+      ),
       metadataLabels: _metadataLabels(selectedEntry, isSpanish),
       selectedDayEntries: selectedDayEntries,
       extraEntriesLabel: _extraEntriesLabel(
@@ -431,11 +459,17 @@ List<String> _metadataLabels(DiaryEntryUi? entry, bool isSpanish) {
   return labels;
 }
 
-String _monthMoodLabel(List<DiaryEntryUi> monthEntries, String localeTag) {
-  final moods = monthEntries
-      .map((entry) => entry.mood)
-      .whereType<int>()
-      .toList(growable: false);
+String _monthMoodLabel({
+  required DateTime month,
+  required List<DiaryEntry> monthEntries,
+  required Map<String, DailyMood> dailyMoodsByDate,
+  required String localeTag,
+}) {
+  final moods = resolvePreferredMonthMoodValues(
+    month: month,
+    dailyMoodsByDate: dailyMoodsByDate,
+    monthEntries: monthEntries,
+  );
   if (moods.isEmpty) {
     return localeTag.startsWith('es')
         ? 'Estado m\u00e1s repetido: por definir'
@@ -468,33 +502,36 @@ String _moodWord(int mood, bool spanish) {
   }
 }
 
-List<DiaryV2MonthDot> _buildMonthDots(
-  List<DiaryEntryUi> monthEntries,
-  DateTime selectedDay,
-) {
-  final groupedByDay = <int, List<DiaryEntryUi>>{};
+List<DiaryV2MonthDot> _buildMonthDots({
+  required List<DiaryEntry> monthEntries,
+  required Map<String, DailyMood> dailyMoodsByDate,
+  required DateTime selectedDay,
+}) {
+  final groupedByDay = <int, List<DiaryEntry>>{};
   for (final entry in monthEntries) {
-    groupedByDay.putIfAbsent(entry.createdAt.day, () => []).add(entry);
+    final createdAt = DateTime.fromMillisecondsSinceEpoch(entry.createdAt);
+    groupedByDay.putIfAbsent(createdAt.day, () => []).add(entry);
   }
 
   final daysInMonth =
       DateUtils.getDaysInMonth(selectedDay.year, selectedDay.month);
   return List.generate(daysInMonth, (index) {
     final dayNumber = index + 1;
-    final entriesForDay = groupedByDay[dayNumber] ?? const <DiaryEntryUi>[];
-    // TODO(v2-diary): This month preview temporarily uses diary entry mood as a
-    // proxy for the global day mood. Replace this with a first-class DailyMood
-    // source later, and do not mix habit-specific mood data into that model.
-    final mood = entriesForDay
-        .map((entry) => entry.mood)
-        .whereType<int>()
-        .cast<int?>()
-        .firstWhere((value) => value != null, orElse: () => null);
+    final dayDate = DateTime(selectedDay.year, selectedDay.month, dayNumber);
+    final entriesForDay = groupedByDay[dayNumber] ?? const <DiaryEntry>[];
+    final mood = resolvePreferredMoodForDay(
+      day: dayDate,
+      dailyMoodsByDate: dailyMoodsByDate,
+      fallbackEntries: entriesForDay,
+    );
+    final hasDailyMood = dailyMoodsByDate.containsKey(
+      '${dayDate.year}-${dayDate.month.toString().padLeft(2, '0')}-${dayDate.day.toString().padLeft(2, '0')}',
+    );
     return DiaryV2MonthDot(
-      active: entriesForDay.isNotEmpty,
+      active: hasDailyMood || entriesForDay.isNotEmpty,
       moodValue: mood,
       highlighted: DateUtils.isSameDay(
-        DateTime(selectedDay.year, selectedDay.month, dayNumber),
+        dayDate,
         selectedDay,
       ),
       tone: _toneForMood(mood),
@@ -513,11 +550,16 @@ DiaryV2MonthDotTone _toneForMood(int? mood) {
   };
 }
 
-int? _dominantMood(List<DiaryEntryUi> monthEntries) {
-  final moods = monthEntries
-      .map((entry) => entry.mood)
-      .whereType<int>()
-      .toList(growable: false);
+int? _dominantMood({
+  required DateTime month,
+  required List<DiaryEntry> monthEntries,
+  required Map<String, DailyMood> dailyMoodsByDate,
+}) {
+  final moods = resolvePreferredMonthMoodValues(
+    month: month,
+    dailyMoodsByDate: dailyMoodsByDate,
+    monthEntries: monthEntries,
+  );
   if (moods.isEmpty) return null;
 
   final counts = <int, int>{};

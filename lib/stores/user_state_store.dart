@@ -23,6 +23,7 @@ import '../features/achievements/domain/models/achievement.dart';
 import '../features/achievements/domain/models/habit_streak_snapshot.dart';
 import '../features/achievements/domain/models/unlocked_achievement_record.dart';
 import '../features/gamification/application/level_up_celebration_controller.dart';
+import '../models/daily_mood.dart';
 import '../features/gamification/domain/level_event.dart';
 import '../features/gamification/domain/level_event_resolver.dart';
 import '../features/gamification/domain/level_progression.dart';
@@ -462,6 +463,12 @@ class UserStateStore extends ChangeNotifier {
       );
 
   List<DiaryEntry> get diaryEntries => _diaryEntries(this);
+  List<DailyMood> get dailyMoods => _dailyMoods(this);
+
+  DailyMood? dailyMoodForDate(DateTime date) => _dailyMoodForDate(this, date);
+
+  List<DailyMood> dailyMoodsForMonth(DateTime month) =>
+      _dailyMoodsForMonth(this, month);
 
   List<TodoItem> get todoItems => _todoItems(this);
 
@@ -485,6 +492,8 @@ class UserStateStore extends ChangeNotifier {
       _updateDiaryEntry(this, entry);
 
   Future<void> deleteDiaryEntry(String id) => _deleteDiaryEntry(this, id);
+
+  Future<void> setDailyMood(DailyMood dailyMood) => _setDailyMood(this, dailyMood);
 
   dynamic getActiveHabitById(String id) => _getActiveHabitById(this, id);
 
