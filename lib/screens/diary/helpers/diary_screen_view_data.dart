@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 import '../../../models/diary_entry.dart';
 import '../../../stores/user_state_store.dart';
 import '../models/diary_types.dart';
@@ -70,165 +68,18 @@ int _countFrom(Map<DateTime, List<DiaryEntryUi>> groupedEntries) {
 }
 
 DiaryEntryUi _toUi(DiaryEntry entry) {
-  final dynamic raw = entry;
-
-  dynamic id;
-  dynamic createdAt;
-  String text = '';
-  int? mood;
-  String? habitId;
-  String? habitName;
-  String? familyName;
-  Color? familyColor;
-
-  try {
-    if (raw is Map) id = raw['id'] ?? raw['_id'] ?? raw['uid'];
-  } catch (_) {}
-  try {
-    id ??= (raw as dynamic).id;
-  } catch (_) {}
-  try {
-    id ??= (raw as dynamic)._id;
-  } catch (_) {}
-  try {
-    id ??= (raw as dynamic).uid;
-  } catch (_) {}
-
-  try {
-    if (raw is Map) {
-      createdAt = raw['createdAt'] ??
-          raw['createdAtRaw'] ??
-          raw['timestamp'] ??
-          raw['date'];
-    }
-  } catch (_) {}
-  try {
-    createdAt ??= (raw as dynamic).createdAt;
-  } catch (_) {}
-  try {
-    createdAt ??= (raw as dynamic).createdAtRaw;
-  } catch (_) {}
-  try {
-    createdAt ??= (raw as dynamic).timestamp;
-  } catch (_) {}
-
-  try {
-    if (raw is Map) {
-      text = (raw['text'] ?? raw['note'] ?? raw['content'] ?? '').toString();
-    }
-  } catch (_) {}
-  if (text.isEmpty) {
-    try {
-      text = ((raw as dynamic).text ?? '').toString();
-    } catch (_) {}
-  }
-  if (text.isEmpty) {
-    try {
-      text = ((raw as dynamic).note ?? '').toString();
-    } catch (_) {}
-  }
-
-  dynamic moodValue;
-  try {
-    if (raw is Map) moodValue = raw['mood'];
-  } catch (_) {}
-  try {
-    moodValue ??= (raw as dynamic).mood;
-  } catch (_) {}
-  if (moodValue is int) {
-    mood = moodValue;
-  } else if (moodValue != null) {
-    mood = int.tryParse(moodValue.toString());
-  }
-
-  try {
-    if (raw is Map) {
-      habitId = raw['habitId']?.toString();
-      habitName = raw['habitName']?.toString();
-      familyName = raw['familyName']?.toString();
-    }
-  } catch (_) {}
-  try {
-    habitId ??= (raw as dynamic).habitId?.toString();
-  } catch (_) {}
-  try {
-    habitName ??= (raw as dynamic).habitName?.toString();
-  } catch (_) {}
-  try {
-    familyName ??= (raw as dynamic).familyName?.toString();
-  } catch (_) {}
-
-  dynamic rawFamilyColor;
-  try {
-    if (raw is Map) rawFamilyColor = raw['familyColor'];
-  } catch (_) {}
-  try {
-    rawFamilyColor ??= (raw as dynamic).familyColor;
-  } catch (_) {}
-  if (rawFamilyColor is Color) {
-    familyColor = rawFamilyColor;
-  } else if (rawFamilyColor is int) {
-    familyColor = Color(rawFamilyColor);
-  } else if (rawFamilyColor is String) {
-    final value = rawFamilyColor.trim();
-    int? parsedColor;
-    try {
-      if (value.startsWith('0x')) {
-        parsedColor = int.parse(value);
-      } else if (value.length == 6) {
-        parsedColor = int.parse('0xFF$value');
-      } else {
-        parsedColor = int.tryParse(value);
-      }
-    } catch (_) {}
-    if (parsedColor != null) familyColor = Color(parsedColor);
-  }
-
-  DiaryEntryType type = DiaryEntryType.personal;
-  dynamic rawType;
-  dynamic isHabit;
-  try {
-    if (raw is Map) {
-      rawType = raw['type'] ?? raw['entryType'];
-      isHabit = raw['isHabit'];
-    }
-  } catch (_) {}
-  try {
-    rawType ??= (raw as dynamic).type;
-  } catch (_) {}
-  try {
-    rawType ??= (raw as dynamic).entryType;
-  } catch (_) {}
-  try {
-    isHabit ??= (raw as dynamic).isHabit;
-  } catch (_) {}
-
-  if (rawType is DiaryEntryType) {
-    type = rawType;
-  } else if (rawType is String) {
-    final normalized = rawType.toLowerCase();
-    if (normalized.contains('habit')) type = DiaryEntryType.habit;
-    if (normalized.contains('personal') || normalized.contains('note')) {
-      type = DiaryEntryType.personal;
-    }
-  } else if (rawType is int) {
-    type = rawType == 0 ? DiaryEntryType.habit : DiaryEntryType.personal;
-  } else if (isHabit is bool) {
-    type = isHabit ? DiaryEntryType.habit : DiaryEntryType.personal;
-  } else if (habitId != null && habitId.isNotEmpty) {
-    type = DiaryEntryType.habit;
-  }
-
+  final parts = entry.textParts;
   return DiaryEntryUi.fromModel(
-    id: id,
-    createdAt: createdAt,
-    type: type,
-    text: text,
-    mood: mood,
-    habitId: habitId,
-    habitName: habitName,
-    familyName: familyName,
-    familyColor: familyColor,
+    id: entry.id,
+    createdAt: entry.createdAt,
+    type: entry.habitId != null && entry.habitId!.isNotEmpty
+        ? DiaryEntryType.habit
+        : DiaryEntryType.personal,
+    text: entry.legacyText,
+    title: parts.title,
+    body: parts.body,
+    mood: entry.mood,
+    habitId: entry.habitId,
   );
 }
 

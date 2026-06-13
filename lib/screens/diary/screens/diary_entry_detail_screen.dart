@@ -206,18 +206,23 @@ class _DiaryEntryDetailVm {
         ? (resolvedFamilyColor ?? FamilyTheme.colorOf(familyId))
         : const Color(0xFFC98A47);
 
+    final explicitTitle = (entry.title ?? '').trim();
+    final explicitBody = (entry.body ?? '').trim();
+
     return _DiaryEntryDetailVm(
       isHabit: isHabit,
       topLabel: isHabit
           ? l10n.diaryDetailTopHabitUpper
           : l10n.diaryDetailTopPersonalUpper,
-      title: isHabit
+      title: explicitTitle.isNotEmpty
+          ? explicitTitle
+          : isHabit
           ? ((resolvedHabitName?.isNotEmpty ?? false)
               ? resolvedHabitName!
               : l10n.diaryDetailFallbackHabitTitle)
           : l10n.diaryDetailFallbackPersonalTitle,
       dayLabel: l10n.diaryDetailDate(entry.createdAt),
-      bodyText: entry.text,
+      bodyText: explicitBody.isNotEmpty ? explicitBody : entry.text,
       leadingMeta: isHabit
           ? ((resolvedHabitName?.isNotEmpty ?? false)
               ? resolvedHabitName!

@@ -473,6 +473,13 @@ class DiaryV2DayEntryItem {
   String get text => ui.text;
 
   String get displayTitle {
+    final explicitTitle = _compactText(ui.title ?? '');
+    if (explicitTitle.isNotEmpty) {
+      return explicitTitle.length <= 32
+          ? explicitTitle
+          : '${explicitTitle.substring(0, 29).trimRight()}...';
+    }
+
     final compact = _compactText(text);
     if (compact.isEmpty) return 'Entrada';
     final firstSentenceMatch = RegExp(r'^[^.!?\n]{1,40}').firstMatch(compact);
@@ -481,12 +488,15 @@ class DiaryV2DayEntryItem {
   }
 
   String get displayBody {
+    final explicitBody = _compactText(ui.body ?? '');
+    if (explicitBody.isNotEmpty) return explicitBody;
+
     final compact = _compactText(text);
     if (compact.isEmpty) return '';
-    if (compact == displayTitle) return compact;
+    if (compact == displayTitle) return '';
     if (compact.startsWith(displayTitle)) {
       final rest = compact.substring(displayTitle.length).trimLeft();
-      return rest.isEmpty ? compact : rest;
+      return rest;
     }
     return compact;
   }

@@ -13,7 +13,7 @@ class JournalEntryRemoteMapper {
     String? remoteIdOverride,
     bool isDeleted = false,
   }) {
-    final content = localEntry.text.trim();
+    final content = localEntry.legacyText.trim();
     if (content.isEmpty) return null;
 
     final localCreatedAt = DateTime.fromMillisecondsSinceEpoch(
@@ -37,7 +37,7 @@ class JournalEntryRemoteMapper {
       id: _resolveRemoteId(localEntryMap, override: remoteIdOverride),
       userId: userId,
       entryDate: entryDate,
-      title: _nullableTrim(localEntryMap['title']),
+      title: _nullableTrim(localEntryMap['title'] ?? localEntry.title),
       content: content,
       mood: _normalizeMood(localEntryMap['mood'] ?? localEntry.mood),
       emoji: _nullableTrim(localEntryMap['emoji']),

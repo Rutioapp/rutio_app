@@ -264,14 +264,16 @@ class _DiaryV2ViewData {
         .toSet()
         .length;
     final isSpanish = localeTag.startsWith('es');
-    final previewText = _splitPreviewText(selectedEntry?.text ?? '');
+    final previewTitleText = (selectedEntry?.title ?? '').trim();
+    final previewBodyText = (selectedEntry?.body ?? '').trim();
     final fallbackTitle = isSpanish ? 'Entrada de hoy' : 'Today entry';
 
     return _DiaryV2ViewData(
       weekDays: _buildWeekDays(normalizedSelectedDay, localeTag),
       selectedDayLabel: _formatLongDate(normalizedSelectedDay, localeTag),
-      previewTitle: previewText.$1.isNotEmpty ? previewText.$1 : fallbackTitle,
-      todayExcerpt: _excerptFor(previewText.$2),
+      previewTitle:
+          previewTitleText.isNotEmpty ? previewTitleText : fallbackTitle,
+      todayExcerpt: _excerptFor(previewBodyText),
       emptyStateTitle: isSpanish
           ? 'A\u00fan no has escrito hoy'
           : 'You have not written today yet',
@@ -347,7 +349,9 @@ DiaryEntryUi _toUi(DiaryEntry entry) {
     type: entry.habitId == null
         ? DiaryEntryType.personal
         : DiaryEntryType.habit,
-    text: entry.text,
+    text: entry.legacyText,
+    title: entry.textParts.title,
+    body: entry.textParts.body,
     mood: entry.mood,
     habitId: entry.habitId,
   );
@@ -384,22 +388,6 @@ String _excerptFor(String text) {
   if (compact.isEmpty) return compact;
   if (compact.length <= 165) return compact;
   return '${compact.substring(0, 162).trimRight()}...';
-}
-
-(String, String) _splitPreviewText(String text) {
-  final trimmed = text.trim();
-  if (trimmed.isEmpty) return ('', '');
-
-  final parts = trimmed
-      .split('\n')
-      .map((line) => line.trim())
-      .where((line) => line.isNotEmpty)
-      .toList(growable: false);
-
-  if (parts.isEmpty) return ('', '');
-  if (parts.length == 1) return (parts.first, '');
-
-  return (parts.first, parts.skip(1).join(' '));
 }
 
 String? _extraEntriesLabel({

@@ -60,16 +60,15 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
   @override
   void initState() {
     super.initState();
-    final initialText = widget.editing?.text.trim() ?? '';
-    final splitText = _splitInitialText(initialText);
+    final splitText = widget.editing?.textParts ?? const DiaryEntryTextParts(title: '', body: '');
     _scrollController = ScrollController();
     _titleFocusNode = FocusNode()
       ..addListener(() => _handleFocusChanged(_titleFocusNode, _titleFieldKey));
     _bodyFocusNode = FocusNode()
       ..addListener(() => _handleFocusChanged(_bodyFocusNode, _writeCardKey));
-    _titleController = TextEditingController(text: splitText.$1)
+    _titleController = TextEditingController(text: splitText.title)
       ..addListener(_handleTextChanged);
-    _bodyController = TextEditingController(text: splitText.$2)
+    _bodyController = TextEditingController(text: splitText.body)
       ..addListener(_handleTextChanged);
     _selectedMood = widget.editing?.mood;
     _entryDate = DateUtils.dateOnly(
@@ -160,6 +159,8 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
       id: existing?.id ?? newDiaryEntryId(),
       createdAt: createdAt.millisecondsSinceEpoch,
       text: text,
+      title: _titleController.text,
+      body: _bodyController.text,
       remoteId: existing?.remoteId,
       habitId: existing?.habitId,
       familyId: existing?.familyId,
@@ -415,17 +416,6 @@ _DiaryV2EditorCopy _copy(BuildContext context) {
   return locale.languageCode == 'es'
       ? const _DiaryV2EditorCopy.spanish()
       : const _DiaryV2EditorCopy.english();
-}
-
-(String, String) _splitInitialText(String value) {
-  if (value.isEmpty) return ('', '');
-
-  final parts = value.split(RegExp(r'\n\s*\n'));
-  if (parts.length >= 2) {
-    return (parts.first.trim(), parts.sublist(1).join('\n\n').trim());
-  }
-
-  return ('', value);
 }
 
 String _composeDiaryText({

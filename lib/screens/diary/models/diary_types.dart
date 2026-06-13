@@ -15,6 +15,8 @@ class DiaryEntryUi {
 
   final DiaryEntryType type;
   final String text;
+  final String? title;
+  final String? body;
   final int? mood;
 
   final String? habitId;
@@ -34,6 +36,8 @@ class DiaryEntryUi {
     required this.createdAt,
     required this.type,
     required this.text,
+    this.title,
+    this.body,
     this.mood,
     this.habitId,
     this.habitName,
@@ -46,6 +50,8 @@ class DiaryEntryUi {
     required dynamic createdAt,
     required DiaryEntryType type,
     required String text,
+    String? title,
+    String? body,
     int? mood,
     String? habitId,
     String? habitName,
@@ -62,6 +68,8 @@ class DiaryEntryUi {
       createdAt: dt,
       type: type,
       text: text,
+      title: title,
+      body: body,
       mood: mood,
       habitId: habitId,
       habitName: habitName,
