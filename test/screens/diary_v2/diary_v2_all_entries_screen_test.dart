@@ -125,6 +125,172 @@ void main() {
       expect(find.text('Sleep entry'), findsOneWidget);
     });
 
+    testWidgets('empty search shows all entries under all filter',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'first',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Morning note',
+                body: 'Fresh start',
+              ),
+              _entry(
+                id: 'second',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Evening recap',
+                body: 'Quiet close',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), '   ');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Morning note'), findsOneWidget);
+      expect(find.text('Evening recap'), findsOneWidget);
+    });
+
+    testWidgets('search by title finds matching entries', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Sunset walk',
+                body: 'Body 1',
+              ),
+              _entry(
+                id: 'other',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Morning pages',
+                body: 'Body 2',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), 'sunset');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sunset walk'), findsOneWidget);
+      expect(find.text('Morning pages'), findsNothing);
+    });
+
+    testWidgets('search by body finds matching entries', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Daily check-in',
+                body: 'Breathing room after lunch',
+              ),
+              _entry(
+                id: 'other',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Gym',
+                body: 'Evening stretch',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), 'lunch');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Daily check-in'), findsOneWidget);
+      expect(find.text('Gym'), findsNothing);
+    });
+
+    testWidgets('search by tag finds matching entries', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Thankful moment',
+                body: 'Body 1',
+                tags: const <String>['gratitude'],
+              ),
+              _entry(
+                id: 'other',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Deep sleep',
+                body: 'Body 2',
+                tags: const <String>['sleep'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), 'gratitude');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Thankful moment'), findsOneWidget);
+      expect(find.text('Deep sleep'), findsNothing);
+    });
+
+    testWidgets('search is case-insensitive', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Calm Reset',
+                body: 'Body 1',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), 'reset');
+      await tester.pumpAndSettle();
+      expect(find.text('Calm Reset'), findsOneWidget);
+
+      await tester.enterText(_searchField(), 'CALM');
+      await tester.pumpAndSettle();
+      expect(find.text('Calm Reset'), findsOneWidget);
+    });
+
+    testWidgets('search trims whitespace', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Notebook',
+                body: 'Body 1',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), '   note   ');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Notebook'), findsOneWidget);
+    });
+
     testWidgets('gratitude filter shows only entries with gratitude tag',
         (tester) async {
       await tester.pumpWidget(
@@ -155,6 +321,47 @@ void main() {
 
       expect(find.text('Gratitude entry'), findsOneWidget);
       expect(find.text('Energy entry'), findsNothing);
+    });
+
+    testWidgets('search combines with selected tag filter', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'gratitude-match',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Family dinner',
+                body: 'Warm evening together',
+                tags: const <String>['gratitude'],
+              ),
+              _entry(
+                id: 'gratitude-other',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Quiet tea',
+                body: 'Slow moment',
+                tags: const <String>['gratitude'],
+              ),
+              _entry(
+                id: 'sleep-match-text',
+                createdAt: DateTime(2026, 6, 11, 21, 30),
+                title: 'Dinner prep',
+                body: 'Set up for tomorrow',
+                tags: const <String>['sleep'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_filterChip('gratitude'));
+      await tester.pumpAndSettle();
+      await tester.enterText(_searchField(), 'dinner');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Family dinner'), findsOneWidget);
+      expect(find.text('Quiet tea'), findsNothing);
+      expect(find.text('Dinner prep'), findsNothing);
     });
 
     testWidgets('entry with multiple tags appears under either matching tag',
@@ -218,6 +425,83 @@ void main() {
         find.text('Cuando uses esta etiqueta en una entrada, aparecerá aquí.'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('shows no results empty state when search has no matches',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'gratitude-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Gratitude entry',
+                body: 'Body',
+                tags: const <String>['gratitude'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), 'missing');
+      await tester.pumpAndSettle();
+
+      expect(find.text('No hay resultados'), findsOneWidget);
+      expect(
+        find.text('Prueba con otra palabra o cambia el filtro.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('preserves grouping and newest-first sorting after search',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'older',
+                createdAt: DateTime(2026, 6, 12, 8, 0),
+                title: 'Alpha note',
+                body: 'shared keyword',
+              ),
+              _entry(
+                id: 'newest',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Beta note',
+                body: 'shared keyword',
+              ),
+              _entry(
+                id: 'newer-same-day',
+                createdAt: DateTime(2026, 6, 12, 22, 45),
+                title: 'Gamma note',
+                body: 'shared keyword',
+              ),
+              _entry(
+                id: 'other',
+                createdAt: DateTime(2026, 6, 11, 12, 0),
+                title: 'Different',
+                body: 'other body',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), 'shared');
+      await tester.pumpAndSettle();
+
+      final newestTop = tester.getTopLeft(find.text('Beta note')).dy;
+      final newerSameDayTop = tester.getTopLeft(find.text('Gamma note')).dy;
+      final olderTop = tester.getTopLeft(find.text('Alpha note')).dy;
+
+      expect(newestTop, lessThan(newerSameDayTop));
+      expect(newerSameDayTop, lessThan(olderTop));
+      expect(find.textContaining('13 de junio'), findsOneWidget);
+      expect(find.textContaining('12 de junio'), findsOneWidget);
+      expect(find.text('Different'), findsNothing);
     });
 
     testWidgets('preserves grouping and newest-first sorting after filtering',
@@ -480,6 +764,49 @@ void main() {
       expect(find.text('Edit tags'), findsOneWidget);
       expect(find.text('No hay entradas con esta etiqueta'), findsNothing);
     });
+
+    testWidgets('editing an entry updates visible search results', (tester) async {
+      final initialEntry = _entry(
+        id: 'search-edit',
+        createdAt: DateTime(2026, 6, 13, 20, 15),
+        title: 'Sunrise',
+        body: 'Body',
+      );
+      final store = _MutableFakeDiaryStore(entries: [initialEntry]);
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: DiaryV2AllEntriesScreen(
+            entries: [initialEntry],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), 'sunrise');
+      await tester.pumpAndSettle();
+      expect(find.text('Sunrise'), findsOneWidget);
+
+      await tester.tap(find.text('Sunrise'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'Moonlight');
+      await tester.pumpAndSettle();
+
+      final editSaveButton = tester.widget<InkWell>(
+        find.ancestor(
+          of: find.text('Guardar cambios'),
+          matching: find.byType(InkWell),
+        ).first,
+      );
+      editSaveButton.onTap!.call();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sunrise'), findsNothing);
+      expect(find.text('No hay resultados'), findsOneWidget);
+      expect(store.updatedEntries, hasLength(1));
+      expect(store.updatedEntries.single.title, 'Moonlight');
+    });
   });
 }
 
@@ -509,6 +836,10 @@ Widget _app({
 
 Finder _filterChip(String tag) {
   return find.byKey(ValueKey<String>('diary-all-entries-filter-$tag'));
+}
+
+Finder _searchField() {
+  return find.byKey(const ValueKey<String>('diary-all-entries-search-field'));
 }
 
 DiaryEntry _entry({

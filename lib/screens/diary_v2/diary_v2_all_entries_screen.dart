@@ -28,6 +28,14 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
   static const String _allFilter = 'all';
 
   String _selectedTag = _allFilter;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _openEntryEditor(DiaryEntry entry) async {
     final didChange = await openDiaryV2EntryEditor(
@@ -48,9 +56,12 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     final filteredEntries = _filterEntries(
       entries: effectiveEntries,
       selectedTag: _selectedTag,
+      searchQuery: _searchQuery,
     );
     final groups = _groupEntries(entries: filteredEntries);
     final isTagFiltered = _selectedTag != _allFilter;
+    final hasSearchQuery = _normalizedSearchQuery(_searchQuery).isNotEmpty;
+    final hasAnyEntries = effectiveEntries.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F0E7),
@@ -61,6 +72,12 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
           children: [
             _AllEntriesHeader(title: context.l10n.diaryAllEntriesTitle),
             const SizedBox(height: 14),
+            _AllEntriesSearchField(
+              controller: _searchController,
+              placeholder: context.l10n.diaryAllEntriesSearchPlaceholder,
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+            const SizedBox(height: 12),
             _TagFilterRow(
               selectedTag: _selectedTag,
               onTagSelected: (tag) => setState(() => _selectedTag = tag),
@@ -68,12 +85,20 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
             const SizedBox(height: 16),
             if (groups.isEmpty)
               _AllEntriesEmptyState(
-                title: isTagFiltered
-                    ? _tagFilterEmptyTitle(locale)
-                    : context.l10n.diaryAllEntriesEmptyTitle,
-                body: isTagFiltered
-                    ? _tagFilterEmptyBody(locale)
-                    : context.l10n.diaryAllEntriesEmptyBody,
+                title: !hasAnyEntries
+                    ? context.l10n.diaryAllEntriesEmptyTitle
+                    : hasSearchQuery
+                        ? context.l10n.diaryAllEntriesNoResultsTitle
+                        : isTagFiltered
+                            ? _tagFilterEmptyTitle(locale)
+                            : context.l10n.diaryAllEntriesEmptyTitle,
+                body: !hasAnyEntries
+                    ? context.l10n.diaryAllEntriesEmptyBody
+                    : hasSearchQuery
+                        ? context.l10n.diaryAllEntriesNoResultsBody
+                        : isTagFiltered
+                            ? _tagFilterEmptyBody(locale)
+                            : context.l10n.diaryAllEntriesEmptyBody,
               )
             else
               ...groups.map(
@@ -87,6 +112,43 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AllEntriesSearchField extends StatelessWidget {
+  const _AllEntriesSearchField({
+    required this.controller,
+    required this.placeholder,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String placeholder;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: DiaryV2Styles.compactCardDecoration(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        child: CupertinoSearchTextField(
+          key: const ValueKey<String>('diary-all-entries-search-field'),
+          controller: controller,
+          onChanged: onChanged,
+          placeholder: placeholder,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          backgroundColor: Colors.white.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(18),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: DiaryV2Styles.textStrong,
+              ),
+          placeholderStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: DiaryV2Styles.mutedTextStrong,
+              ),
         ),
       ),
     );
@@ -544,14 +606,34 @@ String _truncate(String value, int maxLength) {
 List<DiaryEntry> _filterEntries({
   required List<DiaryEntry> entries,
   required String selectedTag,
+  required String searchQuery,
 }) {
-  if (selectedTag == _DiaryV2AllEntriesScreenState._allFilter) {
-    return entries;
-  }
+  final normalizedQuery = _normalizedSearchQuery(searchQuery);
 
-  return entries
-      .where((entry) => entry.tags.contains(selectedTag))
-      .toList(growable: false);
+  return entries.where((entry) {
+    final matchesTag = selectedTag == _DiaryV2AllEntriesScreenState._allFilter
+        ? true
+        : entry.tags.contains(selectedTag);
+    if (!matchesTag) return false;
+    if (normalizedQuery.isEmpty) return true;
+    return _entryMatchesSearch(entry, normalizedQuery);
+  }).toList(growable: false);
+}
+
+String _normalizedSearchQuery(String value) => value.trim().toLowerCase();
+
+bool _entryMatchesSearch(DiaryEntry entry, String normalizedQuery) {
+  final ui = _toUi(entry);
+  final searchHaystacks = <String>[
+    ui.title ?? '',
+    ui.body ?? '',
+    ui.text,
+    ...entry.tags,
+  ];
+
+  return searchHaystacks.any(
+    (value) => value.trim().toLowerCase().contains(normalizedQuery),
+  );
 }
 
 String _filterLabel({

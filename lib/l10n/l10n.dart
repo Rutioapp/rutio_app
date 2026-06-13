@@ -1509,6 +1509,16 @@ extension AppLocalizationsDiaryX on AppLocalizations {
   String get diaryAllEntriesTooltip =>
       _isSpanishDiary ? 'Todas las entradas' : 'All entries';
 
+  String get diaryAllEntriesSearchPlaceholder =>
+      _isSpanishDiary ? 'Buscar en el diario' : 'Search journal';
+
+  String get diaryAllEntriesNoResultsTitle =>
+      _isSpanishDiary ? 'No hay resultados' : 'No results';
+
+  String get diaryAllEntriesNoResultsBody => _isSpanishDiary
+      ? 'Prueba con otra palabra o cambia el filtro.'
+      : 'Try another word or change the filter.';
+
   String get diaryDetailTopHabitUpper =>
       _isSpanishDiary ? 'ENTRADA DE HABITO' : 'HABIT ENTRY';
 
