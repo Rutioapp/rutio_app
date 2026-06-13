@@ -21,6 +21,7 @@ import 'diary_v2_daily_mood_resolver.dart';
 import 'diary_v2_entry_editor_screen.dart';
 import 'diary_v2_mood_visuals.dart';
 import 'widgets/diary_v2_explore_grid.dart';
+import 'widgets/diary_v2_daily_mood_card.dart';
 import 'widgets/diary_v2_header.dart';
 import 'widgets/diary_v2_month_preview_card.dart';
 import 'widgets/diary_v2_stats_summary_card.dart';
@@ -64,6 +65,22 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
     );
   }
 
+  Future<void> _setSelectedDayDailyMood(
+    UserStateStore store,
+    int mood,
+  ) {
+    final existing = store.dailyMoodForDate(_selectedDay);
+    return store.setDailyMood(
+      DailyMood(
+        date: _selectedDay,
+        mood: mood,
+        note: existing?.note,
+        createdAt: existing?.createdAt ?? 0,
+        updatedAt: 0,
+      ),
+    );
+  }
+
   Future<void> _openSelectedDayEntries(
     BuildContext context,
     _DiaryV2ViewData viewData,
@@ -103,6 +120,7 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
     final localeTag = locale.toLanguageTag();
     final isSpanish = locale.languageCode == 'es';
     final dailyMoods = store.dailyMoodsForMonth(_selectedDay);
+    final selectedDailyMood = store.dailyMoodForDate(_selectedDay);
     final viewData = _DiaryV2ViewData.fromEntries(
       entries: store.diaryEntries,
       dailyMoods: dailyMoods,
@@ -153,6 +171,16 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
                     },
                   ),
                   const SizedBox(height: 18),
+                  DiaryV2DailyMoodCard(
+                    title: isSpanish ? 'Estado del día' : 'Day state',
+                    helperText: isSpanish
+                        ? 'Marca cómo ha ido tu día en general.'
+                        : 'Mark how your day felt overall.',
+                    selectedMood: selectedDailyMood?.mood,
+                    onMoodSelected: (mood) =>
+                        _setSelectedDayDailyMood(store, mood),
+                  ),
+                  const SizedBox(height: 14),
                   DiaryV2TodayEntryCard(
                     title: viewData.previewTitle,
                     dateLabel: viewData.selectedDayLabel,
@@ -279,12 +307,6 @@ class _DiaryV2ViewData {
         )
         .toList(growable: false);
     final dailyMoodsByDate = dailyMoodMapByDate(dailyMoods);
-    final selectedMood = resolvePreferredMoodForDay(
-      day: normalizedSelectedDay,
-      dailyMoodsByDate: dailyMoodsByDate,
-      fallbackEntries: selectedDayEntries.map((item) => item.entry).toList(),
-    );
-
     final pinnedCount = entries.where((entry) => entry.isPinned).length;
     final monthlyEntryDays = monthEntries
         .map((entry) => DateUtils.dateOnly(entry.createdAt))
@@ -308,7 +330,7 @@ class _DiaryV2ViewData {
           ? 'Guarda un momento cuando quieras.'
           : 'Save a moment whenever you want.',
       selectedEntry: selectedEntry,
-      selectedMood: selectedMood,
+      selectedMood: selectedEntry?.mood,
       stats: [
         DiaryV2StatItem(
           icon: CupertinoIcons.flame,
