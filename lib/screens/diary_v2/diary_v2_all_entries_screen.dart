@@ -25,6 +25,10 @@ class DiaryV2AllEntriesScreen extends StatefulWidget {
 }
 
 class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
+  static const String _allFilter = 'all';
+
+  String _selectedTag = _allFilter;
+
   Future<void> _openEntryEditor(DiaryEntry entry) async {
     final didChange = await openDiaryV2EntryEditor(
       context,
@@ -41,7 +45,12 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     final locale = Localizations.localeOf(context);
     final localeTag = locale.toLanguageTag();
     final effectiveEntries = store?.diaryEntries ?? widget.entries;
-    final groups = _groupEntries(entries: effectiveEntries);
+    final filteredEntries = _filterEntries(
+      entries: effectiveEntries,
+      selectedTag: _selectedTag,
+    );
+    final groups = _groupEntries(entries: filteredEntries);
+    final isTagFiltered = _selectedTag != _allFilter;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F0E7),
@@ -51,11 +60,20 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 28),
           children: [
             _AllEntriesHeader(title: context.l10n.diaryAllEntriesTitle),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
+            _TagFilterRow(
+              selectedTag: _selectedTag,
+              onTagSelected: (tag) => setState(() => _selectedTag = tag),
+            ),
+            const SizedBox(height: 16),
             if (groups.isEmpty)
               _AllEntriesEmptyState(
-                title: context.l10n.diaryAllEntriesEmptyTitle,
-                body: context.l10n.diaryAllEntriesEmptyBody,
+                title: isTagFiltered
+                    ? _tagFilterEmptyTitle(locale)
+                    : context.l10n.diaryAllEntriesEmptyTitle,
+                body: isTagFiltered
+                    ? _tagFilterEmptyBody(locale)
+                    : context.l10n.diaryAllEntriesEmptyBody,
               )
             else
               ...groups.map(
@@ -104,6 +122,49 @@ class _AllEntriesHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TagFilterRow extends StatelessWidget {
+  const _TagFilterRow({
+    required this.selectedTag,
+    required this.onTagSelected,
+  });
+
+  final String selectedTag;
+  final ValueChanged<String> onTagSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    final filters = <String>[
+      _DiaryV2AllEntriesScreenState._allFilter,
+      ...diaryV2PredefinedTags,
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Row(
+        children: filters
+            .map(
+              (tag) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _FilterChipButton(
+                  key: ValueKey<String>('diary-all-entries-filter-$tag'),
+                  label: _filterLabel(
+                    tag: tag,
+                    locale: locale,
+                    context: context,
+                  ),
+                  isSelected: selectedTag == tag,
+                  onTap: () => onTagSelected(tag),
+                ),
+              ),
+            )
+            .toList(growable: false),
       ),
     );
   }
@@ -480,6 +541,42 @@ String _truncate(String value, int maxLength) {
   return '${value.substring(0, maxLength - 3).trimRight()}...';
 }
 
+List<DiaryEntry> _filterEntries({
+  required List<DiaryEntry> entries,
+  required String selectedTag,
+}) {
+  if (selectedTag == _DiaryV2AllEntriesScreenState._allFilter) {
+    return entries;
+  }
+
+  return entries
+      .where((entry) => entry.tags.contains(selectedTag))
+      .toList(growable: false);
+}
+
+String _filterLabel({
+  required String tag,
+  required Locale locale,
+  required BuildContext context,
+}) {
+  if (tag == _DiaryV2AllEntriesScreenState._allFilter) {
+    return context.l10n.todoFilterAll;
+  }
+  return diaryTagLabel(tag, locale);
+}
+
+String _tagFilterEmptyTitle(Locale locale) {
+  return locale.languageCode == 'es'
+      ? 'No hay entradas con esta etiqueta'
+      : 'No entries with this tag';
+}
+
+String _tagFilterEmptyBody(Locale locale) {
+  return locale.languageCode == 'es'
+      ? 'Cuando uses esta etiqueta en una entrada, aparecerá aquí.'
+      : 'When you use this tag in an entry, it will appear here.';
+}
+
 class _EntryChip extends StatelessWidget {
   const _EntryChip({required this.label});
 
@@ -501,6 +598,58 @@ class _EntryChip extends StatelessWidget {
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
+      ),
+    );
+  }
+}
+
+class _FilterChipButton extends StatelessWidget {
+  const _FilterChipButton({
+    super.key,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final backgroundColor = isSelected
+        ? DiaryV2Styles.accentSoftMuted
+        : Colors.white.withValues(alpha: 0.62);
+    final borderColor = isSelected
+        ? DiaryV2Styles.accent.withValues(alpha: 0.3)
+        : DiaryV2Styles.border.withValues(alpha: 0.72);
+    final textColor = isSelected
+        ? DiaryV2Styles.textStrong
+        : DiaryV2Styles.mutedTextStrong;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: borderColor),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+          ),
+        ),
       ),
     );
   }

@@ -68,12 +68,12 @@ void main() {
       expect(find.text('Newest entry'), findsOneWidget);
       expect(find.text('Newer same day'), findsOneWidget);
       expect(find.text('Older same day'), findsOneWidget);
-      expect(find.text('Gratitud'), findsOneWidget);
-      expect(find.text('Energía'), findsOneWidget);
+      expect(find.text('Gratitud'), findsNWidgets(2));
+      expect(find.text('Energía'), findsNWidgets(2));
       expect(find.text('+1'), findsOneWidget);
     });
 
-    testWidgets('does not render tag chips when entry tags are empty',
+    testWidgets('does not render entry tag chips when entry tags are empty',
         (tester) async {
       await tester.pumpWidget(
         _app(
@@ -90,9 +90,188 @@ void main() {
         ),
       );
 
-      expect(find.text('Gratitud'), findsNothing);
-      expect(find.text('Energía'), findsNothing);
+      expect(find.text('Gratitud'), findsOneWidget);
+      expect(find.text('Energía'), findsOneWidget);
       expect(find.text('+1'), findsNothing);
+    });
+
+    testWidgets('all filter is selected by default and shows all entries',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'gratitude-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Gratitude entry',
+                body: 'Body 1',
+                tags: const <String>['gratitude'],
+              ),
+              _entry(
+                id: 'sleep-entry',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Sleep entry',
+                body: 'Body 2',
+                tags: const <String>['sleep'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Todos'), findsOneWidget);
+      expect(find.text('Gratitude entry'), findsOneWidget);
+      expect(find.text('Sleep entry'), findsOneWidget);
+    });
+
+    testWidgets('gratitude filter shows only entries with gratitude tag',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'gratitude-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Gratitude entry',
+                body: 'Body 1',
+                tags: const <String>['gratitude'],
+              ),
+              _entry(
+                id: 'energy-entry',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Energy entry',
+                body: 'Body 2',
+                tags: const <String>['energy'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_filterChip('gratitude'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gratitude entry'), findsOneWidget);
+      expect(find.text('Energy entry'), findsNothing);
+    });
+
+    testWidgets('entry with multiple tags appears under either matching tag',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'multi-tag-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Multi tag entry',
+                body: 'Body',
+                tags: const <String>['gratitude', 'sleep'],
+              ),
+              _entry(
+                id: 'focus-entry',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Focus entry',
+                body: 'Body 2',
+                tags: const <String>['focus'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_filterChip('gratitude'));
+      await tester.pumpAndSettle();
+      expect(find.text('Multi tag entry'), findsOneWidget);
+
+      await tester.tap(_filterChip('sleep'));
+      await tester.pumpAndSettle();
+      expect(find.text('Multi tag entry'), findsOneWidget);
+      expect(find.text('Focus entry'), findsNothing);
+    });
+
+    testWidgets('shows tag-specific empty state when filter has no matches',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'gratitude-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Gratitude entry',
+                body: 'Body',
+                tags: const <String>['gratitude'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_filterChip('idea'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No hay entradas con esta etiqueta'), findsOneWidget);
+      expect(
+        find.text('Cuando uses esta etiqueta en una entrada, aparecerá aquí.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('preserves grouping and newest-first sorting after filtering',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'older-sleep',
+                createdAt: DateTime(2026, 6, 12, 8, 0),
+                title: 'Older sleep',
+                body: 'Body 1',
+                tags: const <String>['sleep'],
+              ),
+              _entry(
+                id: 'newest-sleep',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Newest sleep',
+                body: 'Body 2',
+                tags: const <String>['sleep'],
+              ),
+              _entry(
+                id: 'newer-same-day-sleep',
+                createdAt: DateTime(2026, 6, 12, 22, 45),
+                title: 'Newer same day sleep',
+                body: 'Body 3',
+                tags: const <String>['sleep'],
+              ),
+              _entry(
+                id: 'gratitude-entry',
+                createdAt: DateTime(2026, 6, 11, 12, 0),
+                title: 'Gratitude entry',
+                body: 'Body 4',
+                tags: const <String>['gratitude'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_filterChip('sleep'));
+      await tester.pumpAndSettle();
+
+      final newestTop = tester.getTopLeft(find.text('Newest sleep')).dy;
+      final newerSameDayTop =
+          tester.getTopLeft(find.text('Newer same day sleep')).dy;
+      final olderTop = tester.getTopLeft(find.text('Older sleep')).dy;
+
+      expect(newestTop, lessThan(newerSameDayTop));
+      expect(newerSameDayTop, lessThan(olderTop));
+      expect(find.text('sábado, 13 de junio'), findsOneWidget);
+      expect(find.text('viernes, 12 de junio'), findsOneWidget);
+      expect(find.text('Gratitude entry'), findsNothing);
     });
 
     testWidgets('tap opens editor in edit mode', (tester) async {
@@ -249,6 +428,58 @@ void main() {
       expect(store.diaryEntries, hasLength(1));
       expect(store.diaryEntries.single.id, 'edit-mood');
     });
+
+    testWidgets('editing an entry updates the filtered list', (tester) async {
+      final initialEntry = _entry(
+        id: 'edit-tags',
+        createdAt: DateTime(2026, 6, 13, 20, 15),
+        title: 'Edit tags',
+        body: 'Body',
+      );
+      final store = _MutableFakeDiaryStore(entries: [initialEntry]);
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: DiaryV2AllEntriesScreen(
+            entries: [initialEntry],
+          ),
+        ),
+      );
+
+      await tester.tap(_filterChip('sleep'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No hay entradas con esta etiqueta'), findsOneWidget);
+
+      await tester.tap(_filterChip('all'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit tags'));
+      await tester.pumpAndSettle();
+
+      final editorSleepChip = find.widgetWithText(FilterChip, 'Sueño');
+      await tester.ensureVisible(editorSleepChip);
+      await tester.tap(editorSleepChip);
+      await tester.pumpAndSettle();
+
+      final editSaveButton = tester.widget<InkWell>(
+        find.ancestor(
+          of: find.text('Guardar cambios'),
+          matching: find.byType(InkWell),
+        ).first,
+      );
+      editSaveButton.onTap!.call();
+      await tester.pumpAndSettle();
+
+      expect(store.updatedEntries, hasLength(1));
+      expect(store.updatedEntries.single.tags, contains('sleep'));
+
+      await tester.tap(_filterChip('sleep'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit tags'), findsOneWidget);
+      expect(find.text('No hay entradas con esta etiqueta'), findsNothing);
+    });
   });
 }
 
@@ -274,6 +505,10 @@ Widget _app({
   }
 
   return appShell();
+}
+
+Finder _filterChip(String tag) {
+  return find.byKey(ValueKey<String>('diary-all-entries-filter-$tag'));
 }
 
 DiaryEntry _entry({
