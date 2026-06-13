@@ -16,6 +16,7 @@ import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/widgets/app_view_drawer.dart';
 
 import 'diary_v2_day_entries_screen.dart';
+import 'diary_v2_all_entries_screen.dart';
 import 'diary_v2_daily_mood_resolver.dart';
 import 'diary_v2_entry_editor_screen.dart';
 import 'widgets/diary_v2_explore_grid.dart';
@@ -81,6 +82,18 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
     );
   }
 
+  Future<void> _openAllEntries(
+      BuildContext context, UserStateStore store) async {
+    await Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (_) => DiaryV2AllEntriesScreen(
+          entries: store.diaryEntries,
+          dailyMoods: store.dailyMoods,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<UserStateStore>();
@@ -126,6 +139,8 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
                       title: context.l10n.diaryTitle,
                       subtitle: subtitle,
                       onMenuTap: () => Scaffold.of(ctx).openDrawer(),
+                      onAllEntriesTap: () => _openAllEntries(context, store),
+                      allEntriesTooltip: context.l10n.diaryAllEntriesTooltip,
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -235,7 +250,8 @@ class _DiaryV2ViewData {
 
     final selectedEntry = uiEntries
         .where(
-          (entry) => DateUtils.isSameDay(entry.createdAt, normalizedSelectedDay),
+          (entry) =>
+              DateUtils.isSameDay(entry.createdAt, normalizedSelectedDay),
         )
         .cast<DiaryEntryUi?>()
         .firstWhere((entry) => entry != null, orElse: () => null);
@@ -374,9 +390,8 @@ DiaryEntryUi _toUi(DiaryEntry entry) {
   return DiaryEntryUi.fromModel(
     id: entry.id,
     createdAt: entry.createdAt,
-    type: entry.habitId == null
-        ? DiaryEntryType.personal
-        : DiaryEntryType.habit,
+    type:
+        entry.habitId == null ? DiaryEntryType.personal : DiaryEntryType.habit,
     text: entry.legacyText,
     title: entry.textParts.title,
     body: entry.textParts.body,

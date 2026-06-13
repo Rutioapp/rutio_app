@@ -13,11 +13,15 @@ class DiaryV2Header extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onMenuTap,
+    this.onAllEntriesTap,
+    this.allEntriesTooltip,
   });
 
   final String title;
   final String subtitle;
   final VoidCallback onMenuTap;
+  final VoidCallback? onAllEntriesTap;
+  final String? allEntriesTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +42,16 @@ class DiaryV2Header extends StatelessWidget {
                     onTap: onMenuTap,
                   ),
                 ),
+                if (onAllEntriesTap != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _HeaderActionButton(
+                      icon: Icons.notes_outlined,
+                      color: _statisticsTitleColor,
+                      tooltip: allEntriesTooltip ?? '',
+                      onTap: onAllEntriesTap!,
+                    ),
+                  ),
                 Semantics(
                   header: true,
                   child: Text(
@@ -68,6 +82,57 @@ class DiaryV2Header extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeaderActionButton extends StatelessWidget {
+  const _HeaderActionButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget child = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.54),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 22,
+            color: color.withValues(alpha: 0.82),
+          ),
+        ),
+      ),
+    );
+
+    if (tooltip.isNotEmpty) {
+      child = Tooltip(message: tooltip, child: child);
+    }
+
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: child,
     );
   }
 }

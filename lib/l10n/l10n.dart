@@ -208,8 +208,7 @@ extension AppLocalizationsProfileX on AppLocalizations {
 }
 
 extension AppLocalizationsAchievementsX on AppLocalizations {
-  bool get _isSpanishAchievements =>
-      localeName.toLowerCase().startsWith('es');
+  bool get _isSpanishAchievements => localeName.toLowerCase().startsWith('es');
 
   String get profileFeaturedAchievementsTitle =>
       _isSpanishAchievements ? 'Logros destacados' : 'Featured achievements';
@@ -1139,9 +1138,8 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
   String get habitStatsThisMonth =>
       _isSpanishHabitStats ? 'Este mes' : 'This month';
 
-  String get habitStatsMonthlyConsistency => _isSpanishHabitStats
-      ? 'Cumplimiento mensual'
-      : 'Monthly consistency';
+  String get habitStatsMonthlyConsistency =>
+      _isSpanishHabitStats ? 'Cumplimiento mensual' : 'Monthly consistency';
 
   String get habitStatsMonthlyLegendDone =>
       _isSpanishHabitStats ? 'Hecho' : 'Done';
@@ -1155,15 +1153,17 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
   String get habitStatsMonthlyComparisonTitle =>
       _isSpanishHabitStats ? 'Comparaci\u00f3n mensual' : 'Monthly comparison';
 
-  String get habitStatsMonthlyComparisonUnavailableTitle =>
-      _isSpanishHabitStats ? 'Sin comparaci\u00f3n todav\u00eda' : 'No comparison yet';
+  String get habitStatsMonthlyComparisonUnavailableTitle => _isSpanishHabitStats
+      ? 'Sin comparaci\u00f3n todav\u00eda'
+      : 'No comparison yet';
 
   String get habitStatsMonthlyComparisonUnavailableBody => _isSpanishHabitStats
       ? 'Cuando haya datos del mes anterior, ver\u00e1s tu evoluci\u00f3n.'
       : 'Once there is previous month data, you\u2019ll see your progress.';
 
-  String get habitStatsMonthlyComparisonBetterTitle =>
-      _isSpanishHabitStats ? 'Mejor que el mes pasado' : 'Better than last month';
+  String get habitStatsMonthlyComparisonBetterTitle => _isSpanishHabitStats
+      ? 'Mejor que el mes pasado'
+      : 'Better than last month';
 
   String habitStatsMonthlyComparisonBetterDelta(int count) {
     final safeCount = count < 0 ? count.abs() : count;
@@ -1176,8 +1176,9 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
       ? 'Ritmo similar al mes anterior'
       : 'Similar pace to last month';
 
-  String get habitStatsMonthlyComparisonSameDelta =>
-      _isSpanishHabitStats ? 'Sin cambios vs mes anterior' : 'No change vs previous month';
+  String get habitStatsMonthlyComparisonSameDelta => _isSpanishHabitStats
+      ? 'Sin cambios vs mes anterior'
+      : 'No change vs previous month';
 
   String get habitStatsMonthlyComparisonWorseTitle => _isSpanishHabitStats
       ? 'Algo por debajo del mes anterior'
@@ -1196,9 +1197,8 @@ extension AppLocalizationsHabitStatsX on AppLocalizations {
   String get habitStatsCountObjectiveTitle =>
       _isSpanishHabitStats ? 'Objetivo' : 'Goal';
 
-  String habitStatsCountObjectiveSubtitle(int target) => _isSpanishHabitStats
-      ? 'Meta diaria: $target'
-      : 'Daily target: $target';
+  String habitStatsCountObjectiveSubtitle(int target) =>
+      _isSpanishHabitStats ? 'Meta diaria: $target' : 'Daily target: $target';
 
   String get habitStatsCountGoalCompleted =>
       _isSpanishHabitStats ? 'Completado' : 'Completed';
@@ -1492,6 +1492,19 @@ extension AppLocalizationsDiaryX on AppLocalizations {
       _isSpanishDiary ? 'Seleccionar habito' : 'Select habit';
 
   String get diaryDetailScreenTitle => _isSpanishDiary ? 'Entrada' : 'Entry';
+
+  String get diaryAllEntriesTitle =>
+      _isSpanishDiary ? 'Todas las entradas' : 'All entries';
+
+  String get diaryAllEntriesEmptyTitle =>
+      _isSpanishDiary ? 'A\u00fan no hay entradas' : 'No entries yet';
+
+  String get diaryAllEntriesEmptyBody => _isSpanishDiary
+      ? 'Cuando escribas en tu diario, tus entradas aparecer\u00e1n aqu\u00ed.'
+      : 'When you write in your journal, your entries will appear here.';
+
+  String get diaryAllEntriesTooltip =>
+      _isSpanishDiary ? 'Todas las entradas' : 'All entries';
 
   String get diaryDetailTopHabitUpper =>
       _isSpanishDiary ? 'ENTRADA DE HABITO' : 'HABIT ENTRY';
