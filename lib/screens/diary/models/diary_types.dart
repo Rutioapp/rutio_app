@@ -18,6 +18,7 @@ class DiaryEntryUi {
   final String? title;
   final String? body;
   final int? mood;
+  final List<String> tags;
 
   final String? habitId;
   final String? habitName;
@@ -39,6 +40,7 @@ class DiaryEntryUi {
     this.title,
     this.body,
     this.mood,
+    this.tags = const <String>[],
     this.habitId,
     this.habitName,
     this.familyName,
@@ -53,6 +55,7 @@ class DiaryEntryUi {
     String? title,
     String? body,
     int? mood,
+    List<String> tags = const <String>[],
     String? habitId,
     String? habitName,
     String? familyName,
@@ -71,6 +74,7 @@ class DiaryEntryUi {
       title: title,
       body: body,
       mood: mood,
+      tags: tags,
       habitId: habitId,
       habitName: habitName,
       familyName: familyName,

@@ -20,6 +20,7 @@ import 'diary_v2_all_entries_screen.dart';
 import 'diary_v2_daily_mood_resolver.dart';
 import 'diary_v2_entry_editor_screen.dart';
 import 'diary_v2_mood_visuals.dart';
+import 'diary_v2_tags.dart';
 import 'widgets/diary_v2_explore_grid.dart';
 import 'widgets/diary_v2_daily_mood_card.dart';
 import 'widgets/diary_v2_header.dart';
@@ -370,7 +371,7 @@ class _DiaryV2ViewData {
         dailyMoodsByDate: dailyMoodsByDate,
         selectedDay: normalizedSelectedDay,
       ),
-      metadataLabels: _metadataLabels(selectedEntry, isSpanish),
+      metadataLabels: _metadataLabels(selectedEntry, localeTag),
       selectedDayEntries: selectedDayEntries,
       extraEntriesLabel: _extraEntriesLabel(
         count: selectedDayEntries.length,
@@ -414,6 +415,7 @@ DiaryEntryUi _toUi(DiaryEntry entry) {
     title: entry.textParts.title,
     body: entry.textParts.body,
     mood: entry.mood,
+    tags: entry.tags,
     habitId: entry.habitId,
   );
 }
@@ -481,15 +483,22 @@ int _currentStreak(List<DiaryEntryUi> entries, DateTime anchorDay) {
   return streak;
 }
 
-List<String> _metadataLabels(DiaryEntryUi? entry, bool isSpanish) {
+List<String> _metadataLabels(DiaryEntryUi? entry, String localeTag) {
   if (entry == null) return const [];
 
   final labels = <String>[];
+  labels.addAll(
+    diaryTagLabels(
+      entry.tags,
+      Locale(localeTag.split('-').first),
+      maxVisible: 2,
+    ),
+  );
   if (entry.type == DiaryEntryType.habit) {
-    labels.add(isSpanish ? 'H\u00e1bito' : 'Habit');
+    labels.add(localeTag.startsWith('es') ? 'H\u00e1bito' : 'Habit');
   }
 
-  return labels;
+  return labels.take(3).toList(growable: false);
 }
 
 String _monthMoodLabel({

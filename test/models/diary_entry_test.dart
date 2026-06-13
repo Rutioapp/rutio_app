@@ -45,6 +45,27 @@ void main() {
       expect(json['text'], 'Deporte\n\nHoy sali a caminar.');
     });
 
+    test('fromJson without tags defaults to empty list', () {
+      final entry = DiaryEntry.fromJson({
+        'id': 'no-tags',
+        'createdAt': 123,
+        'text': 'Entrada simple',
+      });
+
+      expect(entry.tags, isEmpty);
+    });
+
+    test('fromJson with tags loads normalized supported tags', () {
+      final entry = DiaryEntry.fromJson({
+        'id': 'with-tags',
+        'createdAt': 123,
+        'text': 'Entrada simple',
+        'tags': ['gratitude', ' energy ', 'custom', 'GRATITUDE'],
+      });
+
+      expect(entry.tags, <String>['gratitude', 'energy']);
+    });
+
     test('one-line legacy text becomes title with empty body', () {
       final entry = DiaryEntry.fromJson({
         'id': 'one-line',
@@ -111,6 +132,7 @@ void main() {
         habitId: 'habit-1',
         familyId: 'body',
         mood: 1,
+        tags: <String>['focus', 'sleep'],
         isPinned: true,
       );
 
@@ -125,6 +147,7 @@ void main() {
       expect(restored.habitId, 'habit-1');
       expect(restored.familyId, 'body');
       expect(restored.mood, 1);
+      expect(restored.tags, <String>['focus', 'sleep']);
       expect(restored.isPinned, isTrue);
     });
   });

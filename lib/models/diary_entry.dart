@@ -2,6 +2,15 @@ import 'package:flutter/foundation.dart';
 
 @immutable
 class DiaryEntry {
+  static const List<String> supportedTags = <String>[
+    'gratitude',
+    'energy',
+    'focus',
+    'sleep',
+    'mood',
+    'idea',
+  ];
+
   final String id;
   final int createdAt; // epoch ms
   final String text;
@@ -18,6 +27,8 @@ class DiaryEntry {
   /// Optional mood value: -2..+2
   final int? mood;
 
+  final List<String> tags;
+
   final bool isPinned;
 
   const DiaryEntry({
@@ -30,6 +41,7 @@ class DiaryEntry {
     this.habitId,
     this.familyId,
     this.mood,
+    this.tags = const <String>[],
     this.isPinned = false,
   });
 
@@ -64,6 +76,7 @@ class DiaryEntry {
     String? habitId,
     String? familyId,
     int? mood,
+    List<String>? tags,
     bool? isPinned,
   }) {
     return DiaryEntry(
@@ -76,6 +89,7 @@ class DiaryEntry {
       habitId: habitId ?? this.habitId,
       familyId: familyId ?? this.familyId,
       mood: mood ?? this.mood,
+      tags: tags ?? this.tags,
       isPinned: isPinned ?? this.isPinned,
     );
   }
@@ -90,6 +104,7 @@ class DiaryEntry {
         'habitId': habitId,
         'familyId': familyId,
         'mood': mood,
+        'tags': _normalizedTags(tags),
         'isPinned': isPinned,
       };
 
@@ -109,6 +124,7 @@ class DiaryEntry {
         habitId: (json['habitId'] as Object?)?.toString(),
         familyId: (json['familyId'] as Object?)?.toString(),
         mood: (json['mood'] is int) ? json['mood'] as int : int.tryParse((json['mood'] ?? '').toString()),
+        tags: _jsonTags(json['tags']),
         isPinned: (json['isPinned'] as bool?) ?? false,
       );
 }
@@ -180,4 +196,21 @@ String? _resolveJsonBody(Map<String, dynamic> json) {
 String? _normalizedNullableText(Object? value) {
   final normalized = (value ?? '').toString().trim();
   return normalized.isEmpty ? null : normalized;
+}
+
+List<String> _jsonTags(Object? value) {
+  if (value is! List) return const <String>[];
+  return _normalizedTags(value);
+}
+
+List<String> _normalizedTags(Iterable<dynamic> values) {
+  final normalized = <String>[];
+  for (final value in values) {
+    final tag = value.toString().trim().toLowerCase();
+    if (tag.isEmpty || !DiaryEntry.supportedTags.contains(tag)) continue;
+    if (!normalized.contains(tag)) {
+      normalized.add(tag);
+    }
+  }
+  return List<String>.unmodifiable(normalized);
 }

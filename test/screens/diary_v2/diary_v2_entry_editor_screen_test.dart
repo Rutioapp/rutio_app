@@ -36,7 +36,38 @@ void main() {
       expect(store.addedEntries.single.id, isNotEmpty);
       expect(store.addedEntries.single.title, 'Fresh title');
       expect(store.addedEntries.single.body, 'Fresh body');
+      expect(store.addedEntries.single.tags, isEmpty);
       expect(find.byTooltip('Eliminar'), findsNothing);
+    });
+
+    testWidgets('create mode stores selected predefined tags', (tester) async {
+      final store = _FakeDiaryEditorStore();
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: const DiaryV2EntryEditorScreen(),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField).first, 'Fresh title');
+      await tester.enterText(find.byType(TextField).last, 'Fresh body');
+      await tester.ensureVisible(find.widgetWithText(FilterChip, 'Gratitud'));
+      await tester.tap(find.widgetWithText(FilterChip, 'Gratitud'));
+      await tester.tap(find.widgetWithText(FilterChip, 'Energía'));
+      await tester.pumpAndSettle();
+
+      final createSaveButton = tester.widget<InkWell>(
+        find.ancestor(
+          of: find.text('Guardar'),
+          matching: find.byType(InkWell),
+        ).first,
+      );
+      createSaveButton.onTap!.call();
+      await tester.pumpAndSettle();
+
+      expect(store.addedEntries, hasLength(1));
+      expect(store.addedEntries.single.tags, <String>['gratitude', 'energy']);
     });
 
     testWidgets('renders standardized mood icons in the selector',
@@ -70,6 +101,7 @@ void main() {
         remoteId: '123e4567-e89b-12d3-a456-426614174000',
         habitId: 'habit-1',
         familyId: 'mind',
+        tags: const <String>['gratitude', 'energy'],
         isPinned: true,
       );
 
@@ -84,9 +116,21 @@ void main() {
       expect(find.byTooltip('Eliminar'), findsOneWidget);
       expect(find.text('Old title'), findsOneWidget);
       expect(find.text('Old body'), findsOneWidget);
+      expect(
+        tester.widget<FilterChip>(find.widgetWithText(FilterChip, 'Gratitud')).selected,
+        isTrue,
+      );
+      expect(
+        tester.widget<FilterChip>(find.widgetWithText(FilterChip, 'Energía')).selected,
+        isTrue,
+      );
 
       await tester.enterText(find.byType(TextField).first, 'Updated title');
       await tester.enterText(find.byType(TextField).last, 'Updated body');
+      await tester.ensureVisible(find.widgetWithText(FilterChip, 'Gratitud'));
+      await tester.tap(find.widgetWithText(FilterChip, 'Gratitud'));
+      await tester.tap(find.widgetWithText(FilterChip, 'Sueño'));
+      await tester.pumpAndSettle();
       final editSaveButton = tester.widget<InkWell>(
         find.ancestor(
           of: find.text('Guardar cambios'),
@@ -108,6 +152,7 @@ void main() {
       expect(updated.isPinned, isTrue);
       expect(updated.title, 'Updated title');
       expect(updated.body, 'Updated body');
+      expect(updated.tags, <String>['energy', 'sleep']);
     });
 
     testWidgets('delete action opens confirmation dialog and cancel keeps entry',

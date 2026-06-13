@@ -11,6 +11,7 @@ import 'package:rutio/stores/user_state_store.dart';
 import 'diary_v2_daily_mood_resolver.dart';
 import 'diary_v2_entry_editor_screen.dart';
 import 'diary_v2_mood_visuals.dart';
+import 'diary_v2_tags.dart';
 import 'widgets/diary_v2_styles.dart';
 
 class DiaryV2AllEntriesScreen extends StatelessWidget {
@@ -237,6 +238,17 @@ class _AllEntriesCard extends StatelessWidget {
                         ),
                   ),
                 ],
+                if (item.tagLabels(Localizations.localeOf(context)).isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: item
+                        .tagLabels(Localizations.localeOf(context))
+                        .map((label) => _EntryChip(label: label))
+                        .toList(growable: false),
+                  ),
+                ],
               ],
             ),
           ),
@@ -385,6 +397,10 @@ class _AllEntriesItemVm {
     }
     return legacy;
   }
+
+  List<String> tagLabels(Locale locale) {
+    return diaryTagLabels(entry.tags, locale, maxVisible: 3);
+  }
 }
 
 List<_AllEntriesGroupVm> _groupEntries({
@@ -436,6 +452,7 @@ DiaryEntryUi _toUi(DiaryEntry entry) {
     title: entry.textParts.title,
     body: entry.textParts.body,
     mood: entry.mood,
+    tags: entry.tags,
     habitId: entry.habitId,
   );
 }
@@ -454,4 +471,30 @@ String _compact(String value) {
 String _truncate(String value, int maxLength) {
   if (value.length <= maxLength) return value;
   return '${value.substring(0, maxLength - 3).trimRight()}...';
+}
+
+class _EntryChip extends StatelessWidget {
+  const _EntryChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: DiaryV2Styles.creamStrong.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: DiaryV2Styles.border.withValues(alpha: 0.82)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: DiaryV2Styles.mutedTextStrong,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+      ),
+    );
+  }
 }

@@ -24,7 +24,8 @@ void main() {
       expect(find.text('Aún no hay entradas'), findsOneWidget);
       expect(
         find.text(
-            'Cuando escribas en tu diario, tus entradas aparecerán aquí.'),
+          'Cuando escribas en tu diario, tus entradas aparecerán aquí.',
+        ),
         findsOneWidget,
       );
     });
@@ -45,6 +46,7 @@ void main() {
                 createdAt: DateTime(2026, 6, 13, 20, 15),
                 title: 'Newest entry',
                 body: 'Body 2',
+                tags: const <String>['gratitude', 'energy', 'focus', 'sleep'],
               ),
               _entry(
                 id: 'newer-same-day',
@@ -74,7 +76,32 @@ void main() {
       expect(find.text('Newest entry'), findsOneWidget);
       expect(find.text('Newer same day'), findsOneWidget);
       expect(find.text('Older same day'), findsOneWidget);
-      expect(find.text('♥️'), findsOneWidget);
+      expect(find.text('Gratitud'), findsOneWidget);
+      expect(find.text('Energía'), findsOneWidget);
+      expect(find.text('+1'), findsOneWidget);
+    });
+
+    testWidgets('does not render tag chips when entry tags are empty',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'plain-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Plain entry',
+                body: 'Body',
+              ),
+            ],
+            dailyMoods: const [],
+          ),
+        ),
+      );
+
+      expect(find.text('Gratitud'), findsNothing);
+      expect(find.text('Energía'), findsNothing);
+      expect(find.text('+1'), findsNothing);
     });
 
     testWidgets('tap opens editor in edit mode', (tester) async {
@@ -177,6 +204,7 @@ DiaryEntry _entry({
   required DateTime createdAt,
   required String title,
   required String body,
+  List<String> tags = const <String>[],
 }) {
   return DiaryEntry(
     id: id,
@@ -184,6 +212,7 @@ DiaryEntry _entry({
     text: '$title\n\n$body',
     title: title,
     body: body,
+    tags: tags,
   );
 }
 

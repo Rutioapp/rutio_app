@@ -7,6 +7,7 @@ import 'package:rutio/stores/user_state_store.dart';
 
 import 'diary_v2_entry_editor_screen.dart';
 import 'diary_v2_mood_visuals.dart';
+import 'diary_v2_tags.dart';
 import 'widgets/diary_v2_styles.dart';
 import 'widgets/diary_v2_write_button.dart';
 
@@ -527,6 +528,7 @@ class DiaryV2DayEntryItem {
 
   List<String> metadataChips(Locale locale) {
     final chips = <String>[];
+    chips.addAll(diaryTagLabels(entry.tags, locale, maxVisible: 2));
     if (mood != null) {
       chips.add(DiaryMoodVisuals.labelForLocale(mood!, locale));
     }
@@ -535,7 +537,7 @@ class DiaryV2DayEntryItem {
     } else if ((ui.habitName ?? '').trim().isNotEmpty) {
       chips.add(ui.habitName!.trim());
     }
-    return chips.take(2).toList(growable: false);
+    return chips.take(3).toList(growable: false);
   }
 
   static String _compactText(String value) {
@@ -575,6 +577,7 @@ DiaryEntryUi _toUi(DiaryEntry entry) {
     title: entry.textParts.title,
     body: entry.textParts.body,
     mood: entry.mood,
+    tags: entry.tags,
     habitId: entry.habitId,
   );
 }

@@ -13,6 +13,7 @@ import 'widgets/diary_v2_editor_mood_selector.dart';
 import 'widgets/diary_v2_editor_write_card.dart';
 import 'widgets/diary_v2_styles.dart';
 import 'widgets/diary_v2_write_button.dart';
+import 'diary_v2_tags.dart';
 
 Future<bool?> openDiaryV2EntryEditor(
   BuildContext context, {
@@ -57,6 +58,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
   final GlobalKey _titleFieldKey = GlobalKey();
   final GlobalKey _writeCardKey = GlobalKey();
   int? _selectedMood;
+  late List<String> _selectedTags;
 
   bool get _isEditing => widget.editing != null;
 
@@ -74,6 +76,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
     _bodyController = TextEditingController(text: splitText.body)
       ..addListener(_handleTextChanged);
     _selectedMood = widget.editing?.mood;
+    _selectedTags = List<String>.from(widget.editing?.tags ?? const <String>[]);
     _entryDate = DateUtils.dateOnly(
       widget.initialDate ??
           (widget.editing != null
@@ -153,6 +156,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
           title: _titleController.text,
           body: _bodyController.text,
           mood: _selectedMood,
+          tags: _selectedTags,
         ) ??
         DiaryEntry(
           id: newDiaryEntryId(),
@@ -170,6 +174,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
           title: _titleController.text,
           body: _bodyController.text,
           mood: _selectedMood,
+          tags: _selectedTags,
         );
 
     if (existing == null) {
@@ -262,6 +267,22 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
                         focusNode: _bodyFocusNode,
                         currentLength: bodyCount,
                         maxLength: _maxCharacters,
+                      ),
+                      const SizedBox(height: 12),
+                      _TagSelectorCard(
+                        title: copy.tagsTitle,
+                        helperText: copy.tagsHelper,
+                        selectedTags: _selectedTags,
+                        onToggle: (tag) {
+                          setState(() {
+                            if (_selectedTags.contains(tag)) {
+                              _selectedTags =
+                                  _selectedTags.where((value) => value != tag).toList(growable: false);
+                            } else {
+                              _selectedTags = <String>[..._selectedTags, tag];
+                            }
+                          });
+                        },
                       ),
                       SizedBox(height: bodyCount > 0 ? 22 : 18),
                       Center(
@@ -404,6 +425,8 @@ class _DiaryV2EditorCopy {
         moodTitle = '\u00bfQu\u00e9 emoci\u00f3n acompa\u00f1a esta entrada?',
         titleHint = 'T\u00edtulo opcional',
         promptTitle = '\u00bfQu\u00e9 quieres recordar de hoy?',
+        tagsTitle = 'Etiquetas',
+        tagsHelper = 'A\u00f1ade una pista sobre lo que est\u00e1s registrando.',
         writeSomethingError = 'Escribe algo antes de guardar.';
 
   const _DiaryV2EditorCopy.editSpanish()
@@ -416,6 +439,8 @@ class _DiaryV2EditorCopy {
         moodTitle = '\u00bfQu\u00e9 emoci\u00f3n acompa\u00f1a esta entrada?',
         titleHint = 'T\u00edtulo opcional',
         promptTitle = '\u00bfQu\u00e9 quieres recordar de hoy?',
+        tagsTitle = 'Etiquetas',
+        tagsHelper = 'A\u00f1ade una pista sobre lo que est\u00e1s registrando.',
         writeSomethingError = 'Escribe algo antes de guardar.';
 
   const _DiaryV2EditorCopy.english()
@@ -428,6 +453,8 @@ class _DiaryV2EditorCopy {
         moodTitle = 'What feeling goes with this entry?',
         titleHint = 'Optional title',
         promptTitle = 'What would you like to remember today?',
+        tagsTitle = 'Tags',
+        tagsHelper = 'Add a small cue about what you\'re recording.',
         writeSomethingError = 'Write something before saving.';
 
   const _DiaryV2EditorCopy.editEnglish()
@@ -440,6 +467,8 @@ class _DiaryV2EditorCopy {
         moodTitle = 'What feeling goes with this entry?',
         titleHint = 'Optional title',
         promptTitle = 'What would you like to remember today?',
+        tagsTitle = 'Tags',
+        tagsHelper = 'Add a small cue about what you\'re recording.',
         writeSomethingError = 'Write something before saving.';
 
   final String localeTag;
@@ -449,6 +478,8 @@ class _DiaryV2EditorCopy {
   final String moodTitle;
   final String titleHint;
   final String promptTitle;
+  final String tagsTitle;
+  final String tagsHelper;
   final String bottomSaveLabel;
   final String savedMessage;
   final String writeSomethingError;
@@ -486,4 +517,80 @@ String _formatDateLabel(DateTime date, String localeTag) {
   final formatted = DateFormat(pattern, localeTag).format(date);
   if (formatted.isEmpty) return formatted;
   return '${formatted[0].toUpperCase()}${formatted.substring(1)}';
+}
+
+class _TagSelectorCard extends StatelessWidget {
+  const _TagSelectorCard({
+    required this.title,
+    required this.helperText,
+    required this.selectedTags,
+    required this.onToggle,
+  });
+
+  final String title;
+  final String helperText;
+  final List<String> selectedTags;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: DiaryV2Styles.compactCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: DiaryV2Styles.textStrong,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            helperText,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: DiaryV2Styles.mutedTextStrong,
+                  height: 1.3,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: diaryV2PredefinedTags.map((tag) {
+              final selected = selectedTags.contains(tag);
+              return FilterChip(
+                label: Text(diaryTagLabel(tag, locale)),
+                selected: selected,
+                onSelected: (_) => onToggle(tag),
+                selectedColor: DiaryV2Styles.accentSoftMuted,
+                checkmarkColor: DiaryV2Styles.accentDeep,
+                backgroundColor: DiaryV2Styles.creamStrong.withValues(alpha: 0.94),
+                side: BorderSide(
+                  color: selected
+                      ? DiaryV2Styles.accentDeep.withValues(alpha: 0.28)
+                      : DiaryV2Styles.border.withValues(alpha: 0.9),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: selected
+                          ? DiaryV2Styles.accentDeep
+                          : DiaryV2Styles.mutedTextStrong,
+                      fontWeight: FontWeight.w600,
+                    ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              );
+            }).toList(growable: false),
+          ),
+        ],
+      ),
+    );
+  }
 }
