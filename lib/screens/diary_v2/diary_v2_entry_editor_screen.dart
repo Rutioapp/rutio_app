@@ -13,13 +13,13 @@ import 'widgets/diary_v2_editor_write_card.dart';
 import 'widgets/diary_v2_styles.dart';
 import 'widgets/diary_v2_write_button.dart';
 
-Future<void> openDiaryV2EntryEditor(
+Future<bool?> openDiaryV2EntryEditor(
   BuildContext context, {
   DiaryEntry? editing,
   DateTime? initialDate,
 }) {
   return Navigator.of(context).push(
-    CupertinoPageRoute<void>(
+    CupertinoPageRoute<bool>(
       fullscreenDialog: true,
       builder: (_) => DiaryV2EntryEditorScreen(
         editing: editing,
@@ -56,6 +56,8 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
   final GlobalKey _titleFieldKey = GlobalKey();
   final GlobalKey _writeCardKey = GlobalKey();
   int? _selectedMood;
+
+  bool get _isEditing => widget.editing != null;
 
   @override
   void initState() {
@@ -133,40 +135,41 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
     );
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_copy(context).writeSomethingError)),
+        SnackBar(
+          content: Text(
+            _copy(context, isEditing: _isEditing).writeSomethingError,
+          ),
+        ),
       );
       return;
     }
 
     final store = context.read<UserStateStore>();
     final existing = widget.editing;
-    final sourceDate = existing != null
-        ? DateTime.fromMillisecondsSinceEpoch(existing.createdAt)
-        : _entryDate;
-    final createdAt = DateTime(
-      sourceDate.year,
-      sourceDate.month,
-      sourceDate.day,
-      existing != null ? sourceDate.hour : DateTime.now().hour,
-      existing != null ? sourceDate.minute : DateTime.now().minute,
-      existing != null ? sourceDate.second : DateTime.now().second,
-      existing != null
-          ? sourceDate.millisecond
-          : DateTime.now().millisecond,
-    );
-
-    final entry = DiaryEntry(
-      id: existing?.id ?? newDiaryEntryId(),
-      createdAt: createdAt.millisecondsSinceEpoch,
-      text: text,
-      title: _titleController.text,
-      body: _bodyController.text,
-      remoteId: existing?.remoteId,
-      habitId: existing?.habitId,
-      familyId: existing?.familyId,
-      mood: _selectedMood,
-      isPinned: existing?.isPinned ?? false,
-    );
+    final now = DateTime.now();
+    final entry = existing?.copyWith(
+          text: text,
+          title: _titleController.text,
+          body: _bodyController.text,
+          mood: _selectedMood,
+        ) ??
+        DiaryEntry(
+          id: newDiaryEntryId(),
+          createdAt: DateTime(
+            _entryDate.year,
+            _entryDate.month,
+            _entryDate.day,
+            now.hour,
+            now.minute,
+            now.second,
+            now.millisecond,
+            now.microsecond,
+          ).millisecondsSinceEpoch,
+          text: text,
+          title: _titleController.text,
+          body: _bodyController.text,
+          mood: _selectedMood,
+        );
 
     if (existing == null) {
       await store.addDiaryEntry(entry);
@@ -176,15 +179,15 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
 
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(true);
     messenger.showSnackBar(
-      SnackBar(content: Text(_copy(context).savedMessage)),
+      SnackBar(content: Text(_copy(context, isEditing: _isEditing).savedMessage)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final copy = _copy(context);
+    final copy = _copy(context, isEditing: _isEditing);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final bodyCount = _bodyController.text.characters.length;
@@ -376,27 +379,51 @@ class _TitleField extends StatelessWidget {
 
 class _DiaryV2EditorCopy {
   const _DiaryV2EditorCopy.spanish()
-      : localeTag = 'es',
-        screenTitle = 'Nueva entrada',
+      : screenTitle = 'Nueva entrada',
         topSaveLabel = 'Guardar',
+        bottomSaveLabel = 'Guardar entrada',
+        savedMessage = 'Entrada guardada',
+        localeTag = 'es',
         autoSaveLabel = 'Guardado autom\u00e1tico',
         moodTitle = '\u00bfQu\u00e9 emoci\u00f3n acompa\u00f1a esta entrada?',
         titleHint = 'T\u00edtulo opcional',
         promptTitle = '\u00bfQu\u00e9 quieres recordar de hoy?',
-        bottomSaveLabel = 'Guardar entrada',
-        savedMessage = 'Entrada guardada',
+        writeSomethingError = 'Escribe algo antes de guardar.';
+
+  const _DiaryV2EditorCopy.editSpanish()
+      : screenTitle = 'Editar entrada',
+        topSaveLabel = 'Guardar cambios',
+        bottomSaveLabel = 'Guardar cambios',
+        savedMessage = 'Entrada actualizada',
+        localeTag = 'es',
+        autoSaveLabel = 'Guardado autom\u00e1tico',
+        moodTitle = '\u00bfQu\u00e9 emoci\u00f3n acompa\u00f1a esta entrada?',
+        titleHint = 'T\u00edtulo opcional',
+        promptTitle = '\u00bfQu\u00e9 quieres recordar de hoy?',
         writeSomethingError = 'Escribe algo antes de guardar.';
 
   const _DiaryV2EditorCopy.english()
-      : localeTag = 'en',
-        screenTitle = 'New entry',
+      : screenTitle = 'New entry',
         topSaveLabel = 'Save',
+        bottomSaveLabel = 'Save entry',
+        savedMessage = 'Entry saved',
+        localeTag = 'en',
         autoSaveLabel = 'Autosaved',
         moodTitle = 'What feeling goes with this entry?',
         titleHint = 'Optional title',
         promptTitle = 'What would you like to remember today?',
-        bottomSaveLabel = 'Save entry',
-        savedMessage = 'Entry saved',
+        writeSomethingError = 'Write something before saving.';
+
+  const _DiaryV2EditorCopy.editEnglish()
+      : screenTitle = 'Edit entry',
+        topSaveLabel = 'Save changes',
+        bottomSaveLabel = 'Save changes',
+        savedMessage = 'Entry updated',
+        localeTag = 'en',
+        autoSaveLabel = 'Autosaved',
+        moodTitle = 'What feeling goes with this entry?',
+        titleHint = 'Optional title',
+        promptTitle = 'What would you like to remember today?',
         writeSomethingError = 'Write something before saving.';
 
   final String localeTag;
@@ -411,10 +438,15 @@ class _DiaryV2EditorCopy {
   final String writeSomethingError;
 }
 
-_DiaryV2EditorCopy _copy(BuildContext context) {
+_DiaryV2EditorCopy _copy(BuildContext context, {required bool isEditing}) {
   final locale = Localizations.localeOf(context);
-  return locale.languageCode == 'es'
-      ? const _DiaryV2EditorCopy.spanish()
+  if (locale.languageCode == 'es') {
+    return isEditing
+        ? const _DiaryV2EditorCopy.editSpanish()
+        : const _DiaryV2EditorCopy.spanish();
+  }
+  return isEditing
+      ? const _DiaryV2EditorCopy.editEnglish()
       : const _DiaryV2EditorCopy.english();
 }
 

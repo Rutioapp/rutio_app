@@ -1351,6 +1351,9 @@ extension AppLocalizationsDiaryX on AppLocalizations {
 
   String get diaryNewEntry => _isSpanishDiary ? 'Nueva entrada' : 'New entry';
 
+  String get diaryEditEntry =>
+      _isSpanishDiary ? 'Editar entrada' : 'Edit entry';
+
   String get diaryEntryDeleted =>
       _isSpanishDiary ? 'Entrada eliminada' : 'Entry deleted';
 

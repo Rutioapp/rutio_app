@@ -74,6 +74,7 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
         builder: (_) => DiaryV2DayEntriesScreen(
           title: isSpanish ? 'Entradas del d\u00eda' : 'Day entries',
           dateLabel: viewData.selectedDayLabel,
+          selectedDay: _selectedDay,
           entries: viewData.selectedDayEntries,
           onCreateEntry: () => _openComposer(context),
           createLabel: isSpanish ? 'Nueva entrada' : 'New entry',
@@ -255,21 +256,10 @@ class _DiaryV2ViewData {
         )
         .cast<DiaryEntryUi?>()
         .firstWhere((entry) => entry != null, orElse: () => null);
-    final selectedDayEntries = entries
-        .map(
-          (entry) => DiaryV2DayEntryItem(
-            ui: _toUi(entry),
-            isPinned: entry.isPinned,
-          ),
-        )
-        .where(
-          (entry) => DateUtils.isSameDay(
-            entry.ui.createdAt,
-            normalizedSelectedDay,
-          ),
-        )
-        .toList(growable: false)
-      ..sort((a, b) => b.ui.createdAt.compareTo(a.ui.createdAt));
+    final selectedDayEntries = diaryV2DayEntryItemsForDate(
+      entries: entries,
+      selectedDay: normalizedSelectedDay,
+    );
 
     final monthEntries = uiEntries
         .where(

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/models/daily_mood.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_all_entries_screen.dart';
+import 'package:rutio/stores/user_state_store.dart';
 
 void main() {
+  Provider.debugCheckInvalidValueType = null;
+
   group('DiaryV2AllEntriesScreen', () {
     testWidgets('shows empty state when there are no entries', (tester) async {
       await tester.pumpWidget(
@@ -71,15 +75,48 @@ void main() {
       expect(find.text('Newer same day'), findsOneWidget);
       expect(find.text('Older same day'), findsOneWidget);
     });
+
+    testWidgets('tap opens editor in edit mode', (tester) async {
+      final entry = _entry(
+        id: 'edit-me',
+        createdAt: DateTime(2026, 6, 13, 20, 15),
+        title: 'Existing title',
+        body: 'Existing body',
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: _FakeDiaryStore(entries: [entry]),
+          child: DiaryV2AllEntriesScreen(
+            entries: [entry],
+            dailyMoods: const [],
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Existing title'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Editar entrada'), findsOneWidget);
+      expect(find.text('Guardar cambios'), findsWidgets);
+      expect(find.text('Existing title'), findsOneWidget);
+      expect(find.text('Existing body'), findsOneWidget);
+    });
   });
 }
 
-Widget _app({required Widget child}) {
-  return MaterialApp(
-    locale: const Locale('es'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: child,
+Widget _app({
+  required Widget child,
+  UserStateStore? store,
+}) {
+  return Provider<UserStateStore?>.value(
+    value: store,
+    child: MaterialApp(
+      locale: const Locale('es'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: child,
+    ),
   );
 }
 
@@ -96,4 +133,21 @@ DiaryEntry _entry({
     title: title,
     body: body,
   );
+}
+
+class _FakeDiaryStore implements UserStateStore {
+  const _FakeDiaryStore({
+    required this.entries,
+  });
+
+  final List<DiaryEntry> entries;
+
+  @override
+  List<DiaryEntry> get diaryEntries => entries;
+
+  @override
+  List<DailyMood> get dailyMoods => const [];
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

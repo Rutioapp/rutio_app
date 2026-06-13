@@ -1,8 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary/models/diary_types.dart';
-import 'package:rutio/screens/diary/screens/diary_entry_detail_screen.dart';
+import 'package:rutio/stores/user_state_store.dart';
 
+import 'diary_v2_entry_editor_screen.dart';
 import 'widgets/diary_v2_styles.dart';
 import 'widgets/diary_v2_write_button.dart';
 
@@ -11,6 +14,7 @@ class DiaryV2DayEntriesScreen extends StatelessWidget {
     super.key,
     required this.title,
     required this.dateLabel,
+    required this.selectedDay,
     required this.entries,
     this.onCreateEntry,
     this.createLabel,
@@ -18,17 +22,25 @@ class DiaryV2DayEntriesScreen extends StatelessWidget {
 
   final String title;
   final String dateLabel;
+  final DateTime selectedDay;
   final List<DiaryV2DayEntryItem> entries;
   final VoidCallback? onCreateEntry;
   final String? createLabel;
 
   @override
   Widget build(BuildContext context) {
+    final store = Provider.of<UserStateStore?>(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final showCreateAction =
         onCreateEntry != null && (createLabel?.isNotEmpty ?? false);
     final locale = Localizations.localeOf(context);
     final isSpanish = locale.languageCode == 'es';
+    final effectiveEntries = store == null
+        ? entries
+        : diaryV2DayEntryItemsForDate(
+            entries: store.diaryEntries,
+            selectedDay: selectedDay,
+          );
 
     return Scaffold(
       backgroundColor: const Color(0xFFE7F1FA),
@@ -50,25 +62,22 @@ class DiaryV2DayEntriesScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 _SummaryCard(
-                  count: entries.length,
+                  count: effectiveEntries.length,
                   isSpanish: isSpanish,
                 ),
                 const SizedBox(height: 16),
-                if (entries.isEmpty)
+                if (effectiveEntries.isEmpty)
                   _EmptyCard(isSpanish: isSpanish)
                 else
-                  ...entries.map(
+                  ...effectiveEntries.map(
                     (entry) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _DayEntryCard(
                         entry: entry,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            CupertinoPageRoute(
-                              builder: (_) => DiaryEntryDetailScreen(entry: entry.ui),
-                            ),
-                          );
-                        },
+                        onTap: () => openDiaryV2EntryEditor(
+                          context,
+                          editing: entry.entry,
+                        ),
                       ),
                     ),
                   ),
@@ -461,10 +470,12 @@ class _MetadataChip extends StatelessWidget {
 
 class DiaryV2DayEntryItem {
   const DiaryV2DayEntryItem({
+    required this.entry,
     required this.ui,
     required this.isPinned,
   });
 
+  final DiaryEntry entry;
   final DiaryEntryUi ui;
   final bool isPinned;
 
@@ -544,4 +555,40 @@ class DiaryV2DayEntryItem {
         return 'Gratitud';
     }
   }
+}
+
+List<DiaryV2DayEntryItem> diaryV2DayEntryItemsForDate({
+  required List<DiaryEntry> entries,
+  required DateTime selectedDay,
+}) {
+  return entries
+      .where(
+        (entry) => DateUtils.isSameDay(
+          DateTime.fromMillisecondsSinceEpoch(entry.createdAt),
+          selectedDay,
+        ),
+      )
+      .map(
+        (entry) => DiaryV2DayEntryItem(
+          entry: entry,
+          ui: _toUi(entry),
+          isPinned: entry.isPinned,
+        ),
+      )
+      .toList(growable: false)
+    ..sort((a, b) => b.ui.createdAt.compareTo(a.ui.createdAt));
+}
+
+DiaryEntryUi _toUi(DiaryEntry entry) {
+  return DiaryEntryUi.fromModel(
+    id: entry.id,
+    createdAt: entry.createdAt,
+    type:
+        entry.habitId == null ? DiaryEntryType.personal : DiaryEntryType.habit,
+    text: entry.legacyText,
+    title: entry.textParts.title,
+    body: entry.textParts.body,
+    mood: entry.mood,
+    habitId: entry.habitId,
+  );
 }

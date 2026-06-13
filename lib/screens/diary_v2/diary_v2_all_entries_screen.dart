@@ -1,13 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/models/daily_mood.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary/models/diary_types.dart';
-import 'package:rutio/screens/diary/screens/diary_entry_detail_screen.dart';
+import 'package:rutio/stores/user_state_store.dart';
 
 import 'diary_v2_daily_mood_resolver.dart';
+import 'diary_v2_entry_editor_screen.dart';
 import 'widgets/diary_v2_styles.dart';
 
 class DiaryV2AllEntriesScreen extends StatelessWidget {
@@ -22,11 +24,14 @@ class DiaryV2AllEntriesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final store = Provider.of<UserStateStore?>(context);
     final locale = Localizations.localeOf(context);
     final localeTag = locale.toLanguageTag();
+    final effectiveEntries = store?.diaryEntries ?? entries;
+    final effectiveDailyMoods = store?.dailyMoods ?? dailyMoods;
     final groups = _groupEntries(
-      entries: entries,
-      dailyMoods: dailyMoods,
+      entries: effectiveEntries,
+      dailyMoods: effectiveDailyMoods,
     );
 
     return Scaffold(
@@ -181,13 +186,10 @@ class _AllEntriesCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(DiaryV2Styles.compactCardRadius),
-          onTap: () {
-            Navigator.of(context).push(
-              CupertinoPageRoute(
-                builder: (_) => DiaryEntryDetailScreen(entry: item.ui),
-              ),
-            );
-          },
+          onTap: () => openDiaryV2EntryEditor(
+            context,
+            editing: item.entry,
+          ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
             child: Column(
@@ -344,11 +346,13 @@ class _AllEntriesGroupVm {
 
 class _AllEntriesItemVm {
   const _AllEntriesItemVm({
+    required this.entry,
     required this.ui,
     required this.isPinned,
     required this.mood,
   });
 
+  final DiaryEntry entry;
   final DiaryEntryUi ui;
   final bool isPinned;
   final int? mood;
@@ -400,6 +404,7 @@ List<_AllEntriesGroupVm> _groupEntries({
 
     groups.putIfAbsent(day, () => <_AllEntriesItemVm>[]).add(
           _AllEntriesItemVm(
+            entry: entry,
             ui: ui,
             isPinned: entry.isPinned,
             mood: mood,
