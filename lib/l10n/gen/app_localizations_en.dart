@@ -1649,8 +1649,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get diaryDeleteEntryTitle => 'Delete entry';
 
   @override
-  String get diaryDeleteEntryBody =>
-      'Are you sure you want to delete this entry?';
+  String get diaryDeleteEntryBody => 'This action can\'t be undone.';
 
   @override
   String diaryEntriesCount(int count) {

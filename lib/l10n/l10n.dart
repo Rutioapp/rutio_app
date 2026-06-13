@@ -1369,8 +1369,8 @@ extension AppLocalizationsDiaryX on AppLocalizations {
       _isSpanishDiary ? 'Eliminar entrada' : 'Delete entry';
 
   String get diaryDeleteEntryBody => _isSpanishDiary
-      ? 'Seguro que quieres eliminar esta entrada?'
-      : 'Are you sure you want to delete this entry?';
+      ? 'Esta acci\u00f3n no se puede deshacer.'
+      : 'This action can\'t be undone.';
 
   String diaryEntriesCount(int count) => _isSpanishDiary
       ? '$count entrada${count == 1 ? '' : 's'}'

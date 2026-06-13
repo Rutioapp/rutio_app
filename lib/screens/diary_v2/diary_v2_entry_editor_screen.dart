@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary/helpers/diary_screen_actions.dart';
 import 'package:rutio/screens/diary/widgets/diary_screen_background.dart';
@@ -185,6 +186,19 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
     );
   }
 
+  Future<void> _delete() async {
+    final existing = widget.editing;
+    if (existing == null) return;
+
+    final confirmed = await showDiaryDeleteConfirmationDialog(context);
+    if (!mounted || !confirmed) return;
+
+    await context.read<UserStateStore>().deleteDiaryEntry(existing.id);
+    if (!mounted) return;
+
+    Navigator.of(context).pop(true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final copy = _copy(context, isEditing: _isEditing);
@@ -217,6 +231,8 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
                         saveLabel: copy.topSaveLabel,
                         onClose: () => Navigator.of(context).maybePop(),
                         onSave: _save,
+                        onDelete: _isEditing ? _delete : null,
+                        deleteTooltip: context.l10n.diaryActionDelete,
                       ),
                       const SizedBox(height: 16),
                       _DateStatusCard(

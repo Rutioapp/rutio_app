@@ -2989,7 +2989,7 @@ abstract class AppLocalizations {
   /// No description provided for @diaryDeleteEntryBody.
   ///
   /// In es, this message translates to:
-  /// **'¿Seguro que quieres eliminar esta entrada?'**
+  /// **'Esta acción no se puede deshacer.'**
   String get diaryDeleteEntryBody;
 
   /// No description provided for @diaryEntriesCount.

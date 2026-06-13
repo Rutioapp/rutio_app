@@ -876,7 +876,7 @@
   "diaryNoteSaved": "Nota guardada",
   "diaryPinSoon": "Fijar: próximamente",
   "diaryDeleteEntryTitle": "Eliminar entrada",
-  "diaryDeleteEntryBody": "¿Seguro que quieres eliminar esta entrada?",
+  "diaryDeleteEntryBody": "Esta acción no se puede deshacer.",
   "diaryEntriesCount": "{count} entradas",
   "@diaryEntriesCount": {
     "placeholders": {

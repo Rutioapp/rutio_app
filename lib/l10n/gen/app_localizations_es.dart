@@ -1660,8 +1660,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get diaryDeleteEntryTitle => 'Eliminar entrada';
 
   @override
-  String get diaryDeleteEntryBody =>
-      '¿Seguro que quieres eliminar esta entrada?';
+  String get diaryDeleteEntryBody => 'Esta acción no se puede deshacer.';
 
   @override
   String diaryEntriesCount(int count) {

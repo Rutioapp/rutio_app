@@ -103,6 +103,48 @@ void main() {
       expect(find.text('Existing title'), findsOneWidget);
       expect(find.text('Existing body'), findsOneWidget);
     });
+
+    testWidgets('confirm delete removes only the selected entry',
+        (tester) async {
+      final firstEntry = _entry(
+        id: 'delete-me',
+        createdAt: DateTime(2026, 6, 13, 20, 15),
+        title: 'Delete me',
+        body: 'Body 1',
+      );
+      final secondEntry = _entry(
+        id: 'keep-me',
+        createdAt: DateTime(2026, 6, 13, 18, 15),
+        title: 'Keep me',
+        body: 'Body 2',
+      );
+      final store = _MutableFakeDiaryStore(entries: [firstEntry, secondEntry]);
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: DiaryV2AllEntriesScreen(
+            entries: [firstEntry, secondEntry],
+            dailyMoods: const [],
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Delete me'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Eliminar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Eliminar').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Editar entrada'), findsNothing);
+      expect(find.text('Keep me'), findsOneWidget);
+      expect(store.deletedEntryIds, <String>['delete-me']);
+      expect(
+        store.diaryEntries.map((entry) => entry.id).toList(),
+        <String>['keep-me'],
+      );
+    });
   });
 }
 
@@ -110,15 +152,24 @@ Widget _app({
   required Widget child,
   UserStateStore? store,
 }) {
-  return Provider<UserStateStore?>.value(
-    value: store,
-    child: MaterialApp(
-      locale: const Locale('es'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    ),
-  );
+  Widget appShell() => Provider<UserStateStore?>.value(
+        value: store,
+        child: MaterialApp(
+          locale: const Locale('es'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: child,
+        ),
+      );
+
+  if (store is ChangeNotifier) {
+    return ListenableBuilder(
+      listenable: store as ChangeNotifier,
+      builder: (_, __) => appShell(),
+    );
+  }
+
+  return appShell();
 }
 
 DiaryEntry _entry({
@@ -136,8 +187,8 @@ DiaryEntry _entry({
   );
 }
 
-class _FakeDiaryStore implements UserStateStore {
-  const _FakeDiaryStore({
+class _FakeDiaryStore extends ChangeNotifier implements UserStateStore {
+  _FakeDiaryStore({
     required this.entries,
   });
 
@@ -148,6 +199,31 @@ class _FakeDiaryStore implements UserStateStore {
 
   @override
   List<DailyMood> get dailyMoods => const [];
+
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _MutableFakeDiaryStore extends ChangeNotifier implements UserStateStore {
+  _MutableFakeDiaryStore({
+    required List<DiaryEntry> entries,
+  }) : _entries = List<DiaryEntry>.from(entries);
+
+  final List<DiaryEntry> _entries;
+  final List<String> deletedEntryIds = <String>[];
+
+  @override
+  List<DiaryEntry> get diaryEntries => List<DiaryEntry>.unmodifiable(_entries);
+
+  @override
+  List<DailyMood> get dailyMoods => const [];
+
+  @override
+  Future<void> deleteDiaryEntry(String id) async {
+    deletedEntryIds.add(id);
+    _entries.removeWhere((entry) => entry.id == id);
+    notifyListeners();
+  }
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

@@ -10,12 +10,16 @@ class DiaryV2EditorHeader extends StatelessWidget {
     required this.saveLabel,
     required this.onClose,
     required this.onSave,
+    this.onDelete,
+    this.deleteTooltip,
   });
 
   final String title;
   final String saveLabel;
   final VoidCallback onClose;
   final VoidCallback onSave;
+  final VoidCallback? onDelete;
+  final String? deleteTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +46,23 @@ class DiaryV2EditorHeader extends StatelessWidget {
             ),
           ),
         ),
-        _SavePillButton(
-          label: saveLabel,
-          onTap: onSave,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onDelete != null) ...[
+              _RoundIconButton(
+                icon: CupertinoIcons.trash,
+                onTap: onDelete!,
+                tooltip: deleteTooltip,
+                iconColor: const Color(0xFFB4574A),
+              ),
+              const SizedBox(width: 8),
+            ],
+            _SavePillButton(
+              label: saveLabel,
+              onTap: onSave,
+            ),
+          ],
         ),
       ],
     );
@@ -55,27 +73,34 @@ class _RoundIconButton extends StatelessWidget {
   const _RoundIconButton({
     required this.icon,
     required this.onTap,
+    this.tooltip,
+    this.iconColor,
   });
 
   final IconData icon;
   final VoidCallback onTap;
+  final String? tooltip;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: DiaryV2Styles.subtleButtonDecoration(),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox(
-            width: 46,
-            height: 46,
-            child: Icon(
-              icon,
-              color: DiaryV2Styles.textStrong,
-              size: 19,
+    return Tooltip(
+      message: tooltip ?? '',
+      child: DecoratedBox(
+        decoration: DiaryV2Styles.subtleButtonDecoration(),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: SizedBox(
+              width: 46,
+              height: 46,
+              child: Icon(
+                icon,
+                color: iconColor ?? DiaryV2Styles.textStrong,
+                size: 19,
+              ),
             ),
           ),
         ),

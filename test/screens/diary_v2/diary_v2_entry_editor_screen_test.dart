@@ -36,6 +36,7 @@ void main() {
       expect(store.addedEntries.single.id, isNotEmpty);
       expect(store.addedEntries.single.title, 'Fresh title');
       expect(store.addedEntries.single.body, 'Fresh body');
+      expect(find.byTooltip('Eliminar'), findsNothing);
     });
 
     testWidgets('renders standardized mood icons in the selector',
@@ -80,6 +81,7 @@ void main() {
       );
 
       expect(find.text('Editar entrada'), findsOneWidget);
+      expect(find.byTooltip('Eliminar'), findsOneWidget);
       expect(find.text('Old title'), findsOneWidget);
       expect(find.text('Old body'), findsOneWidget);
 
@@ -107,6 +109,62 @@ void main() {
       expect(updated.title, 'Updated title');
       expect(updated.body, 'Updated body');
     });
+
+    testWidgets('delete action opens confirmation dialog and cancel keeps entry',
+        (tester) async {
+      final store = _FakeDiaryEditorStore();
+      final existing = DiaryEntry(
+        id: 'entry-1',
+        createdAt: DateTime(2026, 6, 13, 8, 30).millisecondsSinceEpoch,
+        text: 'Old title\n\nOld body',
+        title: 'Old title',
+        body: 'Old body',
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: DiaryV2EntryEditorScreen(editing: existing),
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Eliminar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Eliminar entrada'), findsOneWidget);
+      expect(find.text('Esta acción no se puede deshacer.'), findsOneWidget);
+
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      expect(store.deletedEntryIds, isEmpty);
+      expect(find.text('Editar entrada'), findsOneWidget);
+    });
+
+    testWidgets('confirm delete removes the edited entry', (tester) async {
+      final store = _FakeDiaryEditorStore();
+      final existing = DiaryEntry(
+        id: 'entry-1',
+        createdAt: DateTime(2026, 6, 13, 8, 30).millisecondsSinceEpoch,
+        text: 'Old title\n\nOld body',
+        title: 'Old title',
+        body: 'Old body',
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: DiaryV2EntryEditorScreen(editing: existing),
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Eliminar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Eliminar').last);
+      await tester.pumpAndSettle();
+
+      expect(store.deletedEntryIds, <String>['entry-1']);
+    });
   });
 }
 
@@ -133,6 +191,7 @@ Widget _app({
 class _FakeDiaryEditorStore implements UserStateStore {
   final List<DiaryEntry> addedEntries = <DiaryEntry>[];
   final List<DiaryEntry> updatedEntries = <DiaryEntry>[];
+  final List<String> deletedEntryIds = <String>[];
 
   @override
   Future<void> addDiaryEntry(DiaryEntry entry) async {
@@ -142,6 +201,11 @@ class _FakeDiaryEditorStore implements UserStateStore {
   @override
   Future<void> updateDiaryEntry(DiaryEntry entry) async {
     updatedEntries.add(entry);
+  }
+
+  @override
+  Future<void> deleteDiaryEntry(String id) async {
+    deletedEntryIds.add(id);
   }
 
   @override
