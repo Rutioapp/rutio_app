@@ -7,7 +7,7 @@ import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary/models/diary_types.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
-import 'diary_v2_entry_editor_screen.dart';
+import 'diary_v2_entry_detail_screen.dart';
 import 'diary_v2_mood_visuals.dart';
 import 'diary_v2_tags.dart';
 import 'widgets/diary_v2_styles.dart';
@@ -42,12 +42,12 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     super.dispose();
   }
 
-  Future<void> _openEntryEditor(DiaryEntry entry) async {
-    final didChange = await openDiaryV2EntryEditor(
+  Future<void> _openEntryDetail(DiaryEntry entry) async {
+    await openDiaryV2EntryDetail(
       context,
-      editing: entry,
+      entry: entry,
     );
-    if (didChange == true && mounted) {
+    if (mounted) {
       setState(() {});
     }
   }
@@ -143,7 +143,7 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
                   child: _AllEntriesGroup(
                     label: _formatGroupDate(group.day, localeTag),
                     items: group.items,
-                    onEntryTap: _openEntryEditor,
+                    onEntryTap: _openEntryDetail,
                   ),
                 ),
               ),

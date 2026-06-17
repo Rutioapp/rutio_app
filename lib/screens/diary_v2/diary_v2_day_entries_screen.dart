@@ -5,7 +5,7 @@ import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary/models/diary_types.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
-import 'diary_v2_entry_editor_screen.dart';
+import 'diary_v2_entry_detail_screen.dart';
 import 'diary_v2_mood_visuals.dart';
 import 'diary_v2_tags.dart';
 import 'widgets/diary_v2_styles.dart';
@@ -76,9 +76,9 @@ class DiaryV2DayEntriesScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _DayEntryCard(
                         entry: entry,
-                        onTap: () => openDiaryV2EntryEditor(
+                        onTap: () => openDiaryV2EntryDetail(
                           context,
-                          editing: entry.entry,
+                          entry: entry.entry,
                         ),
                       ),
                     ),

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -1213,7 +1214,7 @@ void main() {
       expect(find.text('Previous week'), findsNothing);
     });
 
-    testWidgets('tap opens editor in edit mode', (tester) async {
+    testWidgets('tap opens detail screen before editing', (tester) async {
       final entry = _entry(
         id: 'edit-me',
         createdAt: DateTime(2026, 6, 13, 20, 15),
@@ -1233,8 +1234,9 @@ void main() {
       await tester.tap(find.text('Existing title'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Editar entrada'), findsOneWidget);
-      expect(find.text('Guardar cambios'), findsWidgets);
+      expect(find.text('Tu entrada'), findsOneWidget);
+      expect(find.text('Editar entrada'), findsNothing);
+      expect(find.text('Editar'), findsWidgets);
       expect(find.text('Existing title'), findsOneWidget);
       expect(find.text('Existing body'), findsOneWidget);
     });
@@ -1266,12 +1268,14 @@ void main() {
 
       await tester.tap(find.text('Delete me'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Editar').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Eliminar'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Eliminar').last);
       await tester.pumpAndSettle();
 
-      expect(find.text('Editar entrada'), findsNothing);
+      expect(find.text('Tu entrada'), findsNothing);
       expect(find.text('Keep me'), findsOneWidget);
       expect(store.deletedEntryIds, <String>['delete-me']);
       expect(
@@ -1383,6 +1387,8 @@ void main() {
 
       await tester.tap(find.text('Edit mood'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Editar').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.text(DiaryMoodVisuals.emojiFor(2)));
       await tester.pumpAndSettle();
 
@@ -1430,6 +1436,8 @@ void main() {
 
       await tester.tap(find.text('Edit mood filter'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Editar').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.text(DiaryMoodVisuals.emojiFor(2)));
       await tester.pumpAndSettle();
 
@@ -1442,6 +1450,11 @@ void main() {
             .first,
       );
       editSaveButton.onTap!.call();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit mood filter'), findsOneWidget);
+
+      await tester.tap(find.byIcon(CupertinoIcons.back));
       await tester.pumpAndSettle();
 
       expect(find.text('Edit mood filter'), findsNothing);
@@ -1476,6 +1489,8 @@ void main() {
       await _clearFiltersFromSheet(tester);
       await tester.tap(find.text('Edit tags'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Editar').first);
+      await tester.pumpAndSettle();
 
       final editorSleepChip = find.widgetWithText(FilterChip, 'Sueño');
       await tester.ensureVisible(editorSleepChip);
@@ -1495,6 +1510,9 @@ void main() {
 
       expect(store.updatedEntries, hasLength(1));
       expect(store.updatedEntries.single.tags, contains('sleep'));
+
+      await tester.tap(find.byIcon(CupertinoIcons.back));
+      await tester.pumpAndSettle();
 
       await _applyTagFilter(tester, 'sleep');
 
@@ -1527,6 +1545,8 @@ void main() {
 
       await tester.tap(find.text('Sunrise'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Editar').first);
+      await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).first, 'Moonlight');
       await tester.pumpAndSettle();
@@ -1542,10 +1562,16 @@ void main() {
       editSaveButton.onTap!.call();
       await tester.pumpAndSettle();
 
-      expect(find.text('Sunrise'), findsNothing);
-      expect(find.text('No hay resultados'), findsOneWidget);
       expect(store.updatedEntries, hasLength(1));
       expect(store.updatedEntries.single.title, 'Moonlight');
+
+      expect(find.text('Moonlight'), findsOneWidget);
+
+      await tester.tap(find.byIcon(CupertinoIcons.back));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sunrise'), findsNothing);
+      expect(find.text('No hay resultados'), findsOneWidget);
     });
   });
 }
