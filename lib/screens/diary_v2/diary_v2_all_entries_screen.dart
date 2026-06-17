@@ -294,6 +294,14 @@ class _FilterActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final decoration = BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.9),
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(
+        color: DiaryV2Styles.border.withValues(alpha: 0.78),
+      ),
+    );
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -301,9 +309,9 @@ class _FilterActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         onTap: onTap,
         child: Ink(
-          decoration: DiaryV2Styles.subtleButtonDecoration(),
+          decoration: decoration,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
