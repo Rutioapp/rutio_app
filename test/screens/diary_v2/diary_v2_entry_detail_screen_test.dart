@@ -37,6 +37,7 @@ void main() {
       expect(find.text('Gratitude'), findsOneWidget);
       expect(find.text('Energy'), findsOneWidget);
       expect(find.text('Saved'), findsOneWidget);
+      expect(find.text('Edit'), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
     });
 

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/models/diary_entry.dart';
+import 'package:rutio/screens/diary/widgets/diary_screen_background.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
 import 'diary_v2_entry_editor_screen.dart';
@@ -78,55 +79,47 @@ class _DiaryV2EntryDetailScreenState extends State<DiaryV2EntryDetailScreen> {
       locale.toLanguageTag(),
     );
     final tagLabels = diaryTagLabels(currentEntry.tags, locale);
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F0E7),
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            const Positioned.fill(child: _DetailBackground()),
-            ListView(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 28),
-              children: [
-                _DetailHeader(
-                  editLabel: context.l10n.diaryActionEdit,
-                  onClose: () => Navigator.of(context).maybePop(),
-                  onEdit: () => _openEditor(currentEntry),
-                ),
-                const SizedBox(height: 18),
-                _MetaStrip(dateLabel: dateLabel),
-                const SizedBox(height: 12),
-                _TitleCard(title: title),
-                const SizedBox(height: 12),
-                _SignalsCard(
-                  mood: currentEntry.mood,
-                  moodLabel:
-                      currentEntry.mood == null
-                          ? null
-                          : DiaryMoodVisuals.labelForLocale(
-                              currentEntry.mood!,
-                              locale,
-                            ),
-                  tags: tagLabels,
-                  isPinned: currentEntry.isPinned,
-                ),
-                const SizedBox(height: 12),
-                _BodyCard(
-                  title: copy.bodySectionTitle,
-                  body: body.isEmpty ? copy.emptyBody : body,
-                  isPlaceholder: body.isEmpty,
-                ),
-                const SizedBox(height: 18),
-                Center(
-                  child: _EditButton(
-                    label: context.l10n.diaryActionEdit,
-                    onTap: () => _openEditor(currentEntry),
-                  ),
-                ),
-              ],
-            ),
-          ],
+      backgroundColor: Colors.transparent,
+      body: DiaryScreenBackground(
+        child: SafeArea(
+          bottom: false,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(14, 10, 14, bottomPadding + 28),
+            children: [
+              _DetailHeader(
+                editLabel: context.l10n.diaryActionEdit,
+                onClose: () => Navigator.of(context).maybePop(),
+                onEdit: () => _openEditor(currentEntry),
+              ),
+              const SizedBox(height: 18),
+              _MetaStrip(dateLabel: dateLabel),
+              const SizedBox(height: 12),
+              _TitleCard(title: title),
+              const SizedBox(height: 12),
+              _SignalsCard(
+                mood: currentEntry.mood,
+                moodLabel:
+                    currentEntry.mood == null
+                        ? null
+                        : DiaryMoodVisuals.labelForLocale(
+                            currentEntry.mood!,
+                            locale,
+                          ),
+                tags: tagLabels,
+                isPinned: currentEntry.isPinned,
+              ),
+              const SizedBox(height: 12),
+              _BodyCard(
+                title: copy.bodySectionTitle,
+                body: body.isEmpty ? copy.emptyBody : body,
+                isPlaceholder: body.isEmpty,
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
@@ -213,6 +206,8 @@ class _MetaStrip extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: DiaryV2Styles.textStrong,
                     fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    height: 1.2,
                   ),
             ),
           ),
@@ -236,9 +231,10 @@ class _TitleCard extends StatelessWidget {
       child: Text(
         title,
         style: DiaryV2Styles.title(context).copyWith(
-          fontSize: 28,
+          fontSize: 23,
+          fontWeight: FontWeight.w600,
           color: DiaryV2Styles.textStrong,
-          height: 1.08,
+          height: 1.16,
         ),
       ),
     );
@@ -329,6 +325,7 @@ class _BodyCard extends StatelessWidget {
                   color: DiaryV2Styles.mutedTextStrong,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.2,
+                  fontSize: 13,
                 ),
           ),
           const SizedBox(height: 12),
@@ -338,7 +335,8 @@ class _BodyCard extends StatelessWidget {
                   color: isPlaceholder
                       ? DiaryV2Styles.mutedTextStrong
                       : DiaryV2Styles.textStrong,
-                  height: 1.65,
+                  fontSize: 15,
+                  height: 1.7,
                 ),
           ),
         ],
@@ -367,7 +365,7 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
         color: fillColor,
         borderRadius: BorderRadius.circular(999),
@@ -379,19 +377,21 @@ class _Badge extends StatelessWidget {
           if (emoji != null) ...[
             Text(
               emoji!,
-              style: const TextStyle(fontSize: 14, height: 1),
+              style: const TextStyle(fontSize: 13, height: 1),
             ),
-            const SizedBox(width: 7),
+            const SizedBox(width: 6),
           ],
           if (icon != null) ...[
-            Icon(icon, size: 14, color: textColor),
-            const SizedBox(width: 7),
+            Icon(icon, size: 13, color: textColor),
+            const SizedBox(width: 6),
           ],
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: textColor,
                   fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  height: 1.15,
                 ),
           ),
         ],
@@ -414,58 +414,16 @@ class _EditPill extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: DiaryV2Styles.subtleButtonDecoration(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: DiaryV2Styles.textStrong,
+                  color: DiaryV2Styles.accentDeep,
                   fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EditButton extends StatelessWidget {
-  const _EditButton({
-    required this.label,
-    required this.onTap,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          decoration: BoxDecoration(
-            color: DiaryV2Styles.textStrong,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(
-                color: DiaryV2Styles.shadowWarm,
-                blurRadius: 20,
-                offset: Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
                 ),
           ),
         ),
@@ -502,47 +460,6 @@ class _CircleButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _DetailBackground extends StatelessWidget {
-  const _DetailBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Color(0xFFF6F0E7),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -28,
-            right: -34,
-            child: Container(
-              width: 148,
-              height: 148,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF7EE).withValues(alpha: 0.95),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            left: -48,
-            bottom: 80,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1E6D8).withValues(alpha: 0.75),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
