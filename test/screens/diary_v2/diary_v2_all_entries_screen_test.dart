@@ -127,7 +127,9 @@ void main() {
           find.byKey(
               const ValueKey<String>('diary-all-entries-mood-filter-all')),
           findsOneWidget);
-      expect(find.text('Mood de entrada'), findsOneWidget);
+      expect(find.text('Fecha'), findsOneWidget);
+      expect(find.text('Etiqueta'), findsOneWidget);
+      expect(find.text('Mood'), findsOneWidget);
       expect(find.text('Gratitude entry'), findsOneWidget);
       expect(find.text('Sleep entry'), findsOneWidget);
     });
@@ -882,6 +884,39 @@ void main() {
       expect(find.text('No hay resultados'), findsOneWidget);
       expect(
         find.text('Prueba con otra palabra o cambia el filtro.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows combined empty state when search and filters have no matches',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'gratitude-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Quiet evening',
+                body: 'Body',
+                tags: const <String>['gratitude'],
+                mood: 1,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_filterChip('gratitude'));
+      await tester.pumpAndSettle();
+      await tester.tap(_moodFilterChip(-1));
+      await tester.pumpAndSettle();
+      await tester.enterText(_searchField(), 'missing');
+      await tester.pumpAndSettle();
+
+      expect(find.text('No hay resultados con estos filtros'), findsOneWidget);
+      expect(
+        find.text('Prueba con otra palabra o quita algún filtro.'),
         findsOneWidget,
       );
     });
