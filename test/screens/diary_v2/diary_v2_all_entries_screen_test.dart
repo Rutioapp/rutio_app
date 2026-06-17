@@ -120,9 +120,40 @@ void main() {
         ),
       );
 
-      expect(find.text('Todos'), findsOneWidget);
+      expect(_filterChip('all'), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('diary-all-entries-mood-filter-all')),
+          findsOneWidget);
+      expect(find.text('Mood de entrada'), findsOneWidget);
       expect(find.text('Gratitude entry'), findsOneWidget);
       expect(find.text('Sleep entry'), findsOneWidget);
+    });
+
+    testWidgets('all mood filter shows entries with and without mood',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'good',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Good mood entry',
+                body: 'Body 1',
+                mood: 1,
+              ),
+              _entry(
+                id: 'no-mood',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'No mood entry',
+                body: 'Body 2',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Good mood entry'), findsOneWidget);
+      expect(find.text('No mood entry'), findsOneWidget);
     });
 
     testWidgets('empty search shows all entries under all filter',
@@ -364,6 +395,131 @@ void main() {
       expect(find.text('Dinner prep'), findsNothing);
     });
 
+    testWidgets('good mood filter shows only entries with DiaryEntry mood good',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'good',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Good mood entry',
+                body: 'Body 1',
+                mood: 1,
+              ),
+              _entry(
+                id: 'low',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Low mood entry',
+                body: 'Body 2',
+                mood: -1,
+              ),
+              _entry(
+                id: 'none',
+                createdAt: DateTime(2026, 6, 11, 20, 30),
+                title: 'No mood entry',
+                body: 'Body 3',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_moodFilterChip(1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Good mood entry'), findsOneWidget);
+      expect(find.text('Low mood entry'), findsNothing);
+      expect(find.text('No mood entry'), findsNothing);
+    });
+
+    testWidgets('mood filter combines with selected tag filter',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Matching entry',
+                body: 'Body 1',
+                mood: 1,
+                tags: const <String>['gratitude'],
+              ),
+              _entry(
+                id: 'wrong-mood',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Wrong mood',
+                body: 'Body 2',
+                mood: -1,
+                tags: const <String>['gratitude'],
+              ),
+              _entry(
+                id: 'wrong-tag',
+                createdAt: DateTime(2026, 6, 11, 20, 30),
+                title: 'Wrong tag',
+                body: 'Body 3',
+                mood: 1,
+                tags: const <String>['sleep'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_filterChip('gratitude'));
+      await tester.pumpAndSettle();
+      await tester.tap(_moodFilterChip(1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Matching entry'), findsOneWidget);
+      expect(find.text('Wrong mood'), findsNothing);
+      expect(find.text('Wrong tag'), findsNothing);
+    });
+
+    testWidgets('mood filter combines with search query', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Work win',
+                body: 'Great progress',
+                mood: 1,
+              ),
+              _entry(
+                id: 'wrong-query',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Calm walk',
+                body: 'Fresh air',
+                mood: 1,
+              ),
+              _entry(
+                id: 'wrong-mood',
+                createdAt: DateTime(2026, 6, 11, 20, 30),
+                title: 'Work delay',
+                body: 'Long day',
+                mood: -1,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_moodFilterChip(1));
+      await tester.pumpAndSettle();
+      await tester.enterText(_searchField(), 'work');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Work win'), findsOneWidget);
+      expect(find.text('Calm walk'), findsNothing);
+      expect(find.text('Work delay'), findsNothing);
+    });
+
     testWidgets('entry with multiple tags appears under either matching tag',
         (tester) async {
       await tester.pumpWidget(
@@ -423,6 +579,34 @@ void main() {
       expect(find.text('No hay entradas con esta etiqueta'), findsOneWidget);
       expect(
         find.text('Cuando uses esta etiqueta en una entrada, aparecerá aquí.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows filter empty state when selected mood has no matches',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'low',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Low entry',
+                body: 'Body',
+                mood: -1,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_moodFilterChip(1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
+      expect(
+        find.text('Prueba con otro mood o cambia la etiqueta.'),
         findsOneWidget,
       );
     });
@@ -654,8 +838,45 @@ void main() {
         ),
       );
 
-      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsOneWidget);
-      expect(find.text(DiaryMoodVisuals.emojiFor(1)), findsNothing);
+      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsNWidgets(2));
+      expect(find.text(DiaryMoodVisuals.emojiFor(1)), findsOneWidget);
+    });
+
+    testWidgets('DailyMood does not affect entry mood filter', (tester) async {
+      final entry = _entry(
+        id: 'mood-mismatch',
+        createdAt: DateTime(2026, 6, 13, 20, 15),
+        title: 'Mood mismatch',
+        body: 'Body',
+        mood: -1,
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: _FakeDiaryStore(
+            entries: [entry],
+            dailyMoods: [
+              DailyMood(
+                date: DateTime(2026, 6, 13),
+                mood: 1,
+                createdAt: 1,
+                updatedAt: 1,
+              ),
+            ],
+          ),
+          child: DiaryV2AllEntriesScreen(
+            entries: [entry],
+          ),
+        ),
+      );
+
+      await tester.tap(_moodFilterChip(1));
+      await tester.pumpAndSettle();
+      expect(find.text('Mood mismatch'), findsNothing);
+
+      await tester.tap(_moodFilterChip(-1));
+      await tester.pumpAndSettle();
+      expect(find.text('Mood mismatch'), findsOneWidget);
     });
 
     testWidgets('updates displayed mood after editing from all entries',
@@ -688,8 +909,8 @@ void main() {
         ),
       );
 
-      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsOneWidget);
-      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsNothing);
+      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsNWidgets(2));
+      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsOneWidget);
 
       await tester.tap(find.text('Edit mood'));
       await tester.pumpAndSettle();
@@ -707,10 +928,56 @@ void main() {
 
       expect(store.updatedEntries, hasLength(1));
       expect(store.updatedEntries.single.mood, 2);
-      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsOneWidget);
-      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsNothing);
+      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsNWidgets(2));
+      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsOneWidget);
       expect(store.diaryEntries, hasLength(1));
       expect(store.diaryEntries.single.id, 'edit-mood');
+    });
+
+    testWidgets('editing an entry updates visible mood-filtered results',
+        (tester) async {
+      final entry = _entry(
+        id: 'edit-mood-filter',
+        createdAt: DateTime(2026, 6, 13, 20, 15),
+        title: 'Edit mood filter',
+        body: 'Body',
+        mood: -1,
+      );
+      final store = _MutableFakeDiaryStore(entries: [entry]);
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: DiaryV2AllEntriesScreen(
+            entries: [entry],
+          ),
+        ),
+      );
+
+      await tester.tap(_moodFilterChip(-1));
+      await tester.pumpAndSettle();
+      expect(find.text('Edit mood filter'), findsOneWidget);
+
+      await tester.tap(find.text('Edit mood filter'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(DiaryMoodVisuals.emojiFor(2)));
+      await tester.pumpAndSettle();
+
+      final editSaveButton = tester.widget<InkWell>(
+        find.ancestor(
+          of: find.text('Guardar cambios'),
+          matching: find.byType(InkWell),
+        ).first,
+      );
+      editSaveButton.onTap!.call();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit mood filter'), findsNothing);
+      expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
+
+      await tester.tap(_moodFilterChip(2));
+      await tester.pumpAndSettle();
+      expect(find.text('Edit mood filter'), findsOneWidget);
     });
 
     testWidgets('editing an entry updates the filtered list', (tester) async {
@@ -836,6 +1103,10 @@ Widget _app({
 
 Finder _filterChip(String tag) {
   return find.byKey(ValueKey<String>('diary-all-entries-filter-$tag'));
+}
+
+Finder _moodFilterChip(int mood) {
+  return find.byKey(ValueKey<String>('diary-all-entries-mood-filter-$mood'));
 }
 
 Finder _searchField() {

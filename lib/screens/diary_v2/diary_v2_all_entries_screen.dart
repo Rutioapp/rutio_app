@@ -28,6 +28,7 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
   static const String _allFilter = 'all';
 
   String _selectedTag = _allFilter;
+  int? _selectedEntryMood;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -56,10 +57,12 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     final filteredEntries = _filterEntries(
       entries: effectiveEntries,
       selectedTag: _selectedTag,
+      selectedEntryMood: _selectedEntryMood,
       searchQuery: _searchQuery,
     );
     final groups = _groupEntries(entries: filteredEntries);
     final isTagFiltered = _selectedTag != _allFilter;
+    final isMoodFiltered = _selectedEntryMood != null;
     final hasSearchQuery = _normalizedSearchQuery(_searchQuery).isNotEmpty;
     final hasAnyEntries = effectiveEntries.isNotEmpty;
 
@@ -82,6 +85,11 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
               selectedTag: _selectedTag,
               onTagSelected: (tag) => setState(() => _selectedTag = tag),
             ),
+            const SizedBox(height: 10),
+            _EntryMoodFilterRow(
+              selectedMood: _selectedEntryMood,
+              onMoodSelected: (mood) => setState(() => _selectedEntryMood = mood),
+            ),
             const SizedBox(height: 16),
             if (groups.isEmpty)
               _AllEntriesEmptyState(
@@ -89,15 +97,19 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
                     ? context.l10n.diaryAllEntriesEmptyTitle
                     : hasSearchQuery
                         ? context.l10n.diaryAllEntriesNoResultsTitle
-                        : isTagFiltered
+                        : isTagFiltered && !isMoodFiltered
                             ? _tagFilterEmptyTitle(locale)
+                            : isTagFiltered || isMoodFiltered
+                                ? _filterEmptyTitle(locale)
                             : context.l10n.diaryAllEntriesEmptyTitle,
                 body: !hasAnyEntries
                     ? context.l10n.diaryAllEntriesEmptyBody
                     : hasSearchQuery
                         ? context.l10n.diaryAllEntriesNoResultsBody
-                        : isTagFiltered
+                        : isTagFiltered && !isMoodFiltered
                             ? _tagFilterEmptyBody(locale)
+                            : isTagFiltered || isMoodFiltered
+                                ? _filterEmptyBody(locale)
                             : context.l10n.diaryAllEntriesEmptyBody,
               )
             else
@@ -266,6 +278,66 @@ class _AllEntriesEmptyState extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EntryMoodFilterRow extends StatelessWidget {
+  const _EntryMoodFilterRow({
+    required this.selectedMood,
+    required this.onMoodSelected,
+  });
+
+  final int? selectedMood;
+  final ValueChanged<int?> onMoodSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Text(
+            _entryMoodFilterLabel(locale),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: DiaryV2Styles.mutedTextStrong,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.15,
+                ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _FilterChipButton(
+                  key: const ValueKey<String>('diary-all-entries-mood-filter-all'),
+                  label: _allMoodFilterLabel(locale),
+                  isSelected: selectedMood == null,
+                  onTap: () => onMoodSelected(null),
+                ),
+              ),
+              ...DiaryMoodVisuals.values.map(
+                (mood) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _MoodFilterChipButton(
+                    mood: mood,
+                    isSelected: selectedMood == mood,
+                    onTap: () => onMoodSelected(mood),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -606,6 +678,7 @@ String _truncate(String value, int maxLength) {
 List<DiaryEntry> _filterEntries({
   required List<DiaryEntry> entries,
   required String selectedTag,
+  required int? selectedEntryMood,
   required String searchQuery,
 }) {
   final normalizedQuery = _normalizedSearchQuery(searchQuery);
@@ -615,6 +688,9 @@ List<DiaryEntry> _filterEntries({
         ? true
         : entry.tags.contains(selectedTag);
     if (!matchesTag) return false;
+    final matchesMood =
+        selectedEntryMood == null ? true : entry.mood == selectedEntryMood;
+    if (!matchesMood) return false;
     if (normalizedQuery.isEmpty) return true;
     return _entryMatchesSearch(entry, normalizedQuery);
   }).toList(growable: false);
@@ -657,6 +733,26 @@ String _tagFilterEmptyBody(Locale locale) {
   return locale.languageCode == 'es'
       ? 'Cuando uses esta etiqueta en una entrada, aparecerá aquí.'
       : 'When you use this tag in an entry, it will appear here.';
+}
+
+String _entryMoodFilterLabel(Locale locale) {
+  return locale.languageCode == 'es' ? 'Mood de entrada' : 'Entry mood';
+}
+
+String _allMoodFilterLabel(Locale locale) {
+  return locale.languageCode == 'es' ? 'Todos' : 'All';
+}
+
+String _filterEmptyTitle(Locale locale) {
+  return locale.languageCode == 'es'
+      ? 'No hay entradas con estos filtros'
+      : 'No entries with these filters';
+}
+
+String _filterEmptyBody(Locale locale) {
+  return locale.languageCode == 'es'
+      ? 'Prueba con otro mood o cambia la etiqueta.'
+      : 'Try another mood or change the tag.';
 }
 
 class _EntryChip extends StatelessWidget {
@@ -730,6 +826,81 @@ class _FilterChipButton extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoodFilterChipButton extends StatelessWidget {
+  const _MoodFilterChipButton({
+    required this.mood,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final int mood;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fillColor = DiaryMoodVisuals.fillColorFor(mood);
+    final borderColor = DiaryMoodVisuals.borderColorFor(mood);
+    final locale = Localizations.localeOf(context);
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: DiaryMoodVisuals.semanticLabelForLocale(mood, locale),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: ValueKey<String>('diary-all-entries-mood-filter-$mood'),
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? fillColor.withValues(alpha: 0.95)
+                  : fillColor.withValues(alpha: 0.42),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: isSelected
+                    ? borderColor.withValues(alpha: 0.42)
+                    : borderColor.withValues(alpha: 0.18),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  DiaryMoodVisuals.emojiFor(mood),
+                  style: TextStyle(
+                    fontSize: mood == 0 ? 16 : 14,
+                    height: 1,
+                    color: borderColor,
+                    fontWeight:
+                        mood == 0 ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  DiaryMoodVisuals.labelForLocale(mood, locale),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isSelected
+                            ? DiaryV2Styles.textStrong
+                            : DiaryV2Styles.mutedTextStrong,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
