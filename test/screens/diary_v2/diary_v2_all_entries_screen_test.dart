@@ -8,6 +8,8 @@ import 'package:rutio/screens/diary_v2/diary_v2_all_entries_screen.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_mood_visuals.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
+final DateTime _screenNow = DateTime(2026, 6, 17, 10, 0);
+
 void main() {
   Provider.debugCheckInvalidValueType = null;
 
@@ -121,11 +123,156 @@ void main() {
       );
 
       expect(_filterChip('all'), findsOneWidget);
-      expect(find.byKey(const ValueKey<String>('diary-all-entries-mood-filter-all')),
+      expect(
+          find.byKey(
+              const ValueKey<String>('diary-all-entries-mood-filter-all')),
           findsOneWidget);
       expect(find.text('Mood de entrada'), findsOneWidget);
       expect(find.text('Gratitude entry'), findsOneWidget);
       expect(find.text('Sleep entry'), findsOneWidget);
+    });
+
+    testWidgets('all date filter is selected by default and shows all entries',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            now: _screenNow,
+            entries: [
+              _entry(
+                id: 'recent',
+                createdAt: DateTime(2026, 6, 16, 20, 15),
+                title: 'Recent entry',
+                body: 'Body 1',
+              ),
+              _entry(
+                id: 'old',
+                createdAt: DateTime(2026, 4, 10, 21, 30),
+                title: 'Old entry',
+                body: 'Body 2',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(_dateFilterChip('all'), findsOneWidget);
+      expect(find.text('Recent entry'), findsOneWidget);
+      expect(find.text('Old entry'), findsOneWidget);
+    });
+
+    testWidgets('week filter shows only entries in current week',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            now: _screenNow,
+            entries: [
+              _entry(
+                id: 'monday',
+                createdAt: DateTime(2026, 6, 15, 8, 0),
+                title: 'This week start',
+                body: 'Body 1',
+              ),
+              _entry(
+                id: 'today',
+                createdAt: DateTime(2026, 6, 17, 21, 30),
+                title: 'This week today',
+                body: 'Body 2',
+              ),
+              _entry(
+                id: 'previous-week',
+                createdAt: DateTime(2026, 6, 14, 21, 30),
+                title: 'Previous week',
+                body: 'Body 3',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_dateFilterChip('week'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('This week start'), findsOneWidget);
+      expect(find.text('This week today'), findsOneWidget);
+      expect(find.text('Previous week'), findsNothing);
+    });
+
+    testWidgets('month filter shows only entries in current month',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            now: _screenNow,
+            entries: [
+              _entry(
+                id: 'this-month',
+                createdAt: DateTime(2026, 6, 2, 8, 0),
+                title: 'This month',
+                body: 'Body 1',
+              ),
+              _entry(
+                id: 'today',
+                createdAt: DateTime(2026, 6, 17, 21, 30),
+                title: 'Today month',
+                body: 'Body 2',
+              ),
+              _entry(
+                id: 'previous-month',
+                createdAt: DateTime(2026, 5, 31, 21, 30),
+                title: 'Previous month',
+                body: 'Body 3',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_dateFilterChip('month'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('This month'), findsOneWidget);
+      expect(find.text('Today month'), findsOneWidget);
+      expect(find.text('Previous month'), findsNothing);
+    });
+
+    testWidgets('30 days filter shows only entries from the last 30 days',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            now: _screenNow,
+            entries: [
+              _entry(
+                id: 'today',
+                createdAt: DateTime(2026, 6, 17, 21, 30),
+                title: 'Today entry',
+                body: 'Body 1',
+              ),
+              _entry(
+                id: 'boundary',
+                createdAt: DateTime(2026, 5, 19, 8, 0),
+                title: 'Boundary entry',
+                body: 'Body 2',
+              ),
+              _entry(
+                id: 'older',
+                createdAt: DateTime(2026, 5, 18, 21, 30),
+                title: 'Older than 30 days',
+                body: 'Body 3',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_dateFilterChip('last30Days'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Today entry'), findsOneWidget);
+      expect(find.text('Boundary entry'), findsOneWidget);
+      expect(find.text('Older than 30 days'), findsNothing);
     });
 
     testWidgets('all mood filter shows entries with and without mood',
@@ -395,6 +542,49 @@ void main() {
       expect(find.text('Dinner prep'), findsNothing);
     });
 
+    testWidgets('date filter combines with selected tag filter',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            now: _screenNow,
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 16, 20, 15),
+                title: 'Week gratitude',
+                body: 'Body 1',
+                tags: const <String>['gratitude'],
+              ),
+              _entry(
+                id: 'wrong-date',
+                createdAt: DateTime(2026, 6, 10, 21, 30),
+                title: 'Old gratitude',
+                body: 'Body 2',
+                tags: const <String>['gratitude'],
+              ),
+              _entry(
+                id: 'wrong-tag',
+                createdAt: DateTime(2026, 6, 17, 21, 30),
+                title: 'Week sleep',
+                body: 'Body 3',
+                tags: const <String>['sleep'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_dateFilterChip('week'));
+      await tester.pumpAndSettle();
+      await tester.tap(_filterChip('gratitude'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Week gratitude'), findsOneWidget);
+      expect(find.text('Old gratitude'), findsNothing);
+      expect(find.text('Week sleep'), findsNothing);
+    });
+
     testWidgets('good mood filter shows only entries with DiaryEntry mood good',
         (tester) async {
       await tester.pumpWidget(
@@ -520,6 +710,59 @@ void main() {
       expect(find.text('Work delay'), findsNothing);
     });
 
+    testWidgets('date filter combines with selected mood and search query',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            now: _screenNow,
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 16, 20, 15),
+                title: 'Work win',
+                body: 'Body 1',
+                mood: 1,
+              ),
+              _entry(
+                id: 'wrong-mood',
+                createdAt: DateTime(2026, 6, 17, 21, 30),
+                title: 'Work slump',
+                body: 'Body 2',
+                mood: -1,
+              ),
+              _entry(
+                id: 'wrong-query',
+                createdAt: DateTime(2026, 6, 15, 21, 30),
+                title: 'Calm walk',
+                body: 'Body 3',
+                mood: 1,
+              ),
+              _entry(
+                id: 'wrong-date',
+                createdAt: DateTime(2026, 6, 5, 21, 30),
+                title: 'Work archive',
+                body: 'Body 4',
+                mood: 1,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_dateFilterChip('week'));
+      await tester.pumpAndSettle();
+      await tester.tap(_moodFilterChip(1));
+      await tester.pumpAndSettle();
+      await tester.enterText(_searchField(), 'work');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Work win'), findsOneWidget);
+      expect(find.text('Work slump'), findsNothing);
+      expect(find.text('Calm walk'), findsNothing);
+      expect(find.text('Work archive'), findsNothing);
+    });
+
     testWidgets('entry with multiple tags appears under either matching tag',
         (tester) async {
       await tester.pumpWidget(
@@ -555,11 +798,13 @@ void main() {
       expect(find.text('Focus entry'), findsNothing);
     });
 
-    testWidgets('shows tag-specific empty state when filter has no matches',
+    testWidgets(
+        'shows filter empty state when date and tag filters have no matches',
         (tester) async {
       await tester.pumpWidget(
         _app(
           child: DiaryV2AllEntriesScreen(
+            now: _screenNow,
             entries: [
               _entry(
                 id: 'gratitude-entry',
@@ -573,12 +818,14 @@ void main() {
         ),
       );
 
+      await tester.tap(_dateFilterChip('week'));
+      await tester.pumpAndSettle();
       await tester.tap(_filterChip('idea'));
       await tester.pumpAndSettle();
 
-      expect(find.text('No hay entradas con esta etiqueta'), findsOneWidget);
+      expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
       expect(
-        find.text('Cuando uses esta etiqueta en una entrada, aparecerá aquí.'),
+        find.text('Prueba con otro periodo, mood o etiqueta.'),
         findsOneWidget,
       );
     });
@@ -606,7 +853,7 @@ void main() {
 
       expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
       expect(
-        find.text('Prueba con otro mood o cambia la etiqueta.'),
+        find.text('Prueba con otro periodo, mood o etiqueta.'),
         findsOneWidget,
       );
     });
@@ -740,6 +987,58 @@ void main() {
       expect(find.text('sábado, 13 de junio'), findsOneWidget);
       expect(find.text('viernes, 12 de junio'), findsOneWidget);
       expect(find.text('Gratitude entry'), findsNothing);
+    });
+
+    testWidgets(
+        'preserves grouping and newest-first sorting after date filtering',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            now: _screenNow,
+            entries: [
+              _entry(
+                id: 'older-week',
+                createdAt: DateTime(2026, 6, 15, 8, 0),
+                title: 'Older week',
+                body: 'Body 1',
+              ),
+              _entry(
+                id: 'newest-week',
+                createdAt: DateTime(2026, 6, 17, 20, 15),
+                title: 'Newest week',
+                body: 'Body 2',
+              ),
+              _entry(
+                id: 'newer-same-day',
+                createdAt: DateTime(2026, 6, 15, 22, 45),
+                title: 'Newer same day week',
+                body: 'Body 3',
+              ),
+              _entry(
+                id: 'previous-week',
+                createdAt: DateTime(2026, 6, 14, 12, 0),
+                title: 'Previous week',
+                body: 'Body 4',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(_dateFilterChip('week'));
+      await tester.pumpAndSettle();
+
+      final newestTop = tester.getTopLeft(find.text('Newest week')).dy;
+      final newerSameDayTop =
+          tester.getTopLeft(find.text('Newer same day week')).dy;
+      final olderTop = tester.getTopLeft(find.text('Older week')).dy;
+
+      expect(newestTop, lessThan(newerSameDayTop));
+      expect(newerSameDayTop, lessThan(olderTop));
+      expect(find.textContaining('17 de junio'), findsOneWidget);
+      expect(find.textContaining('15 de junio'), findsOneWidget);
+      expect(find.text('Previous week'), findsNothing);
     });
 
     testWidgets('tap opens editor in edit mode', (tester) async {
@@ -918,10 +1217,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final editSaveButton = tester.widget<InkWell>(
-        find.ancestor(
-          of: find.text('Guardar cambios'),
-          matching: find.byType(InkWell),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('Guardar cambios'),
+              matching: find.byType(InkWell),
+            )
+            .first,
       );
       editSaveButton.onTap!.call();
       await tester.pumpAndSettle();
@@ -964,10 +1265,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final editSaveButton = tester.widget<InkWell>(
-        find.ancestor(
-          of: find.text('Guardar cambios'),
-          matching: find.byType(InkWell),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('Guardar cambios'),
+              matching: find.byType(InkWell),
+            )
+            .first,
       );
       editSaveButton.onTap!.call();
       await tester.pumpAndSettle();
@@ -1001,7 +1304,7 @@ void main() {
       await tester.tap(_filterChip('sleep'));
       await tester.pumpAndSettle();
 
-      expect(find.text('No hay entradas con esta etiqueta'), findsOneWidget);
+      expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
 
       await tester.tap(_filterChip('all'));
       await tester.pumpAndSettle();
@@ -1014,10 +1317,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final editSaveButton = tester.widget<InkWell>(
-        find.ancestor(
-          of: find.text('Guardar cambios'),
-          matching: find.byType(InkWell),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('Guardar cambios'),
+              matching: find.byType(InkWell),
+            )
+            .first,
       );
       editSaveButton.onTap!.call();
       await tester.pumpAndSettle();
@@ -1029,10 +1334,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Edit tags'), findsOneWidget);
-      expect(find.text('No hay entradas con esta etiqueta'), findsNothing);
+      expect(find.text('No hay entradas con estos filtros'), findsNothing);
     });
 
-    testWidgets('editing an entry updates visible search results', (tester) async {
+    testWidgets('editing an entry updates visible search results',
+        (tester) async {
       final initialEntry = _entry(
         id: 'search-edit',
         createdAt: DateTime(2026, 6, 13, 20, 15),
@@ -1061,10 +1367,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final editSaveButton = tester.widget<InkWell>(
-        find.ancestor(
-          of: find.text('Guardar cambios'),
-          matching: find.byType(InkWell),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('Guardar cambios'),
+              matching: find.byType(InkWell),
+            )
+            .first,
       );
       editSaveButton.onTap!.call();
       await tester.pumpAndSettle();
@@ -1103,6 +1411,10 @@ Widget _app({
 
 Finder _filterChip(String tag) {
   return find.byKey(ValueKey<String>('diary-all-entries-filter-$tag'));
+}
+
+Finder _dateFilterChip(String filter) {
+  return find.byKey(ValueKey<String>('diary-all-entries-date-filter-$filter'));
 }
 
 Finder _moodFilterChip(int mood) {

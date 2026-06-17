@@ -16,17 +16,21 @@ class DiaryV2AllEntriesScreen extends StatefulWidget {
   const DiaryV2AllEntriesScreen({
     super.key,
     required this.entries,
+    this.now,
   });
 
   final List<DiaryEntry> entries;
+  final DateTime? now;
 
   @override
-  State<DiaryV2AllEntriesScreen> createState() => _DiaryV2AllEntriesScreenState();
+  State<DiaryV2AllEntriesScreen> createState() =>
+      _DiaryV2AllEntriesScreenState();
 }
 
 class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
   static const String _allFilter = 'all';
 
+  _AllEntriesDateFilter _selectedDateFilter = _AllEntriesDateFilter.all;
   String _selectedTag = _allFilter;
   int? _selectedEntryMood;
   final TextEditingController _searchController = TextEditingController();
@@ -56,11 +60,14 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     final effectiveEntries = store?.diaryEntries ?? widget.entries;
     final filteredEntries = _filterEntries(
       entries: effectiveEntries,
+      selectedDateFilter: _selectedDateFilter,
       selectedTag: _selectedTag,
       selectedEntryMood: _selectedEntryMood,
       searchQuery: _searchQuery,
+      now: widget.now ?? DateTime.now(),
     );
     final groups = _groupEntries(entries: filteredEntries);
+    final isDateFiltered = _selectedDateFilter != _AllEntriesDateFilter.all;
     final isTagFiltered = _selectedTag != _allFilter;
     final isMoodFiltered = _selectedEntryMood != null;
     final hasSearchQuery = _normalizedSearchQuery(_searchQuery).isNotEmpty;
@@ -81,6 +88,12 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
               onChanged: (value) => setState(() => _searchQuery = value),
             ),
             const SizedBox(height: 12),
+            _DateFilterRow(
+              selectedFilter: _selectedDateFilter,
+              onFilterSelected: (filter) =>
+                  setState(() => _selectedDateFilter = filter),
+            ),
+            const SizedBox(height: 10),
             _TagFilterRow(
               selectedTag: _selectedTag,
               onTagSelected: (tag) => setState(() => _selectedTag = tag),
@@ -88,7 +101,8 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
             const SizedBox(height: 10),
             _EntryMoodFilterRow(
               selectedMood: _selectedEntryMood,
-              onMoodSelected: (mood) => setState(() => _selectedEntryMood = mood),
+              onMoodSelected: (mood) =>
+                  setState(() => _selectedEntryMood = mood),
             ),
             const SizedBox(height: 16),
             if (groups.isEmpty)
@@ -97,19 +111,15 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
                     ? context.l10n.diaryAllEntriesEmptyTitle
                     : hasSearchQuery
                         ? context.l10n.diaryAllEntriesNoResultsTitle
-                        : isTagFiltered && !isMoodFiltered
-                            ? _tagFilterEmptyTitle(locale)
-                            : isTagFiltered || isMoodFiltered
-                                ? _filterEmptyTitle(locale)
+                        : isDateFiltered || isTagFiltered || isMoodFiltered
+                            ? _filterEmptyTitle(locale)
                             : context.l10n.diaryAllEntriesEmptyTitle,
                 body: !hasAnyEntries
                     ? context.l10n.diaryAllEntriesEmptyBody
                     : hasSearchQuery
                         ? context.l10n.diaryAllEntriesNoResultsBody
-                        : isTagFiltered && !isMoodFiltered
-                            ? _tagFilterEmptyBody(locale)
-                            : isTagFiltered || isMoodFiltered
-                                ? _filterEmptyBody(locale)
+                        : isDateFiltered || isTagFiltered || isMoodFiltered
+                            ? _filterEmptyBody(locale)
                             : context.l10n.diaryAllEntriesEmptyBody,
               )
             else
@@ -166,6 +176,8 @@ class _AllEntriesSearchField extends StatelessWidget {
     );
   }
 }
+
+enum _AllEntriesDateFilter { all, week, month, last30Days }
 
 class _AllEntriesHeader extends StatelessWidget {
   const _AllEntriesHeader({required this.title});
@@ -235,6 +247,43 @@ class _TagFilterRow extends StatelessWidget {
                   ),
                   isSelected: selectedTag == tag,
                   onTap: () => onTagSelected(tag),
+                ),
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
+  }
+}
+
+class _DateFilterRow extends StatelessWidget {
+  const _DateFilterRow({
+    required this.selectedFilter,
+    required this.onFilterSelected,
+  });
+
+  final _AllEntriesDateFilter selectedFilter;
+  final ValueChanged<_AllEntriesDateFilter> onFilterSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Row(
+        children: _AllEntriesDateFilter.values
+            .map(
+              (filter) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _FilterChipButton(
+                  key: ValueKey<String>(
+                    'diary-all-entries-date-filter-${filter.name}',
+                  ),
+                  label: _dateFilterLabel(filter, locale),
+                  isSelected: selectedFilter == filter,
+                  onTap: () => onFilterSelected(filter),
                 ),
               ),
             )
@@ -318,7 +367,8 @@ class _EntryMoodFilterRow extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: _FilterChipButton(
-                  key: const ValueKey<String>('diary-all-entries-mood-filter-all'),
+                  key: const ValueKey<String>(
+                      'diary-all-entries-mood-filter-all'),
                   label: _allMoodFilterLabel(locale),
                   isSelected: selectedMood == null,
                   onTap: () => onMoodSelected(null),
@@ -447,7 +497,9 @@ class _AllEntriesCard extends StatelessWidget {
                         ),
                   ),
                 ],
-                if (item.tagLabels(Localizations.localeOf(context)).isNotEmpty) ...[
+                if (item
+                    .tagLabels(Localizations.localeOf(context))
+                    .isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
@@ -677,13 +729,22 @@ String _truncate(String value, int maxLength) {
 
 List<DiaryEntry> _filterEntries({
   required List<DiaryEntry> entries,
+  required _AllEntriesDateFilter selectedDateFilter,
   required String selectedTag,
   required int? selectedEntryMood,
   required String searchQuery,
+  required DateTime now,
 }) {
   final normalizedQuery = _normalizedSearchQuery(searchQuery);
+  final normalizedNow = DateUtils.dateOnly(now);
 
   return entries.where((entry) {
+    final matchesDate = _matchesDateFilter(
+      entry: entry,
+      selectedDateFilter: selectedDateFilter,
+      now: normalizedNow,
+    );
+    if (!matchesDate) return false;
     final matchesTag = selectedTag == _DiaryV2AllEntriesScreenState._allFilter
         ? true
         : entry.tags.contains(selectedTag);
@@ -712,6 +773,35 @@ bool _entryMatchesSearch(DiaryEntry entry, String normalizedQuery) {
   );
 }
 
+bool _matchesDateFilter({
+  required DiaryEntry entry,
+  required _AllEntriesDateFilter selectedDateFilter,
+  required DateTime now,
+}) {
+  if (selectedDateFilter == _AllEntriesDateFilter.all) return true;
+
+  final entryDay = DateUtils.dateOnly(_toUi(entry).createdAt);
+  switch (selectedDateFilter) {
+    case _AllEntriesDateFilter.all:
+      return true;
+    case _AllEntriesDateFilter.week:
+      final startOfWeek =
+          now.subtract(Duration(days: now.weekday - DateTime.monday));
+      final endOfWeek = startOfWeek.add(const Duration(days: 6));
+      return !_isBeforeDay(entryDay, startOfWeek) &&
+          !_isAfterDay(entryDay, endOfWeek);
+    case _AllEntriesDateFilter.month:
+      return entryDay.year == now.year && entryDay.month == now.month;
+    case _AllEntriesDateFilter.last30Days:
+      final start = now.subtract(const Duration(days: 29));
+      return !_isBeforeDay(entryDay, start) && !_isAfterDay(entryDay, now);
+  }
+}
+
+bool _isBeforeDay(DateTime value, DateTime other) => value.compareTo(other) < 0;
+
+bool _isAfterDay(DateTime value, DateTime other) => value.compareTo(other) > 0;
+
 String _filterLabel({
   required String tag,
   required Locale locale,
@@ -723,16 +813,18 @@ String _filterLabel({
   return diaryTagLabel(tag, locale);
 }
 
-String _tagFilterEmptyTitle(Locale locale) {
-  return locale.languageCode == 'es'
-      ? 'No hay entradas con esta etiqueta'
-      : 'No entries with this tag';
-}
-
-String _tagFilterEmptyBody(Locale locale) {
-  return locale.languageCode == 'es'
-      ? 'Cuando uses esta etiqueta en una entrada, aparecerá aquí.'
-      : 'When you use this tag in an entry, it will appear here.';
+String _dateFilterLabel(_AllEntriesDateFilter filter, Locale locale) {
+  final isSpanish = locale.languageCode == 'es';
+  switch (filter) {
+    case _AllEntriesDateFilter.all:
+      return isSpanish ? 'Todo' : 'All';
+    case _AllEntriesDateFilter.week:
+      return isSpanish ? 'Semana' : 'Week';
+    case _AllEntriesDateFilter.month:
+      return isSpanish ? 'Mes' : 'Month';
+    case _AllEntriesDateFilter.last30Days:
+      return isSpanish ? '30 días' : '30 days';
+  }
 }
 
 String _entryMoodFilterLabel(Locale locale) {
@@ -751,8 +843,8 @@ String _filterEmptyTitle(Locale locale) {
 
 String _filterEmptyBody(Locale locale) {
   return locale.languageCode == 'es'
-      ? 'Prueba con otro mood o cambia la etiqueta.'
-      : 'Try another mood or change the tag.';
+      ? 'Prueba con otro periodo, mood o etiqueta.'
+      : 'Try another period, mood or tag.';
 }
 
 class _EntryChip extends StatelessWidget {
@@ -801,9 +893,8 @@ class _FilterChipButton extends StatelessWidget {
     final borderColor = isSelected
         ? DiaryV2Styles.accent.withValues(alpha: 0.3)
         : DiaryV2Styles.border.withValues(alpha: 0.72);
-    final textColor = isSelected
-        ? DiaryV2Styles.textStrong
-        : DiaryV2Styles.mutedTextStrong;
+    final textColor =
+        isSelected ? DiaryV2Styles.textStrong : DiaryV2Styles.mutedTextStrong;
 
     return Material(
       color: Colors.transparent,
@@ -884,8 +975,7 @@ class _MoodFilterChipButton extends StatelessWidget {
                     fontSize: mood == 0 ? 16 : 14,
                     height: 1,
                     color: borderColor,
-                    fontWeight:
-                        mood == 0 ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: mood == 0 ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
                 const SizedBox(width: 6),
