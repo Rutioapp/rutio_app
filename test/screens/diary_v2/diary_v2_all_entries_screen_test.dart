@@ -123,6 +123,9 @@ void main() {
       );
 
       expect(_filtersButton(), findsOneWidget);
+      expect(find.text('Filtros'), findsOneWidget);
+      expect(find.text('Fecha, etiqueta y mood'), findsNothing);
+      expect(find.text('Date, tag and mood'), findsNothing);
       expect(_searchField(), findsOneWidget);
       expect(find.text('Fecha'), findsNothing);
       expect(find.text('Etiqueta'), findsNothing);
@@ -1039,13 +1042,19 @@ void main() {
       await tester.pumpAndSettle();
       await _applyFilters(tester);
 
-      expect(find.text('3 activos'), findsOneWidget);
+      expect(
+        find.descendant(of: _filtersButton(), matching: find.text('3')),
+        findsOneWidget,
+      );
       expect(find.text('Morning gratitude'), findsOneWidget);
       expect(find.text('Morning sleep'), findsNothing);
 
       await _clearFiltersFromSheet(tester);
 
-      expect(find.text('3 activos'), findsNothing);
+      expect(
+        find.descendant(of: _filtersButton(), matching: find.text('3')),
+        findsNothing,
+      );
       expect(find.text('Morning gratitude'), findsOneWidget);
       expect(find.text('Morning sleep'), findsOneWidget);
       expect(_searchField(), findsOneWidget);

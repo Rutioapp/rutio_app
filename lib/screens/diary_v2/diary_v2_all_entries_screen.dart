@@ -127,7 +127,6 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
             ),
             const SizedBox(height: 12),
             _AllEntriesFilterBar(
-              locale: locale,
               activeFilterCount: activeFilterCount,
               onTap: _openFiltersSheet,
             ),
@@ -230,58 +229,21 @@ class _AllEntriesSearchField extends StatelessWidget {
 
 class _AllEntriesFilterBar extends StatelessWidget {
   const _AllEntriesFilterBar({
-    required this.locale,
     required this.activeFilterCount,
     required this.onTap,
   });
 
-  final Locale locale;
   final int activeFilterCount;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: DiaryV2Styles.compactCardDecoration(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            _FilterActionButton(
-              label: _filtersButtonLabel(locale),
-              activeFilterCount: activeFilterCount,
-              onTap: onTap,
-            ),
-            if (activeFilterCount > 0) ...[
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _activeFiltersSummary(locale, activeFilterCount),
-                  key: const ValueKey<String>(
-                    'diary-all-entries-filter-summary',
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: DiaryV2Styles.mutedTextStrong,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-            ] else
-              Expanded(
-                child: Text(
-                  _filtersHintLabel(locale),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: DiaryV2Styles.mutedTextStrong,
-                        fontWeight: FontWeight.w500,
-                      ),
-                ),
-              ),
-          ],
-        ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: _FilterActionButton(
+        label: _filtersButtonLabel(Localizations.localeOf(context)),
+        activeFilterCount: activeFilterCount,
+        onTap: onTap,
       ),
     );
   }
@@ -1239,12 +1201,6 @@ String _allMoodFilterLabel(Locale locale) {
 
 String _filtersButtonLabel(Locale locale) {
   return locale.languageCode == 'es' ? 'Filtros' : 'Filters';
-}
-
-String _filtersHintLabel(Locale locale) {
-  return locale.languageCode == 'es'
-      ? 'Fecha, etiqueta y mood'
-      : 'Date, tag and mood';
 }
 
 String _activeFiltersSummary(Locale locale, int count) {
