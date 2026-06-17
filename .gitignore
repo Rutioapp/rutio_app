@@ -32,6 +32,10 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+.tmp/
+android/.gradle-user-home/
+android/.kotlin/
+.vscode/launch.json
 
 # Symbolication related
 app.*.symbols
