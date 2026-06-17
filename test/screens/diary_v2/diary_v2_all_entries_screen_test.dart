@@ -70,8 +70,8 @@ void main() {
       expect(find.text('Newest entry'), findsOneWidget);
       expect(find.text('Newer same day'), findsOneWidget);
       expect(find.text('Older same day'), findsOneWidget);
-      expect(find.text('Gratitud'), findsNWidgets(2));
-      expect(find.text('Energía'), findsNWidgets(2));
+      expect(find.text('Gratitud'), findsOneWidget);
+      expect(find.text('Energía'), findsOneWidget);
       expect(find.text('+1'), findsOneWidget);
     });
 
@@ -92,8 +92,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Gratitud'), findsOneWidget);
-      expect(find.text('Energía'), findsOneWidget);
+      expect(find.text('Gratitud'), findsNothing);
+      expect(find.text('Energía'), findsNothing);
       expect(find.text('+1'), findsNothing);
     });
 
@@ -122,16 +122,56 @@ void main() {
         ),
       );
 
-      expect(_filterChip('all'), findsOneWidget);
-      expect(
-          find.byKey(
-              const ValueKey<String>('diary-all-entries-mood-filter-all')),
-          findsOneWidget);
-      expect(find.text('Fecha'), findsOneWidget);
-      expect(find.text('Etiqueta'), findsOneWidget);
-      expect(find.text('Mood'), findsOneWidget);
+      expect(_filtersButton(), findsOneWidget);
+      expect(_searchField(), findsOneWidget);
+      expect(find.text('Fecha'), findsNothing);
+      expect(find.text('Etiqueta'), findsNothing);
       expect(find.text('Gratitude entry'), findsOneWidget);
       expect(find.text('Sleep entry'), findsOneWidget);
+    });
+
+    testWidgets('filter button opens bottom sheet with date tag and mood options',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'gratitude-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Gratitude entry',
+                body: 'Body 1',
+                tags: const <String>['gratitude'],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await _openFiltersSheet(tester);
+
+      expect(_filtersSheet(), findsOneWidget);
+      expect(_dateFilterChip('all'), findsOneWidget);
+      expect(_dateFilterChip('week'), findsOneWidget);
+      expect(_dateFilterChip('month'), findsOneWidget);
+      expect(_dateFilterChip('last30Days'), findsOneWidget);
+      expect(_filterChip('all'), findsOneWidget);
+      expect(_filterChip('gratitude'), findsOneWidget);
+      expect(_filterChip('energy'), findsOneWidget);
+      expect(_filterChip('focus'), findsOneWidget);
+      expect(_filterChip('sleep'), findsOneWidget);
+      expect(_filterChip('mood'), findsOneWidget);
+      expect(_filterChip('idea'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('diary-all-entries-mood-filter-all')),
+        findsOneWidget,
+      );
+      expect(_moodFilterChip(-1), findsOneWidget);
+      expect(_moodFilterChip(0), findsOneWidget);
+      expect(_moodFilterChip(1), findsOneWidget);
+      expect(_moodFilterChip(2), findsOneWidget);
+      expect(find.text('Limpiar'), findsOneWidget);
+      expect(find.text('Aplicar'), findsOneWidget);
     });
 
     testWidgets('all date filter is selected by default and shows all entries',
@@ -158,7 +198,9 @@ void main() {
         ),
       );
 
+      await _openFiltersSheet(tester);
       expect(_dateFilterChip('all'), findsOneWidget);
+      await _applyFilters(tester);
       expect(find.text('Recent entry'), findsOneWidget);
       expect(find.text('Old entry'), findsOneWidget);
     });
@@ -193,8 +235,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_dateFilterChip('week'));
-      await tester.pumpAndSettle();
+      await _applyDateFilter(tester, 'week');
 
       expect(find.text('This week start'), findsOneWidget);
       expect(find.text('This week today'), findsOneWidget);
@@ -231,8 +272,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_dateFilterChip('month'));
-      await tester.pumpAndSettle();
+      await _applyDateFilter(tester, 'month');
 
       expect(find.text('This month'), findsOneWidget);
       expect(find.text('Today month'), findsOneWidget);
@@ -269,8 +309,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_dateFilterChip('last30Days'));
-      await tester.pumpAndSettle();
+      await _applyDateFilter(tester, 'last30Days');
 
       expect(find.text('Today entry'), findsOneWidget);
       expect(find.text('Boundary entry'), findsOneWidget);
@@ -303,6 +342,30 @@ void main() {
 
       expect(find.text('Good mood entry'), findsOneWidget);
       expect(find.text('No mood entry'), findsOneWidget);
+    });
+
+    testWidgets('search remains visible while filters move into the sheet',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Visible search',
+                body: 'Body',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(_searchField(), findsOneWidget);
+      expect(_filtersButton(), findsOneWidget);
+      expect(find.text('Fecha'), findsNothing);
+      expect(find.text('Etiqueta'), findsNothing);
+      expect(find.text('Mood'), findsNothing);
     });
 
     testWidgets('empty search shows all entries under all filter',
@@ -496,8 +559,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_filterChip('gratitude'));
-      await tester.pumpAndSettle();
+      await _applyTagFilter(tester, 'gratitude');
 
       expect(find.text('Gratitude entry'), findsOneWidget);
       expect(find.text('Energy entry'), findsNothing);
@@ -534,8 +596,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_filterChip('gratitude'));
-      await tester.pumpAndSettle();
+      await _applyTagFilter(tester, 'gratitude');
       await tester.enterText(_searchField(), 'dinner');
       await tester.pumpAndSettle();
 
@@ -577,10 +638,14 @@ void main() {
         ),
       );
 
+      await _openFiltersSheet(tester);
+      await tester.ensureVisible(_dateFilterChip('week'));
       await tester.tap(_dateFilterChip('week'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(_filterChip('gratitude'));
       await tester.tap(_filterChip('gratitude'));
       await tester.pumpAndSettle();
+      await _applyFilters(tester);
 
       expect(find.text('Week gratitude'), findsOneWidget);
       expect(find.text('Old gratitude'), findsNothing);
@@ -618,8 +683,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_moodFilterChip(1));
-      await tester.pumpAndSettle();
+      await _applyMoodFilter(tester, 1);
 
       expect(find.text('Good mood entry'), findsOneWidget);
       expect(find.text('Low mood entry'), findsNothing);
@@ -661,10 +725,14 @@ void main() {
         ),
       );
 
+      await _openFiltersSheet(tester);
+      await tester.ensureVisible(_filterChip('gratitude'));
       await tester.tap(_filterChip('gratitude'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(_moodFilterChip(1));
       await tester.tap(_moodFilterChip(1));
       await tester.pumpAndSettle();
+      await _applyFilters(tester);
 
       expect(find.text('Matching entry'), findsOneWidget);
       expect(find.text('Wrong mood'), findsNothing);
@@ -702,8 +770,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_moodFilterChip(1));
-      await tester.pumpAndSettle();
+      await _applyMoodFilter(tester, 1);
       await tester.enterText(_searchField(), 'work');
       await tester.pumpAndSettle();
 
@@ -752,10 +819,14 @@ void main() {
         ),
       );
 
+      await _openFiltersSheet(tester);
+      await tester.ensureVisible(_dateFilterChip('week'));
       await tester.tap(_dateFilterChip('week'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(_moodFilterChip(1));
       await tester.tap(_moodFilterChip(1));
       await tester.pumpAndSettle();
+      await _applyFilters(tester);
       await tester.enterText(_searchField(), 'work');
       await tester.pumpAndSettle();
 
@@ -790,12 +861,10 @@ void main() {
         ),
       );
 
-      await tester.tap(_filterChip('gratitude'));
-      await tester.pumpAndSettle();
+      await _applyTagFilter(tester, 'gratitude');
       expect(find.text('Multi tag entry'), findsOneWidget);
 
-      await tester.tap(_filterChip('sleep'));
-      await tester.pumpAndSettle();
+      await _applyTagFilter(tester, 'sleep');
       expect(find.text('Multi tag entry'), findsOneWidget);
       expect(find.text('Focus entry'), findsNothing);
     });
@@ -820,10 +889,14 @@ void main() {
         ),
       );
 
+      await _openFiltersSheet(tester);
+      await tester.ensureVisible(_dateFilterChip('week'));
       await tester.tap(_dateFilterChip('week'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(_filterChip('idea'));
       await tester.tap(_filterChip('idea'));
       await tester.pumpAndSettle();
+      await _applyFilters(tester);
 
       expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
       expect(
@@ -850,8 +923,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_moodFilterChip(1));
-      await tester.pumpAndSettle();
+      await _applyMoodFilter(tester, 1);
 
       expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
       expect(
@@ -907,10 +979,14 @@ void main() {
         ),
       );
 
+      await _openFiltersSheet(tester);
+      await tester.ensureVisible(_filterChip('gratitude'));
       await tester.tap(_filterChip('gratitude'));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(_moodFilterChip(-1));
       await tester.tap(_moodFilterChip(-1));
       await tester.pumpAndSettle();
+      await _applyFilters(tester);
       await tester.enterText(_searchField(), 'missing');
       await tester.pumpAndSettle();
 
@@ -919,6 +995,60 @@ void main() {
         find.text('Prueba con otra palabra o quita algún filtro.'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('clear resets date tag and mood filters but keeps search',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            now: _screenNow,
+            entries: [
+              _entry(
+                id: 'match',
+                createdAt: DateTime(2026, 6, 16, 20, 15),
+                title: 'Morning gratitude',
+                body: 'shared text',
+                tags: const <String>['gratitude'],
+                mood: 1,
+              ),
+              _entry(
+                id: 'other',
+                createdAt: DateTime(2026, 5, 10, 20, 15),
+                title: 'Morning sleep',
+                body: 'shared text',
+                tags: const <String>['sleep'],
+                mood: -1,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.enterText(_searchField(), 'morning');
+      await tester.pumpAndSettle();
+      await _openFiltersSheet(tester);
+      await tester.ensureVisible(_dateFilterChip('week'));
+      await tester.tap(_dateFilterChip('week'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(_filterChip('gratitude'));
+      await tester.tap(_filterChip('gratitude'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(_moodFilterChip(1));
+      await tester.tap(_moodFilterChip(1));
+      await tester.pumpAndSettle();
+      await _applyFilters(tester);
+
+      expect(find.text('3 activos'), findsOneWidget);
+      expect(find.text('Morning gratitude'), findsOneWidget);
+      expect(find.text('Morning sleep'), findsNothing);
+
+      await _clearFiltersFromSheet(tester);
+
+      expect(find.text('3 activos'), findsNothing);
+      expect(find.text('Morning gratitude'), findsOneWidget);
+      expect(find.text('Morning sleep'), findsOneWidget);
+      expect(_searchField(), findsOneWidget);
     });
 
     testWidgets('preserves grouping and newest-first sorting after search',
@@ -1009,8 +1139,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_filterChip('sleep'));
-      await tester.pumpAndSettle();
+      await _applyTagFilter(tester, 'sleep');
 
       final newestTop = tester.getTopLeft(find.text('Newest sleep')).dy;
       final newerSameDayTop =
@@ -1061,8 +1190,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_dateFilterChip('week'));
-      await tester.pumpAndSettle();
+      await _applyDateFilter(tester, 'week');
 
       final newestTop = tester.getTopLeft(find.text('Newest week')).dy;
       final newerSameDayTop =
@@ -1172,8 +1300,8 @@ void main() {
         ),
       );
 
-      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsNWidgets(2));
-      expect(find.text(DiaryMoodVisuals.emojiFor(1)), findsOneWidget);
+      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsOneWidget);
+      expect(find.text(DiaryMoodVisuals.emojiFor(1)), findsNothing);
     });
 
     testWidgets('DailyMood does not affect entry mood filter', (tester) async {
@@ -1204,12 +1332,10 @@ void main() {
         ),
       );
 
-      await tester.tap(_moodFilterChip(1));
-      await tester.pumpAndSettle();
+      await _applyMoodFilter(tester, 1);
       expect(find.text('Mood mismatch'), findsNothing);
 
-      await tester.tap(_moodFilterChip(-1));
-      await tester.pumpAndSettle();
+      await _applyMoodFilter(tester, -1);
       expect(find.text('Mood mismatch'), findsOneWidget);
     });
 
@@ -1243,8 +1369,8 @@ void main() {
         ),
       );
 
-      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsNWidgets(2));
-      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsOneWidget);
+      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsOneWidget);
+      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsNothing);
 
       await tester.tap(find.text('Edit mood'));
       await tester.pumpAndSettle();
@@ -1264,8 +1390,8 @@ void main() {
 
       expect(store.updatedEntries, hasLength(1));
       expect(store.updatedEntries.single.mood, 2);
-      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsNWidgets(2));
-      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsOneWidget);
+      expect(find.text(DiaryMoodVisuals.emojiFor(2)), findsOneWidget);
+      expect(find.text(DiaryMoodVisuals.emojiFor(-1)), findsNothing);
       expect(store.diaryEntries, hasLength(1));
       expect(store.diaryEntries.single.id, 'edit-mood');
     });
@@ -1290,8 +1416,7 @@ void main() {
         ),
       );
 
-      await tester.tap(_moodFilterChip(-1));
-      await tester.pumpAndSettle();
+      await _applyMoodFilter(tester, -1);
       expect(find.text('Edit mood filter'), findsOneWidget);
 
       await tester.tap(find.text('Edit mood filter'));
@@ -1313,8 +1438,7 @@ void main() {
       expect(find.text('Edit mood filter'), findsNothing);
       expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
 
-      await tester.tap(_moodFilterChip(2));
-      await tester.pumpAndSettle();
+      await _applyMoodFilter(tester, 2);
       expect(find.text('Edit mood filter'), findsOneWidget);
     });
 
@@ -1336,13 +1460,11 @@ void main() {
         ),
       );
 
-      await tester.tap(_filterChip('sleep'));
-      await tester.pumpAndSettle();
+      await _applyTagFilter(tester, 'sleep');
 
       expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
 
-      await tester.tap(_filterChip('all'));
-      await tester.pumpAndSettle();
+      await _clearFiltersFromSheet(tester);
       await tester.tap(find.text('Edit tags'));
       await tester.pumpAndSettle();
 
@@ -1365,8 +1487,7 @@ void main() {
       expect(store.updatedEntries, hasLength(1));
       expect(store.updatedEntries.single.tags, contains('sleep'));
 
-      await tester.tap(_filterChip('sleep'));
-      await tester.pumpAndSettle();
+      await _applyTagFilter(tester, 'sleep');
 
       expect(find.text('Edit tags'), findsOneWidget);
       expect(find.text('No hay entradas con estos filtros'), findsNothing);
@@ -1458,6 +1579,67 @@ Finder _moodFilterChip(int mood) {
 
 Finder _searchField() {
   return find.byKey(const ValueKey<String>('diary-all-entries-search-field'));
+}
+
+Finder _filtersButton() {
+  return find.byKey(
+    const ValueKey<String>('diary-all-entries-filters-button'),
+  );
+}
+
+Finder _filtersSheet() {
+  return find.byKey(
+    const ValueKey<String>('diary-all-entries-filters-sheet'),
+  );
+}
+
+Future<void> _openFiltersSheet(WidgetTester tester) async {
+  await tester.tap(_filtersButton());
+  await tester.pumpAndSettle();
+}
+
+Future<void> _applyFilters(WidgetTester tester) async {
+  await tester.tap(
+    find.byKey(
+      const ValueKey<String>('diary-all-entries-filters-apply'),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+Future<void> _clearFiltersFromSheet(WidgetTester tester) async {
+  await _openFiltersSheet(tester);
+  await tester.tap(
+    find.byKey(
+      const ValueKey<String>('diary-all-entries-filters-clear'),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await _applyFilters(tester);
+}
+
+Future<void> _applyTagFilter(WidgetTester tester, String tag) async {
+  await _openFiltersSheet(tester);
+  await tester.ensureVisible(_filterChip(tag));
+  await tester.tap(_filterChip(tag));
+  await tester.pumpAndSettle();
+  await _applyFilters(tester);
+}
+
+Future<void> _applyDateFilter(WidgetTester tester, String filter) async {
+  await _openFiltersSheet(tester);
+  await tester.ensureVisible(_dateFilterChip(filter));
+  await tester.tap(_dateFilterChip(filter));
+  await tester.pumpAndSettle();
+  await _applyFilters(tester);
+}
+
+Future<void> _applyMoodFilter(WidgetTester tester, int mood) async {
+  await _openFiltersSheet(tester);
+  await tester.ensureVisible(_moodFilterChip(mood));
+  await tester.tap(_moodFilterChip(mood));
+  await tester.pumpAndSettle();
+  await _applyFilters(tester);
 }
 
 DiaryEntry _entry({

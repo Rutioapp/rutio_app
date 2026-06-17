@@ -52,6 +52,36 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     }
   }
 
+  _AllEntriesFiltersSelection get _currentFilters => _AllEntriesFiltersSelection(
+        dateFilter: _selectedDateFilter,
+        tag: _selectedTag,
+        entryMood: _selectedEntryMood,
+      );
+
+  void _applyFilters(_AllEntriesFiltersSelection selection) {
+    setState(() {
+      _selectedDateFilter = selection.dateFilter;
+      _selectedTag = selection.tag;
+      _selectedEntryMood = selection.entryMood;
+    });
+  }
+
+  Future<void> _openFiltersSheet() async {
+    final selection = await showModalBottomSheet<_AllEntriesFiltersSelection>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _AllEntriesFiltersSheet(
+        initialSelection: _currentFilters,
+      ),
+    );
+
+    if (selection != null && mounted) {
+      _applyFilters(selection);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = Provider.of<UserStateStore?>(context);
@@ -73,6 +103,7 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     final hasSearchQuery = _normalizedSearchQuery(_searchQuery).isNotEmpty;
     final hasAnyEntries = effectiveEntries.isNotEmpty;
     final hasActiveFilters = isDateFiltered || isTagFiltered || isMoodFiltered;
+    final activeFilterCount = _currentFilters.activeCount;
     final emptyState = _resolveEmptyState(
       locale: locale,
       hasAnyEntries: hasAnyEntries,
@@ -95,32 +126,10 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
               onChanged: (value) => setState(() => _searchQuery = value),
             ),
             const SizedBox(height: 12),
-            _AllEntriesFiltersPanel(
-              children: [
-                _FilterSection(
-                  label: _dateFilterSectionLabel(locale),
-                  child: _DateFilterRow(
-                    selectedFilter: _selectedDateFilter,
-                    onFilterSelected: (filter) =>
-                        setState(() => _selectedDateFilter = filter),
-                  ),
-                ),
-                _FilterSection(
-                  label: _tagFilterSectionLabel(locale),
-                  child: _TagFilterRow(
-                    selectedTag: _selectedTag,
-                    onTagSelected: (tag) => setState(() => _selectedTag = tag),
-                  ),
-                ),
-                _FilterSection(
-                  label: _entryMoodFilterLabel(locale),
-                  child: _EntryMoodFilterRow(
-                    selectedMood: _selectedEntryMood,
-                    onMoodSelected: (mood) =>
-                        setState(() => _selectedEntryMood = mood),
-                  ),
-                ),
-              ],
+            _AllEntriesFilterBar(
+              locale: locale,
+              activeFilterCount: activeFilterCount,
+              onTap: _openFiltersSheet,
             ),
             const SizedBox(height: 16),
             if (groups.isEmpty)
@@ -145,6 +154,42 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     );
   }
 }
+
+class _AllEntriesFiltersSelection {
+  const _AllEntriesFiltersSelection({
+    required this.dateFilter,
+    required this.tag,
+    required this.entryMood,
+  });
+
+  final _AllEntriesDateFilter dateFilter;
+  final String tag;
+  final int? entryMood;
+
+  int get activeCount {
+    var count = 0;
+    if (dateFilter != _AllEntriesDateFilter.all) count++;
+    if (tag != _DiaryV2AllEntriesScreenState._allFilter) count++;
+    if (entryMood != null) count++;
+    return count;
+  }
+
+  _AllEntriesFiltersSelection copyWith({
+    _AllEntriesDateFilter? dateFilter,
+    String? tag,
+    Object? entryMood = _allEntriesFiltersSelectionNoChange,
+  }) {
+    return _AllEntriesFiltersSelection(
+      dateFilter: dateFilter ?? this.dateFilter,
+      tag: tag ?? this.tag,
+      entryMood: identical(entryMood, _allEntriesFiltersSelectionNoChange)
+          ? this.entryMood
+          : entryMood as int?,
+    );
+  }
+}
+
+const Object _allEntriesFiltersSelectionNoChange = Object();
 
 class _AllEntriesSearchField extends StatelessWidget {
   const _AllEntriesSearchField({
@@ -183,24 +228,58 @@ class _AllEntriesSearchField extends StatelessWidget {
   }
 }
 
-class _AllEntriesFiltersPanel extends StatelessWidget {
-  const _AllEntriesFiltersPanel({required this.children});
+class _AllEntriesFilterBar extends StatelessWidget {
+  const _AllEntriesFilterBar({
+    required this.locale,
+    required this.activeFilterCount,
+    required this.onTap,
+  });
 
-  final List<Widget> children;
+  final Locale locale;
+  final int activeFilterCount;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: DiaryV2Styles.compactCardDecoration(),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
           children: [
-            for (var index = 0; index < children.length; index++) ...[
-              if (index > 0) const SizedBox(height: 12),
-              children[index],
-            ],
+            _FilterActionButton(
+              label: _filtersButtonLabel(locale),
+              activeFilterCount: activeFilterCount,
+              onTap: onTap,
+            ),
+            if (activeFilterCount > 0) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _activeFiltersSummary(locale, activeFilterCount),
+                  key: const ValueKey<String>(
+                    'diary-all-entries-filter-summary',
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: DiaryV2Styles.mutedTextStrong,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ] else
+              Expanded(
+                child: Text(
+                  _filtersHintLabel(locale),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: DiaryV2Styles.mutedTextStrong,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ),
           ],
         ),
       ),
@@ -240,7 +319,279 @@ class _FilterSection extends StatelessWidget {
   }
 }
 
+class _FilterActionButton extends StatelessWidget {
+  const _FilterActionButton({
+    required this.label,
+    required this.activeFilterCount,
+    required this.onTap,
+  });
+
+  final String label;
+  final int activeFilterCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const ValueKey<String>('diary-all-entries-filters-button'),
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Ink(
+          decoration: DiaryV2Styles.subtleButtonDecoration(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  CupertinoIcons.slider_horizontal_3,
+                  size: 16,
+                  color: DiaryV2Styles.textStrong,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: DiaryV2Styles.textStrong,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                if (activeFilterCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: DiaryV2Styles.accentSoftMuted,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: DiaryV2Styles.accent.withValues(alpha: 0.22),
+                      ),
+                    ),
+                    child: Text(
+                      '$activeFilterCount',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: DiaryV2Styles.textStrong,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 enum _AllEntriesDateFilter { all, week, month, last30Days }
+
+class _AllEntriesFiltersSheet extends StatefulWidget {
+  const _AllEntriesFiltersSheet({
+    required this.initialSelection,
+  });
+
+  final _AllEntriesFiltersSelection initialSelection;
+
+  @override
+  State<_AllEntriesFiltersSheet> createState() => _AllEntriesFiltersSheetState();
+}
+
+class _AllEntriesFiltersSheetState extends State<_AllEntriesFiltersSheet> {
+  late _AllEntriesFiltersSelection _draftSelection = widget.initialSelection;
+
+  void _clear() {
+    setState(() {
+      _draftSelection = const _AllEntriesFiltersSelection(
+        dateFilter: _AllEntriesDateFilter.all,
+        tag: _DiaryV2AllEntriesScreenState._allFilter,
+        entryMood: null,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Container(
+      key: const ValueKey<String>('diary-all-entries-filters-sheet'),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8F2E9),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomInset),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.78,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: DiaryV2Styles.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _filtersButtonLabel(locale),
+                        style: DiaryV2Styles.sectionTitle(context).copyWith(
+                          fontSize: 26,
+                          color: DiaryV2Styles.textStrong,
+                        ),
+                      ),
+                    ),
+                    if (_draftSelection.activeCount > 0)
+                      Text(
+                        _activeFiltersSummary(locale, _draftSelection.activeCount),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: DiaryV2Styles.mutedTextStrong,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FilterSection(
+                          label: _dateFilterSectionLabel(locale),
+                          child: _DateFilterRow(
+                            selectedFilter: _draftSelection.dateFilter,
+                            onFilterSelected: (filter) => setState(() {
+                              _draftSelection = _draftSelection.copyWith(
+                                dateFilter: filter,
+                              );
+                            }),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _FilterSection(
+                          label: _tagFilterSectionLabel(locale),
+                          child: _TagFilterRow(
+                            selectedTag: _draftSelection.tag,
+                            onTagSelected: (tag) => setState(() {
+                              _draftSelection = _draftSelection.copyWith(
+                                tag: tag,
+                              );
+                            }),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _FilterSection(
+                          label: _entryMoodFilterLabel(locale),
+                          child: _EntryMoodFilterRow(
+                            selectedMood: _draftSelection.entryMood,
+                            onMoodSelected: (mood) => setState(() {
+                              _draftSelection = _draftSelection.copyWith(
+                                entryMood: mood,
+                              );
+                            }),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SheetActionButton(
+                        key: const ValueKey<String>(
+                          'diary-all-entries-filters-clear',
+                        ),
+                        label: _clearFiltersLabel(locale),
+                        isPrimary: false,
+                        onTap: _clear,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _SheetActionButton(
+                        key: const ValueKey<String>(
+                          'diary-all-entries-filters-apply',
+                        ),
+                        label: _applyFiltersLabel(locale),
+                        isPrimary: true,
+                        onTap: () => Navigator.of(context).pop(_draftSelection),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetActionButton extends StatelessWidget {
+  const _SheetActionButton({
+    super.key,
+    required this.label,
+    required this.isPrimary,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isPrimary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            color: isPrimary
+                ? DiaryV2Styles.textStrong
+                : Colors.white.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isPrimary
+                  ? DiaryV2Styles.textStrong.withValues(alpha: 0.9)
+                  : DiaryV2Styles.border,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isPrimary ? Colors.white : DiaryV2Styles.textStrong,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _AllEntriesHeader extends StatelessWidget {
   const _AllEntriesHeader({required this.title});
@@ -884,6 +1235,31 @@ String _tagFilterSectionLabel(Locale locale) {
 
 String _allMoodFilterLabel(Locale locale) {
   return locale.languageCode == 'es' ? 'Todos' : 'All';
+}
+
+String _filtersButtonLabel(Locale locale) {
+  return locale.languageCode == 'es' ? 'Filtros' : 'Filters';
+}
+
+String _filtersHintLabel(Locale locale) {
+  return locale.languageCode == 'es'
+      ? 'Fecha, etiqueta y mood'
+      : 'Date, tag and mood';
+}
+
+String _activeFiltersSummary(Locale locale, int count) {
+  if (locale.languageCode == 'es') {
+    return count == 1 ? '1 activo' : '$count activos';
+  }
+  return count == 1 ? '1 active' : '$count active';
+}
+
+String _clearFiltersLabel(Locale locale) {
+  return locale.languageCode == 'es' ? 'Limpiar' : 'Clear';
+}
+
+String _applyFiltersLabel(Locale locale) {
+  return locale.languageCode == 'es' ? 'Aplicar' : 'Apply';
 }
 
 String _filterEmptyTitle(Locale locale) {
