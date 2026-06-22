@@ -113,6 +113,14 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
     );
   }
 
+  Future<void> _handleManualRefresh(UserStateStore store) async {
+    try {
+      await store.syncDiaryV2FromRemoteBestEffort();
+    } catch (error) {
+      debugPrint('[diary_v2_refresh] manual refresh failed: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = context.watch<UserStateStore>();
@@ -151,9 +159,12 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
           bottom: false,
           child: Stack(
             children: [
-              ListView(
-                padding: EdgeInsets.fromLTRB(14, 10, 14, bottomInset + 114),
-                children: [
+              RefreshIndicator.adaptive(
+                onRefresh: () => _handleManualRefresh(store),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(14, 10, 14, bottomInset + 114),
+                  children: [
                   Builder(
                     builder: (ctx) => DiaryV2Header(
                       title: context.l10n.diaryTitle,
@@ -212,7 +223,8 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen> {
                     dominantMood: viewData.monthDominantMood,
                     dots: viewData.monthDots,
                   ),
-                ],
+                  ],
+                ),
               ),
               Positioned(
                 left: 14,
