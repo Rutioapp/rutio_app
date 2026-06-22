@@ -126,6 +126,36 @@ void main() {
       expect(store.activeHabits.first['name'], 'Local Only');
     });
 
+    test('1 local habit and 43 foreign remote habits keeps only the local habit',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final foreignHabits = List<RemoteHabit>.generate(
+        43,
+        (index) => RemoteHabit(
+          id: '550e8400-e29b-41d4-a716-44665544${index.toString().padLeft(4, '0')}',
+          userId: 'user-999',
+          name: 'Foreign Habit $index',
+          habitType: 'check',
+          reminderEnabled: false,
+          isArchived: false,
+          sortOrder: index,
+        ),
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(fetchedHabits: foreignHabits),
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(id: 'habit-1', name: 'Local Only'),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.single['name'], 'Local Only');
+    });
+
     test('mixed-user remote habits only merge current user rows', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -435,6 +465,91 @@ void main() {
       expect(countValue, 8);
     });
 
+    test('pull repair prunes only clearly foreign-owned polluted local habits',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'Current User Remote Habit',
+            ),
+          ],
+        ),
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'foreign-owned',
+            name: 'Foreign Owned',
+            remoteId: '550e8400-e29b-41d4-a716-446655440099',
+            remoteUserId: 'user-999',
+          ),
+          _localCheckHabit(
+            id: 'unknown-owner',
+            name: 'Unknown Owner Local',
+            remoteId: '550e8400-e29b-41d4-a716-446655440098',
+          ),
+          _localCheckHabit(
+            id: 'local-only',
+            name: 'Local Only',
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(
+        store.activeHabits.map((habit) => habit['name']).toList(),
+        containsAll(<String>[
+          'Unknown Owner Local',
+          'Local Only',
+          'Current User Remote Habit',
+        ]),
+      );
+      expect(
+        store.activeHabits.any((habit) => habit['name'] == 'Foreign Owned'),
+        isFalse,
+      );
+      expect(store.pendingAchievementUnlockCount, 0);
+      expect(store.pendingLevelCelebrationCount, 0);
+      expect(
+        ((store.state!['userState'] as Map)['progression'] as Map)['xp'],
+        0,
+      );
+      expect(((store.state!['userState'] as Map)['wallet'] as Map)['coins'], 0);
+    });
+
+    test('pull repair keeps local-only habits without ownership metadata',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository:
+            _FakeHabitRepository(fetchedHabits: const <RemoteHabit>[]),
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'local-1',
+            name: 'Keep Me',
+            remoteId: '550e8400-e29b-41d4-a716-446655440111',
+          ),
+          _localCheckHabit(
+            id: 'local-2',
+            name: 'Keep Me Too',
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(
+        store.activeHabits.map((habit) => habit['name']).toList(),
+        containsAll(<String>['Keep Me', 'Keep Me Too']),
+      );
+    });
+
     test('no-auth pull is safe and does not call remote repositories',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -598,6 +713,7 @@ Map<String, dynamic> _localCheckHabit({
   required String id,
   required String name,
   String? remoteId,
+  String? remoteUserId,
   String? updatedAt,
   bool archived = false,
 }) {
@@ -614,6 +730,7 @@ Map<String, dynamic> _localCheckHabit({
     'createdAt': '2026-06-20',
     if (updatedAt != null) 'updatedAt': updatedAt,
     if (remoteId != null) 'remoteId': remoteId,
+    if (remoteUserId != null) 'remoteUserId': remoteUserId,
     if (archived) 'archived': true,
   };
 }
@@ -623,6 +740,7 @@ Map<String, dynamic> _localCountHabit({
   required String name,
   required num target,
   String? remoteId,
+  String? remoteUserId,
 }) {
   return <String, dynamic>{
     'id': id,
@@ -636,6 +754,7 @@ Map<String, dynamic> _localCountHabit({
     'schedule': const <String, dynamic>{'type': 'daily'},
     'createdAt': '2026-06-20',
     if (remoteId != null) 'remoteId': remoteId,
+    if (remoteUserId != null) 'remoteUserId': remoteUserId,
   };
 }
 
