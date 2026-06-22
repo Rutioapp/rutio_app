@@ -540,16 +540,51 @@ Future<JournalEntryBackfillSummary> _syncExistingLocalJournalEntriesOnce(
   }
 }
 
-Future<void> _syncDiaryV2FromRemoteBestEffort(UserStateStore store) async {
+Future<void> _autoSyncDiaryV2FromRemoteIfNeeded(UserStateStore store) async {
   if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'pull')) return;
+  if (store._isDiaryV2RemotePullRunning) {
+    _debugDiaryV2Sync('auto pull skipped: already running');
+    return;
+  }
 
+  final now = store._nowProvider();
+  final lastAttemptAt = store._lastDiaryV2RemotePullAttemptAt;
+  if (lastAttemptAt != null &&
+      now.difference(lastAttemptAt) < UserStateStore.diaryV2AutoPullCooldown) {
+    _debugDiaryV2Sync(
+      'auto pull skipped: cooldown active '
+      '(${now.difference(lastAttemptAt).inMinutes}m since last attempt)',
+    );
+    return;
+  }
+
+  await _runDiaryV2RemotePull(store, source: 'auto');
+}
+
+Future<void> _syncDiaryV2FromRemoteBestEffort(UserStateStore store) async {
+  await _runDiaryV2RemotePull(store, source: 'manual');
+}
+
+Future<void> _runDiaryV2RemotePull(
+  UserStateStore store, {
+  required String source,
+}) async {
+  if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'pull')) return;
+  if (store._isDiaryV2RemotePullRunning) {
+    _debugDiaryV2Sync('$source pull skipped: already running');
+    return;
+  }
+
+  store._isDiaryV2RemotePullRunning = true;
+  store._lastDiaryV2RemotePullAttemptAt = store._nowProvider();
   if (store._state == null) {
     await store.load();
   }
 
   final root = store._state;
   if (root == null) {
-    _debugDiaryV2Sync('pull skipped: local state unavailable');
+    _debugDiaryV2Sync('$source pull skipped: local state unavailable');
+    store._isDiaryV2RemotePullRunning = false;
     return;
   }
 
@@ -561,14 +596,14 @@ Future<void> _syncDiaryV2FromRemoteBestEffort(UserStateStore store) async {
 
     if (!diaryEntriesResult.isSuccess) {
       _debugDiaryV2Sync(
-        'pull failed while fetching diary entries: '
+        '$source pull failed while fetching diary entries: '
         '${diaryEntriesResult.error?.code.name}: ${diaryEntriesResult.error?.message}',
       );
       return;
     }
     if (!dailyMoodsResult.isSuccess) {
       _debugDiaryV2Sync(
-        'pull failed while fetching daily moods: '
+        '$source pull failed while fetching daily moods: '
         '${dailyMoodsResult.error?.code.name}: ${dailyMoodsResult.error?.message}',
       );
       return;
@@ -589,7 +624,10 @@ Future<void> _syncDiaryV2FromRemoteBestEffort(UserStateStore store) async {
     );
 
     if (!mergedEntries.changed && !mergedDailyMoods.changed) {
-      _debugDiaryV2Sync('pull completed: no local Diary V2 changes applied');
+      store._lastDiaryV2RemotePullSuccessAt = store._nowProvider();
+      _debugDiaryV2Sync(
+        '$source pull completed: no local Diary V2 changes applied',
+      );
       return;
     }
 
@@ -597,8 +635,11 @@ Future<void> _syncDiaryV2FromRemoteBestEffort(UserStateStore store) async {
     userState['dailyMoods'] = mergedDailyMoods.moods;
     root['userState'] = userState;
     await store.save(root);
+    store._lastDiaryV2RemotePullSuccessAt = store._nowProvider();
   } catch (error) {
-    _debugDiaryV2Sync('pull unexpected error: $error');
+    _debugDiaryV2Sync('$source pull unexpected error: $error');
+  } finally {
+    store._isDiaryV2RemotePullRunning = false;
   }
 }
 

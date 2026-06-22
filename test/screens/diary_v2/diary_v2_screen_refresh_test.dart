@@ -33,6 +33,31 @@ void main() {
     expect(store.syncDiaryV2FromRemoteBestEffortCalls, 1);
   });
 
+  testWidgets('main screen open triggers controlled Diary V2 auto sync',
+      (tester) async {
+    final store = _FakeDiaryV2Store();
+
+    await tester.pumpWidget(_app(store: store));
+    await tester.pumpAndSettle();
+
+    expect(store.autoSyncDiaryV2FromRemoteIfNeededCalls, 1);
+    expect(store.syncDiaryV2FromRemoteBestEffortCalls, 0);
+  });
+
+  testWidgets('app resume asks store for controlled Diary V2 auto sync',
+      (tester) async {
+    final store = _FakeDiaryV2Store();
+
+    await tester.pumpWidget(_app(store: store));
+    await tester.pumpAndSettle();
+    expect(store.autoSyncDiaryV2FromRemoteIfNeededCalls, 1);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+
+    expect(store.autoSyncDiaryV2FromRemoteIfNeededCalls, 2);
+  });
+
   testWidgets('pull-to-refresh failure keeps local Diary V2 content intact', (
     tester,
   ) async {
@@ -96,6 +121,7 @@ class _FakeDiaryV2Store extends ChangeNotifier implements UserStateStore {
   final Object? syncDiaryV2FromRemoteBestEffortError;
 
   int syncDiaryV2FromRemoteBestEffortCalls = 0;
+  int autoSyncDiaryV2FromRemoteIfNeededCalls = 0;
 
   @override
   List<DiaryEntry> get diaryEntries => List<DiaryEntry>.unmodifiable(_entries);
@@ -143,6 +169,11 @@ class _FakeDiaryV2Store extends ChangeNotifier implements UserStateStore {
     if (syncDiaryV2FromRemoteBestEffortError != null) {
       throw syncDiaryV2FromRemoteBestEffortError!;
     }
+  }
+
+  @override
+  Future<void> autoSyncDiaryV2FromRemoteIfNeeded() async {
+    autoSyncDiaryV2FromRemoteIfNeededCalls += 1;
   }
 
   String _dateKey(DateTime date) {

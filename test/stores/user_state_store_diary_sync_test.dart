@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/diary_v2_supabase_repository.dart';
@@ -331,6 +333,87 @@ void main() {
       expect(fakeRepository.fetchDailyMoodsCalls, 1);
     });
 
+    test('controlled auto sync triggers remote pull when allowed', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      var now = DateTime(2026, 6, 22, 10, 0);
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'remote-entry-1',
+            createdAt: 1718445600123,
+            text: 'Pulled on open',
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        nowProvider: () => now,
+      );
+
+      await store.autoSyncDiaryV2FromRemoteIfNeeded();
+
+      expect(fakeRepository.fetchDiaryEntriesCalls, 1);
+      expect(fakeRepository.fetchDailyMoodsCalls, 1);
+      expect(store.lastDiaryV2RemotePullAttemptAt, now);
+      expect(store.lastDiaryV2RemotePullSuccessAt, now);
+      expect(store.diaryEntries.single.id, 'remote-entry-1');
+    });
+
+    test('controlled auto sync does not trigger repeatedly inside cooldown',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      var now = DateTime(2026, 6, 22, 10, 0);
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository();
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        nowProvider: () => now,
+      );
+
+      await store.autoSyncDiaryV2FromRemoteIfNeeded();
+      now = now.add(const Duration(minutes: 5));
+      await store.autoSyncDiaryV2FromRemoteIfNeeded();
+      now = now.add(UserStateStore.diaryV2AutoPullCooldown);
+      await store.autoSyncDiaryV2FromRemoteIfNeeded();
+
+      expect(fakeRepository.fetchDiaryEntriesCalls, 2);
+      expect(fakeRepository.fetchDailyMoodsCalls, 2);
+    });
+
+    test('controlled auto sync does not start if a sync is already in progress',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final fetchCompleter = Completer<RepositoryResult<List<DiaryEntry>>>();
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchDiaryEntriesHandler: () => fetchCompleter.future,
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+      );
+
+      final firstSync = store.autoSyncDiaryV2FromRemoteIfNeeded();
+      await Future<void>.delayed(Duration.zero);
+      expect(store.isDiaryV2RemotePullRunning, isTrue);
+
+      await store.autoSyncDiaryV2FromRemoteIfNeeded();
+
+      expect(fakeRepository.fetchDiaryEntriesCalls, 1);
+      expect(fakeRepository.fetchDailyMoodsCalls, 0);
+
+      fetchCompleter.complete(
+        const RepositoryResult<List<DiaryEntry>>.success(data: <DiaryEntry>[]),
+      );
+      await firstSync;
+
+      expect(store.isDiaryV2RemotePullRunning, isFalse);
+      expect(fakeRepository.fetchDailyMoodsCalls, 1);
+    });
+
     test('remote diary entry with existing local id does not duplicate on pull',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -640,6 +723,40 @@ void main() {
       expect(fakeRepository.fetchDailyMoodsCalls, 0);
     });
 
+    test('no-auth controlled auto sync is safe and keeps local state unchanged',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'remote-entry-1',
+            createdAt: 1718445600123,
+            text: 'Should not be pulled',
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: null,
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 100,
+            text: 'Local only',
+          ),
+        ],
+      );
+
+      await store.autoSyncDiaryV2FromRemoteIfNeeded();
+
+      expect(store.diaryEntries.single.id, 'entry-1');
+      expect(fakeRepository.fetchDiaryEntriesCalls, 0);
+      expect(fakeRepository.fetchDailyMoodsCalls, 0);
+      expect(store.lastDiaryV2RemotePullAttemptAt, isNull);
+      expect(store.lastDiaryV2RemotePullSuccessAt, isNull);
+    });
+
     test('remote fetch error is best effort and keeps local state unchanged',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -681,6 +798,39 @@ void main() {
       expect(fakeRepository.fetchDiaryEntriesCalls, 1);
       expect(fakeRepository.fetchDailyMoodsCalls, 1);
     });
+
+    test('controlled auto sync fetch error keeps local state intact', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final now = DateTime(2026, 6, 22, 10, 0);
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchDiaryEntriesResult: RepositoryResult<List<DiaryEntry>>.failure(
+          const RepositoryError(
+            code: RepositoryErrorCode.network,
+            message: 'offline',
+          ),
+        ),
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        nowProvider: () => now,
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 100,
+            text: 'Local only',
+          ),
+        ],
+      );
+
+      await store.autoSyncDiaryV2FromRemoteIfNeeded();
+
+      expect(store.diaryEntries.single.text, 'Local only');
+      expect(store.lastDiaryV2RemotePullAttemptAt, now);
+      expect(store.lastDiaryV2RemotePullSuccessAt, isNull);
+      expect(store.isDiaryV2RemotePullRunning, isFalse);
+    });
   });
 }
 
@@ -689,6 +839,7 @@ Future<UserStateStore> _buildStore({
   required String? authenticatedUserId,
   List<DiaryEntry> entries = const <DiaryEntry>[],
   List<DailyMood> dailyMoods = const <DailyMood>[],
+  DateTime Function()? nowProvider,
 }) async {
   final repo = UserStateRepository(storage: UserStateStorage())
     ..setActiveUserScope('user-1');
@@ -697,6 +848,7 @@ Future<UserStateStore> _buildStore({
     journalEntrySyncService: JournalEntrySyncService(),
     diaryV2SupabaseRepository: diaryV2SupabaseRepository,
     currentSupabaseUserIdProvider: () => authenticatedUserId,
+    nowProvider: nowProvider,
   );
   await store.save(
     _baseState(
@@ -797,12 +949,18 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
     RepositoryResult<List<DailyMood>>? fetchDailyMoodsResult,
     List<DiaryEntry> fetchedDiaryEntries = const <DiaryEntry>[],
     List<DailyMood> fetchedDailyMoods = const <DailyMood>[],
+    Future<RepositoryResult<List<DiaryEntry>>> Function()?
+        fetchDiaryEntriesHandler,
+    Future<RepositoryResult<List<DailyMood>>> Function()?
+        fetchDailyMoodsHandler,
   })  : _upsertResult = upsertResult,
         _deleteResult = deleteResult,
         _dailyMoodUpsertResult = dailyMoodUpsertResult,
         _fetchDiaryEntriesResult = fetchDiaryEntriesResult,
         _fetchDailyMoodsResult = fetchDailyMoodsResult,
         _fetchedDiaryEntries = fetchedDiaryEntries,
+        _fetchDiaryEntriesHandler = fetchDiaryEntriesHandler,
+        _fetchDailyMoodsHandler = fetchDailyMoodsHandler,
         _fetchedDailyMoods = fetchedDailyMoods,
         super(
           client: SupabaseClient('https://example.com', 'anon-key'),
@@ -816,6 +974,10 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
   final RepositoryResult<List<DailyMood>>? _fetchDailyMoodsResult;
   final List<DiaryEntry> _fetchedDiaryEntries;
   final List<DailyMood> _fetchedDailyMoods;
+  final Future<RepositoryResult<List<DiaryEntry>>> Function()?
+      _fetchDiaryEntriesHandler;
+  final Future<RepositoryResult<List<DailyMood>>> Function()?
+      _fetchDailyMoodsHandler;
 
   int upsertCalls = 0;
   int deleteCalls = 0;
@@ -872,6 +1034,10 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
     DateTime? end,
   }) async {
     fetchDiaryEntriesCalls += 1;
+    final handler = _fetchDiaryEntriesHandler;
+    if (handler != null) {
+      return handler();
+    }
     return _fetchDiaryEntriesResult ??
         RepositoryResult<List<DiaryEntry>>.success(data: _fetchedDiaryEntries);
   }
@@ -882,6 +1048,10 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
     DateTime? end,
   }) async {
     fetchDailyMoodsCalls += 1;
+    final handler = _fetchDailyMoodsHandler;
+    if (handler != null) {
+      return handler();
+    }
     return _fetchDailyMoodsResult ??
         RepositoryResult<List<DailyMood>>.success(data: _fetchedDailyMoods);
   }
