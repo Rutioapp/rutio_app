@@ -5,11 +5,17 @@ import '../../core/supabase/rutio_supabase_client.dart';
 import '../models/remote/remote_habit_log.dart';
 import 'repository_result.dart';
 
+typedef HabitLogCurrentUserIdProvider = String? Function();
+
 class HabitLogRepository {
-  HabitLogRepository({SupabaseClient? client})
-      : _client = client ?? RutioSupabaseClient.instance;
+  HabitLogRepository({
+    SupabaseClient? client,
+    HabitLogCurrentUserIdProvider? currentUserIdProvider,
+  })  : _client = client ?? RutioSupabaseClient.instance,
+        _currentUserIdProvider = currentUserIdProvider;
 
   final SupabaseClient _client;
+  final HabitLogCurrentUserIdProvider? _currentUserIdProvider;
 
   static const String _habitLogsTable = 'habit_logs';
   static const String _habitLogColumns = '''
@@ -31,7 +37,9 @@ updated_at
   ) async {
     final userId = _currentUserId();
     if (userId == null) {
-      return RepositoryResult<List<RemoteHabitLog>>.failure(_notAuthenticated());
+      return const RepositoryResult<List<RemoteHabitLog>>.success(
+        data: <RemoteHabitLog>[],
+      );
     }
 
     final startKey = _dateOnlyIso(start);
@@ -54,6 +62,7 @@ updated_at
               Map<String, dynamic>.from(row.cast<String, dynamic>()),
             ),
           )
+          .where((log) => log.userId == userId)
           .toList(growable: false);
 
       return RepositoryResult<List<RemoteHabitLog>>.success(data: logs);
@@ -66,7 +75,8 @@ updated_at
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[habit_log_repository] unexpected fetch-range error: $error');
+        debugPrint(
+            '[habit_log_repository] unexpected fetch-range error: $error');
       }
       return RepositoryResult<List<RemoteHabitLog>>.failure(
         RepositoryError(
@@ -85,7 +95,9 @@ updated_at
   }) async {
     final userId = _currentUserId();
     if (userId == null) {
-      return RepositoryResult<List<RemoteHabitLog>>.failure(_notAuthenticated());
+      return const RepositoryResult<List<RemoteHabitLog>>.success(
+        data: <RemoteHabitLog>[],
+      );
     }
 
     final normalizedHabitId = habitId.trim();
@@ -123,6 +135,9 @@ updated_at
               Map<String, dynamic>.from(row.cast<String, dynamic>()),
             ),
           )
+          .where(
+            (log) => log.userId == userId && log.habitId == normalizedHabitId,
+          )
           .toList(growable: false);
 
       return RepositoryResult<List<RemoteHabitLog>>.success(data: logs);
@@ -135,12 +150,91 @@ updated_at
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[habit_log_repository] unexpected fetch-habit error: $error');
+        debugPrint(
+            '[habit_log_repository] unexpected fetch-habit error: $error');
       }
       return RepositoryResult<List<RemoteHabitLog>>.failure(
         RepositoryError(
           code: RepositoryErrorCode.unknown,
           message: 'Could not fetch habit logs for habit.',
+          cause: error,
+        ),
+      );
+    }
+  }
+
+  Future<RepositoryResult<List<RemoteHabitLog>>> fetchLogsForHabits(
+    Iterable<String> habitIds, {
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    final userId = _currentUserId();
+    if (userId == null) {
+      return const RepositoryResult<List<RemoteHabitLog>>.success(
+        data: <RemoteHabitLog>[],
+      );
+    }
+
+    final normalizedHabitIds = habitIds
+        .map((habitId) => habitId.trim())
+        .where((habitId) => habitId.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (normalizedHabitIds.isEmpty) {
+      return const RepositoryResult<List<RemoteHabitLog>>.success(
+        data: <RemoteHabitLog>[],
+      );
+    }
+
+    try {
+      var query = _client
+          .from(_habitLogsTable)
+          .select(_habitLogColumns)
+          .eq('user_id', userId)
+          .inFilter('habit_id', normalizedHabitIds);
+
+      if (start != null) {
+        query = query.gte('log_date', _dateOnlyIso(start));
+      }
+      if (end != null) {
+        query = query.lte('log_date', _dateOnlyIso(end));
+      }
+
+      final rows = await query
+          .order('log_date', ascending: true)
+          .order('created_at', ascending: true);
+
+      final logs = rows
+          .whereType<Map>()
+          .map(
+            (row) => RemoteHabitLog.fromMap(
+              Map<String, dynamic>.from(row.cast<String, dynamic>()),
+            ),
+          )
+          .where(
+            (log) =>
+                log.userId == userId &&
+                normalizedHabitIds.contains(log.habitId),
+          )
+          .toList(growable: false);
+
+      return RepositoryResult<List<RemoteHabitLog>>.success(data: logs);
+    } on PostgrestException catch (error) {
+      return RepositoryResult<List<RemoteHabitLog>>.failure(
+        _mapPostgrestError(
+          error,
+          fallbackMessage: 'Could not fetch habit logs for habits.',
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+            '[habit_log_repository] unexpected fetch-habits error: $error');
+      }
+      return RepositoryResult<List<RemoteHabitLog>>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.unknown,
+          message: 'Could not fetch habit logs for habits.',
           cause: error,
         ),
       );
@@ -259,6 +353,12 @@ updated_at
   }
 
   String? _currentUserId() {
+    final providedUserId = _currentUserIdProvider?.call();
+    if (providedUserId != null) {
+      final normalized = providedUserId.trim();
+      return normalized.isEmpty ? null : normalized;
+    }
+
     final userId = _client.auth.currentUser?.id.trim();
     if (userId == null || userId.isEmpty) return null;
     return userId;
