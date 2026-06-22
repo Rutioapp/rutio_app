@@ -290,6 +290,44 @@ String? _currentHabitPullAuthenticatedUserId(UserStateStore store) {
   return normalized.isEmpty ? null : normalized;
 }
 
+_HabitRemoteMergeResult _pruneForeignRemoteHabitsFromLocalState({
+  required List<Map<String, dynamic>> localHabits,
+  required String authenticatedUserId,
+}) {
+  if (authenticatedUserId.trim().isEmpty) {
+    return _HabitRemoteMergeResult(
+      habits: localHabits
+          .map((habit) => Map<String, dynamic>.from(habit))
+          .toList(growable: false),
+      changed: false,
+    );
+  }
+
+  final prunedHabits = <Map<String, dynamic>>[];
+  var changed = false;
+
+  for (final habit in localHabits) {
+    final copy = Map<String, dynamic>.from(habit);
+    if (_isClearlyForeignRemoteOwnedHabit(
+      copy,
+      authenticatedUserId: authenticatedUserId,
+    )) {
+      changed = true;
+      _debugHabitPull(
+        'pruned local habit with foreign remote ownership metadata: '
+        'localHabitId="${_habitIdValue(copy) ?? ''}" '
+        'remoteHabitId="${_habitRemoteIdValue(copy) ?? ''}" '
+        'ownerUserId="${_remoteHabitOwnerUserIdValue(copy) ?? ''}"',
+      );
+      continue;
+    }
+
+    prunedHabits.add(copy);
+  }
+
+  return _HabitRemoteMergeResult(habits: prunedHabits, changed: changed);
+}
+
 class _HabitRemoteMergeResult {
   const _HabitRemoteMergeResult({
     required this.habits,
@@ -311,9 +349,20 @@ _HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
   required List<RemoteHabit> remoteHabits,
   required String authenticatedUserId,
 }) {
-  final mergedHabits = localHabits
-      .map((habit) => Map<String, dynamic>.from(habit))
-      .toList(growable: true);
+  if (authenticatedUserId.trim().isEmpty) {
+    return _HabitRemoteMergeResult(
+      habits: localHabits
+          .map((habit) => Map<String, dynamic>.from(habit))
+          .toList(growable: false),
+      changed: false,
+    );
+  }
+
+  final prunedLocalHabits = _pruneForeignRemoteHabitsFromLocalState(
+    localHabits: localHabits,
+    authenticatedUserId: authenticatedUserId,
+  );
+  final mergedHabits = prunedLocalHabits.habits.toList(growable: true);
   final localIndexesByRemoteId = <String, int>{};
   for (var index = 0; index < mergedHabits.length; index += 1) {
     final remoteId = _habitRemoteIdValue(mergedHabits[index]);
@@ -323,7 +372,7 @@ _HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
     localIndexesByRemoteId[remoteId] = index;
   }
 
-  var changed = false;
+  var changed = prunedLocalHabits.changed;
 
   for (final remoteHabit in remoteHabits) {
     if (!_isRemoteHabitScopedToUser(
@@ -380,6 +429,10 @@ _HabitLogRemoteMergeResult _mergeRemoteHabitLogsIntoLocalState({
   required List<RemoteHabitLog> remoteLogs,
   required String authenticatedUserId,
 }) {
+  if (authenticatedUserId.trim().isEmpty) {
+    return const _HabitLogRemoteMergeResult(changed: false);
+  }
+
   if (remoteLogs.isEmpty) {
     return const _HabitLogRemoteMergeResult(changed: false);
   }
@@ -494,18 +547,61 @@ bool _isRemoteHabitScopedToUser(
   required String authenticatedUserId,
 }) {
   final normalizedUserId = remoteHabit.userId.trim();
-  return normalizedUserId.isNotEmpty && normalizedUserId == authenticatedUserId;
+  final normalizedAuthenticatedUserId = authenticatedUserId.trim();
+  return normalizedAuthenticatedUserId.isNotEmpty &&
+      normalizedUserId.isNotEmpty &&
+      normalizedUserId == normalizedAuthenticatedUserId;
 }
 
 bool _isRemoteHabitLogScopedToUser(
   RemoteHabitLog remoteLog, {
   required String authenticatedUserId,
 }) {
+  final normalizedAuthenticatedUserId = authenticatedUserId.trim();
   final normalizedUserId = remoteLog.userId.trim();
   final normalizedHabitId = remoteLog.habitId.trim();
-  return normalizedUserId.isNotEmpty &&
-      normalizedUserId == authenticatedUserId &&
+  return normalizedAuthenticatedUserId.isNotEmpty &&
+      normalizedUserId.isNotEmpty &&
+      normalizedUserId == normalizedAuthenticatedUserId &&
       normalizedHabitId.isNotEmpty;
+}
+
+String? _remoteHabitOwnerUserIdValue(Map<String, dynamic> habit) {
+  for (final key in const <String>[
+    'remoteUserId',
+    'remote_user_id',
+    'supabaseUserId',
+    'supabase_user_id',
+    'userId',
+    'user_id',
+  ]) {
+    final normalized = (habit[key] ?? '').toString().trim();
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+bool _isClearlyForeignRemoteOwnedHabit(
+  Map<String, dynamic> habit, {
+  required String authenticatedUserId,
+}) {
+  final normalizedAuthenticatedUserId = authenticatedUserId.trim();
+  if (normalizedAuthenticatedUserId.isEmpty) {
+    return false;
+  }
+
+  final ownerUserId = _remoteHabitOwnerUserIdValue(habit);
+  if (ownerUserId == null || ownerUserId == normalizedAuthenticatedUserId) {
+    return false;
+  }
+
+  // Only remove records whose ownership is explicit. Habits without reliable
+  // ownership metadata are kept to avoid destructive cleanup of valid local-only
+  // items after the earlier cross-user import bug.
+  return true;
 }
 
 bool _areHabitTypesCompatible(
@@ -537,6 +633,7 @@ Map<String, dynamic> _mergeRemoteHabitIntoExistingLocal({
   final merged = Map<String, dynamic>.from(localHabit);
 
   merged['remoteId'] = remoteHabit.id;
+  merged['remoteUserId'] = remoteHabit.userId;
   merged['name'] = remoteHabit.name;
   merged['title'] = remoteHabit.name;
   merged['habitTitle'] = remoteHabit.name;
@@ -571,6 +668,7 @@ Map<String, dynamic> _localHabitFromRemote(RemoteHabit remoteHabit) {
     'id': localHabitId,
     'habitId': localHabitId,
     'remoteId': remoteHabitId,
+    'remoteUserId': remoteHabit.userId,
     'createdAt': remoteHabit.createdAt?.toUtc().toIso8601String() ?? _today(),
     'updatedAt': remoteHabit.updatedAt?.toUtc().toIso8601String(),
     'name': remoteHabit.name,
