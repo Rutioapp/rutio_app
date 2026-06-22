@@ -5,11 +5,17 @@ import '../../core/supabase/rutio_supabase_client.dart';
 import '../models/remote/remote_habit.dart';
 import 'repository_result.dart';
 
+typedef HabitCurrentUserIdProvider = String? Function();
+
 class HabitRepository {
-  HabitRepository({SupabaseClient? client})
-      : _client = client ?? RutioSupabaseClient.instance;
+  HabitRepository({
+    SupabaseClient? client,
+    HabitCurrentUserIdProvider? currentUserIdProvider,
+  })  : _client = client ?? RutioSupabaseClient.instance,
+        _currentUserIdProvider = currentUserIdProvider;
 
   final SupabaseClient _client;
+  final HabitCurrentUserIdProvider? _currentUserIdProvider;
 
   static const String _habitsTable = 'habits';
   static const String _habitColumns = '''
@@ -30,10 +36,13 @@ created_at,
 updated_at
 ''';
 
-  Future<RepositoryResult<List<RemoteHabit>>> fetchHabitsForCurrentUser() async {
+  Future<RepositoryResult<List<RemoteHabit>>>
+      fetchHabitsForCurrentUser() async {
     final userId = _currentUserId();
     if (userId == null) {
-      return RepositoryResult<List<RemoteHabit>>.failure(_notAuthenticated());
+      return const RepositoryResult<List<RemoteHabit>>.success(
+        data: <RemoteHabit>[],
+      );
     }
 
     try {
@@ -47,9 +56,10 @@ updated_at
       final habits = rows
           .whereType<Map>()
           .map(
-            (row) =>
-                RemoteHabit.fromMap(Map<String, dynamic>.from(row.cast<String, dynamic>())),
+            (row) => RemoteHabit.fromMap(
+                Map<String, dynamic>.from(row.cast<String, dynamic>())),
           )
+          .where((habit) => habit.userId == userId)
           .toList(growable: false);
 
       return RepositoryResult<List<RemoteHabit>>.success(data: habits);
@@ -246,6 +256,12 @@ updated_at
   }
 
   String? _currentUserId() {
+    final providedUserId = _currentUserIdProvider?.call();
+    if (providedUserId != null) {
+      final normalized = providedUserId.trim();
+      return normalized.isEmpty ? null : normalized;
+    }
+
     final userId = _client.auth.currentUser?.id.trim();
     if (userId == null || userId.isEmpty) return null;
     return userId;
