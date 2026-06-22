@@ -42,6 +42,8 @@ part 'user_state_store_habit_progress.dart';
 part 'user_state_store_todos.dart';
 
 class UserStateStore extends ChangeNotifier {
+  static const Duration diaryV2AutoPullCooldown = Duration(minutes: 10);
+
   final UserStateRepository _repo;
   final AchievementSyncService _achievementSyncService;
   final HabitSyncService _habitSyncService;
@@ -52,6 +54,7 @@ class UserStateStore extends ChangeNotifier {
   final ProfileRepository? _profileRepository;
   final LevelUpCelebrationController _levelUpCelebrationController;
   final CurrentUserIdProvider _currentSupabaseUserIdProvider;
+  final DateTime Function() _nowProvider;
 
   UserStateStore(
     this._repo, {
@@ -63,6 +66,7 @@ class UserStateStore extends ChangeNotifier {
     DiaryV2SupabaseRepository? diaryV2SupabaseRepository,
     ProfileRepository? profileRepository,
     CurrentUserIdProvider? currentSupabaseUserIdProvider,
+    DateTime Function()? nowProvider,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
         _habitSyncService = habitSyncService ?? HabitSyncService(),
@@ -78,7 +82,8 @@ class UserStateStore extends ChangeNotifier {
         _profileRepository = profileRepository,
         _levelUpCelebrationController = const LevelUpCelebrationController(),
         _currentSupabaseUserIdProvider =
-            currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId;
+            currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId,
+        _nowProvider = nowProvider ?? DateTime.now;
 
   Map<String, dynamic>? _state;
   bool _loading = false;
@@ -92,6 +97,9 @@ class UserStateStore extends ChangeNotifier {
   bool _isSupabaseHabitLogsBackfillRunning = false;
   bool _isSupabaseUserProgressBackfillRunning = false;
   bool _isSupabaseJournalEntriesBackfillRunning = false;
+  bool _isDiaryV2RemotePullRunning = false;
+  DateTime? _lastDiaryV2RemotePullAttemptAt;
+  DateTime? _lastDiaryV2RemotePullSuccessAt;
   Object? _accountDeletionError;
   String? _activeLocalScopeUserId;
   int _scopeEpoch = 0;
@@ -124,6 +132,9 @@ class UserStateStore extends ChangeNotifier {
       _isSupabaseUserProgressBackfillRunning;
   bool get isSupabaseJournalEntriesBackfillRunning =>
       _isSupabaseJournalEntriesBackfillRunning;
+  bool get isDiaryV2RemotePullRunning => _isDiaryV2RemotePullRunning;
+  DateTime? get lastDiaryV2RemotePullAttemptAt => _lastDiaryV2RemotePullAttemptAt;
+  DateTime? get lastDiaryV2RemotePullSuccessAt => _lastDiaryV2RemotePullSuccessAt;
   Object? get accountDeletionError => _accountDeletionError;
 
   void _emitChanged() => notifyListeners();
@@ -359,6 +370,9 @@ class UserStateStore extends ChangeNotifier {
     bool force = false,
   }) =>
       _syncExistingLocalJournalEntriesOnce(this, force: force);
+
+  Future<void> autoSyncDiaryV2FromRemoteIfNeeded() =>
+      _autoSyncDiaryV2FromRemoteIfNeeded(this);
 
   Future<void> syncDiaryV2FromRemoteBestEffort() =>
       _syncDiaryV2FromRemoteBestEffort(this);

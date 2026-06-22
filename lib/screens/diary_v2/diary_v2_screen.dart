@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -50,13 +52,37 @@ class DiaryV2Screen extends StatefulWidget {
   State<DiaryV2Screen> createState() => _DiaryV2ScreenState();
 }
 
-class _DiaryV2ScreenState extends State<DiaryV2Screen> {
+class _DiaryV2ScreenState extends State<DiaryV2Screen>
+    with WidgetsBindingObserver {
   late DateTime _selectedDay;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _selectedDay = DateUtils.dateOnly(DateTime.now());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scheduleControlledAutoSync();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed) return;
+    _scheduleControlledAutoSync();
+  }
+
+  void _scheduleControlledAutoSync() {
+    final store = context.read<UserStateStore>();
+    unawaited(store.autoSyncDiaryV2FromRemoteIfNeeded());
   }
 
   void _openComposer(BuildContext context) {
