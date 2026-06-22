@@ -4,7 +4,7 @@ import 'package:rutio/models/diary_entry.dart';
 
 Map<String, DailyMood> dailyMoodMapByDate(Iterable<DailyMood> dailyMoods) {
   return {
-    for (final dailyMood in dailyMoods) _dateKey(dailyMood.date): dailyMood,
+    for (final dailyMood in dailyMoods) dailyMood.dateKey: dailyMood,
   };
 }
 
@@ -13,15 +13,7 @@ int? resolvePreferredMoodForDay({
   required Map<String, DailyMood> dailyMoodsByDate,
   required Iterable<DiaryEntry> fallbackEntries,
 }) {
-  final mood = dailyMoodsByDate[_dateKey(day)]?.mood;
-  if (mood != null) return mood;
-
-  // TODO(v2-diary): DiaryEntry.mood fallback is temporary until daily mood
-  // capture is fully integrated.
-  for (final entry in fallbackEntries) {
-    if (entry.mood != null) return entry.mood;
-  }
-  return null;
+  return dailyMoodsByDate[_dateKey(day)]?.mood;
 }
 
 List<int> resolvePreferredMonthMoodValues({
