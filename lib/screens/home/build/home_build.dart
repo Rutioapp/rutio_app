@@ -84,6 +84,7 @@ extension _HomeScreenBuild on _HomeScreenState {
       showSkipped: _showSkipped,
       onOpenDrawer: () => _buildViewDrawer(context),
       onOpenAddHabit: () => showHomeAddHabitSheet(context),
+      onManualRefresh: () => _handleManualRefresh(store),
       statsHeader: _statsHeader(
         context: context,
         username: username,
@@ -140,6 +141,7 @@ class _HomeLoadedView extends StatelessWidget {
   final bool showSkipped;
   final Widget Function() onOpenDrawer;
   final VoidCallback onOpenAddHabit;
+  final Future<void> Function() onManualRefresh;
   final Widget statsHeader;
   final Widget weekStrip;
   final Widget dayProgress;
@@ -159,6 +161,7 @@ class _HomeLoadedView extends StatelessWidget {
     required this.showSkipped,
     required this.onOpenDrawer,
     required this.onOpenAddHabit,
+    required this.onManualRefresh,
     required this.statsHeader,
     required this.weekStrip,
     required this.dayProgress,
@@ -222,28 +225,31 @@ class _HomeLoadedView extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: CustomScrollView(
-                      physics: const BouncingScrollPhysics(
-                        parent: AlwaysScrollableScrollPhysics(),
-                      ),
-                      slivers: [
-                        HomeScrollableContentSliver(
-                          viewHabits: homeData.viewHabits,
-                          pendingHabits: homeData.pendingHabits,
-                          completedHabits: homeData.completedHabits,
-                          skippedHabits: homeData.skippedHabits,
-                          showCompleted: showCompleted,
-                          showSkipped: showSkipped,
-                          habitCardBuilder: habitCardBuilder,
-                          completedHeaderBuilder: completedHeaderBuilder,
-                          skippedHeaderBuilder: skippedHeaderBuilder,
-                          onPendingReorder: onPendingReorder,
-                          onCompletedReorder: onCompletedReorder,
-                          onSkippedReorder: onSkippedReorder,
-                          onOpenAddHabit: onOpenAddHabit,
-                          bottomPadding: bottomInset + 112,
+                    child: RefreshIndicator.adaptive(
+                      onRefresh: onManualRefresh,
+                      child: CustomScrollView(
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
                         ),
-                      ],
+                        slivers: [
+                          HomeScrollableContentSliver(
+                            viewHabits: homeData.viewHabits,
+                            pendingHabits: homeData.pendingHabits,
+                            completedHabits: homeData.completedHabits,
+                            skippedHabits: homeData.skippedHabits,
+                            showCompleted: showCompleted,
+                            showSkipped: showSkipped,
+                            habitCardBuilder: habitCardBuilder,
+                            completedHeaderBuilder: completedHeaderBuilder,
+                            skippedHeaderBuilder: skippedHeaderBuilder,
+                            onPendingReorder: onPendingReorder,
+                            onCompletedReorder: onCompletedReorder,
+                            onSkippedReorder: onSkippedReorder,
+                            onOpenAddHabit: onOpenAddHabit,
+                            bottomPadding: bottomInset + 112,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
