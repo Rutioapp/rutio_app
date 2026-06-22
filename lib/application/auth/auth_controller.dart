@@ -435,8 +435,15 @@ class AuthController extends ChangeNotifier {
       );
 
       unawaited(() async {
-        final userProgressBackfillSynced =
-            await _userStateStore.syncSupabaseUserProgressBackfillOnce();
+        final progressBootstrap =
+            await _userStateStore.syncSupabaseUserProgressBootstrapBestEffort();
+        if (kDebugMode) {
+          debugPrint(
+            '[auth] user progress restore status: '
+            '${progressBootstrap.restoreResult.status.name}',
+          );
+        }
+        final userProgressBackfillSynced = progressBootstrap.backfillSynced;
         if (kDebugMode) {
           debugPrint(
             '[auth] user progress backfill synced: ${userProgressBackfillSynced ? 'yes' : 'no'}',

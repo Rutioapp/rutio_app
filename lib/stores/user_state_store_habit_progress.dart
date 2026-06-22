@@ -3,6 +3,10 @@ const String _lastCelebratedLevelMetaKey = 'lastCelebratedLevel';
 const LevelEventResolver _levelEventResolver = LevelEventResolver();
 const LevelRewardResolver _levelRewardResolver = LevelRewardResolver();
 
+UserProgressRepository _userProgressRepositoryForStore(UserStateStore store) {
+  return store._userProgressRepository ?? UserProgressRepository();
+}
+
 class _HabitProgressResult {
   final int xpGain;
   final int coinsGain;
@@ -48,6 +52,162 @@ _ProgressSyncSnapshot _buildProgressSyncSnapshot(
     xpInCurrentLevel: levelProgress.currentLevelXp,
     xpToNextLevel: levelProgress.xpToNextLevel,
     coins: coins,
+  );
+}
+
+_ProgressSyncSnapshot _buildRemoteProgressSnapshot(RemoteUserProgress progress) {
+  final safeXp = progress.totalXp < 0 ? 0 : progress.totalXp;
+  final safeLevel = progress.level < 1 ? 1 : progress.level;
+  final levelProgress = LevelProgression.fromTotalXp(safeXp);
+  final xpInCurrentLevel =
+      progress.currentLevelXp < 0 ? levelProgress.currentLevelXp : progress.currentLevelXp;
+  final xpToNextLevel =
+      progress.nextLevelXp < 1 ? levelProgress.xpToNextLevel : progress.nextLevelXp;
+  final safeCoins = progress.ambarBalance < 0 ? 0 : progress.ambarBalance;
+
+  return _ProgressSyncSnapshot(
+    level: safeLevel,
+    xp: safeXp,
+    xpInCurrentLevel: xpInCurrentLevel,
+    xpToNextLevel: xpToNextLevel,
+    coins: safeCoins,
+  );
+}
+
+bool _isTemplateProgressSnapshot(_ProgressSyncSnapshot snapshot) {
+  return snapshot.level == 1 && snapshot.xp == 0 && snapshot.coins == 0;
+}
+
+bool _progressSnapshotsMatch(
+  _ProgressSyncSnapshot a,
+  _ProgressSyncSnapshot b,
+) {
+  return a.level == b.level && a.xp == b.xp && a.coins == b.coins;
+}
+
+Future<SupabaseUserProgressRestoreResult>
+    _restoreSupabaseUserProgressBestEffort(
+  UserStateStore store,
+) async {
+  if (store._state == null) {
+    if (!store._loading) {
+      await store.load();
+    }
+    if (store._state == null) {
+      return const SupabaseUserProgressRestoreResult(
+        status: SupabaseUserProgressRestoreStatus.failedRemoteStateUnknown,
+      );
+    }
+  }
+
+  final authenticatedUserId = store._currentSupabaseUserIdProvider();
+  if (authenticatedUserId == null) {
+    return const SupabaseUserProgressRestoreResult(
+      status: SupabaseUserProgressRestoreStatus.skippedNoAuthUser,
+    );
+  }
+
+  final localUserId = (store.userId ?? '').trim();
+  if (localUserId.isEmpty || localUserId != authenticatedUserId) {
+    return const SupabaseUserProgressRestoreResult(
+      status: SupabaseUserProgressRestoreStatus.failedRemoteStateUnknown,
+    );
+  }
+
+  final fetchResult =
+      await _userProgressRepositoryForStore(store).fetchCurrentProgress();
+  if (!fetchResult.isSuccess) {
+    if (kDebugMode) {
+      debugPrint(
+        '[user_progress_restore] fetch failed: '
+        '${fetchResult.error?.code.name}: ${fetchResult.error?.message}',
+      );
+    }
+    return SupabaseUserProgressRestoreResult(
+      status: SupabaseUserProgressRestoreStatus.failedRemoteStateUnknown,
+      error: fetchResult.error,
+    );
+  }
+
+  final remoteProgress = fetchResult.data;
+  if (remoteProgress == null) {
+    return const SupabaseUserProgressRestoreResult(
+      status: SupabaseUserProgressRestoreStatus.skippedNoRemoteRow,
+    );
+  }
+
+  final root = Map<String, dynamic>.from(store._state!);
+  final userState = _ensureUserStateRoot(root);
+  final localSnapshot = _buildProgressSyncSnapshot(userState);
+  final remoteSnapshot = _buildRemoteProgressSnapshot(remoteProgress);
+  final snapshotsMatch = _progressSnapshotsMatch(localSnapshot, remoteSnapshot);
+  final localLooksTemplate = _isTemplateProgressSnapshot(localSnapshot);
+
+  if (!snapshotsMatch && !localLooksTemplate) {
+    if (kDebugMode) {
+      debugPrint(
+        '[user_progress_restore] skipped conflicting non-template local progress '
+        '(local: level=${localSnapshot.level}, xp=${localSnapshot.xp}, coins=${localSnapshot.coins}; '
+        'remote: level=${remoteSnapshot.level}, xp=${remoteSnapshot.xp}, coins=${remoteSnapshot.coins})',
+      );
+    }
+    return const SupabaseUserProgressRestoreResult(
+      status: SupabaseUserProgressRestoreStatus.skippedLocalConflict,
+    );
+  }
+
+  final progression = _map(userState['progression']);
+  final wallet = _map(userState['wallet']);
+  final previousCelebratedLevel = _lastCelebratedLevel(userState);
+  final nextCelebratedLevel =
+      remoteSnapshot.level > previousCelebratedLevel ? remoteSnapshot.level : previousCelebratedLevel;
+
+  progression['xp'] = remoteSnapshot.xp;
+  progression['level'] = remoteSnapshot.level;
+  userState['progression'] = progression;
+
+  wallet['coins'] = remoteSnapshot.coins;
+  userState['wallet'] = wallet;
+
+  _setLastCelebratedLevel(userState, level: nextCelebratedLevel);
+  _touchLastSavedAt(userState);
+
+  final celebrationQueueChanged =
+      store._pendingLevelCelebrations.isNotEmpty || store._pendingAchievementUnlocks.isNotEmpty;
+  store._pendingLevelCelebrations.clear();
+  store._pendingAchievementUnlocks.clear();
+
+  final changed = !snapshotsMatch || previousCelebratedLevel != nextCelebratedLevel;
+  if (!changed && !celebrationQueueChanged) {
+    return const SupabaseUserProgressRestoreResult(
+      status: SupabaseUserProgressRestoreStatus.alreadyAligned,
+    );
+  }
+
+  root['userState'] = userState;
+  store._state = root;
+  await store._repo.save(root);
+  store._emitChanged();
+
+  return SupabaseUserProgressRestoreResult(
+    status: snapshotsMatch
+        ? SupabaseUserProgressRestoreStatus.alreadyAligned
+        : SupabaseUserProgressRestoreStatus.restored,
+  );
+}
+
+Future<SupabaseUserProgressBootstrapResult>
+    _syncSupabaseUserProgressBootstrapBestEffort(
+  UserStateStore store, {
+  bool force = false,
+}) async {
+  final restoreResult = await _restoreSupabaseUserProgressBestEffort(store);
+  final backfillSynced = restoreResult.shouldAllowBackfill
+      ? await _syncSupabaseUserProgressBackfillOnce(store, force: force)
+      : false;
+  return SupabaseUserProgressBootstrapResult(
+    restoreResult: restoreResult,
+    backfillSynced: backfillSynced,
   );
 }
 

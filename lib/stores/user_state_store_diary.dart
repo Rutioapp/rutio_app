@@ -1,5 +1,11 @@
 part of 'user_state_store.dart';
 
+DiaryV2SupabaseRepository _diaryV2SupabaseRepositoryForStore(
+  UserStateStore store,
+) {
+  return store._diaryV2SupabaseRepository ??= DiaryV2SupabaseRepository();
+}
+
 const String _diaryRewardAppliedDateKeysMetaKey = 'diaryRewardAppliedDateKeys';
 const String _supabaseJournalBackfillCompletedByUserKey =
     'supabaseJournalBackfillCompletedByUser';
@@ -589,10 +595,11 @@ Future<void> _runDiaryV2RemotePull(
   }
 
   try {
-    final diaryEntriesResult = await store._diaryV2SupabaseRepository
+    final diaryEntriesResult = await _diaryV2SupabaseRepositoryForStore(store)
         .fetchDiaryEntriesForCurrentUser();
     final dailyMoodsResult =
-        await store._diaryV2SupabaseRepository.fetchDailyMoodsForCurrentUser();
+        await _diaryV2SupabaseRepositoryForStore(store)
+            .fetchDailyMoodsForCurrentUser();
 
     if (!diaryEntriesResult.isSuccess) {
       _debugDiaryV2Sync(
@@ -904,7 +911,7 @@ Future<void> _syncDiaryV2EntryUpsertBestEffort(
 
   try {
     final result =
-        await store._diaryV2SupabaseRepository.upsertDiaryEntry(entry);
+        await _diaryV2SupabaseRepositoryForStore(store).upsertDiaryEntry(entry);
     if (result.isSuccess) return;
     _debugDiaryV2Sync(
       'entry upsert failed ($source) for localId="${entry.id}": '
@@ -933,7 +940,7 @@ Future<void> _syncDiaryV2EntryDeleteBestEffort(
   if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'delete')) return;
 
   try {
-    final result = await store._diaryV2SupabaseRepository
+    final result = await _diaryV2SupabaseRepositoryForStore(store)
         .deleteDiaryEntryByLocalId(normalizedLocalId);
     if (result.isSuccess) return;
     _debugDiaryV2Sync(
@@ -958,8 +965,8 @@ Future<void> _syncDailyMoodUpsertBestEffort(
   }
 
   try {
-    final result =
-        await store._diaryV2SupabaseRepository.upsertDailyMood(dailyMood);
+    final result = await _diaryV2SupabaseRepositoryForStore(store)
+        .upsertDailyMood(dailyMood);
     if (result.isSuccess) return;
     _debugDiaryV2Sync(
       'daily mood upsert failed ($source) for date="${dailyMood.dateKey}": '

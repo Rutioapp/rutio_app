@@ -13,9 +13,12 @@ import '../data/services/habit_sync_service.dart';
 import '../data/services/journal_entry_sync_service.dart';
 import '../data/models/remote/remote_habit.dart';
 import '../data/models/remote/remote_habit_log.dart';
+import '../data/models/remote/remote_user_progress.dart';
 import '../data/repositories/diary_v2_supabase_repository.dart';
 import '../data/repositories/habit_log_repository.dart';
 import '../data/repositories/habit_repository.dart';
+import '../data/repositories/repository_result.dart';
+import '../data/repositories/user_progress_repository.dart';
 import '../data/services/user_progress_sync_service.dart';
 import '../data/repositories/journal_entry_repository.dart';
 import '../data/repositories/profile_repository.dart';
@@ -45,6 +48,46 @@ part 'user_state_store_habits.dart';
 part 'user_state_store_habit_progress.dart';
 part 'user_state_store_todos.dart';
 
+enum SupabaseUserProgressRestoreStatus {
+  restored,
+  alreadyAligned,
+  skippedNoAuthUser,
+  skippedNoRemoteRow,
+  skippedLocalConflict,
+  failedRemoteStateUnknown,
+}
+
+@immutable
+class SupabaseUserProgressRestoreResult {
+  const SupabaseUserProgressRestoreResult({
+    required this.status,
+    this.error,
+  });
+
+  final SupabaseUserProgressRestoreStatus status;
+  final RepositoryError? error;
+
+  bool get restored =>
+      status == SupabaseUserProgressRestoreStatus.restored ||
+      status == SupabaseUserProgressRestoreStatus.alreadyAligned;
+
+  bool get shouldAllowBackfill =>
+      status == SupabaseUserProgressRestoreStatus.restored ||
+      status == SupabaseUserProgressRestoreStatus.alreadyAligned ||
+      status == SupabaseUserProgressRestoreStatus.skippedNoRemoteRow;
+}
+
+@immutable
+class SupabaseUserProgressBootstrapResult {
+  const SupabaseUserProgressBootstrapResult({
+    required this.restoreResult,
+    required this.backfillSynced,
+  });
+
+  final SupabaseUserProgressRestoreResult restoreResult;
+  final bool backfillSynced;
+}
+
 class UserStateStore extends ChangeNotifier {
   static const Duration diaryV2AutoPullCooldown = Duration(minutes: 10);
 
@@ -54,9 +97,10 @@ class UserStateStore extends ChangeNotifier {
   final HabitLogSyncService _habitLogSyncService;
   final UserProgressSyncService _userProgressSyncService;
   final JournalEntrySyncService _journalEntrySyncService;
-  final DiaryV2SupabaseRepository _diaryV2SupabaseRepository;
-  final HabitRepository _habitRepository;
-  final HabitLogRepository _habitLogRepository;
+  DiaryV2SupabaseRepository? _diaryV2SupabaseRepository;
+  HabitRepository? _habitRepository;
+  HabitLogRepository? _habitLogRepository;
+  final UserProgressRepository? _userProgressRepository;
   final ProfileRepository? _profileRepository;
   final LevelUpCelebrationController _levelUpCelebrationController;
   final CurrentUserIdProvider _currentSupabaseUserIdProvider;
@@ -72,6 +116,7 @@ class UserStateStore extends ChangeNotifier {
     DiaryV2SupabaseRepository? diaryV2SupabaseRepository,
     HabitRepository? habitRepository,
     HabitLogRepository? habitLogRepository,
+    UserProgressRepository? userProgressRepository,
     ProfileRepository? profileRepository,
     CurrentUserIdProvider? currentSupabaseUserIdProvider,
     DateTime Function()? nowProvider,
@@ -85,10 +130,10 @@ class UserStateStore extends ChangeNotifier {
             JournalEntrySyncService(
               journalEntryRepository: JournalEntryRepository(),
             ),
-        _diaryV2SupabaseRepository =
-            diaryV2SupabaseRepository ?? DiaryV2SupabaseRepository(),
-        _habitRepository = habitRepository ?? HabitRepository(),
-        _habitLogRepository = habitLogRepository ?? HabitLogRepository(),
+        _diaryV2SupabaseRepository = diaryV2SupabaseRepository,
+        _habitRepository = habitRepository,
+        _habitLogRepository = habitLogRepository,
+        _userProgressRepository = userProgressRepository,
         _profileRepository = profileRepository,
         _levelUpCelebrationController = const LevelUpCelebrationController(),
         _currentSupabaseUserIdProvider =
@@ -377,6 +422,14 @@ class UserStateStore extends ChangeNotifier {
 
   Future<bool> syncSupabaseUserProgressBackfillOnce({bool force = false}) =>
       _syncSupabaseUserProgressBackfillOnce(this, force: force);
+
+  Future<SupabaseUserProgressRestoreResult>
+      restoreSupabaseUserProgressBestEffort() =>
+          _restoreSupabaseUserProgressBestEffort(this);
+
+  Future<SupabaseUserProgressBootstrapResult>
+      syncSupabaseUserProgressBootstrapBestEffort({bool force = false}) =>
+          _syncSupabaseUserProgressBootstrapBestEffort(this, force: force);
 
   Future<JournalEntryBackfillSummary> syncExistingLocalJournalEntriesOnce({
     bool force = false,

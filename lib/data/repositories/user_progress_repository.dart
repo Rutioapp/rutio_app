@@ -6,10 +6,14 @@ import '../models/remote/remote_user_progress.dart';
 import 'repository_result.dart';
 
 class UserProgressRepository {
-  UserProgressRepository({SupabaseClient? client})
-      : _client = client ?? RutioSupabaseClient.instance;
+  UserProgressRepository({
+    SupabaseClient? client,
+    String? Function()? currentUserIdProvider,
+  })  : _client = client ?? RutioSupabaseClient.instance,
+        _currentUserIdProvider = currentUserIdProvider;
 
   final SupabaseClient _client;
+  final String? Function()? _currentUserIdProvider;
 
   static const String _userProgressTable = 'user_progress';
 
@@ -181,6 +185,12 @@ class UserProgressRepository {
   }
 
   String? _currentUserId() {
+    if (_currentUserIdProvider != null) {
+      final userId = _currentUserIdProvider!()?.trim();
+      if (userId == null || userId.isEmpty) return null;
+      return userId;
+    }
+
     final userId = _client.auth.currentUser?.id.trim();
     if (userId == null || userId.isEmpty) return null;
     return userId;
