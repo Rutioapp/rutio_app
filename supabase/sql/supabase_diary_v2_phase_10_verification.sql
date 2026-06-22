@@ -4,6 +4,11 @@
 -- Run this only after successfully applying:
 --   supabase/sql/supabase_diary_v2_phase_10_proposal.sql
 
+-- 0) Quick table existence summary.
+select
+  to_regclass('public.diary_entries') as diary_entries_table,
+  to_regclass('public.daily_moods') as daily_moods_table;
+
 -- 1) Confirm the tables exist.
 select
   n.nspname as schema_name,
@@ -18,14 +23,15 @@ order by c.relname;
 
 -- 2) Confirm RLS is enabled on both tables.
 select
-  schemaname,
-  tablename,
-  rowsecurity,
-  forcerowsecurity
-from pg_tables
-where schemaname = 'public'
-  and tablename in ('diary_entries', 'daily_moods')
-order by tablename;
+  n.nspname as schema_name,
+  c.relname as table_name,
+  c.relrowsecurity as rls_enabled,
+  c.relforcerowsecurity as force_rls
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public'
+  and c.relname in ('diary_entries', 'daily_moods')
+order by c.relname;
 
 -- 3) Confirm the own-row policies exist.
 select
@@ -50,33 +56,41 @@ select
 from pg_indexes
 where schemaname = 'public'
   and (
-    (tablename = 'diary_entries' and indexname in (
-      'diary_entries_pkey',
-      'idx_diary_entries_user_local_id',
-      'idx_diary_entries_user_date',
-      'idx_diary_entries_user_updated',
-      'idx_diary_entries_user_mood',
-      'idx_diary_entries_tags'
-    ))
+    (
+      tablename = 'diary_entries'
+      and indexname in (
+        'diary_entries_pkey',
+        'idx_diary_entries_user_local_id',
+        'idx_diary_entries_user_date',
+        'idx_diary_entries_user_updated',
+        'idx_diary_entries_user_mood',
+        'idx_diary_entries_tags'
+      )
+    )
     or
-    (tablename = 'daily_moods' and indexname in (
-      'daily_moods_pkey',
-      'daily_moods_user_date_unique',
-      'idx_daily_moods_user_date',
-      'idx_daily_moods_user_updated'
-    ))
+    (
+      tablename = 'daily_moods'
+      and indexname in (
+        'daily_moods_pkey',
+        'daily_moods_user_date_unique',
+        'idx_daily_moods_user_date',
+        'idx_daily_moods_user_updated'
+      )
+    )
   )
 order by tablename, indexname;
 
 -- 5) Confirm the daily_moods uniqueness constraint exists.
+-- Safe version: this does not fail if public.daily_moods does not exist.
 select
   con.conname as constraint_name,
-  con.conrelid::regclass as table_name,
+  c.relname as table_name,
   pg_get_constraintdef(con.oid) as definition
 from pg_constraint con
-join pg_namespace n on n.oid = con.connamespace
+join pg_class c on c.oid = con.conrelid
+join pg_namespace n on n.oid = c.relnamespace
 where n.nspname = 'public'
-  and con.conrelid = 'public.daily_moods'::regclass
+  and c.relname = 'daily_moods'
   and con.conname = 'daily_moods_user_date_unique';
 
 -- Optional manual smoke test:
