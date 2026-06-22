@@ -11,7 +11,11 @@ import '../data/services/achievement_sync_service.dart';
 import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
 import '../data/services/journal_entry_sync_service.dart';
+import '../data/models/remote/remote_habit.dart';
+import '../data/models/remote/remote_habit_log.dart';
 import '../data/repositories/diary_v2_supabase_repository.dart';
+import '../data/repositories/habit_log_repository.dart';
+import '../data/repositories/habit_repository.dart';
 import '../data/services/user_progress_sync_service.dart';
 import '../data/repositories/journal_entry_repository.dart';
 import '../data/repositories/profile_repository.dart';
@@ -51,6 +55,8 @@ class UserStateStore extends ChangeNotifier {
   final UserProgressSyncService _userProgressSyncService;
   final JournalEntrySyncService _journalEntrySyncService;
   final DiaryV2SupabaseRepository _diaryV2SupabaseRepository;
+  final HabitRepository _habitRepository;
+  final HabitLogRepository _habitLogRepository;
   final ProfileRepository? _profileRepository;
   final LevelUpCelebrationController _levelUpCelebrationController;
   final CurrentUserIdProvider _currentSupabaseUserIdProvider;
@@ -64,6 +70,8 @@ class UserStateStore extends ChangeNotifier {
     UserProgressSyncService? userProgressSyncService,
     JournalEntrySyncService? journalEntrySyncService,
     DiaryV2SupabaseRepository? diaryV2SupabaseRepository,
+    HabitRepository? habitRepository,
+    HabitLogRepository? habitLogRepository,
     ProfileRepository? profileRepository,
     CurrentUserIdProvider? currentSupabaseUserIdProvider,
     DateTime Function()? nowProvider,
@@ -79,6 +87,8 @@ class UserStateStore extends ChangeNotifier {
             ),
         _diaryV2SupabaseRepository =
             diaryV2SupabaseRepository ?? DiaryV2SupabaseRepository(),
+        _habitRepository = habitRepository ?? HabitRepository(),
+        _habitLogRepository = habitLogRepository ?? HabitLogRepository(),
         _profileRepository = profileRepository,
         _levelUpCelebrationController = const LevelUpCelebrationController(),
         _currentSupabaseUserIdProvider =
@@ -98,6 +108,7 @@ class UserStateStore extends ChangeNotifier {
   bool _isSupabaseUserProgressBackfillRunning = false;
   bool _isSupabaseJournalEntriesBackfillRunning = false;
   bool _isDiaryV2RemotePullRunning = false;
+  bool _isHabitsRemotePullRunning = false;
   DateTime? _lastDiaryV2RemotePullAttemptAt;
   DateTime? _lastDiaryV2RemotePullSuccessAt;
   Object? _accountDeletionError;
@@ -133,6 +144,7 @@ class UserStateStore extends ChangeNotifier {
   bool get isSupabaseJournalEntriesBackfillRunning =>
       _isSupabaseJournalEntriesBackfillRunning;
   bool get isDiaryV2RemotePullRunning => _isDiaryV2RemotePullRunning;
+  bool get isHabitsRemotePullRunning => _isHabitsRemotePullRunning;
   DateTime? get lastDiaryV2RemotePullAttemptAt => _lastDiaryV2RemotePullAttemptAt;
   DateTime? get lastDiaryV2RemotePullSuccessAt => _lastDiaryV2RemotePullSuccessAt;
   Object? get accountDeletionError => _accountDeletionError;
@@ -376,6 +388,9 @@ class UserStateStore extends ChangeNotifier {
 
   Future<void> syncDiaryV2FromRemoteBestEffort() =>
       _syncDiaryV2FromRemoteBestEffort(this);
+
+  Future<void> syncHabitsFromRemoteBestEffort() =>
+      _syncHabitsFromRemoteBestEffort(this);
 
   Future<void> reorderVisibleHabits({
     required List<String> orderedVisibleIds,

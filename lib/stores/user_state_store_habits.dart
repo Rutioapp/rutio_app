@@ -143,6 +143,464 @@ Future<void> _persistHabitRemoteId(
   await store.save(root);
 }
 
+Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
+  final authenticatedUserId = _currentHabitPullAuthenticatedUserId(store);
+  if (!_shouldSyncHabitsForCurrentScope(
+    store,
+    authenticatedUserId: authenticatedUserId,
+  )) {
+    return;
+  }
+  if (store._isHabitsRemotePullRunning) {
+    _debugHabitPull('manual pull skipped: already running');
+    return;
+  }
+
+  store._isHabitsRemotePullRunning = true;
+  final scopeEpochAtStart = store._scopeEpoch;
+  final scopeUserAtStart = _normalizedScopeUserId(store._activeLocalScopeUserId);
+
+  try {
+    if (store._state == null) {
+      await store.load();
+    }
+
+    final habitsResult = await store._habitRepository.fetchHabitsForCurrentUser();
+    if (!habitsResult.isSuccess) {
+      _debugHabitPull(
+        'manual pull failed while fetching habits: '
+        '${habitsResult.error?.code.name}: ${habitsResult.error?.message}',
+      );
+      return;
+    }
+
+    final remoteHabits = habitsResult.data ?? const <RemoteHabit>[];
+    final remoteLogs = <RemoteHabitLog>[];
+    for (final remoteHabit in remoteHabits) {
+      final remoteHabitId = (remoteHabit.id ?? '').trim();
+      if (remoteHabitId.isEmpty) continue;
+
+      final logsResult = await store._habitLogRepository.fetchLogsForHabit(
+        remoteHabitId,
+      );
+      if (!logsResult.isSuccess) {
+        _debugHabitPull(
+          'manual pull failed while fetching logs for remote habit '
+          '"$remoteHabitId": ${logsResult.error?.code.name}: '
+          '${logsResult.error?.message}',
+        );
+        return;
+      }
+      remoteLogs.addAll(logsResult.data ?? const <RemoteHabitLog>[]);
+    }
+
+    if (scopeEpochAtStart != store._scopeEpoch ||
+        scopeUserAtStart !=
+            _normalizedScopeUserId(store._activeLocalScopeUserId)) {
+      _debugHabitPull('manual pull skipped: scope changed during fetch');
+      return;
+    }
+
+    final root = store._state;
+    if (root == null) {
+      _debugHabitPull('manual pull skipped: local state unavailable');
+      return;
+    }
+
+    final userState = _ensureUserStateRoot(root);
+    _ensureDailyReset(userState);
+    _ensureActiveHabitIds(userState);
+
+    final mergedHabits = _mergeRemoteHabitsIntoLocalState(
+      localHabits: _mutableActiveHabits(userState),
+      remoteHabits: remoteHabits,
+    );
+    final mergedLogs = _mergeRemoteHabitLogsIntoLocalState(
+      userState: userState,
+      activeHabits: mergedHabits.habits,
+      remoteLogs: remoteLogs,
+    );
+
+    if (!mergedHabits.changed && !mergedLogs.changed) {
+      _debugHabitPull('manual pull completed: no local habit changes applied');
+      return;
+    }
+
+    userState['activeHabits'] = mergedHabits.habits;
+    _hydrateActiveHabitsForDate(userState, _dateFromKey(_activeViewDateKey(userState)));
+    root['userState'] = userState;
+    await store.save(root);
+  } catch (error) {
+    _debugHabitPull('manual pull unexpected error: $error');
+  } finally {
+    store._isHabitsRemotePullRunning = false;
+  }
+}
+
+bool _shouldSyncHabitsForCurrentScope(
+  UserStateStore store, {
+  required String? authenticatedUserId,
+}) {
+  if (RutioRuntimeProfile.isDemo) {
+    _debugHabitPull('pull skipped: demo runtime profile is active');
+    return false;
+  }
+
+  if (authenticatedUserId == null) {
+    _debugHabitPull('pull skipped: no authenticated Supabase user');
+    return false;
+  }
+
+  final localUserId = (store.userId ?? '').trim();
+  if (localUserId.isEmpty || localUserId != authenticatedUserId) {
+    _debugHabitPull(
+      'pull skipped: local scoped user does not match auth session',
+    );
+    return false;
+  }
+
+  if (localUserId == DemoSeedScope.userId) {
+    _debugHabitPull('pull skipped: demo local scope is active');
+    return false;
+  }
+
+  return true;
+}
+
+String? _currentHabitPullAuthenticatedUserId(UserStateStore store) {
+  final rawUserId = store._currentSupabaseUserIdProvider();
+  final normalized = (rawUserId ?? '').trim();
+  return normalized.isEmpty ? null : normalized;
+}
+
+class _HabitRemoteMergeResult {
+  const _HabitRemoteMergeResult({
+    required this.habits,
+    required this.changed,
+  });
+
+  final List<Map<String, dynamic>> habits;
+  final bool changed;
+}
+
+class _HabitLogRemoteMergeResult {
+  const _HabitLogRemoteMergeResult({required this.changed});
+
+  final bool changed;
+}
+
+_HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
+  required List<Map<String, dynamic>> localHabits,
+  required List<RemoteHabit> remoteHabits,
+}) {
+  final mergedHabits = localHabits
+      .map((habit) => Map<String, dynamic>.from(habit))
+      .toList(growable: true);
+  final localIndexesByRemoteId = <String, int>{};
+  for (var index = 0; index < mergedHabits.length; index += 1) {
+    final remoteId = _habitRemoteIdValue(mergedHabits[index]);
+    if (remoteId == null || localIndexesByRemoteId.containsKey(remoteId)) {
+      continue;
+    }
+    localIndexesByRemoteId[remoteId] = index;
+  }
+
+  var changed = false;
+
+  for (final remoteHabit in remoteHabits) {
+    final remoteHabitId = (remoteHabit.id ?? '').trim();
+    if (remoteHabitId.isEmpty) continue;
+
+    final existingIndex = localIndexesByRemoteId[remoteHabitId];
+    if (existingIndex != null) {
+      final localHabit = mergedHabits[existingIndex];
+      if (!_areHabitTypesCompatible(localHabit, remoteHabit)) {
+        continue;
+      }
+      if (!_shouldReplaceLocalHabitWithRemote(
+        localHabit: localHabit,
+        remoteHabit: remoteHabit,
+      )) {
+        continue;
+      }
+
+      mergedHabits[existingIndex] = _mergeRemoteHabitIntoExistingLocal(
+        localHabit: localHabit,
+        remoteHabit: remoteHabit,
+      );
+      changed = true;
+      continue;
+    }
+
+    if (remoteHabit.isArchived) {
+      continue;
+    }
+
+    final newLocalHabit = _localHabitFromRemote(remoteHabit);
+    mergedHabits.add(newLocalHabit);
+    localIndexesByRemoteId[remoteHabitId] = mergedHabits.length - 1;
+    changed = true;
+  }
+
+  return _HabitRemoteMergeResult(habits: mergedHabits, changed: changed);
+}
+
+_HabitLogRemoteMergeResult _mergeRemoteHabitLogsIntoLocalState({
+  required Map<String, dynamic> userState,
+  required List<Map<String, dynamic>> activeHabits,
+  required List<RemoteHabitLog> remoteLogs,
+}) {
+  if (remoteLogs.isEmpty) {
+    return const _HabitLogRemoteMergeResult(changed: false);
+  }
+
+  final habitsByLocalId = <String, Map<String, dynamic>>{};
+  final localHabitIdByRemoteId = <String, String>{};
+  for (final habit in activeHabits) {
+    final habitId = _habitIdValue(habit);
+    if (habitId == null || habitId.isEmpty) continue;
+    habitsByLocalId[habitId] = habit;
+
+    final remoteId = _habitRemoteIdValue(habit);
+    if (remoteId != null && remoteId.isNotEmpty) {
+      localHabitIdByRemoteId[remoteId] = habitId;
+    }
+  }
+
+  var changed = false;
+  for (final remoteLog in remoteLogs) {
+    final localHabitId = localHabitIdByRemoteId[remoteLog.habitId];
+    if (localHabitId == null || localHabitId.isEmpty) continue;
+
+    final localHabit = habitsByLocalId[localHabitId];
+    if (localHabit == null) continue;
+    if (!_remoteLogHasMeaningfulState(remoteLog)) continue;
+
+    final dateKey = _dateKey(remoteLog.logDate.toLocal());
+    if (_hasLocalProgressForHabitDate(
+      userState,
+      habitId: localHabitId,
+      dateKey: dateKey,
+    )) {
+      if (!_shouldReplaceLocalProgressWithRemote(
+        userState: userState,
+        localHabit: localHabit,
+        habitId: localHabitId,
+        dateKey: dateKey,
+        remoteLog: remoteLog,
+      )) {
+        continue;
+      }
+    }
+
+    _applyRemoteLogToLocalHistory(
+      userState: userState,
+      localHabit: localHabit,
+      habitId: localHabitId,
+      dateKey: dateKey,
+      remoteLog: remoteLog,
+    );
+    changed = true;
+  }
+
+  return _HabitLogRemoteMergeResult(changed: changed);
+}
+
+bool _areHabitTypesCompatible(
+  Map<String, dynamic> localHabit,
+  RemoteHabit remoteHabit,
+) {
+  return _normalizedHabitType(localHabit['type']) == remoteHabit.habitType;
+}
+
+bool _shouldReplaceLocalHabitWithRemote({
+  required Map<String, dynamic> localHabit,
+  required RemoteHabit remoteHabit,
+}) {
+  final remoteUpdatedAt = remoteHabit.updatedAt;
+  if (remoteUpdatedAt == null) return false;
+
+  final localUpdatedAt = _parseHabitDate(
+    localHabit['updatedAt'] ?? localHabit['updated_at'],
+  );
+  if (localUpdatedAt == null) return false;
+
+  return remoteUpdatedAt.isAfter(localUpdatedAt);
+}
+
+Map<String, dynamic> _mergeRemoteHabitIntoExistingLocal({
+  required Map<String, dynamic> localHabit,
+  required RemoteHabit remoteHabit,
+}) {
+  final merged = Map<String, dynamic>.from(localHabit);
+
+  merged['remoteId'] = remoteHabit.id;
+  merged['name'] = remoteHabit.name;
+  merged['title'] = remoteHabit.name;
+  merged['habitTitle'] = remoteHabit.name;
+  merged['familyId'] = remoteHabit.familyId;
+  merged['emoji'] = remoteHabit.emoji ?? merged['emoji'];
+  merged['reminderEnabled'] = remoteHabit.reminderEnabled;
+  merged['reminderTime'] = remoteHabit.reminderTime;
+  merged['colorId'] = remoteHabit.colorId;
+  merged['updatedAt'] = remoteHabit.updatedAt?.toUtc().toIso8601String();
+  merged['createdAt'] = merged['createdAt'] ??
+      remoteHabit.createdAt?.toUtc().toIso8601String();
+
+  if (_normalizedHabitType(merged['type']) == 'count') {
+    merged['unit'] = remoteHabit.unit;
+    if (remoteHabit.targetCount != null) {
+      merged['target'] = remoteHabit.targetCount;
+    }
+  }
+
+  if (merged['archived'] != true) {
+    merged['archived'] = remoteHabit.isArchived;
+  }
+
+  return merged;
+}
+
+Map<String, dynamic> _localHabitFromRemote(RemoteHabit remoteHabit) {
+  final remoteHabitId = (remoteHabit.id ?? '').trim().toLowerCase();
+  final localHabitId = 'remote_$remoteHabitId';
+
+  return <String, dynamic>{
+    'id': localHabitId,
+    'habitId': localHabitId,
+    'remoteId': remoteHabitId,
+    'createdAt': remoteHabit.createdAt?.toUtc().toIso8601String() ?? _today(),
+    'updatedAt': remoteHabit.updatedAt?.toUtc().toIso8601String(),
+    'name': remoteHabit.name,
+    'title': remoteHabit.name,
+    'habitTitle': remoteHabit.name,
+    'emoji': remoteHabit.emoji ?? '?',
+    'familyId': remoteHabit.familyId,
+    'type': remoteHabit.habitType,
+    'unit': remoteHabit.habitType == 'count' ? remoteHabit.unit : null,
+    'target': remoteHabit.habitType == 'count'
+        ? (remoteHabit.targetCount ?? 1)
+        : 1,
+    'progress': 0,
+    'doneToday': false,
+    'skippedToday': false,
+    'schedule': const <String, dynamic>{'type': 'daily'},
+    'reminderEnabled': remoteHabit.reminderEnabled,
+    'reminderTime': remoteHabit.reminderTime,
+    'colorId': remoteHabit.colorId,
+    'archived': remoteHabit.isArchived,
+  };
+}
+
+bool _remoteLogHasMeaningfulState(RemoteHabitLog remoteLog) {
+  return remoteLog.isCompleted || remoteLog.value > 0;
+}
+
+bool _hasLocalProgressForHabitDate(
+  Map<String, dynamic> userState, {
+  required String habitId,
+  required String dateKey,
+}) {
+  final history = _ensureHistoryRoot(userState);
+  final completions = _map(_map(history['habitCompletions'])[dateKey]);
+  final countValues = _map(_map(history['habitCountValues'])[dateKey]);
+  final skips = _map(_map(history['habitSkips'])[dateKey]);
+
+  return completions.containsKey(habitId) ||
+      countValues.containsKey(habitId) ||
+      skips.containsKey(habitId);
+}
+
+bool _shouldReplaceLocalProgressWithRemote({
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> localHabit,
+  required String habitId,
+  required String dateKey,
+  required RemoteHabitLog remoteLog,
+}) {
+  if (_normalizedHabitType(localHabit['type']) == 'count') {
+    return false;
+  }
+
+  if (!remoteLog.isCompleted) {
+    return false;
+  }
+
+  final remoteUpdatedAt = remoteLog.updatedAt;
+  if (remoteUpdatedAt == null) {
+    return false;
+  }
+
+  final history = _ensureHistoryRoot(userState);
+  final completionTimes = _map(_map(history['habitCompletionTimes'])[dateKey]);
+  final localEpoch = _safeInt(completionTimes[habitId], fallback: 0);
+  if (localEpoch <= 0) {
+    return false;
+  }
+
+  final localTimestamp =
+      DateTime.fromMillisecondsSinceEpoch(localEpoch, isUtc: false);
+  return remoteUpdatedAt.isAfter(localTimestamp);
+}
+
+void _applyRemoteLogToLocalHistory({
+  required Map<String, dynamic> userState,
+  required Map<String, dynamic> localHabit,
+  required String habitId,
+  required String dateKey,
+  required RemoteHabitLog remoteLog,
+}) {
+  final type = _normalizedHabitType(localHabit['type']);
+  if (type == 'count') {
+    final remoteValue = remoteLog.value < 0 ? 0 : remoteLog.value;
+    _setHabitCountValueForDay(
+      userState,
+      dateKey: dateKey,
+      habitId: habitId,
+      value: remoteValue,
+    );
+    _setHabitCompletionForDay(
+      userState,
+      dateKey: dateKey,
+      habitId: habitId,
+      done: remoteLog.isCompleted || remoteValue >= _habitTarget(localHabit),
+    );
+    _setHabitSkipForDay(
+      userState,
+      dateKey: dateKey,
+      habitId: habitId,
+      skipped: false,
+    );
+    return;
+  }
+
+  _setHabitCompletionForDay(
+    userState,
+    dateKey: dateKey,
+    habitId: habitId,
+    done: remoteLog.isCompleted,
+  );
+  _setHabitSkipForDay(
+    userState,
+    dateKey: dateKey,
+    habitId: habitId,
+    skipped: false,
+  );
+  _setHabitCompletionTimeState(
+    userState,
+    dateKey: dateKey,
+    habitId: habitId,
+    done: remoteLog.isCompleted,
+    epochMillis:
+        remoteLog.updatedAt?.toLocal().millisecondsSinceEpoch ?? 0,
+  );
+}
+
+void _debugHabitPull(String message) {
+  if (!kDebugMode) return;
+  debugPrint('[habit_pull] $message');
+}
+
 Future<HabitBackfillSummary> _syncExistingLocalHabitsOnce(
   UserStateStore store, {
   bool force = false,
