@@ -193,6 +193,12 @@ Future<void> _addDiaryEntry(UserStateStore store, DiaryEntry entry) async {
 
   final activeHabits = _activeHabitsSnapshotForDiarySync(userState);
   unawaited(() async {
+    await _syncDiaryV2EntryUpsertBestEffort(
+      store,
+      entry: entry,
+      source: 'create',
+    );
+
     final remoteId = await store._journalEntrySyncService.syncEntryCreated(
       localEntry: Map<String, dynamic>.from(entryMap),
       activeHabits: activeHabits,
@@ -259,6 +265,15 @@ Future<void> _updateDiaryEntry(UserStateStore store, DiaryEntry entry) async {
   }
   store._emitChanged();
 
+  final syncedDiaryV2Entry = DiaryEntry.fromJson(updatedEntryMap);
+  unawaited(
+    _syncDiaryV2EntryUpsertBestEffort(
+      store,
+      entry: syncedDiaryV2Entry,
+      source: index >= 0 ? 'update' : 'update-upsert',
+    ),
+  );
+
   final activeHabits = _activeHabitsSnapshotForDiarySync(userState);
   final persistedRemoteId = _diaryEntryRemoteIdValue(updatedEntryMap);
   if (persistedRemoteId != null) {
@@ -323,6 +338,14 @@ Future<void> _deleteDiaryEntry(UserStateStore store, String id) async {
 
   await store._repo.save(root);
   store._emitChanged();
+
+  unawaited(
+    _syncDiaryV2EntryDeleteBestEffort(
+      store,
+      localEntryId: id,
+      remoteEntryId: remoteEntryId,
+    ),
+  );
 
   if (remoteEntryId != null) {
     unawaited(
@@ -617,4 +640,75 @@ Map<String, dynamic> _journalBackfillCompletedByUser(
 void _debugJournalBackfill(String message) {
   if (!kDebugMode) return;
   debugPrint('[journal_backfill] $message');
+}
+
+Future<void> _syncDiaryV2EntryUpsertBestEffort(
+  UserStateStore store, {
+  required DiaryEntry entry,
+  required String source,
+}) async {
+  if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'upsert')) return;
+
+  try {
+    final result = await store._diaryV2SupabaseRepository.upsertDiaryEntry(entry);
+    if (result.isSuccess) return;
+    _debugDiaryV2Sync(
+      'entry upsert failed ($source) for localId="${entry.id}": '
+      '${result.error?.code.name}: ${result.error?.message}',
+    );
+  } catch (error) {
+    _debugDiaryV2Sync(
+      'entry upsert unexpected error ($source) for localId="${entry.id}": $error',
+    );
+  }
+}
+
+Future<void> _syncDiaryV2EntryDeleteBestEffort(
+  UserStateStore store, {
+  required String localEntryId,
+  String? remoteEntryId,
+}) async {
+  if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'delete')) return;
+
+  try {
+    final result = await store._diaryV2SupabaseRepository.deleteDiaryEntry(
+      localId: localEntryId,
+      remoteId: remoteEntryId,
+    );
+    if (result.isSuccess) return;
+    _debugDiaryV2Sync(
+      'entry delete failed for localId="$localEntryId": '
+      '${result.error?.code.name}: ${result.error?.message}',
+    );
+  } catch (error) {
+    _debugDiaryV2Sync(
+      'entry delete unexpected error for localId="$localEntryId": $error',
+    );
+  }
+}
+
+bool _shouldSyncDiaryV2ForCurrentScope(
+  UserStateStore store, {
+  required String operation,
+}) {
+  final authenticatedUserId = store._currentSupabaseUserIdProvider();
+  if (authenticatedUserId == null) {
+    _debugDiaryV2Sync('$operation skipped: no authenticated Supabase user');
+    return false;
+  }
+
+  final localUserId = (store.userId ?? '').trim();
+  if (localUserId.isEmpty || localUserId != authenticatedUserId) {
+    _debugDiaryV2Sync(
+      '$operation skipped: local user does not match auth session',
+    );
+    return false;
+  }
+
+  return true;
+}
+
+void _debugDiaryV2Sync(String message) {
+  if (!kDebugMode) return;
+  debugPrint('[diary_v2_sync] $message');
 }

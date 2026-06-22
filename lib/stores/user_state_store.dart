@@ -11,6 +11,7 @@ import '../data/services/achievement_sync_service.dart';
 import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
 import '../data/services/journal_entry_sync_service.dart';
+import '../data/repositories/diary_v2_supabase_repository.dart';
 import '../data/services/user_progress_sync_service.dart';
 import '../data/repositories/journal_entry_repository.dart';
 import '../data/repositories/profile_repository.dart';
@@ -47,8 +48,10 @@ class UserStateStore extends ChangeNotifier {
   final HabitLogSyncService _habitLogSyncService;
   final UserProgressSyncService _userProgressSyncService;
   final JournalEntrySyncService _journalEntrySyncService;
+  final DiaryV2SupabaseRepository _diaryV2SupabaseRepository;
   final ProfileRepository? _profileRepository;
   final LevelUpCelebrationController _levelUpCelebrationController;
+  final CurrentUserIdProvider _currentSupabaseUserIdProvider;
 
   UserStateStore(
     this._repo, {
@@ -57,7 +60,9 @@ class UserStateStore extends ChangeNotifier {
     HabitLogSyncService? habitLogSyncService,
     UserProgressSyncService? userProgressSyncService,
     JournalEntrySyncService? journalEntrySyncService,
+    DiaryV2SupabaseRepository? diaryV2SupabaseRepository,
     ProfileRepository? profileRepository,
+    CurrentUserIdProvider? currentSupabaseUserIdProvider,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
         _habitSyncService = habitSyncService ?? HabitSyncService(),
@@ -68,8 +73,12 @@ class UserStateStore extends ChangeNotifier {
             JournalEntrySyncService(
               journalEntryRepository: JournalEntryRepository(),
             ),
+        _diaryV2SupabaseRepository =
+            diaryV2SupabaseRepository ?? DiaryV2SupabaseRepository(),
         _profileRepository = profileRepository,
-        _levelUpCelebrationController = const LevelUpCelebrationController();
+        _levelUpCelebrationController = const LevelUpCelebrationController(),
+        _currentSupabaseUserIdProvider =
+            currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId;
 
   Map<String, dynamic>? _state;
   bool _loading = false;
