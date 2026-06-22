@@ -97,7 +97,8 @@ void main() {
       expect(store.activeHabits.first['name'], 'Local Only');
     });
 
-    test('foreign remote habits are never merged into local state', () async {
+    test('foreign remote habit aborts pull and keeps local state unchanged',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final store = await _buildStore(
@@ -156,7 +157,8 @@ void main() {
       expect(store.activeHabits.single['name'], 'Local Only');
     });
 
-    test('mixed-user remote habits only merge current user rows', () async {
+    test('mixed-user remote habits abort pull and local state remains unchanged',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final store = await _buildStore(
@@ -185,15 +187,68 @@ void main() {
 
       await store.syncHabitsFromRemoteBestEffort();
 
-      expect(store.activeHabits, hasLength(2));
-      expect(
-        store.activeHabits.map((habit) => habit['name']),
-        containsAll(<String>['Local Only', 'My Habit']),
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.single['name'], 'Local Only');
+    });
+
+    test('missing remote habit user id aborts pull and keeps local state unchanged',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            const RemoteHabit(
+              id: '550e8400-e29b-41d4-a716-446655440055',
+              userId: '',
+              name: 'Broken Habit',
+              habitType: 'check',
+              reminderEnabled: false,
+              isArchived: false,
+              sortOrder: 0,
+            ),
+          ],
+        ),
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(id: 'habit-1', name: 'Local Only'),
+        ],
       );
-      expect(
-        store.activeHabits.any((habit) => habit['name'] == 'Foreign Habit'),
-        isFalse,
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.single['name'], 'Local Only');
+    });
+
+    test('mixed-user remote habits with empty local state import zero habits',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440001',
+              name: 'My Habit',
+            ),
+            const RemoteHabit(
+              id: '550e8400-e29b-41d4-a716-446655440043',
+              userId: 'user-999',
+              name: 'Foreign Habit',
+              habitType: 'check',
+              reminderEnabled: false,
+              isArchived: false,
+              sortOrder: 1,
+            ),
+          ],
+        ),
       );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, isEmpty);
     });
 
     test('local habit is preferred when timestamps are missing or unclear',
@@ -314,7 +369,8 @@ void main() {
       expect(((store.state!['userState'] as Map)['wallet'] as Map)['coins'], 0);
     });
 
-    test('foreign remote logs are not merged into local progress', () async {
+    test('foreign remote logs abort merge and keep local progress unchanged',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final habitLogRepository = _FakeHabitLogRepository(
@@ -329,6 +385,53 @@ void main() {
               isCompleted: true,
               source: 'manual',
               updatedAt: DateTime.utc(2026, 6, 21, 7),
+            ),
+          ],
+        },
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'Read',
+            ),
+          ],
+        ),
+        habitLogRepository: habitLogRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'habit-1',
+            remoteId: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Read',
+            updatedAt: '2026-06-20T09:00:00.000Z',
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      final history = ((store.state!['userState'] as Map)['history'] as Map);
+      expect((history['habitCompletions'] as Map).containsKey('2026-06-21'),
+          isFalse);
+    });
+
+    test('missing remote log user id aborts merge and keeps local progress unchanged',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitLogRepository = _FakeHabitLogRepository(
+        logsByRemoteHabitId: <String, List<RemoteHabitLog>>{
+          '550e8400-e29b-41d4-a716-446655440000': <RemoteHabitLog>[
+            RemoteHabitLog(
+              id: '660e8400-e29b-41d4-a716-446655440097',
+              userId: '',
+              habitId: '550e8400-e29b-41d4-a716-446655440000',
+              logDate: DateTime(2026, 6, 21),
+              value: 1,
+              isCompleted: true,
+              source: 'manual',
             ),
           ],
         },

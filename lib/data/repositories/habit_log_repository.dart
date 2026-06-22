@@ -62,7 +62,6 @@ updated_at
               Map<String, dynamic>.from(row.cast<String, dynamic>()),
             ),
           )
-          .where((log) => log.userId == userId)
           .toList(growable: false);
 
       return RepositoryResult<List<RemoteHabitLog>>.success(data: logs);
@@ -134,9 +133,6 @@ updated_at
             (row) => RemoteHabitLog.fromMap(
               Map<String, dynamic>.from(row.cast<String, dynamic>()),
             ),
-          )
-          .where(
-            (log) => log.userId == userId && log.habitId == normalizedHabitId,
           )
           .toList(growable: false);
 
@@ -210,11 +206,6 @@ updated_at
             (row) => RemoteHabitLog.fromMap(
               Map<String, dynamic>.from(row.cast<String, dynamic>()),
             ),
-          )
-          .where(
-            (log) =>
-                log.userId == userId &&
-                normalizedHabitIds.contains(log.habitId),
           )
           .toList(growable: false);
 

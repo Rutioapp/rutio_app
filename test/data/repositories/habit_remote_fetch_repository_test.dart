@@ -28,7 +28,8 @@ void main() {
       expect(client.callCount, 0);
     });
 
-    test('fetchHabitsForCurrentUser maps remote habits and filters other users',
+    test(
+        'fetchHabitsForCurrentUser maps remote habits and preserves remote user scope rows',
         () async {
       final client = _QueueingHttpClient()
         ..enqueueJson(
@@ -91,7 +92,7 @@ void main() {
       final result = await repository.fetchHabitsForCurrentUser();
 
       expect(result.isSuccess, isTrue);
-      expect(result.data, hasLength(2));
+      expect(result.data, hasLength(3));
       expect(client.lastUri?.path, '/rest/v1/habits');
       expect(client.lastUri?.queryParameters['user_id'], 'eq.user-123');
 
@@ -107,6 +108,10 @@ void main() {
       expect(countHabit.habitType, 'count');
       expect(countHabit.targetCount, 25);
       expect(countHabit.unit, 'reps');
+
+      final foreignHabit = result.data![2];
+      expect(foreignHabit.id, '550e8400-e29b-41d4-a716-446655440999');
+      expect(foreignHabit.userId, 'user-999');
     });
 
     test('fetchHabitsForCurrentUser returns empty collection for empty remote',
@@ -188,7 +193,8 @@ void main() {
       expect(client.callCount, 0);
     });
 
-    test('fetchLogsForHabits maps count/check rows and filters unrelated rows',
+    test(
+        'fetchLogsForHabits maps count/check rows and preserves remote ownership fields',
         () async {
       const habitA = '550e8400-e29b-41d4-a716-446655440000';
       const habitB = '550e8400-e29b-41d4-a716-446655440001';
@@ -259,7 +265,7 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(result.data, hasLength(2));
+      expect(result.data, hasLength(4));
       expect(client.lastUri?.path, '/rest/v1/habit_logs');
       expect(client.lastUri?.queryParameters['user_id'], 'eq.user-123');
       expect(client.lastUri?.queryParameters['log_date'], 'lte.2026-06-21');
@@ -277,9 +283,17 @@ void main() {
       expect(countLog.value, 7);
       expect(countLog.isCompleted, isFalse);
       expect(countLog.source, 'system');
+
+      final foreignUserLog = result.data![2];
+      expect(foreignUserLog.userId, 'user-999');
+      expect(foreignUserLog.habitId, habitA);
+
+      final foreignHabitLog = result.data![3];
+      expect(foreignHabitLog.userId, 'user-123');
+      expect(foreignHabitLog.habitId, '550e8400-e29b-41d4-a716-446655449999');
     });
 
-    test('fetchLogsForHabit applies auth scope and excludes foreign rows',
+    test('fetchLogsForHabit applies auth scope and preserves returned rows',
         () async {
       const habitId = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -328,15 +342,18 @@ void main() {
       final result = await repository.fetchLogsForHabit(habitId);
 
       expect(result.isSuccess, isTrue);
-      expect(result.data, hasLength(1));
+      expect(result.data, hasLength(3));
       expect(client.lastUri?.path, '/rest/v1/habit_logs');
       expect(client.lastUri?.queryParameters['user_id'], 'eq.user-123');
       expect(client.lastUri?.queryParameters['habit_id'], 'eq.$habitId');
-      expect(result.data!.single.userId, 'user-123');
-      expect(result.data!.single.habitId, habitId);
+      expect(result.data!.first.userId, 'user-123');
+      expect(result.data!.first.habitId, habitId);
+      expect(result.data![1].userId, 'user-999');
+      expect(result.data![2].habitId, '550e8400-e29b-41d4-a716-446655449999');
     });
 
-    test('fetchLogsForDateRange applies auth scope and excludes foreign rows',
+    test(
+        'fetchLogsForDateRange applies auth scope query and preserves returned rows',
         () async {
       final client = _QueueingHttpClient()
         ..enqueueJson(
@@ -377,10 +394,11 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(result.data, hasLength(1));
+      expect(result.data, hasLength(2));
       expect(client.lastUri?.path, '/rest/v1/habit_logs');
       expect(client.lastUri?.queryParameters['user_id'], 'eq.user-123');
-      expect(result.data!.single.userId, 'user-123');
+      expect(result.data!.first.userId, 'user-123');
+      expect(result.data![1].userId, 'user-999');
     });
 
     test('fetchLogsForHabit returns empty collection for empty remote',
