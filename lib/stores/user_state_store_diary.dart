@@ -316,13 +316,16 @@ Future<void> _deleteDiaryEntry(UserStateStore store, String id) async {
   final root = store._state;
   if (root == null) return;
 
+  final localEntryId = id.trim();
+  if (localEntryId.isEmpty) return;
+
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(userState);
   final rawEntries = _ensureDiaryEntriesRoot(userState);
   _ensureDiaryRewardAppliedDateKeys(userState);
 
   final existingIndex = rawEntries.indexWhere(
-    (entry) => (entry['id'] ?? '').toString() == id,
+    (entry) => (entry['id'] ?? '').toString() == localEntryId,
   );
   final existingEntryMap = existingIndex >= 0
       ? Map<String, dynamic>.from(rawEntries[existingIndex])
@@ -330,7 +333,7 @@ Future<void> _deleteDiaryEntry(UserStateStore store, String id) async {
   final remoteEntryId =
       existingEntryMap == null ? null : _diaryEntryRemoteIdValue(existingEntryMap);
 
-  rawEntries.removeWhere((entry) => (entry['id'] ?? '').toString() == id);
+  rawEntries.removeWhere((entry) => (entry['id'] ?? '').toString() == localEntryId);
   _touchLastSavedAt(userState);
 
   root['userState'] = userState;
@@ -342,15 +345,14 @@ Future<void> _deleteDiaryEntry(UserStateStore store, String id) async {
   unawaited(
     _syncDiaryV2EntryDeleteBestEffort(
       store,
-      localEntryId: id,
-      remoteEntryId: remoteEntryId,
+      localEntryId: localEntryId,
     ),
   );
 
   if (remoteEntryId != null) {
     unawaited(
       store._journalEntrySyncService.syncEntryDeleted(
-        localEntryId: id,
+        localEntryId: localEntryId,
         remoteEntryId: remoteEntryId,
         expectedLocalUserId: store.userId,
         preferSoftDelete: true,
@@ -666,23 +668,29 @@ Future<void> _syncDiaryV2EntryUpsertBestEffort(
 Future<void> _syncDiaryV2EntryDeleteBestEffort(
   UserStateStore store, {
   required String localEntryId,
-  String? remoteEntryId,
 }) async {
+  final normalizedLocalId = localEntryId.trim();
+  final authUserId = store._currentSupabaseUserIdProvider();
+  if (kDebugMode) {
+    _debugDiaryV2Sync(
+      'entry delete attempt for localId="$normalizedLocalId": '
+      'authAvailable=${authUserId != null}',
+    );
+  }
+
   if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'delete')) return;
 
   try {
-    final result = await store._diaryV2SupabaseRepository.deleteDiaryEntry(
-      localId: localEntryId,
-      remoteId: remoteEntryId,
-    );
+    final result = await store._diaryV2SupabaseRepository
+        .deleteDiaryEntryByLocalId(normalizedLocalId);
     if (result.isSuccess) return;
     _debugDiaryV2Sync(
-      'entry delete failed for localId="$localEntryId": '
+      'entry delete failed for localId="$normalizedLocalId": '
       '${result.error?.code.name}: ${result.error?.message}',
     );
   } catch (error) {
     _debugDiaryV2Sync(
-      'entry delete unexpected error for localId="$localEntryId": $error',
+      'entry delete unexpected error for localId="$normalizedLocalId": $error',
     );
   }
 }

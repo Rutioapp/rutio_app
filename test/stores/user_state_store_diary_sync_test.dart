@@ -94,6 +94,40 @@ void main() {
             id: 'entry-1',
             createdAt: 1718445600123,
             text: 'Morning reset',
+            remoteId: '550e8400-e29b-41d4-a716-446655440000',
+          ),
+        ],
+      );
+
+      await store.deleteDiaryEntry('entry-1');
+      await _flushAsyncWork();
+
+      expect(store.diaryEntries, isEmpty);
+      expect(fakeRepository.deleteCalls, 1);
+      expect(fakeRepository.lastDeletedLocalId, 'entry-1');
+      expect(fakeRepository.lastDeletedRemoteId, isNull);
+    });
+
+    test('delete keeps local removal even if Diary V2 remote delete fails',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        deleteResult: RepositoryResult<void>.failure(
+          const RepositoryError(
+            code: RepositoryErrorCode.network,
+            message: 'offline',
+          ),
+        ),
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 1718445600123,
+            text: 'Morning reset',
           ),
         ],
       );
@@ -271,6 +305,14 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
     deleteCalls += 1;
     lastDeletedLocalId = localId;
     lastDeletedRemoteId = remoteId;
+    return _deleteResult ?? const RepositoryResult<void>.success();
+  }
+
+  @override
+  Future<RepositoryResult<void>> deleteDiaryEntryByLocalId(String localId) async {
+    deleteCalls += 1;
+    lastDeletedLocalId = localId;
+    lastDeletedRemoteId = null;
     return _deleteResult ?? const RepositoryResult<void>.success();
   }
 }

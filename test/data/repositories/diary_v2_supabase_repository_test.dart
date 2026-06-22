@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:rutio/data/repositories/diary_v2_supabase_repository.dart';
 import 'package:rutio/data/repositories/repository_result.dart';
 import 'package:rutio/models/daily_mood.dart';
@@ -193,5 +194,91 @@ void main() {
       expect(moodsResult.isSuccess, isTrue);
       expect(moodsResult.data, isEmpty);
     });
+
+    test('deleteDiaryEntryByLocalId fails safely without authenticated user',
+        () async {
+      final repository = DiaryV2SupabaseRepository(
+        client: SupabaseClient('https://example.com', 'anon-key'),
+        currentUserIdProvider: () => null,
+      );
+
+      final result = await repository.deleteDiaryEntryByLocalId('local-entry-1');
+
+      expect(result.isSuccess, isFalse);
+      expect(result.error?.code, RepositoryErrorCode.notAuthenticated);
+    });
   });
+
+  group('DiaryV2SupabaseRepository delete behavior', () {
+    test('deleteDiaryEntryByLocalId applies user_id and local_id filters',
+        () async {
+      final recordingClient = _RecordingHttpClient();
+      final repository = DiaryV2SupabaseRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: recordingClient,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.deleteDiaryEntryByLocalId('local-entry-1');
+
+      expect(result.isSuccess, isTrue);
+      expect(recordingClient.lastMethod, 'DELETE');
+      expect(recordingClient.lastUri?.path, '/rest/v1/diary_entries');
+      expect(recordingClient.lastUri?.queryParameters['user_id'], 'eq.user-123');
+      expect(
+        recordingClient.lastUri?.queryParameters['local_id'],
+        'eq.local-entry-1',
+      );
+      expect(recordingClient.lastUri?.queryParameters.containsKey('id'), isFalse);
+    });
+
+    test('deleteDiaryEntry prefers local_id over remote uuid when both exist',
+        () async {
+      final recordingClient = _RecordingHttpClient();
+      final repository = DiaryV2SupabaseRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: recordingClient,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.deleteDiaryEntry(
+        localId: 'local-entry-1',
+        remoteId: '550e8400-e29b-41d4-a716-446655440000',
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(recordingClient.lastUri?.queryParameters['user_id'], 'eq.user-123');
+      expect(
+        recordingClient.lastUri?.queryParameters['local_id'],
+        'eq.local-entry-1',
+      );
+      expect(recordingClient.lastUri?.queryParameters.containsKey('id'), isFalse);
+    });
+  });
+}
+
+class _RecordingHttpClient extends http.BaseClient {
+  Uri? lastUri;
+  String? lastMethod;
+  Map<String, String>? lastHeaders;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    lastUri = request.url;
+    lastMethod = request.method;
+    lastHeaders = Map<String, String>.from(request.headers);
+
+    return http.StreamedResponse(
+      const Stream<List<int>>.empty(),
+      204,
+      request: request,
+      headers: const <String, String>{'content-type': 'application/json'},
+    );
+  }
 }

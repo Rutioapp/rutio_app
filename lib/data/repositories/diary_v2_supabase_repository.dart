@@ -242,14 +242,24 @@ metadata
     String? localId,
     String? remoteId,
   }) async {
+    final normalizedLocalId = _nullableTrim(localId);
+    if (normalizedLocalId != null) {
+      return deleteDiaryEntryByLocalId(normalizedLocalId);
+    }
+
     final userId = _currentUserId();
     if (userId == null) {
+      if (kDebugMode) {
+        debugPrint(
+          '[diary_v2_supabase_repository] delete skipped: auth unavailable, '
+          'localId="${normalizedLocalId ?? ''}", remoteId="${_nullableTrim(remoteId) ?? ''}"',
+        );
+      }
       return RepositoryResult<void>.failure(_notAuthenticated());
     }
 
-    final normalizedLocalId = _nullableTrim(localId);
     final normalizedRemoteId = _nullableTrim(remoteId)?.toLowerCase();
-    if (normalizedLocalId == null && normalizedRemoteId == null) {
+    if (normalizedRemoteId == null) {
       return RepositoryResult<void>.failure(
         const RepositoryError(
           code: RepositoryErrorCode.invalidResponse,
@@ -259,13 +269,17 @@ metadata
     }
 
     try {
-      var query = _client.from(_diaryEntriesTable).delete().eq('user_id', userId);
-      if (normalizedRemoteId != null) {
-        query = query.eq('id', normalizedRemoteId);
-      } else {
-        query = query.eq('local_id', normalizedLocalId!);
+      if (kDebugMode) {
+        debugPrint(
+          '[diary_v2_supabase_repository] delete attempt by remote id: '
+          'authAvailable=true, remoteId="$normalizedRemoteId"',
+        );
       }
-      await query;
+      await _client
+          .from(_diaryEntriesTable)
+          .delete()
+          .eq('user_id', userId)
+          .eq('id', normalizedRemoteId);
       return const RepositoryResult<void>.success();
     } on PostgrestException catch (error) {
       return RepositoryResult<void>.failure(
@@ -281,6 +295,63 @@ metadata
       if (kDebugMode) {
         debugPrint(
           '[diary_v2_supabase_repository] unexpected diary delete error: $error',
+        );
+      }
+      return RepositoryResult<void>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.unknown,
+          message: 'Could not delete Diary V2 entry.',
+          cause: error,
+        ),
+      );
+    }
+  }
+
+  Future<RepositoryResult<void>> deleteDiaryEntryByLocalId(String localId) async {
+    final normalizedLocalId = _nullableTrim(localId);
+    final userId = _currentUserId();
+
+    if (kDebugMode) {
+      debugPrint(
+        '[diary_v2_supabase_repository] delete attempt by local id: '
+        'localId="${normalizedLocalId ?? ''}", authAvailable=${userId != null}',
+      );
+    }
+
+    if (userId == null) {
+      return RepositoryResult<void>.failure(_notAuthenticated());
+    }
+    if (normalizedLocalId == null) {
+      return RepositoryResult<void>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Local id is required for Diary V2 delete.',
+        ),
+      );
+    }
+
+    try {
+      await _client
+          .from(_diaryEntriesTable)
+          .delete()
+          .eq('user_id', userId)
+          .eq('local_id', normalizedLocalId);
+      return const RepositoryResult<void>.success();
+    } on PostgrestException catch (error) {
+      return RepositoryResult<void>.failure(
+        _mapPostgrestError(
+          error,
+          fallbackMessage: 'Could not delete Diary V2 entry.',
+          schemaLabel: 'Diary V2 entries table/schema is unavailable.',
+          debugLabel: 'diary_v2_supabase_repository',
+          tableName: _diaryEntriesTable,
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[diary_v2_supabase_repository] unexpected diary delete error '
+          'for localId="$normalizedLocalId": $error',
         );
       }
       return RepositoryResult<void>.failure(
