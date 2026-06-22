@@ -389,6 +389,14 @@ Future<void> _setDailyMood(UserStateStore store, DailyMood dailyMood) async {
 
   await store._repo.save(root);
   store._emitChanged();
+
+  unawaited(
+    _syncDailyMoodUpsertBestEffort(
+      store,
+      dailyMood: DailyMood.fromJson(rawMoods[key]),
+      source: existing == null ? 'create' : 'update',
+    ),
+  );
 }
 
 Future<JournalEntryBackfillSummary> _syncExistingLocalJournalEntriesOnce(
@@ -691,6 +699,29 @@ Future<void> _syncDiaryV2EntryDeleteBestEffort(
   } catch (error) {
     _debugDiaryV2Sync(
       'entry delete unexpected error for localId="$normalizedLocalId": $error',
+    );
+  }
+}
+
+Future<void> _syncDailyMoodUpsertBestEffort(
+  UserStateStore store, {
+  required DailyMood dailyMood,
+  required String source,
+}) async {
+  if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'daily_mood_upsert')) {
+    return;
+  }
+
+  try {
+    final result = await store._diaryV2SupabaseRepository.upsertDailyMood(dailyMood);
+    if (result.isSuccess) return;
+    _debugDiaryV2Sync(
+      'daily mood upsert failed ($source) for date="${dailyMood.dateKey}": '
+      '${result.error?.code.name}: ${result.error?.message}',
+    );
+  } catch (error) {
+    _debugDiaryV2Sync(
+      'daily mood upsert unexpected error ($source) for date="${dailyMood.dateKey}": $error',
     );
   }
 }

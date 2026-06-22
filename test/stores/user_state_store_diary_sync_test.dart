@@ -4,6 +4,7 @@ import 'package:rutio/data/repositories/diary_v2_supabase_repository.dart';
 import 'package:rutio/data/repositories/repository_result.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/models/daily_mood.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -169,6 +170,134 @@ void main() {
       expect(store.diaryEntries, isEmpty);
       expect(fakeRepository.upsertCalls, 0);
       expect(fakeRepository.deleteCalls, 0);
+      expect(fakeRepository.dailyMoodUpsertCalls, 0);
+    });
+
+    test('setDailyMood keeps local state even if daily mood upsert fails',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        dailyMoodUpsertResult: RepositoryResult<DailyMood>.failure(
+          const RepositoryError(
+            code: RepositoryErrorCode.network,
+            message: 'offline',
+          ),
+        ),
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+      );
+      final dailyMood = DailyMood(
+        date: DateTime(2026, 6, 22, 18, 30),
+        mood: 2,
+        createdAt: 0,
+        updatedAt: 0,
+      );
+
+      await store.setDailyMood(dailyMood);
+      await _flushAsyncWork();
+
+      final persisted = store.dailyMoodForDate(DateTime(2026, 6, 22));
+      expect(persisted, isNotNull);
+      expect(persisted?.mood, 2);
+      expect(fakeRepository.dailyMoodUpsertCalls, 1);
+      expect(fakeRepository.lastUpsertedDailyMood?.dateKey, '2026-06-22');
+      expect(fakeRepository.lastUpsertedDailyMood?.mood, 2);
+      expect(fakeRepository.upsertCalls, 0);
+    });
+
+    test('setDailyMood calls daily mood upsert with persisted date and mood',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository();
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+      );
+
+      await store.setDailyMood(
+        DailyMood(
+          date: DateTime(2026, 6, 22, 23, 59),
+          mood: 1,
+          note: 'steady',
+          createdAt: 0,
+          updatedAt: 0,
+        ),
+      );
+      await _flushAsyncWork();
+
+      expect(fakeRepository.dailyMoodUpsertCalls, 1);
+      expect(fakeRepository.lastUpsertedDailyMood?.date, DateTime(2026, 6, 22));
+      expect(fakeRepository.lastUpsertedDailyMood?.mood, 1);
+      expect(fakeRepository.lastUpsertedDailyMood?.note, 'steady');
+      expect(fakeRepository.upsertCalls, 0);
+    });
+
+    test('changing DailyMood for the same day upserts updates without duplicates',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository();
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+      );
+
+      await store.setDailyMood(
+        DailyMood(
+          date: DateTime(2026, 6, 22, 9),
+          mood: 0,
+          createdAt: 0,
+          updatedAt: 0,
+        ),
+      );
+      await store.setDailyMood(
+        DailyMood(
+          date: DateTime(2026, 6, 22, 20),
+          mood: 2,
+          createdAt: 0,
+          updatedAt: 0,
+        ),
+      );
+      await _flushAsyncWork();
+
+      expect(store.dailyMoods, hasLength(1));
+      expect(store.dailyMoods.single.dateKey, '2026-06-22');
+      expect(store.dailyMoods.single.mood, 2);
+      expect(fakeRepository.dailyMoodUpsertCalls, 2);
+      expect(
+        fakeRepository.upsertedDailyMoods.map((item) => item.dateKey).toList(),
+        <String>['2026-06-22', '2026-06-22'],
+      );
+      expect(fakeRepository.upsertCalls, 0);
+    });
+
+    test('no-auth skips daily mood remote sync safely', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository();
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: null,
+      );
+
+      await store.setDailyMood(
+        DailyMood(
+          date: DateTime(2026, 6, 22),
+          mood: -1,
+          createdAt: 0,
+          updatedAt: 0,
+        ),
+      );
+      await _flushAsyncWork();
+
+      expect(store.dailyMoods, hasLength(1));
+      expect(store.dailyMoods.single.mood, -1);
+      expect(fakeRepository.dailyMoodUpsertCalls, 0);
+      expect(fakeRepository.upsertCalls, 0);
     });
   });
 }
@@ -274,8 +403,10 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
   _FakeDiaryV2SupabaseRepository({
     RepositoryResult<DiaryEntry>? upsertResult,
     RepositoryResult<void>? deleteResult,
+    RepositoryResult<DailyMood>? dailyMoodUpsertResult,
   })  : _upsertResult = upsertResult,
         _deleteResult = deleteResult,
+        _dailyMoodUpsertResult = dailyMoodUpsertResult,
         super(
           client: SupabaseClient('https://example.com', 'anon-key'),
           currentUserIdProvider: () => 'user-1',
@@ -283,12 +414,16 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
 
   final RepositoryResult<DiaryEntry>? _upsertResult;
   final RepositoryResult<void>? _deleteResult;
+  final RepositoryResult<DailyMood>? _dailyMoodUpsertResult;
 
   int upsertCalls = 0;
   int deleteCalls = 0;
+  int dailyMoodUpsertCalls = 0;
   DiaryEntry? lastUpsertedEntry;
+  DailyMood? lastUpsertedDailyMood;
   String? lastDeletedLocalId;
   String? lastDeletedRemoteId;
+  final List<DailyMood> upsertedDailyMoods = <DailyMood>[];
 
   @override
   Future<RepositoryResult<DiaryEntry>> upsertDiaryEntry(DiaryEntry entry) async {
@@ -314,5 +449,14 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
     lastDeletedLocalId = localId;
     lastDeletedRemoteId = null;
     return _deleteResult ?? const RepositoryResult<void>.success();
+  }
+
+  @override
+  Future<RepositoryResult<DailyMood>> upsertDailyMood(DailyMood dailyMood) async {
+    dailyMoodUpsertCalls += 1;
+    lastUpsertedDailyMood = dailyMood;
+    upsertedDailyMoods.add(dailyMood);
+    return _dailyMoodUpsertResult ??
+        RepositoryResult<DailyMood>.success(data: dailyMood);
   }
 }

@@ -179,6 +179,25 @@ void main() {
       expect(result.error?.code, RepositoryErrorCode.notAuthenticated);
     });
 
+    test('upsertDailyMood fails safely without authenticated user', () async {
+      final repository = DiaryV2SupabaseRepository(
+        client: SupabaseClient('https://example.com', 'anon-key'),
+        currentUserIdProvider: () => null,
+      );
+
+      final result = await repository.upsertDailyMood(
+        DailyMood(
+          date: DateTime(2026, 6, 13),
+          mood: 2,
+          createdAt: 10,
+          updatedAt: 20,
+        ),
+      );
+
+      expect(result.isSuccess, isFalse);
+      expect(result.error?.code, RepositoryErrorCode.notAuthenticated);
+    });
+
     test('fetch methods return empty results safely without authenticated user',
         () async {
       final repository = DiaryV2SupabaseRepository(
@@ -203,6 +222,19 @@ void main() {
       );
 
       final result = await repository.deleteDiaryEntryByLocalId('local-entry-1');
+
+      expect(result.isSuccess, isFalse);
+      expect(result.error?.code, RepositoryErrorCode.notAuthenticated);
+    });
+
+    test('deleteDailyMoodByDate fails safely without authenticated user',
+        () async {
+      final repository = DiaryV2SupabaseRepository(
+        client: SupabaseClient('https://example.com', 'anon-key'),
+        currentUserIdProvider: () => null,
+      );
+
+      final result = await repository.deleteDailyMoodByDate(DateTime(2026, 6, 13));
 
       expect(result.isSuccess, isFalse);
       expect(result.error?.code, RepositoryErrorCode.notAuthenticated);
