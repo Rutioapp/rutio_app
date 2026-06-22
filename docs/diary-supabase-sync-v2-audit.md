@@ -159,174 +159,78 @@ Not required now, but a good future direction:
 
 ## SQL Ready To Paste Into Supabase
 
-The same proposal is also mirrored in [supabase/sql/supabase_diary_v2_phase_10_proposal.sql](/D:/dev/alpha/rutio_app/supabase/sql/supabase_diary_v2_phase_10_proposal.sql).
+Primary schema file:
 
-```sql
-begin;
+- [supabase/sql/supabase_diary_v2_phase_10_proposal.sql](/D:/dev/alpha/rutio_app/supabase/sql/supabase_diary_v2_phase_10_proposal.sql)
 
-create extension if not exists pgcrypto;
+Verification file to run after the schema applies:
 
-create or replace function public.set_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
+- [supabase/sql/supabase_diary_v2_phase_10_verification.sql](/D:/dev/alpha/rutio_app/supabase/sql/supabase_diary_v2_phase_10_verification.sql)
 
-create table if not exists public.diary_entries (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  local_id text not null,
-  entry_date date not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  local_created_at_ms bigint not null,
-  title text,
-  body text,
-  legacy_text text,
-  mood text,
-  tags text[] not null default '{}',
-  is_pinned boolean not null default false,
-  habit_id text,
-  family_id text,
-  metadata jsonb not null default '{}'::jsonb
-);
+### Final schema decisions confirmed
 
-comment on table public.diary_entries is
-  'Diary V2 structured entries. Separate from legacy public.journal_entries to allow additive rollout.';
+- `public.diary_entries` and `public.daily_moods` are additive new tables.
+- `public.journal_entries` remains untouched during this transition phase.
+- `diary_entries.habit_id` stays nullable `text` for local-id compatibility.
+- `diary_entries.tags` uses `text[]`.
+- `metadata` stays `jsonb` on both tables.
+- `daily_moods` keeps `unique(user_id, mood_date)`.
+- No strict SQL check constraint is added for mood values yet.
+- `DiaryEntry.mood` and `DailyMood.mood` remain separate concepts and separate columns.
+- Mood columns are typed as `integer` in the new tables to match the current Dart models, while remaining unconstrained for now.
 
-comment on column public.diary_entries.local_id is
-  'Stable local diary entry id used for reconciliation/backfill from local-first storage.';
+### Paste-readiness notes
 
-comment on column public.diary_entries.legacy_text is
-  'Backward-compatible combined text payload preserved during migration from legacy/local diary formats.';
+- `create extension if not exists pgcrypto` is included.
+- `create table if not exists` is used for both new tables.
+- `create index if not exists` is used for all explicit indexes.
+- RLS is enabled on both new tables.
+- Policies are created only when missing via `pg_policies` checks inside `do $$ ... $$`.
+- The shared `public.set_updated_at()` helper is created with `create or replace function`.
+- Triggers are recreated safely with `drop trigger if exists ...` followed by `create trigger`.
+- The script is additive and does not drop tables, alter `journal_entries`, or remove existing policies on other tables.
 
-comment on column public.diary_entries.mood is
-  'Entry-level mood only. Do not confuse with public.daily_moods.mood.';
+### Manual apply checklist
 
-create unique index if not exists diary_entries_user_local_id_idx
-  on public.diary_entries (user_id, local_id);
+1. Open Supabase Dashboard for the target project.
+2. Open SQL Editor.
+3. Paste the full contents of [supabase/sql/supabase_diary_v2_phase_10_proposal.sql](/D:/dev/alpha/rutio_app/supabase/sql/supabase_diary_v2_phase_10_proposal.sql).
+4. Run the schema SQL once.
+5. Paste the full contents of [supabase/sql/supabase_diary_v2_phase_10_verification.sql](/D:/dev/alpha/rutio_app/supabase/sql/supabase_diary_v2_phase_10_verification.sql).
+6. Run the verification SQL and confirm both tables, both RLS flags, all policies, the expected indexes, and the `daily_moods_user_date_unique` constraint are present.
+7. Only if you want a manual smoke test, run the optional insert/select/delete block in the verification file after replacing the placeholder UUID with a real `auth.users.id`.
 
-create index if not exists diary_entries_user_date_idx
-  on public.diary_entries (user_id, entry_date desc);
+### Manual verification checklist
 
-create index if not exists diary_entries_user_updated_idx
-  on public.diary_entries (user_id, updated_at desc);
+- Verify table creation:
+  - `public.diary_entries`
+  - `public.daily_moods`
+- Verify RLS is enabled on both tables.
+- Verify policies exist for `select`, `insert`, `update`, and `delete` on both tables.
+- Verify indexes exist for:
+  - `idx_diary_entries_user_local_id`
+  - `idx_diary_entries_user_date`
+  - `idx_diary_entries_user_updated`
+  - `idx_diary_entries_user_mood`
+  - `idx_diary_entries_tags`
+  - `idx_daily_moods_user_date`
+  - `idx_daily_moods_user_updated`
+- Verify `daily_moods_user_date_unique` exists.
+- Optional manual smoke test:
+  - insert one temporary `diary_entries` row with a real user UUID
+  - select it back
+  - delete it
+  - confirm cleanup succeeded
 
-create index if not exists diary_entries_user_mood_idx
-  on public.diary_entries (user_id, mood);
+### What not to touch yet
 
-create index if not exists diary_entries_tags_idx
-  on public.diary_entries using gin (tags);
-
-drop trigger if exists trg_diary_entries_set_updated_at on public.diary_entries;
-create trigger trg_diary_entries_set_updated_at
-before update on public.diary_entries
-for each row
-execute function public.set_updated_at();
-
-alter table public.diary_entries enable row level security;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'diary_entries' and policyname = 'diary_entries_select_own'
-  ) then
-    execute 'create policy diary_entries_select_own on public.diary_entries for select to authenticated using (auth.uid() = user_id)';
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'diary_entries' and policyname = 'diary_entries_insert_own'
-  ) then
-    execute 'create policy diary_entries_insert_own on public.diary_entries for insert to authenticated with check (auth.uid() = user_id)';
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'diary_entries' and policyname = 'diary_entries_update_own'
-  ) then
-    execute 'create policy diary_entries_update_own on public.diary_entries for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id)';
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'diary_entries' and policyname = 'diary_entries_delete_own'
-  ) then
-    execute 'create policy diary_entries_delete_own on public.diary_entries for delete to authenticated using (auth.uid() = user_id)';
-  end if;
-end
-$$;
-
-create table if not exists public.daily_moods (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  mood_date date not null,
-  mood text not null,
-  note text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  local_created_at_ms bigint,
-  local_updated_at_ms bigint,
-  metadata jsonb not null default '{}'::jsonb,
-  constraint daily_moods_user_date_unique unique (user_id, mood_date)
-);
-
-comment on table public.daily_moods is
-  'Diary V2 daily mood snapshots. Separate from entry-level moods and limited to one row per user per day.';
-
-comment on column public.daily_moods.mood is
-  'Day-level mood only. Do not mix with public.diary_entries.mood.';
-
-create index if not exists daily_moods_user_date_idx
-  on public.daily_moods (user_id, mood_date desc);
-
-drop trigger if exists trg_daily_moods_set_updated_at on public.daily_moods;
-create trigger trg_daily_moods_set_updated_at
-before update on public.daily_moods
-for each row
-execute function public.set_updated_at();
-
-alter table public.daily_moods enable row level security;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'daily_moods' and policyname = 'daily_moods_select_own'
-  ) then
-    execute 'create policy daily_moods_select_own on public.daily_moods for select to authenticated using (auth.uid() = user_id)';
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'daily_moods' and policyname = 'daily_moods_insert_own'
-  ) then
-    execute 'create policy daily_moods_insert_own on public.daily_moods for insert to authenticated with check (auth.uid() = user_id)';
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'daily_moods' and policyname = 'daily_moods_update_own'
-  ) then
-    execute 'create policy daily_moods_update_own on public.daily_moods for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id)';
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'daily_moods' and policyname = 'daily_moods_delete_own'
-  ) then
-    execute 'create policy daily_moods_delete_own on public.daily_moods for delete to authenticated using (auth.uid() = user_id)';
-  end if;
-end
-$$;
-
-commit;
-```
+- Do not add Flutter sync logic yet.
+- Do not change runtime behavior.
+- Do not change UI.
+- Do not change `DiaryEntry` or `DailyMood` models.
+- Do not change local persistence.
+- Do not backfill or migrate `journal_entries`.
+- Do not remove `journal_entries`.
 
 ## Migration And Safety Notes
 
@@ -337,6 +241,7 @@ commit;
 - No destructive migration is required now.
 - No backfill is required before applying the SQL itself.
 - Backfill will be needed later only when the app starts syncing Diary V2 into these new tables.
+- The SQL is rerunnable for the intended fresh-apply case, but `create table if not exists` will not repair a previously created conflicting table shape. If these tables already exist with different columns or types, inspect and reconcile manually before applying follow-up changes.
 
 ### Legacy text mapping
 
