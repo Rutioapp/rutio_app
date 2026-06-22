@@ -59,7 +59,6 @@ updated_at
             (row) => RemoteHabit.fromMap(
                 Map<String, dynamic>.from(row.cast<String, dynamic>())),
           )
-          .where((habit) => habit.userId == userId)
           .toList(growable: false);
 
       return RepositoryResult<List<RemoteHabit>>.success(data: habits);

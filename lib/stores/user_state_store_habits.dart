@@ -179,10 +179,19 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
       return;
     }
 
-    final remoteHabits = _filterScopedRemoteHabits(
-      habitsResult.data ?? const <RemoteHabit>[],
+    final remoteHabits = habitsResult.data ?? const <RemoteHabit>[];
+    final remoteHabitScopeValidation = _validateRemoteHabitsScopeForPull(
+      remoteHabits,
       authenticatedUserId: authenticatedUserId,
     );
+    if (!remoteHabitScopeValidation.isSafe) {
+      _debugHabitPull(
+        'manual pull aborted: unsafe remote habit scope detected '
+        '(${remoteHabitScopeValidation.reason})',
+      );
+      return;
+    }
+
     final remoteLogs = <RemoteHabitLog>[];
     for (final remoteHabit in remoteHabits) {
       final remoteHabitId = (remoteHabit.id ?? '').trim();
@@ -199,13 +208,22 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
         );
         return;
       }
-      remoteLogs.addAll(
-        _filterScopedRemoteHabitLogs(
-          logsResult.data ?? const <RemoteHabitLog>[],
-          authenticatedUserId: authenticatedUserId,
-          allowedRemoteHabitIds: <String>{remoteHabitId},
-        ),
+
+      final scopedLogs = logsResult.data ?? const <RemoteHabitLog>[];
+      final remoteLogScopeValidation = _validateRemoteHabitLogsScopeForPull(
+        scopedLogs,
+        authenticatedUserId: authenticatedUserId,
+        allowedRemoteHabitIds: <String>{remoteHabitId},
       );
+      if (!remoteLogScopeValidation.isSafe) {
+        _debugHabitPull(
+          'manual pull aborted: unsafe remote habit log scope detected '
+          'for remoteHabitId="$remoteHabitId" '
+          '(${remoteLogScopeValidation.reason})',
+        );
+        return;
+      }
+      remoteLogs.addAll(scopedLogs);
     }
 
     if (scopeEpochAtStart != store._scopeEpoch ||
@@ -501,45 +519,115 @@ _HabitLogRemoteMergeResult _mergeRemoteHabitLogsIntoLocalState({
   return _HabitLogRemoteMergeResult(changed: changed);
 }
 
-List<RemoteHabit> _filterScopedRemoteHabits(
+class _RemotePullScopeValidation {
+  const _RemotePullScopeValidation.safe() : isSafe = true, reason = null;
+
+  const _RemotePullScopeValidation.unsafe(this.reason) : isSafe = false;
+
+  final bool isSafe;
+  final String? reason;
+}
+
+_RemotePullScopeValidation _validateRemoteHabitsScopeForPull(
   List<RemoteHabit> remoteHabits, {
   required String authenticatedUserId,
 }) {
-  return remoteHabits
-      .where(
-        (remoteHabit) => _isRemoteHabitScopedToUser(
-          remoteHabit,
-          authenticatedUserId: authenticatedUserId,
-        ),
-      )
-      .toList(growable: false);
+  final normalizedAuthenticatedUserId = authenticatedUserId.trim();
+  if (normalizedAuthenticatedUserId.isEmpty) {
+    return const _RemotePullScopeValidation.unsafe(
+      'missing authenticated user id',
+    );
+  }
+
+  final distinctUserIds = <String>{};
+  for (final remoteHabit in remoteHabits) {
+    final remoteHabitId = (remoteHabit.id ?? '').trim();
+    final normalizedUserId = remoteHabit.userId.trim();
+    if (normalizedUserId.isEmpty) {
+      return _RemotePullScopeValidation.unsafe(
+        'habit missing user_id (habitId="$remoteHabitId")',
+      );
+    }
+
+    distinctUserIds.add(normalizedUserId);
+    if (normalizedUserId != normalizedAuthenticatedUserId) {
+      return _RemotePullScopeValidation.unsafe(
+        'habit user_id mismatch '
+        '(habitId="$remoteHabitId" userId="$normalizedUserId" '
+        'expected="$normalizedAuthenticatedUserId")',
+      );
+    }
+  }
+
+  if (distinctUserIds.length > 1) {
+    return _RemotePullScopeValidation.unsafe(
+      'multiple habit user_id values returned (${distinctUserIds.join(', ')})',
+    );
+  }
+
+  return const _RemotePullScopeValidation.safe();
 }
 
-List<RemoteHabitLog> _filterScopedRemoteHabitLogs(
+_RemotePullScopeValidation _validateRemoteHabitLogsScopeForPull(
   List<RemoteHabitLog> remoteLogs, {
   required String authenticatedUserId,
   Set<String>? allowedRemoteHabitIds,
 }) {
+  final normalizedAuthenticatedUserId = authenticatedUserId.trim();
+  if (normalizedAuthenticatedUserId.isEmpty) {
+    return const _RemotePullScopeValidation.unsafe(
+      'missing authenticated user id',
+    );
+  }
+
   final normalizedAllowedRemoteHabitIds = allowedRemoteHabitIds
       ?.map((habitId) => habitId.trim())
       .where((habitId) => habitId.isNotEmpty)
       .toSet();
+  final distinctUserIds = <String>{};
 
-  return remoteLogs.where((remoteLog) {
-    if (!_isRemoteHabitLogScopedToUser(
-      remoteLog,
-      authenticatedUserId: authenticatedUserId,
-    )) {
-      return false;
+  for (final remoteLog in remoteLogs) {
+    final normalizedLogId = remoteLog.id.trim();
+    final normalizedUserId = remoteLog.userId.trim();
+    if (normalizedUserId.isEmpty) {
+      return _RemotePullScopeValidation.unsafe(
+        'log missing user_id (logId="$normalizedLogId")',
+      );
     }
 
-    if (normalizedAllowedRemoteHabitIds == null ||
-        normalizedAllowedRemoteHabitIds.isEmpty) {
-      return true;
+    distinctUserIds.add(normalizedUserId);
+    if (normalizedUserId != normalizedAuthenticatedUserId) {
+      return _RemotePullScopeValidation.unsafe(
+        'log user_id mismatch '
+        '(logId="$normalizedLogId" userId="$normalizedUserId" '
+        'expected="$normalizedAuthenticatedUserId")',
+      );
     }
 
-    return normalizedAllowedRemoteHabitIds.contains(remoteLog.habitId.trim());
-  }).toList(growable: false);
+    final normalizedHabitId = remoteLog.habitId.trim();
+    if (normalizedHabitId.isEmpty) {
+      return _RemotePullScopeValidation.unsafe(
+        'log missing habit_id (logId="$normalizedLogId")',
+      );
+    }
+
+    if (normalizedAllowedRemoteHabitIds != null &&
+        normalizedAllowedRemoteHabitIds.isNotEmpty &&
+        !normalizedAllowedRemoteHabitIds.contains(normalizedHabitId)) {
+      return _RemotePullScopeValidation.unsafe(
+        'log habit_id mismatch '
+        '(logId="$normalizedLogId" habitId="$normalizedHabitId")',
+      );
+    }
+  }
+
+  if (distinctUserIds.length > 1) {
+    return _RemotePullScopeValidation.unsafe(
+      'multiple log user_id values returned (${distinctUserIds.join(', ')})',
+    );
+  }
+
+  return const _RemotePullScopeValidation.safe();
 }
 
 bool _isRemoteHabitScopedToUser(
