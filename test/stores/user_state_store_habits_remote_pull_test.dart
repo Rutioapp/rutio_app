@@ -84,7 +84,8 @@ void main() {
 
       final store = await _buildStore(
         authenticatedUserId: 'user-1',
-        habitRepository: _FakeHabitRepository(fetchedHabits: const <RemoteHabit>[]),
+        habitRepository:
+            _FakeHabitRepository(fetchedHabits: const <RemoteHabit>[]),
         activeHabits: <Map<String, dynamic>>[
           _localCheckHabit(id: 'habit-1', name: 'Local Only'),
         ],
@@ -94,6 +95,75 @@ void main() {
 
       expect(store.activeHabits, hasLength(1));
       expect(store.activeHabits.first['name'], 'Local Only');
+    });
+
+    test('foreign remote habits are never merged into local state', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            RemoteHabit(
+              id: '550e8400-e29b-41d4-a716-446655440043',
+              userId: 'user-999',
+              name: 'Foreign Habit',
+              habitType: 'check',
+              reminderEnabled: false,
+              isArchived: false,
+              sortOrder: 0,
+            ),
+          ],
+        ),
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(id: 'habit-1', name: 'Local Only'),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.first['name'], 'Local Only');
+    });
+
+    test('mixed-user remote habits only merge current user rows', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440001',
+              name: 'My Habit',
+            ),
+            RemoteHabit(
+              id: '550e8400-e29b-41d4-a716-446655440043',
+              userId: 'user-999',
+              name: 'Foreign Habit',
+              habitType: 'check',
+              reminderEnabled: false,
+              isArchived: false,
+              sortOrder: 1,
+            ),
+          ],
+        ),
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(id: 'habit-1', name: 'Local Only'),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, hasLength(2));
+      expect(
+        store.activeHabits.map((habit) => habit['name']),
+        containsAll(<String>['Local Only', 'My Habit']),
+      );
+      expect(
+        store.activeHabits.any((habit) => habit['name'] == 'Foreign Habit'),
+        isFalse,
+      );
     });
 
     test('local habit is preferred when timestamps are missing or unclear',
@@ -204,13 +274,109 @@ void main() {
       await store.syncHabitsFromRemoteBestEffort();
 
       final history = ((store.state!['userState'] as Map)['history'] as Map);
-      final completions =
-          (((history['habitCompletions'] as Map)['2026-06-21'] as Map)['habit-1']);
+      final completions = (((history['habitCompletions'] as Map)['2026-06-21']
+          as Map)['habit-1']);
       expect(completions, isTrue);
       expect(store.pendingAchievementUnlockCount, 0);
       expect(store.pendingLevelCelebrationCount, 0);
-      expect(((store.state!['userState'] as Map)['progression'] as Map)['xp'], 0);
+      expect(
+          ((store.state!['userState'] as Map)['progression'] as Map)['xp'], 0);
       expect(((store.state!['userState'] as Map)['wallet'] as Map)['coins'], 0);
+    });
+
+    test('foreign remote logs are not merged into local progress', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitLogRepository = _FakeHabitLogRepository(
+        logsByRemoteHabitId: <String, List<RemoteHabitLog>>{
+          '550e8400-e29b-41d4-a716-446655440000': <RemoteHabitLog>[
+            RemoteHabitLog(
+              id: '660e8400-e29b-41d4-a716-446655440099',
+              userId: 'user-999',
+              habitId: '550e8400-e29b-41d4-a716-446655440000',
+              logDate: DateTime(2026, 6, 21),
+              value: 1,
+              isCompleted: true,
+              source: 'manual',
+              updatedAt: DateTime.utc(2026, 6, 21, 7),
+            ),
+          ],
+        },
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'Read',
+            ),
+          ],
+        ),
+        habitLogRepository: habitLogRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'habit-1',
+            remoteId: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Read',
+            updatedAt: '2026-06-20T09:00:00.000Z',
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      final history = ((store.state!['userState'] as Map)['history'] as Map);
+      expect((history['habitCompletions'] as Map).containsKey('2026-06-21'),
+          isFalse);
+    });
+
+    test('foreign logs for a different habit id are not merged locally',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitLogRepository = _FakeHabitLogRepository(
+        logsByRemoteHabitId: <String, List<RemoteHabitLog>>{
+          '550e8400-e29b-41d4-a716-446655440000': <RemoteHabitLog>[
+            RemoteHabitLog(
+              id: '660e8400-e29b-41d4-a716-446655440098',
+              userId: 'user-1',
+              habitId: '550e8400-e29b-41d4-a716-446655440999',
+              logDate: DateTime(2026, 6, 21),
+              value: 1,
+              isCompleted: true,
+              source: 'manual',
+              updatedAt: DateTime.utc(2026, 6, 21, 7),
+            ),
+          ],
+        },
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'Read',
+            ),
+          ],
+        ),
+        habitLogRepository: habitLogRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'habit-1',
+            remoteId: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Read',
+            updatedAt: '2026-06-20T09:00:00.000Z',
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      final history = ((store.state!['userState'] as Map)['history'] as Map);
+      expect((history['habitCompletions'] as Map).containsKey('2026-06-21'),
+          isFalse);
     });
 
     test('existing local count progress is not overwritten by remote data',
@@ -264,12 +430,13 @@ void main() {
       await store.syncHabitsFromRemoteBestEffort();
 
       final history = ((store.state!['userState'] as Map)['history'] as Map);
-      final countValue =
-          (((history['habitCountValues'] as Map)['2026-06-21'] as Map)['habit-2']);
+      final countValue = (((history['habitCountValues'] as Map)['2026-06-21']
+          as Map)['habit-2']);
       expect(countValue, 8);
     });
 
-    test('no-auth pull is safe and does not call remote repositories', () async {
+    test('no-auth pull is safe and does not call remote repositories',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final habitRepository = _FakeHabitRepository(
@@ -546,7 +713,8 @@ class _FakeHabitRepository extends HabitRepository {
   int fetchCalls = 0;
 
   @override
-  Future<RepositoryResult<List<RemoteHabit>>> fetchHabitsForCurrentUser() async {
+  Future<RepositoryResult<List<RemoteHabit>>>
+      fetchHabitsForCurrentUser() async {
     fetchCalls += 1;
     return _fetchResult ??
         RepositoryResult<List<RemoteHabit>>.success(data: _fetchedHabits);

@@ -151,6 +151,9 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
   )) {
     return;
   }
+  if (authenticatedUserId == null) {
+    return;
+  }
   if (store._isHabitsRemotePullRunning) {
     _debugHabitPull('manual pull skipped: already running');
     return;
@@ -158,14 +161,16 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
 
   store._isHabitsRemotePullRunning = true;
   final scopeEpochAtStart = store._scopeEpoch;
-  final scopeUserAtStart = _normalizedScopeUserId(store._activeLocalScopeUserId);
+  final scopeUserAtStart =
+      _normalizedScopeUserId(store._activeLocalScopeUserId);
 
   try {
     if (store._state == null) {
       await store.load();
     }
 
-    final habitsResult = await store._habitRepository.fetchHabitsForCurrentUser();
+    final habitsResult =
+        await store._habitRepository.fetchHabitsForCurrentUser();
     if (!habitsResult.isSuccess) {
       _debugHabitPull(
         'manual pull failed while fetching habits: '
@@ -174,7 +179,10 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
       return;
     }
 
-    final remoteHabits = habitsResult.data ?? const <RemoteHabit>[];
+    final remoteHabits = _filterScopedRemoteHabits(
+      habitsResult.data ?? const <RemoteHabit>[],
+      authenticatedUserId: authenticatedUserId,
+    );
     final remoteLogs = <RemoteHabitLog>[];
     for (final remoteHabit in remoteHabits) {
       final remoteHabitId = (remoteHabit.id ?? '').trim();
@@ -191,7 +199,13 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
         );
         return;
       }
-      remoteLogs.addAll(logsResult.data ?? const <RemoteHabitLog>[]);
+      remoteLogs.addAll(
+        _filterScopedRemoteHabitLogs(
+          logsResult.data ?? const <RemoteHabitLog>[],
+          authenticatedUserId: authenticatedUserId,
+          allowedRemoteHabitIds: <String>{remoteHabitId},
+        ),
+      );
     }
 
     if (scopeEpochAtStart != store._scopeEpoch ||
@@ -214,11 +228,13 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
     final mergedHabits = _mergeRemoteHabitsIntoLocalState(
       localHabits: _mutableActiveHabits(userState),
       remoteHabits: remoteHabits,
+      authenticatedUserId: authenticatedUserId,
     );
     final mergedLogs = _mergeRemoteHabitLogsIntoLocalState(
       userState: userState,
       activeHabits: mergedHabits.habits,
       remoteLogs: remoteLogs,
+      authenticatedUserId: authenticatedUserId,
     );
 
     if (!mergedHabits.changed && !mergedLogs.changed) {
@@ -227,7 +243,8 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
     }
 
     userState['activeHabits'] = mergedHabits.habits;
-    _hydrateActiveHabitsForDate(userState, _dateFromKey(_activeViewDateKey(userState)));
+    _hydrateActiveHabitsForDate(
+        userState, _dateFromKey(_activeViewDateKey(userState)));
     root['userState'] = userState;
     await store.save(root);
   } catch (error) {
@@ -292,6 +309,7 @@ class _HabitLogRemoteMergeResult {
 _HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
   required List<Map<String, dynamic>> localHabits,
   required List<RemoteHabit> remoteHabits,
+  required String authenticatedUserId,
 }) {
   final mergedHabits = localHabits
       .map((habit) => Map<String, dynamic>.from(habit))
@@ -308,6 +326,17 @@ _HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
   var changed = false;
 
   for (final remoteHabit in remoteHabits) {
+    if (!_isRemoteHabitScopedToUser(
+      remoteHabit,
+      authenticatedUserId: authenticatedUserId,
+    )) {
+      _debugHabitPull(
+        'skipped remote habit outside authenticated scope: '
+        'habitId="${remoteHabit.id ?? ''}" userId="${remoteHabit.userId}"',
+      );
+      continue;
+    }
+
     final remoteHabitId = (remoteHabit.id ?? '').trim();
     if (remoteHabitId.isEmpty) continue;
 
@@ -349,6 +378,7 @@ _HabitLogRemoteMergeResult _mergeRemoteHabitLogsIntoLocalState({
   required Map<String, dynamic> userState,
   required List<Map<String, dynamic>> activeHabits,
   required List<RemoteHabitLog> remoteLogs,
+  required String authenticatedUserId,
 }) {
   if (remoteLogs.isEmpty) {
     return const _HabitLogRemoteMergeResult(changed: false);
@@ -369,6 +399,18 @@ _HabitLogRemoteMergeResult _mergeRemoteHabitLogsIntoLocalState({
 
   var changed = false;
   for (final remoteLog in remoteLogs) {
+    if (!_isRemoteHabitLogScopedToUser(
+      remoteLog,
+      authenticatedUserId: authenticatedUserId,
+    )) {
+      _debugHabitPull(
+        'skipped remote habit log outside authenticated scope: '
+        'logId="${remoteLog.id}" userId="${remoteLog.userId}" '
+        'habitId="${remoteLog.habitId}"',
+      );
+      continue;
+    }
+
     final localHabitId = localHabitIdByRemoteId[remoteLog.habitId];
     if (localHabitId == null || localHabitId.isEmpty) continue;
 
@@ -404,6 +446,66 @@ _HabitLogRemoteMergeResult _mergeRemoteHabitLogsIntoLocalState({
   }
 
   return _HabitLogRemoteMergeResult(changed: changed);
+}
+
+List<RemoteHabit> _filterScopedRemoteHabits(
+  List<RemoteHabit> remoteHabits, {
+  required String authenticatedUserId,
+}) {
+  return remoteHabits
+      .where(
+        (remoteHabit) => _isRemoteHabitScopedToUser(
+          remoteHabit,
+          authenticatedUserId: authenticatedUserId,
+        ),
+      )
+      .toList(growable: false);
+}
+
+List<RemoteHabitLog> _filterScopedRemoteHabitLogs(
+  List<RemoteHabitLog> remoteLogs, {
+  required String authenticatedUserId,
+  Set<String>? allowedRemoteHabitIds,
+}) {
+  final normalizedAllowedRemoteHabitIds = allowedRemoteHabitIds
+      ?.map((habitId) => habitId.trim())
+      .where((habitId) => habitId.isNotEmpty)
+      .toSet();
+
+  return remoteLogs.where((remoteLog) {
+    if (!_isRemoteHabitLogScopedToUser(
+      remoteLog,
+      authenticatedUserId: authenticatedUserId,
+    )) {
+      return false;
+    }
+
+    if (normalizedAllowedRemoteHabitIds == null ||
+        normalizedAllowedRemoteHabitIds.isEmpty) {
+      return true;
+    }
+
+    return normalizedAllowedRemoteHabitIds.contains(remoteLog.habitId.trim());
+  }).toList(growable: false);
+}
+
+bool _isRemoteHabitScopedToUser(
+  RemoteHabit remoteHabit, {
+  required String authenticatedUserId,
+}) {
+  final normalizedUserId = remoteHabit.userId.trim();
+  return normalizedUserId.isNotEmpty && normalizedUserId == authenticatedUserId;
+}
+
+bool _isRemoteHabitLogScopedToUser(
+  RemoteHabitLog remoteLog, {
+  required String authenticatedUserId,
+}) {
+  final normalizedUserId = remoteLog.userId.trim();
+  final normalizedHabitId = remoteLog.habitId.trim();
+  return normalizedUserId.isNotEmpty &&
+      normalizedUserId == authenticatedUserId &&
+      normalizedHabitId.isNotEmpty;
 }
 
 bool _areHabitTypesCompatible(
@@ -444,8 +546,8 @@ Map<String, dynamic> _mergeRemoteHabitIntoExistingLocal({
   merged['reminderTime'] = remoteHabit.reminderTime;
   merged['colorId'] = remoteHabit.colorId;
   merged['updatedAt'] = remoteHabit.updatedAt?.toUtc().toIso8601String();
-  merged['createdAt'] = merged['createdAt'] ??
-      remoteHabit.createdAt?.toUtc().toIso8601String();
+  merged['createdAt'] =
+      merged['createdAt'] ?? remoteHabit.createdAt?.toUtc().toIso8601String();
 
   if (_normalizedHabitType(merged['type']) == 'count') {
     merged['unit'] = remoteHabit.unit;
@@ -478,9 +580,8 @@ Map<String, dynamic> _localHabitFromRemote(RemoteHabit remoteHabit) {
     'familyId': remoteHabit.familyId,
     'type': remoteHabit.habitType,
     'unit': remoteHabit.habitType == 'count' ? remoteHabit.unit : null,
-    'target': remoteHabit.habitType == 'count'
-        ? (remoteHabit.targetCount ?? 1)
-        : 1,
+    'target':
+        remoteHabit.habitType == 'count' ? (remoteHabit.targetCount ?? 1) : 1,
     'progress': 0,
     'doneToday': false,
     'skippedToday': false,
@@ -591,8 +692,7 @@ void _applyRemoteLogToLocalHistory({
     dateKey: dateKey,
     habitId: habitId,
     done: remoteLog.isCompleted,
-    epochMillis:
-        remoteLog.updatedAt?.toLocal().millisecondsSinceEpoch ?? 0,
+    epochMillis: remoteLog.updatedAt?.toLocal().millisecondsSinceEpoch ?? 0,
   );
 }
 
@@ -662,7 +762,8 @@ Future<HabitBackfillSummary> _syncExistingLocalHabitsOnce(
       userState,
       authenticatedUserId,
     );
-    final hasEligibleCandidates = _countEligibleBackfillCandidates(userState) > 0;
+    final hasEligibleCandidates =
+        _countEligibleBackfillCandidates(userState) > 0;
 
     if (markerCompleted && !force && !hasEligibleCandidates) {
       _debugBackfill(
@@ -681,7 +782,8 @@ Future<HabitBackfillSummary> _syncExistingLocalHabitsOnce(
         .map((entry) => Map<String, dynamic>.from(_map(entry)))
         .toList(growable: false);
 
-    final summary = await store._habitSyncService.backfillLocalHabitsWithoutRemoteId(
+    final summary =
+        await store._habitSyncService.backfillLocalHabitsWithoutRemoteId(
       localHabits: activeHabits,
       expectedLocalUserId: authenticatedUserId,
       onRemoteIdAssigned: ({
@@ -689,18 +791,20 @@ Future<HabitBackfillSummary> _syncExistingLocalHabitsOnce(
         required String remoteHabitId,
       }) =>
           _persistHabitRemoteId(
-            store,
-            localHabitId: localHabitId,
-            remoteHabitId: remoteHabitId,
-          ),
+        store,
+        localHabitId: localHabitId,
+        remoteHabitId: remoteHabitId,
+      ),
     );
 
     final updatedRoot = store._state;
     if (updatedRoot == null) return summary;
 
     final updatedUserState = _ensureUserStateRoot(updatedRoot);
-    final remainingEligible = _countEligibleBackfillCandidates(updatedUserState);
-    final shouldMarkCompleted = remainingEligible == 0 && summary.failedCount == 0;
+    final remainingEligible =
+        _countEligibleBackfillCandidates(updatedUserState);
+    final shouldMarkCompleted =
+        remainingEligible == 0 && summary.failedCount == 0;
 
     final wasCompleted = _isBackfillCompletedForUser(
       updatedUserState,
@@ -919,8 +1023,8 @@ Future<bool> _syncSupabaseUserProgressBackfillOnce(
     }
 
     final snapshot = _buildProgressSyncSnapshot(userState);
-    final synced = await store._userProgressSyncService
-        .syncCurrentProgressFromLocalState(
+    final synced =
+        await store._userProgressSyncService.syncCurrentProgressFromLocalState(
       level: snapshot.level,
       totalXp: snapshot.xp,
       currentLevelXp: snapshot.xpInCurrentLevel,
@@ -955,7 +1059,8 @@ Future<bool> _syncSupabaseUserProgressBackfillOnce(
     );
     return true;
   } catch (error) {
-    _debugUserProgressBackfill('progress backfill unexpected store error: $error');
+    _debugUserProgressBackfill(
+        'progress backfill unexpected store error: $error');
     return false;
   } finally {
     store._isSupabaseUserProgressBackfillRunning = false;
@@ -1021,9 +1126,8 @@ List<HabitLogBackfillCandidate> _collectHistoricalHabitLogBackfillCandidates(
       final hasSkipEntry = daySkips.containsKey(habitId);
       final hasCountEntry = dayCountValues.containsKey(habitId);
 
-      final isCompleted = hasCompletionEntry
-          ? _dynamicToBool(dayCompletions[habitId])
-          : null;
+      final isCompleted =
+          hasCompletionEntry ? _dynamicToBool(dayCompletions[habitId]) : null;
       final isSkipped = hasSkipEntry ? _dynamicToBool(daySkips[habitId]) : null;
       final countValue = hasCountEntry
           ? _safeNum(dayCountValues[habitId], fallback: 0)
@@ -1322,7 +1426,12 @@ bool _isTimesPerWeekFrequencyMode(dynamic rawMode) =>
     (rawMode ?? '').toString().trim().toLowerCase() == 'timesperweek';
 
 int? _readLegacyTimesPerWeekTarget(Map<String, dynamic> source) {
-  for (final key in const ['timesPerWeekTarget', 'timesPerWeek', 'goal', 'times']) {
+  for (final key in const [
+    'timesPerWeekTarget',
+    'timesPerWeek',
+    'goal',
+    'times'
+  ]) {
     final value = source[key];
     if (value == null) continue;
     final target = _safePositiveNum(value, fallback: 0).toInt();
@@ -1338,8 +1447,9 @@ Map<String, dynamic> _resolvedScheduleForHabitSave({
 }) {
   final fallback = _normalizeSchedule(fallbackSchedule);
   final rawSchedule = _map(source['schedule']);
-  final normalizedSchedule =
-      rawSchedule.isEmpty ? <String, dynamic>{} : _normalizeSchedule(rawSchedule);
+  final normalizedSchedule = rawSchedule.isEmpty
+      ? <String, dynamic>{}
+      : _normalizeSchedule(rawSchedule);
   final normalizedType = (normalizedSchedule['type'] ?? '').toString();
 
   if (habitType == 'count') {
@@ -1351,10 +1461,12 @@ Map<String, dynamic> _resolvedScheduleForHabitSave({
 
   if (normalizedType == 'timesPerWeek') {
     final target = _safePositiveNum(
-      normalizedSchedule['timesPerWeek'] ?? _readLegacyTimesPerWeekTarget(source),
+      normalizedSchedule['timesPerWeek'] ??
+          _readLegacyTimesPerWeekTarget(source),
       fallback: 1,
     ).toInt();
-    final rawWeekStartsOn = _safeInt(normalizedSchedule['weekStartsOn'], fallback: 1);
+    final rawWeekStartsOn =
+        _safeInt(normalizedSchedule['weekStartsOn'], fallback: 1);
     final weekStartsOn =
         rawWeekStartsOn >= 1 && rawWeekStartsOn <= 7 ? rawWeekStartsOn : 1;
     return _normalizeSchedule({
@@ -1367,7 +1479,7 @@ Map<String, dynamic> _resolvedScheduleForHabitSave({
   final legacyTarget = _readLegacyTimesPerWeekTarget(source);
   final indicatesTimesPerWeek =
       _isTimesPerWeekFrequencyMode(source['frequencyMode']) ||
-      _isTimesPerWeekFrequencyMode(source['mode']);
+          _isTimesPerWeekFrequencyMode(source['mode']);
   if (indicatesTimesPerWeek &&
       legacyTarget != null &&
       (normalizedSchedule.isEmpty || normalizedType == 'daily')) {
@@ -1543,10 +1655,10 @@ Future<void> _addHabitFromCatalog(
         required String remoteHabitId,
       }) =>
           _persistHabitRemoteId(
-            store,
-            localHabitId: localHabitId,
-            remoteHabitId: remoteHabitId,
-          ),
+        store,
+        localHabitId: localHabitId,
+        remoteHabitId: remoteHabitId,
+      ),
     ),
   );
 }
@@ -1597,8 +1709,8 @@ Future<void> _addCustomHabit(
 
   activeHabits.add(<String, dynamic>{
     'id': id,
-    'createdAt': (habit['createdAt'] ?? habit['created_at'] ?? _today())
-        .toString(),
+    'createdAt':
+        (habit['createdAt'] ?? habit['created_at'] ?? _today()).toString(),
     'name': (habit['name'] ?? habit['title'] ?? 'Habito').toString(),
     'emoji': resolvedEmoji,
     'description': (habit['description'] ?? '').toString(),
@@ -1633,10 +1745,10 @@ Future<void> _addCustomHabit(
         required String remoteHabitId,
       }) =>
           _persistHabitRemoteId(
-            store,
-            localHabitId: localHabitId,
-            remoteHabitId: remoteHabitId,
-          ),
+        store,
+        localHabitId: localHabitId,
+        remoteHabitId: remoteHabitId,
+      ),
     ),
   );
 }
@@ -1915,8 +2027,7 @@ Future<void> _updateHabitDetailsFromEdit(
       patch.containsKey('habitType') ||
       patch.containsKey('tracking');
   if (shouldResolveSchedule) {
-    final mergedForSchedule = Map<String, dynamic>.from(current)
-      ..addAll(patch);
+    final mergedForSchedule = Map<String, dynamic>.from(current)..addAll(patch);
     current['schedule'] = _resolvedScheduleForHabitSave(
       habitType: type,
       source: mergedForSchedule,
@@ -2467,7 +2578,8 @@ void _queueBestEffortHabitLogSyncForDate(
   final isSkipped = isSkippedOverride ?? _dynamicToBool(daySkips[habitId]);
   final countValue = _isCountHabit(habit)
       ? (countValueOverride ??
-          _safeNum(dayCountValues[habitId], fallback: 0).clamp(0, double.infinity))
+          _safeNum(dayCountValues[habitId], fallback: 0)
+              .clamp(0, double.infinity))
       : null;
 
   final syncedHabit = Map<String, dynamic>.from(habit);
