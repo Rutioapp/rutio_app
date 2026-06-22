@@ -64,6 +64,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(update);
   }
 
+  Future<void> _handleManualRefresh(UserStateStore store) async {
+    try {
+      await store.syncHabitsFromRemoteBestEffort();
+    } catch (error) {
+      debugPrint('[home_refresh] manual refresh failed: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) => buildContent(context);
 
