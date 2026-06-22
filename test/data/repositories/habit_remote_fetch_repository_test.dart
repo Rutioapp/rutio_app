@@ -279,6 +279,110 @@ void main() {
       expect(countLog.source, 'system');
     });
 
+    test('fetchLogsForHabit applies auth scope and excludes foreign rows',
+        () async {
+      const habitId = '550e8400-e29b-41d4-a716-446655440000';
+
+      final client = _QueueingHttpClient()
+        ..enqueueJson(
+          statusCode: 200,
+          body: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': '660e8400-e29b-41d4-a716-446655440010',
+              'user_id': 'user-123',
+              'habit_id': habitId,
+              'log_date': '2026-06-20',
+              'value': 1,
+              'is_completed': true,
+              'source': 'manual',
+            },
+            <String, dynamic>{
+              'id': '660e8400-e29b-41d4-a716-446655440011',
+              'user_id': 'user-999',
+              'habit_id': habitId,
+              'log_date': '2026-06-20',
+              'value': 1,
+              'is_completed': true,
+              'source': 'manual',
+            },
+            <String, dynamic>{
+              'id': '660e8400-e29b-41d4-a716-446655440012',
+              'user_id': 'user-123',
+              'habit_id': '550e8400-e29b-41d4-a716-446655449999',
+              'log_date': '2026-06-20',
+              'value': 1,
+              'is_completed': true,
+              'source': 'manual',
+            },
+          ],
+        );
+      final repository = HabitLogRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.fetchLogsForHabit(habitId);
+
+      expect(result.isSuccess, isTrue);
+      expect(result.data, hasLength(1));
+      expect(client.lastUri?.path, '/rest/v1/habit_logs');
+      expect(client.lastUri?.queryParameters['user_id'], 'eq.user-123');
+      expect(client.lastUri?.queryParameters['habit_id'], 'eq.$habitId');
+      expect(result.data!.single.userId, 'user-123');
+      expect(result.data!.single.habitId, habitId);
+    });
+
+    test('fetchLogsForDateRange applies auth scope and excludes foreign rows',
+        () async {
+      final client = _QueueingHttpClient()
+        ..enqueueJson(
+          statusCode: 200,
+          body: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': '660e8400-e29b-41d4-a716-446655440020',
+              'user_id': 'user-123',
+              'habit_id': '550e8400-e29b-41d4-a716-446655440000',
+              'log_date': '2026-06-20',
+              'value': 1,
+              'is_completed': true,
+              'source': 'manual',
+            },
+            <String, dynamic>{
+              'id': '660e8400-e29b-41d4-a716-446655440021',
+              'user_id': 'user-999',
+              'habit_id': '550e8400-e29b-41d4-a716-446655440000',
+              'log_date': '2026-06-20',
+              'value': 1,
+              'is_completed': true,
+              'source': 'manual',
+            },
+          ],
+        );
+      final repository = HabitLogRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.fetchLogsForDateRange(
+        DateTime(2026, 6, 1),
+        DateTime(2026, 6, 30),
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(result.data, hasLength(1));
+      expect(client.lastUri?.path, '/rest/v1/habit_logs');
+      expect(client.lastUri?.queryParameters['user_id'], 'eq.user-123');
+      expect(result.data!.single.userId, 'user-123');
+    });
+
     test('fetchLogsForHabit returns empty collection for empty remote',
         () async {
       final client = _QueueingHttpClient()
