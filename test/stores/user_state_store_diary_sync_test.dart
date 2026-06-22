@@ -623,6 +623,41 @@ void main() {
       expect(store.dailyMoods.single.dateKey, '2026-06-22');
     });
 
+    test('newer remote daily mood for same date replaces local mood on pull',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDailyMoods: <DailyMood>[
+          DailyMood(
+            date: DateTime(2026, 6, 22, 23, 45),
+            mood: 2,
+            createdAt: 10,
+            updatedAt: 40,
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        dailyMoods: <DailyMood>[
+          DailyMood(
+            date: DateTime(2026, 6, 22, 8, 30),
+            mood: -1,
+            createdAt: 10,
+            updatedAt: 20,
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.dailyMoods, hasLength(1));
+      expect(store.dailyMoods.single.dateKey, '2026-06-22');
+      expect(store.dailyMoods.single.mood, 2);
+      expect(store.dailyMoodForDate(DateTime(2026, 6, 22, 12))?.mood, 2);
+    });
+
     test('local daily mood is not removed if missing remotely on pull',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
