@@ -1,5 +1,13 @@
 part of 'user_state_store.dart';
 
+HabitRepository _habitRepositoryForStore(UserStateStore store) {
+  return store._habitRepository ??= HabitRepository();
+}
+
+HabitLogRepository _habitLogRepositoryForStore(UserStateStore store) {
+  return store._habitLogRepository ??= HabitLogRepository();
+}
+
 const String _supabaseHabitsBackfillCompletedByUserKey =
     'supabaseHabitsBackfillCompletedByUser';
 const String _supabaseHabitLogsBackfillCompletedByUserKey =
@@ -170,7 +178,7 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
     }
 
     final habitsResult =
-        await store._habitRepository.fetchHabitsForCurrentUser();
+        await _habitRepositoryForStore(store).fetchHabitsForCurrentUser();
     if (!habitsResult.isSuccess) {
       _debugHabitPull(
         'manual pull failed while fetching habits: '
@@ -197,7 +205,7 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
       final remoteHabitId = (remoteHabit.id ?? '').trim();
       if (remoteHabitId.isEmpty) continue;
 
-      final logsResult = await store._habitLogRepository.fetchLogsForHabit(
+      final logsResult = await _habitLogRepositoryForStore(store).fetchLogsForHabit(
         remoteHabitId,
       );
       if (!logsResult.isSuccess) {
@@ -918,7 +926,7 @@ Future<HabitBackfillSummary> _syncExistingLocalHabitsOnce(
       }
     }
 
-    final authenticatedUserId = _authenticatedSupabaseUserId();
+    final authenticatedUserId = store._currentSupabaseUserIdProvider();
     if (authenticatedUserId == null) {
       _debugBackfill('habit backfill skipped: no authenticated Supabase user');
       return const HabitBackfillSummary(
@@ -1059,7 +1067,7 @@ Future<HabitLogBackfillSummary> _syncExistingLocalHabitLogsOnce(
       }
     }
 
-    final authenticatedUserId = _authenticatedSupabaseUserId();
+    final authenticatedUserId = store._currentSupabaseUserIdProvider();
     if (authenticatedUserId == null) {
       _debugHabitLogBackfill(
         'habit log backfill skipped: no authenticated Supabase user',
@@ -1178,7 +1186,7 @@ Future<bool> _syncSupabaseUserProgressBackfillOnce(
       }
     }
 
-    final authenticatedUserId = _authenticatedSupabaseUserId();
+    final authenticatedUserId = store._currentSupabaseUserIdProvider();
     if (authenticatedUserId == null) {
       _debugUserProgressBackfill(
         'progress backfill skipped: no authenticated Supabase user',
