@@ -141,9 +141,8 @@ _DiaryRewardResult _tryApplyDailyDiaryReward(
   final daily = _map(userState['daily']);
   daily['xpEarnedToday'] = _safeInt(daily['xpEarnedToday'], fallback: 0) +
       RewardConstants.dailyDiaryXpReward;
-  daily['coinsEarnedToday'] =
-      _safeInt(daily['coinsEarnedToday'], fallback: 0) +
-          RewardConstants.dailyDiaryAmbarReward;
+  daily['coinsEarnedToday'] = _safeInt(daily['coinsEarnedToday'], fallback: 0) +
+      RewardConstants.dailyDiaryAmbarReward;
   userState['daily'] = daily;
 
   claimedKeySet.add(dateKey);
@@ -330,10 +329,12 @@ Future<void> _deleteDiaryEntry(UserStateStore store, String id) async {
   final existingEntryMap = existingIndex >= 0
       ? Map<String, dynamic>.from(rawEntries[existingIndex])
       : null;
-  final remoteEntryId =
-      existingEntryMap == null ? null : _diaryEntryRemoteIdValue(existingEntryMap);
+  final remoteEntryId = existingEntryMap == null
+      ? null
+      : _diaryEntryRemoteIdValue(existingEntryMap);
 
-  rawEntries.removeWhere((entry) => (entry['id'] ?? '').toString() == localEntryId);
+  rawEntries
+      .removeWhere((entry) => (entry['id'] ?? '').toString() == localEntryId);
   _touchLastSavedAt(userState);
 
   root['userState'] = userState;
@@ -420,7 +421,8 @@ Future<JournalEntryBackfillSummary> _syncExistingLocalJournalEntriesOnce(
         await store.load();
       }
       if (store._state == null) {
-        _debugJournalBackfill('journal backfill skipped: local state unavailable');
+        _debugJournalBackfill(
+            'journal backfill skipped: local state unavailable');
         return const JournalEntryBackfillSummary(
           totalCandidates: 0,
           uploadedCount: 0,
@@ -489,10 +491,10 @@ Future<JournalEntryBackfillSummary> _syncExistingLocalJournalEntriesOnce(
         required String remoteEntryId,
       }) =>
           _persistDiaryEntryRemoteId(
-            store,
-            localEntryId: localEntryId,
-            remoteEntryId: remoteEntryId,
-          ),
+        store,
+        localEntryId: localEntryId,
+        remoteEntryId: remoteEntryId,
+      ),
     );
 
     final updatedRoot = store._state;
@@ -501,7 +503,8 @@ Future<JournalEntryBackfillSummary> _syncExistingLocalJournalEntriesOnce(
     final updatedUserState = _ensureUserStateRoot(updatedRoot);
     final remainingEligible =
         _countEligibleJournalBackfillCandidates(updatedUserState);
-    final shouldMarkCompleted = remainingEligible == 0 && summary.failedCount == 0;
+    final shouldMarkCompleted =
+        remainingEligible == 0 && summary.failedCount == 0;
 
     final wasCompleted = _isJournalBackfillCompletedForUser(
       updatedUserState,
@@ -535,6 +538,205 @@ Future<JournalEntryBackfillSummary> _syncExistingLocalJournalEntriesOnce(
   } finally {
     store._isSupabaseJournalEntriesBackfillRunning = false;
   }
+}
+
+Future<void> _syncDiaryV2FromRemoteBestEffort(UserStateStore store) async {
+  if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'pull')) return;
+
+  if (store._state == null) {
+    await store.load();
+  }
+
+  final root = store._state;
+  if (root == null) {
+    _debugDiaryV2Sync('pull skipped: local state unavailable');
+    return;
+  }
+
+  try {
+    final diaryEntriesResult = await store._diaryV2SupabaseRepository
+        .fetchDiaryEntriesForCurrentUser();
+    final dailyMoodsResult =
+        await store._diaryV2SupabaseRepository.fetchDailyMoodsForCurrentUser();
+
+    if (!diaryEntriesResult.isSuccess) {
+      _debugDiaryV2Sync(
+        'pull failed while fetching diary entries: '
+        '${diaryEntriesResult.error?.code.name}: ${diaryEntriesResult.error?.message}',
+      );
+      return;
+    }
+    if (!dailyMoodsResult.isSuccess) {
+      _debugDiaryV2Sync(
+        'pull failed while fetching daily moods: '
+        '${dailyMoodsResult.error?.code.name}: ${dailyMoodsResult.error?.message}',
+      );
+      return;
+    }
+
+    final userState = _ensureUserStateRoot(root);
+    _ensureDailyReset(userState);
+    final localEntries = _ensureDiaryEntriesRoot(userState);
+    final localMoods = _ensureDailyMoodsRoot(userState);
+
+    final mergedEntries = _mergeRemoteDiaryEntriesIntoLocalState(
+      localEntries: localEntries,
+      remoteEntries: diaryEntriesResult.data ?? const <DiaryEntry>[],
+    );
+    final mergedDailyMoods = _mergeRemoteDailyMoodsIntoLocalState(
+      localMoods: localMoods,
+      remoteMoods: dailyMoodsResult.data ?? const <DailyMood>[],
+    );
+
+    if (!mergedEntries.changed && !mergedDailyMoods.changed) {
+      _debugDiaryV2Sync('pull completed: no local Diary V2 changes applied');
+      return;
+    }
+
+    userState['diaryEntries'] = mergedEntries.entries;
+    userState['dailyMoods'] = mergedDailyMoods.moods;
+    root['userState'] = userState;
+    await store.save(root);
+  } catch (error) {
+    _debugDiaryV2Sync('pull unexpected error: $error');
+  }
+}
+
+class _DiaryEntryMergeResult {
+  const _DiaryEntryMergeResult({
+    required this.entries,
+    required this.changed,
+  });
+
+  final List<Map<String, dynamic>> entries;
+  final bool changed;
+}
+
+class _DailyMoodMergeResult {
+  const _DailyMoodMergeResult({
+    required this.moods,
+    required this.changed,
+  });
+
+  final Map<String, dynamic> moods;
+  final bool changed;
+}
+
+_DiaryEntryMergeResult _mergeRemoteDiaryEntriesIntoLocalState({
+  required List<Map<String, dynamic>> localEntries,
+  required List<DiaryEntry> remoteEntries,
+}) {
+  final mergedEntries = localEntries
+      .map((entry) => Map<String, dynamic>.from(entry))
+      .toList(growable: true);
+  final localIndexesById = <String, int>{};
+  for (var index = 0; index < mergedEntries.length; index += 1) {
+    final localId = (mergedEntries[index]['id'] ?? '').toString().trim();
+    if (localId.isEmpty || localIndexesById.containsKey(localId)) continue;
+    localIndexesById[localId] = index;
+  }
+
+  var changed = false;
+
+  for (final remoteEntry in remoteEntries) {
+    final localId = remoteEntry.id.trim();
+    if (localId.isEmpty) continue;
+
+    final existingIndex = localIndexesById[localId];
+    final remoteEntryMap = Map<String, dynamic>.from(remoteEntry.toJson());
+    if (existingIndex == null) {
+      mergedEntries.add(remoteEntryMap);
+      localIndexesById[localId] = mergedEntries.length - 1;
+      changed = true;
+      continue;
+    }
+
+    final localEntry = DiaryEntry.fromJson(mergedEntries[existingIndex]);
+    if (_shouldReplaceLocalDiaryEntry(
+      localEntry: localEntry,
+      remoteEntry: remoteEntry,
+    )) {
+      mergedEntries[existingIndex] = remoteEntryMap;
+      changed = true;
+    }
+  }
+
+  return _DiaryEntryMergeResult(entries: mergedEntries, changed: changed);
+}
+
+_DailyMoodMergeResult _mergeRemoteDailyMoodsIntoLocalState({
+  required Map<String, dynamic> localMoods,
+  required List<DailyMood> remoteMoods,
+}) {
+  final mergedMoods = <String, dynamic>{
+    for (final entry in localMoods.entries)
+      entry.key: entry.value is Map
+          ? Map<String, dynamic>.from(_map(entry.value))
+          : entry.value,
+  };
+
+  var changed = false;
+
+  for (final remoteMood in remoteMoods) {
+    final dateKey = remoteMood.dateKey;
+    if (dateKey.isEmpty) continue;
+
+    final remoteMoodMap = remoteMood.toJson();
+    final localMoodMap = _map(mergedMoods[dateKey]);
+    if (localMoodMap.isEmpty) {
+      mergedMoods[dateKey] = remoteMoodMap;
+      changed = true;
+      continue;
+    }
+
+    final localMood = DailyMood.fromJson({
+      ...localMoodMap,
+      if (!localMoodMap.containsKey('date')) 'date': dateKey,
+    });
+    if (_shouldReplaceLocalDailyMood(
+      localMood: localMood,
+      remoteMood: remoteMood,
+    )) {
+      mergedMoods[dateKey] = remoteMoodMap;
+      changed = true;
+    }
+  }
+
+  return _DailyMoodMergeResult(moods: mergedMoods, changed: changed);
+}
+
+bool _shouldReplaceLocalDiaryEntry({
+  required DiaryEntry localEntry,
+  required DiaryEntry remoteEntry,
+}) {
+  final localTimestamp = _robustDiaryEntryMergeTimestamp(localEntry);
+  final remoteTimestamp = _robustDiaryEntryMergeTimestamp(remoteEntry);
+  if (localTimestamp == null || remoteTimestamp == null) {
+    return false;
+  }
+  return remoteTimestamp > localTimestamp;
+}
+
+bool _shouldReplaceLocalDailyMood({
+  required DailyMood localMood,
+  required DailyMood remoteMood,
+}) {
+  final localTimestamp = _robustDailyMoodMergeTimestamp(localMood);
+  final remoteTimestamp = _robustDailyMoodMergeTimestamp(remoteMood);
+  if (localTimestamp == null || remoteTimestamp == null) {
+    return false;
+  }
+  return remoteTimestamp > localTimestamp;
+}
+
+int? _robustDiaryEntryMergeTimestamp(DiaryEntry entry) {
+  return entry.createdAt > 0 ? entry.createdAt : null;
+}
+
+int? _robustDailyMoodMergeTimestamp(DailyMood dailyMood) {
+  if (dailyMood.updatedAt > 0) return dailyMood.updatedAt;
+  if (dailyMood.createdAt > 0) return dailyMood.createdAt;
+  return null;
 }
 
 List<Map<String, dynamic>> _activeHabitsSnapshotForDiarySync(
@@ -660,7 +862,8 @@ Future<void> _syncDiaryV2EntryUpsertBestEffort(
   if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'upsert')) return;
 
   try {
-    final result = await store._diaryV2SupabaseRepository.upsertDiaryEntry(entry);
+    final result =
+        await store._diaryV2SupabaseRepository.upsertDiaryEntry(entry);
     if (result.isSuccess) return;
     _debugDiaryV2Sync(
       'entry upsert failed ($source) for localId="${entry.id}": '
@@ -708,12 +911,14 @@ Future<void> _syncDailyMoodUpsertBestEffort(
   required DailyMood dailyMood,
   required String source,
 }) async {
-  if (!_shouldSyncDiaryV2ForCurrentScope(store, operation: 'daily_mood_upsert')) {
+  if (!_shouldSyncDiaryV2ForCurrentScope(store,
+      operation: 'daily_mood_upsert')) {
     return;
   }
 
   try {
-    final result = await store._diaryV2SupabaseRepository.upsertDailyMood(dailyMood);
+    final result =
+        await store._diaryV2SupabaseRepository.upsertDailyMood(dailyMood);
     if (result.isSuccess) return;
     _debugDiaryV2Sync(
       'daily mood upsert failed ($source) for date="${dailyMood.dateKey}": '

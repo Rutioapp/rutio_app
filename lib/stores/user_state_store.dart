@@ -360,6 +360,9 @@ class UserStateStore extends ChangeNotifier {
   }) =>
       _syncExistingLocalJournalEntriesOnce(this, force: force);
 
+  Future<void> syncDiaryV2FromRemoteBestEffort() =>
+      _syncDiaryV2FromRemoteBestEffort(this);
+
   Future<void> reorderVisibleHabits({
     required List<String> orderedVisibleIds,
   }) =>
@@ -502,7 +505,8 @@ class UserStateStore extends ChangeNotifier {
 
   Future<void> deleteDiaryEntry(String id) => _deleteDiaryEntry(this, id);
 
-  Future<void> setDailyMood(DailyMood dailyMood) => _setDailyMood(this, dailyMood);
+  Future<void> setDailyMood(DailyMood dailyMood) =>
+      _setDailyMood(this, dailyMood);
 
   dynamic getActiveHabitById(String id) => _getActiveHabitById(this, id);
 

@@ -74,7 +74,8 @@ void main() {
       );
       await _flushAsyncWork();
 
-      final updated = store.diaryEntries.singleWhere((item) => item.id == 'entry-1');
+      final updated =
+          store.diaryEntries.singleWhere((item) => item.id == 'entry-1');
       expect(updated.title, 'New title');
       expect(updated.body, 'New body');
       expect(updated.mood, 2);
@@ -236,7 +237,8 @@ void main() {
       expect(fakeRepository.upsertCalls, 0);
     });
 
-    test('changing DailyMood for the same day upserts updates without duplicates',
+    test(
+        'changing DailyMood for the same day upserts updates without duplicates',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -299,6 +301,386 @@ void main() {
       expect(fakeRepository.dailyMoodUpsertCalls, 0);
       expect(fakeRepository.upsertCalls, 0);
     });
+
+    test('remote diary entry with new local id is added locally on pull',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'remote-entry-1',
+            createdAt: 1718445600123,
+            text: 'Pulled from remote',
+            mood: 2,
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.diaryEntries, hasLength(1));
+      expect(store.diaryEntries.single.id, 'remote-entry-1');
+      expect(store.diaryEntries.single.text, 'Pulled from remote');
+      expect(store.diaryEntries.single.mood, 2);
+      expect(fakeRepository.fetchDiaryEntriesCalls, 1);
+      expect(fakeRepository.fetchDailyMoodsCalls, 1);
+    });
+
+    test('remote diary entry with existing local id does not duplicate on pull',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 1718445600123,
+            text: 'Remote copy',
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 1718445600123,
+            text: 'Local copy',
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.diaryEntries, hasLength(1));
+      expect(store.diaryEntries.single.id, 'entry-1');
+    });
+
+    test('local diary entry is not removed if missing remotely on pull',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 1718445600123,
+            text: 'Keep me local',
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.diaryEntries, hasLength(1));
+      expect(store.diaryEntries.single.id, 'entry-1');
+      expect(store.diaryEntries.single.text, 'Keep me local');
+    });
+
+    test('diary entry conflict keeps local when local timestamp is newer',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 100,
+            text: 'Older remote text',
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 200,
+            text: 'Newer local text',
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.diaryEntries.single.text, 'Newer local text');
+      expect(store.diaryEntries.single.createdAt, 200);
+    });
+
+    test('diary entry conflict keeps local when timestamp certainty is weak',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 0,
+            text: 'Remote uncertain text',
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 0,
+            text: 'Local uncertain text',
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.diaryEntries.single.text, 'Local uncertain text');
+    });
+
+    test('remote newer diary entry updates local when timestamp is clear',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 300,
+            text: 'Remote newer text',
+            mood: -1,
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 100,
+            text: 'Old local text',
+            mood: 2,
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.diaryEntries.single.text, 'Remote newer text');
+      expect(store.diaryEntries.single.createdAt, 300);
+      expect(store.diaryEntries.single.mood, -1);
+    });
+
+    test('remote daily mood with new date is added locally on pull', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDailyMoods: <DailyMood>[
+          DailyMood(
+            date: DateTime(2026, 6, 22),
+            mood: 1,
+            createdAt: 10,
+            updatedAt: 20,
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.dailyMoods, hasLength(1));
+      expect(store.dailyMoods.single.dateKey, '2026-06-22');
+      expect(store.dailyMoods.single.mood, 1);
+    });
+
+    test('daily mood with same date does not duplicate on pull', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDailyMoods: <DailyMood>[
+          DailyMood(
+            date: DateTime(2026, 6, 22),
+            mood: 1,
+            createdAt: 10,
+            updatedAt: 20,
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        dailyMoods: <DailyMood>[
+          DailyMood(
+            date: DateTime(2026, 6, 22),
+            mood: -1,
+            createdAt: 15,
+            updatedAt: 30,
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.dailyMoods, hasLength(1));
+      expect(store.dailyMoods.single.dateKey, '2026-06-22');
+    });
+
+    test('local daily mood is not removed if missing remotely on pull',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDailyMoods: const <DailyMood>[],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        dailyMoods: <DailyMood>[
+          DailyMood(
+            date: DateTime(2026, 6, 22),
+            mood: 2,
+            createdAt: 10,
+            updatedAt: 20,
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.dailyMoods, hasLength(1));
+      expect(store.dailyMoods.single.mood, 2);
+    });
+
+    test('DiaryEntry mood and DailyMood mood remain separated after pull',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 1718445600123,
+            text: 'Entry mood stays entry-scoped',
+            mood: -2,
+          ),
+        ],
+        fetchedDailyMoods: <DailyMood>[
+          DailyMood(
+            date: DateTime(2026, 6, 22),
+            mood: 2,
+            createdAt: 10,
+            updatedAt: 20,
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.diaryEntries.single.mood, -2);
+      expect(store.dailyMoods.single.mood, 2);
+    });
+
+    test('no-auth pull is safe and keeps local state unchanged', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchedDiaryEntries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'remote-entry-1',
+            createdAt: 1718445600123,
+            text: 'Should not be pulled',
+          ),
+        ],
+        fetchedDailyMoods: <DailyMood>[
+          DailyMood(
+            date: DateTime(2026, 6, 22),
+            mood: 1,
+            createdAt: 10,
+            updatedAt: 20,
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: null,
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 100,
+            text: 'Local only',
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.diaryEntries, hasLength(1));
+      expect(store.diaryEntries.single.id, 'entry-1');
+      expect(store.dailyMoods, isEmpty);
+      expect(fakeRepository.fetchDiaryEntriesCalls, 0);
+      expect(fakeRepository.fetchDailyMoodsCalls, 0);
+    });
+
+    test('remote fetch error is best effort and keeps local state unchanged',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeRepository = _FakeDiaryV2SupabaseRepository(
+        fetchDiaryEntriesResult: RepositoryResult<List<DiaryEntry>>.failure(
+          const RepositoryError(
+            code: RepositoryErrorCode.network,
+            message: 'offline',
+          ),
+        ),
+      );
+      final store = await _buildStore(
+        diaryV2SupabaseRepository: fakeRepository,
+        authenticatedUserId: 'user-1',
+        entries: const <DiaryEntry>[
+          DiaryEntry(
+            id: 'entry-1',
+            createdAt: 100,
+            text: 'Local only',
+          ),
+        ],
+        dailyMoods: <DailyMood>[
+          DailyMood(
+            date: DateTime(2026, 6, 22),
+            mood: 2,
+            createdAt: 10,
+            updatedAt: 20,
+          ),
+        ],
+      );
+
+      await store.syncDiaryV2FromRemoteBestEffort();
+
+      expect(store.diaryEntries, hasLength(1));
+      expect(store.diaryEntries.single.text, 'Local only');
+      expect(store.dailyMoods, hasLength(1));
+      expect(store.dailyMoods.single.mood, 2);
+      expect(fakeRepository.fetchDiaryEntriesCalls, 1);
+      expect(fakeRepository.fetchDailyMoodsCalls, 1);
+    });
   });
 }
 
@@ -306,6 +688,7 @@ Future<UserStateStore> _buildStore({
   required _FakeDiaryV2SupabaseRepository diaryV2SupabaseRepository,
   required String? authenticatedUserId,
   List<DiaryEntry> entries = const <DiaryEntry>[],
+  List<DailyMood> dailyMoods = const <DailyMood>[],
 }) async {
   final repo = UserStateRepository(storage: UserStateStorage())
     ..setActiveUserScope('user-1');
@@ -319,6 +702,7 @@ Future<UserStateStore> _buildStore({
     _baseState(
       userId: 'user-1',
       entries: entries,
+      dailyMoods: dailyMoods,
     ),
   );
   return store;
@@ -327,6 +711,7 @@ Future<UserStateStore> _buildStore({
 Map<String, dynamic> _baseState({
   required String userId,
   required List<DiaryEntry> entries,
+  required List<DailyMood> dailyMoods,
 }) {
   return <String, dynamic>{
     'userState': <String, dynamic>{
@@ -380,8 +765,12 @@ Map<String, dynamic> _baseState({
         'professional': 0,
       },
       'activeHabits': <dynamic>[],
-      'diaryEntries': entries.map((entry) => entry.toJson()).toList(growable: false),
-      'dailyMoods': <String, dynamic>{},
+      'diaryEntries':
+          entries.map((entry) => entry.toJson()).toList(growable: false),
+      'dailyMoods': <String, dynamic>{
+        for (final dailyMood in dailyMoods)
+          dailyMood.dateKey: dailyMood.toJson(),
+      },
     },
   };
 }
@@ -404,9 +793,17 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
     RepositoryResult<DiaryEntry>? upsertResult,
     RepositoryResult<void>? deleteResult,
     RepositoryResult<DailyMood>? dailyMoodUpsertResult,
+    RepositoryResult<List<DiaryEntry>>? fetchDiaryEntriesResult,
+    RepositoryResult<List<DailyMood>>? fetchDailyMoodsResult,
+    List<DiaryEntry> fetchedDiaryEntries = const <DiaryEntry>[],
+    List<DailyMood> fetchedDailyMoods = const <DailyMood>[],
   })  : _upsertResult = upsertResult,
         _deleteResult = deleteResult,
         _dailyMoodUpsertResult = dailyMoodUpsertResult,
+        _fetchDiaryEntriesResult = fetchDiaryEntriesResult,
+        _fetchDailyMoodsResult = fetchDailyMoodsResult,
+        _fetchedDiaryEntries = fetchedDiaryEntries,
+        _fetchedDailyMoods = fetchedDailyMoods,
         super(
           client: SupabaseClient('https://example.com', 'anon-key'),
           currentUserIdProvider: () => 'user-1',
@@ -415,10 +812,16 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
   final RepositoryResult<DiaryEntry>? _upsertResult;
   final RepositoryResult<void>? _deleteResult;
   final RepositoryResult<DailyMood>? _dailyMoodUpsertResult;
+  final RepositoryResult<List<DiaryEntry>>? _fetchDiaryEntriesResult;
+  final RepositoryResult<List<DailyMood>>? _fetchDailyMoodsResult;
+  final List<DiaryEntry> _fetchedDiaryEntries;
+  final List<DailyMood> _fetchedDailyMoods;
 
   int upsertCalls = 0;
   int deleteCalls = 0;
   int dailyMoodUpsertCalls = 0;
+  int fetchDiaryEntriesCalls = 0;
+  int fetchDailyMoodsCalls = 0;
   DiaryEntry? lastUpsertedEntry;
   DailyMood? lastUpsertedDailyMood;
   String? lastDeletedLocalId;
@@ -426,7 +829,8 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
   final List<DailyMood> upsertedDailyMoods = <DailyMood>[];
 
   @override
-  Future<RepositoryResult<DiaryEntry>> upsertDiaryEntry(DiaryEntry entry) async {
+  Future<RepositoryResult<DiaryEntry>> upsertDiaryEntry(
+      DiaryEntry entry) async {
     upsertCalls += 1;
     lastUpsertedEntry = entry;
     return _upsertResult ?? RepositoryResult<DiaryEntry>.success(data: entry);
@@ -444,7 +848,8 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
   }
 
   @override
-  Future<RepositoryResult<void>> deleteDiaryEntryByLocalId(String localId) async {
+  Future<RepositoryResult<void>> deleteDiaryEntryByLocalId(
+      String localId) async {
     deleteCalls += 1;
     lastDeletedLocalId = localId;
     lastDeletedRemoteId = null;
@@ -452,11 +857,32 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
   }
 
   @override
-  Future<RepositoryResult<DailyMood>> upsertDailyMood(DailyMood dailyMood) async {
+  Future<RepositoryResult<DailyMood>> upsertDailyMood(
+      DailyMood dailyMood) async {
     dailyMoodUpsertCalls += 1;
     lastUpsertedDailyMood = dailyMood;
     upsertedDailyMoods.add(dailyMood);
     return _dailyMoodUpsertResult ??
         RepositoryResult<DailyMood>.success(data: dailyMood);
+  }
+
+  @override
+  Future<RepositoryResult<List<DiaryEntry>>> fetchDiaryEntriesForCurrentUser({
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    fetchDiaryEntriesCalls += 1;
+    return _fetchDiaryEntriesResult ??
+        RepositoryResult<List<DiaryEntry>>.success(data: _fetchedDiaryEntries);
+  }
+
+  @override
+  Future<RepositoryResult<List<DailyMood>>> fetchDailyMoodsForCurrentUser({
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    fetchDailyMoodsCalls += 1;
+    return _fetchDailyMoodsResult ??
+        RepositoryResult<List<DailyMood>>.success(data: _fetchedDailyMoods);
   }
 }
