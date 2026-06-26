@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/models/remote/remote_habit.dart';
@@ -817,6 +819,119 @@ void main() {
       expect(store.activeHabits, hasLength(1));
       expect(store.activeHabits.first['name'], 'Keep Me');
     });
+
+    test('controlled auto sync triggers remote pull when allowed', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      var now = DateTime(2026, 6, 26, 9, 0);
+
+      final habitRepository = _FakeHabitRepository(
+        fetchedHabits: <RemoteHabit>[
+          _remoteCheckHabit(
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Drink Water',
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+        nowProvider: () => now,
+      );
+
+      await store.maybeSyncHabitsFromRemoteBestEffort();
+
+      expect(habitRepository.fetchCalls, 1);
+      expect(store.lastHabitsRemotePullAttemptAt, now);
+      expect(store.lastHabitsRemotePullSuccessAt, now);
+    });
+
+    test('controlled auto sync does not trigger repeatedly within cooldown',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      var now = DateTime(2026, 6, 26, 9, 0);
+
+      final habitRepository = _FakeHabitRepository(
+        fetchedHabits: <RemoteHabit>[
+          _remoteCheckHabit(
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Drink Water',
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+        nowProvider: () => now,
+      );
+
+      await store.maybeSyncHabitsFromRemoteBestEffort();
+      now = now.add(const Duration(minutes: 5));
+      await store.maybeSyncHabitsFromRemoteBestEffort();
+      now = now.add(const Duration(minutes: 11));
+      await store.maybeSyncHabitsFromRemoteBestEffort();
+
+      expect(habitRepository.fetchCalls, 2);
+    });
+
+    test('controlled auto sync does not run concurrently', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final fetchCompleter = Completer<RepositoryResult<List<RemoteHabit>>>();
+
+      final habitRepository = _FakeHabitRepository(
+        fetchHandler: () => fetchCompleter.future,
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+      );
+
+      final firstCall = store.maybeSyncHabitsFromRemoteBestEffort();
+      await Future<void>.delayed(Duration.zero);
+      final secondCall = store.maybeSyncHabitsFromRemoteBestEffort();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(habitRepository.fetchCalls, 1);
+
+      fetchCompleter.complete(
+        RepositoryResult<List<RemoteHabit>>.success(
+          data: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'Drink Water',
+            ),
+          ],
+        ),
+      );
+
+      await Future.wait(<Future<void>>[firstCall, secondCall]);
+      expect(habitRepository.fetchCalls, 1);
+    });
+
+    test('manual controlled sync bypasses cooldown safely', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      var now = DateTime(2026, 6, 26, 9, 0);
+
+      final habitRepository = _FakeHabitRepository(
+        fetchedHabits: <RemoteHabit>[
+          _remoteCheckHabit(
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Drink Water',
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+        nowProvider: () => now,
+      );
+
+      await store.maybeSyncHabitsFromRemoteBestEffort();
+      now = now.add(const Duration(minutes: 1));
+      await store.maybeSyncHabitsFromRemoteBestEffort(ignoreCooldown: true);
+
+      expect(habitRepository.fetchCalls, 2);
+      expect(store.lastHabitsRemotePullAttemptAt, now);
+    });
   });
 }
 
@@ -825,6 +940,7 @@ Future<UserStateStore> _buildStore({
   String userId = 'user-1',
   HabitRepository? habitRepository,
   HabitLogRepository? habitLogRepository,
+  DateTime Function()? nowProvider,
   List<Map<String, dynamic>> activeHabits = const <Map<String, dynamic>>[],
   Map<String, dynamic> historyCompletions = const <String, dynamic>{},
   Map<String, dynamic> historyCountValues = const <String, dynamic>{},
@@ -839,6 +955,7 @@ Future<UserStateStore> _buildStore({
     habitLogRepository: habitLogRepository ?? _FakeHabitLogRepository(),
     journalEntrySyncService: JournalEntrySyncService(),
     currentSupabaseUserIdProvider: () => authenticatedUserId,
+    nowProvider: nowProvider,
   );
   await store.save(
     <String, dynamic>{
@@ -1010,6 +1127,7 @@ class _FakeHabitRepository extends HabitRepository {
   _FakeHabitRepository({
     RepositoryResult<List<RemoteHabit>>? fetchResult,
     List<RemoteHabit> fetchedHabits = const <RemoteHabit>[],
+    this.fetchHandler,
   })  : _fetchResult = fetchResult,
         _fetchedHabits = fetchedHabits,
         super(
@@ -1019,6 +1137,7 @@ class _FakeHabitRepository extends HabitRepository {
 
   final RepositoryResult<List<RemoteHabit>>? _fetchResult;
   final List<RemoteHabit> _fetchedHabits;
+  final Future<RepositoryResult<List<RemoteHabit>>> Function()? fetchHandler;
 
   int fetchCalls = 0;
 
@@ -1026,6 +1145,9 @@ class _FakeHabitRepository extends HabitRepository {
   Future<RepositoryResult<List<RemoteHabit>>>
       fetchHabitsForCurrentUser() async {
     fetchCalls += 1;
+    if (fetchHandler != null) {
+      return fetchHandler!();
+    }
     return _fetchResult ??
         RepositoryResult<List<RemoteHabit>>.success(data: _fetchedHabits);
   }

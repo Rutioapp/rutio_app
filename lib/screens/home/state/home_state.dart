@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _handleManualRefresh(UserStateStore store) async {
     try {
-      await store.syncHabitsFromRemoteBestEffort();
+      await store.maybeSyncHabitsFromRemoteBestEffort(ignoreCooldown: true);
     } catch (error) {
       debugPrint('[home_refresh] manual refresh failed: $error');
     }
@@ -88,6 +88,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (s.state == null && !s.isLoading) {
         s.load();
       }
+      unawaited(s.maybeSyncHabitsFromRemoteBestEffort());
     });
     _schedulePostLoginNotificationPrompt();
 
@@ -316,6 +317,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       final store = context.read<UserStateStore>();
       store.state;
+      unawaited(store.maybeSyncHabitsFromRemoteBestEffort());
 
       final today = _onlyDate(DateTime.now());
       if (today != _lastToday && _selectedDay == _lastToday) {

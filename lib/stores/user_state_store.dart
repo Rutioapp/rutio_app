@@ -90,6 +90,7 @@ class SupabaseUserProgressBootstrapResult {
 
 class UserStateStore extends ChangeNotifier {
   static const Duration diaryV2AutoPullCooldown = Duration(minutes: 10);
+  static const Duration habitsAutoPullCooldown = Duration(minutes: 10);
 
   final UserStateRepository _repo;
   final AchievementSyncService _achievementSyncService;
@@ -156,6 +157,8 @@ class UserStateStore extends ChangeNotifier {
   bool _isHabitsRemotePullRunning = false;
   DateTime? _lastDiaryV2RemotePullAttemptAt;
   DateTime? _lastDiaryV2RemotePullSuccessAt;
+  DateTime? _lastHabitsRemotePullAttemptAt;
+  DateTime? _lastHabitsRemotePullSuccessAt;
   Object? _accountDeletionError;
   String? _activeLocalScopeUserId;
   int _scopeEpoch = 0;
@@ -192,6 +195,8 @@ class UserStateStore extends ChangeNotifier {
   bool get isHabitsRemotePullRunning => _isHabitsRemotePullRunning;
   DateTime? get lastDiaryV2RemotePullAttemptAt => _lastDiaryV2RemotePullAttemptAt;
   DateTime? get lastDiaryV2RemotePullSuccessAt => _lastDiaryV2RemotePullSuccessAt;
+  DateTime? get lastHabitsRemotePullAttemptAt => _lastHabitsRemotePullAttemptAt;
+  DateTime? get lastHabitsRemotePullSuccessAt => _lastHabitsRemotePullSuccessAt;
   Object? get accountDeletionError => _accountDeletionError;
 
   void _emitChanged() => notifyListeners();
@@ -444,6 +449,14 @@ class UserStateStore extends ChangeNotifier {
 
   Future<void> syncHabitsFromRemoteBestEffort() =>
       _syncHabitsFromRemoteBestEffort(this);
+
+  Future<void> maybeSyncHabitsFromRemoteBestEffort({
+    bool ignoreCooldown = false,
+  }) =>
+      _maybeSyncHabitsFromRemoteBestEffort(
+        this,
+        ignoreCooldown: ignoreCooldown,
+      );
 
   Future<void> reorderVisibleHabits({
     required List<String> orderedVisibleIds,

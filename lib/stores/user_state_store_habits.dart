@@ -152,6 +152,13 @@ Future<void> _persistHabitRemoteId(
 }
 
 Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
+  await _runHabitsRemotePull(store, source: 'manual');
+}
+
+Future<void> _maybeSyncHabitsFromRemoteBestEffort(
+  UserStateStore store, {
+  bool ignoreCooldown = false,
+}) async {
   final authenticatedUserId = _currentHabitPullAuthenticatedUserId(store);
   if (!_shouldSyncHabitsForCurrentScope(
     store,
@@ -163,11 +170,52 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
     return;
   }
   if (store._isHabitsRemotePullRunning) {
-    _debugHabitPull('manual pull skipped: already running');
+    _debugHabitPull('auto pull skipped: already running');
+    return;
+  }
+  if (store._isSupabaseHabitsBackfillRunning ||
+      store._isSupabaseHabitLogsBackfillRunning ||
+      store._isSupabaseUserProgressBackfillRunning) {
+    _debugHabitPull('auto pull skipped: backfill or restore already running');
+    return;
+  }
+
+  final now = store._nowProvider();
+  final lastAttemptAt = store._lastHabitsRemotePullAttemptAt;
+  if (!ignoreCooldown &&
+      lastAttemptAt != null &&
+      now.difference(lastAttemptAt) < UserStateStore.habitsAutoPullCooldown) {
+    _debugHabitPull(
+      'auto pull skipped: cooldown active '
+      '(${now.difference(lastAttemptAt).inMinutes}m since last attempt)',
+    );
+    return;
+  }
+
+  await _runHabitsRemotePull(store, source: ignoreCooldown ? 'manual' : 'auto');
+}
+
+Future<void> _runHabitsRemotePull(
+  UserStateStore store, {
+  required String source,
+}) async {
+  final authenticatedUserId = _currentHabitPullAuthenticatedUserId(store);
+  if (!_shouldSyncHabitsForCurrentScope(
+    store,
+    authenticatedUserId: authenticatedUserId,
+  )) {
+    return;
+  }
+  if (authenticatedUserId == null) {
+    return;
+  }
+  if (store._isHabitsRemotePullRunning) {
+    _debugHabitPull('$source pull skipped: already running');
     return;
   }
 
   store._isHabitsRemotePullRunning = true;
+  store._lastHabitsRemotePullAttemptAt = store._nowProvider();
   final scopeEpochAtStart = store._scopeEpoch;
   final scopeUserAtStart =
       _normalizedScopeUserId(store._activeLocalScopeUserId);
@@ -181,7 +229,7 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
         await _habitRepositoryForStore(store).fetchHabitsForCurrentUser();
     if (!habitsResult.isSuccess) {
       _debugHabitPull(
-        'manual pull failed while fetching habits: '
+        '$source pull failed while fetching habits: '
         '${habitsResult.error?.code.name}: ${habitsResult.error?.message}',
       );
       return;
@@ -194,7 +242,7 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
     );
     if (!remoteHabitScopeValidation.isSafe) {
       _debugHabitPull(
-        'manual pull aborted: unsafe remote habit scope detected '
+        '$source pull aborted: unsafe remote habit scope detected '
         '(${remoteHabitScopeValidation.reason})',
       );
       return;
@@ -210,7 +258,7 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
       );
       if (!logsResult.isSuccess) {
         _debugHabitPull(
-          'manual pull failed while fetching logs for remote habit '
+          '$source pull failed while fetching logs for remote habit '
           '"$remoteHabitId": ${logsResult.error?.code.name}: '
           '${logsResult.error?.message}',
         );
@@ -225,7 +273,7 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
       );
       if (!remoteLogScopeValidation.isSafe) {
         _debugHabitPull(
-          'manual pull aborted: unsafe remote habit log scope detected '
+          '$source pull aborted: unsafe remote habit log scope detected '
           'for remoteHabitId="$remoteHabitId" '
           '(${remoteLogScopeValidation.reason})',
         );
@@ -237,13 +285,13 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
     if (scopeEpochAtStart != store._scopeEpoch ||
         scopeUserAtStart !=
             _normalizedScopeUserId(store._activeLocalScopeUserId)) {
-      _debugHabitPull('manual pull skipped: scope changed during fetch');
+      _debugHabitPull('$source pull skipped: scope changed during fetch');
       return;
     }
 
     final root = store._state;
     if (root == null) {
-      _debugHabitPull('manual pull skipped: local state unavailable');
+      _debugHabitPull('$source pull skipped: local state unavailable');
       return;
     }
 
@@ -264,7 +312,8 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
     );
 
     if (!mergedHabits.changed && !mergedLogs.changed) {
-      _debugHabitPull('manual pull completed: no local habit changes applied');
+      store._lastHabitsRemotePullSuccessAt = store._nowProvider();
+      _debugHabitPull('$source pull completed: no local habit changes applied');
       return;
     }
 
@@ -273,8 +322,9 @@ Future<void> _syncHabitsFromRemoteBestEffort(UserStateStore store) async {
         userState, _dateFromKey(_activeViewDateKey(userState)));
     root['userState'] = userState;
     await store.save(root);
+    store._lastHabitsRemotePullSuccessAt = store._nowProvider();
   } catch (error) {
-    _debugHabitPull('manual pull unexpected error: $error');
+    _debugHabitPull('$source pull unexpected error: $error');
   } finally {
     store._isHabitsRemotePullRunning = false;
   }

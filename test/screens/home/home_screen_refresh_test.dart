@@ -10,7 +10,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   Provider.debugCheckInvalidValueType = null;
 
-  testWidgets('home screen open does not start habits sync automatically',
+  testWidgets('home screen open asks store for controlled habits auto sync',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final store = _FakeHomeStore();
@@ -18,6 +18,7 @@ void main() {
     await tester.pumpWidget(_app(store: store));
     await tester.pumpAndSettle();
 
+    expect(store.maybeSyncHabitsFromRemoteBestEffortCalls, 1);
     expect(store.syncHabitsFromRemoteBestEffortCalls, 0);
     expect(find.text('Drink Water'), findsOneWidget);
   });
@@ -37,7 +38,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    expect(store.syncHabitsFromRemoteBestEffortCalls, 1);
+    expect(store.maybeSyncHabitsFromRemoteBestEffortCalls, 2);
+    expect(store.lastMaybeSyncIgnoreCooldown, isTrue);
+    expect(store.syncHabitsFromRemoteBestEffortCalls, 0);
     expect(find.text('Drink Water'), findsOneWidget);
     expect(store.pendingAchievementUnlockCount, 0);
     expect(store.pendingLevelCelebrationCount, 0);
@@ -59,8 +62,26 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
-    expect(store.syncHabitsFromRemoteBestEffortCalls, 1);
+    expect(store.maybeSyncHabitsFromRemoteBestEffortCalls, 2);
+    expect(store.lastMaybeSyncIgnoreCooldown, isTrue);
+    expect(store.syncHabitsFromRemoteBestEffortCalls, 0);
     expect(find.text('Drink Water'), findsOneWidget);
+  });
+
+  testWidgets('app resume asks store for controlled habits auto sync',
+      (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final store = _FakeHomeStore();
+
+    await tester.pumpWidget(_app(store: store));
+    await tester.pumpAndSettle();
+    expect(store.maybeSyncHabitsFromRemoteBestEffortCalls, 1);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+
+    expect(store.maybeSyncHabitsFromRemoteBestEffortCalls, 2);
+    expect(store.lastMaybeSyncIgnoreCooldown, isFalse);
   });
 }
 
@@ -86,6 +107,8 @@ class _FakeHomeStore extends ChangeNotifier implements UserStateStore {
 
   final Object? syncHabitsFromRemoteBestEffortError;
   int syncHabitsFromRemoteBestEffortCalls = 0;
+  int maybeSyncHabitsFromRemoteBestEffortCalls = 0;
+  bool? lastMaybeSyncIgnoreCooldown;
 
   @override
   bool get isLoading => false;
@@ -151,6 +174,17 @@ class _FakeHomeStore extends ChangeNotifier implements UserStateStore {
   Future<void> syncHabitsFromRemoteBestEffort() async {
     syncHabitsFromRemoteBestEffortCalls += 1;
     if (syncHabitsFromRemoteBestEffortError != null) {
+      throw syncHabitsFromRemoteBestEffortError!;
+    }
+  }
+
+  @override
+  Future<void> maybeSyncHabitsFromRemoteBestEffort({
+    bool ignoreCooldown = false,
+  }) async {
+    maybeSyncHabitsFromRemoteBestEffortCalls += 1;
+    lastMaybeSyncIgnoreCooldown = ignoreCooldown;
+    if (ignoreCooldown && syncHabitsFromRemoteBestEffortError != null) {
       throw syncHabitsFromRemoteBestEffortError!;
     }
   }
