@@ -824,26 +824,34 @@ extension AppLocalizationsEmojiPickerX on AppLocalizations {
         return _isSpanishEmojiPicker ? 'Recientes' : 'Recent';
       case 'frequent':
         return _isSpanishEmojiPicker ? 'Frecuentes' : 'Frequent';
-      case 'body_health':
+      case 'health':
         return _isSpanishEmojiPicker ? 'Salud' : 'Health';
-      case 'mind_focus':
-        return _isSpanishEmojiPicker ? 'Foco' : 'Focus';
-      case 'sleep_rest':
-        return _isSpanishEmojiPicker ? 'Sueno' : 'Sleep';
-      case 'food_drink':
-        return _isSpanishEmojiPicker ? 'Comida' : 'Food';
-      case 'work_study':
+      case 'sport':
+        return _isSpanishEmojiPicker ? 'Deporte' : 'Sport';
+      case 'mind':
+        return _isSpanishEmojiPicker ? 'Mente' : 'Mind';
+      case 'study':
+        return _isSpanishEmojiPicker ? 'Estudio' : 'Study';
+      case 'work':
         return _isSpanishEmojiPicker ? 'Trabajo' : 'Work';
-      case 'home_order':
+      case 'sleep':
+        return _isSpanishEmojiPicker ? 'Sueno' : 'Sleep';
+      case 'food':
+        return _isSpanishEmojiPicker ? 'Comida' : 'Food';
+      case 'home':
         return _isSpanishEmojiPicker ? 'Casa' : 'Home';
       case 'social':
         return _isSpanishEmojiPicker ? 'Social' : 'Social';
-      case 'sport':
-        return _isSpanishEmojiPicker ? 'Deporte' : 'Sport';
       case 'creativity':
         return _isSpanishEmojiPicker ? 'Creatividad' : 'Creative';
+      case 'finance':
+        return _isSpanishEmojiPicker ? 'Finanzas' : 'Finance';
       case 'nature':
         return _isSpanishEmojiPicker ? 'Naturaleza' : 'Nature';
+      case 'spirituality':
+        return _isSpanishEmojiPicker ? 'Calma' : 'Spirit';
+      case 'leisure':
+        return _isSpanishEmojiPicker ? 'Ocio' : 'Leisure';
       default:
         return _isSpanishEmojiPicker ? 'Otros' : 'Other';
     }
