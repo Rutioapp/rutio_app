@@ -1858,7 +1858,37 @@ Future<void> _addHabitFromCatalog(
 
   final type = _normalizedHabitType(habitDef['type']);
   final metric = _map(habitDef['metric']);
-  final resolvedTarget = target ?? (type == 'check' ? 1 : 10);
+  final resolvedTarget = _safePositiveNum(
+    target ?? (type == 'check' ? 1 : 10),
+    fallback: type == 'check' ? 1 : 10,
+  );
+  final rawResolvedUnit = type == 'count'
+      ? (habitDef['unit'] ??
+              habitDef['unitLabel'] ??
+              metric['unit'] ??
+              metric['label'] ??
+              '')
+          .toString()
+          .trim()
+      : '';
+  final resolvedUnit = rawResolvedUnit.isEmpty ? null : rawResolvedUnit;
+  final requestedSchedule = _habitSchedule(
+    scheduleType: scheduleType,
+    scheduledDate: scheduledDate,
+    weekdays: weekdays,
+  );
+  final resolvedSchedule = _resolvedScheduleForHabitSave(
+    habitType: type,
+    source: <String, dynamic>{
+      ...habitDef,
+      'type': type,
+      'target': resolvedTarget,
+      'targetCount': resolvedTarget,
+      if (resolvedUnit != null) 'unit': resolvedUnit,
+      'schedule': requestedSchedule,
+    },
+    fallbackSchedule: requestedSchedule,
+  );
 
   final normalizedRoutine =
       routine == null || routine.trim().isEmpty ? null : routine.trim();
@@ -1871,16 +1901,14 @@ Future<void> _addHabitFromCatalog(
     'emoji': (habitDef['emoji'] ?? '?').toString(),
     'familyId': familyId,
     'type': type,
-    'unit': metric['unit'],
+    'unit': resolvedUnit,
+    'unitLabel': resolvedUnit,
     'target': resolvedTarget,
+    'targetCount': resolvedTarget,
     'progress': 0,
     'doneToday': false,
     'skippedToday': false,
-    'schedule': _habitSchedule(
-      scheduleType: scheduleType,
-      scheduledDate: scheduledDate,
-      weekdays: weekdays,
-    ),
+    'schedule': resolvedSchedule,
     'routine': normalizedRoutine,
     if (initialRemoteId != null) 'remoteId': initialRemoteId,
   });
@@ -1950,6 +1978,10 @@ Future<void> _addCustomHabit(
   final resolvedEmoji =
       rawEmoji.isNotEmpty ? rawEmoji : FamilyTheme.emojiOf(resolvedFamilyId);
   final initialRemoteId = _habitRemoteIdValue(habit);
+  final rawUnit = (habit['unit'] ?? habit['unitLabel'] ?? '').toString().trim();
+  final resolvedUnit = type == 'count' && rawUnit.isNotEmpty ? rawUnit : null;
+  final resolvedTarget =
+      type == 'count' ? _safePositiveNum(habit['target'], fallback: 1) : 1;
 
   activeHabits.add(<String, dynamic>{
     'id': id,
@@ -1961,9 +1993,10 @@ Future<void> _addCustomHabit(
     'familyId': resolvedFamilyId,
     'allFamilies': allFamilies,
     'type': type,
-    'unit': type == 'count' ? habit['unit'] : null,
-    'target':
-        type == 'count' ? _safePositiveNum(habit['target'], fallback: 1) : 1,
+    'unit': resolvedUnit,
+    'unitLabel': resolvedUnit,
+    'target': resolvedTarget,
+    'targetCount': resolvedTarget,
     'progress': 0,
     'doneToday': false,
     'skippedToday': false,
