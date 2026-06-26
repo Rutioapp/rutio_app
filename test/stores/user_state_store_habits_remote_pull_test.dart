@@ -417,6 +417,50 @@ void main() {
           isFalse);
     });
 
+    test('foreign remote logs abort before partial habit merge', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitLogRepository = _FakeHabitLogRepository(
+        logsByRemoteHabitId: <String, List<RemoteHabitLog>>{
+          '550e8400-e29b-41d4-a716-446655440000': <RemoteHabitLog>[
+            RemoteHabitLog(
+              id: '660e8400-e29b-41d4-a716-446655440096',
+              userId: 'user-999',
+              habitId: '550e8400-e29b-41d4-a716-446655440000',
+              logDate: DateTime(2026, 6, 21),
+              value: 1,
+              isCompleted: true,
+              source: 'manual',
+              updatedAt: DateTime.utc(2026, 6, 21, 7),
+            ),
+          ],
+        },
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'Should Not Partially Merge',
+            ),
+          ],
+        ),
+        habitLogRepository: habitLogRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(id: 'habit-1', name: 'Local Only'),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.single['name'], 'Local Only');
+      final history = ((store.state!['userState'] as Map)['history'] as Map);
+      expect((history['habitCompletions'] as Map).containsKey('2026-06-21'),
+          isFalse);
+    });
+
     test('missing remote log user id aborts merge and keeps local progress unchanged',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -459,6 +503,50 @@ void main() {
 
       await store.syncHabitsFromRemoteBestEffort();
 
+      final history = ((store.state!['userState'] as Map)['history'] as Map);
+      expect((history['habitCompletions'] as Map).containsKey('2026-06-21'),
+          isFalse);
+    });
+
+    test('missing remote log user id aborts before partial habit merge',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitLogRepository = _FakeHabitLogRepository(
+        logsByRemoteHabitId: <String, List<RemoteHabitLog>>{
+          '550e8400-e29b-41d4-a716-446655440000': <RemoteHabitLog>[
+            RemoteHabitLog(
+              id: '660e8400-e29b-41d4-a716-446655440095',
+              userId: '',
+              habitId: '550e8400-e29b-41d4-a716-446655440000',
+              logDate: DateTime(2026, 6, 21),
+              value: 1,
+              isCompleted: true,
+              source: 'manual',
+            ),
+          ],
+        },
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'Should Not Partially Merge',
+            ),
+          ],
+        ),
+        habitLogRepository: habitLogRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(id: 'habit-1', name: 'Local Only'),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.single['name'], 'Local Only');
       final history = ((store.state!['userState'] as Map)['history'] as Map);
       expect((history['habitCompletions'] as Map).containsKey('2026-06-21'),
           isFalse);
