@@ -810,6 +810,44 @@ extension AppLocalizationsEmojiPickerX on AppLocalizations {
 
   String get emojiPickerSearchHint =>
       _isSpanishEmojiPicker ? 'Buscar emoji' : 'Search emoji';
+
+  String get emojiPickerHabitSubtitle => _isSpanishEmojiPicker
+      ? 'Personaliza tu habito con un icono que te motive'
+      : 'Personalize your habit with an icon that keeps you motivated';
+
+  String get emojiPickerNoResults =>
+      _isSpanishEmojiPicker ? 'No se encontraron emojis' : 'No emoji found';
+
+  String emojiPickerCategoryLabel(String category) {
+    switch (category) {
+      case 'recent':
+        return _isSpanishEmojiPicker ? 'Recientes' : 'Recent';
+      case 'frequent':
+        return _isSpanishEmojiPicker ? 'Frecuentes' : 'Frequent';
+      case 'body_health':
+        return _isSpanishEmojiPicker ? 'Salud' : 'Health';
+      case 'mind_focus':
+        return _isSpanishEmojiPicker ? 'Foco' : 'Focus';
+      case 'sleep_rest':
+        return _isSpanishEmojiPicker ? 'Sueno' : 'Sleep';
+      case 'food_drink':
+        return _isSpanishEmojiPicker ? 'Comida' : 'Food';
+      case 'work_study':
+        return _isSpanishEmojiPicker ? 'Trabajo' : 'Work';
+      case 'home_order':
+        return _isSpanishEmojiPicker ? 'Casa' : 'Home';
+      case 'social':
+        return _isSpanishEmojiPicker ? 'Social' : 'Social';
+      case 'sport':
+        return _isSpanishEmojiPicker ? 'Deporte' : 'Sport';
+      case 'creativity':
+        return _isSpanishEmojiPicker ? 'Creatividad' : 'Creative';
+      case 'nature':
+        return _isSpanishEmojiPicker ? 'Naturaleza' : 'Nature';
+      default:
+        return _isSpanishEmojiPicker ? 'Otros' : 'Other';
+    }
+  }
 }
 
 extension AppLocalizationsMonthlyX on AppLocalizations {

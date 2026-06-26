@@ -303,6 +303,8 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
               final selectedEmoji = await showEmojiPickerBottomSheet(
                 context,
                 currentEmoji: resolvedEmoji,
+                currentHabitName:
+                    (habit['title'] ?? habit['name'] ?? '').toString(),
                 accentColor: familyColor,
               );
               if (!context.mounted) return;
