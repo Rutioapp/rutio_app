@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/devtools/demo_seed/demo_seed_models.dart';
 import 'package:rutio/features/gamification/domain/level_progression.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -114,6 +115,99 @@ void main() {
       // expectation to assert balanced reward rollback semantics.
       expect(_xp(store), 10);
       expect(_coins(store), 5);
+    });
+
+    test('switching authenticated local scopes does not mix saved habit state',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      await _seedScopedStore(
+        scopeUserId: 'real-user-a',
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'habit-a', type: 'check', target: 1),
+        ],
+      );
+      await _seedScopedStore(
+        scopeUserId: 'real-user-b',
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'habit-b', type: 'check', target: 1),
+        ],
+      );
+
+      final repo = UserStateRepository(storage: UserStateStorage())
+        ..setActiveUserScope('real-user-a');
+      final store = UserStateStore(
+        repo,
+        journalEntrySyncService: JournalEntrySyncService(),
+      );
+
+      await store.load();
+      expect(store.activeHabits.map((habit) => habit['id']), <String>['habit-a']);
+
+      await store.switchLocalScope(userId: 'real-user-b');
+      expect(store.activeHabits.map((habit) => habit['id']), <String>['habit-b']);
+
+      await store.switchLocalScope(userId: 'real-user-a');
+      expect(store.activeHabits.map((habit) => habit['id']), <String>['habit-a']);
+    });
+
+    test('demo and authenticated scopes stay isolated from each other',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      await _seedScopedStore(
+        scopeUserId: DemoSeedScope.userId,
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'demo-habit', type: 'check', target: 1),
+        ],
+      );
+      await _seedScopedStore(
+        scopeUserId: 'real-user-auth',
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'auth-habit', type: 'check', target: 1),
+        ],
+      );
+
+      final demoStore =
+          await _reloadScopedStore(scopeUserId: DemoSeedScope.userId);
+      final authStore =
+          await _reloadScopedStore(scopeUserId: 'real-user-auth');
+
+      expect(
+        demoStore.activeHabits.map((habit) => habit['id']),
+        <String>['demo-habit'],
+      );
+      expect(
+        authStore.activeHabits.map((habit) => habit['id']),
+        <String>['auth-habit'],
+      );
+    });
+
+    test('guest scope does not read authenticated scoped state', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      await _seedScopedStore(
+        scopeUserId: 'real-user-auth',
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'auth-habit', type: 'check', target: 1),
+        ],
+      );
+
+      final repo = UserStateRepository(storage: UserStateStorage());
+      final guestStore = UserStateStore(
+        repo,
+        journalEntrySyncService: JournalEntrySyncService(),
+      );
+
+      await guestStore.load();
+
+      expect(guestStore.userId, isNull);
+      expect(guestStore.activeHabits, isEmpty);
     });
   });
 }

@@ -10,6 +10,18 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   Provider.debugCheckInvalidValueType = null;
 
+  testWidgets('home screen open does not start habits sync automatically',
+      (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final store = _FakeHomeStore();
+
+    await tester.pumpWidget(_app(store: store));
+    await tester.pumpAndSettle();
+
+    expect(store.syncHabitsFromRemoteBestEffortCalls, 0);
+    expect(find.text('Drink Water'), findsOneWidget);
+  });
+
   testWidgets('pull-to-refresh triggers habits remote sync manually only',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
