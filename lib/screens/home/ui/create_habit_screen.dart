@@ -129,6 +129,7 @@ class _CreateHabitScreenState extends State<CreateHabitScreen> {
     final String? emoji = await showEmojiPickerBottomSheet(
       context,
       currentEmoji: _emoji,
+      currentHabitName: _titleController.text,
       accentColor: _familyColor,
     );
 

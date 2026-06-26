@@ -110,11 +110,12 @@ class _EditHabitTabState extends State<EditHabitTab> {
           await picker(context, _formData.emoji, _formData.currentFamilyColor);
     } else {
       // ignore: use_build_context_synchronously
-      selected = await showEmojiPickerBottomSheet(
-        context,
-        currentEmoji: _formData.emoji,
-        accentColor: _formData.currentFamilyColor,
-      );
+        selected = await showEmojiPickerBottomSheet(
+          context,
+          currentEmoji: _formData.emoji,
+          currentHabitName: _titleCtrl.text,
+          accentColor: _formData.currentFamilyColor,
+        );
     }
 
     if (!mounted || selected == null) {

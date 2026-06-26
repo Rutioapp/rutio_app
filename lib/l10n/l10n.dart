@@ -810,6 +810,52 @@ extension AppLocalizationsEmojiPickerX on AppLocalizations {
 
   String get emojiPickerSearchHint =>
       _isSpanishEmojiPicker ? 'Buscar emoji' : 'Search emoji';
+
+  String get emojiPickerHabitSubtitle => _isSpanishEmojiPicker
+      ? 'Personaliza tu habito con un icono que te motive'
+      : 'Personalize your habit with an icon that keeps you motivated';
+
+  String get emojiPickerNoResults =>
+      _isSpanishEmojiPicker ? 'No se encontraron emojis' : 'No emoji found';
+
+  String emojiPickerCategoryLabel(String category) {
+    switch (category) {
+      case 'recent':
+        return _isSpanishEmojiPicker ? 'Recientes' : 'Recent';
+      case 'frequent':
+        return _isSpanishEmojiPicker ? 'Frecuentes' : 'Frequent';
+      case 'health':
+        return _isSpanishEmojiPicker ? 'Salud' : 'Health';
+      case 'sport':
+        return _isSpanishEmojiPicker ? 'Deporte' : 'Sport';
+      case 'mind':
+        return _isSpanishEmojiPicker ? 'Mente' : 'Mind';
+      case 'study':
+        return _isSpanishEmojiPicker ? 'Estudio' : 'Study';
+      case 'work':
+        return _isSpanishEmojiPicker ? 'Trabajo' : 'Work';
+      case 'sleep':
+        return _isSpanishEmojiPicker ? 'Sueno' : 'Sleep';
+      case 'food':
+        return _isSpanishEmojiPicker ? 'Comida' : 'Food';
+      case 'home':
+        return _isSpanishEmojiPicker ? 'Casa' : 'Home';
+      case 'social':
+        return _isSpanishEmojiPicker ? 'Social' : 'Social';
+      case 'creativity':
+        return _isSpanishEmojiPicker ? 'Creatividad' : 'Creative';
+      case 'finance':
+        return _isSpanishEmojiPicker ? 'Finanzas' : 'Finance';
+      case 'nature':
+        return _isSpanishEmojiPicker ? 'Naturaleza' : 'Nature';
+      case 'spirituality':
+        return _isSpanishEmojiPicker ? 'Calma' : 'Spirit';
+      case 'leisure':
+        return _isSpanishEmojiPicker ? 'Ocio' : 'Leisure';
+      default:
+        return _isSpanishEmojiPicker ? 'Otros' : 'Other';
+    }
+  }
 }
 
 extension AppLocalizationsMonthlyX on AppLocalizations {
