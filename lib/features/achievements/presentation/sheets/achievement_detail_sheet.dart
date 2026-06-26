@@ -220,23 +220,23 @@ class _AchievementDetailSheet extends StatelessWidget {
           );
         case 'special:turista':
           return _metricLabelForCount(
-            unlocked: 'familias exploradas',
-            pending: 'familias distintas con progreso',
+            unlocked: 'familias distintas en tu mejor ventana semanal',
+            pending: 'familias distintas dentro de 7 dias',
           );
         case 'special:polimota':
           return _metricLabelForCount(
-            unlocked: 'familias activas cubiertas',
-            pending: 'familias con al menos un habito activo',
+            unlocked: 'familias distintas en tu mejor ventana de 21 dias',
+            pending: 'familias distintas dentro de 21 dias',
           );
         case 'special:hay_alguien_ahi':
           return _metricLabelForCount(
-            unlocked: 'dias sociales completados',
-            pending: 'dias distintos con progreso social',
+            unlocked: 'habitos sociales completados',
+            pending: 'habitos sociales totales',
           );
         case 'special:ave_fenix':
           return _metricLabelForCount(
-            unlocked: 'recuperacion conseguida',
-            pending: 'rachas recuperadas tras una caida',
+            unlocked: 'vueltas tras una pausa larga',
+            pending: 'vueltas tras 2 dias o mas sin actividad',
           );
         case 'special:perfeccionista':
           return _metricLabelForCount(
@@ -245,8 +245,8 @@ class _AchievementDetailSheet extends StatelessWidget {
           );
         case 'special:el_centurion':
           return _metricLabelForCount(
-            unlocked: 'completados acumulados',
-            pending: 'completados totales necesarios',
+            unlocked: 'dias con constancia mayoritaria',
+            pending: 'dias con mas del 50% completado',
           );
         case 'special:imparable':
           return _metricLabelForCount(

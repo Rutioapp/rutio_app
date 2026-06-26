@@ -64,18 +64,18 @@ class AchievementCatalog {
     _SpecialAchievementDefinition(
       id: 'special:madrugador',
       title: 'Madrugador',
-      description: 'Completa 20 habitos antes de las 09:00.',
+      description: 'Completa 50 habitos antes de las 09:00.',
       assetFileName: 'Logro - Madrugador.png',
-      targetValue: 20,
+      targetValue: 50,
       sortIndex: 0,
       tier: AchievementTier.silver,
     ),
     _SpecialAchievementDefinition(
       id: 'special:buho_nocturno',
       title: 'Buho nocturno',
-      description: 'Completa 20 habitos despues de las 22:00.',
+      description: 'Completa 50 habitos despues de las 22:00.',
       assetFileName: 'Logro - B\u00FAho Nocturno.png',
-      targetValue: 20,
+      targetValue: 50,
       sortIndex: 1,
       tier: AchievementTier.silver,
     ),
@@ -110,7 +110,7 @@ class AchievementCatalog {
       id: 'special:turista',
       title: 'Turista',
       description:
-          'Explora 6 familias distintas con al menos un habito completado.',
+          'Completa habitos de 6 familias distintas dentro de una ventana de 7 dias.',
       assetFileName: 'Logro - Turista.png',
       targetValue: 6,
       sortIndex: 5,
@@ -119,7 +119,8 @@ class AchievementCatalog {
     _SpecialAchievementDefinition(
       id: 'special:polimota',
       title: 'Polimota',
-      description: 'Manten al menos un habito activo en cada familia de Rutio.',
+      description:
+          'Completa habitos de las 7 familias dentro de una ventana de 21 dias.',
       assetFileName: 'Logro - Polimota.png',
       targetValue: 7,
       sortIndex: 6,
@@ -128,18 +129,19 @@ class AchievementCatalog {
     _SpecialAchievementDefinition(
       id: 'special:hay_alguien_ahi',
       title: '\u00BFHay alguien ahi?',
-      description: 'Completa habitos sociales en 12 dias distintos.',
+      description: 'Completa 15 habitos sociales en total.',
       assetFileName: 'Logro - \u00BFHay alguien alli_.png',
-      targetValue: 12,
+      targetValue: 15,
       sortIndex: 7,
       tier: AchievementTier.wood,
     ),
     _SpecialAchievementDefinition(
       id: 'special:ave_fenix',
       title: 'Ave fenix',
-      description: 'Recupera una racha despues de haberla roto 2 veces.',
+      description:
+          'Vuelve a completar un habito tras 2 dias o mas sin actividad.',
       assetFileName: 'Logro - Ave Fenix.png',
-      targetValue: 2,
+      targetValue: 1,
       sortIndex: 8,
       tier: AchievementTier.gold,
     ),
@@ -156,7 +158,8 @@ class AchievementCatalog {
     _SpecialAchievementDefinition(
       id: 'special:el_centurion',
       title: 'El centurion',
-      description: 'Completa 150 habitos en total.',
+      description:
+          'Completa 150 dias con mas del 50% de constancia diaria.',
       assetFileName: 'Logro - El centurion.png',
       targetValue: 150,
       sortIndex: 10,

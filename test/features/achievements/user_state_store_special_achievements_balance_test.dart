@@ -89,28 +89,231 @@ void main() {
     });
 
     test(
-        'el centurion no longer unlocks at the old threshold of 100 total completions',
+        'turista no longer unlocks when 6 families are spread outside a 7-day window',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
-      const scopeUserId = 'achievements-balance-centurion-old-threshold';
+      const scopeUserId = 'achievements-balance-turista-old-semantics';
       final today = DateTime.now();
-      final habit = _habit(
-        id: 'centurion-old',
-        familyId: 'body',
-        type: 'check',
-        target: 1,
-      );
+      final familyIds = <String>[
+        'mind',
+        'spirit',
+        'body',
+        'emotional',
+        'social',
+        'discipline',
+      ];
+      final habits = familyIds
+          .map(
+            (familyId) => _habit(
+              id: 'turista-$familyId',
+              familyId: familyId,
+              type: 'check',
+              target: 1,
+            ),
+          )
+          .toList(growable: false);
 
       await _seedStore(
         scopeUserId: scopeUserId,
         state: _baseState(
           userId: scopeUserId,
-          habits: <Map<String, dynamic>>[habit],
-          completionsByDay: _dailyCheckCompletions(
-            habitId: habit['id'] as String,
+          habits: habits,
+          completionsByDay: _spreadFamilyCompletions(
+            habits: habits,
             endDate: today,
-            dayCount: 100,
+            spacingDays: 2,
+          ),
+        ),
+      );
+
+      final store = await _reloadStore(scopeUserId: scopeUserId);
+
+      expect(
+        store.unlockedAchievementsById.containsKey('special:turista'),
+        isFalse,
+      );
+      expect(
+        store.achievementMetricSnapshots['special:turista']?.bestStreak,
+        4,
+      );
+    });
+
+    test('turista unlocks with 6 families completed inside 7 days', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      const scopeUserId = 'achievements-balance-turista-new-semantics';
+      final today = DateTime.now();
+      final familyIds = <String>[
+        'mind',
+        'spirit',
+        'body',
+        'emotional',
+        'social',
+        'discipline',
+      ];
+      final habits = familyIds
+          .map(
+            (familyId) => _habit(
+              id: 'turista-fast-$familyId',
+              familyId: familyId,
+              type: 'check',
+              target: 1,
+            ),
+          )
+          .toList(growable: false);
+
+      await _seedStore(
+        scopeUserId: scopeUserId,
+        state: _baseState(
+          userId: scopeUserId,
+          habits: habits,
+          completionsByDay: _spreadFamilyCompletions(
+            habits: habits,
+            endDate: today,
+            spacingDays: 1,
+          ),
+        ),
+      );
+
+      final store = await _reloadStore(scopeUserId: scopeUserId);
+      final record = store.unlockedAchievementsById['special:turista'];
+      final achievement = AchievementCatalog.achievementForId('special:turista');
+
+      expect(record, isNotNull);
+      expect(record!.targetValue, 6);
+      expect(achievement?.targetValue, 6);
+    });
+
+    test('polimota no longer unlocks just for having 7 active families', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      const scopeUserId = 'achievements-balance-polimota-old-semantics';
+      final habits = <Map<String, dynamic>>[
+        _habit(id: 'polimota-mind', familyId: 'mind', type: 'check', target: 1),
+        _habit(
+          id: 'polimota-spirit',
+          familyId: 'spirit',
+          type: 'check',
+          target: 1,
+        ),
+        _habit(id: 'polimota-body', familyId: 'body', type: 'check', target: 1),
+        _habit(
+          id: 'polimota-emotional',
+          familyId: 'emotional',
+          type: 'check',
+          target: 1,
+        ),
+        _habit(
+          id: 'polimota-social',
+          familyId: 'social',
+          type: 'check',
+          target: 1,
+        ),
+        _habit(
+          id: 'polimota-discipline',
+          familyId: 'discipline',
+          type: 'check',
+          target: 1,
+        ),
+        _habit(
+          id: 'polimota-professional',
+          familyId: 'professional',
+          type: 'check',
+          target: 1,
+        ),
+      ];
+
+      await _seedStore(
+        scopeUserId: scopeUserId,
+        state: _baseState(
+          userId: scopeUserId,
+          habits: habits,
+        ),
+      );
+
+      final store = await _reloadStore(scopeUserId: scopeUserId);
+
+      expect(
+        store.unlockedAchievementsById.containsKey('special:polimota'),
+        isFalse,
+      );
+      expect(store.achievementMetricSnapshots['special:polimota']?.bestStreak, 0);
+    });
+
+    test('polimota unlocks with 7 families completed inside 21 days', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      const scopeUserId = 'achievements-balance-polimota-new-semantics';
+      final today = DateTime.now();
+      final habits = <Map<String, dynamic>>[
+        _habit(id: 'pm-mind', familyId: 'mind', type: 'check', target: 1),
+        _habit(id: 'pm-spirit', familyId: 'spirit', type: 'check', target: 1),
+        _habit(id: 'pm-body', familyId: 'body', type: 'check', target: 1),
+        _habit(
+          id: 'pm-emotional',
+          familyId: 'emotional',
+          type: 'check',
+          target: 1,
+        ),
+        _habit(id: 'pm-social', familyId: 'social', type: 'check', target: 1),
+        _habit(
+          id: 'pm-discipline',
+          familyId: 'discipline',
+          type: 'check',
+          target: 1,
+        ),
+        _habit(
+          id: 'pm-professional',
+          familyId: 'professional',
+          type: 'check',
+          target: 1,
+        ),
+      ];
+
+      await _seedStore(
+        scopeUserId: scopeUserId,
+        state: _baseState(
+          userId: scopeUserId,
+          habits: habits,
+          completionsByDay: _spreadFamilyCompletions(
+            habits: habits,
+            endDate: today,
+            spacingDays: 1,
+          ),
+        ),
+      );
+
+      final store = await _reloadStore(scopeUserId: scopeUserId);
+      final record = store.unlockedAchievementsById['special:polimota'];
+
+      expect(record, isNotNull);
+      expect(record!.targetValue, 7);
+    });
+
+    test(
+        'el centurion no longer unlocks with 150 days at exactly 50 percent completion',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      const scopeUserId = 'achievements-balance-centurion-old-semantics';
+      final today = DateTime.now();
+      final habits = <Map<String, dynamic>>[
+        _habit(id: 'centurion-a', familyId: 'body', type: 'check', target: 1),
+        _habit(id: 'centurion-b', familyId: 'mind', type: 'check', target: 1),
+      ];
+
+      await _seedStore(
+        scopeUserId: scopeUserId,
+        state: _baseState(
+          userId: scopeUserId,
+          habits: habits,
+          completionsByDay: _partialDailyCompletions(
+            completedHabitIdsByDay: List<List<String>>.generate(
+              150,
+              (_) => <String>['centurion-a'],
+            ),
+            endDate: today,
           ),
         ),
       );
@@ -123,32 +326,38 @@ void main() {
       );
       expect(
         store.achievementMetricSnapshots['special:el_centurion']?.bestStreak,
-        100,
+        0,
       );
     });
 
-    test('el centurion unlocks at the new threshold of 150 total completions',
+    test('el centurion unlocks with 150 majority-consistency days',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       const scopeUserId = 'achievements-balance-centurion-new-threshold';
       final today = DateTime.now();
-      final habit = _habit(
-        id: 'centurion-new',
-        familyId: 'body',
-        type: 'check',
-        target: 1,
-      );
+      final habits = <Map<String, dynamic>>[
+        _habit(id: 'centurion-1', familyId: 'body', type: 'check', target: 1),
+        _habit(id: 'centurion-2', familyId: 'mind', type: 'check', target: 1),
+        _habit(
+          id: 'centurion-3',
+          familyId: 'discipline',
+          type: 'check',
+          target: 1,
+        ),
+      ];
 
       await _seedStore(
         scopeUserId: scopeUserId,
         state: _baseState(
           userId: scopeUserId,
-          habits: <Map<String, dynamic>>[habit],
-          completionsByDay: _dailyCheckCompletions(
-            habitId: habit['id'] as String,
+          habits: habits,
+          completionsByDay: _partialDailyCompletions(
+            completedHabitIdsByDay: List<List<String>>.generate(
+              150,
+              (_) => <String>['centurion-1', 'centurion-2'],
+            ),
             endDate: today,
-            dayCount: 150,
           ),
         ),
       );
@@ -295,6 +504,113 @@ void main() {
       expect(record!.targetValue, 100);
       expect(achievement?.targetValue, 100);
     });
+
+    test('hay alguien ahi no longer unlocks with only 7 social days', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      const scopeUserId = 'achievements-balance-social-old-semantics';
+      final today = DateTime.now();
+      final habit = _habit(
+        id: 'social-old',
+        familyId: 'social',
+        type: 'check',
+        target: 1,
+      );
+
+      await _seedStore(
+        scopeUserId: scopeUserId,
+        state: _baseState(
+          userId: scopeUserId,
+          habits: <Map<String, dynamic>>[habit],
+          completionsByDay: _dailyCheckCompletions(
+            habitId: habit['id'] as String,
+            endDate: today,
+            dayCount: 7,
+          ),
+        ),
+      );
+
+      final store = await _reloadStore(scopeUserId: scopeUserId);
+
+      expect(
+        store.unlockedAchievementsById.containsKey('special:hay_alguien_ahi'),
+        isFalse,
+      );
+      expect(
+        store.achievementMetricSnapshots['special:hay_alguien_ahi']?.bestStreak,
+        7,
+      );
+    });
+
+    test('hay alguien ahi unlocks with 15 social completions', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      const scopeUserId = 'achievements-balance-social-new-semantics';
+      final today = DateTime.now();
+      final habits = <Map<String, dynamic>>[
+        _habit(id: 'social-1', familyId: 'social', type: 'check', target: 1),
+        _habit(id: 'social-2', familyId: 'social', type: 'check', target: 1),
+        _habit(id: 'social-3', familyId: 'social', type: 'check', target: 1),
+      ];
+
+      await _seedStore(
+        scopeUserId: scopeUserId,
+        state: _baseState(
+          userId: scopeUserId,
+          habits: habits,
+          completionsByDay: _partialDailyCompletions(
+            completedHabitIdsByDay: List<List<String>>.generate(
+              5,
+              (_) => <String>['social-1', 'social-2', 'social-3'],
+            ),
+            endDate: today,
+          ),
+        ),
+      );
+
+      final store = await _reloadStore(scopeUserId: scopeUserId);
+      final record = store.unlockedAchievementsById['special:hay_alguien_ahi'];
+
+      expect(record, isNotNull);
+      expect(record!.targetValue, 15);
+    });
+
+    test('ave fenix unlocks after returning from a 2-day inactivity gap',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      const scopeUserId = 'achievements-balance-ave-fenix-new-semantics';
+      final today = DateTime.now();
+      final habit = _habit(
+        id: 'ave-fenix',
+        familyId: 'mind',
+        type: 'check',
+        target: 1,
+      );
+
+      await _seedStore(
+        scopeUserId: scopeUserId,
+        state: _baseState(
+          userId: scopeUserId,
+          habits: <Map<String, dynamic>>[habit],
+          completionsByDay: _partialDailyCompletions(
+            completedHabitIdsByDay: <List<String>>[
+              <String>[habit['id'] as String],
+              <String>[],
+              <String>[],
+              <String>[habit['id'] as String],
+            ],
+            endDate: today,
+          ),
+        ),
+      );
+
+      final store = await _reloadStore(scopeUserId: scopeUserId);
+      final record = store.unlockedAchievementsById['special:ave_fenix'];
+
+      expect(record, isNotNull);
+      expect(record!.targetValue, 1);
+    });
   });
 }
 
@@ -425,6 +741,40 @@ Map<String, Map<String, dynamic>> _dailyCheckCompletions({
   for (var offset = 0; offset < dayCount; offset += 1) {
     final day = endDate.subtract(Duration(days: offset));
     output[_dateKey(day)] = <String, dynamic>{habitId: true};
+  }
+
+  return output;
+}
+
+Map<String, Map<String, dynamic>> _spreadFamilyCompletions({
+  required List<Map<String, dynamic>> habits,
+  required DateTime endDate,
+  required int spacingDays,
+}) {
+  final output = <String, Map<String, dynamic>>{};
+
+  for (var index = 0; index < habits.length; index += 1) {
+    final day = endDate.subtract(Duration(days: index * spacingDays));
+    output[_dateKey(day)] = <String, dynamic>{habits[index]['id'] as String: true};
+  }
+
+  return output;
+}
+
+Map<String, Map<String, dynamic>> _partialDailyCompletions({
+  required List<List<String>> completedHabitIdsByDay,
+  required DateTime endDate,
+}) {
+  final output = <String, Map<String, dynamic>>{};
+
+  for (var offset = 0; offset < completedHabitIdsByDay.length; offset += 1) {
+    final habitIds = completedHabitIdsByDay[offset];
+    if (habitIds.isEmpty) continue;
+
+    final day = endDate.subtract(Duration(days: offset));
+    output[_dateKey(day)] = <String, dynamic>{
+      for (final habitId in habitIds) habitId: true,
+    };
   }
 
   return output;

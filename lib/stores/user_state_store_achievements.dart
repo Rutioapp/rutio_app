@@ -195,12 +195,15 @@ class _AchievementHistoryStats {
     required this.activeHabitCount,
     required this.activeFamilyCount,
     required this.completedFamilyCount,
+    required this.bestSevenDayFamilyDiversity,
+    required this.bestTwentyOneDayFamilyDiversity,
     required this.earlyCompletionCount,
     required this.exactTargetHitCount,
     required this.lateCompletionCount,
     required this.onTimeCompletionCount,
     required this.weekendCompletionDays,
     required this.perfectDays,
+    required this.majorityCompletionDays,
     required this.bestDailyCompletions,
     required this.bestHabitStreak,
     required this.completionDays,
@@ -208,19 +211,24 @@ class _AchievementHistoryStats {
     required this.currentGlobalStreak,
     required this.bestGlobalStreak,
     required this.recoveryCount,
+    required this.comebackAfterGapCount,
     required this.socialCompletionDays,
+    required this.socialCompletionCount,
     required this.unlockedAchievementCount,
   });
 
   final int activeHabitCount;
   final int activeFamilyCount;
   final int completedFamilyCount;
+  final int bestSevenDayFamilyDiversity;
+  final int bestTwentyOneDayFamilyDiversity;
   final int earlyCompletionCount;
   final int exactTargetHitCount;
   final int lateCompletionCount;
   final int onTimeCompletionCount;
   final int weekendCompletionDays;
   final int perfectDays;
+  final int majorityCompletionDays;
   final int bestDailyCompletions;
   final int bestHabitStreak;
   final int completionDays;
@@ -228,7 +236,9 @@ class _AchievementHistoryStats {
   final int currentGlobalStreak;
   final int bestGlobalStreak;
   final int recoveryCount;
+  final int comebackAfterGapCount;
   final int socialCompletionDays;
+  final int socialCompletionCount;
   final int unlockedAchievementCount;
 }
 
@@ -538,25 +548,25 @@ Map<String, HabitStreakSnapshot> _specialAchievementSnapshotsFromUserState(
       case 'special:turista':
         output[achievement.id] = _snapshotFromMetricValue(
           achievement.id,
-          value: stats.completedFamilyCount,
+          value: stats.bestSevenDayFamilyDiversity,
         );
         break;
       case 'special:polimota':
         output[achievement.id] = _snapshotFromMetricValue(
           achievement.id,
-          value: stats.activeFamilyCount,
+          value: stats.bestTwentyOneDayFamilyDiversity,
         );
         break;
       case 'special:hay_alguien_ahi':
         output[achievement.id] = _snapshotFromMetricValue(
           achievement.id,
-          value: stats.socialCompletionDays,
+          value: stats.socialCompletionCount,
         );
         break;
       case 'special:ave_fenix':
         output[achievement.id] = _snapshotFromMetricValue(
           achievement.id,
-          value: stats.recoveryCount,
+          value: stats.comebackAfterGapCount,
         );
         break;
       case 'special:perfeccionista':
@@ -574,7 +584,7 @@ Map<String, HabitStreakSnapshot> _specialAchievementSnapshotsFromUserState(
       case 'special:el_centurion':
         output[achievement.id] = _snapshotFromMetricValue(
           achievement.id,
-          value: stats.totalCompletions,
+          value: stats.majorityCompletionDays,
         );
         break;
       case 'special:imparable':
@@ -633,14 +643,17 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
     ..sort();
 
   final globalCountsByDay = <DateTime, int>{};
+  final completedFamiliesByDay = <DateTime, Set<String>>{};
   final completedFamilyIds = <String>{};
   final socialDays = <DateTime>{};
+  var socialCompletionCount = 0;
   var earlyCompletionCount = 0;
   var exactTargetHitCount = 0;
   var lateCompletionCount = 0;
   var onTimeCompletionCount = 0;
   var weekendCompletionDays = 0;
   var perfectDays = 0;
+  var majorityCompletionDays = 0;
   var bestDailyCompletions = 0;
   var totalCompletions = 0;
 
@@ -653,6 +666,7 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
 
     var scheduledCount = 0;
     final completedToday = <String>{};
+    final completedFamiliesToday = <String>{};
 
     for (final habit in activeHabits) {
       if (!_isScheduledForDate(habit, day)) continue;
@@ -671,9 +685,12 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
 
       completedToday.add(habitId);
       totalCompletions += 1;
-      completedFamilyIds.add(_habitFamilyId(habit));
-      if (_habitFamilyId(habit) == FamilyTheme.social) {
+      final familyId = _habitFamilyId(habit);
+      completedFamilyIds.add(familyId);
+      completedFamiliesToday.add(familyId);
+      if (familyId == FamilyTheme.social) {
         socialDays.add(day);
+        socialCompletionCount += 1;
       }
       if (_isExactTargetHit(habit, countValueMap: countValueMap)) {
         exactTargetHitCount += 1;
@@ -688,6 +705,8 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
 
     if (completedToday.isEmpty) continue;
 
+    completedFamiliesByDay[day] = completedFamiliesToday;
+
     if (day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
       weekendCompletionDays += 1;
     }
@@ -698,6 +717,10 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
 
     if (scheduledCount > 0 && completedToday.length >= scheduledCount) {
       perfectDays += 1;
+    }
+
+    if (scheduledCount > 0 && (completedToday.length * 2) > scheduledCount) {
+      majorityCompletionDays += 1;
     }
 
     for (final entry in timeMap.entries) {
@@ -735,6 +758,14 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
   final completionDays = globalCountsByDay.values
       .where((value) => value > 0)
       .length;
+  final bestSevenDayFamilyDiversity = _computeMaxDistinctFamiliesInWindow(
+    completedFamiliesByDay,
+    windowLengthDays: 7,
+  );
+  final bestTwentyOneDayFamilyDiversity = _computeMaxDistinctFamiliesInWindow(
+    completedFamiliesByDay,
+    windowLengthDays: 21,
+  );
 
   final achievements = _ensureAchievementsRoot(userState);
   final unlockedAchievementCount = _list(achievements['unlocked'])
@@ -746,12 +777,15 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
     activeHabitCount: activeHabits.length,
     activeFamilyCount: activeFamilyIds.length,
     completedFamilyCount: completedFamilyIds.length,
+    bestSevenDayFamilyDiversity: bestSevenDayFamilyDiversity,
+    bestTwentyOneDayFamilyDiversity: bestTwentyOneDayFamilyDiversity,
     earlyCompletionCount: earlyCompletionCount,
     exactTargetHitCount: exactTargetHitCount,
     lateCompletionCount: lateCompletionCount,
     onTimeCompletionCount: onTimeCompletionCount,
     weekendCompletionDays: weekendCompletionDays,
     perfectDays: perfectDays,
+    majorityCompletionDays: majorityCompletionDays,
     bestDailyCompletions: bestDailyCompletions,
     bestHabitStreak: bestHabitStreak,
     completionDays: completionDays,
@@ -759,9 +793,39 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
     currentGlobalStreak: _computeCurrentStreak(globalCountsByDay, DateTime.now()),
     bestGlobalStreak: _computeBestStreak(globalCountsByDay),
     recoveryCount: _computeRecoveryCount(globalCountsByDay),
+    comebackAfterGapCount: _computeComebackAfterGapCount(globalCountsByDay),
     socialCompletionDays: socialDays.length,
+    socialCompletionCount: socialCompletionCount,
     unlockedAchievementCount: unlockedAchievementCount,
   );
+}
+
+int _computeMaxDistinctFamiliesInWindow(
+  Map<DateTime, Set<String>> familiesByDay, {
+  required int windowLengthDays,
+}) {
+  if (familiesByDay.isEmpty || windowLengthDays <= 0) return 0;
+
+  final days = familiesByDay.keys.toList()..sort();
+  var best = 0;
+
+  for (var startIndex = 0; startIndex < days.length; startIndex += 1) {
+    final startDay = days[startIndex];
+    final endExclusive = startDay.add(Duration(days: windowLengthDays));
+    final familiesInWindow = <String>{};
+
+    for (var index = startIndex; index < days.length; index += 1) {
+      final day = days[index];
+      if (!day.isBefore(endExclusive)) break;
+      familiesInWindow.addAll(familiesByDay[day] ?? const <String>{});
+    }
+
+    if (familiesInWindow.length > best) {
+      best = familiesInWindow.length;
+    }
+  }
+
+  return best;
 }
 
 bool _isExactTargetHit(
@@ -863,6 +927,25 @@ int _computeRecoveryCount(Map<DateTime, int> countsByDay) {
   }
 
   return recoveries;
+}
+
+int _computeComebackAfterGapCount(Map<DateTime, int> countsByDay) {
+  final positiveDays = countsByDay.entries
+      .where((entry) => entry.value > 0)
+      .map((entry) => entry.key)
+      .toList()
+    ..sort();
+
+  if (positiveDays.length < 2) return 0;
+
+  var comebacks = 0;
+  for (var index = 1; index < positiveDays.length; index += 1) {
+    if (positiveDays[index].difference(positiveDays[index - 1]).inDays >= 3) {
+      comebacks += 1;
+    }
+  }
+
+  return comebacks;
 }
 
 int _computeCurrentStreak(Map<DateTime, int> countsByDay, DateTime today) {
