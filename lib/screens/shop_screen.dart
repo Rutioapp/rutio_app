@@ -20,6 +20,7 @@ void _navReplace(BuildContext context, Widget screen) {
 }
 
 class ShopScreen extends StatefulWidget {
+  // Legacy shop screen. Final shop UI will be rebuilt on top of features/shop.
   const ShopScreen({super.key});
 
   @override

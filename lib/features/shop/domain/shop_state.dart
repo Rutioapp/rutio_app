@@ -5,6 +5,7 @@ import 'package:rutio/features/shop/domain/models/shop_model_utils.dart';
 
 class ShopState {
   const ShopState({
+    // Legacy snapshot only. Real currency lives in userState.wallet.coins.
     this.coins = 0,
     this.inventory = const <OwnedShopItem>[],
     this.backpackItems = const <BackpackItem>[],

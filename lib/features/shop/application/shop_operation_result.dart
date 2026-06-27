@@ -14,11 +14,13 @@ class ShopOperationResult {
   const ShopOperationResult({
     required this.status,
     required this.state,
+    required this.walletCoins,
     this.itemId,
   });
 
   final ShopOperationStatus status;
   final ShopState state;
+  final int walletCoins;
   final String? itemId;
 
   bool get isSuccess => status == ShopOperationStatus.success;
@@ -26,11 +28,13 @@ class ShopOperationResult {
   ShopOperationResult copyWith({
     ShopOperationStatus? status,
     ShopState? state,
+    int? walletCoins,
     Object? itemId = _resultUnset,
   }) {
     return ShopOperationResult(
       status: status ?? this.status,
       state: state ?? this.state,
+      walletCoins: walletCoins ?? this.walletCoins,
       itemId: identical(itemId, _resultUnset) ? this.itemId : itemId as String?,
     );
   }

@@ -53,14 +53,16 @@ void main() {
     test('purchases a cosmetic correctly', () {
       final item = ShopCatalog.getItemById('bg_basic_camel')!;
       final service = ShopService(
-        state: const ShopState(coins: 200),
+        state: const ShopState(coins: 999),
+        walletCoins: 200,
         nowMillisProvider: () => 111,
       );
 
       final result = service.purchaseItem(item);
 
       expect(result.status, ShopOperationStatus.success);
-      expect(result.state.coins, 100);
+      expect(result.walletCoins, 100);
+      expect(result.state.coins, 999);
       expect(result.state.inventory, hasLength(1));
       expect(result.state.inventory.first.itemId, 'bg_basic_camel');
       expect(result.state.inventory.first.acquiredAtMillis, 111);
@@ -69,13 +71,15 @@ void main() {
     test('purchases a utility correctly', () {
       final item = ShopCatalog.getItemById('utility_xp_boost_1d')!;
       final service = ShopService(
-        state: const ShopState(coins: 200),
+        state: const ShopState(coins: 777),
+        walletCoins: 200,
       );
 
       final result = service.purchaseItem(item);
 
       expect(result.status, ShopOperationStatus.success);
-      expect(result.state.coins, 125);
+      expect(result.walletCoins, 125);
+      expect(result.state.coins, 777);
       expect(
         result.state.backpackItems,
         const <BackpackItem>[
@@ -84,16 +88,40 @@ void main() {
       );
     });
 
+    test('purchasing the same utility twice increments backpack quantity', () {
+      final item = ShopCatalog.getItemById('utility_xp_boost_1d')!;
+      final firstPurchase = ShopService(
+        state: const ShopState(),
+        walletCoins: 300,
+      ).purchaseItem(item);
+
+      final secondPurchase = ShopService(
+        state: firstPurchase.state,
+        walletCoins: firstPurchase.walletCoins,
+      ).purchaseItem(item);
+
+      expect(secondPurchase.status, ShopOperationStatus.success);
+      expect(secondPurchase.walletCoins, 150);
+      expect(
+        secondPurchase.state.backpackItems,
+        const <BackpackItem>[
+          BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
+        ],
+      );
+    });
+
     test('does not purchase without enough coins', () {
       final item = ShopCatalog.getItemById('bg_landscape_dawn_hills')!;
       final service = ShopService(
-        state: const ShopState(coins: 200),
+        state: const ShopState(coins: 999),
+        walletCoins: 200,
       );
 
       final result = service.purchaseItem(item);
 
       expect(result.status, ShopOperationStatus.insufficientCoins);
-      expect(result.state, const ShopState(coins: 200));
+      expect(result.walletCoins, 200);
+      expect(result.state, const ShopState(coins: 999));
     });
 
     test('does not duplicate a cosmetic', () {
@@ -105,11 +133,13 @@ void main() {
             OwnedShopItem(itemId: 'bg_basic_camel'),
           ],
         ),
+        walletCoins: 500,
       );
 
       final result = service.purchaseItem(item);
 
       expect(result.status, ShopOperationStatus.alreadyOwned);
+      expect(result.walletCoins, 500);
       expect(result.state.coins, 500);
       expect(result.state.inventory, hasLength(1));
     });
@@ -122,6 +152,7 @@ void main() {
             OwnedShopItem(itemId: 'bg_basic_camel'),
           ],
         ),
+        walletCoins: 0,
       );
 
       final result = service.equipCosmetic(item);
@@ -134,6 +165,7 @@ void main() {
       final item = ShopCatalog.getItemById('bg_basic_camel')!;
       final service = ShopService(
         state: const ShopState(),
+        walletCoins: 0,
       );
 
       final result = service.equipCosmetic(item);
@@ -149,6 +181,7 @@ void main() {
             BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
           ],
         ),
+        walletCoins: 0,
       );
 
       final result = service.consumeBackpackItem('utility_xp_boost_1d');
@@ -169,6 +202,7 @@ void main() {
             BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 1),
           ],
         ),
+        walletCoins: 0,
       );
 
       final result = service.consumeBackpackItem('utility_xp_boost_1d');
@@ -177,14 +211,37 @@ void main() {
       expect(result.state.backpackItems, isEmpty);
     });
 
+    test('consuming an item with zero legacy quantity fails safely', () {
+      final service = ShopService(
+        state: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 0),
+          ],
+        ),
+        walletCoins: 0,
+      );
+
+      final result = service.consumeBackpackItem('utility_xp_boost_1d');
+
+      expect(result.status, ShopOperationStatus.backpackItemNotFound);
+      expect(
+        result.state.backpackItems,
+        const <BackpackItem>[
+          BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 0),
+        ],
+      );
+    });
+
     test('coins never go below zero', () {
       final service = ShopService(
         state: const ShopState(coins: 20),
+        walletCoins: 20,
       );
 
       final result = service.spendCoins(25);
 
       expect(result.status, ShopOperationStatus.insufficientCoins);
+      expect(result.walletCoins, 20);
       expect(result.state.coins, 20);
     });
 
@@ -192,6 +249,7 @@ void main() {
       final item = ShopCatalog.getItemById('utility_xp_boost_1d')!;
       final service = ShopService(
         state: const ShopState(),
+        walletCoins: 0,
       );
 
       final result = service.equipCosmetic(item);
@@ -207,6 +265,7 @@ void main() {
             habitCardItemId: 'habit_card_basic_sage',
           ),
         ),
+        walletCoins: 0,
       );
 
       final result = service.unequipCosmetic(CosmeticSlot.background);
@@ -214,6 +273,21 @@ void main() {
       expect(result.status, ShopOperationStatus.success);
       expect(result.state.equippedCosmetics.backgroundItemId, isNull);
       expect(result.state.equippedCosmetics.habitCardItemId, 'habit_card_basic_sage');
+    });
+
+    test('purchase flow uses wallet coins instead of ShopState coins', () {
+      final item = ShopCatalog.getItemById('bg_basic_camel')!;
+      final service = ShopService(
+        state: const ShopState(coins: 1000),
+        walletCoins: 0,
+      );
+
+      final result = service.purchaseItem(item);
+
+      expect(result.status, ShopOperationStatus.insufficientCoins);
+      expect(result.walletCoins, 0);
+      expect(result.state.coins, 1000);
+      expect(result.state.inventory, isEmpty);
     });
   });
 }

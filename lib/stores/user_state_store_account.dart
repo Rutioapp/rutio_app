@@ -533,33 +533,32 @@ Future<bool> _buyItem(
   final root = store._state;
   if (root == null) return false;
 
+  final item = ShopCatalog.getItemById(itemId);
+  if (item == null || item.priceCoins != price) return false;
+
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(userState);
 
   final wallet = _map(userState['wallet']);
   final coins = ((wallet['coins'] as num?) ?? 0).toInt();
+  final shopRepository = ShopLocalRepository();
+  final shopState = await shopRepository.load();
+  final result = ShopService(
+    state: shopState,
+    walletCoins: coins,
+  ).purchaseItem(item);
+  if (!result.isSuccess) return false;
 
-  if (coins < price) return false;
-
-  final inventory = _map(userState['inventory']);
-  final items =
-      _list(inventory['items']).map((entry) => entry.toString()).toList();
-
-  if (items.contains(itemId)) return false;
-
-  items.add(itemId);
-  wallet['coins'] = coins - price;
-  inventory['items'] = items;
-
+  wallet['coins'] = result.walletCoins;
   userState['wallet'] = wallet;
-  userState['inventory'] = inventory;
 
   await store.save(root);
+  await shopRepository.save(result.state);
   _queueBestEffortProgressAndRewardSync(
     store,
     userState: userState,
     xpDelta: 0,
-    coinsDelta: -price,
+    coinsDelta: -(coins - result.walletCoins),
     source: 'shop_purchase',
     currencyReason: 'shop_item_purchase',
   );
