@@ -411,13 +411,14 @@ void _queueBestEffortProgressAndRewardSync(
   }());
 }
 
-int _xpForCheck() => 10;
-int _coinsForCheck() => 5;
+int _xpForCheck() => RewardConstants.habitCheckXpReward;
+int _coinsForCheck() => RewardConstants.habitCheckAmbarReward;
 
 int _xpForCountCompletion(num target) =>
-    ((target / 5).ceil() * 2 + 5).clamp(5, 15);
+    RewardConstants.habitCountXpReward(target);
 
-int _coinsForCountCompletion(num xp) => (xp / 2).floor().clamp(0, 10);
+int _coinsForCountCompletion(num xp) =>
+    RewardConstants.habitCountAmbarReward(xp);
 
 num _habitTarget(Map<String, dynamic> habit) =>
     _safePositiveNum(habit['target'], fallback: 1);
@@ -563,6 +564,38 @@ void _applyHabitRewards(
   userState['wallet'] = wallet;
   userState['familyXp'] = familyXp;
   userState['daily'] = daily;
+}
+
+int _coinsForCompletedHabitReward(Map<String, dynamic> habit) {
+  if (!_isCountHabit(habit)) return _coinsForCheck();
+  final xpGain = _xpForCountCompletion(_habitTarget(habit));
+  return _coinsForCountCompletion(xpGain);
+}
+
+int _revokeGrantedHabitRewardCoins(
+  Map<String, dynamic> userState, {
+  required Map<String, dynamic> habit,
+  required String habitId,
+}) {
+  if (!_hasDailyRewardGrant(userState, habitId: habitId)) return 0;
+
+  final wallet = _map(userState['wallet']);
+  final currentCoins = _safeInt(wallet['coins'], fallback: 0);
+  final coinsToRevoke = _coinsForCompletedHabitReward(habit);
+  final revokedCoins =
+      coinsToRevoke <= 0 ? 0 : currentCoins.clamp(0, coinsToRevoke).toInt();
+
+  wallet['coins'] = currentCoins - revokedCoins;
+  userState['wallet'] = wallet;
+
+  final daily = _map(userState['daily']);
+  final currentDailyCoins = _safeInt(daily['coinsEarnedToday'], fallback: 0);
+  daily['coinsEarnedToday'] =
+      (currentDailyCoins - revokedCoins).clamp(0, 1 << 30).toInt();
+  userState['daily'] = daily;
+
+  _setDailyRewardGrant(userState, habitId: habitId, granted: false);
+  return revokedCoins;
 }
 
 _HabitProgressResult _setCountHabitProgress(

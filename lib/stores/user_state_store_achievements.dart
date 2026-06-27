@@ -84,7 +84,8 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
   for (final record in records) {
     if (rewardAppliedIds.contains(record.id)) continue;
 
-    final reward = AchievementRewards.getAchievementReward(record.tier);
+    final reward =
+        AchievementRewardResolver.resolveForUnlockedRecord(record);
     if (reward.rewardXp <= 0 && reward.rewardAmber <= 0) {
       rewardAppliedIds.add(record.id);
       continue;

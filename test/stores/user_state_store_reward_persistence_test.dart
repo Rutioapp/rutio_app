@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/constants/reward_constants.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
@@ -27,14 +28,20 @@ void main() {
 
       await store.completeHabit(habitId: 'habit-check');
 
-      expect(_xp(store), 10);
-      expect(_coins(store), 5);
-      expect(_level(store), LevelProgression.fromTotalXp(10).level);
+      expect(_xp(store), RewardConstants.habitCheckXpReward);
+      expect(_coins(store), RewardConstants.habitCheckAmbarReward);
+      expect(
+        _level(store),
+        LevelProgression.fromTotalXp(RewardConstants.habitCheckXpReward).level,
+      );
 
       final reloaded = await _reloadScopedStore(scopeUserId: scopeUserId);
-      expect(_xp(reloaded), 10);
-      expect(_coins(reloaded), 5);
-      expect(_level(reloaded), LevelProgression.fromTotalXp(10).level);
+      expect(_xp(reloaded), RewardConstants.habitCheckXpReward);
+      expect(_coins(reloaded), RewardConstants.habitCheckAmbarReward);
+      expect(
+        _level(reloaded),
+        LevelProgression.fromTotalXp(RewardConstants.habitCheckXpReward).level,
+      );
       expect(reloaded.userId, scopeUserId);
     });
 
@@ -55,18 +62,45 @@ void main() {
       expect(_coins(store), 0);
 
       await store.setCountHabitValue(habitId: 'habit-count', value: 5);
-      expect(_xp(store), 7);
-      expect(_coins(store), 3);
-      expect(_level(store), LevelProgression.fromTotalXp(7).level);
+      final expectedXp = RewardConstants.habitCountXpReward(5);
+      final expectedCoins = RewardConstants.habitCountAmbarReward(expectedXp);
+      expect(_xp(store), expectedXp);
+      expect(_coins(store), expectedCoins);
+      expect(_level(store), LevelProgression.fromTotalXp(expectedXp).level);
 
       await store.setCountHabitValue(habitId: 'habit-count', value: 9);
-      expect(_xp(store), 7);
-      expect(_coins(store), 3);
+      expect(_xp(store), expectedXp);
+      expect(_coins(store), expectedCoins);
 
       final reloaded = await _reloadScopedStore(scopeUserId: scopeUserId);
-      expect(_xp(reloaded), 7);
-      expect(_coins(reloaded), 3);
-      expect(_level(reloaded), LevelProgression.fromTotalXp(7).level);
+      expect(_xp(reloaded), expectedXp);
+      expect(_coins(reloaded), expectedCoins);
+      expect(_level(reloaded), LevelProgression.fromTotalXp(expectedXp).level);
+    });
+
+    test('count habit rollback removes granted coins and can re-grant later', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      const scopeUserId = 'real-user-count-rollback';
+      final store = await _seedScopedStore(
+        scopeUserId: scopeUserId,
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'habit-count-rollback', type: 'count', target: 5),
+        ],
+      );
+
+      await store.setCountHabitValue(habitId: 'habit-count-rollback', value: 5);
+      final expectedCoins = RewardConstants.habitCountAmbarReward(
+        RewardConstants.habitCountXpReward(5),
+      );
+      expect(_coins(store), expectedCoins);
+
+      await store.setCountHabitValue(habitId: 'habit-count-rollback', value: 4);
+      expect(_coins(store), 0);
+
+      await store.setCountHabitValue(habitId: 'habit-count-rollback', value: 5);
+      expect(_coins(store), expectedCoins);
     });
 
     test('logout/reset overlay guards do not block normal reward application',
@@ -86,12 +120,11 @@ void main() {
       store.restoreGamificationOverlaysAfterLogout();
       await store.completeHabit(habitId: 'habit-guard');
 
-      expect(_xp(store), 10);
-      expect(_coins(store), 5);
+      expect(_xp(store), RewardConstants.habitCheckXpReward);
+      expect(_coins(store), RewardConstants.habitCheckAmbarReward);
     });
 
-    test('uncompleting today keeps already granted reward (current behavior)',
-        () async {
+    test('uncompleting today removes granted coins and keeps XP', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final today = DateTime.now();
@@ -111,10 +144,60 @@ void main() {
         done: false,
       );
 
-      // TODO(product): if reversible rewards are introduced, update this
-      // expectation to assert balanced reward rollback semantics.
-      expect(_xp(store), 10);
-      expect(_coins(store), 5);
+      expect(_xp(store), RewardConstants.habitCheckXpReward);
+      expect(_coins(store), 0);
+    });
+
+    test('uncompleting a non-rewarded habit does not subtract coins', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final today = DateTime.now();
+      const scopeUserId = 'real-user-5';
+      final store = await _seedScopedStore(
+        scopeUserId: scopeUserId,
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'habit-no-reward', type: 'check', target: 1),
+        ],
+      );
+
+      await store.setHabitCompletion(
+        habitId: 'habit-no-reward',
+        date: today,
+        done: false,
+      );
+
+      expect(_xp(store), 0);
+      expect(_coins(store), 0);
+    });
+
+    test('coin rollback never makes wallet negative', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final today = DateTime.now();
+      const scopeUserId = 'real-user-6';
+      final store = await _seedScopedStore(
+        scopeUserId: scopeUserId,
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'habit-spend-then-undo', type: 'check', target: 1),
+        ],
+      );
+
+      await store.completeHabit(habitId: 'habit-spend-then-undo');
+      final wallet =
+          ((store.state?['userState'] as Map?)?['wallet'] as Map?)?.cast<String, dynamic>() ??
+              <String, dynamic>{};
+      wallet['coins'] = 0;
+      await store.save(store.state!);
+
+      await store.setHabitCompletion(
+        habitId: 'habit-spend-then-undo',
+        date: today,
+        done: false,
+      );
+
+      expect(_coins(store), 0);
     });
 
     test('switching authenticated local scopes does not mix saved habit state',

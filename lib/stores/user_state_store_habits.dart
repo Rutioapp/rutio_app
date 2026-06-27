@@ -2362,6 +2362,7 @@ Future<void> _setCountHabitValue(
 
   final rewardAlreadyGranted =
       _hasDailyRewardGrant(userState, habitId: habitId);
+  final wasCompletedBeforeChange = habit['doneToday'] == true;
   final progressResult = _setCountHabitProgress(
     habit,
     value: value,
@@ -2387,6 +2388,15 @@ Future<void> _setCountHabitValue(
     );
     _setDailyRewardGrant(userState, habitId: habitId, granted: true);
   }
+
+  final revokedCoins =
+      rewardAlreadyGranted && wasCompletedBeforeChange && habit['doneToday'] != true
+      ? _revokeGrantedHabitRewardCoins(
+          userState,
+          habit: habit,
+          habitId: habitId,
+        )
+      : 0;
 
   activeHabits[index] = habit;
   userState['activeHabits'] = activeHabits;
@@ -2418,6 +2428,16 @@ Future<void> _setCountHabitValue(
       source: 'habit_completion',
       xpReason: 'habit_completion_reward',
       currencyReason: 'habit_completion_reward',
+    );
+  }
+  if (revokedCoins != 0) {
+    _queueBestEffortProgressAndRewardSync(
+      store,
+      userState: userState,
+      xpDelta: 0,
+      coinsDelta: -revokedCoins,
+      source: 'refund',
+      currencyReason: 'habit_completion_rollback',
     );
   }
   for (final reward in achievementSyncOutcome.appliedRewards) {
@@ -2616,6 +2636,7 @@ Future<void> _setHabitCompletionForKey(
   if (index == -1) return;
   final habit = Map<String, dynamic>.from(activeHabits[index]);
   if (!_isHabitExpectedForDate(habit, date)) return;
+  var revokedCoins = 0;
 
   if (_isSameDay(date, DateTime.now())) {
     if (done) {
@@ -2623,6 +2644,11 @@ Future<void> _setHabitCompletionForKey(
       return;
     }
     final type = _normalizedHabitType(habit['type']);
+    revokedCoins = _revokeGrantedHabitRewardCoins(
+      userState,
+      habit: habit,
+      habitId: habitId,
+    );
 
     habit['doneToday'] = false;
     habit['skippedToday'] = false;
@@ -2654,6 +2680,16 @@ Future<void> _setHabitCompletionForKey(
   );
 
   await store.save(root);
+  if (revokedCoins != 0) {
+    _queueBestEffortProgressAndRewardSync(
+      store,
+      userState: userState,
+      xpDelta: 0,
+      coinsDelta: -revokedCoins,
+      source: 'refund',
+      currencyReason: 'habit_completion_rollback',
+    );
+  }
 
   final syncHabit = _activeHabitSnapshotForSync(userState, habitId);
   if (syncHabit != null) {
@@ -2687,8 +2723,16 @@ Future<void> _setHabitSkipForKey(
   if (index == -1) return;
   final habit = Map<String, dynamic>.from(activeHabits[index]);
   if (!_isHabitExpectedForDate(habit, date)) return;
+  var revokedCoins = 0;
 
   if (_isSameDay(date, DateTime.now())) {
+    revokedCoins = skipped
+        ? _revokeGrantedHabitRewardCoins(
+            userState,
+            habit: habit,
+            habitId: habitId,
+          )
+        : 0;
     habit['skippedToday'] = skipped;
     if (skipped) {
       habit['doneToday'] = false;
@@ -2740,6 +2784,16 @@ Future<void> _setHabitSkipForKey(
   }
 
   await store.save(root);
+  if (revokedCoins != 0) {
+    _queueBestEffortProgressAndRewardSync(
+      store,
+      userState: userState,
+      xpDelta: 0,
+      coinsDelta: -revokedCoins,
+      source: 'refund',
+      currencyReason: 'habit_completion_rollback',
+    );
+  }
 
   final syncHabit = _activeHabitSnapshotForSync(userState, habitId);
   if (syncHabit != null) {

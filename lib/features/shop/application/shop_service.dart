@@ -9,15 +9,17 @@ import 'package:rutio/features/shop/domain/shop_state.dart';
 class ShopService {
   ShopService({
     required this.state,
+    required this.walletCoins,
     int Function()? nowMillisProvider,
   }) : _nowMillisProvider =
             nowMillisProvider ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   final ShopState state;
+  final int walletCoins;
   final int Function() _nowMillisProvider;
 
   bool canAfford(ShopItem item) {
-    return state.coins >= item.priceCoins;
+    return walletCoins >= item.priceCoins;
   }
 
   bool ownsItem(String itemId) {
@@ -47,9 +49,9 @@ class ShopService {
       return _result(
         ShopOperationStatus.success,
         nextState: state.copyWith(
-          coins: state.coins - item.priceCoins,
           inventory: nextInventory,
         ),
+        walletCoins: walletCoins - item.priceCoins,
         itemId: item.id,
       );
     }
@@ -63,8 +65,8 @@ class ShopService {
       return _result(
         ShopOperationStatus.success,
         nextState: addResult.state.copyWith(
-          coins: addResult.state.coins - item.priceCoins,
         ),
+        walletCoins: walletCoins - item.priceCoins,
         itemId: item.id,
       );
     }
@@ -112,24 +114,24 @@ class ShopService {
       return _result(ShopOperationStatus.invalidQuantity);
     }
 
-    return _result(
-      ShopOperationStatus.success,
-      nextState: state.copyWith(coins: state.coins + amount),
-    );
-  }
+      return _result(
+        ShopOperationStatus.success,
+        walletCoins: walletCoins + amount,
+      );
+    }
 
   ShopOperationResult spendCoins(int amount) {
     if (amount < 0) {
       return _result(ShopOperationStatus.invalidQuantity);
     }
 
-    if (amount > state.coins) {
+    if (amount > walletCoins) {
       return _result(ShopOperationStatus.insufficientCoins);
     }
 
     return _result(
       ShopOperationStatus.success,
-      nextState: state.copyWith(coins: state.coins - amount),
+      walletCoins: walletCoins - amount,
     );
   }
 
@@ -163,6 +165,10 @@ class ShopService {
     }
 
     final current = nextItems[index];
+    if (current.quantity <= 0) {
+      return _result(ShopOperationStatus.backpackItemNotFound, itemId: itemId);
+    }
+
     if (current.quantity <= 1) {
       nextItems.removeAt(index);
     } else {
@@ -194,11 +200,13 @@ class ShopService {
   ShopOperationResult _result(
     ShopOperationStatus status, {
     ShopState? nextState,
+    int? walletCoins,
     String? itemId,
   }) {
     return ShopOperationResult(
       status: status,
       state: nextState ?? state,
+      walletCoins: walletCoins ?? this.walletCoins,
       itemId: itemId,
     );
   }

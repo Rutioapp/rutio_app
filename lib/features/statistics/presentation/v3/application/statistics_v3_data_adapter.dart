@@ -1420,14 +1420,15 @@ DateTime? _parseDateKey(String raw) {
   return DateTime(year, month, day);
 }
 
-int _xpForCheckCompletionReward() => 10;
+int _xpForCheckCompletionReward() => RewardConstants.habitCheckXpReward;
 
-int _amberForCheckCompletionReward() => 5;
+int _amberForCheckCompletionReward() => RewardConstants.habitCheckAmbarReward;
 
 int _xpForCountCompletionReward(num target) =>
-    ((target / 5).ceil() * 2 + 5).clamp(5, 15);
+    RewardConstants.habitCountXpReward(target);
 
-int _amberForCountCompletionReward(num xp) => (xp / 2).floor().clamp(0, 10);
+int _amberForCountCompletionReward(num xp) =>
+    RewardConstants.habitCountAmbarReward(xp);
 
 AchievementTier _safeAchievementTierForRewards(dynamic rawTier) {
   final key = (rawTier ?? '').toString().trim().toLowerCase();
