@@ -25,6 +25,7 @@ import 'utils/app_theme.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/root_gate.dart';
+import 'screens/shop_screen.dart';
 
 import 'screens/diary/diary_screen.dart';
 import 'screens/diary_v2/diary_v2_screen.dart';
@@ -148,6 +149,7 @@ class MyApp extends StatelessWidget {
               '/archived': (_) => ArchivedHabitsScreen(),
               '/stats': (_) => const StatisticsV3Screen(),
               StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
+              '/shop': (_) => const ShopScreen(),
             },
           ),
         ),

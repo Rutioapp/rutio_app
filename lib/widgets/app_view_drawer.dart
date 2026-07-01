@@ -24,6 +24,7 @@ class AppViewDrawer extends StatelessWidget {
     required this.onGoDiaryV2,
     required this.onGoArchived,
     required this.onGoStats,
+    this.onGoShop,
     required this.onGoProfile,
     this.selected,
   });
@@ -36,6 +37,7 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoDiaryV2;
   final VoidCallback onGoArchived;
   final VoidCallback onGoStats;
+  final VoidCallback? onGoShop;
   final VoidCallback onGoProfile;
 
   /// Valores sugeridos:
@@ -133,6 +135,15 @@ class AppViewDrawer extends StatelessWidget {
                       onTap: () => _go(context, onGoStats),
                     ),
                     const _DrawerDivider(),
+                    if (onGoShop != null) ...[
+                      _DrawerTile(
+                        icon: Icons.storefront_outlined,
+                        label: 'Tienda',
+                        isSelected: selected == 'shop',
+                        onTap: () => _go(context, onGoShop!),
+                      ),
+                      const _DrawerDivider(),
+                    ],
                     _DrawerTile(
                       icon: Icons.menu_book_outlined,
                       label: context.l10n.diaryTitle,

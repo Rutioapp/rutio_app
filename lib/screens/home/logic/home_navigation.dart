@@ -54,6 +54,7 @@ extension _HomeScreenNavigation on _HomeScreenState {
         );
       },
       onGoStats: () => _openStatsOverview(context),
+      onGoShop: () => Navigator.pushNamed(context, '/shop'),
       onGoProfile: () => _openProfileFromHome(context),
     );
   }
