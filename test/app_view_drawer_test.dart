@@ -218,6 +218,67 @@ void main() {
 
     expect(find.byType(StatisticsV3Screen), findsOneWidget);
   });
+
+  testWidgets('AppViewDrawer Tienda entry opens ShopFlowScreen via /shop', (
+    WidgetTester tester,
+  ) async {
+    final scaffoldKey = GlobalKey<ScaffoldState>();
+    final observer = _RecordingNavigatorObserver();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('es'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        navigatorObservers: [observer],
+        routes: {
+          '/shop': (_) => const SizedBox.shrink(),
+        },
+        home: Scaffold(
+          key: scaffoldKey,
+          drawer: AppViewDrawer(
+            onGoDaily: () {},
+            onGoWeekly: () {},
+            onGoMonthly: () {},
+            onGoTodo: () {},
+            onGoDiary: () {},
+            onGoDiaryV2: () {},
+            onGoArchived: () {},
+            onGoStats: () {},
+            onGoShop: () => Navigator.of(scaffoldKey.currentContext!)
+                .pushNamed('/shop'),
+            onGoProfile: () {},
+          ),
+          body: const SizedBox.shrink(),
+        ),
+      ),
+    );
+
+    scaffoldKey.currentState!.openDrawer();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('Tienda'));
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(observer.lastPushedRouteName, '/shop');
+    expect(find.text('Tienda'), findsOneWidget);
+  });
+}
+
+class _RecordingNavigatorObserver extends NavigatorObserver {
+  String? lastPushedRouteName;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    lastPushedRouteName = route.settings.name;
+    super.didPush(route, previousRoute);
+  }
 }
 
 class _DrawerStatsFakeStore implements UserStateStore {
