@@ -9,7 +9,7 @@ import 'package:rutio/utils/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final ShopItem cosmeticItem = ShopCatalog.getItemById('bg_basic_camel')!;
+  final ShopItem cosmeticItem = ShopCatalog.getItemById('wallpaper_warm_beige')!;
   final ShopItem utilityItem = ShopCatalog.getItemById('utility_xp_boost_1d')!;
 
   group('ShopItemDetailScreen', () {
@@ -26,10 +26,10 @@ void main() {
 
       expect(find.text('Detalle'), findsOneWidget);
       expect(find.byKey(const Key('shopItemDetailTitle')), findsOneWidget);
-      expect(find.text('Camel Canvas'), findsAtLeastNWidgets(1));
+      expect(find.text('Warm Beige Wallpaper'), findsAtLeastNWidgets(1));
       expect(find.byKey(const Key('shopItemDetailDescription')), findsOneWidget);
       expect(
-        find.text('Fondo liso camel para una presencia calida.'),
+        find.text('Fondo beige calido y liso para una base suave.'),
         findsOneWidget,
       );
     });

@@ -26,7 +26,7 @@ void main() {
         _app(
           _screen(
             ownedItemIds: const <String>{
-              'bg_basic_camel',
+              'wallpaper_warm_beige',
             },
           ),
         ),
@@ -42,7 +42,7 @@ void main() {
         _app(
           _screen(
             ownedItemIds: const <String>{
-              'bg_basic_camel',
+              'wallpaper_warm_beige',
             },
           ),
         ),

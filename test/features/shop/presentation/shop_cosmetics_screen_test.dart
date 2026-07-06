@@ -134,12 +134,12 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      await tester.ensureVisible(find.byKey(const Key('shopCosmeticCard-bg_basic_camel')));
+      await tester.ensureVisible(find.byKey(const Key('shopCosmeticCard-wallpaper_warm_beige')));
       await tester.pump(const Duration(milliseconds: 16));
-      await tester.tap(find.byKey(const Key('shopCosmeticCard-bg_basic_camel')));
+      await tester.tap(find.byKey(const Key('shopCosmeticCard-wallpaper_warm_beige')));
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(pressedItemId, 'bg_basic_camel');
+      expect(pressedItemId, 'wallpaper_warm_beige');
     });
 
     testWidgets('equipped item shows visual indicator',
@@ -148,9 +148,9 @@ void main() {
         _app(
           _screen(
             items: items,
-            ownedItemIds: const <String>{'bg_basic_camel'},
+            ownedItemIds: const <String>{'wallpaper_warm_beige'},
             equippedCosmetics: const EquippedCosmetics(
-              backgroundItemId: 'bg_basic_camel',
+              backgroundItemId: 'wallpaper_warm_beige',
             ),
           ),
         ),

@@ -27,14 +27,14 @@ void main() {
     test('purchaseItem cosmetic spends wallet and adds inventory', () async {
       final controller = await _createController(walletCoins: 200);
 
-      final result = await controller.purchaseItem('bg_basic_camel');
+      final result = await controller.purchaseItem('wallpaper_warm_beige');
 
       expect(result.status, ShopControllerStatus.success);
-      expect(result.walletCoins, 100);
-      expect(controller.getWalletCoins(), 100);
+      expect(result.walletCoins, 80);
+      expect(controller.getWalletCoins(), 80);
       expect(
         result.shopState.inventory.map((entry) => entry.itemId),
-        contains('bg_basic_camel'),
+        contains('wallpaper_warm_beige'),
       );
     });
 
@@ -75,14 +75,14 @@ void main() {
     test('purchaseItem without enough coins fails without mutating state',
         () async {
       final controller = await _createController(walletCoins: 10);
-      final beforeState = await controller.getItemState('bg_basic_camel');
+      final beforeState = await controller.getItemState('wallpaper_warm_beige');
 
-      final result = await controller.purchaseItem('bg_basic_camel');
+      final result = await controller.purchaseItem('wallpaper_warm_beige');
 
       expect(result.status, ShopControllerStatus.insufficientCoins);
       expect(controller.getWalletCoins(), 10);
       expect(result.shopState.inventory, isEmpty);
-      final afterState = await controller.getItemState('bg_basic_camel');
+      final afterState = await controller.getItemState('wallpaper_warm_beige');
       expect(afterState?.isOwned, beforeState?.isOwned);
     });
 
@@ -90,21 +90,21 @@ void main() {
       final controller = await _createController(
         walletCoins: 500,
         shopState: const ShopState(
-          inventory: <OwnedShopItem>[OwnedShopItem(itemId: 'bg_basic_camel')],
+          inventory: <OwnedShopItem>[OwnedShopItem(itemId: 'wallpaper_warm_beige')],
         ),
       );
 
-      final result = await controller.equipItem('bg_basic_camel');
+      final result = await controller.equipItem('wallpaper_warm_beige');
 
       expect(result.status, ShopControllerStatus.success);
-      expect(result.shopState.equippedCosmetics.backgroundItemId, 'bg_basic_camel');
+      expect(result.shopState.equippedCosmetics.backgroundItemId, 'wallpaper_warm_beige');
     });
 
     test('cosmetic purchase never appears in backpack', () async {
       final controller = await _createController(walletCoins: 200);
 
-      final result = await controller.purchaseItem('bg_basic_camel');
-      final itemState = await controller.getItemState('bg_basic_camel');
+      final result = await controller.purchaseItem('wallpaper_warm_beige');
+      final itemState = await controller.getItemState('wallpaper_warm_beige');
 
       expect(result.status, ShopControllerStatus.success);
       expect(result.shopState.backpackItems, isEmpty);
@@ -115,7 +115,7 @@ void main() {
     test('equipItem unowned cosmetic fails', () async {
       final controller = await _createController(walletCoins: 500);
 
-      final result = await controller.equipItem('bg_basic_camel');
+      final result = await controller.equipItem('wallpaper_warm_beige');
 
       expect(result.status, ShopControllerStatus.itemNotOwned);
       expect(result.shopState.equippedCosmetics.backgroundItemId, isNull);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
 
 class ShopItemDetailPreview extends StatelessWidget {
@@ -34,11 +35,12 @@ class ShopItemDetailPreview extends StatelessWidget {
           children: <Widget>[
             ClipRRect(
               borderRadius: ShopUiTokens.radiusLgShape,
-              child: ShopPreviewPlaceholder(
-                label: item.title,
-                tone: _toneForItem(item.type),
+              child: ShopItemAssetPreview(
+                item: item,
+                fallbackLabel: item.title,
+                fallbackTone: _toneForItem(item.type),
                 height: 240,
-                icon: _iconForItem(item.type),
+                fallbackIcon: _iconForItem(item.type),
               ),
             ),
             const SizedBox(height: 16),

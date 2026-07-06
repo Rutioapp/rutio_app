@@ -3,6 +3,7 @@ import 'package:rutio/features/shop/domain/models/shop_collection.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_collection_progress.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 
@@ -52,11 +53,12 @@ class ShopCollectionCard extends StatelessWidget {
               builder: (BuildContext context, BoxConstraints constraints) {
                 final bool compact = constraints.maxWidth < 440;
 
-                final Widget preview = ShopPreviewPlaceholder(
-                  label: featuredItem?.title ?? collection.title,
-                  tone: _toneForCollection(collection.themeKey),
+                final Widget preview = ShopItemAssetPreview(
+                  item: featuredItem,
+                  fallbackLabel: featuredItem?.title ?? collection.title,
+                  fallbackTone: _toneForCollection(collection.themeKey),
                   height: 190,
-                  icon: _iconForCollection(collection.themeKey),
+                  fallbackIcon: _iconForCollection(collection.themeKey),
                 );
 
                 final Widget details = Column(

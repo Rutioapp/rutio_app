@@ -34,7 +34,7 @@ void main() {
       const state = ShopState(
         inventory: <OwnedShopItem>[
           OwnedShopItem(
-            itemId: 'bg_basic_camel',
+            itemId: 'wallpaper_warm_beige',
             acquiredAtMillis: 123,
             source: 'shop_purchase',
           ),
@@ -63,9 +63,9 @@ void main() {
     test('save and load preserves equipped cosmetics', () async {
       const state = ShopState(
         equippedCosmetics: EquippedCosmetics(
-          backgroundItemId: 'bg_basic_camel',
-          habitCardItemId: 'habit_card_basic_sage',
-          userCardItemId: 'user_card_basic_clay',
+          backgroundItemId: 'wallpaper_warm_beige',
+          habitCardItemId: 'habit_card_soft_camel',
+          userCardItemId: 'user_card_dune_layers',
         ),
       );
 

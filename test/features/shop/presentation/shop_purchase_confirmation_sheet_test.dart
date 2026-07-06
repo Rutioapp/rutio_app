@@ -9,7 +9,7 @@ import 'package:rutio/utils/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final ShopItem item = ShopCatalog.getItemById('bg_basic_camel')!;
+  final ShopItem item = ShopCatalog.getItemById('wallpaper_warm_beige')!;
 
   group('ShopPurchaseConfirmationSheet', () {
     testWidgets('shows item price and walletCoins', (WidgetTester tester) async {
@@ -25,8 +25,8 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Camel Canvas'), findsOneWidget);
-      expect(find.text('100 coins'), findsOneWidget);
+      expect(find.text('Warm Beige Wallpaper'), findsOneWidget);
+      expect(find.text('120 coins'), findsAtLeastNWidgets(1));
       expect(find.text('240 coins'), findsOneWidget);
     });
 
@@ -44,7 +44,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('140 coins'), findsOneWidget);
+      expect(find.text('120 coins'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('disables purchase when there are not enough coins',

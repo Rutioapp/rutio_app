@@ -70,13 +70,16 @@ class _PreviewSlot extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: <Widget>[
-            ClipRRect(
-              borderRadius: ShopUiTokens.radiusSmShape,
-              child: ShopPreviewPlaceholder(
-                label: item?.title ?? 'Sin equipar',
-                tone: tone,
-                height: 72,
-                icon: icon,
+            SizedBox(
+              width: 108,
+              height: 72,
+              child: ClipRRect(
+                borderRadius: ShopUiTokens.radiusSmShape,
+                child: _CompactPreviewThumb(
+                  item: item,
+                  tone: tone,
+                  icon: icon,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -99,6 +102,53 @@ class _PreviewSlot extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactPreviewThumb extends StatelessWidget {
+  const _CompactPreviewThumb({
+    required this.item,
+    required this.tone,
+    required this.icon,
+  });
+
+  final ShopItem? item;
+  final ShopPreviewPlaceholderTone tone;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final assetRef = item?.assetRef;
+    if (assetRef != null && assetRef.startsWith('assets/shop/')) {
+      return Image.asset(
+        assetRef,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallback(),
+      );
+    }
+    return _fallback();
+  }
+
+  Widget _fallback() {
+    final Color color = switch (tone) {
+      ShopPreviewPlaceholderTone.camel => ShopUiTokens.placeholderCamel,
+      ShopPreviewPlaceholderTone.sage => ShopUiTokens.placeholderSage,
+      ShopPreviewPlaceholderTone.sand => ShopUiTokens.placeholderSand,
+      ShopPreviewPlaceholderTone.clay => ShopUiTokens.placeholderClay,
+      ShopPreviewPlaceholderTone.ice => ShopUiTokens.placeholderIce,
+      ShopPreviewPlaceholderTone.charcoal => ShopUiTokens.placeholderCharcoal,
+    };
+
+    return DecoratedBox(
+      decoration: BoxDecoration(color: color),
+      child: Center(
+        child: Icon(
+          icon,
+          size: 18,
+          color: Colors.white.withValues(alpha: 0.82),
         ),
       ),
     );

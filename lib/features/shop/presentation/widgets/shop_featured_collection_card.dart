@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_collection.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 
@@ -38,11 +39,12 @@ class ShopFeaturedCollectionCard extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   flex: isCompact ? 0 : 5,
-                  child: ShopPreviewPlaceholder(
-                    tone: _toneForCollection(collection.themeKey),
+                  child: ShopItemAssetPreview(
+                    item: featuredItem,
+                    fallbackTone: _toneForCollection(collection.themeKey),
                     height: 180,
-                    icon: Icons.auto_awesome_rounded,
-                    label: featuredItem?.title ?? collection.title,
+                    fallbackIcon: Icons.auto_awesome_rounded,
+                    fallbackLabel: featuredItem?.title ?? collection.title,
                   ),
                 ),
                 SizedBox(

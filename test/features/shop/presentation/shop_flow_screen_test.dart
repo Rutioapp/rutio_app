@@ -95,9 +95,9 @@ void main() {
       final env = await _createEnv(
         shopState: const ShopState(
           inventory: <OwnedShopItem>[
-            OwnedShopItem(itemId: 'bg_basic_camel'),
+            OwnedShopItem(itemId: 'wallpaper_warm_beige'),
           ],
-          equippedCosmetics: EquippedCosmetics(backgroundItemId: 'bg_basic_camel'),
+          equippedCosmetics: EquippedCosmetics(backgroundItemId: 'wallpaper_warm_beige'),
         ),
       );
 
@@ -124,7 +124,7 @@ void main() {
 
       await _tapVisible(tester, find.byKey(const Key('shopHomeEntryCosmetics')));
       await tester.pump(const Duration(milliseconds: 32));
-      await _tapVisible(tester, find.byKey(const Key('shopCosmeticCard-bg_basic_camel')));
+      await _tapVisible(tester, find.byKey(const Key('shopCosmeticCard-wallpaper_warm_beige')));
       await tester.pump(const Duration(milliseconds: 32));
 
       expect(find.text('Detalle'), findsOneWidget);
@@ -142,7 +142,7 @@ void main() {
 
       await _tapVisible(tester, find.byKey(const Key('shopHomeEntryCosmetics')));
       await tester.pump(const Duration(milliseconds: 32));
-      await _tapVisible(tester, find.byKey(const Key('shopCosmeticCard-bg_basic_camel')));
+      await _tapVisible(tester, find.byKey(const Key('shopCosmeticCard-wallpaper_warm_beige')));
       await tester.pump(const Duration(milliseconds: 32));
       await _tapVisible(tester, find.text('Comprar'));
       await tester.pump(const Duration(milliseconds: 400));
@@ -168,7 +168,7 @@ void main() {
 
       await _tapVisible(tester, find.byKey(const Key('shopHomeEntryCosmetics')));
       await tester.pump(const Duration(milliseconds: 32));
-      await _tapVisible(tester, find.byKey(const Key('shopCosmeticCard-bg_basic_camel')));
+      await _tapVisible(tester, find.byKey(const Key('shopCosmeticCard-wallpaper_warm_beige')));
       await tester.pump(const Duration(milliseconds: 32));
       await _tapVisible(tester, find.text('Comprar'));
       await tester.pump(const Duration(milliseconds: 400));
@@ -213,7 +213,7 @@ void main() {
         walletCoins: 500,
         shopState: const ShopState(
           inventory: <OwnedShopItem>[
-            OwnedShopItem(itemId: 'bg_basic_camel'),
+            OwnedShopItem(itemId: 'wallpaper_warm_beige'),
           ],
         ),
       );
@@ -226,7 +226,7 @@ void main() {
 
       await _tapVisible(tester, find.byKey(const Key('shopHomeHeroCustomization')));
       await tester.pump(const Duration(milliseconds: 32));
-      await _tapVisible(tester, find.byKey(const Key('shopOwnedItem-bg_basic_camel')));
+      await _tapVisible(tester, find.byKey(const Key('shopOwnedItem-wallpaper_warm_beige')));
       await tester.pump(const Duration(milliseconds: 32));
       await _pumpUntilText(tester, 'Detalle');
 

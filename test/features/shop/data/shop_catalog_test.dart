@@ -35,10 +35,10 @@ void main() {
 
   group('ShopCatalog queries', () {
     test('getItemById returns the matching item', () {
-      final item = ShopCatalog.getItemById('bg_basic_camel');
+      final item = ShopCatalog.getItemById('wallpaper_warm_beige');
 
       expect(item, isNotNull);
-      expect(item!.title, 'Camel Canvas');
+      expect(item!.title, 'Warm Beige Wallpaper');
       expect(ShopCatalog.getItemById('missing_item'), isNull);
     });
 
@@ -46,7 +46,7 @@ void main() {
       final cosmeticItems = ShopCatalog.itemsByCategory(ShopItemCategory.cosmetic);
       final utilityItems = ShopCatalog.itemsByCategory(ShopItemCategory.utility);
 
-      expect(cosmeticItems, hasLength(36));
+      expect(cosmeticItems, hasLength(30));
       expect(utilityItems, hasLength(5));
       expect(cosmeticItems.every((item) => item.category == ShopItemCategory.cosmetic), isTrue);
       expect(utilityItems.every((item) => item.category == ShopItemCategory.utility), isTrue);
@@ -58,9 +58,9 @@ void main() {
       final userCardItems = ShopCatalog.itemsByType(ShopItemType.userCard);
       final mysteryBoxes = ShopCatalog.itemsByType(ShopItemType.mysteryBox);
 
-      expect(backgroundItems, hasLength(12));
-      expect(habitCardItems, hasLength(12));
-      expect(userCardItems, hasLength(12));
+      expect(backgroundItems, hasLength(10));
+      expect(habitCardItems, hasLength(10));
+      expect(userCardItems, hasLength(10));
       expect(mysteryBoxes.map((item) => item.id), <String>['utility_mystery_box_basic']);
     });
 
@@ -69,7 +69,7 @@ void main() {
       final gradientItems = ShopCatalog.itemsByCollection('gradient');
       final landscapeItems = ShopCatalog.itemsByCollection('landscape');
 
-      expect(minimalItems, hasLength(18));
+      expect(minimalItems, hasLength(12));
       expect(gradientItems, hasLength(12));
       expect(landscapeItems, hasLength(6));
       expect(minimalItems.every((item) => item.collectionId == 'minimal'), isTrue);

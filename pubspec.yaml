@@ -86,6 +86,9 @@ flutter:
     - assets/templates/user_state_template.json
     - assets/data/habits_catalog.json
     - assets/images/statistics/
+    - assets/shop/wallpapers/
+    - assets/shop/habit_cards/
+    - assets/shop/user_cards/
     - "design/badges/Figma Icons/Bronce/"
     - "design/badges/Figma Icons/Diamante/"
     - "design/badges/Figma Icons/Diamante Prismatico/"

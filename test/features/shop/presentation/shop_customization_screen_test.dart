@@ -11,9 +11,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final List<ShopItem> ownedItems = <ShopItem>[
-    ShopCatalog.getItemById('bg_basic_camel')!,
-    ShopCatalog.getItemById('habit_card_basic_sage')!,
-    ShopCatalog.getItemById('user_card_landscape_dawn_hills')!,
+    ShopCatalog.getItemById('wallpaper_warm_beige')!,
+    ShopCatalog.getItemById('habit_card_soft_camel')!,
+    ShopCatalog.getItemById('user_card_dune_layers')!,
   ];
 
   group('ShopCustomizationScreen', () {
@@ -49,16 +49,16 @@ void main() {
           _screen(
             items: ownedItems,
             equippedCosmetics: const EquippedCosmetics(
-              backgroundItemId: 'bg_basic_camel',
-              userCardItemId: 'user_card_landscape_dawn_hills',
+              backgroundItemId: 'wallpaper_warm_beige',
+              userCardItemId: 'user_card_dune_layers',
             ),
           ),
         ),
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.byKey(const Key('shopOwnedStatus-bg_basic_camel')), findsOneWidget);
-      expect(find.byKey(const Key('shopOwnedStatus-user_card_landscape_dawn_hills')), findsOneWidget);
+      expect(find.byKey(const Key('shopOwnedStatus-wallpaper_warm_beige')), findsOneWidget);
+      expect(find.byKey(const Key('shopOwnedStatus-user_card_dune_layers')), findsOneWidget);
       expect(find.text('Equipado'), findsAtLeastNWidgets(1));
     });
 
@@ -75,11 +75,11 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      await tester.ensureVisible(find.byKey(const Key('shopOwnedEquip-bg_basic_camel')));
-      await tester.tap(find.byKey(const Key('shopOwnedEquip-bg_basic_camel')));
+      await tester.ensureVisible(find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')));
+      await tester.tap(find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')));
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(pressedItemId, 'bg_basic_camel');
+      expect(pressedItemId, 'wallpaper_warm_beige');
     });
 
     testWidgets('equipped object shows correct state', (WidgetTester tester) async {
@@ -88,7 +88,7 @@ void main() {
           _screen(
             items: ownedItems,
             equippedCosmetics: const EquippedCosmetics(
-              backgroundItemId: 'bg_basic_camel',
+              backgroundItemId: 'wallpaper_warm_beige',
             ),
           ),
         ),
@@ -96,7 +96,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(find.text('Equipado'), findsAtLeastNWidgets(1));
-      expect(find.byKey(const Key('shopOwnedEquip-bg_basic_camel')), findsOneWidget);
+      expect(find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')), findsOneWidget);
     });
 
     testWidgets('empty state appears when no objects', (WidgetTester tester) async {
