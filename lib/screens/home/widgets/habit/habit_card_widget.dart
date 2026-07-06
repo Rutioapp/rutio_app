@@ -42,6 +42,7 @@ class HabitCardWidget extends StatefulWidget {
   final VoidCallback? onCountTap;
 
   final String completionBurstText;
+  final String? backgroundImageAssetPath;
 
   const HabitCardWidget({
     super.key,
@@ -70,6 +71,7 @@ class HabitCardWidget extends StatefulWidget {
     this.onDecrement,
     this.onCountTap,
     this.completionBurstText = '+XP',
+    this.backgroundImageAssetPath,
   });
 
   @override
@@ -454,7 +456,6 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                   constraints: BoxConstraints(
                     minHeight: widget.compact ? 68 : 76,
                   ),
-                  padding: EdgeInsets.symmetric(vertical: verticalPadding),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(radius),
@@ -469,7 +470,40 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                       ),
                     ],
                   ),
-                  child: content,
+                  child: Stack(
+                    children: [
+                      if (widget.backgroundImageAssetPath != null)
+                        Positioned.fill(
+                          child: Image.asset(
+                            widget.backgroundImageAssetPath!,
+                            key: const Key('habitCardBackgroundImage'),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                      if (widget.backgroundImageAssetPath != null)
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: <Color>[
+                                  Colors.white.withValues(alpha: 0.26),
+                                  Colors.white.withValues(alpha: 0.44),
+                                  Colors.white.withValues(alpha: 0.60),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                        child: content,
+                      ),
+                    ],
+                  ),
                 ),
                 Positioned.fill(
                   child: IgnorePointer(

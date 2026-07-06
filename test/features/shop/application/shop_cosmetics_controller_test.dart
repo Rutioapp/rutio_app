@@ -70,6 +70,198 @@ void main() {
         ShopAssetOwnershipState.equipped,
       );
     });
+
+    test('equipped wallpaper helper returns null for invalid id', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedWallpaperId: 'wallpaper_missing',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
+    });
+
+    test('equipped wallpaper helper ignores wrong category ids', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedWallpaperId: 'habit_card_warm_beige',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
+    });
+
+    test('equipped wallpaper helper resolves valid asset', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedWallpaperId: 'wallpaper_warm_beige',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+      final asset = await controller.getEquippedWallpaperAssetOrNull();
+
+      expect(asset?.id, 'wallpaper_warm_beige');
+      expect(asset?.category, ShopAssetCategory.wallpaper);
+    });
+
+    test('equipped habit card helper resolves valid asset', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedHabitCardSkinId: 'habit_card_warm_beige',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+      final asset = await controller.getEquippedHabitCardAssetOrNull();
+
+      expect(asset?.id, 'habit_card_warm_beige');
+      expect(asset?.category, ShopAssetCategory.habitCard);
+    });
+
+    test('equipped habit card helper returns null for invalid id', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedHabitCardSkinId: 'habit_card_missing',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      expect(await controller.getEquippedHabitCardAssetOrNull(), isNull);
+    });
+
+    test('equipped habit card helper ignores wrong category ids', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedHabitCardSkinId: 'user_card_warm_beige',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      expect(await controller.getEquippedHabitCardAssetOrNull(), isNull);
+    });
+
+    test('equipped user card helper resolves valid asset', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedUserCardSkinId: 'user_card_warm_beige',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+      final asset = await controller.getEquippedUserCardAssetOrNull();
+
+      expect(asset?.id, 'user_card_warm_beige');
+      expect(asset?.category, ShopAssetCategory.userCard);
+    });
+
+    test('equipped user card helper returns null for invalid id', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedUserCardSkinId: 'user_card_missing',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      expect(await controller.getEquippedUserCardAssetOrNull(), isNull);
+    });
+
+    test('equipped user card helper ignores wrong category ids', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedUserCardSkinId: 'wallpaper_warm_beige',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      expect(await controller.getEquippedUserCardAssetOrNull(), isNull);
+    });
+
+    test('equipping a purchased wallpaper updates resolved wallpaper asset',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 500);
+
+      await controller.purchaseAsset('wallpaper_warm_beige');
+      await controller.equipAsset('wallpaper_warm_beige');
+
+      expect(
+        (await controller.getEquippedWallpaperAssetOrNull())?.id,
+        'wallpaper_warm_beige',
+      );
+    });
+
+    test('equipping a purchased habit card updates resolved habit card asset',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 500);
+
+      await controller.purchaseAsset('habit_card_warm_beige');
+      await controller.equipAsset('habit_card_warm_beige');
+
+      expect(
+        (await controller.getEquippedHabitCardAssetOrNull())?.id,
+        'habit_card_warm_beige',
+      );
+    });
+
+    test('equipping a purchased user card updates resolved user card asset',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 500);
+
+      await controller.purchaseAsset('user_card_warm_beige');
+      await controller.equipAsset('user_card_warm_beige');
+
+      expect(
+        (await controller.getEquippedUserCardAssetOrNull())?.id,
+        'user_card_warm_beige',
+      );
+    });
   });
 }
 

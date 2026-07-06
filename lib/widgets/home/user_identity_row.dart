@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import 'package:rutio/constants/color_palette.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/utils/app_theme.dart';
 import 'package:rutio/widgets/avatar/avatar_with_xp_ring.dart';
 
@@ -13,6 +16,7 @@ class UserIdentityRow extends StatelessWidget {
   final double xpProgress;
   final String? avatarUrl;
   final VoidCallback? onTap;
+  final String? backgroundImageAssetPath;
 
   const UserIdentityRow({
     super.key,
@@ -22,7 +26,73 @@ class UserIdentityRow extends StatelessWidget {
     required this.xpProgress,
     this.avatarUrl,
     this.onTap,
+    this.backgroundImageAssetPath,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    if (backgroundImageAssetPath != null) {
+      return _UserIdentityRowSurface(
+        username: username,
+        level: level,
+        coins: coins,
+        xpProgress: xpProgress,
+        avatarUrl: avatarUrl,
+        onTap: onTap,
+        backgroundImageAssetPath: backgroundImageAssetPath,
+      );
+    }
+
+    try {
+      final store = context.read<UserStateStore>();
+      final controller = ShopCosmeticsController(userStateStore: store);
+      return FutureBuilder<String?>(
+        future: controller
+            .getEquippedUserCardAssetOrNull()
+            .then((asset) => asset?.assetPath),
+        builder: (context, snapshot) {
+          return _UserIdentityRowSurface(
+            username: username,
+            level: level,
+            coins: coins,
+            xpProgress: xpProgress,
+            avatarUrl: avatarUrl,
+            onTap: onTap,
+            backgroundImageAssetPath: snapshot.data,
+          );
+        },
+      );
+    } catch (_) {
+      return _UserIdentityRowSurface(
+        username: username,
+        level: level,
+        coins: coins,
+        xpProgress: xpProgress,
+        avatarUrl: avatarUrl,
+        onTap: onTap,
+      );
+    }
+  }
+}
+
+class _UserIdentityRowSurface extends StatelessWidget {
+  const _UserIdentityRowSurface({
+    required this.username,
+    required this.level,
+    required this.coins,
+    required this.xpProgress,
+    required this.avatarUrl,
+    required this.onTap,
+    this.backgroundImageAssetPath,
+  });
+
+  final String username;
+  final int level;
+  final int coins;
+  final double xpProgress;
+  final String? avatarUrl;
+  final VoidCallback? onTap;
+  final String? backgroundImageAssetPath;
 
   @override
   Widget build(BuildContext context) {
@@ -40,69 +110,103 @@ class UserIdentityRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         splashColor: palette.textPrimary.withValues(alpha: 0.05),
         highlightColor: palette.textPrimary.withValues(alpha: 0.025),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
             children: [
-              AvatarWithXpRing(
-                avatarUrl: avatarUrl,
-                fallbackLabel: safeUsername,
-                progress: xpProgress,
-              ),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      safeUsername,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'DMSerifDisplay',
-                        fontSize: 18,
-                        height: 1.0,
-                        color: palette.textPrimary,
+              if (backgroundImageAssetPath != null)
+                Positioned.fill(
+                  child: Image.asset(
+                    backgroundImageAssetPath!,
+                    key: const Key('userIdentityRowBackgroundImage'),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              if (backgroundImageAssetPath != null)
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: <Color>[
+                          Colors.white.withValues(alpha: 0.24),
+                          Colors.white.withValues(alpha: 0.34),
+                          Colors.white.withValues(alpha: 0.46),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          l10n.userLevelShort(level),
-                          style: TextStyle(
-                            fontFamily: 'DMSans',
-                            fontSize: 11.5,
-                            height: 1.0,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.0,
-                            color: palette.textSecondary,
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AvatarWithXpRing(
+                      avatarUrl: avatarUrl,
+                      fallbackLabel: safeUsername,
+                      progress: xpProgress,
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            safeUsername,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'DMSerifDisplay',
+                              fontSize: 18,
+                              height: 1.0,
+                              color: palette.textPrimary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 1,
-                          height: 12,
-                          color: palette.separator,
-                        ),
-                        const SizedBox(width: 8),
-                        _CoinGlyph(palette: palette),
-                        const SizedBox(width: 6),
-                        Text(
-                          numberFormat.format(coins),
-                          style: TextStyle(
-                            fontFamily: 'DMSans',
-                            fontSize: 12.5,
-                            height: 1.0,
-                            fontWeight: FontWeight.w700,
-                            color: palette.textPrimary,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                l10n.userLevelShort(level),
+                                style: TextStyle(
+                                  fontFamily: 'DMSans',
+                                  fontSize: 11.5,
+                                  height: 1.0,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.0,
+                                  color: palette.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 1,
+                                height: 12,
+                                color: palette.separator,
+                              ),
+                              const SizedBox(width: 8),
+                              _CoinGlyph(palette: palette),
+                              const SizedBox(width: 6),
+                              Text(
+                                numberFormat.format(coins),
+                                style: TextStyle(
+                                  fontFamily: 'DMSans',
+                                  fontSize: 12.5,
+                                  height: 1.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: palette.textPrimary,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

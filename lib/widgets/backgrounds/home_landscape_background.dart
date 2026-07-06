@@ -1,28 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/stores/user_state_store.dart';
 
 class HomeBackground extends StatelessWidget {
-  const HomeBackground({super.key});
+  const HomeBackground({
+    super.key,
+    this.wallpaperAssetPath,
+    this.resolveEquippedWallpaper = true,
+  });
+
+  final String? wallpaperAssetPath;
+  final bool resolveEquippedWallpaper;
 
   @override
   Widget build(BuildContext context) {
-    return const Positioned.fill(
+    if (wallpaperAssetPath != null || !resolveEquippedWallpaper) {
+      return _HomeBackgroundScene(wallpaperAssetPath: wallpaperAssetPath);
+    }
+
+    try {
+      final store = context.read<UserStateStore>();
+      final controller = ShopCosmeticsController(userStateStore: store);
+      return FutureBuilder<String?>(
+        future: controller
+            .getEquippedWallpaperAssetOrNull()
+            .then((asset) => asset?.assetPath),
+        builder: (context, snapshot) {
+          return _HomeBackgroundScene(wallpaperAssetPath: snapshot.data);
+        },
+      );
+    } catch (_) {
+      return const _HomeBackgroundScene();
+    }
+  }
+}
+
+class _HomeBackgroundScene extends StatelessWidget {
+  const _HomeBackgroundScene({
+    this.wallpaperAssetPath,
+  });
+
+  final String? wallpaperAssetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
       child: IgnorePointer(
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
+              colors: <Color>[
                 Color(0xFFEAF3FB),
                 Color(0xFFD6EAF6),
                 Color(0xFFC8DDED),
                 Color(0xFFD8CEA8),
                 Color(0xFFE6DCC0),
               ],
-              stops: [0.0, 0.28, 0.52, 0.78, 1.0],
+              stops: <double>[0.0, 0.28, 0.52, 0.78, 1.0],
             ),
           ),
-          child: _HomeBackgroundArt(),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (wallpaperAssetPath != null)
+                Image.asset(
+                  wallpaperAssetPath!,
+                  key: const Key('homeBackgroundWallpaperImage'),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              const _HomeBackgroundArt(),
+            ],
+          ),
         ),
       ),
     );

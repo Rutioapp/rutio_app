@@ -51,8 +51,23 @@ class ShopCosmeticsController {
   Future<ShopAsset?> getEquippedAssetForCategory(
     ShopAssetCategory category,
   ) async {
-    final service = await _service();
-    return service.getEquippedAssetForCategory(category);
+    final state = await getState();
+    return _getValidatedEquippedAssetOrNull(state, category);
+  }
+
+  Future<ShopAsset?> getEquippedWallpaperAssetOrNull() async {
+    final state = await getState();
+    return _getValidatedEquippedAssetOrNull(state, ShopAssetCategory.wallpaper);
+  }
+
+  Future<ShopAsset?> getEquippedHabitCardAssetOrNull() async {
+    final state = await getState();
+    return _getValidatedEquippedAssetOrNull(state, ShopAssetCategory.habitCard);
+  }
+
+  Future<ShopAsset?> getEquippedUserCardAssetOrNull() async {
+    final state = await getState();
+    return _getValidatedEquippedAssetOrNull(state, ShopAssetCategory.userCard);
   }
 
   Future<ShopCosmeticsOperationResult> purchaseAsset(String assetId) async {
@@ -133,5 +148,25 @@ class ShopCosmeticsController {
     final root = _userStateStore.state;
     if (root == null) return null;
     return Map<String, dynamic>.from(root);
+  }
+
+  ShopAsset? _getValidatedEquippedAssetOrNull(
+    ShopCosmeticsState state,
+    ShopAssetCategory category,
+  ) {
+    final assetId = state.getEquippedAssetIdForCategory(category);
+    if (assetId == null || assetId.trim().isEmpty) {
+      return null;
+    }
+
+    final asset = ShopCosmeticsService(
+      state: state,
+      walletCoins: 0,
+    ).getEquippedAssetForCategory(category);
+    if (asset == null || asset.category != category) {
+      return null;
+    }
+
+    return asset;
   }
 }
