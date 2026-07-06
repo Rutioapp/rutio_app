@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
@@ -29,10 +30,12 @@ class ShopFlowScreen extends StatefulWidget {
   const ShopFlowScreen({
     super.key,
     required this.controller,
+    required this.cosmeticsController,
     this.shopRepository,
   });
 
   final ShopController controller;
+  final ShopCosmeticsController cosmeticsController;
   final ShopLocalRepository? shopRepository;
 
   @override
@@ -206,12 +209,8 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         );
       case _ShopFlowPage.cosmetics:
         return ShopCosmeticsScreen(
-          walletCoins: snapshot.walletCoins,
-          items: snapshot.cosmeticCatalogItems,
-          ownedItemIds: snapshot.ownedItemIds,
-          equippedCosmetics: snapshot.equippedCosmetics,
+          controller: widget.cosmeticsController,
           onBackPressed: _popPage,
-          onItemPressed: _openDetail,
         );
       case _ShopFlowPage.utilities:
         return ShopUtilitiesScreen(

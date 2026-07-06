@@ -1,42 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:rutio/features/shop/domain/models/equipped_cosmetics.dart';
-import 'package:rutio/features/shop/domain/models/shop_item.dart';
-import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_operation_result.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
-import 'package:rutio/features/shop/presentation/widgets/shop_cosmetic_item_card.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_detail_sheet.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_product_card.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_empty_state.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_filter_chip.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_header.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_page_shell.dart';
-import 'package:rutio/features/shop/presentation/widgets/shop_section_header.dart';
 
 enum ShopCosmeticsFilter {
   all,
-  backgrounds,
-  habitCards,
-  userCards,
+  wallpapers,
+  cards,
+  packs,
 }
 
 class ShopCosmeticsScreen extends StatefulWidget {
   const ShopCosmeticsScreen({
     super.key,
-    required this.walletCoins,
-    required this.items,
-    required this.onItemPressed,
-    this.ownedItemIds = const <String>{},
-    this.equippedCosmetics = const EquippedCosmetics(),
+    required this.controller,
     this.onBackPressed,
     this.onMenuPressed,
-    this.onViewAllPressed,
   });
 
-  final int walletCoins;
-  final List<ShopItem> items;
-  final Set<String> ownedItemIds;
-  final EquippedCosmetics equippedCosmetics;
+  final ShopCosmeticsController controller;
   final VoidCallback? onBackPressed;
   final VoidCallback? onMenuPressed;
-  final ValueChanged<String> onItemPressed;
-  final ValueChanged<ShopCosmeticsFilter>? onViewAllPressed;
 
   @override
   State<ShopCosmeticsScreen> createState() => _ShopCosmeticsScreenState();
@@ -44,41 +40,39 @@ class ShopCosmeticsScreen extends StatefulWidget {
 
 class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   ShopCosmeticsFilter _selectedFilter = ShopCosmeticsFilter.all;
+  ShopCosmeticsState? _state;
+  int _walletCoins = 0;
+  bool _loading = true;
+  String? _busyId;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    setState(() {
+      _loading = true;
+    });
+
+    final state = await widget.controller.getState();
+    final walletCoins = await widget.controller.getWalletCoins();
+    if (!mounted) return;
+
+    setState(() {
+      _state = state;
+      _walletCoins = walletCoins;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final List<ShopItem> cosmeticItems = widget.items
-        .where((ShopItem item) => item.category == ShopItemCategory.cosmetic)
-        .toList(growable: false);
-
-    final sections = <_CosmeticSectionData>[
-      _CosmeticSectionData(
-        title: 'Fondos',
-        filter: ShopCosmeticsFilter.backgrounds,
-        itemType: ShopItemType.background,
-      ),
-      _CosmeticSectionData(
-        title: 'Cards de hábitos',
-        filter: ShopCosmeticsFilter.habitCards,
-        itemType: ShopItemType.habitCard,
-      ),
-      _CosmeticSectionData(
-        title: 'Cards de usuario',
-        filter: ShopCosmeticsFilter.userCards,
-        itemType: ShopItemType.userCard,
-      ),
-    ];
-
-    final visibleSections = sections.where(
-      (_CosmeticSectionData section) =>
-          _selectedFilter == ShopCosmeticsFilter.all ||
-          _selectedFilter == section.filter,
-    );
-
     return ShopPageShell(
       header: ShopHeader(
-        title: 'Cosméticos',
-        subtitle: 'Personaliza tu Rutio',
+        title: 'Cosmeticos',
+        subtitle: 'Fondos, cards y packs con estilo Rutio',
         leadingIcon: widget.onBackPressed != null
             ? Icons.arrow_back_ios_new_rounded
             : Icons.menu_rounded,
@@ -88,38 +82,314 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
             : null,
         onTrailingPressed:
             widget.onBackPressed != null ? widget.onMenuPressed : null,
-        walletCoins: widget.walletCoins,
+        walletCoins: _walletCoins,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _FilterRow(
-            selectedFilter: _selectedFilter,
-            onFilterSelected: (ShopCosmeticsFilter filter) {
-              setState(() {
-                _selectedFilter = filter;
-              });
-            },
+      child: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final state = _state;
+    if (state == null) {
+      return const ShopEmptyState(
+        title: 'Cosmeticos no disponibles',
+        message: 'No hemos podido cargar la tienda cosmetica ahora mismo.',
+      );
+    }
+
+    final entries = _visibleEntries(state);
+    if (entries.isEmpty) {
+      return const ShopEmptyState(
+        title: 'Nada por mostrar',
+        message: 'No encontramos cosmeticos en esta seccion.',
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _FilterRow(
+          selectedFilter: _selectedFilter,
+          onFilterSelected: (ShopCosmeticsFilter filter) {
+            setState(() {
+              _selectedFilter = filter;
+            });
+          },
+        ),
+        const SizedBox(height: 18),
+        Text(
+          '${entries.length} resultados',
+          style: ShopUiTextStyles.bodySmall,
+        ),
+        const SizedBox(height: 14),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final int crossAxisCount = constraints.maxWidth >= 560 ? 3 : 2;
+            final double childAspectRatio =
+                crossAxisCount == 3 ? 0.58 : 0.48;
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: entries.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 14,
+                crossAxisSpacing: 14,
+                childAspectRatio: childAspectRatio,
+              ),
+              itemBuilder: (BuildContext context, int index) {
+                final entry = entries[index];
+                return switch (entry) {
+                  _AssetEntry(:final asset, :final ownershipState) =>
+                    ShopCosmeticsProductCard.asset(
+                      asset: asset,
+                      ownershipState: ownershipState,
+                      hasEnoughCoins: _walletCoins >= asset.priceAmber,
+                      busy: _busyId == asset.id,
+                      onPressed: () => _openAssetDetail(asset, ownershipState),
+                      onPrimaryActionPressed: () =>
+                          _handleAssetPrimaryAction(asset, ownershipState),
+                    ),
+                  _BundleEntry(:final bundle, :final assets, :final isOwned) =>
+                    ShopCosmeticsProductCard.bundle(
+                      bundle: bundle,
+                      bundleAssets: assets,
+                      isBundleOwned: isOwned,
+                      hasEnoughCoins: _walletCoins >= bundle.priceAmber,
+                      busy: _busyId == bundle.id,
+                      onPressed: () => _openBundleDetail(bundle, assets, isOwned),
+                      onPrimaryActionPressed: () => _handleBundlePurchase(bundle),
+                    ),
+                };
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  List<_ShopEntry> _visibleEntries(ShopCosmeticsState state) {
+    final allEntries = <_ShopEntry>[
+      ...ShopAssetsCatalog.allAssets.map(
+        (ShopAsset asset) => _AssetEntry(
+          asset: asset,
+          ownershipState: state.assetOwnershipState(
+            asset,
+            bundles: ShopAssetsCatalog.allBundles,
           ),
-          const SizedBox(height: ShopUiTokens.sectionSpacing),
-          for (final _CosmeticSectionData section in visibleSections) ...<Widget>[
-            _CosmeticSection(
-              title: section.title,
-              items: cosmeticItems
-                  .where((ShopItem item) => item.type == section.itemType)
-                  .toList(growable: false),
-              ownedItemIds: widget.ownedItemIds,
-              equippedCosmetics: widget.equippedCosmetics,
-              onItemPressed: widget.onItemPressed,
-              onViewAllPressed: widget.onViewAllPressed == null
-                  ? null
-                  : () => widget.onViewAllPressed!(section.filter),
-            ),
-            const SizedBox(height: ShopUiTokens.sectionSpacing),
-          ],
-        ],
+        ),
+      ),
+      ...ShopAssetsCatalog.allBundles.map(
+        (ShopBundle bundle) => _BundleEntry(
+          bundle: bundle,
+          assets: bundle.assetIds
+              .map(ShopAssetsCatalog.getAssetById)
+              .whereType<ShopAsset>()
+              .toList(growable: false),
+          isOwned: state.isBundleOwned(bundle.id),
+        ),
+      ),
+    ]..sort(_compareEntries);
+
+    switch (_selectedFilter) {
+      case ShopCosmeticsFilter.all:
+        return allEntries;
+      case ShopCosmeticsFilter.wallpapers:
+        return allEntries.whereType<_AssetEntry>().where((entry) {
+          return entry.asset.category == ShopAssetCategory.wallpaper;
+        }).toList(growable: false);
+      case ShopCosmeticsFilter.cards:
+        return allEntries.whereType<_AssetEntry>().where((entry) {
+          return entry.asset.category == ShopAssetCategory.habitCard ||
+              entry.asset.category == ShopAssetCategory.userCard;
+        }).toList(growable: false);
+      case ShopCosmeticsFilter.packs:
+        return allEntries.whereType<_BundleEntry>().toList(growable: false);
+    }
+  }
+
+  int _compareEntries(_ShopEntry a, _ShopEntry b) {
+    final rarityCompare = _rarityOrder(a.rarity).compareTo(_rarityOrder(b.rarity));
+    if (rarityCompare != 0) return rarityCompare;
+
+    final categoryCompare =
+        _categoryOrder(a.categoryOrder).compareTo(_categoryOrder(b.categoryOrder));
+    if (categoryCompare != 0) return categoryCompare;
+
+    return a.sortOrder.compareTo(b.sortOrder);
+  }
+
+  int _rarityOrder(ShopAssetRarity rarity) {
+    switch (rarity) {
+      case ShopAssetRarity.common:
+        return 0;
+      case ShopAssetRarity.rare:
+        return 1;
+      case ShopAssetRarity.epic:
+        return 2;
+      case ShopAssetRarity.legendary:
+        return 3;
+    }
+  }
+
+  int _categoryOrder(_EntryCategory category) {
+    switch (category) {
+      case _EntryCategory.wallpaper:
+        return 0;
+      case _EntryCategory.habitCard:
+        return 1;
+      case _EntryCategory.userCard:
+        return 2;
+      case _EntryCategory.bundle:
+        return 3;
+    }
+  }
+
+  Future<void> _handleAssetPrimaryAction(
+    ShopAsset asset,
+    ShopAssetOwnershipState ownershipState,
+  ) async {
+    if (_busyId != null) return;
+
+    setState(() {
+      _busyId = asset.id;
+    });
+
+    final result = switch (ownershipState) {
+      ShopAssetOwnershipState.locked => await widget.controller.purchaseAsset(asset.id),
+      ShopAssetOwnershipState.owned ||
+      ShopAssetOwnershipState.equipped ||
+      ShopAssetOwnershipState.includedInOwnedBundle =>
+        await widget.controller.equipAsset(asset.id),
+    };
+
+    await _reload();
+    if (!mounted) return;
+
+    setState(() {
+      _busyId = null;
+    });
+
+    _showFeedback(_assetFeedback(result, ownershipState));
+  }
+
+  Future<void> _handleBundlePurchase(ShopBundle bundle) async {
+    if (_busyId != null) return;
+
+    setState(() {
+      _busyId = bundle.id;
+    });
+
+    final result = await widget.controller.purchaseBundle(bundle.id);
+    await _reload();
+    if (!mounted) return;
+
+    setState(() {
+      _busyId = null;
+    });
+
+    _showFeedback(_bundleFeedback(result));
+  }
+
+  void _openAssetDetail(
+    ShopAsset asset,
+    ShopAssetOwnershipState ownershipState,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return ShopCosmeticsDetailSheet.asset(
+          asset: asset,
+          ownershipState: ownershipState,
+          walletCoins: _walletCoins,
+          busy: _busyId == asset.id,
+          onPrimaryActionPressed: () async {
+            Navigator.of(context).pop();
+            await _handleAssetPrimaryAction(asset, ownershipState);
+          },
+        );
+      },
+    );
+  }
+
+  void _openBundleDetail(
+    ShopBundle bundle,
+    List<ShopAsset> assets,
+    bool isOwned,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return ShopCosmeticsDetailSheet.bundle(
+          bundle: bundle,
+          bundleAssets: assets,
+          isBundleOwned: isOwned,
+          walletCoins: _walletCoins,
+          busy: _busyId == bundle.id,
+          onPrimaryActionPressed: () async {
+            Navigator.of(context).pop();
+            await _handleBundlePurchase(bundle);
+          },
+        );
+      },
+    );
+  }
+
+  void _showFeedback(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ShopUiTokens.textPrimary,
       ),
     );
+  }
+
+  String _assetFeedback(
+    ShopCosmeticsOperationResult result,
+    ShopAssetOwnershipState previousState,
+  ) {
+    switch (result.status) {
+      case ShopCosmeticsOperationStatus.success:
+        return previousState == ShopAssetOwnershipState.locked
+            ? 'Cosmetico comprado'
+            : 'Cosmetico equipado';
+      case ShopCosmeticsOperationStatus.insufficientCoins:
+        return 'No tienes ambar suficiente';
+      case ShopCosmeticsOperationStatus.alreadyOwned:
+        return 'Ya lo tienes en tu coleccion';
+      case ShopCosmeticsOperationStatus.assetNotOwned:
+        return 'Necesitas comprarlo antes de equiparlo';
+      case ShopCosmeticsOperationStatus.assetNotFound:
+      case ShopCosmeticsOperationStatus.bundleNotFound:
+        return 'No hemos encontrado este cosmetico';
+    }
+  }
+
+  String _bundleFeedback(ShopCosmeticsOperationResult result) {
+    switch (result.status) {
+      case ShopCosmeticsOperationStatus.success:
+        return 'Pack comprado';
+      case ShopCosmeticsOperationStatus.insufficientCoins:
+        return 'No tienes ambar suficiente';
+      case ShopCosmeticsOperationStatus.alreadyOwned:
+        return 'Ese pack ya esta comprado';
+      case ShopCosmeticsOperationStatus.assetNotFound:
+      case ShopCosmeticsOperationStatus.bundleNotFound:
+        return 'No hemos encontrado este pack';
+      case ShopCosmeticsOperationStatus.assetNotOwned:
+        return 'Operacion no disponible';
+    }
   }
 }
 
@@ -138,132 +408,108 @@ class _FilterRow extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: <Widget>[
-          ShopFilterChip(
-            key: const Key('shopCosmeticsFilter-all'),
-            label: 'Todos',
-            selected: selectedFilter == ShopCosmeticsFilter.all,
-            onTap: () => onFilterSelected(ShopCosmeticsFilter.all),
+          _buildChip(
+            key: 'shopCosmeticsFilter-all',
+            label: 'Todo',
+            filter: ShopCosmeticsFilter.all,
           ),
           const SizedBox(width: 10),
-          ShopFilterChip(
-            key: const Key('shopCosmeticsFilter-backgrounds'),
+          _buildChip(
+            key: 'shopCosmeticsFilter-wallpapers',
             label: 'Fondos',
-            selected: selectedFilter == ShopCosmeticsFilter.backgrounds,
-            onTap: () => onFilterSelected(ShopCosmeticsFilter.backgrounds),
+            filter: ShopCosmeticsFilter.wallpapers,
           ),
           const SizedBox(width: 10),
-          ShopFilterChip(
-            key: const Key('shopCosmeticsFilter-habitCards'),
+          _buildChip(
+            key: 'shopCosmeticsFilter-cards',
             label: 'Cards',
-            selected: selectedFilter == ShopCosmeticsFilter.habitCards,
-            onTap: () => onFilterSelected(ShopCosmeticsFilter.habitCards),
+            filter: ShopCosmeticsFilter.cards,
           ),
           const SizedBox(width: 10),
-          ShopFilterChip(
-            key: const Key('shopCosmeticsFilter-userCards'),
-            label: 'Usuario',
-            selected: selectedFilter == ShopCosmeticsFilter.userCards,
-            onTap: () => onFilterSelected(ShopCosmeticsFilter.userCards),
+          _buildChip(
+            key: 'shopCosmeticsFilter-packs',
+            label: 'Packs',
+            filter: ShopCosmeticsFilter.packs,
           ),
         ],
       ),
     );
   }
-}
 
-class _CosmeticSection extends StatelessWidget {
-  const _CosmeticSection({
-    required this.title,
-    required this.items,
-    required this.ownedItemIds,
-    required this.equippedCosmetics,
-    required this.onItemPressed,
-    this.onViewAllPressed,
-  });
-
-  final String title;
-  final List<ShopItem> items;
-  final Set<String> ownedItemIds;
-  final EquippedCosmetics equippedCosmetics;
-  final ValueChanged<String> onItemPressed;
-  final VoidCallback? onViewAllPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      key: Key('shopCosmeticsSection-$title'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        ShopSectionHeader(
-          title: title,
-          subtitle: '${items.length} opciones disponibles',
-          trailing: onViewAllPressed == null
-              ? null
-              : TextButton(
-                  onPressed: onViewAllPressed,
-                  child: const Text('Ver todo'),
-                ),
-        ),
-        const SizedBox(height: 4),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final int crossAxisCount = constraints.maxWidth >= 560 ? 3 : 2;
-            final double childAspectRatio =
-                crossAxisCount == 3 ? 0.75 : 0.68;
-
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: items.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 14,
-                childAspectRatio: childAspectRatio,
-              ),
-              itemBuilder: (BuildContext context, int index) {
-                final ShopItem item = items[index];
-                return ShopCosmeticItemCard(
-                  key: Key('shopCosmeticCard-${item.id}'),
-                  item: item,
-                  isOwned: ownedItemIds.contains(item.id),
-                  isEquipped: _isEquipped(item, equippedCosmetics),
-                  onPressed: () => onItemPressed(item.id),
-                );
-              },
-            );
-          },
-        ),
-      ],
+  Widget _buildChip({
+    required String key,
+    required String label,
+    required ShopCosmeticsFilter filter,
+  }) {
+    return ShopFilterChip(
+      key: Key(key),
+      label: label,
+      selected: selectedFilter == filter,
+      onTap: () => onFilterSelected(filter),
     );
   }
+}
 
-  bool _isEquipped(ShopItem item, EquippedCosmetics equippedCosmetics) {
-    switch (item.type) {
-      case ShopItemType.background:
-        return equippedCosmetics.backgroundItemId == item.id;
-      case ShopItemType.habitCard:
-        return equippedCosmetics.habitCardItemId == item.id;
-      case ShopItemType.userCard:
-        return equippedCosmetics.userCardItemId == item.id;
-      case ShopItemType.xpBoost:
-      case ShopItemType.coinBoost:
-      case ShopItemType.streakRecover:
-      case ShopItemType.streakShield:
-      case ShopItemType.mysteryBox:
-        return false;
+sealed class _ShopEntry {
+  const _ShopEntry();
+
+  ShopAssetRarity get rarity;
+  int get sortOrder;
+  _EntryCategory get categoryOrder;
+}
+
+class _AssetEntry extends _ShopEntry {
+  const _AssetEntry({
+    required this.asset,
+    required this.ownershipState,
+  });
+
+  final ShopAsset asset;
+  final ShopAssetOwnershipState ownershipState;
+
+  @override
+  ShopAssetRarity get rarity => asset.rarity;
+
+  @override
+  int get sortOrder => asset.sortOrder;
+
+  @override
+  _EntryCategory get categoryOrder {
+    switch (asset.category) {
+      case ShopAssetCategory.wallpaper:
+        return _EntryCategory.wallpaper;
+      case ShopAssetCategory.habitCard:
+        return _EntryCategory.habitCard;
+      case ShopAssetCategory.userCard:
+        return _EntryCategory.userCard;
     }
   }
 }
 
-class _CosmeticSectionData {
-  const _CosmeticSectionData({
-    required this.title,
-    required this.filter,
-    required this.itemType,
+class _BundleEntry extends _ShopEntry {
+  const _BundleEntry({
+    required this.bundle,
+    required this.assets,
+    required this.isOwned,
   });
 
-  final String title;
-  final ShopCosmeticsFilter filter;
-  final ShopItemType itemType;
+  final ShopBundle bundle;
+  final List<ShopAsset> assets;
+  final bool isOwned;
+
+  @override
+  ShopAssetRarity get rarity => bundle.rarity;
+
+  @override
+  int get sortOrder => bundle.sortOrder;
+
+  @override
+  _EntryCategory get categoryOrder => _EntryCategory.bundle;
+}
+
+enum _EntryCategory {
+  wallpaper,
+  habitCard,
+  userCard,
+  bundle,
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_flow_screen.dart';
@@ -30,6 +31,9 @@ class _ShopScreenState extends State<ShopScreen> {
       controller: ShopController(
         userStateStore: userStateStore,
         shopRepository: _shopRepository,
+      ),
+      cosmeticsController: ShopCosmeticsController(
+        userStateStore: userStateStore,
       ),
       shopRepository: _shopRepository,
     );
