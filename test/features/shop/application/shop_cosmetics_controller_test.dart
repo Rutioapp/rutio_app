@@ -103,12 +103,45 @@ void main() {
       expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
     });
 
-    test('equipped wallpaper helper resolves valid asset', () async {
+    test('equipped wallpaper helper returns null when equipped asset is not owned',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final repository = ShopCosmeticsRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedWallpaperId: 'wallpaper_warm_beige',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
+    });
+
+    test('equipped wallpaper helper returns null for empty equipped id', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>[],
+          equippedWallpaperId: '   ',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
+    });
+
+    test('equipped wallpaper helper resolves valid asset', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>['wallpaper_warm_beige'],
           ownedBundleIds: <String>[],
           equippedWallpaperId: 'wallpaper_warm_beige',
         ),
@@ -126,7 +159,7 @@ void main() {
       final repository = ShopCosmeticsRepository();
       await repository.save(
         ShopCosmeticsState(
-          ownedAssetIds: <String>[],
+          ownedAssetIds: <String>['habit_card_warm_beige'],
           ownedBundleIds: <String>[],
           equippedHabitCardSkinId: 'habit_card_warm_beige',
         ),
@@ -171,12 +204,31 @@ void main() {
       expect(await controller.getEquippedHabitCardAssetOrNull(), isNull);
     });
 
-    test('equipped user card helper resolves valid asset', () async {
+    test('equipped habit card helper resolves bundle-owned asset', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final repository = ShopCosmeticsRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
+          ownedBundleIds: <String>['bundle_warm_beige'],
+          equippedHabitCardSkinId: 'habit_card_warm_beige',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      expect(
+        (await controller.getEquippedHabitCardAssetOrNull())?.id,
+        'habit_card_warm_beige',
+      );
+    });
+
+    test('equipped user card helper resolves valid asset', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>['user_card_warm_beige'],
           ownedBundleIds: <String>[],
           equippedUserCardSkinId: 'user_card_warm_beige',
         ),
@@ -219,6 +271,19 @@ void main() {
       final controller = await _createController(walletCoins: 0);
 
       expect(await controller.getEquippedUserCardAssetOrNull(), isNull);
+    });
+
+    test('getWalletCoins falls back to zero when root state is missing', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repo = UserStateRepository(storage: UserStateStorage())
+        ..setActiveUserScope('shop-cosmetics-empty-user');
+      final store = UserStateStore(
+        repo,
+        journalEntrySyncService: JournalEntrySyncService(),
+      );
+      final controller = ShopCosmeticsController(userStateStore: store);
+
+      expect(await controller.getWalletCoins(), 0);
     });
 
     test('equipping a purchased wallpaper updates resolved wallpaper asset',

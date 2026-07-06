@@ -89,6 +89,36 @@ void main() {
       ), ShopAssetOwnershipState.includedInOwnedBundle);
     });
 
+    test('purchaseBundle keeps individually owned assets without duplicates', () {
+      final service = ShopCosmeticsService(
+        state: ShopCosmeticsState(
+          ownedAssetIds: <String>[
+            'wallpaper_warm_beige',
+            'wallpaper_warm_beige',
+            'habit_card_warm_beige',
+          ],
+          ownedBundleIds: <String>[],
+        ),
+        walletCoins: 1000,
+      );
+
+      final result = service.purchaseBundle('bundle_warm_beige');
+
+      expect(result.status, ShopCosmeticsOperationStatus.success);
+      expect(
+        result.state.ownedAssetIds,
+        equals(<String>['wallpaper_warm_beige', 'habit_card_warm_beige']),
+      );
+      expect(result.state.ownedBundleIds, equals(<String>['bundle_warm_beige']));
+      expect(
+        result.state.isAssetOwned(
+          'user_card_warm_beige',
+          bundles: ShopAssetsCatalog.allBundles,
+        ),
+        isTrue,
+      );
+    });
+
     test('purchaseBundle fails when balance is insufficient', () {
       final service = ShopCosmeticsService(
         state: const ShopCosmeticsState.initial(),
@@ -183,6 +213,17 @@ void main() {
       final result = service.equipAsset('wallpaper_warm_beige');
 
       expect(result.status, ShopCosmeticsOperationStatus.assetNotOwned);
+    });
+
+    test('equipAsset fails safely when id belongs to a bundle', () {
+      final service = ShopCosmeticsService(
+        state: const ShopCosmeticsState.initial(),
+        walletCoins: 0,
+      );
+
+      final result = service.equipAsset('bundle_warm_beige');
+
+      expect(result.status, ShopCosmeticsOperationStatus.assetNotFound);
     });
 
     test('unequipAsset clears the requested slot', () {

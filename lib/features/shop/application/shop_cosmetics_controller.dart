@@ -1,4 +1,5 @@
 import 'package:rutio/features/shop/application/shop_cosmetics_service.dart';
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
@@ -164,6 +165,10 @@ class ShopCosmeticsController {
       walletCoins: 0,
     ).getEquippedAssetForCategory(category);
     if (asset == null || asset.category != category) {
+      return null;
+    }
+
+    if (!state.isAssetOwned(asset.id, bundles: ShopAssetsCatalog.allBundles)) {
       return null;
     }
 

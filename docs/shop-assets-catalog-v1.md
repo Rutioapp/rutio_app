@@ -271,3 +271,26 @@ The current assets integrated during Phase 4.3 are temporary placeholder files m
 These placeholders should be replaced in a later phase by final exported assets generated from:
 
 * `docs/shop-assets-generation-prompts-v1.md`
+
+## Implementation Status
+
+* placeholder assets are available
+* local catalog is implemented
+* local ownership is implemented
+* asset purchase is implemented
+* bundle purchase is implemented
+* equipment is implemented
+* equipped wallpapers are applied to shared Home background components
+* equipped habit card skins are applied to `HabitCardWidget`
+* equipped user card skins are applied to `UserIdentityRow`
+* final generated assets are still pending
+
+## Known Follow-ups
+
+* replace placeholder assets with final generated WebP assets
+* review all cosmetics on real iOS devices
+* tune prices after beta feedback
+* consider profile customization in a later phase
+* consider per-habit card skins in a later phase
+* consider dedicated previews for store cards instead of reusing full assets
+* consider analytics for purchase/equip events later
