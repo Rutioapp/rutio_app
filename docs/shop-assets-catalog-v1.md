@@ -283,7 +283,8 @@ These placeholders should be replaced in a later phase by final exported assets 
 * equipped wallpapers are applied to shared Home background components
 * equipped habit card skins are applied to `HabitCardWidget`
 * equipped user card skins are applied to `UserIdentityRow`
-* final generated assets are still pending
+* procedural WebP cosmetics are available for V1
+* final hand-crafted/generated art direction may still be refined later
 
 ## Known Follow-ups
 
