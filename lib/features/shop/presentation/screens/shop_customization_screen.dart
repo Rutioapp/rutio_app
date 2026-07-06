@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/domain/models/equipped_cosmetics.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_empty_state.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_equipped_summary.dart';
@@ -22,6 +27,7 @@ class ShopCustomizationScreen extends StatelessWidget {
     required this.onEquipPressed,
     required this.onItemPressed,
     this.onOpenCosmetics,
+    this.cosmeticsController,
   });
 
   final int walletCoins;
@@ -31,12 +37,67 @@ class ShopCustomizationScreen extends StatelessWidget {
   final ValueChanged<String> onEquipPressed;
   final ValueChanged<String> onItemPressed;
   final VoidCallback? onOpenCosmetics;
+  final ShopCosmeticsController? cosmeticsController;
 
   @override
   Widget build(BuildContext context) {
-    final List<ShopItem> backgrounds = _itemsForType(ShopItemType.background);
-    final List<ShopItem> habitCards = _itemsForType(ShopItemType.habitCard);
-    final List<ShopItem> userCards = _itemsForType(ShopItemType.userCard);
+    final controller = cosmeticsController;
+    if (controller != null) {
+      return FutureBuilder<_CustomizationViewData>(
+        future: _loadCustomizationViewData(controller),
+        builder: (BuildContext context, AsyncSnapshot<_CustomizationViewData> snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return ShopPageShell(
+              header: ShopHeader(
+                title: 'Personalizacion',
+                subtitle: 'Gestiona los cosmeticos que ya son tuyos',
+                leadingIcon: Icons.arrow_back_ios_new_rounded,
+                onLeadingPressed: onBackPressed,
+                walletCoins: walletCoins,
+              ),
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          final data = snapshot.data ??
+              const _CustomizationViewData(
+                walletCoins: 0,
+                equippedCosmetics: EquippedCosmetics(),
+                ownedCosmeticItems: <ShopItem>[],
+              );
+          return _buildContent(
+            walletCoins: data.walletCoins,
+            equippedCosmetics: data.equippedCosmetics,
+            ownedCosmeticItems: data.ownedCosmeticItems,
+          );
+        },
+      );
+    }
+
+    return _buildContent(
+      walletCoins: walletCoins,
+      equippedCosmetics: equippedCosmetics,
+      ownedCosmeticItems: ownedCosmeticItems,
+    );
+  }
+
+  Widget _buildContent({
+    required int walletCoins,
+    required EquippedCosmetics equippedCosmetics,
+    required List<ShopItem> ownedCosmeticItems,
+  }) {
+    final List<ShopItem> backgrounds = _itemsForType(
+      ownedCosmeticItems,
+      ShopItemType.background,
+    );
+    final List<ShopItem> habitCards = _itemsForType(
+      ownedCosmeticItems,
+      ShopItemType.habitCard,
+    );
+    final List<ShopItem> userCards = _itemsForType(
+      ownedCosmeticItems,
+      ShopItemType.userCard,
+    );
 
     return ShopPageShell(
       header: ShopHeader(
@@ -52,9 +113,21 @@ class ShopCustomizationScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 ShopEquippedSummary(
-                  backgroundItem: _equippedItem(ShopItemType.background),
-                  habitCardItem: _equippedItem(ShopItemType.habitCard),
-                  userCardItem: _equippedItem(ShopItemType.userCard),
+                  backgroundItem: _equippedItem(
+                    ownedCosmeticItems,
+                    equippedCosmetics,
+                    ShopItemType.background,
+                  ),
+                  habitCardItem: _equippedItem(
+                    ownedCosmeticItems,
+                    equippedCosmetics,
+                    ShopItemType.habitCard,
+                  ),
+                  userCardItem: _equippedItem(
+                    ownedCosmeticItems,
+                    equippedCosmetics,
+                    ShopItemType.userCard,
+                  ),
                 ),
                 const SizedBox(height: ShopUiTokens.sectionSpacing),
                 const ShopSectionHeader(
@@ -98,12 +171,14 @@ class ShopCustomizationScreen extends StatelessWidget {
 
   Widget _emptyState() {
     return ShopEmptyState(
+      key: const Key('shopCustomizationEmptyState'),
       icon: Icons.auto_awesome_rounded,
       title: 'Todavia no tienes cosméticos.',
       message: 'Compra nuevos objetos en la tienda para personalizar Rutio.',
       action: onOpenCosmetics == null
           ? null
           : ShopPrimaryButton(
+              key: const Key('shopCustomizationOpenCosmetics'),
               label: 'Ir a Cosméticos',
               icon: Icons.palette_outlined,
               onPressed: onOpenCosmetics,
@@ -112,14 +187,18 @@ class ShopCustomizationScreen extends StatelessWidget {
     );
   }
 
-  List<ShopItem> _itemsForType(ShopItemType type) {
+  List<ShopItem> _itemsForType(List<ShopItem> ownedCosmeticItems, ShopItemType type) {
     return ownedCosmeticItems
         .where((ShopItem item) => item.type == type)
         .toList(growable: false);
   }
 
-  ShopItem? _equippedItem(ShopItemType type) {
-    final String? equippedId = _equippedItemId(type);
+  ShopItem? _equippedItem(
+    List<ShopItem> ownedCosmeticItems,
+    EquippedCosmetics equippedCosmetics,
+    ShopItemType type,
+  ) {
+    final String? equippedId = _equippedItemId(equippedCosmetics, type);
     if (equippedId == null) {
       return null;
     }
@@ -131,7 +210,10 @@ class ShopCustomizationScreen extends StatelessWidget {
     }
   }
 
-  String? _equippedItemId(ShopItemType type) {
+  String? _equippedItemId(
+    EquippedCosmetics equippedCosmetics,
+    ShopItemType type,
+  ) {
     switch (type) {
       case ShopItemType.background:
         return equippedCosmetics.backgroundItemId;
@@ -145,6 +227,75 @@ class ShopCustomizationScreen extends StatelessWidget {
       case ShopItemType.streakShield:
       case ShopItemType.mysteryBox:
         return null;
+    }
+  }
+
+  Future<_CustomizationViewData> _loadCustomizationViewData(
+    ShopCosmeticsController controller,
+  ) async {
+    final ShopCosmeticsState state = await controller.getState();
+    final int resolvedWalletCoins = await controller.getWalletCoins();
+    final List<ShopItem> resolvedItems = ShopAssetsCatalog.allAssets
+        .where(
+          (ShopAsset asset) => state.isAssetOwned(
+            asset.id,
+            bundles: ShopAssetsCatalog.allBundles,
+          ),
+        )
+        .map(_mapAssetToShopItem)
+        .whereType<ShopItem>()
+        .toList(growable: false);
+
+    return _CustomizationViewData(
+      walletCoins: resolvedWalletCoins,
+      equippedCosmetics: EquippedCosmetics(
+        backgroundItemId: state.equippedWallpaperId,
+        habitCardItemId: state.equippedHabitCardSkinId,
+        userCardItemId: state.equippedUserCardSkinId,
+      ),
+      ownedCosmeticItems: resolvedItems,
+    );
+  }
+
+  ShopItem? _mapAssetToShopItem(ShopAsset asset) {
+    final existing = ShopCatalog.getItemById(asset.id);
+    if (existing != null) {
+      return existing;
+    }
+
+    return ShopItem(
+      id: asset.id,
+      title: asset.nameEn,
+      description: asset.nameEs,
+      type: _mapAssetType(asset.category),
+      rarity: _mapRarity(asset.rarity),
+      priceCoins: asset.priceAmber,
+      assetRef: asset.assetPath,
+      metadata: <String, dynamic>{'familyId': asset.familyId},
+    );
+  }
+
+  ShopItemType _mapAssetType(ShopAssetCategory category) {
+    switch (category) {
+      case ShopAssetCategory.wallpaper:
+        return ShopItemType.background;
+      case ShopAssetCategory.habitCard:
+        return ShopItemType.habitCard;
+      case ShopAssetCategory.userCard:
+        return ShopItemType.userCard;
+    }
+  }
+
+  ShopItemRarity _mapRarity(ShopAssetRarity rarity) {
+    switch (rarity) {
+      case ShopAssetRarity.common:
+        return ShopItemRarity.common;
+      case ShopAssetRarity.rare:
+        return ShopItemRarity.rare;
+      case ShopAssetRarity.epic:
+        return ShopItemRarity.epic;
+      case ShopAssetRarity.legendary:
+        return ShopItemRarity.legendary;
     }
   }
 }
@@ -223,4 +374,16 @@ class _OwnedSection extends StatelessWidget {
         return false;
     }
   }
+}
+
+class _CustomizationViewData {
+  const _CustomizationViewData({
+    required this.walletCoins,
+    required this.equippedCosmetics,
+    required this.ownedCosmeticItems,
+  });
+
+  final int walletCoins;
+  final EquippedCosmetics equippedCosmetics;
+  final List<ShopItem> ownedCosmeticItems;
 }

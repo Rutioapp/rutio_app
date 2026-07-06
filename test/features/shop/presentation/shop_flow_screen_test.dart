@@ -6,8 +6,10 @@ import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
+import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/equipped_cosmetics.dart';
 import 'package:rutio/features/shop/domain/models/owned_shop_item.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/domain/shop_state.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_flow_screen.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
@@ -140,6 +142,13 @@ void main() {
         find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_warm_beige')),
       );
       await tester.pumpAndSettle();
+      await _tapVisible(
+        tester,
+        find.byKey(
+          const Key('shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+        ),
+      );
+      await tester.pumpAndSettle();
 
       expect(
         find.descendant(
@@ -169,6 +178,13 @@ void main() {
       await _tapVisible(
         tester,
         find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_warm_beige')),
+      );
+      await tester.pumpAndSettle();
+      await _tapVisible(
+        tester,
+        find.byKey(
+          const Key('shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+        ),
       );
       await tester.pumpAndSettle();
       await _tapVisible(
@@ -220,10 +236,9 @@ void main() {
         (WidgetTester tester) async {
       final env = await _createEnv(
         walletCoins: 500,
-        shopState: const ShopState(
-          inventory: <OwnedShopItem>[
-            OwnedShopItem(itemId: 'wallpaper_warm_beige'),
-          ],
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedBundleIds: const <String>[],
         ),
       );
 
@@ -267,6 +282,7 @@ Widget _flow(_Env env) {
 Future<_Env> _createEnv({
   int walletCoins = 320,
   ShopState shopState = const ShopState.initial(),
+  ShopCosmeticsState cosmeticsState = const ShopCosmeticsState.initial(),
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -280,6 +296,7 @@ Future<_Env> _createEnv({
 
   final shopRepository = ShopLocalRepository();
   await shopRepository.save(shopState);
+  await ShopCosmeticsRepository().save(cosmeticsState);
 
   return _Env(
     controller: ShopController(

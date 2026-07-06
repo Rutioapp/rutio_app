@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/data/local/user_state_storage.dart';
+import 'package:rutio/data/repositories/user_state_repository.dart';
+import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
+import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/equipped_cosmetics.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_customization_screen.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
+import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/utils/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -57,8 +65,14 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.byKey(const Key('shopOwnedStatus-wallpaper_warm_beige')), findsOneWidget);
-      expect(find.byKey(const Key('shopOwnedStatus-user_card_dune_layers')), findsOneWidget);
+      expect(
+        find.byKey(const Key('shopOwnedStatus-wallpaper_warm_beige')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedStatus-user_card_dune_layers')),
+        findsOneWidget,
+      );
       expect(find.text('Equipado'), findsAtLeastNWidgets(1));
     });
 
@@ -75,14 +89,19 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      await tester.ensureVisible(find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')));
-      await tester.tap(find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')));
+      await tester.ensureVisible(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+      );
+      await tester.tap(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+      );
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(pressedItemId, 'wallpaper_warm_beige');
     });
 
-    testWidgets('equipped object shows correct state', (WidgetTester tester) async {
+    testWidgets('equipped object shows correct state',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         _app(
           _screen(
@@ -96,10 +115,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(find.text('Equipado'), findsAtLeastNWidgets(1));
-      expect(find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')), findsOneWidget);
+      expect(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('empty state appears when no objects', (WidgetTester tester) async {
+    testWidgets('empty state appears when no objects',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         _app(
           _screen(
@@ -110,15 +133,16 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Todavia no tienes cosméticos.'), findsOneWidget);
+      expect(find.byKey(const Key('shopCustomizationEmptyState')), findsOneWidget);
       expect(
         find.text('Compra nuevos objetos en la tienda para personalizar Rutio.'),
         findsOneWidget,
       );
-      expect(find.text('Ir a Cosméticos'), findsOneWidget);
+      expect(find.byKey(const Key('shopCustomizationOpenCosmetics')), findsOneWidget);
     });
 
-    testWidgets('Ir a Cosméticos calls callback', (WidgetTester tester) async {
+    testWidgets('Ir a CosmÃ©ticos calls callback',
+        (WidgetTester tester) async {
       var openedCosmetics = false;
 
       await tester.pumpWidget(
@@ -133,10 +157,51 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      await tester.tap(find.text('Ir a Cosméticos'));
+      await tester.tap(find.byKey(const Key('shopCustomizationOpenCosmetics')));
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(openedCosmetics, isTrue);
+    });
+
+    testWidgets('V1 cosmetics controller shows owned assets from new system',
+        (WidgetTester tester) async {
+      final controller = await _createCosmeticsController(
+        walletCoins: 640,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedBundleIds: const <String>['bundle_warm_beige'],
+          equippedHabitCardSkinId: 'habit_card_warm_beige',
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            items: const <ShopItem>[],
+            cosmeticsController: controller,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedItem-wallpaper_warm_beige')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedItem-habit_card_warm_beige')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedItem-user_card_warm_beige')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedStatus-habit_card_warm_beige')),
+        findsOneWidget,
+      );
+      expect(find.text('Equipado'), findsAtLeastNWidgets(1));
+      expect(find.text('Pack'), findsNothing);
     });
   });
 }
@@ -156,6 +221,7 @@ Widget _screen({
   ValueChanged<String>? onEquipPressed,
   ValueChanged<String>? onItemPressed,
   VoidCallback? onOpenCosmetics,
+  ShopCosmeticsController? cosmeticsController,
 }) {
   return ShopCustomizationScreen(
     walletCoins: 640,
@@ -165,5 +231,31 @@ Widget _screen({
     onEquipPressed: onEquipPressed ?? (_) {},
     onItemPressed: onItemPressed ?? (_) {},
     onOpenCosmetics: onOpenCosmetics,
+    cosmeticsController: cosmeticsController,
   );
+}
+
+Future<ShopCosmeticsController> _createCosmeticsController({
+  required int walletCoins,
+  ShopCosmeticsState cosmeticsState = const ShopCosmeticsState.initial(),
+}) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  await ShopCosmeticsRepository().save(cosmeticsState);
+
+  final repo = UserStateRepository(storage: UserStateStorage())
+    ..setActiveUserScope('shop-customization-screen-user');
+  final store = UserStateStore(
+    repo,
+    journalEntrySyncService: JournalEntrySyncService(),
+  );
+  await store.save(
+    <String, dynamic>{
+      'userState': <String, dynamic>{
+        'userId': 'shop-customization-screen-user',
+        'wallet': <String, dynamic>{'coins': walletCoins},
+      },
+    },
+  );
+
+  return ShopCosmeticsController(userStateStore: store);
 }

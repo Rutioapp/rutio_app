@@ -9,6 +9,7 @@ import 'package:rutio/features/shop/domain/models/shop_cosmetics_operation_resul
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_detail_sheet.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_purchase_confirmation_sheet.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_product_card.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_empty_state.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_filter_chip.dart';
@@ -152,8 +153,10 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                       hasEnoughCoins: _walletCoins >= asset.priceAmber,
                       busy: _busyId == asset.id,
                       onPressed: () => _openAssetDetail(asset, ownershipState),
-                      onPrimaryActionPressed: () =>
-                          _handleAssetPrimaryAction(asset, ownershipState),
+                      onPrimaryActionPressed: () => _onAssetPrimaryActionPressed(
+                        asset,
+                        ownershipState,
+                      ),
                     ),
                   _BundleEntry(:final bundle, :final assets, :final isOwned) =>
                     ShopCosmeticsProductCard.bundle(
@@ -163,7 +166,8 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                       hasEnoughCoins: _walletCoins >= bundle.priceAmber,
                       busy: _busyId == bundle.id,
                       onPressed: () => _openBundleDetail(bundle, assets, isOwned),
-                      onPrimaryActionPressed: () => _handleBundlePurchase(bundle),
+                      onPrimaryActionPressed: () =>
+                          _onBundlePrimaryActionPressed(bundle, assets),
                     ),
                 };
               },
@@ -279,6 +283,17 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     _showFeedback(_assetFeedback(result, ownershipState));
   }
 
+  Future<void> _onAssetPrimaryActionPressed(
+    ShopAsset asset,
+    ShopAssetOwnershipState ownershipState,
+  ) async {
+    if (ownershipState == ShopAssetOwnershipState.locked) {
+      await _confirmAssetPurchase(asset);
+      return;
+    }
+    await _handleAssetPrimaryAction(asset, ownershipState);
+  }
+
   Future<void> _handleBundlePurchase(ShopBundle bundle) async {
     if (_busyId != null) return;
 
@@ -297,6 +312,13 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     _showFeedback(_bundleFeedback(result));
   }
 
+  Future<void> _onBundlePrimaryActionPressed(
+    ShopBundle bundle,
+    List<ShopAsset> assets,
+  ) async {
+    await _confirmBundlePurchase(bundle, assets);
+  }
+
   void _openAssetDetail(
     ShopAsset asset,
     ShopAssetOwnershipState ownershipState,
@@ -313,6 +335,10 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
           busy: _busyId == asset.id,
           onPrimaryActionPressed: () async {
             Navigator.of(context).pop();
+            if (ownershipState == ShopAssetOwnershipState.locked) {
+              await _confirmAssetPurchase(asset);
+              return;
+            }
             await _handleAssetPrimaryAction(asset, ownershipState);
           },
         );
@@ -338,11 +364,57 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
           busy: _busyId == bundle.id,
           onPrimaryActionPressed: () async {
             Navigator.of(context).pop();
-            await _handleBundlePurchase(bundle);
+            await _confirmBundlePurchase(bundle, assets);
           },
         );
       },
     );
+  }
+
+  Future<void> _confirmAssetPurchase(ShopAsset asset) async {
+    if (_busyId != null) return;
+
+    final bool? shouldConfirm = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return ShopCosmeticsPurchaseConfirmationSheet.asset(
+          asset: asset,
+          walletCoins: _walletCoins,
+          onCancel: () => Navigator.of(context).pop(false),
+          onConfirm: () => Navigator.of(context).pop(true),
+        );
+      },
+    );
+
+    if (shouldConfirm != true || !mounted) return;
+    await _handleAssetPrimaryAction(asset, ShopAssetOwnershipState.locked);
+  }
+
+  Future<void> _confirmBundlePurchase(
+    ShopBundle bundle,
+    List<ShopAsset> assets,
+  ) async {
+    if (_busyId != null) return;
+
+    final bool? shouldConfirm = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return ShopCosmeticsPurchaseConfirmationSheet.bundle(
+          bundle: bundle,
+          bundleAssets: assets,
+          walletCoins: _walletCoins,
+          onCancel: () => Navigator.of(context).pop(false),
+          onConfirm: () => Navigator.of(context).pop(true),
+        );
+      },
+    );
+
+    if (shouldConfirm != true || !mounted) return;
+    await _handleBundlePurchase(bundle);
   }
 
   void _showFeedback(String message) {

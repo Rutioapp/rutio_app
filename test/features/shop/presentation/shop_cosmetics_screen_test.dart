@@ -178,7 +178,7 @@ void main() {
       expect(find.text('Equipar'), findsNothing);
     });
 
-    testWidgets('buying an asset updates state to equipable',
+    testWidgets('tapping Comprar opens confirmation and does not buy yet',
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
 
@@ -187,6 +187,68 @@ void main() {
 
       await tester.tap(
         find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(
+          const Key('shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(
+            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+          ),
+          matching: find.text('Comprar'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('canceling asset confirmation does not buy item',
+        (WidgetTester tester) async {
+      final controller = await _createController(walletCoins: 600);
+
+      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('shopCosmeticsPurchaseConfirmationCancel')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(
+            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+          ),
+          matching: find.text('Comprar'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('confirming asset purchase updates state to equipable',
+        (WidgetTester tester) async {
+      final controller = await _createController(walletCoins: 600);
+
+      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          const Key('shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -201,7 +263,7 @@ void main() {
       );
     });
 
-    testWidgets('buying a bundle unlocks included assets for equip',
+    testWidgets('tapping Comprar pack opens confirmation and does not buy yet',
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 1000);
 
@@ -212,6 +274,51 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(const Key('shopCosmeticsAction-bundle_warm_beige')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(
+          const Key('shopCosmeticsPurchaseConfirmationConfirm-bundle_warm_beige'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const Key('shopCosmeticsPurchaseConfirmationCancel')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('shopCosmeticsFilter-wallpapers')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(
+            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+          ),
+          matching: find.text('Comprar'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('confirming bundle purchase unlocks included assets for equip',
+        (WidgetTester tester) async {
+      final controller = await _createController(walletCoins: 1000);
+
+      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('shopCosmeticsFilter-packs')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('shopCosmeticsAction-bundle_warm_beige')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(
+          const Key('shopCosmeticsPurchaseConfirmationConfirm-bundle_warm_beige'),
+        ),
       );
       await tester.pumpAndSettle();
 

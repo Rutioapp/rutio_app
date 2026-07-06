@@ -101,12 +101,18 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
       return;
     }
 
+    final poppedPage = _stack.last;
     setState(() {
       _stack.removeLast();
       if (_stack.last != _ShopFlowPage.detail) {
         _selectedItemId = null;
       }
     });
+
+    if (poppedPage == _ShopFlowPage.cosmetics ||
+        poppedPage == _ShopFlowPage.customization) {
+      _reloadSnapshot();
+    }
   }
 
   void _openCosmetics() => _pushPage(_ShopFlowPage.cosmetics);
@@ -140,12 +146,16 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
     _showSnack('Disponible proximamente');
   }
 
-  Future<void> _handleEquipPressed(String itemId) async {
-    final result = await widget.controller.equipItem(itemId);
+  Future<void> _handleCosmeticsEquipPressed(String itemId) async {
+    final result = await widget.cosmeticsController.equipAsset(itemId);
     if (!mounted) return;
 
     await _reloadSnapshot();
-    _showSnack(_equipMessage(result));
+    _showSnack(
+      result.isSuccess
+          ? 'Cosmetico equipado'
+          : 'No se ha podido equipar el cosmetico',
+    );
   }
 
   Future<void> _handlePurchaseCompleted(ShopControllerResult result) async {
@@ -163,13 +173,6 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   Future<void> _handleEquipCompleted(ShopControllerResult result) async {
     if (!mounted) return;
     await _reloadSnapshot();
-  }
-
-  String _equipMessage(ShopControllerResult result) {
-    if (result.status == ShopControllerStatus.success) {
-      return 'Cosmetico equipado';
-    }
-    return 'No se ha podido equipar el item';
   }
 
   @override
@@ -241,8 +244,9 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
           walletCoins: snapshot.walletCoins,
           equippedCosmetics: snapshot.equippedCosmetics,
           ownedCosmeticItems: snapshot.ownedCosmeticItems,
+          cosmeticsController: widget.cosmeticsController,
           onBackPressed: _popPage,
-          onEquipPressed: _handleEquipPressed,
+          onEquipPressed: _handleCosmeticsEquipPressed,
           onItemPressed: _openDetail,
           onOpenCosmetics: _openCosmetics,
         );
