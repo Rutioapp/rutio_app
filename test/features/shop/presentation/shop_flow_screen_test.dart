@@ -259,6 +259,40 @@ void main() {
 
       expect(find.text('Detalle'), findsAtLeastNWidgets(1));
     });
+
+    testWidgets('customization reflects equipped state from cosmetics repository',
+        (WidgetTester tester) async {
+      final env = await _createEnv(
+        walletCoins: 500,
+        shopState: const ShopState(
+          equippedCosmetics:
+              EquippedCosmetics(backgroundItemId: 'wallpaper_soft_camel'),
+        ),
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedBundleIds: const <String>[],
+          equippedWallpaperId: 'wallpaper_warm_beige',
+        ),
+      );
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pumpAndSettle();
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeHeroCustomization')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('shopOwnedItem-wallpaper_warm_beige')),
+          matching: find.text('Equipado'),
+        ),
+        findsWidgets,
+      );
+      expect(find.byKey(const Key('shopOwnedItem-wallpaper_soft_camel')), findsNothing);
+    });
   });
 }
 

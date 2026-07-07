@@ -327,6 +327,46 @@ void main() {
         'user_card_warm_beige',
       );
     });
+
+    test('equipAsset updates the correct slot for each category', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 1000);
+
+      await controller.purchaseAsset('wallpaper_warm_beige');
+      await controller.purchaseAsset('habit_card_warm_beige');
+      await controller.purchaseAsset('user_card_warm_beige');
+
+      final wallpaperResult = await controller.equipAsset('wallpaper_warm_beige');
+      final habitCardResult = await controller.equipAsset('habit_card_warm_beige');
+      final userCardResult = await controller.equipAsset('user_card_warm_beige');
+      final persisted = await ShopCosmeticsRepository().load();
+
+      expect(wallpaperResult.isSuccess, isTrue);
+      expect(habitCardResult.isSuccess, isTrue);
+      expect(userCardResult.isSuccess, isTrue);
+      expect(persisted.equippedWallpaperId, 'wallpaper_warm_beige');
+      expect(persisted.equippedHabitCardSkinId, 'habit_card_warm_beige');
+      expect(persisted.equippedUserCardSkinId, 'user_card_warm_beige');
+    });
+
+    test('equipAsset fails for unowned asset', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 0);
+
+      final result = await controller.equipAsset('wallpaper_warm_beige');
+
+      expect(result.status, ShopCosmeticsOperationStatus.assetNotOwned);
+      expect((await ShopCosmeticsRepository().load()).equippedWallpaperId, isNull);
+    });
+
+    test('equipAsset fails for missing asset id', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 0);
+
+      final result = await controller.equipAsset('missing_asset');
+
+      expect(result.status, ShopCosmeticsOperationStatus.assetNotFound);
+    });
   });
 }
 

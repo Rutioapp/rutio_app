@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:rutio/l10n/l10n.dart';
@@ -457,10 +458,10 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                     minHeight: widget.compact ? 68 : 76,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white.withValues(alpha: 0.74),
                     borderRadius: BorderRadius.circular(radius),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Colors.white.withValues(alpha: 0.34),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -478,8 +479,16 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                             widget.backgroundImageAssetPath!,
                             key: const Key('habitCardBackgroundImage'),
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const SizedBox.shrink(),
+                            errorBuilder: (_, error, stackTrace) {
+                              if (kDebugMode) {
+                                debugPrint(
+                                  '[ShopCosmetics] HabitCardWidget failed to load '
+                                  'backgroundImageAssetPath=${widget.backgroundImageAssetPath} '
+                                  'error=$error',
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
                           ),
                         ),
                       if (widget.backgroundImageAssetPath != null)
@@ -490,9 +499,9 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: <Color>[
-                                  Colors.white.withValues(alpha: 0.26),
-                                  Colors.white.withValues(alpha: 0.44),
-                                  Colors.white.withValues(alpha: 0.60),
+                                  Colors.white.withValues(alpha: 0.12),
+                                  Colors.white.withValues(alpha: 0.22),
+                                  Colors.white.withValues(alpha: 0.34),
                                 ],
                               ),
                             ),

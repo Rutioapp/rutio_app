@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_service.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
@@ -13,13 +14,25 @@ class ShopCosmeticsController {
     required UserStateStore userStateStore,
     ShopCosmeticsRepository? repository,
   })  : _userStateStore = userStateStore,
-        _repository = repository ?? ShopCosmeticsRepository();
+        _repository = repository ??
+            ShopCosmeticsRepository(
+              scopeResolver: () =>
+                  userStateStore.activeLocalScopeUserId ?? userStateStore.userId,
+            );
 
   final UserStateStore _userStateStore;
   final ShopCosmeticsRepository _repository;
 
   Future<ShopCosmeticsState> getState() async {
-    return _repository.load();
+    final state = await _repository.load();
+    _log(
+      'getState scope=${_currentScope() ?? 'guest'} '
+      'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds} '
+      'equippedWallpaperId=${state.equippedWallpaperId} '
+      'equippedHabitCardSkinId=${state.equippedHabitCardSkinId} '
+      'equippedUserCardSkinId=${state.equippedUserCardSkinId}',
+    );
+    return state;
   }
 
   Future<int> getWalletCoins() => _walletCoins();
@@ -73,7 +86,15 @@ class ShopCosmeticsController {
 
   Future<ShopCosmeticsOperationResult> purchaseAsset(String assetId) async {
     final service = await _service();
+    final asset = ShopAssetsCatalog.getAssetById(assetId);
     final result = service.purchaseAsset(assetId);
+    _log(
+      'purchaseAsset assetId=$assetId found=${asset != null} category=${asset?.category.name} '
+      'success=${result.isSuccess} ownedAssetIds=${result.state.ownedAssetIds} '
+      'equippedWallpaperId=${result.state.equippedWallpaperId} '
+      'equippedHabitCardSkinId=${result.state.equippedHabitCardSkinId} '
+      'equippedUserCardSkinId=${result.state.equippedUserCardSkinId}',
+    );
     if (!result.isSuccess) return result;
     await _persist(result.state, result.walletCoins);
     return result;
@@ -82,6 +103,13 @@ class ShopCosmeticsController {
   Future<ShopCosmeticsOperationResult> purchaseBundle(String bundleId) async {
     final service = await _service();
     final result = service.purchaseBundle(bundleId);
+    _log(
+      'purchaseBundle bundleId=$bundleId success=${result.isSuccess} '
+      'ownedBundleIds=${result.state.ownedBundleIds} '
+      'equippedWallpaperId=${result.state.equippedWallpaperId} '
+      'equippedHabitCardSkinId=${result.state.equippedHabitCardSkinId} '
+      'equippedUserCardSkinId=${result.state.equippedUserCardSkinId}',
+    );
     if (!result.isSuccess) return result;
     await _persist(result.state, result.walletCoins);
     return result;
@@ -89,7 +117,29 @@ class ShopCosmeticsController {
 
   Future<ShopCosmeticsOperationResult> equipAsset(String assetId) async {
     final service = await _service();
+    final asset = ShopAssetsCatalog.getAssetById(assetId);
+    final owned = asset == null ? false : service.isAssetOwned(assetId);
+    final includedInOwnedBundle = asset == null
+        ? false
+        : !service.state.ownedAssetIds.contains(assetId) &&
+            service.state.isAssetOwned(
+              assetId,
+              bundles: ShopAssetsCatalog.allBundles,
+            );
     final result = service.equipAsset(assetId);
+    final updatedSlot = switch (asset?.category) {
+      ShopAssetCategory.wallpaper => 'equippedWallpaperId',
+      ShopAssetCategory.habitCard => 'equippedHabitCardSkinId',
+      ShopAssetCategory.userCard => 'equippedUserCardSkinId',
+      null => 'none',
+    };
+    _log(
+      'equipAsset assetId=$assetId found=${asset != null} category=${asset?.category.name} '
+      'owned=$owned includedInOwnedBundle=$includedInOwnedBundle success=${result.isSuccess} '
+      'updatedSlot=$updatedSlot equippedWallpaperId=${result.state.equippedWallpaperId} '
+      'equippedHabitCardSkinId=${result.state.equippedHabitCardSkinId} '
+      'equippedUserCardSkinId=${result.state.equippedUserCardSkinId}',
+    );
     if (!result.isSuccess) return result;
     await _persist(result.state, result.walletCoins);
     return result;
@@ -108,6 +158,10 @@ class ShopCosmeticsController {
   Future<ShopCosmeticsService> _service() async {
     final walletCoins = await _walletCoins();
     final state = await _repository.load();
+    _log(
+      'createService scope=${_currentScope() ?? 'guest'} walletCoins=$walletCoins '
+      'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds}',
+    );
     return ShopCosmeticsService(state: state, walletCoins: walletCoins);
   }
 
@@ -140,6 +194,12 @@ class ShopCosmeticsController {
     userState['wallet'] = wallet;
     root['userState'] = userState;
     await _userStateStore.save(root);
+    _log(
+      'persistState scope=${_currentScope() ?? 'guest'} walletCoins=$walletCoins persisted=true '
+      'equippedWallpaperId=${state.equippedWallpaperId} '
+      'equippedHabitCardSkinId=${state.equippedHabitCardSkinId} '
+      'equippedUserCardSkinId=${state.equippedUserCardSkinId}',
+    );
   }
 
   Future<Map<String, dynamic>?> _ensureRoot() async {
@@ -155,8 +215,16 @@ class ShopCosmeticsController {
     ShopCosmeticsState state,
     ShopAssetCategory category,
   ) {
+    final logLabel = switch (category) {
+      ShopAssetCategory.wallpaper => 'resolveWallpaper',
+      ShopAssetCategory.habitCard => 'resolveHabitCard',
+      ShopAssetCategory.userCard => 'resolveUserCard',
+    };
     final assetId = state.getEquippedAssetIdForCategory(category);
     if (assetId == null || assetId.trim().isEmpty) {
+      _log(
+        '$logLabel equippedId=$assetId owned=false categoryValid=false assetPath=null',
+      );
       return null;
     }
 
@@ -165,13 +233,40 @@ class ShopCosmeticsController {
       walletCoins: 0,
     ).getEquippedAssetForCategory(category);
     if (asset == null || asset.category != category) {
+      _log(
+        '$logLabel equippedId=$assetId owned=false categoryValid=false assetPath=null',
+      );
       return null;
     }
 
-    if (!state.isAssetOwned(asset.id, bundles: ShopAssetsCatalog.allBundles)) {
+    final owned = state.isAssetOwned(asset.id, bundles: ShopAssetsCatalog.allBundles);
+    if (!owned) {
+      _log(
+        '$logLabel equippedId=$assetId owned=false categoryValid=true assetPath=null',
+      );
       return null;
     }
 
+    _log(
+      '$logLabel equippedId=$assetId owned=true categoryValid=true assetPath=${asset.assetPath}',
+    );
     return asset;
+  }
+
+  String? _currentScope() {
+    final active = _userStateStore.activeLocalScopeUserId?.trim();
+    if (active != null && active.isNotEmpty) {
+      return active;
+    }
+    final userId = _userStateStore.userId?.trim();
+    if (userId != null && userId.isNotEmpty) {
+      return userId;
+    }
+    return null;
+  }
+
+  void _log(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[ShopCosmetics] $message');
   }
 }

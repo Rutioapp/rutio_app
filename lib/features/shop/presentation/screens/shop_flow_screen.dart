@@ -74,9 +74,11 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   Future<ShopFlowSnapshot> _loadSnapshot() async {
     final int walletCoins = widget.controller.getWalletCoins();
     final shopState = await _shopRepository.load();
+    final cosmeticsState = await widget.cosmeticsController.getState();
     return ShopFlowSnapshot.fromStore(
       walletCoins: walletCoins,
       shopState: shopState,
+      cosmeticsState: cosmeticsState,
     );
   }
 

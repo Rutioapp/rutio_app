@@ -203,6 +203,47 @@ void main() {
       expect(find.text('Equipado'), findsAtLeastNWidgets(1));
       expect(find.text('Pack'), findsNothing);
     });
+
+    testWidgets('controller-backed equip refreshes UI from persisted state',
+        (WidgetTester tester) async {
+      final controller = await _createCosmeticsController(
+        walletCoins: 640,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedBundleIds: const <String>[],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          _CustomizationHarness(
+            cosmeticsController: controller,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Disponible'),
+        findsWidgets,
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+      );
+      await tester.tap(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('shopOwnedItem-wallpaper_warm_beige')),
+          matching: find.text('Equipado'),
+        ),
+        findsWidgets,
+      );
+    });
   });
 }
 
@@ -258,4 +299,40 @@ Future<ShopCosmeticsController> _createCosmeticsController({
   );
 
   return ShopCosmeticsController(userStateStore: store);
+}
+
+class _CustomizationHarness extends StatefulWidget {
+  const _CustomizationHarness({
+    required this.cosmeticsController,
+  });
+
+  final ShopCosmeticsController cosmeticsController;
+
+  @override
+  State<_CustomizationHarness> createState() => _CustomizationHarnessState();
+}
+
+class _CustomizationHarnessState extends State<_CustomizationHarness> {
+  int _refreshTick = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShopCustomizationScreen(
+      key: ValueKey<int>(_refreshTick),
+      walletCoins: 0,
+      equippedCosmetics: const EquippedCosmetics(),
+      ownedCosmeticItems: const <ShopItem>[],
+      cosmeticsController: widget.cosmeticsController,
+      onBackPressed: () {},
+      onItemPressed: (_) {},
+      onOpenCosmetics: () {},
+      onEquipPressed: (String itemId) async {
+        await widget.cosmeticsController.equipAsset(itemId);
+        if (!mounted) return;
+        setState(() {
+          _refreshTick++;
+        });
+      },
+    );
+  }
 }

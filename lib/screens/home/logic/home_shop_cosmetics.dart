@@ -7,8 +7,18 @@ extension _HomeScreenShopCosmetics on _HomeScreenState {
         userStateStore: context.read<UserStateStore>(),
       );
       final asset = await controller.getEquippedHabitCardAssetOrNull();
+      if (kDebugMode) {
+        debugPrint(
+          '[ShopCosmetics] HomeHabitCard assetPath=${asset?.assetPath} fallback=${asset == null}',
+        );
+      }
       return asset?.assetPath;
     } catch (_) {
+      if (kDebugMode) {
+        debugPrint(
+          '[ShopCosmetics] HomeHabitCard failed to resolve background image, using fallback',
+        );
+      }
       return null;
     }
   }

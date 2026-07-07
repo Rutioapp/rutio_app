@@ -22,6 +22,21 @@ void main() {
       }
     });
 
+    test('every catalog assetPath and previewAssetPath uses webp extension', () {
+      for (final asset in ShopAssetsCatalog.allAssets) {
+        expect(
+          p.extension(asset.assetPath).toLowerCase(),
+          '.webp',
+          reason: asset.assetPath,
+        );
+        expect(
+          p.extension(asset.previewAssetPath).toLowerCase(),
+          '.webp',
+          reason: asset.previewAssetPath,
+        );
+      }
+    });
+
     test('catalog asset paths are unique', () {
       final assetPaths = ShopAssetsCatalog.allAssets
           .map((asset) => asset.assetPath)
@@ -32,6 +47,28 @@ void main() {
 
       expect(assetPaths.toSet(), hasLength(assetPaths.length));
       expect(previewPaths.toSet(), hasLength(previewPaths.length));
+    });
+
+    test('catalog asset paths match on-disk paths exactly', () {
+      final actualRelativePaths = Directory(p.join(projectRoot, 'assets', 'shop'))
+          .listSync(recursive: true)
+          .whereType<File>()
+          .map(
+            (file) => p.relative(
+              p.normalize(file.path),
+              from: p.normalize(projectRoot),
+            ).replaceAll('\\', '/'),
+          )
+          .toSet();
+
+      for (final asset in ShopAssetsCatalog.allAssets) {
+        expect(actualRelativePaths.contains(asset.assetPath), isTrue, reason: asset.assetPath);
+        expect(
+          actualRelativePaths.contains(asset.previewAssetPath),
+          isTrue,
+          reason: asset.previewAssetPath,
+        );
+      }
     });
 
     test('assets/shop contains no obvious orphan files', () {

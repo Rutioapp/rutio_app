@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -32,6 +33,9 @@ class UserIdentityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (backgroundImageAssetPath != null) {
+      _log(
+        'UserIdentityRow direct backgroundImageAssetPath=$backgroundImageAssetPath fallback=false',
+      );
       return _UserIdentityRowSurface(
         username: username,
         level: level,
@@ -44,6 +48,9 @@ class UserIdentityRow extends StatelessWidget {
     }
 
     try {
+      final storeRevision = context.select<UserStateStore, String?>(
+        (UserStateStore store) => _lastSavedAt(store.state),
+      );
       final store = context.read<UserStateStore>();
       final controller = ShopCosmeticsController(userStateStore: store);
       return FutureBuilder<String?>(
@@ -51,6 +58,10 @@ class UserIdentityRow extends StatelessWidget {
             .getEquippedUserCardAssetOrNull()
             .then((asset) => asset?.assetPath),
         builder: (context, snapshot) {
+          _log(
+            'UserIdentityRow storeRevision=$storeRevision backgroundImageAssetPath=${snapshot.data} '
+            'fallback=${snapshot.data == null}',
+          );
           return _UserIdentityRowSurface(
             username: username,
             level: level,
@@ -63,6 +74,7 @@ class UserIdentityRow extends StatelessWidget {
         },
       );
     } catch (_) {
+      _log('UserIdentityRow failed to resolve background image, using fallback');
       return _UserIdentityRowSurface(
         username: username,
         level: level,
@@ -72,6 +84,19 @@ class UserIdentityRow extends StatelessWidget {
         onTap: onTap,
       );
     }
+  }
+
+  static String? _lastSavedAt(Map<String, dynamic>? root) {
+    final userState = root?['userState'];
+    if (userState is! Map) return null;
+    final meta = userState['meta'];
+    if (meta is! Map) return null;
+    return meta['lastSavedAt']?.toString();
+  }
+
+  static void _log(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[ShopCosmetics] $message');
   }
 }
 
@@ -120,7 +145,14 @@ class _UserIdentityRowSurface extends StatelessWidget {
                     backgroundImageAssetPath!,
                     key: const Key('userIdentityRowBackgroundImage'),
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (_, error, stackTrace) {
+                      UserIdentityRow._log(
+                        'UserIdentityRow failed to load '
+                        'backgroundImageAssetPath=$backgroundImageAssetPath '
+                        'error=$error',
+                      );
+                      return const SizedBox.shrink();
+                    },
                   ),
                 ),
               if (backgroundImageAssetPath != null)

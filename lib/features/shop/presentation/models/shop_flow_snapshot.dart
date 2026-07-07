@@ -1,7 +1,10 @@
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/domain/models/backpack_item.dart';
 import 'package:rutio/features/shop/domain/models/equipped_cosmetics.dart';
 import 'package:rutio/features/shop/domain/models/owned_shop_item.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/domain/models/shop_collection.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
@@ -12,22 +15,26 @@ class ShopFlowSnapshot {
   const ShopFlowSnapshot({
     required this.walletCoins,
     required this.shopState,
+    required this.cosmeticsState,
     required this.collections,
     required this.catalogItems,
   });
 
   final int walletCoins;
   final ShopState shopState;
+  final ShopCosmeticsState cosmeticsState;
   final List<ShopCollection> collections;
   final List<ShopItem> catalogItems;
 
   factory ShopFlowSnapshot.fromStore({
     required int walletCoins,
     required ShopState shopState,
+    required ShopCosmeticsState cosmeticsState,
   }) {
     return ShopFlowSnapshot(
       walletCoins: walletCoins,
       shopState: shopState,
+      cosmeticsState: cosmeticsState,
       collections: ShopCatalog.allCollections,
       catalogItems: ShopCatalog.allItems,
     );
@@ -37,14 +44,28 @@ class ShopFlowSnapshot {
 
   List<BackpackItem> get backpackItems => shopState.backpackItems;
 
-  EquippedCosmetics get equippedCosmetics => shopState.equippedCosmetics;
+  EquippedCosmetics get equippedCosmetics => EquippedCosmetics(
+        backgroundItemId: cosmeticsState.equippedWallpaperId,
+        habitCardItemId: cosmeticsState.equippedHabitCardSkinId,
+        userCardItemId: cosmeticsState.equippedUserCardSkinId,
+      );
 
   Set<String> get ownedItemIds =>
       inventory.map((OwnedShopItem item) => item.itemId).toSet();
 
   List<ShopItem> get ownedCosmeticItems {
-    return inventory
-        .map((OwnedShopItem entry) => ShopCatalog.getItemById(entry.itemId))
+    final ownedCosmeticIds = ShopAssetsCatalog.allAssets
+        .where(
+          (ShopAsset asset) => cosmeticsState.isAssetOwned(
+            asset.id,
+            bundles: ShopAssetsCatalog.allBundles,
+          ),
+        )
+        .map((ShopAsset asset) => asset.id)
+        .toList(growable: false);
+
+    return ownedCosmeticIds
+        .map(ShopCatalog.getItemById)
         .whereType<ShopItem>()
         .where((ShopItem item) => item.category == ShopItemCategory.cosmetic)
         .toList(growable: false);

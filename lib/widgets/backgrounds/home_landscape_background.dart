@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/stores/user_state_store.dart';
@@ -16,10 +17,16 @@ class HomeBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (wallpaperAssetPath != null || !resolveEquippedWallpaper) {
+      _log(
+        'HomeBackground direct wallpaperAssetPath=$wallpaperAssetPath fallback=${wallpaperAssetPath == null}',
+      );
       return _HomeBackgroundScene(wallpaperAssetPath: wallpaperAssetPath);
     }
 
     try {
+      final storeRevision = context.select<UserStateStore, String?>(
+        (UserStateStore store) => _lastSavedAt(store.state),
+      );
       final store = context.read<UserStateStore>();
       final controller = ShopCosmeticsController(userStateStore: store);
       return FutureBuilder<String?>(
@@ -27,12 +34,30 @@ class HomeBackground extends StatelessWidget {
             .getEquippedWallpaperAssetOrNull()
             .then((asset) => asset?.assetPath),
         builder: (context, snapshot) {
+          _log(
+            'HomeBackground storeRevision=$storeRevision wallpaperAssetPath=${snapshot.data} '
+            'fallback=${snapshot.data == null}',
+          );
           return _HomeBackgroundScene(wallpaperAssetPath: snapshot.data);
         },
       );
     } catch (_) {
+      _log('HomeBackground failed to resolve wallpaper, using fallback');
       return const _HomeBackgroundScene();
     }
+  }
+
+  static String? _lastSavedAt(Map<String, dynamic>? root) {
+    final userState = root?['userState'];
+    if (userState is! Map) return null;
+    final meta = userState['meta'];
+    if (meta is! Map) return null;
+    return meta['lastSavedAt']?.toString();
+  }
+
+  static void _log(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[ShopCosmetics] $message');
   }
 }
 
@@ -45,38 +70,96 @@ class _HomeBackgroundScene extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (wallpaperAssetPath == null) {
+      HomeBackground._log(
+        'HomeLandscapeBackground fallback=true mode=defaultBackground',
+      );
+      return const Positioned.fill(
+        child: IgnorePointer(
+          child: _DefaultHomeBackgroundVisual(),
+        ),
+      );
+    }
+
+    HomeBackground._log(
+      'HomeLandscapeBackground applying wallpaperAssetPath=$wallpaperAssetPath '
+      'fallback=false mode=customWallpaper',
+    );
     return Positioned.fill(
       child: IgnorePointer(
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
+        child: _CustomWallpaperBackgroundVisual(
+          wallpaperAssetPath: wallpaperAssetPath!,
+        ),
+      ),
+    );
+  }
+}
+
+class _DefaultHomeBackgroundVisual extends StatelessWidget {
+  const _DefaultHomeBackgroundVisual();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      key: const Key('homeBackgroundDefaultBackground'),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            Color(0xFFEAF3FB),
+            Color(0xFFD6EAF6),
+            Color(0xFFC8DDED),
+            Color(0xFFD8CEA8),
+            Color(0xFFE6DCC0),
+          ],
+          stops: <double>[0.0, 0.28, 0.52, 0.78, 1.0],
+        ),
+      ),
+      child: const _HomeBackgroundArt(),
+    );
+  }
+}
+
+class _CustomWallpaperBackgroundVisual extends StatelessWidget {
+  const _CustomWallpaperBackgroundVisual({
+    required this.wallpaperAssetPath,
+  });
+
+  final String wallpaperAssetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          wallpaperAssetPath,
+          key: const Key('homeBackgroundWallpaperImage'),
+          fit: BoxFit.cover,
+          errorBuilder: (_, error, stackTrace) {
+            HomeBackground._log(
+              'HomeLandscapeBackground asset load failed path=$wallpaperAssetPath',
+            );
+            return const _DefaultHomeBackgroundVisual();
+          },
+        ),
+        const DecoratedBox(
+          key: Key('homeBackgroundWallpaperOverlay'),
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: <Color>[
-                Color(0xFFEAF3FB),
-                Color(0xFFD6EAF6),
-                Color(0xFFC8DDED),
-                Color(0xFFD8CEA8),
-                Color(0xFFE6DCC0),
+                Color(0x0CFFFDF8),
+                Color(0x08FFF9F0),
+                Color(0x14F4ECDD),
               ],
-              stops: <double>[0.0, 0.28, 0.52, 0.78, 1.0],
+              stops: <double>[0.0, 0.46, 1.0],
             ),
           ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (wallpaperAssetPath != null)
-                Image.asset(
-                  wallpaperAssetPath!,
-                  key: const Key('homeBackgroundWallpaperImage'),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                ),
-              const _HomeBackgroundArt(),
-            ],
-          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -87,6 +170,7 @@ class _HomeBackgroundArt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
+      key: const Key('homeBackgroundDefaultArt'),
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final landscapeHeight = width * (180 / 290);

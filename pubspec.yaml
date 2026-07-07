@@ -86,9 +86,18 @@ flutter:
     - assets/templates/user_state_template.json
     - assets/data/habits_catalog.json
     - assets/images/statistics/
-    - assets/shop/wallpapers/
-    - assets/shop/habit_cards/
-    - assets/shop/user_cards/
+    - assets/shop/wallpapers/common/
+    - assets/shop/wallpapers/rare/
+    - assets/shop/wallpapers/epic/
+    - assets/shop/wallpapers/legendary/
+    - assets/shop/habit_cards/common/
+    - assets/shop/habit_cards/rare/
+    - assets/shop/habit_cards/epic/
+    - assets/shop/habit_cards/legendary/
+    - assets/shop/user_cards/common/
+    - assets/shop/user_cards/rare/
+    - assets/shop/user_cards/epic/
+    - assets/shop/user_cards/legendary/
     - "design/badges/Figma Icons/Bronce/"
     - "design/badges/Figma Icons/Diamante/"
     - "design/badges/Figma Icons/Diamante Prismatico/"
