@@ -42,19 +42,20 @@ class ArchivedHabitsScreen extends StatelessWidget {
         Scaffold(
           backgroundColor: Colors.transparent,
           drawer: AppViewDrawer(
-            selected: 'archived',
-            onGoDaily: () => _navReplace(context, const HomeScreen()),
-            onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
-            onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
-            onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-            onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
-            onGoDiaryV2: () =>
-                Navigator.of(context).pushReplacementNamed('/diary'),
-            onGoArchived: () =>
-                _navReplace(context, const ArchivedHabitsScreen()),
-            onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
-            onGoProfile: () => _navReplace(context, const ProfileScreen()),
-          ),
+              selected: 'archived',
+              onGoDaily: () => _navReplace(context, const HomeScreen()),
+              onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
+              onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
+              onGoTodo: () => Navigator.pushNamed(context, '/todo'),
+              onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
+              onGoDiaryV2: () =>
+                  Navigator.of(context).pushReplacementNamed('/diary'),
+              onGoArchived: () =>
+                  _navReplace(context, const ArchivedHabitsScreen()),
+              onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
+              onGoShop: () => Navigator.pushNamed(context, '/shop'),
+              onGoProfile: () => _navReplace(context, const ProfileScreen()),
+            ),
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,

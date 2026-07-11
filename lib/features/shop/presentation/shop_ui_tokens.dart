@@ -87,6 +87,22 @@ class ShopUiTextStyles {
     color: ShopUiTokens.textPrimary,
   );
 
+  static const TextStyle headerTitle = TextStyle(
+    fontFamily: _serif,
+    fontSize: 21,
+    height: 1.02,
+    letterSpacing: -0.2,
+    color: ShopUiTokens.textPrimary,
+  );
+
+  static const TextStyle headerTitleCompact = TextStyle(
+    fontFamily: _serif,
+    fontSize: 15,
+    height: 1.02,
+    letterSpacing: 0,
+    color: ShopUiTokens.textPrimary,
+  );
+
   static const TextStyle sectionTitle = TextStyle(
     fontFamily: _serif,
     fontSize: 24,

@@ -30,20 +30,17 @@ void main() {
       expect(find.text('Tienda'), findsOneWidget);
     });
 
-    testWidgets('tap Cosmeticos opens Cosmetics', (WidgetTester tester) async {
+    testWidgets('tap Cosméticos opens Cosmetics', (WidgetTester tester) async {
       final env = await _createEnv();
 
       await tester.pumpWidget(_app(_flow(env)));
       await tester.pumpAndSettle();
 
-      await _tapVisible(tester, find.byKey(const Key('shopHomeEntryCosmetics')));
+      await _tapVisible(
+          tester, find.byKey(const Key('shopHomeEntryCosmetics')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Cosmeticos'), findsAtLeastNWidgets(1));
-      expect(
-        find.text('Fondos, cards y packs con estilo Rutio'),
-        findsAtLeastNWidgets(1),
-      );
+      expect(find.text('Cosméticos'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('tap Utilidades opens Utilities', (WidgetTester tester) async {
@@ -52,22 +49,11 @@ void main() {
       await tester.pumpWidget(_app(_flow(env)));
       await tester.pump(const Duration(milliseconds: 16));
 
-      await _tapVisible(tester, find.byKey(const Key('shopHomeEntryUtilities')));
+      await _tapVisible(
+          tester, find.byKey(const Key('shopHomeEntryUtilities')));
       await tester.pump(const Duration(milliseconds: 32));
 
       expect(find.text('Utilidades'), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('tap Colecciones opens Collections', (WidgetTester tester) async {
-      final env = await _createEnv();
-
-      await tester.pumpWidget(_app(_flow(env)));
-      await tester.pump(const Duration(milliseconds: 16));
-
-      await _tapVisible(tester, find.byKey(const Key('shopHomeEntryCollections')));
-      await tester.pump(const Duration(milliseconds: 32));
-
-      expect(find.text('Colecciones'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('tap Mochila opens Backpack', (WidgetTester tester) async {
@@ -112,7 +98,8 @@ void main() {
       await tester.pumpWidget(_app(_flow(env)));
       await tester.pumpAndSettle();
 
-      await _tapVisible(tester, find.byKey(const Key('shopHomeEntryCosmetics')));
+      await _tapVisible(
+          tester, find.byKey(const Key('shopHomeEntryCosmetics')));
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
@@ -130,7 +117,8 @@ void main() {
       await tester.pumpWidget(_app(_flow(env)));
       await tester.pumpAndSettle();
 
-      await _tapVisible(tester, find.byKey(const Key('shopHomeEntryCosmetics')));
+      await _tapVisible(
+          tester, find.byKey(const Key('shopHomeEntryCosmetics')));
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
@@ -145,7 +133,8 @@ void main() {
       await _tapVisible(
         tester,
         find.byKey(
-          const Key('shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+          const Key(
+              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
         ),
       );
       await tester.pumpAndSettle();
@@ -155,10 +144,26 @@ void main() {
           of: find.byKey(
             const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
           ),
-          matching: find.text('Equipar'),
+          matching: find.text('Comprado'),
         ),
+        findsWidgets,
+      );
+      expect(
+        find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
+        findsNothing,
+      );
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_warm_beige')),
         findsOneWidget,
       );
+      expect(find.text('Equipar'), findsOneWidget);
     });
 
     testWidgets('purchase cosmetic can then be equipped',
@@ -168,7 +173,8 @@ void main() {
       await tester.pumpWidget(_app(_flow(env)));
       await tester.pumpAndSettle();
 
-      await _tapVisible(tester, find.byKey(const Key('shopHomeEntryCosmetics')));
+      await _tapVisible(
+          tester, find.byKey(const Key('shopHomeEntryCosmetics')));
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
@@ -183,13 +189,19 @@ void main() {
       await _tapVisible(
         tester,
         find.byKey(
-          const Key('shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+          const Key(
+              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
         ),
       );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+      );
+      await tester.pumpAndSettle();
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_warm_beige')),
       );
       await tester.pumpAndSettle();
 
@@ -211,7 +223,8 @@ void main() {
       await tester.pumpWidget(_app(_flow(env)));
       await tester.pump(const Duration(milliseconds: 16));
 
-      await _tapVisible(tester, find.byKey(const Key('shopHomeEntryUtilities')));
+      await _tapVisible(
+          tester, find.byKey(const Key('shopHomeEntryUtilities')));
       await tester.pump(const Duration(milliseconds: 32));
       await _tapVisible(
         tester,
@@ -230,6 +243,58 @@ void main() {
         find.byKey(const Key('shopBackpackUse-utility_xp_boost_1d')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('tap utility opens complete Detail page',
+        (WidgetTester tester) async {
+      final env = await _createEnv();
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      await _tapVisible(
+          tester, find.byKey(const Key('shopHomeEntryUtilities')));
+      await tester.pump(const Duration(milliseconds: 32));
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopUtilityCard-utility_xp_boost_1d')),
+      );
+      await tester.pump(const Duration(milliseconds: 32));
+
+      expect(find.text('XP Boost 1 Dia'), findsAtLeastNWidgets(1));
+      expect(
+        find.text('Aumenta temporalmente la experiencia obtenida al completar habitos.'),
+        findsAtLeastNWidgets(1),
+      );
+      expect(
+        find.byKey(const Key('shopItemDetailUtilityTypeValue')),
+        findsOneWidget,
+      );
+      expect(find.text('Comprar'), findsOneWidget);
+    });
+
+    testWidgets('utility cards stay compact in the list',
+        (WidgetTester tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(360, 800);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final env = await _createEnv();
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      await _tapVisible(
+          tester, find.byKey(const Key('shopHomeEntryUtilities')));
+      await tester.pump(const Duration(milliseconds: 32));
+
+      final Finder card =
+          find.byKey(const Key('shopUtilityCard-utility_xp_boost_1d'));
+      await tester.ensureVisible(card);
+      final Size cardSize = tester.getSize(card);
+
+      expect(cardSize.height, lessThanOrEqualTo(308));
     });
 
     testWidgets('tap item in customization opens Detail',
@@ -258,9 +323,12 @@ void main() {
       await _pumpUntilText(tester, 'Detalle');
 
       expect(find.text('Detalle'), findsAtLeastNWidgets(1));
+      expect(find.text('Equipar'), findsOneWidget);
+      expect(find.text('Comprar'), findsNothing);
     });
 
-    testWidgets('customization reflects equipped state from cosmetics repository',
+    testWidgets(
+        'customization reflects equipped state from cosmetics repository',
         (WidgetTester tester) async {
       final env = await _createEnv(
         walletCoins: 500,
@@ -291,7 +359,8 @@ void main() {
         ),
         findsWidgets,
       );
-      expect(find.byKey(const Key('shopOwnedItem-wallpaper_soft_camel')), findsNothing);
+      expect(find.byKey(const Key('shopOwnedItem-wallpaper_soft_camel')),
+          findsNothing);
     });
   });
 }

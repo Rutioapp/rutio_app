@@ -28,59 +28,49 @@ class ShopHomeHero extends StatelessWidget {
         boxShadow: ShopUiTokens.softShadow,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
               'Tu espacio, mas tuyo',
-              style: ShopUiTextStyles.cardTitle.copyWith(fontSize: 26),
+              style: ShopUiTextStyles.cardTitle.copyWith(fontSize: 24),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
-              'Descubre estilos suaves, utilidades ligeras y colecciones pensadas para Rutio.',
+              'Combina fondos, cards y estilo Rutio',
               style: ShopUiTextStyles.subtitle,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
-                final isCompact = constraints.maxWidth < 420;
+                final bool isCompact = constraints.maxWidth < 460;
+                final Widget artwork = const _HeroArtwork();
+                final Widget actions = _HeroActions(
+                  isCompact: isCompact,
+                  onOpenBackpack: onOpenBackpack,
+                  onOpenCustomization: onOpenCustomization,
+                );
+
                 if (isCompact) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      const SizedBox(
-                        height: 196,
-                        child: _HeroArtwork(isCompact: true),
-                      ),
-                      const SizedBox(height: 16),
-                      _HeroActions(
-                        onOpenBackpack: onOpenBackpack,
-                        onOpenCustomization: onOpenCustomization,
-                      ),
+                      SizedBox(height: 152, child: artwork),
+                      const SizedBox(height: 12),
+                      actions,
                     ],
                   );
                 }
 
-                return SizedBox(
-                  height: 196,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      const Expanded(
-                        flex: 6,
-                        child: _HeroArtwork(isCompact: false),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 5,
-                        child: _HeroActions(
-                          onOpenBackpack: onOpenBackpack,
-                          onOpenCustomization: onOpenCustomization,
-                        ),
-                      ),
-                    ],
-                  ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    SizedBox(height: 148, child: artwork),
+                    const SizedBox(height: 12),
+                    actions,
+                  ],
                 );
               },
             ),
@@ -92,9 +82,7 @@ class ShopHomeHero extends StatelessWidget {
 }
 
 class _HeroArtwork extends StatelessWidget {
-  const _HeroArtwork({required this.isCompact});
-
-  final bool isCompact;
+  const _HeroArtwork();
 
   @override
   Widget build(BuildContext context) {
@@ -113,11 +101,11 @@ class _HeroArtwork extends StatelessWidget {
       child: Stack(
         children: <Widget>[
           Positioned(
-            top: 18,
-            left: 18,
+            top: 14,
+            left: 14,
             child: Container(
-              width: 42,
-              height: 42,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
@@ -125,14 +113,14 @@ class _HeroArtwork extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: 18,
-            top: 24,
+            right: 16,
+            top: 18,
             child: Container(
-              width: 58,
-              height: 58,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
                 color: ShopUiTokens.accentSoft,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
@@ -140,30 +128,30 @@ class _HeroArtwork extends StatelessWidget {
             child: Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: <Widget>[
                     Container(
-                      width: 92,
-                      height: 92,
+                      width: 66,
+                      height: 66,
                       decoration: const BoxDecoration(
                         color: ShopUiTokens.surfaceRaised,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.face_retouching_natural_rounded,
-                        size: 42,
+                        size: 30,
                         color: ShopUiTokens.accent,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 6),
                     Container(
-                      height: 56,
-                      width: 160,
+                      height: 34,
+                      width: 120,
                       decoration: BoxDecoration(
                         color: ShopUiTokens.placeholderCamel,
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(18),
                       ),
                     ),
                   ],
@@ -179,31 +167,59 @@ class _HeroArtwork extends StatelessWidget {
 
 class _HeroActions extends StatelessWidget {
   const _HeroActions({
+    required this.isCompact,
     this.onOpenBackpack,
     this.onOpenCustomization,
   });
 
+  final bool isCompact;
   final VoidCallback? onOpenBackpack;
   final VoidCallback? onOpenCustomization;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    if (isCompact) {
+      return Column(
+        children: <Widget>[
+          _QuickLink(
+            key: const Key('shopHomeHeroBackpack'),
+            title: 'Backpack',
+            subtitle: 'Tus objetos',
+            icon: Icons.inventory_2_outlined,
+            onTap: onOpenBackpack,
+          ),
+          const SizedBox(height: 10),
+          _QuickLink(
+            key: const Key('shopHomeHeroCustomization'),
+            title: 'Personalizar',
+            subtitle: 'Tu estilo',
+            icon: Icons.tune_rounded,
+            onTap: onOpenCustomization,
+          ),
+        ],
+      );
+    }
+
+    return Row(
       children: <Widget>[
-        _QuickLink(
-          key: const Key('shopHomeHeroBackpack'),
-          title: 'Backpack',
-          subtitle: 'Lo que ya has conseguido',
-          icon: Icons.inventory_2_outlined,
-          onTap: onOpenBackpack,
+        Expanded(
+          child: _QuickLink(
+            key: const Key('shopHomeHeroBackpack'),
+            title: 'Backpack',
+            subtitle: 'Tus objetos',
+            icon: Icons.inventory_2_outlined,
+            onTap: onOpenBackpack,
+          ),
         ),
-        const SizedBox(height: 12),
-        _QuickLink(
-          key: const Key('shopHomeHeroCustomization'),
-          title: 'Personalizar',
-          subtitle: 'Combina fondos y cards',
-          icon: Icons.tune_rounded,
-          onTap: onOpenCustomization,
+        const SizedBox(width: 12),
+        Expanded(
+          child: _QuickLink(
+            key: const Key('shopHomeHeroCustomization'),
+            title: 'Personalizar',
+            subtitle: 'Tu estilo',
+            icon: Icons.tune_rounded,
+            onTap: onOpenCustomization,
+          ),
         ),
       ],
     );
@@ -235,7 +251,7 @@ class _QuickLink extends StatelessWidget {
           onTap: onTap,
           borderRadius: ShopUiTokens.radiusMdShape,
           child: Ink(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: ShopUiTokens.radiusMdShape,
               border: Border.all(color: ShopUiTokens.stroke),
@@ -243,8 +259,8 @@ class _QuickLink extends StatelessWidget {
             child: Row(
               children: <Widget>[
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 34,
+                  height: 34,
                   decoration: const BoxDecoration(
                     color: ShopUiTokens.backgroundAlt,
                     shape: BoxShape.circle,
@@ -252,14 +268,15 @@ class _QuickLink extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Icon(icon, size: 18, color: ShopUiTokens.textPrimary),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       Text(
                         title,
-                        style: ShopUiTextStyles.label,
+                        style: ShopUiTextStyles.label.copyWith(fontSize: 12),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -267,7 +284,7 @@ class _QuickLink extends StatelessWidget {
                       Text(
                         subtitle,
                         style: ShopUiTextStyles.bodySmall,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],

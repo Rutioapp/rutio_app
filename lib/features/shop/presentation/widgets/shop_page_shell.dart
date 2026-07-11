@@ -11,6 +11,7 @@ class ShopPageShell extends StatelessWidget {
     this.bottomBar,
     this.backgroundColor = ShopUiTokens.background,
     this.extendBody = false,
+    this.drawer,
   });
 
   final Widget? header;
@@ -20,13 +21,15 @@ class ShopPageShell extends StatelessWidget {
   final Widget? bottomBar;
   final Color backgroundColor;
   final bool extendBody;
+  final Widget? drawer;
 
   @override
   Widget build(BuildContext context) {
     final content = Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: ShopUiTokens.contentMaxWidth),
+        constraints:
+            const BoxConstraints(maxWidth: ShopUiTokens.contentMaxWidth),
         child: Padding(
           padding: padding,
           child: Column(
@@ -46,6 +49,7 @@ class ShopPageShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: backgroundColor,
       extendBody: extendBody,
+      drawer: drawer,
       body: SafeArea(
         bottom: bottomBar == null,
         child: scrollable

@@ -41,7 +41,7 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoProfile;
 
   /// Valores sugeridos:
-  /// 'daily'|'weekly'|'monthly'|'todo'|'diary'|'archived'|'stats'|'profile'
+  /// 'daily'|'weekly'|'monthly'|'todo'|'diary'|'archived'|'stats'|'shop'|'profile'
   final String? selected;
 
   static const Color _skyTop = Color(0xFFEAF3FB);

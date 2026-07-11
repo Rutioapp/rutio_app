@@ -21,7 +21,8 @@ class ShopCatalog {
     ShopCollection(
       id: 'landscape',
       title: 'Landscape',
-      description: 'Composiciones con mas presencia visual y profundidad suave.',
+      description:
+          'Composiciones con mas presencia visual y profundidad suave.',
       themeKey: 'landscape',
       sortOrder: 2,
     ),
@@ -326,7 +327,8 @@ class ShopCatalog {
     _cosmetic(
       id: 'user_card_golden_dawn',
       title: 'Golden Dawn User Card',
-      description: 'User card premium, calida y exclusiva sin brillos agresivos.',
+      description:
+          'User card premium, calida y exclusiva sin brillos agresivos.',
       type: ShopItemType.userCard,
       rarity: ShopItemRarity.legendary,
       priceCoins: 1200,
@@ -339,29 +341,31 @@ class ShopCatalog {
     ShopItem(
       id: 'utility_xp_boost_1d',
       title: 'XP Boost 1 Dia',
-      description: 'Duplica la ganancia de XP durante un dia.',
+      description:
+          'Aumenta temporalmente la experiencia obtenida al completar habitos.',
       category: ShopItemCategory.utility,
       type: ShopItemType.xpBoost,
       rarity: ShopItemRarity.common,
       priceCoins: 75,
-      assetRef: 'catalog:utility_xp_boost_1d',
+      assetRef: 'assets/shop/utilities/boost_xp.png',
       metadata: <String, dynamic>{'durationHours': 24, 'multiplier': 2},
     ),
     ShopItem(
       id: 'utility_coin_boost_1d',
       title: 'Coin Boost 1 Dia',
-      description: 'Aumenta las monedas ganadas durante un dia.',
+      description:
+          'Aumenta temporalmente las monedas obtenidas al completar habitos.',
       category: ShopItemCategory.utility,
       type: ShopItemType.coinBoost,
       rarity: ShopItemRarity.common,
       priceCoins: 100,
-      assetRef: 'catalog:utility_coin_boost_1d',
+      assetRef: 'assets/shop/utilities/boost_coins.png',
       metadata: <String, dynamic>{'durationHours': 24, 'multiplier': 2},
     ),
     ShopItem(
       id: 'utility_streak_recover_1',
       title: 'Streak Recover',
-      description: 'Recupera una racha perdida una vez.',
+      description: 'Permite recuperar una racha perdida una vez.',
       category: ShopItemCategory.utility,
       type: ShopItemType.streakRecover,
       rarity: ShopItemRarity.rare,
@@ -372,7 +376,7 @@ class ShopCatalog {
     ShopItem(
       id: 'utility_streak_shield_1',
       title: 'Streak Shield',
-      description: 'Protege una racha frente a un fallo.',
+      description: 'Protege una racha frente a un dia fallado.',
       category: ShopItemCategory.utility,
       type: ShopItemType.streakShield,
       rarity: ShopItemRarity.rare,
@@ -388,7 +392,7 @@ class ShopCatalog {
       type: ShopItemType.mysteryBox,
       rarity: ShopItemRarity.common,
       priceCoins: 100,
-      assetRef: 'catalog:utility_mystery_box_basic',
+      assetRef: 'assets/shop/utilities/mystery_box_basic.png',
       metadata: <String, dynamic>{'boxTier': 'basic'},
     ),
   ];
@@ -456,5 +460,61 @@ class ShopCatalog {
     return allItems
         .where((ShopItem item) => item.collectionId == collectionId)
         .toList(growable: false);
+  }
+
+  static String utilityCategoryLabel(ShopItem item) {
+    switch (item.type) {
+      case ShopItemType.xpBoost:
+      case ShopItemType.coinBoost:
+        return 'Boosts';
+      case ShopItemType.streakRecover:
+      case ShopItemType.streakShield:
+        return 'Rachas';
+      case ShopItemType.mysteryBox:
+        return 'Cajas';
+      case ShopItemType.background:
+      case ShopItemType.habitCard:
+      case ShopItemType.userCard:
+        return 'Utilidad';
+    }
+  }
+
+  static String utilityDurationLabel(ShopItem item) {
+    final Object? rawDuration = item.metadata['durationHours'];
+    if (rawDuration is num && rawDuration > 0) {
+      final int durationHours = rawDuration.toInt();
+      return durationHours == 1 ? '1 hora' : '$durationHours horas';
+    }
+
+    final Object? rawCharges = item.metadata['charges'];
+    if (rawCharges is num && rawCharges > 0) {
+      final int charges = rawCharges.toInt();
+      return charges == 1 ? '1 uso' : '$charges usos';
+    }
+
+    if (item.type == ShopItemType.mysteryBox) {
+      return '1 caja';
+    }
+
+    return 'Uso inmediato';
+  }
+
+  static String utilityEffectLabel(ShopItem item) {
+    switch (item.type) {
+      case ShopItemType.xpBoost:
+        return 'Multiplicador de XP x2';
+      case ShopItemType.coinBoost:
+        return 'Multiplicador de monedas x2';
+      case ShopItemType.streakRecover:
+        return 'Recuperacion de racha';
+      case ShopItemType.streakShield:
+        return 'Proteccion de racha';
+      case ShopItemType.mysteryBox:
+        return 'Sorpresa futura';
+      case ShopItemType.background:
+      case ShopItemType.habitCard:
+      case ShopItemType.userCard:
+        return 'Personalizacion';
+    }
   }
 }

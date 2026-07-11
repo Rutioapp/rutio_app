@@ -28,67 +28,71 @@ class ShopPreviewPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = _paletteForTone(tone);
 
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            palette.$1,
-            palette.$2,
+    return ClipRRect(
+      borderRadius: ShopUiTokens.radiusMdShape,
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              palette.$1,
+              palette.$2,
+            ],
+          ),
+          borderRadius: ShopUiTokens.radiusMdShape,
+        ),
+        child: Stack(
+          children: <Widget>[
+            Positioned(
+              top: -12,
+              right: -8,
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -18,
+              left: -12,
+              child: Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Padding(
+              padding: ShopUiTokens.placeholderPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Icon(
+                    icon,
+                    color: palette.$3,
+                    size: 22,
+                  ),
+                  const Spacer(),
+                  if (label != null && label!.trim().isNotEmpty)
+                    Text(
+                      label!,
+                      style: ShopUiTextStyles.label.copyWith(color: palette.$3),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
-        borderRadius: ShopUiTokens.radiusMdShape,
-      ),
-      child: Stack(
-        children: <Widget>[
-          Positioned(
-            top: -12,
-            right: -8,
-            child: Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -18,
-            left: -12,
-            child: Container(
-              width: 84,
-              height: 84,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.14),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Padding(
-            padding: ShopUiTokens.placeholderPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Icon(
-                  icon,
-                  color: palette.$3,
-                  size: 22,
-                ),
-                const Spacer(),
-                if (label != null && label!.trim().isNotEmpty)
-                  Text(
-                    label!,
-                    style: ShopUiTextStyles.label.copyWith(color: palette.$3),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

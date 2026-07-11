@@ -24,4 +24,6 @@ export 'shop_primary_button.dart';
 export 'shop_purchase_confirmation_sheet.dart';
 export 'shop_section_header.dart';
 export 'shop_customization_preview.dart';
+export '../screens/shop_cosmetic_detail_container.dart';
+export '../screens/shop_cosmetic_detail_screen.dart';
 export 'shop_wallet_pill.dart';

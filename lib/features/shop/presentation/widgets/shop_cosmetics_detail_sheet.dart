@@ -6,6 +6,7 @@ import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_product_card.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_rarity_badge.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_header.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 
 class ShopCosmeticsDetailSheet extends StatelessWidget {
@@ -49,94 +50,130 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
     final price = _isBundle ? bundle!.priceAmber : asset!.priceAmber;
     final canBuy = walletCoins >= price;
     final action = _resolveAction(canBuy);
+    final mediaHeight = MediaQuery.sizeOf(context).height;
 
     return SafeArea(
       top: false,
-      child: Container(
-        key: const Key('shopCosmeticsDetailSheet'),
-        decoration: BoxDecoration(
-          color: ShopUiTokens.surfaceRaised,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: ShopUiTokens.strokeStrong,
-                      borderRadius: ShopUiTokens.radiusXlShape,
-                    ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: mediaHeight * 0.92),
+        child: Container(
+          key: const Key('shopCosmeticsDetailSheet'),
+          decoration: BoxDecoration(
+            color: ShopUiTokens.surfaceRaised,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: ShopUiTokens.strokeStrong,
+                    borderRadius: ShopUiTokens.radiusXlShape,
                   ),
                 ),
-                const SizedBox(height: 18),
-                Text('Detalle', style: ShopUiTextStyles.sectionTitle),
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: ShopUiTokens.radiusLgShape,
-                  child: SizedBox(
-                    height: 220,
-                    child: _isBundle
-                        ? ShopCosmeticsBundlePreview(assets: bundleAssets)
-                        : ShopCosmeticsAssetPreview(asset: asset!),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: ShopUiTextStyles.cardTitle,
+              ),
+              ShopHeader(
+                title: 'Detalle',
+                subtitle:
+                    _isBundle ? 'Pack' : _assetCategoryLabel(asset!.category),
+                leadingIcon: Icons.arrow_back_ios_new_rounded,
+                onLeadingPressed: () => Navigator.of(context).pop(),
+                walletCoins: walletCoins,
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      ClipRRect(
+                        borderRadius: ShopUiTokens.radiusLgShape,
+                        child: SizedBox(
+                          height: _isBundle ? 210 : 230,
+                          child: _isBundle
+                              ? ShopCosmeticsBundlePreview(assets: bundleAssets)
+                              : ShopCosmeticsAssetPreview(asset: asset!),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    ShopCosmeticsRarityBadge(rarity: rarity),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  _description(),
-                  style: ShopUiTextStyles.subtitle,
-                ),
-                const SizedBox(height: 18),
-                _DetailRow(label: 'Categoria', value: _categoryLabel()),
-                const SizedBox(height: 12),
-                _DetailRow(label: 'Precio', value: '$price ambar'),
-                const SizedBox(height: 12),
-                _DetailRow(label: 'Estado', value: action.statusLabel),
-                if (_isBundle) ...<Widget>[
-                  const SizedBox(height: 16),
-                  Text('Incluye', style: ShopUiTextStyles.label),
-                  const SizedBox(height: 8),
-                  ...bundleAssets.map(
-                    (ShopAsset asset) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _DetailRow(
-                        label: _assetCategoryLabel(asset.category),
-                        value: asset.nameEs,
+                      const SizedBox(height: 18),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: ShopUiTextStyles.cardTitle,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ShopCosmeticsRarityBadge(rarity: rarity),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      Text(
+                        _description(),
+                        style: ShopUiTextStyles.subtitle,
+                      ),
+                      const SizedBox(height: 18),
+                      _DetailRow(label: 'Categoria', value: _categoryLabel()),
+                      const SizedBox(height: 12),
+                      _DetailRow(label: 'Precio', value: '$price ambar'),
+                      const SizedBox(height: 12),
+                      _DetailRow(label: 'Estado', value: action.statusLabel),
+                      if (_isBundle) ...<Widget>[
+                        const SizedBox(height: 16),
+                        Text('Incluye', style: ShopUiTextStyles.label),
+                        const SizedBox(height: 8),
+                        ...bundleAssets.map(
+                          (ShopAsset asset) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _DetailRow(
+                              label: _assetCategoryLabel(asset.category),
+                              value: asset.nameEs,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
-                const SizedBox(height: 20),
-                ShopPrimaryButton(
-                  key: Key(
-                    _isBundle
-                        ? 'shopCosmeticsDetailAction-${bundle!.id}'
-                        : 'shopCosmeticsDetailAction-${asset!.id}',
-                  ),
-                  label: busy ? 'Procesando...' : action.label,
-                  onPressed: busy || !action.enabled ? null : onPrimaryActionPressed,
-                  icon: action.icon,
                 ),
-              ],
-            ),
+              ),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      if (!action.enabled) ...<Widget>[
+                        Text(
+                          action.label == 'Comprar'
+                              ? 'Todavía no se realiza la compra real desde esta pantalla.'
+                              : 'Este cosmético ya no requiere una acción adicional.',
+                          style: ShopUiTextStyles.bodySmall,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      ShopPrimaryButton(
+                        key: Key(
+                          _isBundle
+                              ? 'shopCosmeticsDetailAction-${bundle!.id}'
+                              : 'shopCosmeticsDetailAction-${asset!.id}',
+                        ),
+                        label: busy ? 'Procesando...' : action.label,
+                        onPressed: busy || !action.enabled
+                            ? null
+                            : onPrimaryActionPressed,
+                        icon: action.icon,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -156,9 +193,7 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
       return _SheetAction(
         label: canBuy ? 'Comprar pack' : 'Saldo insuficiente',
         statusLabel: canBuy ? 'Disponible' : 'Bloqueado',
-        icon: canBuy
-            ? Icons.shopping_bag_outlined
-            : Icons.lock_outline_rounded,
+        icon: canBuy ? Icons.shopping_bag_outlined : Icons.lock_outline_rounded,
         enabled: canBuy,
       );
     }

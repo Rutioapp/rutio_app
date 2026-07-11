@@ -7,11 +7,15 @@ class ShopItemDetailInfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.valueKey,
+    this.valueStyle,
+    this.valueMaxLines = 2,
   });
 
   final String label;
   final String value;
   final Key? valueKey;
+  final TextStyle? valueStyle;
+  final int valueMaxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +40,10 @@ class ShopItemDetailInfoRow extends StatelessWidget {
               child: Text(
                 value,
                 key: valueKey,
-                textAlign: TextAlign.right,
-                style: ShopUiTextStyles.label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.start,
+                style: valueStyle ?? ShopUiTextStyles.label,
+                maxLines: valueMaxLines,
+                overflow: TextOverflow.clip,
               ),
             ),
           ],
