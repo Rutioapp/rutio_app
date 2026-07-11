@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/widgets/currency/amber_coin_icon.dart';
 
 class ShopWalletPill extends StatelessWidget {
   const ShopWalletPill({
@@ -7,49 +8,60 @@ class ShopWalletPill extends StatelessWidget {
     required this.coins,
     this.backgroundColor = ShopUiTokens.surfaceRaised,
     this.foregroundColor = ShopUiTokens.textPrimary,
+    this.compact = false,
   });
 
   final int coins;
   final Color backgroundColor;
   final Color foregroundColor;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final double iconBoxSize = compact ? 20 : 24;
+    final double horizontalPadding = compact ? 10 : 12;
+    final double verticalPadding = compact ? 8 : 10;
+    final double gap = compact ? 6 : 8;
+    final TextStyle textStyle = compact
+        ? ShopUiTextStyles.wallet.copyWith(fontSize: 14, color: foregroundColor)
+        : ShopUiTextStyles.wallet.copyWith(color: foregroundColor);
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: ShopUiTokens.radiusXlShape,
         border: Border.all(color: ShopUiTokens.stroke),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Container(
-              width: 24,
-              height: 24,
-              decoration: const BoxDecoration(
-                color: ShopUiTokens.coinSoft,
-                shape: BoxShape.circle,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: compact ? 36 : 44,
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: verticalPadding,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              SizedBox(
+                width: iconBoxSize,
+                height: iconBoxSize,
+                child: Center(
+                  child: AmberCoinIcon(size: iconBoxSize),
+                ),
               ),
-              alignment: Alignment.center,
-              child: const Icon(
-                Icons.monetization_on_rounded,
-                size: ShopUiTokens.walletIconSize,
-                color: ShopUiTokens.coin,
+              SizedBox(width: gap),
+              Flexible(
+                child: Text(
+                  '$coins',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                '$coins',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: ShopUiTextStyles.wallet.copyWith(color: foregroundColor),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

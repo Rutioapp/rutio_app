@@ -4,9 +4,9 @@ import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
-import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_rarity_badge.dart';
-import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
+import 'package:rutio/widgets/currency/amber_coin_icon.dart';
 
 class ShopCosmeticsProductCard extends StatelessWidget {
   const ShopCosmeticsProductCard.asset({
@@ -47,12 +47,11 @@ class ShopCosmeticsProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = _isBundle ? bundle!.nameEs : asset!.nameEs;
-    final subtitle = _isBundle ? _bundleSubtitle() : _assetSubtitle(asset!);
-    final rarity = _isBundle ? bundle!.rarity : asset!.rarity;
-    final price = _isBundle ? bundle!.priceAmber : asset!.priceAmber;
-    final action = _resolveAction();
-    final palette = ShopCosmeticsRarityPalette.fromRarity(rarity);
+    final String title = _isBundle ? bundle!.nameEs : asset!.nameEs;
+    final ShopAssetRarity rarity =
+        _isBundle ? bundle!.rarity : asset!.rarity;
+    final int price = _isBundle ? bundle!.priceAmber : asset!.priceAmber;
+    final _ProductActionState action = _resolveAction();
 
     return Material(
       color: Colors.transparent,
@@ -71,7 +70,7 @@ class ShopCosmeticsProductCard extends StatelessWidget {
             borderRadius: ShopUiTokens.radiusLgShape,
             border: Border.all(
               color: action.highlight
-                  ? palette.border
+                  ? ShopUiTokens.success.withValues(alpha: 0.45)
                   : ShopUiTokens.stroke.withValues(alpha: 0.9),
             ),
             boxShadow: ShopUiTokens.softShadow,
@@ -79,29 +78,15 @@ class ShopCosmeticsProductCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Stack(
-                children: <Widget>[
-                  ClipRRect(
-                    borderRadius: ShopUiTokens.radiusMdShape,
-                    child: SizedBox(
-                      height: 116,
-                      width: double.infinity,
-                      child: _isBundle
-                          ? ShopCosmeticsBundlePreview(assets: bundleAssets)
-                          : ShopCosmeticsAssetPreview(asset: asset!),
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: ShopCosmeticsRarityBadge(rarity: rarity, compact: true),
-                  ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: _StatusChip(action.statusLabel),
-                  ),
-                ],
+              ClipRRect(
+                borderRadius: ShopUiTokens.radiusMdShape,
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 92,
+                  child: _isBundle
+                      ? ShopCosmeticsBundlePreview(assets: bundleAssets)
+                      : ShopCosmeticsAssetPreview(asset: asset!),
+                ),
               ),
               const SizedBox(height: 10),
               Text(
@@ -110,36 +95,54 @@ class ShopCosmeticsProductCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: ShopUiTextStyles.label.copyWith(fontSize: 15),
               ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: ShopUiTextStyles.bodySmall,
-              ),
               const SizedBox(height: 8),
               Row(
                 children: <Widget>[
                   Expanded(
-                    child: _InfoChip(
-                      label: _isBundle ? 'Pack' : _categoryLabel(asset!.category),
+                    child: Text(
+                      _rarityLabel(rarity),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: ShopUiTextStyles.labelSmall.copyWith(
+                        color: ShopUiTokens.textSecondary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _InfoChip(label: '$price'),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const AmberCoinIcon(size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$price',
+                        style: ShopUiTextStyles.labelSmall.copyWith(
+                          color: ShopUiTokens.textPrimary,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const Spacer(),
-              ShopPrimaryButton(
-                key: Key(
-                  _isBundle
-                      ? 'shopCosmeticsAction-${bundle!.id}'
-                      : 'shopCosmeticsAction-${asset!.id}',
+              if (action.showPrimaryButton)
+                ShopPrimaryButton(
+                  key: Key(
+                    _isBundle
+                        ? 'shopCosmeticsAction-${bundle!.id}'
+                        : 'shopCosmeticsAction-${asset!.id}',
+                  ),
+                  label: busy ? 'Procesando...' : action.label,
+                  onPressed:
+                      busy || !action.enabled ? null : onPrimaryActionPressed,
+                  icon: action.icon,
+                )
+              else
+                _OwnedStateFooter(
+                  label: action.statusLabel,
+                  highlighted: action.highlight,
                 ),
-                label: busy ? 'Procesando...' : action.label,
-                onPressed: busy || !action.enabled ? null : onPrimaryActionPressed,
-                icon: action.icon,
-              ),
             ],
           ),
         ),
@@ -156,6 +159,7 @@ class ShopCosmeticsProductCard extends StatelessWidget {
           icon: Icons.check_circle_outline_rounded,
           enabled: false,
           highlight: true,
+          showPrimaryButton: false,
         );
       }
       if (!hasEnoughCoins) {
@@ -177,32 +181,34 @@ class ShopCosmeticsProductCard extends StatelessWidget {
     switch (ownershipState) {
       case ShopAssetOwnershipState.locked:
         if (!hasEnoughCoins) {
+          return const _ProductActionState(
+            label: 'Saldo insuficiente',
+            statusLabel: 'Bloqueado',
+            icon: Icons.lock_outline_rounded,
+            enabled: false,
+          );
+        }
         return const _ProductActionState(
-          label: 'Saldo insuficiente',
-          statusLabel: 'Bloqueado',
-          icon: Icons.lock_outline_rounded,
-          enabled: false,
+          label: 'Comprar',
+          statusLabel: 'Disponible',
+          icon: Icons.monetization_on_outlined,
+          enabled: true,
         );
-      }
-      return const _ProductActionState(
-        label: 'Comprar',
-        statusLabel: 'Bloqueado',
-        icon: Icons.monetization_on_outlined,
-        enabled: true,
-      );
       case ShopAssetOwnershipState.owned:
         return const _ProductActionState(
-          label: 'Equipar',
+          label: 'Comprado',
           statusLabel: 'Comprado',
-          icon: Icons.auto_fix_high_rounded,
-          enabled: true,
+          icon: Icons.check_circle_outline_rounded,
+          enabled: false,
+          showPrimaryButton: false,
         );
       case ShopAssetOwnershipState.includedInOwnedBundle:
         return const _ProductActionState(
-          label: 'Equipar',
+          label: 'Incluido en pack',
           statusLabel: 'Incluido en pack',
-          icon: Icons.auto_fix_high_rounded,
-          enabled: true,
+          icon: Icons.inventory_2_outlined,
+          enabled: false,
+          showPrimaryButton: false,
         );
       case ShopAssetOwnershipState.equipped:
         return const _ProductActionState(
@@ -211,33 +217,21 @@ class ShopCosmeticsProductCard extends StatelessWidget {
           icon: Icons.check_circle_outline_rounded,
           enabled: false,
           highlight: true,
+          showPrimaryButton: false,
         );
     }
   }
 
-  String _assetSubtitle(ShopAsset asset) {
-    final state = switch (ownershipState) {
-      ShopAssetOwnershipState.locked => 'Bloqueado',
-      ShopAssetOwnershipState.owned => 'Comprado',
-      ShopAssetOwnershipState.equipped => 'Equipado',
-      ShopAssetOwnershipState.includedInOwnedBundle => 'Incluido en pack',
-    };
-    return '${_categoryLabel(asset.category)} · $state';
-  }
-
-  String _bundleSubtitle() {
-    final count = bundleAssets.length;
-    return '$count cosmeticos incluidos';
-  }
-
-  String _categoryLabel(ShopAssetCategory category) {
-    switch (category) {
-      case ShopAssetCategory.wallpaper:
-        return 'Fondo';
-      case ShopAssetCategory.habitCard:
-        return 'Habit card';
-      case ShopAssetCategory.userCard:
-        return 'User card';
+  String _rarityLabel(ShopAssetRarity rarity) {
+    switch (rarity) {
+      case ShopAssetRarity.common:
+        return 'Common';
+      case ShopAssetRarity.rare:
+        return 'Rare';
+      case ShopAssetRarity.epic:
+        return 'Epic';
+      case ShopAssetRarity.legendary:
+        return 'Legendary';
     }
   }
 }
@@ -249,6 +243,7 @@ class _ProductActionState {
     required this.icon,
     required this.enabled,
     this.highlight = false,
+    this.showPrimaryButton = true,
   });
 
   final String label;
@@ -256,47 +251,42 @@ class _ProductActionState {
   final IconData icon;
   final bool enabled;
   final bool highlight;
+  final bool showPrimaryButton;
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip(this.label);
+class _OwnedStateFooter extends StatelessWidget {
+  const _OwnedStateFooter({
+    required this.label,
+    required this.highlighted,
+  });
 
   final String label;
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      key: Key('shopCosmeticsStatus-$label'),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: ShopUiTokens.surface.withValues(alpha: 0.92),
-        borderRadius: ShopUiTokens.radiusXlShape,
-        border: Border.all(color: ShopUiTokens.stroke),
+        color: highlighted
+            ? ShopUiTokens.successSoft
+            : ShopUiTokens.backgroundAlt.withValues(alpha: 0.7),
+        borderRadius: ShopUiTokens.radiusSmShape,
+        border: Border.all(
+          color: highlighted
+              ? ShopUiTokens.success.withValues(alpha: 0.28)
+              : ShopUiTokens.stroke,
+        ),
       ),
       child: Text(
         label,
+        textAlign: TextAlign.center,
         style: ShopUiTextStyles.labelSmall.copyWith(
-          color: ShopUiTokens.textPrimary,
+          color:
+              highlighted ? ShopUiTokens.success : ShopUiTokens.textSecondary,
         ),
       ),
-    );
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: ShopUiTokens.backgroundAlt,
-        borderRadius: ShopUiTokens.radiusXlShape,
-      ),
-      child: Text(label, style: ShopUiTextStyles.labelSmall),
     );
   }
 }
@@ -315,7 +305,7 @@ class ShopCosmeticsAssetPreview extends StatelessWidget {
       errorBuilder: (_, __, ___) => ShopPreviewPlaceholder(
         label: asset.nameEs,
         tone: _toneForCategory(asset.category),
-        height: 148,
+        height: 92,
         icon: _iconForCategory(asset.category),
       ),
     );
@@ -363,7 +353,7 @@ class ShopCosmeticsBundlePreview extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(8),
         child: Row(
           children: assets.take(3).map((ShopAsset asset) {
             return Expanded(

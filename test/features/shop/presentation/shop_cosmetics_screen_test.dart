@@ -20,10 +20,11 @@ void main() {
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
-      expect(find.text('Cosmeticos'), findsOneWidget);
+      expect(find.text('Cosméticos'), findsOneWidget);
       expect(
         find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
         findsOneWidget,
@@ -38,7 +39,8 @@ void main() {
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-wallpapers')));
@@ -87,7 +89,8 @@ void main() {
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       expect(
@@ -105,14 +108,15 @@ void main() {
 
       expect(
         find.descendant(
-          of: find.byKey(const Key('shopCosmeticsBundleCard-bundle_warm_beige')),
+          of: find
+              .byKey(const Key('shopCosmeticsBundleCard-bundle_warm_beige')),
           matching: find.text('Comprar pack'),
         ),
         findsOneWidget,
       );
     });
 
-    testWidgets('owned asset shows Equipar and equipped asset shows Equipado',
+    testWidgets('owned asset hides CTA and equipped asset shows state only',
         (WidgetTester tester) async {
       final controller = await _createController(
         walletCoins: 600,
@@ -126,7 +130,8 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       expect(
@@ -134,9 +139,20 @@ void main() {
           of: find.byKey(
             const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
           ),
-          matching: find.text('Equipar'),
+          matching: find.byKey(
+            const Key('shopCosmeticsAction-wallpaper_warm_beige'),
+          ),
         ),
-        findsOneWidget,
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(
+            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+          ),
+          matching: find.text('Comprado'),
+        ),
+        findsWidgets,
       );
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-cards')));
@@ -151,6 +167,17 @@ void main() {
         ),
         findsWidgets,
       );
+      expect(
+        find.descendant(
+          of: find.byKey(
+            const Key('shopCosmeticsAssetCard-habit_card_warm_beige'),
+          ),
+          matching: find.byKey(
+            const Key('shopCosmeticsAction-habit_card_warm_beige'),
+          ),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('owned bundle shows Comprado and no equip action',
@@ -163,14 +190,16 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-packs')));
       await tester.pumpAndSettle();
 
       expect(
         find.descendant(
-          of: find.byKey(const Key('shopCosmeticsBundleCard-bundle_warm_beige')),
+          of: find
+              .byKey(const Key('shopCosmeticsBundleCard-bundle_warm_beige')),
           matching: find.text('Comprado'),
         ),
         findsWidgets,
@@ -182,7 +211,8 @@ void main() {
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       await tester.tap(
@@ -192,7 +222,8 @@ void main() {
 
       expect(
         find.byKey(
-          const Key('shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+          const Key(
+              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
         ),
         findsOneWidget,
       );
@@ -211,7 +242,8 @@ void main() {
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       await tester.tap(
@@ -238,7 +270,8 @@ void main() {
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       await tester.tap(
@@ -247,7 +280,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(
-          const Key('shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+          const Key(
+              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
         ),
       );
       await tester.pumpAndSettle();
@@ -257,9 +291,20 @@ void main() {
           of: find.byKey(
             const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
           ),
-          matching: find.text('Equipar'),
+          matching: find.byKey(
+            const Key('shopCosmeticsAction-wallpaper_warm_beige'),
+          ),
         ),
-        findsOneWidget,
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(
+            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+          ),
+          matching: find.text('Comprado'),
+        ),
+        findsWidgets,
       );
     });
 
@@ -267,7 +312,8 @@ void main() {
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 1000);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-packs')));
@@ -279,7 +325,8 @@ void main() {
 
       expect(
         find.byKey(
-          const Key('shopCosmeticsPurchaseConfirmationConfirm-bundle_warm_beige'),
+          const Key(
+              'shopCosmeticsPurchaseConfirmationConfirm-bundle_warm_beige'),
         ),
         findsOneWidget,
       );
@@ -303,11 +350,13 @@ void main() {
       );
     });
 
-    testWidgets('confirming bundle purchase unlocks included assets for equip',
+    testWidgets(
+        'confirming bundle purchase moves included assets to owned state',
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 1000);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-packs')));
       await tester.pumpAndSettle();
@@ -317,7 +366,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(
-          const Key('shopCosmeticsPurchaseConfirmationConfirm-bundle_warm_beige'),
+          const Key(
+              'shopCosmeticsPurchaseConfirmationConfirm-bundle_warm_beige'),
         ),
       );
       await tester.pumpAndSettle();
@@ -330,9 +380,9 @@ void main() {
           of: find.byKey(
             const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
           ),
-          matching: find.text('Equipar'),
+          matching: find.text('Incluido en pack'),
         ),
-        findsOneWidget,
+        findsWidgets,
       );
     });
 
@@ -340,7 +390,8 @@ void main() {
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 10);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       expect(
@@ -354,7 +405,7 @@ void main() {
       );
     });
 
-    testWidgets('equipping a purchased asset updates visual state',
+    testWidgets('purchased asset keeps owned state without CTA in card',
         (WidgetTester tester) async {
       final controller = await _createController(
         walletCoins: 600,
@@ -364,12 +415,8 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
-      await tester.pumpAndSettle();
-
-      await tester.tap(
-        find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
-      );
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       expect(
@@ -377,17 +424,59 @@ void main() {
           of: find.byKey(
             const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
           ),
-          matching: find.text('Equipado'),
+          matching: find.byKey(
+            const Key('shopCosmeticsAction-wallpaper_warm_beige'),
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(
+            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+          ),
+          matching: find.text('Comprado'),
         ),
         findsWidgets,
       );
+    });
+
+    testWidgets('unowned cosmetics appear before owned cosmetics',
+        (WidgetTester tester) async {
+      final controller = await _createController(
+        walletCoins: 600,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedBundleIds: const <String>[],
+        ),
+      );
+
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester.pumpAndSettle();
+
+      final double ownedDy = tester
+          .getTopLeft(
+            find.byKey(
+                const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+          )
+          .dy;
+      final double unownedDy = tester
+          .getTopLeft(
+            find.byKey(
+                const Key('shopCosmeticsAssetCard-habit_card_warm_beige')),
+          )
+          .dy;
+
+      expect(unownedDy <= ownedDy, isTrue);
     });
 
     testWidgets('detail sheet shows rarity and bundle has no equip action',
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
 
-      await tester.pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
       await tester.tap(

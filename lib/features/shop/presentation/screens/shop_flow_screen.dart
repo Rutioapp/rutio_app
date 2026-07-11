@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
@@ -6,6 +7,7 @@ import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/models/shop_flow_snapshot.dart';
+import 'package:rutio/features/shop/presentation/screens/shop_cosmetic_detail_container.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_backpack_screen.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_collections_screen.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_cosmetics_screen.dart';
@@ -15,6 +17,25 @@ import 'package:rutio/features/shop/presentation/screens/shop_item_detail_contai
 import 'package:rutio/features/shop/presentation/screens/shop_utilities_screen.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_empty_state.dart';
+import 'package:rutio/screens/diary_v2/diary_v2_screen.dart';
+import 'package:rutio/screens/habit_archived_screen.dart';
+import 'package:rutio/screens/habit_monthly_screen.dart';
+import 'package:rutio/screens/habit_weekly_screen.dart';
+import 'package:rutio/screens/home/home_screen.dart';
+import 'package:rutio/screens/profile/profile_screen.dart';
+import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
+import 'package:rutio/widgets/app_view_drawer.dart';
+
+void _navReplace(BuildContext context, Widget screen) {
+  final scaffold = Scaffold.maybeOf(context);
+  if (scaffold != null && scaffold.isDrawerOpen) {
+    Navigator.of(context).pop();
+  }
+
+  Navigator.of(context).pushReplacement(
+    CupertinoPageRoute<void>(builder: (_) => screen),
+  );
+}
 
 enum _ShopFlowPage {
   home,
@@ -119,7 +140,6 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
 
   void _openCosmetics() => _pushPage(_ShopFlowPage.cosmetics);
   void _openUtilities() => _pushPage(_ShopFlowPage.utilities);
-  void _openCollections() => _pushPage(_ShopFlowPage.collections);
   void _openBackpack() => _pushPage(_ShopFlowPage.backpack);
   void _openCustomization() => _pushPage(_ShopFlowPage.customization);
 
@@ -207,10 +227,23 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
           walletCoins: snapshot.walletCoins,
           onOpenCosmetics: _openCosmetics,
           onOpenUtilities: _openUtilities,
-          onOpenCollections: _openCollections,
           onOpenBackpack: _openBackpack,
           onOpenCustomization: _openCustomization,
-          onBackPressed: Navigator.of(context).canPop() ? _popPage : null,
+          drawer: AppViewDrawer(
+            selected: 'shop',
+            onGoDaily: () => _navReplace(context, const HomeScreen()),
+            onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
+            onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
+            onGoTodo: () => Navigator.pushNamed(context, '/todo'),
+            onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
+            onGoDiaryV2: () =>
+                Navigator.of(context).pushReplacementNamed('/diary'),
+            onGoArchived: () =>
+                _navReplace(context, const ArchivedHabitsScreen()),
+            onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
+            onGoShop: () {},
+            onGoProfile: () => _navReplace(context, const ProfileScreen()),
+          ),
         );
       case _ShopFlowPage.cosmetics:
         return ShopCosmeticsScreen(
@@ -281,6 +314,16 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
             ? null
             : snapshot.collectionById(item.collectionId!)?.title;
 
+        if (item.cosmeticSlot != null) {
+          return ShopCosmeticDetailContainer(
+            itemId: itemId,
+            controller: widget.cosmeticsController,
+            onBackPressed: _popPage,
+            collectionName: collectionName,
+            onEquipCompleted: (_) => _reloadSnapshot(),
+          );
+        }
+
         return ShopItemDetailContainer.withController(
           itemId: itemId,
           onBackPressed: _popPage,
@@ -291,4 +334,5 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         );
     }
   }
+
 }

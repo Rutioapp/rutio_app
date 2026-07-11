@@ -86,6 +86,7 @@ flutter:
     - assets/templates/user_state_template.json
     - assets/data/habits_catalog.json
     - assets/images/statistics/
+    - assets/shop/utilities/
     - assets/shop/wallpapers/common/
     - assets/shop/wallpapers/rare/
     - assets/shop/wallpapers/epic/

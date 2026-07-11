@@ -9,6 +9,7 @@ import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/utils/app_theme.dart';
 import 'package:rutio/widgets/avatar/avatar_with_xp_ring.dart';
+import 'package:rutio/widgets/currency/amber_coin_icon.dart';
 
 class UserIdentityRow extends StatelessWidget {
   final String username;
@@ -74,7 +75,8 @@ class UserIdentityRow extends StatelessWidget {
         },
       );
     } catch (_) {
-      _log('UserIdentityRow failed to resolve background image, using fallback');
+      _log(
+          'UserIdentityRow failed to resolve background image, using fallback');
       return _UserIdentityRowSurface(
         username: username,
         level: level,
@@ -220,7 +222,7 @@ class _UserIdentityRowSurface extends StatelessWidget {
                                 color: palette.separator,
                               ),
                               const SizedBox(width: 8),
-                              _CoinGlyph(palette: palette),
+                              const AmberCoinIcon(size: 16),
                               const SizedBox(width: 6),
                               Text(
                                 numberFormat.format(coins),
@@ -251,75 +253,15 @@ class _UserIdentityRowSurface extends StatelessWidget {
   }
 }
 
-class _CoinGlyph extends StatelessWidget {
-  final _UserIdentityPalette palette;
-
-  const _CoinGlyph({required this.palette});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 16,
-      height: 16,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          center: const Alignment(-0.24, -0.34),
-          radius: 0.96,
-          colors: [
-            palette.coinHighlight,
-            palette.coinBase,
-            palette.coinEdge,
-          ],
-          stops: const [0.0, 0.66, 1.0],
-        ),
-        border: Border.all(
-          color: palette.coinStroke,
-          width: 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: palette.coinShadow,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        'R',
-        style: TextStyle(
-          fontFamily: 'DMSerifDisplay',
-          fontSize: 9.5,
-          height: 1.0,
-          color: palette.coinLetter,
-        ),
-      ),
-    );
-  }
-}
-
 class _UserIdentityPalette {
   final Color textPrimary;
   final Color textSecondary;
   final Color separator;
-  final Color coinHighlight;
-  final Color coinBase;
-  final Color coinEdge;
-  final Color coinStroke;
-  final Color coinLetter;
-  final Color coinShadow;
 
   const _UserIdentityPalette({
     required this.textPrimary,
     required this.textSecondary,
     required this.separator,
-    required this.coinHighlight,
-    required this.coinBase,
-    required this.coinEdge,
-    required this.coinStroke,
-    required this.coinLetter,
-    required this.coinShadow,
   });
 
   factory _UserIdentityPalette.resolve(BuildContext context) {
@@ -329,12 +271,6 @@ class _UserIdentityPalette {
         textPrimary: ColorPalette.textPrimaryDark.withValues(alpha: 0.96),
         textSecondary: ColorPalette.textSecondaryDark.withValues(alpha: 0.86),
         separator: ColorPalette.textPrimaryDark.withValues(alpha: 0.18),
-        coinHighlight: Colors.white,
-        coinBase: AppColors.cream,
-        coinEdge: AppColors.cream2,
-        coinStroke: AppColors.earth.withValues(alpha: 0.52),
-        coinLetter: AppColors.ink,
-        coinShadow: AppColors.flowerYellow.withValues(alpha: 0.16),
       );
     }
 
@@ -342,12 +278,6 @@ class _UserIdentityPalette {
       textPrimary: Color.lerp(AppColors.ink, AppColors.earth, 0.72)!,
       textSecondary: AppColors.earth.withValues(alpha: 0.88),
       separator: AppColors.earth.withValues(alpha: 0.24),
-      coinHighlight: AppColors.ink,
-      coinBase: const Color(0xFF2A1408),
-      coinEdge: const Color(0xFF1A0C04),
-      coinStroke: AppColors.earth.withValues(alpha: 0.62),
-      coinLetter: AppColors.cream,
-      coinShadow: AppColors.earth.withValues(alpha: 0.16),
     );
   }
 }

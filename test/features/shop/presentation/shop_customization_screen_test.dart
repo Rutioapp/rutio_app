@@ -33,25 +33,67 @@ void main() {
       expect(find.text('Preview actual'), findsOneWidget);
     });
 
-    testWidgets('renders sections', (WidgetTester tester) async {
+    testWidgets('renders filter chips and default section',
+        (WidgetTester tester) async {
       await tester.pumpWidget(_app(_screen(items: ownedItems)));
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(
-        find.byKey(const Key('shopCustomizationSection-Fondos')),
+        find.byKey(const Key('shopCustomizationFilter-backgrounds')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const Key('shopCustomizationSection-Habit Cards')),
+        find.byKey(const Key('shopCustomizationFilter-habitCards')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const Key('shopCustomizationSection-User Cards')),
+        find.byKey(const Key('shopCustomizationFilter-userCards')),
         findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopCustomizationCategory-backgrounds')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopCustomizationCategory-habitCards')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('shopCustomizationCategory-userCards')),
+        findsNothing,
       );
     });
 
-    testWidgets('renders equipped objects', (WidgetTester tester) async {
+    testWidgets('switching filter updates visible category',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(_app(_screen(items: ownedItems)));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-habitCards')),
+      );
+      await tester.tap(
+        find.byKey(const Key('shopCustomizationFilter-habitCards')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopCustomizationCategory-habitCards')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopCustomizationCategory-backgrounds')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const Key('shopCustomizationCategory-userCards')),
+        findsNothing,
+      );
+      expect(find.text('Habit Cards'), findsWidgets);
+    });
+
+    testWidgets('renders equipped background in default filter',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         _app(
           _screen(
@@ -69,11 +111,8 @@ void main() {
         find.byKey(const Key('shopOwnedStatus-wallpaper_warm_beige')),
         findsOneWidget,
       );
-      expect(
-        find.byKey(const Key('shopOwnedStatus-user_card_dune_layers')),
-        findsOneWidget,
-      );
       expect(find.text('Equipado'), findsAtLeastNWidgets(1));
+      expect(find.text('Disponible'), findsNothing);
     });
 
     testWidgets('Equipar button calls callback', (WidgetTester tester) async {
@@ -119,6 +158,7 @@ void main() {
         find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
         findsOneWidget,
       );
+      expect(find.text('Disponible'), findsNothing);
     });
 
     testWidgets('empty state appears when no objects',
@@ -133,16 +173,21 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.byKey(const Key('shopCustomizationEmptyState')), findsOneWidget);
       expect(
-        find.text('Compra nuevos objetos en la tienda para personalizar Rutio.'),
+        find.byKey(
+            const Key('shopCustomizationCategoryEmptyState-backgrounds')),
         findsOneWidget,
       );
-      expect(find.byKey(const Key('shopCustomizationOpenCosmetics')), findsOneWidget);
+      expect(
+        find.text(
+            'Cuando consigas cosméticos de esta categoría aparecerán en esta sección.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('shopCustomizationOpenCosmetics')),
+          findsOneWidget);
     });
 
-    testWidgets('Ir a CosmÃ©ticos calls callback',
-        (WidgetTester tester) async {
+    testWidgets('Ir a CosmÃ©ticos calls callback', (WidgetTester tester) async {
       var openedCosmetics = false;
 
       await tester.pumpWidget(
@@ -157,6 +202,9 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationOpenCosmetics')),
+      );
       await tester.tap(find.byKey(const Key('shopCustomizationOpenCosmetics')));
       await tester.pump(const Duration(milliseconds: 16));
 
@@ -190,10 +238,24 @@ void main() {
       );
       expect(
         find.byKey(const Key('shopOwnedItem-habit_card_warm_beige')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.byKey(const Key('shopOwnedItem-user_card_warm_beige')),
+        findsNothing,
+      );
+      expect(find.text('Equipado'), findsNothing);
+      expect(find.text('Pack'), findsNothing);
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-habitCards')),
+      );
+      await tester
+          .tap(find.byKey(const Key('shopCustomizationFilter-habitCards')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedItem-habit_card_warm_beige')),
         findsOneWidget,
       );
       expect(
@@ -201,7 +263,18 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Equipado'), findsAtLeastNWidgets(1));
-      expect(find.text('Pack'), findsNothing);
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-userCards')),
+      );
+      await tester
+          .tap(find.byKey(const Key('shopCustomizationFilter-userCards')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedItem-user_card_warm_beige')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('controller-backed equip refreshes UI from persisted state',
@@ -223,10 +296,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining('Disponible'),
-        findsWidgets,
-      );
+      expect(find.text('Disponible'), findsNothing);
 
       await tester.ensureVisible(
         find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
@@ -243,6 +313,53 @@ void main() {
         ),
         findsWidgets,
       );
+    });
+
+    testWidgets(
+        'owned cosmetics grid does not overflow with long wallpaper names',
+        (WidgetTester tester) async {
+      final List<ShopItem> longWallpaperItems = <ShopItem>[
+        ShopCatalog.getItemById('wallpaper_warm_beige')!,
+        ShopCatalog.getItemById('wallpaper_soft_camel')!,
+        ShopCatalog.getItemById('wallpaper_sand_plain')!,
+        ShopCatalog.getItemById('wallpaper_cream_light')!,
+      ];
+
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_app(_screen(items: longWallpaperItems)));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_sand_plain')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('owned cards hide description and metadata chips',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            items: <ShopItem>[
+              ShopCatalog.getItemById('wallpaper_warm_beige')!,
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+          find.text('Warm neutral background for calm focus.'), findsNothing);
+      expect(find.text('Common'), findsNothing);
+      expect(find.text('Disponible'), findsNothing);
     });
   });
 }

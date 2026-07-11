@@ -72,18 +72,17 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   Widget build(BuildContext context) {
     return ShopPageShell(
       header: ShopHeader(
-        title: 'Cosmeticos',
-        subtitle: 'Fondos, cards y packs con estilo Rutio',
+        title: 'Cosméticos',
+        titleStyle: ShopUiTextStyles.sectionTitle.copyWith(
+          fontSize: 25,
+          height: 1.04,
+        ),
         leadingIcon: widget.onBackPressed != null
             ? Icons.arrow_back_ios_new_rounded
             : Icons.menu_rounded,
         onLeadingPressed: widget.onBackPressed ?? widget.onMenuPressed,
-        trailingIcon: widget.onBackPressed != null && widget.onMenuPressed != null
-            ? Icons.menu_rounded
-            : null,
-        onTrailingPressed:
-            widget.onBackPressed != null ? widget.onMenuPressed : null,
         walletCoins: _walletCoins,
+        useDrawerLeadingStyle: widget.onBackPressed == null,
       ),
       child: _buildBody(),
     );
@@ -97,8 +96,8 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     final state = _state;
     if (state == null) {
       return const ShopEmptyState(
-        title: 'Cosmeticos no disponibles',
-        message: 'No hemos podido cargar la tienda cosmetica ahora mismo.',
+        title: 'Cosméticos no disponibles',
+        message: 'No hemos podido cargar la tienda de cosméticos ahora mismo.',
       );
     }
 
@@ -106,14 +105,14 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     if (entries.isEmpty) {
       return const ShopEmptyState(
         title: 'Nada por mostrar',
-        message: 'No encontramos cosmeticos en esta seccion.',
+        message: 'No encontramos cosméticos en esta secci?n.',
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _FilterRow(
+          _FilterRow(
           selectedFilter: _selectedFilter,
           onFilterSelected: (ShopCosmeticsFilter filter) {
             setState(() {
@@ -130,8 +129,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final int crossAxisCount = constraints.maxWidth >= 560 ? 3 : 2;
-            final double childAspectRatio =
-                crossAxisCount == 3 ? 0.58 : 0.48;
+            final double childAspectRatio = crossAxisCount == 3 ? 0.68 : 0.64;
 
             return GridView.builder(
               shrinkWrap: true,
@@ -153,7 +151,8 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                       hasEnoughCoins: _walletCoins >= asset.priceAmber,
                       busy: _busyId == asset.id,
                       onPressed: () => _openAssetDetail(asset, ownershipState),
-                      onPrimaryActionPressed: () => _onAssetPrimaryActionPressed(
+                      onPrimaryActionPressed: () =>
+                          _onAssetPrimaryActionPressed(
                         asset,
                         ownershipState,
                       ),
@@ -165,7 +164,8 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                       isBundleOwned: isOwned,
                       hasEnoughCoins: _walletCoins >= bundle.priceAmber,
                       busy: _busyId == bundle.id,
-                      onPressed: () => _openBundleDetail(bundle, assets, isOwned),
+                      onPressed: () =>
+                          _openBundleDetail(bundle, assets, isOwned),
                       onPrimaryActionPressed: () =>
                           _onBundlePrimaryActionPressed(bundle, assets),
                     ),
@@ -219,11 +219,15 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   }
 
   int _compareEntries(_ShopEntry a, _ShopEntry b) {
-    final rarityCompare = _rarityOrder(a.rarity).compareTo(_rarityOrder(b.rarity));
+    final ownershipCompare = a.ownershipRank.compareTo(b.ownershipRank);
+    if (ownershipCompare != 0) return ownershipCompare;
+
+    final rarityCompare =
+        _rarityOrder(a.rarity).compareTo(_rarityOrder(b.rarity));
     if (rarityCompare != 0) return rarityCompare;
 
-    final categoryCompare =
-        _categoryOrder(a.categoryOrder).compareTo(_categoryOrder(b.categoryOrder));
+    final categoryCompare = _categoryOrder(a.categoryOrder)
+        .compareTo(_categoryOrder(b.categoryOrder));
     if (categoryCompare != 0) return categoryCompare;
 
     return a.sortOrder.compareTo(b.sortOrder);
@@ -266,7 +270,8 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     });
 
     final result = switch (ownershipState) {
-      ShopAssetOwnershipState.locked => await widget.controller.purchaseAsset(asset.id),
+      ShopAssetOwnershipState.locked =>
+        await widget.controller.purchaseAsset(asset.id),
       ShopAssetOwnershipState.owned ||
       ShopAssetOwnershipState.equipped ||
       ShopAssetOwnershipState.includedInOwnedBundle =>
@@ -494,7 +499,7 @@ class _FilterRow extends StatelessWidget {
           const SizedBox(width: 10),
           _buildChip(
             key: 'shopCosmeticsFilter-cards',
-            label: 'Cards',
+            label: 'Tarjetas',
             filter: ShopCosmeticsFilter.cards,
           ),
           const SizedBox(width: 10),
@@ -528,6 +533,7 @@ sealed class _ShopEntry {
   ShopAssetRarity get rarity;
   int get sortOrder;
   _EntryCategory get categoryOrder;
+  int get ownershipRank;
 }
 
 class _AssetEntry extends _ShopEntry {
@@ -556,6 +562,18 @@ class _AssetEntry extends _ShopEntry {
         return _EntryCategory.userCard;
     }
   }
+
+  @override
+  int get ownershipRank {
+    switch (ownershipState) {
+      case ShopAssetOwnershipState.locked:
+        return 0;
+      case ShopAssetOwnershipState.owned:
+      case ShopAssetOwnershipState.includedInOwnedBundle:
+      case ShopAssetOwnershipState.equipped:
+        return 1;
+    }
+  }
 }
 
 class _BundleEntry extends _ShopEntry {
@@ -577,6 +595,9 @@ class _BundleEntry extends _ShopEntry {
 
   @override
   _EntryCategory get categoryOrder => _EntryCategory.bundle;
+
+  @override
+  int get ownershipRank => isOwned ? 1 : 0;
 }
 
 enum _EntryCategory {

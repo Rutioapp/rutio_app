@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
@@ -23,6 +22,7 @@ class ShopOwnedItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isBackground = item.type == ShopItemType.background;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -37,35 +37,16 @@ class ShopOwnedItemCard extends StatelessWidget {
                   ? ShopUiTokens.success.withValues(alpha: 0.35)
                   : ShopUiTokens.stroke,
             ),
-            boxShadow: ShopUiTokens.softShadow,
           ),
           child: Padding(
             padding: ShopUiTokens.cardPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Stack(
-                  children: <Widget>[
-                    ClipRRect(
-                      borderRadius: ShopUiTokens.radiusMdShape,
-                      child: ShopItemAssetPreview(
-                        item: item,
-                        fallbackLabel: item.title,
-                        fallbackTone: _toneForItem(item.type),
-                        height: 96,
-                        fallbackIcon: _iconForItem(item.type),
-                      ),
-                    ),
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: _StatusBadge(
-                        key: Key('shopOwnedStatus-${item.id}'),
-                        isEquipped: isEquipped,
-                      ),
-                    ),
-                  ],
+                _PreviewBlock(
+                  item: item,
+                  isEquipped: isEquipped,
+                  isBackground: isBackground,
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -74,46 +55,14 @@ class ShopOwnedItemCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: ShopUiTextStyles.cardTitle.copyWith(fontSize: 18),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  item.description.isEmpty ? 'Sin descripcion' : item.description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: ShopUiTextStyles.subtitle,
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: <Widget>[
-                    _MetaPill(
-                      label: _rarityLabel(item.rarity),
-                      backgroundColor: _rarityBackground(item.rarity),
-                      textColor: _rarityForeground(item.rarity),
-                    ),
-                    if (item.collectionId != null &&
-                        item.collectionId!.trim().isNotEmpty)
-                      _MetaPill(
-                        label: _collectionLabel(item.collectionId!),
-                        backgroundColor: ShopUiTokens.backgroundAlt,
-                        textColor: ShopUiTokens.textPrimary,
-                      ),
-                    _MetaPill(
-                      label: isEquipped ? 'Equipado' : 'Disponible',
-                      backgroundColor: isEquipped
-                          ? ShopUiTokens.successSoft
-                          : ShopUiTokens.surfaceMuted,
-                      textColor: isEquipped
-                          ? ShopUiTokens.success
-                          : ShopUiTokens.textPrimary,
-                    ),
-                  ],
-                ),
+                const Spacer(),
                 const SizedBox(height: 14),
                 ShopPrimaryButton(
                   key: Key('shopOwnedEquip-${item.id}'),
                   label: isEquipped ? 'Equipado' : 'Equipar',
-                  icon: isEquipped ? Icons.check_rounded : Icons.playlist_add_rounded,
+                  icon: isEquipped
+                      ? Icons.check_rounded
+                      : Icons.playlist_add_rounded,
                   onPressed: isEquipped ? null : () => onEquipPressed(item.id),
                 ),
               ],
@@ -122,6 +71,57 @@ class ShopOwnedItemCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _PreviewBlock extends StatelessWidget {
+  const _PreviewBlock({
+    required this.item,
+    required this.isEquipped,
+    required this.isBackground,
+  });
+
+  final ShopItem item;
+  final bool isEquipped;
+  final bool isBackground;
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget preview = ClipRRect(
+      borderRadius: ShopUiTokens.radiusMdShape,
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: double.infinity,
+        height: isBackground ? 110 : 96,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            ShopItemAssetPreview(
+              item: item,
+              fallbackLabel: item.title,
+              fallbackTone: _toneForItem(item.type),
+              height: isBackground ? 110 : 96,
+              fallbackIcon: _iconForItem(item.type),
+              fit: BoxFit.cover,
+            ),
+            if (isEquipped)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: _StatusBadge(
+                  key: Key('shopOwnedStatus-${item.id}'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (!isEquipped) {
+      return preview;
+    }
+
+    return preview;
   }
 
   ShopPreviewPlaceholderTone _toneForItem(ShopItemType type) {
@@ -161,114 +161,27 @@ class ShopOwnedItemCard extends StatelessWidget {
         return Icons.card_giftcard_rounded;
     }
   }
-
-  String _rarityLabel(ShopItemRarity rarity) {
-    switch (rarity) {
-      case ShopItemRarity.common:
-        return 'Common';
-      case ShopItemRarity.uncommon:
-        return 'Uncommon';
-      case ShopItemRarity.rare:
-        return 'Rare';
-      case ShopItemRarity.epic:
-        return 'Epic';
-      case ShopItemRarity.legendary:
-        return 'Legendary';
-    }
-  }
-
-  String _collectionLabel(String collectionId) {
-    final collection = ShopCatalog.allCollections.firstWhere(
-      (collection) => collection.id == collectionId,
-      orElse: () => ShopCatalog.allCollections.first,
-    );
-    return collection.title;
-  }
-
-  Color _rarityBackground(ShopItemRarity rarity) {
-    switch (rarity) {
-      case ShopItemRarity.common:
-        return ShopUiTokens.backgroundAlt;
-      case ShopItemRarity.uncommon:
-        return ShopUiTokens.successSoft;
-      case ShopItemRarity.rare:
-        return const Color(0x1F6A8BB0);
-      case ShopItemRarity.epic:
-        return const Color(0x1FB28276);
-      case ShopItemRarity.legendary:
-        return ShopUiTokens.coinSoft;
-    }
-  }
-
-  Color _rarityForeground(ShopItemRarity rarity) {
-    switch (rarity) {
-      case ShopItemRarity.common:
-        return ShopUiTokens.textPrimary;
-      case ShopItemRarity.uncommon:
-        return ShopUiTokens.success;
-      case ShopItemRarity.rare:
-        return const Color(0xFF486E92);
-      case ShopItemRarity.epic:
-        return const Color(0xFF8D5D53);
-      case ShopItemRarity.legendary:
-        return const Color(0xFF9E7540);
-    }
-  }
 }
 
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({
     super.key,
-    required this.isEquipped,
   });
-
-  final bool isEquipped;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: isEquipped
-            ? ShopUiTokens.successSoft
-            : Colors.white.withValues(alpha: 0.82),
+        color: ShopUiTokens.successSoft,
         borderRadius: ShopUiTokens.radiusXlShape,
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Text(
-          isEquipped ? 'Equipado' : 'Disponible',
+          'Equipado',
           style: ShopUiTextStyles.labelSmall.copyWith(
-            color: isEquipped ? ShopUiTokens.success : ShopUiTokens.textPrimary,
+            color: ShopUiTokens.success,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MetaPill extends StatelessWidget {
-  const _MetaPill({
-    required this.label,
-    required this.backgroundColor,
-    required this.textColor,
-  });
-
-  final String label;
-  final Color backgroundColor;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: ShopUiTokens.radiusXlShape,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(
-          label,
-          style: ShopUiTextStyles.labelSmall.copyWith(color: textColor),
         ),
       ),
     );

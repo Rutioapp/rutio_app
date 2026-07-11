@@ -27,7 +27,7 @@ class ShopHomeEntryTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: ShopUiTokens.radiusLgShape,
         child: Ink(
-          padding: ShopUiTokens.tilePadding,
+          padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
           decoration: BoxDecoration(
             borderRadius: ShopUiTokens.radiusLgShape,
             border: Border.all(color: ShopUiTokens.stroke),
@@ -40,7 +40,7 @@ class ShopHomeEntryTile extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       title,
-                      style: ShopUiTextStyles.cardTitle.copyWith(fontSize: 21),
+                      style: ShopUiTextStyles.cardTitle.copyWith(fontSize: 19),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -54,9 +54,9 @@ class ShopHomeEntryTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               SizedBox(
-                width: 84,
+                width: 76,
                 height: 84,
                 child: ShopPreviewPlaceholder(
                   tone: placeholderTone,

@@ -167,18 +167,19 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen>
         : 'Your space to remember the day.';
 
     return Scaffold(
-      drawer: AppViewDrawer(
-        selected: 'diary',
-        onGoDaily: () => _navReplace(context, const HomeScreen()),
-        onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
-        onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
-        onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-        onGoDiary: () {},
-        onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
-        onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
-        onGoStats: () => Navigator.pushNamed(context, '/stats'),
-        onGoProfile: () => _navReplace(context, const ProfileScreen()),
-      ),
+          drawer: AppViewDrawer(
+              selected: 'diary',
+              onGoDaily: () => _navReplace(context, const HomeScreen()),
+              onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
+              onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
+              onGoTodo: () => Navigator.pushNamed(context, '/todo'),
+              onGoDiary: () {},
+              onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
+              onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
+              onGoStats: () => Navigator.pushNamed(context, '/stats'),
+              onGoShop: () => Navigator.pushNamed(context, '/shop'),
+              onGoProfile: () => _navReplace(context, const ProfileScreen()),
+        ),
       backgroundColor: Colors.transparent,
       body: DiaryScreenBackground(
         child: SafeArea(

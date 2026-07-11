@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
+import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 
@@ -41,11 +42,13 @@ class ShopItemDetailActionBar extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(
-              action.helperText,
-              style: ShopUiTextStyles.bodySmall,
-            ),
-            const SizedBox(height: 12),
+            if (item.category != ShopItemCategory.utility) ...<Widget>[
+              Text(
+                action.helperText,
+                style: ShopUiTextStyles.bodySmall,
+              ),
+              const SizedBox(height: 12),
+            ],
             ShopPrimaryButton(
               label: action.label,
               onPressed: action.onPressed,
@@ -60,6 +63,31 @@ class ShopItemDetailActionBar extends StatelessWidget {
   _ActionState _resolveAction() {
     final bool hasStock = (backpackQuantity ?? 0) > 0;
     final bool hasEnoughCoins = walletCoins >= item.priceCoins;
+
+    if (item.category == ShopItemCategory.utility) {
+      if (hasStock) {
+        return _ActionState(
+          label: 'En mochila x$backpackQuantity',
+          helperText: 'Ya tienes esta utilidad guardada para usarla despues.',
+          icon: Icons.inventory_2_outlined,
+        );
+      }
+
+      if (!hasEnoughCoins) {
+        return const _ActionState(
+          label: 'Sin monedas suficientes',
+          helperText: 'Necesitas mas monedas para conseguir esta utilidad.',
+          icon: Icons.lock_outline_rounded,
+        );
+      }
+
+      return _ActionState(
+        label: 'Comprar',
+        helperText: 'Se añadira a tu mochila al comprarla.',
+        icon: Icons.monetization_on_outlined,
+        onPressed: () => onPurchasePressed(item.id),
+      );
+    }
 
     if (!isOwned && !hasStock && !hasEnoughCoins) {
       return const _ActionState(
@@ -100,7 +128,7 @@ class ShopItemDetailActionBar extends StatelessWidget {
 
     return _ActionState(
       label: 'Comprar',
-      helperText: 'Todavia no se realiza la compra real desde esta UI.',
+      helperText: 'Se añadira a tu coleccion al comprarlo.',
       icon: Icons.monetization_on_outlined,
       onPressed: () => onPurchasePressed(item.id),
     );
