@@ -171,13 +171,9 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   Future<void> _handleCosmeticsEquipPressed(String itemId) async {
     final result = await widget.cosmeticsController.equipAsset(itemId);
     if (!mounted) return;
-
-    await _reloadSnapshot();
-    _showSnack(
-      result.isSuccess
-          ? 'Cosmetico equipado'
-          : 'No se ha podido equipar el cosmetico',
-    );
+    if (!result.isSuccess) {
+      _showSnack('No se ha podido equipar el cosmetico');
+    }
   }
 
   Future<void> _handlePurchaseCompleted(ShopControllerResult result) async {
@@ -334,5 +330,4 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         );
     }
   }
-
 }

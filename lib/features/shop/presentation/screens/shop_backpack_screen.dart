@@ -42,7 +42,9 @@ class ShopBackpackScreen extends StatelessWidget {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                for (int index = 0; index < sections.length; index++) ...<Widget>[
+                for (int index = 0;
+                    index < sections.length;
+                    index++) ...<Widget>[
                   ShopBackpackSection(
                     title: sections[index].title,
                     subtitle: sections[index].subtitle,

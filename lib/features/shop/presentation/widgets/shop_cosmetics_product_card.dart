@@ -48,8 +48,7 @@ class ShopCosmeticsProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String title = _isBundle ? bundle!.nameEs : asset!.nameEs;
-    final ShopAssetRarity rarity =
-        _isBundle ? bundle!.rarity : asset!.rarity;
+    final ShopAssetRarity rarity = _isBundle ? bundle!.rarity : asset!.rarity;
     final int price = _isBundle ? bundle!.priceAmber : asset!.priceAmber;
     final _ProductActionState action = _resolveAction();
 

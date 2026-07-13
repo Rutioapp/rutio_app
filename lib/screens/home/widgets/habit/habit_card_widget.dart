@@ -9,6 +9,9 @@ import 'package:rutio/screens/home/widgets/habit/habit_card_badge_zone.dart';
 import 'package:rutio/ui/behaviours/ios_feedback.dart';
 import 'package:rutio/ui/foundations/ios_foundations.dart';
 
+const double _habitCardBorderWidth = 1.0;
+const Color _habitCardBorderColor = Color(0x57FFFFFF);
+
 class HabitCardWidget extends StatefulWidget {
   final String title;
   final String description;
@@ -44,6 +47,11 @@ class HabitCardWidget extends StatefulWidget {
 
   final String completionBurstText;
   final String? backgroundImageAssetPath;
+  final ImageProvider<Object>? backgroundImageProvider;
+  final BoxFit backgroundImageFit;
+  final Alignment backgroundImageAlignment;
+  final Color? backgroundOverlayColor;
+  final double backgroundOverlayOpacity;
 
   const HabitCardWidget({
     super.key,
@@ -73,6 +81,11 @@ class HabitCardWidget extends StatefulWidget {
     this.onCountTap,
     this.completionBurstText = '+XP',
     this.backgroundImageAssetPath,
+    this.backgroundImageProvider,
+    this.backgroundImageFit = BoxFit.cover,
+    this.backgroundImageAlignment = Alignment.center,
+    this.backgroundOverlayColor,
+    this.backgroundOverlayOpacity = 0,
   });
 
   @override
@@ -87,6 +100,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
   late final Animation<Offset> _burstOffset;
 
   bool _showBurst = false;
+  ImageProvider<Object>? _lastPrecachedBackgroundProvider;
 
   String _formatCountLabel(num value) {
     if (value is double && !value.isFinite) return '0';
@@ -169,8 +183,15 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _precacheBackgroundIfNeeded();
+  }
+
+  @override
   void didUpdateWidget(covariant HabitCardWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _precacheBackgroundIfNeeded();
 
     final oldDone = oldWidget.isCompleted ||
         (oldWidget.isCounting && oldWidget.progress >= 1.0);
@@ -185,6 +206,18 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     _fxController.forward(from: 0);
   }
 
+  void _precacheBackgroundIfNeeded() {
+    final provider = widget.backgroundImageProvider ??
+        (widget.backgroundImageAssetPath == null
+            ? null
+            : AssetImage(widget.backgroundImageAssetPath!));
+    if (provider == null || provider == _lastPrecachedBackgroundProvider) {
+      return;
+    }
+    _lastPrecachedBackgroundProvider = provider;
+    precacheImage(provider, context);
+  }
+
   @override
   void dispose() {
     _fxController.dispose();
@@ -196,9 +229,17 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     // IOS-FIRST IMPROVEMENT START
     final radius = widget.compact ? 18.0 : 20.0;
     final verticalPadding = widget.compact ? 8.0 : 10.0;
+    final innerRadius = math.max(0.0, radius - _habitCardBorderWidth);
     // IOS-FIRST IMPROVEMENT END
     final isSkipped = widget.isSkipped;
     final controlOpacity = isSkipped ? 0.82 : 1.0;
+    final backgroundImageProvider = widget.backgroundImageProvider ??
+        (widget.backgroundImageAssetPath == null
+            ? null
+            : AssetImage(widget.backgroundImageAssetPath!));
+    final hasBackgroundOverlay = backgroundImageProvider != null &&
+        widget.backgroundOverlayColor != null &&
+        widget.backgroundOverlayOpacity > 0;
     final reminderLabel = widget.reminderLabel?.trim();
     final hasReminder = reminderLabel != null && reminderLabel.isNotEmpty;
     final compactCountLabel =
@@ -207,37 +248,37 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
         ? hasReminder
             ? compactCountLabel
             : (widget.unitLabel ?? '').trim().isEmpty
-            ? context.l10n.homeHabitCountProgress(
-                _formatCountLabel(widget.currentCount),
-                _formatCountLabel(widget.targetCount),
-              )
-            : context.l10n.homeHabitCountProgressWithUnit(
-                _formatCountLabel(widget.currentCount),
-                _formatCountLabel(widget.targetCount),
-                widget.unitLabel!.trim(),
-              )
+                ? context.l10n.homeHabitCountProgress(
+                    _formatCountLabel(widget.currentCount),
+                    _formatCountLabel(widget.targetCount),
+                  )
+                : context.l10n.homeHabitCountProgressWithUnit(
+                    _formatCountLabel(widget.currentCount),
+                    _formatCountLabel(widget.targetCount),
+                    widget.unitLabel!.trim(),
+                  )
         : null;
     final weeklyProgressLabel = widget.weeklyProgressLabel?.trim();
     final hasWeeklyProgress =
         weeklyProgressLabel != null && weeklyProgressLabel.isNotEmpty;
     final badgeZone =
         hasReminder || widget.isCounting || isSkipped || hasWeeklyProgress
-        ? HabitCardBadgeZone(
-            familyColor: widget.familyColor,
-            compact: widget.compact,
-            reminderLabel: reminderLabel,
-            countLabel: countInfoLabel,
-            progressLabel: hasWeeklyProgress ? weeklyProgressLabel : null,
-            extraBadges: isSkipped
-                ? [
-                    HabitSkippedBadge(
-                      label: context.l10n.homeSkippedToday,
-                      compact: widget.compact,
-                    ),
-                  ]
-                : const <Widget>[],
-          )
-        : null;
+            ? HabitCardBadgeZone(
+                familyColor: widget.familyColor,
+                compact: widget.compact,
+                reminderLabel: reminderLabel,
+                countLabel: countInfoLabel,
+                progressLabel: hasWeeklyProgress ? weeklyProgressLabel : null,
+                extraBadges: isSkipped
+                    ? [
+                        HabitSkippedBadge(
+                          label: context.l10n.homeSkippedToday,
+                          compact: widget.compact,
+                        ),
+                      ]
+                    : const <Widget>[],
+              )
+            : null;
 
     void openDefault() {
       if (widget.onOpenDetails != null) {
@@ -448,124 +489,124 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
         child: InkWell(
           borderRadius: BorderRadius.circular(radius),
           onTap: widget.onTap ?? openDefault,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(radius),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  constraints: BoxConstraints(
-                    minHeight: widget.compact ? 68 : 76,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.74),
-                    borderRadius: BorderRadius.circular(radius),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.34),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
+          child: Container(
+            constraints: BoxConstraints(
+              minHeight: widget.compact ? 68 : 76,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.74),
+              borderRadius: BorderRadius.circular(radius),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            foregroundDecoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(
+                color: _habitCardBorderColor,
+                width: _habitCardBorderWidth,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(_habitCardBorderWidth),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(innerRadius),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (backgroundImageProvider != null)
+                      Positioned.fill(
+                        child: Image(
+                          key: const Key('habitCardBackgroundImage'),
+                          image: backgroundImageProvider,
+                          fit: widget.backgroundImageFit,
+                          alignment: widget.backgroundImageAlignment,
+                          errorBuilder: (_, error, stackTrace) {
+                            if (kDebugMode) {
+                              debugPrint(
+                                '[ShopCosmetics] HabitCardWidget failed to load '
+                                'backgroundImageAssetPath=${widget.backgroundImageAssetPath} '
+                                'error=$error',
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
                       ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      if (widget.backgroundImageAssetPath != null)
-                        Positioned.fill(
-                          child: Image.asset(
-                            widget.backgroundImageAssetPath!,
-                            key: const Key('habitCardBackgroundImage'),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, error, stackTrace) {
-                              if (kDebugMode) {
-                                debugPrint(
-                                  '[ShopCosmetics] HabitCardWidget failed to load '
-                                  'backgroundImageAssetPath=${widget.backgroundImageAssetPath} '
-                                  'error=$error',
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
+                    if (hasBackgroundOverlay)
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: widget.backgroundOverlayColor!.withValues(
+                              alpha: widget.backgroundOverlayOpacity,
+                            ),
                           ),
                         ),
-                      if (widget.backgroundImageAssetPath != null)
-                        Positioned.fill(
-                          child: DecoratedBox(
+                      ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                      child: content,
+                    ),
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            width: 10,
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: <Color>[
-                                  Colors.white.withValues(alpha: 0.12),
-                                  Colors.white.withValues(alpha: 0.22),
-                                  Colors.white.withValues(alpha: 0.34),
-                                ],
+                              color: widget.familyColor.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(innerRadius),
+                                bottomLeft: Radius.circular(innerRadius),
                               ),
                             ),
                           ),
                         ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                        child: content,
-                      ),
-                    ],
-                  ),
-                ),
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        width: 10,
-                        decoration: BoxDecoration(
-                          color: widget.familyColor.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(radius),
-                            bottomLeft: Radius.circular(radius),
-                          ),
-                        ),
                       ),
                     ),
-                  ),
-                ),
-                if (_showBurst)
-                  Positioned(
-                    top: -8,
-                    right: 16,
-                    child: SlideTransition(
-                      position: _burstOffset,
-                      child: FadeTransition(
-                        opacity: _burstOpacity,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: widget.familyColor.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(
-                              IosCornerRadius.pill,
-                            ),
-                            border: Border.all(
-                              color: widget.familyColor.withValues(alpha: 0.28),
-                            ),
-                          ),
-                          child: Text(
-                            widget.completionBurstText,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
-                              color: widget.familyColor,
+                    if (_showBurst)
+                      Positioned(
+                        top: -8,
+                        right: 16,
+                        child: SlideTransition(
+                          position: _burstOffset,
+                          child: FadeTransition(
+                            opacity: _burstOpacity,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    widget.familyColor.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(
+                                  IosCornerRadius.pill,
+                                ),
+                                border: Border.all(
+                                  color: widget.familyColor
+                                      .withValues(alpha: 0.28),
+                                ),
+                              ),
+                              child: Text(
+                                widget.completionBurstText,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: widget.familyColor,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),

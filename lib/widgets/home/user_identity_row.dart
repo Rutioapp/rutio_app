@@ -52,27 +52,23 @@ class UserIdentityRow extends StatelessWidget {
       final storeRevision = context.select<UserStateStore, String?>(
         (UserStateStore store) => _lastSavedAt(store.state),
       );
-      final store = context.read<UserStateStore>();
-      final controller = ShopCosmeticsController(userStateStore: store);
-      return FutureBuilder<String?>(
-        future: controller
-            .getEquippedUserCardAssetOrNull()
-            .then((asset) => asset?.assetPath),
-        builder: (context, snapshot) {
-          _log(
-            'UserIdentityRow storeRevision=$storeRevision backgroundImageAssetPath=${snapshot.data} '
-            'fallback=${snapshot.data == null}',
-          );
-          return _UserIdentityRowSurface(
-            username: username,
-            level: level,
-            coins: coins,
-            xpProgress: xpProgress,
-            avatarUrl: avatarUrl,
-            onTap: onTap,
-            backgroundImageAssetPath: snapshot.data,
-          );
-        },
+      final backgroundImageAssetPath =
+          context.select<ShopCosmeticsController, String?>(
+        (ShopCosmeticsController controller) =>
+            controller.getEquippedUserCardAssetOrNullSync()?.assetPath,
+      );
+      _log(
+        'UserIdentityRow storeRevision=$storeRevision backgroundImageAssetPath=$backgroundImageAssetPath '
+        'fallback=${backgroundImageAssetPath == null}',
+      );
+      return _UserIdentityRowSurface(
+        username: username,
+        level: level,
+        coins: coins,
+        xpProgress: xpProgress,
+        avatarUrl: avatarUrl,
+        onTap: onTap,
+        backgroundImageAssetPath: backgroundImageAssetPath,
       );
     } catch (_) {
       _log(

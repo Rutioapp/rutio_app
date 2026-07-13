@@ -9,6 +9,8 @@ import 'demo_seed_history.dart';
 class DemoSeedData {
   const DemoSeedData._();
 
+  static const int initialDemoCoins = 999999;
+
   static DemoSeedPayload build({required DateTime now}) {
     final today = DemoSeedDates.dateOnly(now.toLocal());
     final todayKey = DemoSeedDates.dateKey(today);
@@ -19,9 +21,8 @@ class DemoSeedData {
     final unlockedAchievementJson = unlockedAchievements
         .map((record) => record.toJson())
         .toList(growable: false);
-    final rewardAppliedAchievementIds = unlockedAchievements
-        .map((record) => record.id)
-        .toList(growable: false);
+    final rewardAppliedAchievementIds =
+        unlockedAchievements.map((record) => record.id).toList(growable: false);
     final featuredAchievementIds = _buildFeaturedAchievementIds(
       rewardAppliedAchievementIds,
     );
@@ -113,7 +114,7 @@ class DemoSeedData {
     return _DemoGamificationState(
       totalXp: totalXp,
       level: progress.level,
-      coins: 1240,
+      coins: initialDemoCoins,
     );
   }
 

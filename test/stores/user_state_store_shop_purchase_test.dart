@@ -13,10 +13,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('UserStateStore shop purchases', () {
-    test('buying a cosmetic spends wallet coins and saves shop inventory', () async {
+    test('buying a cosmetic spends wallet coins and saves shop inventory',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
-      final item = ShopCatalog.getItemById('bg_basic_camel')!;
+      final item = ShopCatalog.getItemById('wallpaper_mellow_camel')!;
       final store = await _seedStore(walletCoins: 200);
 
       final success = await store.buyItem(
@@ -26,12 +27,14 @@ void main() {
 
       final shopState = await ShopLocalRepository().load();
       expect(success, isTrue);
-      expect(_walletCoins(store), 100);
-      expect(shopState.inventory.map((entry) => entry.itemId), <String>[item.id]);
+      expect(_walletCoins(store), 200 - item.priceCoins);
+      expect(
+          shopState.inventory.map((entry) => entry.itemId), <String>[item.id]);
       expect(shopState.backpackItems, isEmpty);
     });
 
-    test('buying a utility spends wallet coins and saves backpack item', () async {
+    test('buying a utility spends wallet coins and saves backpack item',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final item = ShopCatalog.getItemById('utility_xp_boost_1d')!;
@@ -57,7 +60,7 @@ void main() {
     test('purchase fails when wallet does not have enough coins', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
-      final item = ShopCatalog.getItemById('bg_landscape_dawn_hills')!;
+      final item = ShopCatalog.getItemById('wallpaper_jungle_sunrise')!;
       final store = await _seedStore(walletCoins: 200);
 
       final success = await store.buyItem(
@@ -71,10 +74,11 @@ void main() {
       expect(shopState, const ShopState.initial());
     });
 
-    test('legacy ShopState.coins is not used as the real balance source', () async {
+    test('legacy ShopState.coins is not used as the real balance source',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
-      final item = ShopCatalog.getItemById('bg_basic_camel')!;
+      final item = ShopCatalog.getItemById('wallpaper_mellow_camel')!;
       await ShopLocalRepository().save(const ShopState(coins: 999));
       final store = await _seedStore(walletCoins: 0);
 
@@ -155,9 +159,9 @@ Future<UserStateStore> _seedStore({required int walletCoins}) async {
 }
 
 int _walletCoins(UserStateStore store) {
-  final wallet =
-      ((store.state?['userState'] as Map?)?['wallet'] as Map?)?.cast<String, dynamic>() ??
-          const <String, dynamic>{};
+  final wallet = ((store.state?['userState'] as Map?)?['wallet'] as Map?)
+          ?.cast<String, dynamic>() ??
+      const <String, dynamic>{};
   return ((wallet['coins'] as num?) ?? 0).toInt();
 }
 

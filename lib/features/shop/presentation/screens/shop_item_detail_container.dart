@@ -60,7 +60,8 @@ class ShopItemDetailContainer extends StatefulWidget {
   final ValueChanged<ShopControllerResult>? onEquipCompleted;
 
   @override
-  State<ShopItemDetailContainer> createState() => _ShopItemDetailContainerState();
+  State<ShopItemDetailContainer> createState() =>
+      _ShopItemDetailContainerState();
 }
 
 class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
@@ -161,9 +162,7 @@ class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
   String _purchaseFeedbackMessage(ShopControllerResult result) {
     if (result.status == ShopControllerStatus.success) {
       final bool isCosmetic = result.item?.cosmeticSlot != null;
-      return isCosmetic
-          ? 'Añadido a tu colección'
-          : 'Añadido a la mochila';
+      return isCosmetic ? 'Añadido a tu colección' : 'Añadido a la mochila';
     }
     return 'No se ha podido completar la compra';
   }

@@ -59,7 +59,8 @@ class ShopCosmeticsService {
       return _result(ShopCosmeticsOperationStatus.assetNotFound);
     }
     if (state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles)) {
-      return _result(ShopCosmeticsOperationStatus.alreadyOwned, assetId: assetId);
+      return _result(ShopCosmeticsOperationStatus.alreadyOwned,
+          assetId: assetId);
     }
     if (walletCoins < asset.priceAmber) {
       return _result(
@@ -85,7 +86,8 @@ class ShopCosmeticsService {
       return _result(ShopCosmeticsOperationStatus.bundleNotFound);
     }
     if (state.isBundleOwned(bundleId)) {
-      return _result(ShopCosmeticsOperationStatus.alreadyOwned, bundleId: bundleId);
+      return _result(ShopCosmeticsOperationStatus.alreadyOwned,
+          bundleId: bundleId);
     }
     if (walletCoins < bundle.priceAmber) {
       return _result(

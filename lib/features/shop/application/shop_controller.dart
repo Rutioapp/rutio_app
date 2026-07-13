@@ -239,10 +239,10 @@ class ShopController {
     Map<String, dynamic> root,
     int walletCoins,
   ) async {
-    final userState =
-        Map<String, dynamic>.from(root['userState'] as Map? ?? <String, dynamic>{});
-    final wallet =
-        Map<String, dynamic>.from(userState['wallet'] as Map? ?? <String, dynamic>{});
+    final userState = Map<String, dynamic>.from(
+        root['userState'] as Map? ?? <String, dynamic>{});
+    final wallet = Map<String, dynamic>.from(
+        userState['wallet'] as Map? ?? <String, dynamic>{});
     wallet['coins'] = walletCoins;
     userState['wallet'] = wallet;
     root['userState'] = userState;

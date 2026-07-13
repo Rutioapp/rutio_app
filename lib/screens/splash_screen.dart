@@ -11,9 +11,15 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({
     super.key,
     this.onFinished,
+    this.autoAdvanceDuration,
+    this.enableTapToContinue = false,
+    this.showTapHint = true,
   });
 
   final VoidCallback? onFinished;
+  final Duration? autoAdvanceDuration;
+  final bool enableTapToContinue;
+  final bool showTapHint;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -58,10 +64,13 @@ class _SplashScreenState extends State<SplashScreen>
 
     _ctrl.forward();
 
-    Future.delayed(const Duration(milliseconds: 1300), () {
-      if (!mounted) return;
-      _goNext();
-    });
+    final autoAdvanceDuration = widget.autoAdvanceDuration;
+    if (autoAdvanceDuration != null) {
+      Future<void>.delayed(autoAdvanceDuration, () {
+        if (!mounted) return;
+        _goNext();
+      });
+    }
   }
 
   @override
@@ -86,11 +95,12 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _goNext, // tap acelera
+      onTap: widget.enableTapToContinue ? _goNext : null,
       child: _SplashBody(
         scale: _scale,
         tagOpacity: _tagOpacity,
         hintOpacity: _hintOpacity,
+        showTapHint: widget.showTapHint,
       ),
     );
   }
@@ -100,11 +110,13 @@ class _SplashBody extends StatelessWidget {
   final Animation<double> scale;
   final Animation<double> tagOpacity;
   final Animation<double> hintOpacity;
+  final bool showTapHint;
 
   const _SplashBody({
     required this.scale,
     required this.tagOpacity,
     required this.hintOpacity,
+    required this.showTapHint,
   });
 
   @override
@@ -142,15 +154,16 @@ class _SplashBody extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(
-            bottom: R.h(context, 70),
-            left: 0,
-            right: 0,
-            child: FadeTransition(
-              opacity: hintOpacity,
-              child: _PulsingHint(text: context.l10n.splashTapToStart),
+          if (showTapHint)
+            Positioned(
+              bottom: R.h(context, 70),
+              left: 0,
+              right: 0,
+              child: FadeTransition(
+                opacity: hintOpacity,
+                child: _PulsingHint(text: context.l10n.splashTapToStart),
+              ),
             ),
-          ),
         ],
       ),
     );

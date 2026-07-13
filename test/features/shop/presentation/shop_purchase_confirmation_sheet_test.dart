@@ -9,10 +9,11 @@ import 'package:rutio/utils/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final ShopItem item = ShopCatalog.getItemById('wallpaper_warm_beige')!;
+  final ShopItem item = ShopCatalog.getItemById('wallpaper_mist_blue')!;
 
   group('ShopPurchaseConfirmationSheet', () {
-    testWidgets('shows item price and walletCoins', (WidgetTester tester) async {
+    testWidgets('shows item price and walletCoins',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         _app(
           ShopPurchaseConfirmationSheet(
@@ -25,7 +26,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Warm Beige Wallpaper'), findsOneWidget);
+      expect(find.text('Mist Blue Wallpaper'), findsOneWidget);
       expect(find.text('120 coins'), findsAtLeastNWidgets(1));
       expect(find.text('240 coins'), findsOneWidget);
     });
@@ -64,7 +65,8 @@ void main() {
       expect(find.text('Sin monedas suficientes'), findsOneWidget);
     });
 
-    testWidgets('pressing Cancelar calls onCancel', (WidgetTester tester) async {
+    testWidgets('pressing Cancelar calls onCancel',
+        (WidgetTester tester) async {
       var cancelCount = 0;
 
       await tester.pumpWidget(

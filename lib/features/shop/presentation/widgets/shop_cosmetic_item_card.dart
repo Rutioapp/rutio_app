@@ -191,9 +191,8 @@ class _StatusBadge extends StatelessWidget {
     }
 
     final String label = isEquipped ? 'Equipped' : 'Owned';
-    final Color background = isEquipped
-        ? ShopUiTokens.successSoft
-        : ShopUiTokens.backgroundAlt;
+    final Color background =
+        isEquipped ? ShopUiTokens.successSoft : ShopUiTokens.backgroundAlt;
     final Color foreground =
         isEquipped ? ShopUiTokens.success : ShopUiTokens.textPrimary;
 

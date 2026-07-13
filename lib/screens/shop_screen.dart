@@ -26,15 +26,14 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
   Widget build(BuildContext context) {
     final userStateStore = context.read<UserStateStore>();
+    final cosmeticsController = context.read<ShopCosmeticsController>();
 
     return ShopFlowScreen(
       controller: ShopController(
         userStateStore: userStateStore,
         shopRepository: _shopRepository,
       ),
-      cosmeticsController: ShopCosmeticsController(
-        userStateStore: userStateStore,
-      ),
+      cosmeticsController: cosmeticsController,
       shopRepository: _shopRepository,
     );
   }

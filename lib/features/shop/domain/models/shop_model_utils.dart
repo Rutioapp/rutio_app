@@ -6,7 +6,8 @@ Map<String, dynamic> shopJsonMap(dynamic value) {
   }
   if (value is Map) {
     return value.map(
-      (dynamic key, dynamic value) => MapEntry(key.toString(), shopJsonValue(value)),
+      (dynamic key, dynamic value) =>
+          MapEntry(key.toString(), shopJsonValue(value)),
     );
   }
   return <String, dynamic>{};
@@ -23,7 +24,8 @@ List<T> shopJsonList<T>(
 dynamic shopJsonValue(dynamic value) {
   if (value is Map) {
     return value.map(
-      (dynamic key, dynamic value) => MapEntry(key.toString(), shopJsonValue(value)),
+      (dynamic key, dynamic value) =>
+          MapEntry(key.toString(), shopJsonValue(value)),
     );
   }
   if (value is List) {

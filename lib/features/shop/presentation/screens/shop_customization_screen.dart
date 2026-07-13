@@ -65,7 +65,7 @@ class ShopCustomizationScreen extends StatefulWidget {
   final EquippedCosmetics equippedCosmetics;
   final List<ShopItem> ownedCosmeticItems;
   final VoidCallback onBackPressed;
-  final ValueChanged<String> onEquipPressed;
+  final Future<void> Function(String itemId) onEquipPressed;
   final ValueChanged<String> onItemPressed;
   final VoidCallback? onOpenCosmetics;
   final ShopCosmeticsController? cosmeticsController;
@@ -78,20 +78,22 @@ class ShopCustomizationScreen extends StatefulWidget {
 class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
   PersonalizationCosmeticFilter _selectedFilter =
       PersonalizationCosmeticFilter.backgrounds;
-  Future<_CustomizationViewData>? _customizationFuture;
+  Future<void>? _controllerHydrationFuture;
   ShopCosmeticsController? _cachedController;
+  int? _resolvedWalletCoins;
+  String? _busyEquipItemId;
 
   @override
   void initState() {
     super.initState();
-    _syncCustomizationFuture();
+    _syncControllerHydration();
   }
 
   @override
   void didUpdateWidget(covariant ShopCustomizationScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.cosmeticsController, widget.cosmeticsController)) {
-      _syncCustomizationFuture();
+      _syncControllerHydration();
     }
   }
 
@@ -99,10 +101,9 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
   Widget build(BuildContext context) {
     final controller = widget.cosmeticsController;
     if (controller != null) {
-      return FutureBuilder<_CustomizationViewData>(
-        future: _customizationFuture,
-        builder: (BuildContext context,
-            AsyncSnapshot<_CustomizationViewData> snapshot) {
+      return FutureBuilder<void>(
+        future: _controllerHydrationFuture,
+        builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return ShopPageShell(
               header: ShopHeader(
@@ -116,16 +117,16 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
             );
           }
 
-          final data = snapshot.data ??
-              const _CustomizationViewData(
-                walletCoins: 0,
-                equippedCosmetics: EquippedCosmetics(),
-                ownedCosmeticItems: <ShopItem>[],
+          return AnimatedBuilder(
+            animation: controller,
+            builder: (BuildContext context, _) {
+              final data = _buildControllerViewData(controller);
+              return _buildContent(
+                walletCoins: data.walletCoins,
+                equippedCosmetics: data.equippedCosmetics,
+                ownedCosmeticItems: data.ownedCosmeticItems,
               );
-          return _buildContent(
-            walletCoins: data.walletCoins,
-            equippedCosmetics: data.equippedCosmetics,
-            ownedCosmeticItems: data.ownedCosmeticItems,
+            },
           );
         },
       );
@@ -138,21 +139,22 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
     );
   }
 
-  void _syncCustomizationFuture() {
+  void _syncControllerHydration() {
     final controller = widget.cosmeticsController;
     if (controller == null) {
       _cachedController = null;
-      _customizationFuture = null;
+      _controllerHydrationFuture = null;
+      _resolvedWalletCoins = null;
       return;
     }
 
     if (identical(_cachedController, controller) &&
-        _customizationFuture != null) {
+        _controllerHydrationFuture != null) {
       return;
     }
 
     _cachedController = controller;
-    _customizationFuture = _loadCustomizationViewData(controller);
+    _controllerHydrationFuture = _hydrateControllerState(controller);
   }
 
   Widget _buildContent({
@@ -217,7 +219,8 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
               title: _selectedFilter.label,
               items: filteredItems,
               equippedCosmetics: equippedCosmetics,
-              onEquipPressed: widget.onEquipPressed,
+              busyEquipItemId: _busyEquipItemId,
+              onEquipPressed: _handleEquipPressed,
               onItemPressed: widget.onItemPressed,
             ),
         ],
@@ -292,11 +295,18 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
     }
   }
 
-  Future<_CustomizationViewData> _loadCustomizationViewData(
+  Future<void> _hydrateControllerState(
     ShopCosmeticsController controller,
   ) async {
-    final ShopCosmeticsState state = await controller.getState();
-    final int resolvedWalletCoins = await controller.getWalletCoins();
+    await controller.getState();
+    _resolvedWalletCoins = await controller.getWalletCoins();
+  }
+
+  _CustomizationViewData _buildControllerViewData(
+    ShopCosmeticsController controller,
+  ) {
+    final ShopCosmeticsState state =
+        controller.state ?? const ShopCosmeticsState.initial();
     final List<ShopItem> resolvedItems = ShopAssetsCatalog.allAssets
         .where(
           (ShopAsset asset) => state.isAssetOwned(
@@ -309,7 +319,7 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
         .toList(growable: false);
 
     return _CustomizationViewData(
-      walletCoins: resolvedWalletCoins,
+      walletCoins: _resolvedWalletCoins ?? widget.walletCoins,
       equippedCosmetics: EquippedCosmetics(
         backgroundItemId: state.equippedWallpaperId,
         habitCardItemId: state.equippedHabitCardSkinId,
@@ -317,6 +327,26 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
       ),
       ownedCosmeticItems: resolvedItems,
     );
+  }
+
+  Future<void> _handleEquipPressed(String itemId) async {
+    if (_busyEquipItemId == itemId) return;
+    setState(() {
+      _busyEquipItemId = itemId;
+    });
+    try {
+      await widget.onEquipPressed(itemId);
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (_busyEquipItemId == itemId) {
+            _busyEquipItemId = null;
+          }
+        });
+      } else if (_busyEquipItemId == itemId) {
+        _busyEquipItemId = null;
+      }
+    }
   }
 
   ShopItem? _mapAssetToShopItem(ShopAsset asset) {
@@ -368,6 +398,7 @@ class _OwnedSection extends StatelessWidget {
     required this.title,
     required this.items,
     required this.equippedCosmetics,
+    required this.busyEquipItemId,
     required this.onEquipPressed,
     required this.onItemPressed,
   });
@@ -375,7 +406,8 @@ class _OwnedSection extends StatelessWidget {
   final String title;
   final List<ShopItem> items;
   final EquippedCosmetics equippedCosmetics;
-  final ValueChanged<String> onEquipPressed;
+  final String? busyEquipItemId;
+  final Future<void> Function(String itemId) onEquipPressed;
   final ValueChanged<String> onItemPressed;
 
   @override
@@ -411,6 +443,7 @@ class _OwnedSection extends StatelessWidget {
                   key: Key('shopOwnedItem-${item.id}'),
                   item: item,
                   isEquipped: _isEquipped(item, equippedCosmetics),
+                  busy: busyEquipItemId == item.id,
                   onTap: () => onItemPressed(item.id),
                   onEquipPressed: onEquipPressed,
                 );

@@ -14,7 +14,8 @@ class ShopCosmeticsState {
     this.equippedHabitCardSkinId,
     this.equippedUserCardSkinId,
   })  : ownedAssetIds = List<String>.unmodifiable(_normalizeIds(ownedAssetIds)),
-        ownedBundleIds = List<String>.unmodifiable(_normalizeIds(ownedBundleIds));
+        ownedBundleIds =
+            List<String>.unmodifiable(_normalizeIds(ownedBundleIds));
 
   const ShopCosmeticsState.initial()
       : ownedAssetIds = const <String>[],

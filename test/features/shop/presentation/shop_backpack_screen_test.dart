@@ -33,9 +33,12 @@ void main() {
       await tester.pumpWidget(_app(_screen(items: _items())));
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.byKey(const Key('shopBackpackSection-Boosts')), findsOneWidget);
-      expect(find.byKey(const Key('shopBackpackSection-Rachas')), findsOneWidget);
-      expect(find.byKey(const Key('shopBackpackSection-Cajas')), findsOneWidget);
+      expect(
+          find.byKey(const Key('shopBackpackSection-Boosts')), findsOneWidget);
+      expect(
+          find.byKey(const Key('shopBackpackSection-Rachas')), findsOneWidget);
+      expect(
+          find.byKey(const Key('shopBackpackSection-Cajas')), findsOneWidget);
     });
 
     testWidgets('quantity appears correctly', (WidgetTester tester) async {
@@ -82,13 +85,15 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      await tester.tap(find.byKey(const Key('shopBackpackUse-utility_xp_boost_1d')));
+      await tester
+          .tap(find.byKey(const Key('shopBackpackUse-utility_xp_boost_1d')));
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(usedItemId, 'utility_xp_boost_1d');
     });
 
-    testWidgets('tapping card calls onItemPressed', (WidgetTester tester) async {
+    testWidgets('tapping card calls onItemPressed',
+        (WidgetTester tester) async {
       String? pressedItemId;
 
       await tester.pumpWidget(

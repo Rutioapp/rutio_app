@@ -64,7 +64,8 @@ void main() {
     expect(openDetailCount, 0);
   });
 
-  testWidgets('check control tap toggles check callback without opening details',
+  testWidgets(
+      'check control tap toggles check callback without opening details',
       (tester) async {
     var checkTapCount = 0;
     var openDetailCount = 0;
@@ -135,4 +136,111 @@ void main() {
     await tester.pumpAndSettle();
     expect(openDetailCount, 1);
   });
+
+  testWidgets('habit card draws a single outer border above its content',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Read',
+          description: '20 min',
+          familyColor: Colors.blue,
+          progress: 0,
+          backgroundImageAssetPath:
+              'assets/shop/habit_cards/common/habit_card_rutio_beige.webp',
+        ),
+      ),
+    );
+
+    final outer = _habitCardShell(tester);
+    final outerDecoration = outer.foregroundDecoration as BoxDecoration;
+    final outerBorder = outerDecoration.border as Border;
+    final clip = _habitCardClip(tester);
+
+    expect(outer.decoration, isA<BoxDecoration>());
+    expect((outer.decoration as BoxDecoration).border, isNull);
+    expect(outerDecoration.borderRadius, BorderRadius.circular(20));
+    expect(outerBorder.top.width, 1.0);
+    expect(outerBorder.top.color, const Color(0x57FFFFFF));
+    expect(outerBorder.bottom.width, 1.0);
+    expect(clip.borderRadius, BorderRadius.circular(19));
+    expect(
+      _habitCardBorderPadding(tester).padding,
+      const EdgeInsets.all(1.0),
+    );
+  });
+
+  testWidgets('habit card keeps the same border shell for check and count',
+      (tester) async {
+    Future<void> pumpCard({required bool isCounting}) async {
+      await tester.pumpWidget(
+        _testApp(
+          HabitCardWidget(
+            title: isCounting ? 'Water' : 'Read',
+            description: isCounting ? '' : '20 min',
+            familyColor: Colors.indigo,
+            progress: isCounting ? 0.4 : 0,
+            isCounting: isCounting,
+            currentCount: isCounting ? 2 : 0,
+            targetCount: isCounting ? 5 : 1,
+          ),
+        ),
+      );
+    }
+
+    await pumpCard(isCounting: false);
+    expect(
+      (_habitCardShell(tester).foregroundDecoration as BoxDecoration)
+          .borderRadius,
+      BorderRadius.circular(20),
+    );
+    expect(_habitCardClip(tester).borderRadius, BorderRadius.circular(19));
+
+    await pumpCard(isCounting: true);
+    expect(
+      (_habitCardShell(tester).foregroundDecoration as BoxDecoration)
+          .borderRadius,
+      BorderRadius.circular(20),
+    );
+    expect(_habitCardClip(tester).borderRadius, BorderRadius.circular(19));
+  });
+}
+
+Container _habitCardShell(WidgetTester tester) {
+  final containers = tester.widgetList<Container>(
+    find.descendant(
+      of: find.byType(HabitCardWidget),
+      matching: find.byType(Container),
+    ),
+  );
+
+  return containers.firstWhere((container) {
+    final foreground = container.foregroundDecoration;
+    if (foreground is! BoxDecoration) return false;
+    return foreground.border is Border;
+  });
+}
+
+ClipRRect _habitCardClip(WidgetTester tester) {
+  return tester.widget<ClipRRect>(
+    find.descendant(
+      of: find.byType(HabitCardWidget),
+      matching: find.byType(ClipRRect),
+    ),
+  );
+}
+
+Padding _habitCardBorderPadding(WidgetTester tester) {
+  final paddingFinder = find.descendant(
+    of: find.byType(HabitCardWidget),
+    matching: find.byWidgetPredicate(
+      (widget) =>
+          widget is Padding &&
+          widget.padding is EdgeInsets &&
+          (widget.padding as EdgeInsets).left == 1.0 &&
+          (widget.padding as EdgeInsets).top == 1.0,
+    ),
+  );
+
+  return tester.widget<Padding>(paddingFinder.first);
 }

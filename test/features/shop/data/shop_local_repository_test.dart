@@ -34,7 +34,7 @@ void main() {
       const state = ShopState(
         inventory: <OwnedShopItem>[
           OwnedShopItem(
-            itemId: 'wallpaper_warm_beige',
+            itemId: 'wallpaper_mist_blue',
             acquiredAtMillis: 123,
             source: 'shop_purchase',
           ),
@@ -62,8 +62,13 @@ void main() {
 
     test('save and load preserves equipped cosmetics', () async {
       const state = ShopState(
+        inventory: <OwnedShopItem>[
+          OwnedShopItem(itemId: 'wallpaper_mist_blue'),
+          OwnedShopItem(itemId: 'habit_card_soft_camel'),
+          OwnedShopItem(itemId: 'user_card_dune_layers'),
+        ],
         equippedCosmetics: EquippedCosmetics(
-          backgroundItemId: 'wallpaper_warm_beige',
+          backgroundItemId: 'wallpaper_mist_blue',
           habitCardItemId: 'habit_card_soft_camel',
           userCardItemId: 'user_card_dune_layers',
         ),
@@ -73,6 +78,19 @@ void main() {
       final restored = await repository.load();
 
       expect(restored.equippedCosmetics, state.equippedCosmetics);
+    });
+
+    test('obsolete equipped wallpaper falls back safely on load', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ShopLocalRepository.storageKey:
+            '{"coins":0,"inventory":[{"itemId":"wallpaper_dune_layers","quantity":1}],"backpackItems":[],"equippedCosmetics":{"backgroundItemId":"wallpaper_dune_layers","habitCardItemId":null,"userCardItemId":null}}',
+      });
+      repository = ShopLocalRepository();
+
+      final restored = await repository.load();
+
+      expect(restored.inventory, isEmpty);
+      expect(restored.equippedCosmetics.backgroundItemId, isNull);
     });
 
     test('corrupt json returns initial state', () async {

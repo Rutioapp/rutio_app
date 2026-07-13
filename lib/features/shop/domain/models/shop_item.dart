@@ -93,7 +93,9 @@ class ShopItem {
           ? this.collectionId
           : collectionId as String?,
       priceCoins: priceCoins ?? this.priceCoins,
-      assetRef: identical(assetRef, _shopItemUnset) ? this.assetRef : assetRef as String?,
+      assetRef: identical(assetRef, _shopItemUnset)
+          ? this.assetRef
+          : assetRef as String?,
       isEnabled: isEnabled ?? this.isEnabled,
       metadata: metadata ?? this.metadata,
     );

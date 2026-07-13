@@ -57,8 +57,8 @@ class _ShopCosmeticDetailContainerState
   Widget build(BuildContext context) {
     return FutureBuilder<_CosmeticDetailData>(
       future: _future,
-      builder: (BuildContext context,
-          AsyncSnapshot<_CosmeticDetailData> snapshot) {
+      builder:
+          (BuildContext context, AsyncSnapshot<_CosmeticDetailData> snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return ShopPageShell(
             header: ShopHeader(

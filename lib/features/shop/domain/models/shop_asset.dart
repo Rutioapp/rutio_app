@@ -1,4 +1,8 @@
+import 'package:flutter/painting.dart';
+
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
+
+const Object _shopAssetUnset = Object();
 
 class ShopAsset {
   const ShopAsset({
@@ -11,9 +15,16 @@ class ShopAsset {
     required this.priceAmber,
     required this.assetPath,
     required this.previewAssetPath,
+    this.imageFit = BoxFit.cover,
+    this.imageAlignmentX = 0,
+    this.imageAlignmentY = 0,
+    this.overlayColorValue,
+    this.overlayOpacity = 0,
     this.isPurchasable = true,
     this.sortOrder = 0,
   });
+
+  static final Map<String, AssetImage> _assetImageCache = <String, AssetImage>{};
 
   final String id;
   final String familyId;
@@ -24,8 +35,21 @@ class ShopAsset {
   final int priceAmber;
   final String assetPath;
   final String previewAssetPath;
+  final BoxFit imageFit;
+  final double imageAlignmentX;
+  final double imageAlignmentY;
+  final int? overlayColorValue;
+  final double overlayOpacity;
   final bool isPurchasable;
   final int sortOrder;
+
+  AssetImage get imageProvider =>
+      _assetImageCache.putIfAbsent(assetPath, () => AssetImage(assetPath));
+
+  Alignment get imageAlignment => Alignment(imageAlignmentX, imageAlignmentY);
+
+  Color? get overlayColor =>
+      overlayColorValue == null ? null : Color(overlayColorValue!);
 
   ShopAsset copyWith({
     String? id,
@@ -37,6 +61,11 @@ class ShopAsset {
     int? priceAmber,
     String? assetPath,
     String? previewAssetPath,
+    BoxFit? imageFit,
+    double? imageAlignmentX,
+    double? imageAlignmentY,
+    Object? overlayColorValue = _shopAssetUnset,
+    double? overlayOpacity,
     bool? isPurchasable,
     int? sortOrder,
   }) {
@@ -50,6 +79,13 @@ class ShopAsset {
       priceAmber: priceAmber ?? this.priceAmber,
       assetPath: assetPath ?? this.assetPath,
       previewAssetPath: previewAssetPath ?? this.previewAssetPath,
+      imageFit: imageFit ?? this.imageFit,
+      imageAlignmentX: imageAlignmentX ?? this.imageAlignmentX,
+      imageAlignmentY: imageAlignmentY ?? this.imageAlignmentY,
+      overlayColorValue: identical(overlayColorValue, _shopAssetUnset)
+          ? this.overlayColorValue
+          : overlayColorValue as int?,
+      overlayOpacity: overlayOpacity ?? this.overlayOpacity,
       isPurchasable: isPurchasable ?? this.isPurchasable,
       sortOrder: sortOrder ?? this.sortOrder,
     );
@@ -66,6 +102,11 @@ class ShopAsset {
       priceAmber: (json['priceAmber'] as num?)?.toInt() ?? 0,
       assetPath: (json['assetPath'] ?? '').toString(),
       previewAssetPath: (json['previewAssetPath'] ?? '').toString(),
+      imageFit: _boxFitFromKey(json['imageFit']?.toString()),
+      imageAlignmentX: (json['imageAlignmentX'] as num?)?.toDouble() ?? 0,
+      imageAlignmentY: (json['imageAlignmentY'] as num?)?.toDouble() ?? 0,
+      overlayColorValue: (json['overlayColorValue'] as num?)?.toInt(),
+      overlayOpacity: (json['overlayOpacity'] as num?)?.toDouble() ?? 0,
       isPurchasable: json['isPurchasable'] as bool? ?? true,
       sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
     );
@@ -82,6 +123,11 @@ class ShopAsset {
       'priceAmber': priceAmber,
       'assetPath': assetPath,
       'previewAssetPath': previewAssetPath,
+      'imageFit': _boxFitKey(imageFit),
+      'imageAlignmentX': imageAlignmentX,
+      'imageAlignmentY': imageAlignmentY,
+      'overlayColorValue': overlayColorValue,
+      'overlayOpacity': overlayOpacity,
       'isPurchasable': isPurchasable,
       'sortOrder': sortOrder,
     };
@@ -100,6 +146,11 @@ class ShopAsset {
         other.priceAmber == priceAmber &&
         other.assetPath == assetPath &&
         other.previewAssetPath == previewAssetPath &&
+        other.imageFit == imageFit &&
+        other.imageAlignmentX == imageAlignmentX &&
+        other.imageAlignmentY == imageAlignmentY &&
+        other.overlayColorValue == overlayColorValue &&
+        other.overlayOpacity == overlayOpacity &&
         other.isPurchasable == isPurchasable &&
         other.sortOrder == sortOrder;
   }
@@ -115,7 +166,51 @@ class ShopAsset {
         priceAmber,
         assetPath,
         previewAssetPath,
+        imageFit,
+        imageAlignmentX,
+        imageAlignmentY,
+        overlayColorValue,
+        overlayOpacity,
         isPurchasable,
         sortOrder,
       );
+
+  static BoxFit _boxFitFromKey(String? key) {
+    switch ((key ?? '').trim()) {
+      case 'contain':
+        return BoxFit.contain;
+      case 'fill':
+        return BoxFit.fill;
+      case 'fitHeight':
+        return BoxFit.fitHeight;
+      case 'fitWidth':
+        return BoxFit.fitWidth;
+      case 'none':
+        return BoxFit.none;
+      case 'scaleDown':
+        return BoxFit.scaleDown;
+      case 'cover':
+      default:
+        return BoxFit.cover;
+    }
+  }
+
+  static String _boxFitKey(BoxFit fit) {
+    switch (fit) {
+      case BoxFit.contain:
+        return 'contain';
+      case BoxFit.cover:
+        return 'cover';
+      case BoxFit.fill:
+        return 'fill';
+      case BoxFit.fitHeight:
+        return 'fitHeight';
+      case BoxFit.fitWidth:
+        return 'fitWidth';
+      case BoxFit.none:
+        return 'none';
+      case BoxFit.scaleDown:
+        return 'scaleDown';
+    }
+  }
 }

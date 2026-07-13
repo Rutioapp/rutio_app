@@ -112,7 +112,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-          _FilterRow(
+        _FilterRow(
           selectedFilter: _selectedFilter,
           onFilterSelected: (ShopCosmeticsFilter filter) {
             setState(() {

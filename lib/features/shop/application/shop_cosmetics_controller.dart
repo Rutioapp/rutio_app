@@ -9,7 +9,7 @@ import 'package:rutio/features/shop/domain/models/shop_cosmetics_operation_resul
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
-class ShopCosmeticsController {
+class ShopCosmeticsController extends ChangeNotifier {
   ShopCosmeticsController({
     required UserStateStore userStateStore,
     ShopCosmeticsRepository? repository,
@@ -17,22 +17,84 @@ class ShopCosmeticsController {
         _repository = repository ??
             ShopCosmeticsRepository(
               scopeResolver: () =>
-                  userStateStore.activeLocalScopeUserId ?? userStateStore.userId,
+                  userStateStore.activeLocalScopeUserId ??
+                  userStateStore.userId,
             );
 
   final UserStateStore _userStateStore;
   final ShopCosmeticsRepository _repository;
+  ShopCosmeticsState? _cachedState;
+  String? _cachedScopeKey;
+  Future<ShopCosmeticsState>? _pendingStateLoad;
+
+  ShopCosmeticsState? get state => _cachedState;
+  bool get hasStateForCurrentScope =>
+      _cachedState != null && _cachedScopeKey == _currentScope();
 
   Future<ShopCosmeticsState> getState() async {
-    final state = await _repository.load();
-    _log(
-      'getState scope=${_currentScope() ?? 'guest'} '
-      'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds} '
-      'equippedWallpaperId=${state.equippedWallpaperId} '
-      'equippedHabitCardSkinId=${state.equippedHabitCardSkinId} '
-      'equippedUserCardSkinId=${state.equippedUserCardSkinId}',
-    );
+    final scopeKey = _currentScope();
+    final cached = _cachedState;
+    if (cached != null && _cachedScopeKey == scopeKey) {
+      _log(
+        'getState scope=${_currentScope() ?? 'guest'} source=memory '
+        'ownedAssetIds=${cached.ownedAssetIds} ownedBundleIds=${cached.ownedBundleIds} '
+        'equippedWallpaperId=${cached.equippedWallpaperId} '
+        'equippedHabitCardSkinId=${cached.equippedHabitCardSkinId} '
+        'equippedUserCardSkinId=${cached.equippedUserCardSkinId}',
+      );
+      return cached;
+    }
+
+    final pending = _pendingStateLoad;
+    if (pending != null) {
+      return pending;
+    }
+
+    late final Future<ShopCosmeticsState> future;
+    future = _repository.load().then((state) {
+      _setCachedState(
+        state,
+        scopeKey: scopeKey,
+        shouldNotifyListeners: false,
+      );
+      _log(
+        'getState scope=${_currentScope() ?? 'guest'} '
+        'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds} '
+        'equippedWallpaperId=${state.equippedWallpaperId} '
+        'equippedHabitCardSkinId=${state.equippedHabitCardSkinId} '
+        'equippedUserCardSkinId=${state.equippedUserCardSkinId}',
+      );
+      return state;
+    }).whenComplete(() {
+      if (identical(_pendingStateLoad, future)) {
+        _pendingStateLoad = null;
+      }
+    });
+    _pendingStateLoad = future;
+    final state = await future;
     return state;
+  }
+
+  Future<ShopCosmeticsState> hydrate() => getState();
+
+  ShopAsset? getEquippedAssetForCategorySync(ShopAssetCategory category) {
+    final cached = _cachedState;
+    if (cached == null || _cachedScopeKey != _currentScope()) {
+      return null;
+    }
+    return _getValidatedEquippedAssetOrNull(cached, category);
+  }
+
+  ShopAsset? getEquippedWallpaperAssetOrNullSync() {
+    return getEquippedAssetForCategorySync(ShopAssetCategory.wallpaper);
+  }
+
+  ShopAsset? getEquippedHabitCardAssetOrNullSync() {
+    return getEquippedAssetForCategorySync(ShopAssetCategory.habitCard);
+  }
+
+  ShopAsset? getEquippedUserCardAssetOrNullSync() {
+    return getEquippedAssetForCategorySync(ShopAssetCategory.userCard);
   }
 
   Future<int> getWalletCoins() => _walletCoins();
@@ -65,6 +127,10 @@ class ShopCosmeticsController {
   Future<ShopAsset?> getEquippedAssetForCategory(
     ShopAssetCategory category,
   ) async {
+    final cached = getEquippedAssetForCategorySync(category);
+    if (cached != null) {
+      return cached;
+    }
     final state = await getState();
     return _getValidatedEquippedAssetOrNull(state, category);
   }
@@ -96,7 +162,13 @@ class ShopCosmeticsController {
       'equippedUserCardSkinId=${result.state.equippedUserCardSkinId}',
     );
     if (!result.isSuccess) return result;
-    await _persist(result.state, result.walletCoins);
+    _setCachedState(result.state);
+    try {
+      await _persist(result.state, result.walletCoins);
+    } catch (_) {
+      await _restorePersistedStateAfterFailure();
+      rethrow;
+    }
     return result;
   }
 
@@ -111,7 +183,13 @@ class ShopCosmeticsController {
       'equippedUserCardSkinId=${result.state.equippedUserCardSkinId}',
     );
     if (!result.isSuccess) return result;
-    await _persist(result.state, result.walletCoins);
+    _setCachedState(result.state);
+    try {
+      await _persist(result.state, result.walletCoins);
+    } catch (_) {
+      await _restorePersistedStateAfterFailure();
+      rethrow;
+    }
     return result;
   }
 
@@ -141,7 +219,13 @@ class ShopCosmeticsController {
       'equippedUserCardSkinId=${result.state.equippedUserCardSkinId}',
     );
     if (!result.isSuccess) return result;
-    await _persist(result.state, result.walletCoins);
+    _setCachedState(result.state);
+    try {
+      await _persist(result.state, result.walletCoins);
+    } catch (_) {
+      await _restorePersistedStateAfterFailure();
+      rethrow;
+    }
     return result;
   }
 
@@ -151,13 +235,24 @@ class ShopCosmeticsController {
     final service = await _service();
     final result = service.unequipAsset(category);
     if (!result.isSuccess) return result;
-    await _persist(result.state, result.walletCoins);
+    _setCachedState(result.state);
+    try {
+      await _persist(result.state, result.walletCoins);
+    } catch (_) {
+      await _restorePersistedStateAfterFailure();
+      rethrow;
+    }
     return result;
   }
 
   Future<ShopCosmeticsService> _service() async {
     final walletCoins = await _walletCoins();
     final state = await _repository.load();
+    _setCachedState(
+      state,
+      scopeKey: _currentScope(),
+      shouldNotifyListeners: false,
+    );
     _log(
       'createService scope=${_currentScope() ?? 'guest'} walletCoins=$walletCoins '
       'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds}',
@@ -211,6 +306,11 @@ class ShopCosmeticsController {
     return Map<String, dynamic>.from(root);
   }
 
+  Future<void> _restorePersistedStateAfterFailure() async {
+    final restored = await _repository.load();
+    _setCachedState(restored);
+  }
+
   ShopAsset? _getValidatedEquippedAssetOrNull(
     ShopCosmeticsState state,
     ShopAssetCategory category,
@@ -239,7 +339,8 @@ class ShopCosmeticsController {
       return null;
     }
 
-    final owned = state.isAssetOwned(asset.id, bundles: ShopAssetsCatalog.allBundles);
+    final owned =
+        state.isAssetOwned(asset.id, bundles: ShopAssetsCatalog.allBundles);
     if (!owned) {
       _log(
         '$logLabel equippedId=$assetId owned=false categoryValid=true assetPath=null',
@@ -268,5 +369,17 @@ class ShopCosmeticsController {
   void _log(String message) {
     if (!kDebugMode) return;
     debugPrint('[ShopCosmetics] $message');
+  }
+
+  void _setCachedState(
+    ShopCosmeticsState state, {
+    String? scopeKey,
+    bool shouldNotifyListeners = true,
+  }) {
+    _cachedState = state;
+    _cachedScopeKey = scopeKey ?? _currentScope();
+    if (shouldNotifyListeners) {
+      super.notifyListeners();
+    }
   }
 }

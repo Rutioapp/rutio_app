@@ -13,7 +13,7 @@ import 'package:rutio/utils/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final ShopItem cosmeticItem = ShopCatalog.getItemById('wallpaper_warm_beige')!;
+  final ShopItem cosmeticItem = ShopCatalog.getItemById('wallpaper_mist_blue')!;
 
   group('ShopItemDetailContainer', () {
     testWidgets('pressing Comprar in detail opens confirmation sheet',
@@ -67,7 +67,7 @@ void main() {
                 item: cosmeticItem,
                 shopState: const ShopState(
                   inventory: <OwnedShopItem>[
-                    OwnedShopItem(itemId: 'wallpaper_warm_beige'),
+                    OwnedShopItem(itemId: 'wallpaper_mist_blue'),
                   ],
                 ),
                 walletCoins: 120,
@@ -89,7 +89,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(purchaseCount, 1);
-      expect(purchasedItemId, 'wallpaper_warm_beige');
+      expect(purchasedItemId, 'wallpaper_mist_blue');
       expect(find.text('Añadido a tu colección'), findsOneWidget);
     });
 

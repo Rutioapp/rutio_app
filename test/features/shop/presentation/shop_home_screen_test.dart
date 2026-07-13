@@ -82,7 +82,8 @@ void main() {
       expect(tapCount, 1);
     });
 
-    testWidgets('does not show collections section', (WidgetTester tester) async {
+    testWidgets('does not show collections section',
+        (WidgetTester tester) async {
       await tester.pumpWidget(_app(_screen()));
       await tester.pump(const Duration(milliseconds: 16));
 
