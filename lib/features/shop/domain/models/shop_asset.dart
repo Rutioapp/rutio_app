@@ -1,5 +1,6 @@
 import 'package:flutter/painting.dart';
 
+import 'package:rutio/features/shop/domain/models/habit_card_content_tone.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 
 const Object _shopAssetUnset = Object();
@@ -20,11 +21,14 @@ class ShopAsset {
     this.imageAlignmentY = 0,
     this.overlayColorValue,
     this.overlayOpacity = 0,
+    this.contentTone = HabitCardContentTone.dark,
+    this.useContentScrim = false,
     this.isPurchasable = true,
     this.sortOrder = 0,
   });
 
-  static final Map<String, AssetImage> _assetImageCache = <String, AssetImage>{};
+  static final Map<String, AssetImage> _assetImageCache =
+      <String, AssetImage>{};
 
   final String id;
   final String familyId;
@@ -40,6 +44,8 @@ class ShopAsset {
   final double imageAlignmentY;
   final int? overlayColorValue;
   final double overlayOpacity;
+  final HabitCardContentTone contentTone;
+  final bool useContentScrim;
   final bool isPurchasable;
   final int sortOrder;
 
@@ -66,6 +72,8 @@ class ShopAsset {
     double? imageAlignmentY,
     Object? overlayColorValue = _shopAssetUnset,
     double? overlayOpacity,
+    HabitCardContentTone? contentTone,
+    bool? useContentScrim,
     bool? isPurchasable,
     int? sortOrder,
   }) {
@@ -86,6 +94,8 @@ class ShopAsset {
           ? this.overlayColorValue
           : overlayColorValue as int?,
       overlayOpacity: overlayOpacity ?? this.overlayOpacity,
+      contentTone: contentTone ?? this.contentTone,
+      useContentScrim: useContentScrim ?? this.useContentScrim,
       isPurchasable: isPurchasable ?? this.isPurchasable,
       sortOrder: sortOrder ?? this.sortOrder,
     );
@@ -107,6 +117,9 @@ class ShopAsset {
       imageAlignmentY: (json['imageAlignmentY'] as num?)?.toDouble() ?? 0,
       overlayColorValue: (json['overlayColorValue'] as num?)?.toInt(),
       overlayOpacity: (json['overlayOpacity'] as num?)?.toDouble() ?? 0,
+      contentTone:
+          HabitCardContentToneX.fromKey(json['contentTone']?.toString()),
+      useContentScrim: json['useContentScrim'] as bool? ?? false,
       isPurchasable: json['isPurchasable'] as bool? ?? true,
       sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
     );
@@ -128,6 +141,8 @@ class ShopAsset {
       'imageAlignmentY': imageAlignmentY,
       'overlayColorValue': overlayColorValue,
       'overlayOpacity': overlayOpacity,
+      'contentTone': contentTone.key,
+      'useContentScrim': useContentScrim,
       'isPurchasable': isPurchasable,
       'sortOrder': sortOrder,
     };
@@ -151,6 +166,8 @@ class ShopAsset {
         other.imageAlignmentY == imageAlignmentY &&
         other.overlayColorValue == overlayColorValue &&
         other.overlayOpacity == overlayOpacity &&
+        other.contentTone == contentTone &&
+        other.useContentScrim == useContentScrim &&
         other.isPurchasable == isPurchasable &&
         other.sortOrder == sortOrder;
   }
@@ -171,6 +188,8 @@ class ShopAsset {
         imageAlignmentY,
         overlayColorValue,
         overlayOpacity,
+        contentTone,
+        useContentScrim,
         isPurchasable,
         sortOrder,
       );

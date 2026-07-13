@@ -1,6 +1,7 @@
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_operation_result.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
@@ -27,6 +28,7 @@ class ShopCosmeticsService {
     final bundle = ShopAssetsCatalog.getBundleById(bundleId);
     if (bundle == null) return false;
     if (state.isBundleOwned(bundleId)) return false;
+    if (_bundleContainsOwnedAssets(bundle)) return false;
     return walletCoins >= bundle.priceAmber;
   }
 
@@ -36,6 +38,13 @@ class ShopCosmeticsService {
 
   bool isBundleOwned(String bundleId) {
     return state.isBundleOwned(bundleId);
+  }
+
+  bool isBundlePartiallyOwned(String bundleId) {
+    final bundle = ShopAssetsCatalog.getBundleById(bundleId);
+    if (bundle == null) return false;
+    if (state.isBundleOwned(bundleId)) return false;
+    return _bundleContainsOwnedAssets(bundle);
   }
 
   ShopAsset? getEquippedAssetForCategory(ShopAssetCategory category) {
@@ -89,6 +98,12 @@ class ShopCosmeticsService {
       return _result(ShopCosmeticsOperationStatus.alreadyOwned,
           bundleId: bundleId);
     }
+    if (_bundleContainsOwnedAssets(bundle)) {
+      return _result(
+        ShopCosmeticsOperationStatus.bundleContainsOwnedAssets,
+        bundleId: bundleId,
+      );
+    }
     if (walletCoins < bundle.priceAmber) {
       return _result(
         ShopCosmeticsOperationStatus.insufficientCoins,
@@ -105,6 +120,15 @@ class ShopCosmeticsService {
       walletCoins: walletCoins - bundle.priceAmber,
       bundleId: bundleId,
     );
+  }
+
+  bool _bundleContainsOwnedAssets(ShopBundle bundle) {
+    for (final assetId in bundle.assetIds) {
+      if (state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   ShopCosmeticsOperationResult equipAsset(String assetId) {

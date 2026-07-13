@@ -21,7 +21,6 @@ void main() {
   final List<ShopItem> ownedItems = <ShopItem>[
     ShopCatalog.getItemById('wallpaper_mist_blue')!,
     ShopCatalog.getItemById('habit_card_soft_camel')!,
-    ShopCatalog.getItemById('user_card_dune_layers')!,
   ];
 
   group('ShopCustomizationScreen', () {
@@ -100,7 +99,6 @@ void main() {
             items: ownedItems,
             equippedCosmetics: const EquippedCosmetics(
               backgroundItemId: 'wallpaper_mist_blue',
-              userCardItemId: 'user_card_dune_layers',
             ),
           ),
         ),
@@ -216,8 +214,11 @@ void main() {
       final controller = await _createCosmeticsController(
         walletCoins: 640,
         cosmeticsState: ShopCosmeticsState(
-          ownedAssetIds: const <String>['wallpaper_mist_blue'],
-          ownedBundleIds: const <String>['bundle_warm_beige'],
+          ownedAssetIds: const <String>[
+            'wallpaper_mist_blue',
+            'habit_card_warm_beige',
+          ],
+          ownedBundleIds: const <String>[],
           equippedHabitCardSkinId: 'habit_card_warm_beige',
         ),
       );
@@ -238,10 +239,6 @@ void main() {
       );
       expect(
         find.byKey(const Key('shopOwnedItem-habit_card_warm_beige')),
-        findsNothing,
-      );
-      expect(
-        find.byKey(const Key('shopOwnedItem-user_card_warm_beige')),
         findsNothing,
       );
       expect(find.text('Equipado'), findsNothing);
@@ -272,7 +269,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const Key('shopOwnedItem-user_card_warm_beige')),
+        find.byKey(const Key('shopCustomizationCategoryEmptyState-userCards')),
         findsOneWidget,
       );
     });
@@ -375,7 +372,8 @@ void main() {
       );
     });
 
-    testWidgets('controller-backed equip refreshes user cards immediately',
+    testWidgets(
+        'user cards filter shows owned catalog items and equipped state',
         (WidgetTester tester) async {
       final controller = await _createCosmeticsController(
         walletCoins: 640,
@@ -404,24 +402,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const Key('shopOwnedStatus-user_card_warm_beige')),
+        find.byKey(const Key('shopOwnedItem-user_card_warm_beige')),
         findsOneWidget,
       );
-
-      await tester.ensureVisible(
-        find.byKey(const Key('shopOwnedEquip-user_card_soft_camel')),
-      );
-      await tester
-          .tap(find.byKey(const Key('shopOwnedEquip-user_card_soft_camel')));
-      await tester.pumpAndSettle();
-
       expect(
-        find.byKey(const Key('shopOwnedStatus-user_card_soft_camel')),
+        find.byKey(const Key('shopOwnedItem-user_card_soft_camel')),
         findsOneWidget,
       );
       expect(
         find.byKey(const Key('shopOwnedStatus-user_card_warm_beige')),
-        findsNothing,
+        findsOneWidget,
       );
     });
 

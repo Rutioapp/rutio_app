@@ -65,12 +65,10 @@ void main() {
         inventory: <OwnedShopItem>[
           OwnedShopItem(itemId: 'wallpaper_mist_blue'),
           OwnedShopItem(itemId: 'habit_card_soft_camel'),
-          OwnedShopItem(itemId: 'user_card_dune_layers'),
         ],
         equippedCosmetics: EquippedCosmetics(
           backgroundItemId: 'wallpaper_mist_blue',
           habitCardItemId: 'habit_card_soft_camel',
-          userCardItemId: 'user_card_dune_layers',
         ),
       );
 

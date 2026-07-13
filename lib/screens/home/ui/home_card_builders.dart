@@ -304,6 +304,8 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
           backgroundAsset?.imageAlignment ?? Alignment.center,
       backgroundOverlayColor: backgroundAsset?.overlayColor,
       backgroundOverlayOpacity: backgroundAsset?.overlayOpacity ?? 0,
+      contentTone: backgroundAsset?.contentTone ?? HabitCardContentTone.dark,
+      useContentScrim: backgroundAsset?.useContentScrim ?? false,
       emoji: resolvedEmoji.isEmpty ? null : resolvedEmoji,
       onEmojiTap: resolvedEmoji.isEmpty
           ? null

@@ -56,6 +56,49 @@ void main() {
       expect(persisted.equippedWallpaperId, 'wallpaper_jungle_sunrise');
     });
 
+    test('bundle purchase persists bundle ownership and wallet coins',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final bundlePrice =
+          ShopAssetsCatalog.getBundleById('pack_beige_rutio')!.priceAmber;
+      final controller = await _createController(walletCoins: 1000);
+
+      final result = await controller.purchaseBundle('pack_beige_rutio');
+      final persisted = await ShopCosmeticsRepository().load();
+
+      expect(result.isSuccess, isTrue);
+      expect(await controller.getWalletCoins(), 1000 - bundlePrice);
+      expect(persisted.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(persisted.ownedAssetIds, isEmpty);
+      expect(
+          await controller.isBundlePartiallyOwned('pack_beige_rutio'), isFalse);
+    });
+
+    test('bundle purchase is blocked when the user already owns part of it',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>['wallpaper_rutio_beige'],
+          ownedBundleIds: <String>[],
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 1000);
+
+      expect(
+          await controller.isBundlePartiallyOwned('pack_beige_rutio'), isTrue);
+
+      final result = await controller.purchaseBundle('pack_beige_rutio');
+      final persisted = await ShopCosmeticsRepository().load();
+
+      expect(result.status,
+          ShopCosmeticsOperationStatus.bundleContainsOwnedAssets);
+      expect(persisted.ownedBundleIds, isEmpty);
+      expect(await controller.getWalletCoins(), 1000);
+    });
+
     test('restores owned and equipped state from persistence', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final repository = ShopCosmeticsRepository();
@@ -63,9 +106,9 @@ void main() {
         ShopCosmeticsState(
           ownedAssetIds: <String>[
             'wallpaper_mist_blue',
-            'habit_card_warm_beige',
+            'habit_card_warm_beige'
           ],
-          ownedBundleIds: <String>['bundle_warm_beige'],
+          ownedBundleIds: <String>[],
           equippedWallpaperId: 'wallpaper_mist_blue',
           equippedHabitCardSkinId: 'habit_card_warm_beige',
         ),
@@ -74,7 +117,7 @@ void main() {
       final controller = await _createController(walletCoins: 0);
       final state = await controller.getState();
 
-      expect(state.ownedBundleIds, contains('bundle_warm_beige'));
+      expect(state.ownedBundleIds, isEmpty);
       expect(state.ownedAssetIds, contains('wallpaper_mist_blue'));
       expect(
         await controller
@@ -234,32 +277,13 @@ void main() {
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
           ownedBundleIds: <String>[],
-          equippedHabitCardSkinId: 'user_card_warm_beige',
+          equippedHabitCardSkinId: 'user_card_removed',
         ),
       );
 
       final controller = await _createController(walletCoins: 0);
 
       expect(await controller.getEquippedHabitCardAssetOrNull(), isNull);
-    });
-
-    test('equipped habit card helper resolves bundle-owned asset', () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
-      await repository.save(
-        ShopCosmeticsState(
-          ownedAssetIds: <String>[],
-          ownedBundleIds: <String>['bundle_warm_beige'],
-          equippedHabitCardSkinId: 'habit_card_warm_beige',
-        ),
-      );
-
-      final controller = await _createController(walletCoins: 0);
-
-      expect(
-        (await controller.getEquippedHabitCardAssetOrNull())?.id,
-        'habit_card_warm_beige',
-      );
     });
 
     test('equipped user card helper resolves valid asset', () async {
@@ -274,6 +298,7 @@ void main() {
       );
 
       final controller = await _createController(walletCoins: 0);
+
       final asset = await controller.getEquippedUserCardAssetOrNull();
 
       expect(asset?.id, 'user_card_warm_beige');
@@ -345,32 +370,59 @@ void main() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final controller = await _createController(walletCoins: 500);
 
-      await controller.purchaseAsset('habit_card_violet_flame');
-      await controller.equipAsset('habit_card_violet_flame');
+      await controller.purchaseAsset('habit_card_lilac_dawn');
+      await controller.equipAsset('habit_card_lilac_dawn');
 
       expect(
         (await controller.getEquippedHabitCardAssetOrNull())?.id,
-        'habit_card_violet_flame',
+        'habit_card_lilac_dawn',
       );
     });
 
-    test('equipping a purchased user card updates resolved user card asset',
-        () async {
+    test('epic habit card purchase and equip persist immediately', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final controller = await _createController(walletCoins: 500);
+      final controller = await _createController(walletCoins: 700);
 
-      await controller.purchaseAsset('user_card_warm_beige');
-      await controller.equipAsset('user_card_warm_beige');
+      final purchaseResult =
+          await controller.purchaseAsset('habit_card_ocean_depth');
+      final equipResult = await controller.equipAsset('habit_card_ocean_depth');
+      final persisted = await ShopCosmeticsRepository().load();
 
+      expect(purchaseResult.isSuccess, isTrue);
+      expect(equipResult.isSuccess, isTrue);
+      expect(await controller.getWalletCoins(), 150);
+      expect(
+        (await controller.getEquippedHabitCardAssetOrNull())?.id,
+        'habit_card_ocean_depth',
+      );
+      expect(persisted.ownedAssetIds, contains('habit_card_ocean_depth'));
+      expect(persisted.equippedHabitCardSkinId, 'habit_card_ocean_depth');
+    });
+
+    test('user card purchase and equip persist immediately', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 700);
+
+      final purchaseResult =
+          await controller.purchaseAsset('user_card_full_moon');
+      final equipResult = await controller.equipAsset('user_card_full_moon');
+      final persisted = await ShopCosmeticsRepository().load();
+
+      expect(purchaseResult.isSuccess, isTrue);
+      expect(equipResult.isSuccess, isTrue);
+      expect(await controller.getWalletCoins(), 150);
       expect(
         (await controller.getEquippedUserCardAssetOrNull())?.id,
-        'user_card_warm_beige',
+        'user_card_full_moon',
       );
+      expect(persisted.ownedAssetIds, contains('user_card_full_moon'));
+      expect(persisted.equippedUserCardSkinId, 'user_card_full_moon');
     });
 
-    test('equipAsset updates the correct slot for each category', () async {
+    test('equipAsset updates the correct slot for each cosmetic family',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final controller = await _createController(walletCoins: 1000);
+      final controller = await _createController(walletCoins: 1300);
 
       await controller.purchaseAsset('wallpaper_mist_blue');
       await controller.purchaseAsset('habit_card_warm_beige');
@@ -414,23 +466,23 @@ void main() {
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final controller = await _createController(walletCoins: 500);
-      await controller.purchaseAsset('habit_card_violet_flame');
+      await controller.purchaseAsset('habit_card_lilac_dawn');
 
       var notificationCount = 0;
       controller.addListener(() {
         notificationCount += 1;
       });
 
-      final result = await controller.equipAsset('habit_card_violet_flame');
+      final result = await controller.equipAsset('habit_card_lilac_dawn');
       final persisted = await ShopCosmeticsRepository().load();
 
       expect(result.isSuccess, isTrue);
       expect(notificationCount, greaterThan(0));
       expect(
         controller.state?.equippedHabitCardSkinId,
-        'habit_card_violet_flame',
+        'habit_card_lilac_dawn',
       );
-      expect(persisted.equippedHabitCardSkinId, 'habit_card_violet_flame');
+      expect(persisted.equippedHabitCardSkinId, 'habit_card_lilac_dawn');
     });
 
     test('equipAsset fails for unowned asset', () async {

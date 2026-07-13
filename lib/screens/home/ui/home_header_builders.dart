@@ -25,28 +25,21 @@ extension _HomeScreenHeaderBuilders on _HomeScreenState {
         width: compact ? 222 : 248,
         child: Align(
           alignment: Alignment.centerRight,
-          child: IosFrostedCard(
-            padding: const EdgeInsets.symmetric(
-              horizontal: IosSpacing.sm,
-              vertical: IosSpacing.xxs,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            child: UserIdentityRow(
-              username: username,
-              level: level,
-              coins: coins,
-              xpProgress: xpValue,
-              avatarUrl: avatarUrl,
-              onTap: () async {
-                await IosFeedback.lightImpact();
-                if (!context.mounted) return;
-                _openProfileFromHome(
-                  context,
-                  openEditProfileOnLoad: true,
-                  useCupertinoRoute: true,
-                );
-              },
-            ),
+          child: UserIdentityRow(
+            username: username,
+            level: level,
+            coins: coins,
+            xpProgress: xpValue,
+            avatarUrl: avatarUrl,
+            onTap: () async {
+              await IosFeedback.lightImpact();
+              if (!context.mounted) return;
+              _openProfileFromHome(
+                context,
+                openEditProfileOnLoad: true,
+                useCupertinoRoute: true,
+              );
+            },
           ),
         ),
       ),

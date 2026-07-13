@@ -1,11 +1,13 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+
+import 'package:rutio/screens/home/widgets/habit/habit_card_foreground_style.dart';
 
 class HabitCardBadgeZone extends StatelessWidget {
   const HabitCardBadgeZone({
     super.key,
     required this.familyColor,
     required this.compact,
+    required this.foregroundStyle,
     this.reminderLabel,
     this.countLabel,
     this.progressLabel,
@@ -16,6 +18,7 @@ class HabitCardBadgeZone extends StatelessWidget {
 
   final Color familyColor;
   final bool compact;
+  final HabitCardForegroundStyle foregroundStyle;
   final String? reminderLabel;
   final String? countLabel;
   final String? progressLabel;
@@ -29,18 +32,21 @@ class HabitCardBadgeZone extends StatelessWidget {
           label: reminderLabel!.trim(),
           familyColor: familyColor,
           compact: compact,
+          foregroundStyle: foregroundStyle,
         ),
       if (countLabel?.trim().isNotEmpty ?? false)
         HabitCountBadge(
           label: countLabel!.trim(),
           familyColor: familyColor,
           compact: compact,
+          foregroundStyle: foregroundStyle,
         ),
       if (progressLabel?.trim().isNotEmpty ?? false)
         HabitCountBadge(
           label: progressLabel!.trim(),
           familyColor: familyColor,
           compact: compact,
+          foregroundStyle: foregroundStyle,
         ),
       ...extraBadges,
     ];
@@ -66,11 +72,13 @@ class HabitReminderBadge extends StatelessWidget {
     required this.label,
     required this.familyColor,
     required this.compact,
+    required this.foregroundStyle,
   });
 
   final String label;
   final Color familyColor;
   final bool compact;
+  final HabitCardForegroundStyle foregroundStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +88,8 @@ class HabitReminderBadge extends StatelessWidget {
         Icon(
           CupertinoIcons.bell_fill,
           size: compact ? 11 : 12,
-          color: familyColor.withValues(alpha: 0.88),
+          color: foregroundStyle.accentColor(familyColor),
+          shadows: foregroundStyle.emphasisShadows,
         ),
         SizedBox(width: compact ? 4 : 5),
         Text(
@@ -90,8 +99,9 @@ class HabitReminderBadge extends StatelessWidget {
           style: TextStyle(
             fontSize: compact ? 10.5 : 11,
             fontWeight: FontWeight.w600,
-            color: Colors.black.withValues(alpha: 0.56),
+            color: foregroundStyle.secondaryText,
             letterSpacing: -0.1,
+            shadows: foregroundStyle.emphasisShadows,
           ),
         ),
       ],
@@ -105,11 +115,13 @@ class HabitCountBadge extends StatelessWidget {
     required this.label,
     required this.familyColor,
     required this.compact,
+    required this.foregroundStyle,
   });
 
   final String label;
   final Color familyColor;
   final bool compact;
+  final HabitCardForegroundStyle foregroundStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -120,8 +132,9 @@ class HabitCountBadge extends StatelessWidget {
       style: TextStyle(
         fontSize: compact ? 10.5 : 11,
         fontWeight: FontWeight.w700,
-        color: familyColor.withValues(alpha: 0.88),
+        color: foregroundStyle.accentColor(familyColor),
         letterSpacing: -0.1,
+        shadows: foregroundStyle.emphasisShadows,
       ),
     );
   }
@@ -132,33 +145,24 @@ class HabitSkippedBadge extends StatelessWidget {
     super.key,
     required this.label,
     required this.compact,
+    required this.foregroundStyle,
   });
 
   final String label;
   final bool compact;
+  final HabitCardForegroundStyle foregroundStyle;
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final background = brightness == Brightness.dark
-        ? const Color(0xFF2C2A25)
-        : const Color(0xFFF2EBDD);
-    final border = brightness == Brightness.dark
-        ? const Color(0xFF474039)
-        : const Color(0xFFE1D8C7);
-    final foreground = brightness == Brightness.dark
-        ? const Color(0xFFD8D1C3)
-        : const Color(0xFF72695C);
-
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 8 : 9,
         vertical: compact ? 4 : 5,
       ),
       decoration: BoxDecoration(
-        color: background,
+        color: foregroundStyle.translucentSurface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: border),
+        border: Border.all(color: foregroundStyle.translucentBorder),
       ),
       child: Text(
         label,
@@ -167,8 +171,9 @@ class HabitSkippedBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: compact ? 10.5 : 11,
           fontWeight: FontWeight.w700,
-          color: foreground,
+          color: foregroundStyle.secondaryText,
           letterSpacing: -0.1,
+          shadows: foregroundStyle.emphasisShadows,
         ),
       ),
     );

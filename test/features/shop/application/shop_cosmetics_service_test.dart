@@ -67,92 +67,67 @@ void main() {
       expect(result.status, ShopCosmeticsOperationStatus.assetNotFound);
     });
 
-    test('purchaseBundle unlocks included assets and deducts wallet', () {
+    test('purchaseBundle success deducts wallet and marks bundle owned', () {
+      final bundlePrice =
+          ShopAssetsCatalog.getBundleById('pack_beige_rutio')!.priceAmber;
       final service = ShopCosmeticsService(
         state: const ShopCosmeticsState.initial(),
         walletCoins: 1000,
       );
 
-      final result = service.purchaseBundle('bundle_warm_beige');
+      final result = service.purchaseBundle('pack_beige_rutio');
 
       expect(result.status, ShopCosmeticsOperationStatus.success);
-      expect(result.walletCoins, 700);
-      expect(result.state.ownedBundleIds, contains('bundle_warm_beige'));
+      expect(result.walletCoins, 1000 - bundlePrice);
+      expect(result.state.ownedBundleIds, contains('pack_beige_rutio'));
       expect(result.state.ownedAssetIds, isEmpty);
-      expect(
-          result.state.isAssetOwned(
-            'habit_card_warm_beige',
-            bundles: ShopAssetsCatalog.allBundles,
-          ),
-          isTrue);
-      expect(
-          result.state.assetOwnershipState(
-            ShopAssetsCatalog.getAssetById('habit_card_warm_beige')!,
-            bundles: ShopAssetsCatalog.allBundles,
-          ),
-          ShopAssetOwnershipState.includedInOwnedBundle);
-    });
-
-    test('purchaseBundle keeps individually owned assets without duplicates',
-        () {
-      final service = ShopCosmeticsService(
-        state: ShopCosmeticsState(
-          ownedAssetIds: <String>[
-            'wallpaper_mist_blue',
-            'wallpaper_mist_blue',
-            'habit_card_warm_beige',
-          ],
-          ownedBundleIds: <String>[],
-        ),
-        walletCoins: 1000,
-      );
-
-      final result = service.purchaseBundle('bundle_warm_beige');
-
-      expect(result.status, ShopCosmeticsOperationStatus.success);
-      expect(
-        result.state.ownedAssetIds,
-        equals(<String>['wallpaper_mist_blue', 'habit_card_warm_beige']),
-      );
-      expect(
-          result.state.ownedBundleIds, equals(<String>['bundle_warm_beige']));
-      expect(
-        result.state.isAssetOwned(
-          'user_card_warm_beige',
-          bundles: ShopAssetsCatalog.allBundles,
-        ),
-        isTrue,
-      );
     });
 
     test('purchaseBundle fails when balance is insufficient', () {
       final service = ShopCosmeticsService(
         state: const ShopCosmeticsState.initial(),
-        walletCoins: 200,
+        walletCoins: 300,
       );
 
-      final result = service.purchaseBundle('bundle_warm_beige');
+      final result = service.purchaseBundle('pack_beige_rutio');
 
       expect(result.status, ShopCosmeticsOperationStatus.insufficientCoins);
-      expect(result.walletCoins, 200);
+      expect(result.walletCoins, 300);
+      expect(result.state, const ShopCosmeticsState.initial());
     });
 
     test('purchaseBundle fails when bundle is already owned', () {
       final service = ShopCosmeticsService(
         state: ShopCosmeticsState(
-          ownedAssetIds: <String>[
-            'wallpaper_mist_blue',
-            'habit_card_warm_beige',
-            'user_card_warm_beige',
-          ],
-          ownedBundleIds: <String>['bundle_warm_beige'],
+          ownedAssetIds: <String>[],
+          ownedBundleIds: <String>['pack_beige_rutio'],
         ),
         walletCoins: 1000,
       );
 
-      final result = service.purchaseBundle('bundle_warm_beige');
+      final result = service.purchaseBundle('pack_beige_rutio');
 
       expect(result.status, ShopCosmeticsOperationStatus.alreadyOwned);
+      expect(result.walletCoins, 1000);
+    });
+
+    test('purchaseBundle fails when the bundle overlaps owned assets', () {
+      final service = ShopCosmeticsService(
+        state: ShopCosmeticsState(
+          ownedAssetIds: <String>['wallpaper_rutio_beige'],
+          ownedBundleIds: <String>[],
+        ),
+        walletCoins: 1000,
+      );
+
+      final result = service.purchaseBundle('pack_beige_rutio');
+
+      expect(
+        result.status,
+        ShopCosmeticsOperationStatus.bundleContainsOwnedAssets,
+      );
+      expect(result.walletCoins, 1000);
+      expect(result.state.ownedBundleIds, isEmpty);
     });
 
     test('purchaseBundle fails when bundle does not exist', () {
@@ -168,7 +143,7 @@ void main() {
   });
 
   group('ShopCosmeticsService equip', () {
-    test('equipAsset works for all categories and replaces previous asset', () {
+    test('equipAsset works for wallpaper and habit card assets', () {
       final service = ShopCosmeticsService(
         state: ShopCosmeticsState(
           ownedAssetIds: <String>[
@@ -176,14 +151,11 @@ void main() {
             'wallpaper_soft_sage',
             'habit_card_warm_beige',
             'habit_card_soft_camel',
-            'habit_card_violet_flame',
-            'user_card_warm_beige',
-            'user_card_soft_camel',
+            'habit_card_lilac_dawn',
           ],
           ownedBundleIds: <String>[],
           equippedWallpaperId: 'wallpaper_mist_blue',
           equippedHabitCardSkinId: 'habit_card_warm_beige',
-          equippedUserCardSkinId: 'user_card_warm_beige',
         ),
         walletCoins: 0,
       );
@@ -193,10 +165,6 @@ void main() {
         state: wallpaper.state,
         walletCoins: 0,
       ).equipAsset('habit_card_soft_camel');
-      final userCard = ShopCosmeticsService(
-        state: habitCard.state,
-        walletCoins: 0,
-      ).equipAsset('user_card_soft_camel');
 
       expect(wallpaper.status, ShopCosmeticsOperationStatus.success);
       expect(wallpaper.state.equippedWallpaperId, 'wallpaper_soft_sage');
@@ -209,16 +177,12 @@ void main() {
       final rareHabitCard = ShopCosmeticsService(
         state: habitCard.state,
         walletCoins: 0,
-      ).equipAsset('habit_card_violet_flame');
+      ).equipAsset('habit_card_lilac_dawn');
       expect(rareHabitCard.status, ShopCosmeticsOperationStatus.success);
       expect(
         rareHabitCard.state.equippedHabitCardSkinId,
-        'habit_card_violet_flame',
+        'habit_card_lilac_dawn',
       );
-
-      expect(userCard.status, ShopCosmeticsOperationStatus.success);
-      expect(userCard.state.equippedUserCardSkinId, 'user_card_soft_camel');
-      expect(userCard.state.ownedAssetIds, contains('user_card_warm_beige'));
     });
 
     test('equipAsset fails when asset is not owned', () {
@@ -238,7 +202,7 @@ void main() {
         walletCoins: 0,
       );
 
-      final result = service.equipAsset('bundle_warm_beige');
+      final result = service.equipAsset('pack_beige_rutio');
 
       expect(result.status, ShopCosmeticsOperationStatus.assetNotFound);
     });
@@ -260,21 +224,22 @@ void main() {
       expect(result.state.ownedAssetIds, contains('wallpaper_mist_blue'));
     });
 
-    test('asset ownership helper reports bundle-included assets', () {
+    test('asset ownership helper reports direct ownership only', () {
       final service = ShopCosmeticsService(
         state: ShopCosmeticsState(
-          ownedAssetIds: <String>[],
-          ownedBundleIds: <String>['bundle_warm_beige'],
+          ownedAssetIds: <String>['habit_card_warm_beige'],
+          ownedBundleIds: <String>[],
         ),
         walletCoins: 0,
       );
 
       expect(
         service.assetOwnershipState('habit_card_warm_beige'),
-        ShopAssetOwnershipState.includedInOwnedBundle,
+        ShopAssetOwnershipState.owned,
       );
       expect(service.isAssetOwned('habit_card_warm_beige'), isTrue);
-      expect(service.isBundleOwned('bundle_warm_beige'), isTrue);
+      expect(service.isBundleOwned('pack_beige_rutio'), isFalse);
+      expect(service.isBundlePartiallyOwned('pack_beige_rutio'), isTrue);
     });
   });
 }

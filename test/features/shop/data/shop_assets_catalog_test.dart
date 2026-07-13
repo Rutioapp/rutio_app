@@ -19,15 +19,22 @@ void main() {
           ShopAssetRarity.legendary,
         }),
       );
-      expect(ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.common),
-          hasLength(18));
       expect(
-          ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.rare),
-          hasLength(10));
-      expect(ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.epic),
-          hasLength(11));
-      expect(ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.legendary),
-          hasLength(3));
+        ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.common),
+        hasLength(30),
+      );
+      expect(
+        ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.rare),
+        hasLength(15),
+      );
+      expect(
+        ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.epic),
+        hasLength(16),
+      );
+      expect(
+        ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.legendary),
+        hasLength(1),
+      );
     });
 
     test('uses the expected category set and counts', () {
@@ -45,17 +52,17 @@ void main() {
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.wallpaper),
           hasLength(21));
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.habitCard),
-          hasLength(11));
+          hasLength(23));
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.userCard),
-          hasLength(10));
+          hasLength(18));
     });
 
-    test('contains exactly 42 assets', () {
-      expect(ShopAssetsCatalog.allAssets, hasLength(42));
+    test('contains exactly 62 assets', () {
+      expect(ShopAssetsCatalog.allAssets, hasLength(62));
     });
 
-    test('contains exactly 10 bundles', () {
-      expect(ShopAssetsCatalog.allBundles, hasLength(10));
+    test('contains the expected 22 bundle packs', () {
+      expect(ShopAssetsCatalog.allBundles, hasLength(22));
     });
 
     test('all asset ids are unique', () {
@@ -84,8 +91,7 @@ void main() {
       }
     });
 
-    test('family groupings stay coherent after replacing common wallpapers',
-        () {
+    test('family groupings stay coherent across assets and packs', () {
       final familyIds =
           ShopAssetsCatalog.allAssets.map((asset) => asset.familyId).toSet();
 
@@ -109,44 +115,39 @@ void main() {
           'jungle_sunrise',
           'carnival_pastel',
           'strawberry_pastel',
-          'calm_sand',
-          'soft_linen',
-          'paper_dawn',
-          'violet_flame',
+          'lilac_dawn',
+          'lavender_blue',
+          'golden_camel',
+          'sage_bloom',
+          'dusty_rose',
+          'pastel_sky',
+          'soft_peach',
+          'ocean_depth',
+          'city_sunrise',
+          'leopard',
+          'full_moon',
+          'golden_clouds',
+          'zebra_minimal',
           'starry_sky',
           'mint_abstract',
-          'zebra_minimal',
           'wild_stripes',
           'cow_spots',
-          'city_sunrise',
-          'ocean_depth',
-          'lavender_mist',
-          'dune_layers',
           'golden_dawn',
         }),
       );
 
       for (final familyId in const <String>[
-        'mist_blue',
         'rutio_beige',
         'off_white',
         'mellow_camel',
-        'stone_gray',
-        'dusty_lilac',
-        'clay_rose',
-        'soft_terracotta',
-        'soft_sage',
         'cream_yellow',
         'jungle_sunrise',
         'carnival_pastel',
         'strawberry_pastel',
         'starry_sky',
         'mint_abstract',
-        'zebra_minimal',
         'wild_stripes',
         'cow_spots',
-        'city_sunrise',
-        'ocean_depth',
       ]) {
         final familyAssets = ShopAssetsCatalog.assetsByFamily(familyId);
         expect(familyAssets, hasLength(1), reason: familyId);
@@ -157,10 +158,48 @@ void main() {
       }
 
       for (final familyId in const <String>[
+        'mist_blue',
+        'stone_gray',
+        'dusty_lilac',
+        'clay_rose',
+        'soft_terracotta',
+        'soft_sage',
+        'ocean_depth',
+        'city_sunrise',
+        'zebra_minimal',
+      ]) {
+        final familyAssets = ShopAssetsCatalog.assetsByFamily(familyId);
+        final expectedCount = familyId == 'zebra_minimal' ? 2 : 3;
+        expect(familyAssets, hasLength(expectedCount), reason: familyId);
+        expect(
+          familyAssets.map((asset) => asset.category).toSet(),
+          familyId == 'zebra_minimal'
+              ? equals(<ShopAssetCategory>{
+                  ShopAssetCategory.wallpaper,
+                  ShopAssetCategory.habitCard,
+                })
+              : equals(<ShopAssetCategory>{
+                  ShopAssetCategory.wallpaper,
+                  ShopAssetCategory.habitCard,
+                  ShopAssetCategory.userCard,
+                }),
+          reason: familyId,
+        );
+        expect(ShopAssetsCatalog.bundlesByFamily(familyId), isEmpty,
+            reason: familyId);
+      }
+
+      for (final familyId in const <String>[
         'warm_beige',
         'soft_camel',
         'sand_plain',
         'cream_light',
+        'lilac_dawn',
+        'dusty_rose',
+        'golden_camel',
+        'pastel_sky',
+        'soft_peach',
+        'full_moon',
       ]) {
         final familyAssets = ShopAssetsCatalog.assetsByFamily(familyId);
         expect(familyAssets, hasLength(2), reason: familyId);
@@ -172,8 +211,15 @@ void main() {
           }),
           reason: familyId,
         );
-        expect(ShopAssetsCatalog.bundlesByFamily(familyId), hasLength(1),
+        expect(ShopAssetsCatalog.bundlesByFamily(familyId), isEmpty,
             reason: familyId);
+      }
+
+      for (final bundle in ShopAssetsCatalog.allBundles) {
+        final bundles = ShopAssetsCatalog.bundlesByFamily(bundle.familyId);
+
+        expect(bundles, hasLength(1), reason: bundle.familyId);
+        expect(bundles.single.id, bundle.id, reason: bundle.familyId);
       }
     });
 
@@ -189,15 +235,31 @@ void main() {
       }
     });
 
-    test('bundle prices match rarity', () {
+    test('bundle prices match the discounted trio formula', () {
       for (final bundle in ShopAssetsCatalog.allBundles) {
-        final expectedPrice = switch (bundle.rarity) {
-          ShopAssetRarity.common => ShopAssetsCatalog.commonBundlePrice,
-          ShopAssetRarity.rare => ShopAssetsCatalog.rareBundlePrice,
-          ShopAssetRarity.epic => ShopAssetsCatalog.epicBundlePrice,
-          ShopAssetRarity.legendary => ShopAssetsCatalog.legendaryBundlePrice,
+        final originalPrice = bundle.assetIds
+            .map((assetId) => ShopAssetsCatalog.getAssetById(assetId)!)
+            .fold<int>(0, (int total, ShopAsset asset) {
+          return total + asset.priceAmber;
+        });
+        final expectedDiscount = switch (bundle.rarity) {
+          ShopAssetRarity.common =>
+            ShopAssetsCatalog.commonBundleDiscountPercentage,
+          ShopAssetRarity.rare =>
+            ShopAssetsCatalog.rareBundleDiscountPercentage,
+          ShopAssetRarity.epic =>
+            ShopAssetsCatalog.epicBundleDiscountPercentage,
+          ShopAssetRarity.legendary =>
+            ShopAssetsCatalog.epicBundleDiscountPercentage,
         };
+        final expectedPrice =
+            _discountedBundlePrice(originalPrice, expectedDiscount);
+
+        expect(bundle.originalPriceAmber, originalPrice, reason: bundle.id);
+        expect(bundle.discountPercentage, expectedDiscount, reason: bundle.id);
         expect(bundle.priceAmber, expectedPrice, reason: bundle.id);
+        expect(bundle.savingsAmber, originalPrice - expectedPrice,
+            reason: bundle.id);
       }
     });
 
@@ -222,13 +284,25 @@ void main() {
           'assets/shop/habit_cards/common/habit_card_soft_camel.webp',
           'assets/shop/habit_cards/common/habit_card_off_white.webp',
           'assets/shop/habit_cards/common/habit_card_cream_yellow.webp',
-          'assets/shop/habit_cards/rare/habit_card_stone_gray.webp',
-          'assets/shop/habit_cards/rare/habit_card_soft_terracotta.webp',
-          'assets/shop/habit_cards/rare/habit_card_clay_rose.webp',
-          'assets/shop/habit_cards/rare/habit_card_violet_flame.webp',
-          'assets/shop/habit_cards/epic/habit_card_dusty_lilac.webp',
-          'assets/shop/habit_cards/epic/habit_card_mist_blue.webp',
-          'assets/shop/habit_cards/legendary/habit_card_soft_sage.webp',
+          'assets/shop/habit_cards/common/habit_card_mist_blue.webp',
+          'assets/shop/habit_cards/common/habit_card_stone_gray.webp',
+          'assets/shop/habit_cards/common/habit_card_dusty_lilac.webp',
+          'assets/shop/habit_cards/common/habit_card_clay_rose.webp',
+          'assets/shop/habit_cards/common/habit_card_soft_terracotta.webp',
+          'assets/shop/habit_cards/common/habit_card_soft_sage.webp',
+          'assets/shop/habit_cards/rare/habit_card_lilac_dawn.webp',
+          'assets/shop/habit_cards/rare/habit_card_lavender_blue.webp',
+          'assets/shop/habit_cards/rare/habit_card_golden_camel.webp',
+          'assets/shop/habit_cards/rare/habit_card_sage_bloom.webp',
+          'assets/shop/habit_cards/rare/habit_card_dusty_rose.webp',
+          'assets/shop/habit_cards/rare/habit_card_pastel_sky.webp',
+          'assets/shop/habit_cards/rare/habit_card_soft_peach.webp',
+          'assets/shop/habit_cards/epic/habit_card_ocean_depth.webp',
+          'assets/shop/habit_cards/epic/habit_card_city_sunrise.webp',
+          'assets/shop/habit_cards/epic/habit_card_leopard.webp',
+          'assets/shop/habit_cards/epic/habit_card_full_moon.webp',
+          'assets/shop/habit_cards/epic/habit_card_golden_clouds.webp',
+          'assets/shop/habit_cards/epic/habit_card_zebra_minimal.webp',
         ]),
       );
       expect(
@@ -278,25 +352,39 @@ void main() {
       );
     });
 
-    test('bundle prices match expected family rarity tiers', () {
-      for (final bundle in ShopAssetsCatalog.allBundles) {
-        final assets = bundle.assetIds
-            .map(ShopAssetsCatalog.getAssetById)
-            .whereType<ShopAsset>()
-            .toList(growable: false);
+    test('user card assets point to the new definitive webp filenames', () {
+      final userCards =
+          ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.userCard)
+              .map((asset) => asset.assetPath)
+              .toList(growable: false);
 
-        expect(assets, anyOf(hasLength(2), hasLength(3)), reason: bundle.id);
-        expect(
-          assets.every((asset) => asset.familyId == bundle.familyId),
-          isTrue,
-          reason: bundle.id,
-        );
-        expect(
-          assets.every((asset) => asset.rarity == bundle.rarity),
-          isTrue,
-          reason: bundle.id,
-        );
-      }
+      expect(
+        userCards,
+        orderedEquals(<String>[
+          'assets/shop/user_cards/common/user_card_rutio_beige.webp',
+          'assets/shop/user_cards/common/user_card_soft_camel.webp',
+          'assets/shop/user_cards/common/user_card_off_white.webp',
+          'assets/shop/user_cards/common/user_card_cream_yellow.webp',
+          'assets/shop/user_cards/common/user_card_mist_blue.webp',
+          'assets/shop/user_cards/common/user_card_stone_gray.webp',
+          'assets/shop/user_cards/common/user_card_dusty_lilac.webp',
+          'assets/shop/user_cards/common/user_card_clay_rose.webp',
+          'assets/shop/user_cards/common/user_card_soft_terracotta.webp',
+          'assets/shop/user_cards/common/user_card_soft_sage.webp',
+          'assets/shop/user_cards/rare/user_card_lilac_dawn.webp',
+          'assets/shop/user_cards/rare/user_card_dusty_rose.webp',
+          'assets/shop/user_cards/rare/user_card_golden_camel.webp',
+          'assets/shop/user_cards/rare/user_card_pastel_sky.webp',
+          'assets/shop/user_cards/rare/user_card_soft_peach.webp',
+          'assets/shop/user_cards/epic/user_card_ocean_depth.webp',
+          'assets/shop/user_cards/epic/user_card_city_sunrise.webp',
+          'assets/shop/user_cards/epic/user_card_full_moon.webp',
+        ]),
+      );
+    });
+
+    test('bundle catalog stays enabled with the curated production packs', () {
+      expect(ShopAssetsCatalog.allBundles, hasLength(22));
     });
 
     test('sortOrder stays strictly increasing', () {
@@ -319,8 +407,10 @@ void main() {
     test('getAssetById and getBundleById return matches', () {
       expect(ShopAssetsCatalog.getAssetById('wallpaper_mist_blue')?.familyId,
           'mist_blue');
-      expect(ShopAssetsCatalog.getBundleById('bundle_golden_dawn')?.familyId,
-          'golden_dawn');
+      expect(ShopAssetsCatalog.getBundleById('pack_beige_rutio')?.id,
+          'pack_beige_rutio');
+      expect(ShopAssetsCatalog.getBundleById('pack_noche_lunar')?.id,
+          'pack_noche_lunar');
       expect(ShopAssetsCatalog.getAssetById('missing_asset'), isNull);
       expect(ShopAssetsCatalog.getBundleById('missing_bundle'), isNull);
     });
@@ -329,16 +419,49 @@ void main() {
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.wallpaper),
           hasLength(21));
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.habitCard),
-          hasLength(11));
-      expect(ShopAssetsCatalog.assetsByFamily('lavender_mist'), hasLength(2));
-      expect(ShopAssetsCatalog.assetsByFamily('violet_flame'), hasLength(1));
-      expect(ShopAssetsCatalog.bundlesByFamily('lavender_mist'), hasLength(1));
+          hasLength(23));
+      expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.userCard),
+          hasLength(18));
+      expect(ShopAssetsCatalog.assetsByFamily('lavender_mist'), isEmpty);
+      expect(ShopAssetsCatalog.assetsByFamily('mist_blue'), hasLength(3));
+      expect(ShopAssetsCatalog.assetsByFamily('lilac_dawn'), hasLength(2));
+      expect(ShopAssetsCatalog.assetsByFamily('ocean_depth'), hasLength(3));
+      expect(ShopAssetsCatalog.assetsByFamily('city_sunrise'), hasLength(3));
+      expect(ShopAssetsCatalog.assetsByFamily('zebra_minimal'), hasLength(2));
+      expect(ShopAssetsCatalog.assetsByFamily('leopard'), hasLength(1));
+      expect(ShopAssetsCatalog.assetsByFamily('full_moon'), hasLength(2));
+      expect(ShopAssetsCatalog.assetsByFamily('golden_clouds'), hasLength(1));
+      expect(ShopAssetsCatalog.bundlesByFamily('lavender_mist'), isEmpty);
       expect(ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.legendary),
-          hasLength(3));
+          hasLength(1));
     });
 
-    test('rare habit card catalog contains violet flame visual config', () {
-      final asset = ShopAssetsCatalog.getAssetById('habit_card_violet_flame');
+    test('common habit card catalog contains the restored production set', () {
+      final commonHabitCards =
+          ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.habitCard)
+              .where((asset) => asset.rarity == ShopAssetRarity.common)
+              .map((asset) => asset.id)
+              .toList(growable: false);
+
+      expect(
+        commonHabitCards,
+        orderedEquals(<String>[
+          'habit_card_warm_beige',
+          'habit_card_soft_camel',
+          'habit_card_sand_plain',
+          'habit_card_cream_light',
+          'habit_card_mist_blue',
+          'habit_card_stone_gray',
+          'habit_card_dusty_lilac',
+          'habit_card_clay_rose',
+          'habit_card_soft_terracotta',
+          'habit_card_soft_sage',
+        ]),
+      );
+    });
+
+    test('rare habit card catalog contains the new rare backgrounds', () {
+      final asset = ShopAssetsCatalog.getAssetById('habit_card_lilac_dawn');
 
       expect(asset, isNotNull);
       expect(asset?.rarity, ShopAssetRarity.rare);
@@ -346,13 +469,33 @@ void main() {
       expect(asset?.category, ShopAssetCategory.habitCard);
       expect(
         asset?.assetPath,
-        'assets/shop/habit_cards/rare/habit_card_violet_flame.webp',
+        'assets/shop/habit_cards/rare/habit_card_lilac_dawn.webp',
       );
       expect(asset?.imageFit, BoxFit.cover);
-      expect(asset?.imageAlignmentX, 0.65);
+      expect(asset?.imageAlignmentX, 0);
       expect(asset?.imageAlignmentY, 0);
-      expect(asset?.overlayColorValue, 0xCCFFFFFF);
-      expect(asset?.overlayOpacity, 0.18);
+      expect(asset?.overlayColorValue, isNull);
+      expect(asset?.overlayOpacity, 0);
+    });
+
+    test('epic habit card catalog contains the new epic backgrounds', () {
+      final epicHabitCards =
+          ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.habitCard)
+              .where((asset) => asset.rarity == ShopAssetRarity.epic)
+              .map((asset) => asset.id)
+              .toList(growable: false);
+
+      expect(
+        epicHabitCards,
+        orderedEquals(<String>[
+          'habit_card_ocean_depth',
+          'habit_card_city_sunrise',
+          'habit_card_leopard',
+          'habit_card_full_moon',
+          'habit_card_golden_clouds',
+          'habit_card_zebra_minimal',
+        ]),
+      );
     });
 
     test('common wallpaper catalog contains only new webp wallpapers', () {
@@ -422,4 +565,16 @@ void main() {
       );
     });
   });
+}
+
+int _discountedBundlePrice(int originalPrice, int discountPercentage) {
+  if (originalPrice <= 0) return 0;
+  final discounted = originalPrice * (100 - discountPercentage) / 100;
+  final rounded = (discounted / 5).round() * 5;
+  if (rounded <= 0) return 5;
+  if (rounded >= originalPrice) {
+    final fallback = originalPrice - 5;
+    return fallback > 0 ? fallback : originalPrice;
+  }
+  return rounded;
 }

@@ -7,6 +7,7 @@ import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_product_card.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_rarity_badge.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_header.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 
 class ShopCosmeticsDetailSheet extends StatelessWidget {
@@ -19,13 +20,15 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
     this.busy = false,
   })  : bundle = null,
         bundleAssets = const <ShopAsset>[],
-        isBundleOwned = false;
+        isBundleOwned = false,
+        isBundlePartiallyOwned = false;
 
   const ShopCosmeticsDetailSheet.bundle({
     super.key,
     required this.bundle,
     required this.bundleAssets,
     required this.isBundleOwned,
+    required this.isBundlePartiallyOwned,
     required this.walletCoins,
     required this.onPrimaryActionPressed,
     this.busy = false,
@@ -37,6 +40,7 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
   final ShopBundle? bundle;
   final List<ShopAsset> bundleAssets;
   final bool isBundleOwned;
+  final bool isBundlePartiallyOwned;
   final int walletCoins;
   final VoidCallback onPrimaryActionPressed;
   final bool busy;
@@ -96,7 +100,16 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
                           height: _isBundle ? 210 : 230,
                           child: _isBundle
                               ? ShopCosmeticsBundlePreview(assets: bundleAssets)
-                              : ShopCosmeticsAssetPreview(asset: asset!),
+                              : ShopCosmeticsAssetPreview(
+                                  asset: asset!,
+                                  mode: switch (asset!.category) {
+                                    ShopAssetCategory.habitCard ||
+                                    ShopAssetCategory.userCard =>
+                                      ShopAssetPreviewMode.applied,
+                                    ShopAssetCategory.wallpaper =>
+                                      ShopAssetPreviewMode.visual,
+                                  },
+                                ),
                         ),
                       ),
                       const SizedBox(height: 18),
@@ -120,6 +133,23 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
                       const SizedBox(height: 18),
                       _DetailRow(label: 'Categoria', value: _categoryLabel()),
                       const SizedBox(height: 12),
+                      if (_isBundle) ...<Widget>[
+                        _DetailRow(
+                          label: 'Precio original',
+                          value: '${bundle!.originalPriceAmber} ambar',
+                        ),
+                        const SizedBox(height: 12),
+                        _DetailRow(
+                          label: 'Descuento',
+                          value: '-${bundle!.discountPercentage}%',
+                        ),
+                        const SizedBox(height: 12),
+                        _DetailRow(
+                          label: 'Ahorro',
+                          value: '${bundle!.savingsAmber} ambar',
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       _DetailRow(label: 'Precio', value: '$price ambar'),
                       const SizedBox(height: 12),
                       _DetailRow(label: 'Estado', value: action.statusLabel),
@@ -152,7 +182,9 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
                         Text(
                           action.label == 'Comprar'
                               ? 'Todavía no se realiza la compra real desde esta pantalla.'
-                              : 'Este cosmético ya no requiere una acción adicional.',
+                              : action.label == 'Ya tienes parte de este pack'
+                                  ? 'Ya tienes parte de este pack. Completa otros cosméticos para desbloquear una compra limpia o revisa tu inventario.'
+                                  : 'Este cosmético ya no requiere una acción adicional.',
                           style: ShopUiTextStyles.bodySmall,
                         ),
                         const SizedBox(height: 12),
@@ -187,6 +219,14 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
           label: 'Comprado',
           statusLabel: 'Comprado',
           icon: Icons.check_circle_outline_rounded,
+          enabled: false,
+        );
+      }
+      if (isBundlePartiallyOwned) {
+        return const _SheetAction(
+          label: 'Ya tienes parte de este pack',
+          statusLabel: 'Ya tienes parte de este pack',
+          icon: Icons.block_outlined,
           enabled: false,
         );
       }

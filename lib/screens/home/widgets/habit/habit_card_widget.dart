@@ -4,8 +4,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:rutio/features/shop/domain/models/habit_card_content_tone.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/screens/home/widgets/habit/habit_card_badge_zone.dart';
+import 'package:rutio/screens/home/widgets/habit/habit_card_foreground_style.dart';
 import 'package:rutio/ui/behaviours/ios_feedback.dart';
 import 'package:rutio/ui/foundations/ios_foundations.dart';
 
@@ -52,6 +54,8 @@ class HabitCardWidget extends StatefulWidget {
   final Alignment backgroundImageAlignment;
   final Color? backgroundOverlayColor;
   final double backgroundOverlayOpacity;
+  final HabitCardContentTone contentTone;
+  final bool useContentScrim;
 
   const HabitCardWidget({
     super.key,
@@ -86,6 +90,8 @@ class HabitCardWidget extends StatefulWidget {
     this.backgroundImageAlignment = Alignment.center,
     this.backgroundOverlayColor,
     this.backgroundOverlayOpacity = 0,
+    this.contentTone = HabitCardContentTone.dark,
+    this.useContentScrim = false,
   });
 
   @override
@@ -240,6 +246,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     final hasBackgroundOverlay = backgroundImageProvider != null &&
         widget.backgroundOverlayColor != null &&
         widget.backgroundOverlayOpacity > 0;
+    final foregroundStyle = resolveHabitCardForegroundStyle(widget.contentTone);
     final reminderLabel = widget.reminderLabel?.trim();
     final hasReminder = reminderLabel != null && reminderLabel.isNotEmpty;
     final compactCountLabel =
@@ -266,6 +273,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
             ? HabitCardBadgeZone(
                 familyColor: widget.familyColor,
                 compact: widget.compact,
+                foregroundStyle: foregroundStyle,
                 reminderLabel: reminderLabel,
                 countLabel: countInfoLabel,
                 progressLabel: hasWeeklyProgress ? weeklyProgressLabel : null,
@@ -274,6 +282,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                         HabitSkippedBadge(
                           label: context.l10n.homeSkippedToday,
                           compact: widget.compact,
+                          foregroundStyle: foregroundStyle,
                         ),
                       ]
                     : const <Widget>[],
@@ -316,6 +325,8 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: widget.compact ? 14 : 15,
+                    color: foregroundStyle.primaryText,
+                    shadows: foregroundStyle.emphasisShadows,
                   ),
                 ),
                 if (badgeZone != null) ...[
@@ -327,7 +338,8 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                     widget.description,
                     style: TextStyle(
                       fontSize: widget.compact ? 12 : 13,
-                      color: Colors.black.withValues(alpha: 0.55),
+                      color: foregroundStyle.secondaryText,
+                      shadows: foregroundStyle.emphasisShadows,
                     ),
                   ),
               ],
@@ -349,9 +361,12 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                     height: 30,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: widget.familyColor, width: 1.6),
+                      border: Border.all(
+                        color: foregroundStyle.accentColor(widget.familyColor),
+                        width: 1.6,
+                      ),
                       color: widget.isCompleted
-                          ? widget.familyColor
+                          ? foregroundStyle.accentColor(widget.familyColor)
                           : Colors.transparent,
                     ),
                     child: AnimatedSwitcher(
@@ -364,11 +379,11 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                         );
                       },
                       child: widget.isCompleted
-                          ? const Icon(
+                          ? Icon(
                               CupertinoIcons.check_mark,
-                              key: ValueKey('done'),
+                              key: const ValueKey('done'),
                               size: 17,
-                              color: Colors.white,
+                              color: foregroundStyle.iconColor,
                             )
                           : const SizedBox(
                               key: ValueKey('empty'),
@@ -414,6 +429,8 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: widget.compact ? 14 : 15,
+                                color: foregroundStyle.primaryText,
+                                shadows: foregroundStyle.emphasisShadows,
                               ),
                             ),
                             if (badgeZone != null) ...[
@@ -434,6 +451,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
             child: _CircleButton(
               icon: CupertinoIcons.minus,
               onTap: widget.onDecrement,
+              foregroundStyle: foregroundStyle,
             ),
           ),
           const SizedBox(width: IosSpacing.xs),
@@ -449,13 +467,16 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                   painter: _ProgressRingPainter(
                     progress: ringProgress,
                     progressColor: widget.familyColor,
+                    foregroundStyle: foregroundStyle,
                   ),
                   child: Center(
                     child: Text(
                       '${_formatCountLabel(widget.currentCount)}/${_formatCountLabel(widget.targetCount)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 11.5,
+                        color: foregroundStyle.primaryText,
+                        shadows: foregroundStyle.emphasisShadows,
                       ),
                     ),
                   ),
@@ -469,6 +490,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
             child: _CircleButton(
               icon: CupertinoIcons.add,
               onTap: widget.onIncrement,
+              foregroundStyle: foregroundStyle,
             ),
           ),
           const SizedBox(width: 12),
@@ -547,6 +569,15 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                           ),
                         ),
                       ),
+                    if (widget.useContentScrim)
+                      const Positioned.fill(
+                        child: DecoratedBox(
+                          key: Key('habitCardContentScrim'),
+                          decoration: BoxDecoration(
+                            gradient: habitCardContentScrim,
+                          ),
+                        ),
+                      ),
                     Padding(
                       padding: EdgeInsets.symmetric(vertical: verticalPadding),
                       child: content,
@@ -582,14 +613,14 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color:
-                                    widget.familyColor.withValues(alpha: 0.14),
+                                color: foregroundStyle
+                                    .accentSurface(widget.familyColor),
                                 borderRadius: BorderRadius.circular(
                                   IosCornerRadius.pill,
                                 ),
                                 border: Border.all(
-                                  color: widget.familyColor
-                                      .withValues(alpha: 0.28),
+                                  color: foregroundStyle
+                                      .accentBorder(widget.familyColor),
                                 ),
                               ),
                               child: Text(
@@ -597,7 +628,9 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w800,
-                                  color: widget.familyColor,
+                                  color: foregroundStyle
+                                      .accentColor(widget.familyColor),
+                                  shadows: foregroundStyle.emphasisShadows,
                                 ),
                               ),
                             ),
@@ -618,10 +651,12 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
 class _CircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
+  final HabitCardForegroundStyle foregroundStyle;
 
   const _CircleButton({
     required this.icon,
     required this.onTap,
+    required this.foregroundStyle,
   });
 
   @override
@@ -643,13 +678,14 @@ class _CircleButton extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.72),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+              color: foregroundStyle.controlSurface,
+              border: Border.all(color: foregroundStyle.controlBorder),
             ),
             child: Icon(
               icon,
               size: 17,
-              color: Colors.black.withValues(alpha: 0.6),
+              color: foregroundStyle.controlIcon,
+              shadows: foregroundStyle.emphasisShadows,
             ),
           ),
         ),
@@ -661,10 +697,12 @@ class _CircleButton extends StatelessWidget {
 class _ProgressRingPainter extends CustomPainter {
   final double progress;
   final Color progressColor;
+  final HabitCardForegroundStyle foregroundStyle;
 
   const _ProgressRingPainter({
     required this.progress,
     required this.progressColor,
+    required this.foregroundStyle,
   });
 
   @override
@@ -674,7 +712,7 @@ class _ProgressRingPainter extends CustomPainter {
     final radius = (size.width - stroke) / 2;
 
     final trackPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.08)
+      ..color = foregroundStyle.progressTrackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke;
 
@@ -700,6 +738,7 @@ class _ProgressRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ProgressRingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-        oldDelegate.progressColor != progressColor;
+        oldDelegate.progressColor != progressColor ||
+        oldDelegate.foregroundStyle != foregroundStyle;
   }
 }

@@ -9,6 +9,7 @@ enum ShopCosmeticsOperationStatus {
   success,
   assetNotFound,
   bundleNotFound,
+  bundleContainsOwnedAssets,
   insufficientCoins,
   alreadyOwned,
   assetNotOwned,

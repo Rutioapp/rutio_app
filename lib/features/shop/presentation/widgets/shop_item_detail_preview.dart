@@ -41,6 +41,18 @@ class ShopItemDetailPreview extends StatelessWidget {
                 fallbackTone: _toneForItem(item.type),
                 height: 240,
                 fallbackIcon: _iconForItem(item.type),
+                mode: switch (item.type) {
+                  ShopItemType.habitCard ||
+                  ShopItemType.userCard =>
+                    ShopAssetPreviewMode.applied,
+                  ShopItemType.background ||
+                  ShopItemType.xpBoost ||
+                  ShopItemType.coinBoost ||
+                  ShopItemType.streakRecover ||
+                  ShopItemType.streakShield ||
+                  ShopItemType.mysteryBox =>
+                    ShopAssetPreviewMode.visual,
+                },
               ),
             ),
             const SizedBox(height: 16),
