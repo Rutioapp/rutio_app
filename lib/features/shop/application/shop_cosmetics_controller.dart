@@ -119,6 +119,11 @@ class ShopCosmeticsController extends ChangeNotifier {
     return service.isBundleOwned(bundleId);
   }
 
+  Future<bool> isBundlePartiallyOwned(String bundleId) async {
+    final service = await _service();
+    return service.isBundlePartiallyOwned(bundleId);
+  }
+
   Future<ShopAssetOwnershipState> assetOwnershipState(String assetId) async {
     final service = await _service();
     return service.assetOwnershipState(assetId);

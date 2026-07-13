@@ -257,90 +257,15 @@ class _HabitCardStylePreview extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 420),
         child: AspectRatio(
           aspectRatio: 1.22,
-          child: ClipRRect(
-            borderRadius: ShopUiTokens.radiusXlShape,
-            child: Stack(
-              fit: StackFit.expand,
-              children: <Widget>[
-                ShopItemAssetPreview(
-                  item: item,
-                  fallbackLabel: item.title,
-                  fallbackTone: ShopPreviewPlaceholderTone.sand,
-                  fallbackIcon: Icons.view_agenda_outlined,
-                  fit: BoxFit.cover,
-                ),
-                Container(
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: ShopUiTokens.surfaceRaised.withValues(alpha: 0.94),
-                      borderRadius: ShopUiTokens.radiusLgShape,
-                      border: Border.all(color: ShopUiTokens.stroke),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              Container(
-                                width: 42,
-                                height: 42,
-                                decoration: const BoxDecoration(
-                                  color: ShopUiTokens.backgroundAlt,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.check_circle_outline_rounded,
-                                  size: 22,
-                                  color: ShopUiTokens.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      'Leer 10 min',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: ShopUiTextStyles.label.copyWith(
-                                        fontSize: 18,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      'Estilo calmado aplicado a tu hábito.',
-                                      style: ShopUiTextStyles.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: _MiniStatChip(label: '3/10 completado'),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _MiniStatChip(label: 'Rutina diaria'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+            child: ShopItemAssetPreview(
+              item: item,
+              fallbackLabel: item.title,
+              fallbackTone: ShopPreviewPlaceholderTone.sand,
+              fallbackIcon: Icons.view_agenda_outlined,
+              fit: BoxFit.cover,
+              mode: ShopAssetPreviewMode.applied,
             ),
           ),
         ),
@@ -361,127 +286,14 @@ class _UserCardStylePreview extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 430),
         child: AspectRatio(
           aspectRatio: 1.08,
-          child: ClipRRect(
-            borderRadius: ShopUiTokens.radiusXlShape,
-            child: Stack(
-              fit: StackFit.expand,
-              children: <Widget>[
-                ShopItemAssetPreview(
-                  item: item,
-                  fallbackLabel: item.title,
-                  fallbackTone: ShopPreviewPlaceholderTone.ice,
-                  fallbackIcon: Icons.badge_outlined,
-                  fit: BoxFit.cover,
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: <Color>[
-                        Colors.white.withValues(alpha: 0.03),
-                        Colors.white.withValues(alpha: 0.18),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: ShopUiTokens.surfaceRaised.withValues(alpha: 0.94),
-                      borderRadius: ShopUiTokens.radiusLgShape,
-                      border: Border.all(color: ShopUiTokens.stroke),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              Container(
-                                width: 52,
-                                height: 52,
-                                decoration: const BoxDecoration(
-                                  color: ShopUiTokens.backgroundAlt,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.person_rounded,
-                                  size: 28,
-                                  color: ShopUiTokens.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      'Rutio User',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: ShopUiTextStyles.label.copyWith(
-                                        fontSize: 18,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      'Perfil premium',
-                                      style: ShopUiTextStyles.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: _MiniStatChip(label: 'Nivel 12'),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _MiniStatChip(label: '640 ámbar'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          child: ShopItemAssetPreview(
+            item: item,
+            fallbackLabel: item.title,
+            fallbackTone: ShopPreviewPlaceholderTone.ice,
+            fallbackIcon: Icons.badge_outlined,
+            fit: BoxFit.cover,
+            mode: ShopAssetPreviewMode.applied,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniStatChip extends StatelessWidget {
-  const _MiniStatChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: ShopUiTokens.backgroundAlt.withValues(alpha: 0.86),
-        borderRadius: ShopUiTokens.radiusXlShape,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: ShopUiTextStyles.label.copyWith(fontSize: 12),
         ),
       ),
     );

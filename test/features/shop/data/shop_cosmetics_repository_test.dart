@@ -59,5 +59,19 @@ void main() {
       expect(state.ownedAssetIds, equals(<String>['wallpaper_mist_blue']));
       expect(state.equippedWallpaperId, isNull);
     });
+
+    test('sanitizes removed legacy habit card ids safely', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ShopCosmeticsRepository.legacyStorageKey:
+            '{"ownedAssetIds":["habit_card_violet_flame","habit_card_warm_beige"],"ownedBundleIds":[],"equippedWallpaperId":null,"equippedHabitCardSkinId":"habit_card_violet_flame","equippedUserCardSkinId":null}',
+      });
+      final repository =
+          ShopCosmeticsRepository(scopeResolver: () => 'demo_user');
+
+      final state = await repository.load();
+
+      expect(state.ownedAssetIds, equals(<String>['habit_card_warm_beige']));
+      expect(state.equippedHabitCardSkinId, isNull);
+    });
   });
 }

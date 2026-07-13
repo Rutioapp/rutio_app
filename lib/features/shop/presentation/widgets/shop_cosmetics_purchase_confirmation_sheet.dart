@@ -106,6 +106,18 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                             ),
                             const SizedBox(height: 10),
                           ],
+                          if (_isBundle) ...<Widget>[
+                            _InfoRow(
+                              label: 'Precio original',
+                              value: '${bundle!.originalPriceAmber} ambar',
+                            ),
+                            const SizedBox(height: 10),
+                            _InfoRow(
+                              label: 'Ahorro',
+                              value: '${bundle!.savingsAmber} ambar',
+                            ),
+                            const SizedBox(height: 10),
+                          ],
                           _InfoRow(label: 'Precio', value: '$_price ambar'),
                           const SizedBox(height: 10),
                           _InfoRow(

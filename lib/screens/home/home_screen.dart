@@ -11,6 +11,7 @@ import 'package:rutio/features/notifications/presentation/notification_permissio
 import 'package:rutio/features/notifications/presentation/notification_permission_recovery_sheet.dart';
 import 'package:rutio/features/gamification/domain/level_progression.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/domain/models/habit_card_content_tone.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/core/assets/app_assets.dart';

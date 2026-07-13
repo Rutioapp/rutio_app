@@ -129,7 +129,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final int crossAxisCount = constraints.maxWidth >= 560 ? 3 : 2;
-            final double childAspectRatio = crossAxisCount == 3 ? 0.68 : 0.64;
+            final double mainAxisExtent = crossAxisCount == 3 ? 276 : 292;
 
             return GridView.builder(
               shrinkWrap: true,
@@ -139,7 +139,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                 crossAxisCount: crossAxisCount,
                 mainAxisSpacing: 14,
                 crossAxisSpacing: 14,
-                childAspectRatio: childAspectRatio,
+                mainAxisExtent: mainAxisExtent,
               ),
               itemBuilder: (BuildContext context, int index) {
                 final entry = entries[index];
@@ -157,15 +157,25 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                         ownershipState,
                       ),
                     ),
-                  _BundleEntry(:final bundle, :final assets, :final isOwned) =>
+                  _BundleEntry(
+                    :final bundle,
+                    :final assets,
+                    :final isOwned,
+                    :final isPartiallyOwned,
+                  ) =>
                     ShopCosmeticsProductCard.bundle(
                       bundle: bundle,
                       bundleAssets: assets,
                       isBundleOwned: isOwned,
+                      isBundlePartiallyOwned: isPartiallyOwned,
                       hasEnoughCoins: _walletCoins >= bundle.priceAmber,
                       busy: _busyId == bundle.id,
-                      onPressed: () =>
-                          _openBundleDetail(bundle, assets, isOwned),
+                      onPressed: () => _openBundleDetail(
+                        bundle,
+                        assets,
+                        isOwned,
+                        isPartiallyOwned,
+                      ),
                       onPrimaryActionPressed: () =>
                           _onBundlePrimaryActionPressed(bundle, assets),
                     ),
@@ -197,6 +207,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
               .whereType<ShopAsset>()
               .toList(growable: false),
           isOwned: state.isBundleOwned(bundle.id),
+          isPartiallyOwned: _bundleContainsOwnedAssets(state, bundle),
         ),
       ),
     ]..sort(_compareEntries);
@@ -355,6 +366,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     ShopBundle bundle,
     List<ShopAsset> assets,
     bool isOwned,
+    bool isPartiallyOwned,
   ) {
     showModalBottomSheet<void>(
       context: context,
@@ -365,6 +377,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
           bundle: bundle,
           bundleAssets: assets,
           isBundleOwned: isOwned,
+          isBundlePartiallyOwned: isPartiallyOwned,
           walletCoins: _walletCoins,
           busy: _busyId == bundle.id,
           onPrimaryActionPressed: () async {
@@ -432,6 +445,19 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     );
   }
 
+  bool _bundleContainsOwnedAssets(
+    ShopCosmeticsState state,
+    ShopBundle bundle,
+  ) {
+    if (state.isBundleOwned(bundle.id)) return false;
+    for (final assetId in bundle.assetIds) {
+      if (state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   String _assetFeedback(
     ShopCosmeticsOperationResult result,
     ShopAssetOwnershipState previousState,
@@ -449,6 +475,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         return 'Necesitas comprarlo antes de equiparlo';
       case ShopCosmeticsOperationStatus.assetNotFound:
       case ShopCosmeticsOperationStatus.bundleNotFound:
+      case ShopCosmeticsOperationStatus.bundleContainsOwnedAssets:
         return 'No hemos encontrado este cosmetico';
     }
   }
@@ -461,6 +488,8 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         return 'No tienes ambar suficiente';
       case ShopCosmeticsOperationStatus.alreadyOwned:
         return 'Ese pack ya esta comprado';
+      case ShopCosmeticsOperationStatus.bundleContainsOwnedAssets:
+        return 'Ya tienes parte de este pack';
       case ShopCosmeticsOperationStatus.assetNotFound:
       case ShopCosmeticsOperationStatus.bundleNotFound:
         return 'No hemos encontrado este pack';
@@ -581,11 +610,13 @@ class _BundleEntry extends _ShopEntry {
     required this.bundle,
     required this.assets,
     required this.isOwned,
+    required this.isPartiallyOwned,
   });
 
   final ShopBundle bundle;
   final List<ShopAsset> assets;
   final bool isOwned;
+  final bool isPartiallyOwned;
 
   @override
   ShopAssetRarity get rarity => bundle.rarity;
@@ -597,7 +628,7 @@ class _BundleEntry extends _ShopEntry {
   _EntryCategory get categoryOrder => _EntryCategory.bundle;
 
   @override
-  int get ownershipRank => isOwned ? 1 : 0;
+  int get ownershipRank => (isOwned || isPartiallyOwned) ? 1 : 0;
 }
 
 enum _EntryCategory {

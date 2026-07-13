@@ -4,6 +4,7 @@ import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
 import 'package:rutio/widgets/currency/amber_coin_icon.dart';
@@ -19,13 +20,15 @@ class ShopCosmeticsProductCard extends StatelessWidget {
     this.busy = false,
   })  : bundle = null,
         bundleAssets = const <ShopAsset>[],
-        isBundleOwned = false;
+        isBundleOwned = false,
+        isBundlePartiallyOwned = false;
 
   const ShopCosmeticsProductCard.bundle({
     super.key,
     required this.bundle,
     required this.bundleAssets,
     required this.isBundleOwned,
+    required this.isBundlePartiallyOwned,
     required this.hasEnoughCoins,
     required this.onPressed,
     required this.onPrimaryActionPressed,
@@ -38,6 +41,7 @@ class ShopCosmeticsProductCard extends StatelessWidget {
   final ShopBundle? bundle;
   final List<ShopAsset> bundleAssets;
   final bool isBundleOwned;
+  final bool isBundlePartiallyOwned;
   final bool hasEnoughCoins;
   final VoidCallback onPressed;
   final VoidCallback onPrimaryActionPressed;
@@ -81,20 +85,20 @@ class ShopCosmeticsProductCard extends StatelessWidget {
                 borderRadius: ShopUiTokens.radiusMdShape,
                 child: SizedBox(
                   width: double.infinity,
-                  height: 92,
+                  height: 94,
                   child: _isBundle
                       ? ShopCosmeticsBundlePreview(assets: bundleAssets)
                       : ShopCosmeticsAssetPreview(asset: asset!),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               Text(
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: ShopUiTextStyles.label.copyWith(fontSize: 15),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Row(
                 children: <Widget>[
                   Expanded(
@@ -108,19 +112,11 @@ class ShopCosmeticsProductCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      const AmberCoinIcon(size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$price',
-                        style: ShopUiTextStyles.labelSmall.copyWith(
-                          color: ShopUiTokens.textPrimary,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ],
+                  _PriceBadge(
+                    price: price,
+                    originalPrice:
+                        _isBundle ? bundle!.originalPriceAmber : price,
+                    savings: _isBundle ? bundle!.savingsAmber : 0,
                   ),
                 ],
               ),
@@ -158,6 +154,15 @@ class ShopCosmeticsProductCard extends StatelessWidget {
           icon: Icons.check_circle_outline_rounded,
           enabled: false,
           highlight: true,
+          showPrimaryButton: false,
+        );
+      }
+      if (isBundlePartiallyOwned) {
+        return const _ProductActionState(
+          label: 'Ya tienes parte del pack',
+          statusLabel: 'Ya tienes parte de este pack',
+          icon: Icons.block_outlined,
+          enabled: false,
           showPrimaryButton: false,
         );
       }
@@ -235,6 +240,76 @@ class ShopCosmeticsProductCard extends StatelessWidget {
   }
 }
 
+class _PriceBadge extends StatelessWidget {
+  const _PriceBadge({
+    required this.price,
+    required this.originalPrice,
+    required this.savings,
+  });
+
+  final int price;
+  final int originalPrice;
+  final int savings;
+
+  @override
+  Widget build(BuildContext context) {
+    if (originalPrice <= price) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const AmberCoinIcon(size: 14),
+          const SizedBox(width: 4),
+          Text(
+            '$price',
+            style: ShopUiTextStyles.labelSmall.copyWith(
+              color: ShopUiTokens.textPrimary,
+              fontSize: 11.5,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: <Widget>[
+        Text(
+          '$originalPrice',
+          style: ShopUiTextStyles.labelSmall.copyWith(
+            color: ShopUiTokens.textTertiary,
+            decoration: TextDecoration.lineThrough,
+            decorationColor: ShopUiTokens.textTertiary,
+          ),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const AmberCoinIcon(size: 14),
+            const SizedBox(width: 4),
+            Text(
+              '$price',
+              style: ShopUiTextStyles.labelSmall.copyWith(
+                color: ShopUiTokens.textPrimary,
+                fontSize: 11.5,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          'Ahorra $savings',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: ShopUiTextStyles.labelSmall.copyWith(
+            color: ShopUiTokens.success,
+            fontSize: 10.5,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ProductActionState {
   const _ProductActionState({
     required this.label,
@@ -291,22 +366,25 @@ class _OwnedStateFooter extends StatelessWidget {
 }
 
 class ShopCosmeticsAssetPreview extends StatelessWidget {
-  const ShopCosmeticsAssetPreview({super.key, required this.asset});
+  const ShopCosmeticsAssetPreview({
+    super.key,
+    required this.asset,
+    this.mode = ShopAssetPreviewMode.visual,
+  });
 
   final ShopAsset asset;
+  final ShopAssetPreviewMode mode;
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      asset.previewAssetPath,
-      key: Key('shopCosmeticsPreview-${asset.id}'),
+    return ShopVisualAssetPreview.asset(
+      asset: asset,
+      fallbackLabel: asset.nameEs,
+      fallbackTone: _toneForCategory(asset.category),
+      fallbackIcon: _iconForCategory(asset.category),
+      height: 96,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => ShopPreviewPlaceholder(
-        label: asset.nameEs,
-        tone: _toneForCategory(asset.category),
-        height: 92,
-        icon: _iconForCategory(asset.category),
-      ),
+      mode: mode,
     );
   }
 

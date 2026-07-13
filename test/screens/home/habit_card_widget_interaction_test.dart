@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/features/shop/domain/models/habit_card_content_tone.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/home/widgets/habit/habit_card_widget.dart';
 
@@ -203,6 +204,51 @@ void main() {
       BorderRadius.circular(20),
     );
     expect(_habitCardClip(tester).borderRadius, BorderRadius.circular(19));
+  });
+
+  testWidgets('habit card defaults to dark content tone without scrim',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Read',
+          description: '20 min',
+          familyColor: Colors.blue,
+          progress: 0,
+        ),
+      ),
+    );
+
+    final title = tester.widget<Text>(find.text('Read'));
+    final description = tester.widget<Text>(find.text('20 min'));
+
+    expect(find.byKey(const Key('habitCardContentScrim')), findsNothing);
+    expect(title.style?.color, const Color(0xFF25221F));
+    expect(description.style?.color, const Color(0xB325221F));
+  });
+
+  testWidgets('habit card applies light content tone and scrim when configured',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Moon walk',
+          description: 'Night focus',
+          familyColor: Colors.deepPurple,
+          progress: 0.5,
+          contentTone: HabitCardContentTone.light,
+          useContentScrim: true,
+        ),
+      ),
+    );
+
+    final title = tester.widget<Text>(find.text('Moon walk'));
+    final description = tester.widget<Text>(find.text('Night focus'));
+
+    expect(find.byKey(const Key('habitCardContentScrim')), findsOneWidget);
+    expect(title.style?.color, const Color(0xFFF9F7F2));
+    expect(title.style?.shadows, isNotEmpty);
+    expect(description.style?.color, const Color(0xD9F9F7F2));
   });
 }
 

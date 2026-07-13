@@ -7,6 +7,7 @@ import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
+import 'package:rutio/features/shop/domain/models/habit_card_content_tone.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/home/widgets/habit/habit_card_widget.dart';
@@ -219,7 +220,7 @@ void main() {
 
   testWidgets('habit card applies configured alignment and overlay',
       (tester) async {
-    final asset = ShopAssetsCatalog.getAssetById('habit_card_violet_flame')!;
+    final asset = ShopAssetsCatalog.getAssetById('habit_card_lilac_dawn')!;
 
     await tester.pumpWidget(
       _app(
@@ -243,8 +244,70 @@ void main() {
     );
 
     expect(image.fit, BoxFit.cover);
-    expect(image.alignment, const Alignment(0.65, 0));
+    expect(image.alignment, Alignment.center);
     expect(find.byType(ClipRRect), findsWidgets);
+  });
+
+  testWidgets('habit card uses catalog contrast metadata for light assets',
+      (tester) async {
+    final asset = ShopAssetsCatalog.getAssetById('habit_card_full_moon')!;
+
+    await tester.pumpWidget(
+      _app(
+        HabitCardWidget(
+          title: 'Moon walk',
+          description: 'Night focus',
+          familyColor: Colors.deepPurple,
+          progress: 0.4,
+          backgroundImageAssetPath: asset.assetPath,
+          backgroundImageProvider: asset.imageProvider,
+          backgroundImageFit: asset.imageFit,
+          backgroundImageAlignment: asset.imageAlignment,
+          backgroundOverlayColor: asset.overlayColor,
+          backgroundOverlayOpacity: asset.overlayOpacity,
+          contentTone: asset.contentTone,
+          useContentScrim: asset.useContentScrim,
+        ),
+      ),
+    );
+
+    final title = tester.widget<Text>(find.text('Moon walk'));
+
+    expect(asset.contentTone, HabitCardContentTone.light);
+    expect(asset.useContentScrim, isTrue);
+    expect(find.byKey(const Key('habitCardContentScrim')), findsOneWidget);
+    expect(title.style?.color, const Color(0xFFF9F7F2));
+  });
+
+  testWidgets('habit card common assets stay on dark tone by default',
+      (tester) async {
+    final asset = ShopAssetsCatalog.getAssetById('habit_card_warm_beige')!;
+
+    await tester.pumpWidget(
+      _app(
+        HabitCardWidget(
+          title: 'Read',
+          description: '20 min',
+          familyColor: Colors.blue,
+          progress: 0,
+          backgroundImageAssetPath: asset.assetPath,
+          backgroundImageProvider: asset.imageProvider,
+          backgroundImageFit: asset.imageFit,
+          backgroundImageAlignment: asset.imageAlignment,
+          backgroundOverlayColor: asset.overlayColor,
+          backgroundOverlayOpacity: asset.overlayOpacity,
+          contentTone: asset.contentTone,
+          useContentScrim: asset.useContentScrim,
+        ),
+      ),
+    );
+
+    final title = tester.widget<Text>(find.text('Read'));
+
+    expect(asset.contentTone, HabitCardContentTone.dark);
+    expect(asset.useContentScrim, isFalse);
+    expect(find.byKey(const Key('habitCardContentScrim')), findsNothing);
+    expect(title.style?.color, const Color(0xFF25221F));
   });
 
   testWidgets('user identity row keeps fallback design when no skin is set',
@@ -263,9 +326,13 @@ void main() {
 
     expect(
         find.byKey(const Key('userIdentityRowBackgroundImage')), findsNothing);
+    expect(
+      find.byKey(const Key('userIdentityRowFallbackBackground')),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('user identity row renders equipped skin image layer',
+  testWidgets('user identity row renders background image when provided',
       (tester) async {
     await tester.pumpWidget(
       _app(
@@ -275,13 +342,33 @@ void main() {
           coins: 120,
           xpProgress: 0.5,
           backgroundImageAssetPath:
-              'assets/shop/user_cards/common/user_card_warm_beige.webp',
+              'assets/shop/user_cards/common/user_card_rutio_beige.webp',
         ),
       ),
     );
 
     expect(find.byKey(const Key('userIdentityRowBackgroundImage')),
         findsOneWidget);
+
+    final image = tester.widget<Image>(
+      find.byKey(const Key('userIdentityRowBackgroundImage')),
+    );
+    final clip = tester.widget<ClipRRect>(
+      find.byKey(const Key('userIdentityRowClipRRect')),
+    );
+    final contentPadding = tester.widget<Padding>(
+      find.byKey(const Key('userIdentityRowContentPadding')),
+    );
+
+    expect(image.fit, BoxFit.cover);
+    expect(
+      (clip.borderRadius as BorderRadius).topLeft.x,
+      20,
+    );
+    expect(
+      contentPadding.padding,
+      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+    );
   });
 
   testWidgets(
@@ -319,8 +406,40 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('userIdentityRowBackgroundImage')),
-        findsOneWidget);
+    expect(
+      find.byKey(const Key('userIdentityRowBackgroundImage')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('user identity row theme background wraps the whole surface',
+      (tester) async {
+    await tester.pumpWidget(
+      _app(
+        const SizedBox(
+          width: 240,
+          child: UserIdentityRow(
+            username: 'Alex',
+            level: 4,
+            coins: 120,
+            xpProgress: 0.5,
+            backgroundImageAssetPath:
+                'assets/shop/user_cards/common/user_card_rutio_beige.webp',
+          ),
+        ),
+      ),
+    );
+
+    final themeBackground =
+        find.byKey(const Key('userIdentityRowThemeBackground'));
+    final clip = find.byKey(const Key('userIdentityRowClipRRect'));
+
+    expect(themeBackground, findsOneWidget);
+    expect(clip, findsOneWidget);
+    expect(
+      tester.getSize(themeBackground),
+      tester.getSize(clip),
+    );
   });
 }
 

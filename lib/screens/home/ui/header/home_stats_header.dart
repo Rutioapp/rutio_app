@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:rutio/ui/behaviours/ios_feedback.dart';
-import 'package:rutio/ui/foundations/ios_foundations.dart';
 import 'package:rutio/widgets/app_header/app_header.dart';
 import 'package:rutio/widgets/home/user_identity_row.dart';
 
@@ -54,24 +53,17 @@ class HomeStatsHeader extends StatelessWidget {
         width: compact ? 222 : 248,
         child: Align(
           alignment: Alignment.centerRight,
-          child: IosFrostedCard(
-            padding: const EdgeInsets.symmetric(
-              horizontal: IosSpacing.sm,
-              vertical: IosSpacing.xxs,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            child: UserIdentityRow(
-              username: username,
-              level: level,
-              coins: coins,
-              xpProgress: xpValue,
-              avatarUrl: avatarUrl,
-              onTap: () async {
-                await IosFeedback.lightImpact();
-                if (!context.mounted) return;
-                onOpenMonthlyOverview();
-              },
-            ),
+          child: UserIdentityRow(
+            username: username,
+            level: level,
+            coins: coins,
+            xpProgress: xpValue,
+            avatarUrl: avatarUrl,
+            onTap: () async {
+              await IosFeedback.lightImpact();
+              if (!context.mounted) return;
+              onOpenMonthlyOverview();
+            },
           ),
         ),
       ),
