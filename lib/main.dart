@@ -16,6 +16,7 @@ import 'data/repositories/profile_repository.dart';
 import 'data/repositories/user_state_repository.dart';
 import 'data/local/user_state_storage.dart';
 import 'data/local/asset_json_loader.dart';
+import 'features/shop/application/shop_cosmetics_controller.dart';
 import 'features/achievements/presentation/screens/achievements_screen.dart';
 import 'features/achievements/presentation/widgets/achievement_unlock_overlay_host.dart';
 import 'stores/user_state_store.dart';
@@ -95,6 +96,11 @@ class MyApp extends StatelessWidget {
               profileRepository: context.read<ProfileRepository>(),
             )..load();
           },
+        ),
+        ChangeNotifierProvider<ShopCosmeticsController>(
+          create: (context) => ShopCosmeticsController(
+            userStateStore: context.read<UserStateStore>(),
+          ),
         ),
         ChangeNotifierProvider<AuthController>(
           create: (context) => AuthController(

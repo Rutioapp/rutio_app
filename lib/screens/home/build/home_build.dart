@@ -76,67 +76,62 @@ extension _HomeScreenBuild on _HomeScreenState {
                 ? profileUsername
                 : context.l10n.homeFallbackUsername;
 
-    return FutureBuilder<String?>(
-      future: _equippedHabitCardBackgroundAssetPath(),
-      builder: (context, snapshot) {
-        final habitCardBackgroundAssetPath = snapshot.data;
+    final habitCardBackgroundAsset = _equippedHabitCardAsset();
 
-        return _HomeLoadedView(
-          scaffoldKey: _scaffoldKey,
-          username: username,
-          homeData: homeData,
-          showCompleted: _showCompleted,
-          showSkipped: _showSkipped,
-          onOpenDrawer: () => _buildViewDrawer(context),
-          onOpenAddHabit: () => showHomeAddHabitSheet(context),
-          onManualRefresh: () => _handleManualRefresh(store),
-          statsHeader: _statsHeader(
-            context: context,
-            username: username,
-            level: homeData.level,
-            xpProgress: homeData.xpProgress,
-            coins: homeData.coins,
-            avatarUrl: store.avatarUrl,
-          ),
-          weekStrip: _weekStrip(),
-          dayProgress: _dayProgressMini(
-            label: MaterialLocalizations.of(context).formatMediumDate(
-              _selectedDay,
-            ),
-            done: homeData.doneCount,
-            total: homeData.totalCount,
-          ),
-          habitCardBuilder: (ctx, h, {bool compact = false}) => _habitCard(
-            context: ctx,
-            habit: h,
-            compact: compact,
-            backgroundImageAssetPath: habitCardBackgroundAssetPath,
-          ),
-          completedHeaderBuilder: (count) => _completedHeader(count: count),
-          skippedHeaderBuilder: (count) => _skippedHeader(count: count),
-          onPendingReorder: (oldIndex, newIndex) => _reorderHabitSection(
-            context,
-            sectionHabits: homeData.pendingHabits,
-            viewHabits: homeData.viewHabits,
-            oldIndex: oldIndex,
-            newIndex: newIndex,
-          ),
-          onCompletedReorder: (oldIndex, newIndex) => _reorderHabitSection(
-            context,
-            sectionHabits: homeData.completedHabits,
-            viewHabits: homeData.viewHabits,
-            oldIndex: oldIndex,
-            newIndex: newIndex,
-          ),
-          onSkippedReorder: (oldIndex, newIndex) => _reorderHabitSection(
-            context,
-            sectionHabits: homeData.skippedHabits,
-            viewHabits: homeData.viewHabits,
-            oldIndex: oldIndex,
-            newIndex: newIndex,
-          ),
-        );
-      },
+    return _HomeLoadedView(
+      scaffoldKey: _scaffoldKey,
+      username: username,
+      homeData: homeData,
+      showCompleted: _showCompleted,
+      showSkipped: _showSkipped,
+      onOpenDrawer: () => _buildViewDrawer(context),
+      onOpenAddHabit: () => showHomeAddHabitSheet(context),
+      onManualRefresh: () => _handleManualRefresh(store),
+      statsHeader: _statsHeader(
+        context: context,
+        username: username,
+        level: homeData.level,
+        xpProgress: homeData.xpProgress,
+        coins: homeData.coins,
+        avatarUrl: store.avatarUrl,
+      ),
+      weekStrip: _weekStrip(),
+      dayProgress: _dayProgressMini(
+        label: MaterialLocalizations.of(context).formatMediumDate(
+          _selectedDay,
+        ),
+        done: homeData.doneCount,
+        total: homeData.totalCount,
+      ),
+      habitCardBuilder: (ctx, h, {bool compact = false}) => _habitCard(
+        context: ctx,
+        habit: h,
+        compact: compact,
+        backgroundAsset: habitCardBackgroundAsset,
+      ),
+      completedHeaderBuilder: (count) => _completedHeader(count: count),
+      skippedHeaderBuilder: (count) => _skippedHeader(count: count),
+      onPendingReorder: (oldIndex, newIndex) => _reorderHabitSection(
+        context,
+        sectionHabits: homeData.pendingHabits,
+        viewHabits: homeData.viewHabits,
+        oldIndex: oldIndex,
+        newIndex: newIndex,
+      ),
+      onCompletedReorder: (oldIndex, newIndex) => _reorderHabitSection(
+        context,
+        sectionHabits: homeData.completedHabits,
+        viewHabits: homeData.viewHabits,
+        oldIndex: oldIndex,
+        newIndex: newIndex,
+      ),
+      onSkippedReorder: (oldIndex, newIndex) => _reorderHabitSection(
+        context,
+        sectionHabits: homeData.skippedHabits,
+        viewHabits: homeData.viewHabits,
+        oldIndex: oldIndex,
+        newIndex: newIndex,
+      ),
     );
   }
 }

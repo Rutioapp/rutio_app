@@ -12,9 +12,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final ShopItem backgroundItem =
-      ShopCatalog.getItemById('wallpaper_warm_beige')!;
-  final ShopItem habitCardItem = ShopCatalog.getItemById('habit_card_warm_beige')!;
-  final ShopItem userCardItem = ShopCatalog.getItemById('user_card_dune_layers')!;
+      ShopCatalog.getItemById('wallpaper_mist_blue')!;
+  final ShopItem habitCardItem =
+      ShopCatalog.getItemById('habit_card_warm_beige')!;
+  final ShopItem userCardItem =
+      ShopCatalog.getItemById('user_card_dune_layers')!;
 
   group('ShopCosmeticDetailScreen', () {
     testWidgets('renders background detail without Comprar',
@@ -71,7 +73,8 @@ void main() {
         find.byKey(const Key('shopCosmeticDetailPreview-habitCard')),
         findsOneWidget,
       );
-      expect(find.byKey(const Key('shopCosmeticDetailStatusValue')), findsOneWidget);
+      expect(find.byKey(const Key('shopCosmeticDetailStatusValue')),
+          findsOneWidget);
       expect(find.text('Minimal'), findsOneWidget);
       expect(find.text('Comprar'), findsNothing);
     });

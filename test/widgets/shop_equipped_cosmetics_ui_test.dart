@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
@@ -35,7 +37,8 @@ void main() {
     );
 
     expect(find.byKey(const Key('homeBackgroundWallpaperImage')), findsNothing);
-    expect(find.byKey(const Key('homeBackgroundDefaultBackground')), findsOneWidget);
+    expect(find.byKey(const Key('homeBackgroundDefaultBackground')),
+        findsOneWidget);
     expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsOneWidget);
   });
 
@@ -47,35 +50,47 @@ void main() {
           children: [
             HomeBackground(
               resolveEquippedWallpaper: false,
-              wallpaperAssetPath: 'assets/shop/wallpapers/common/wallpaper_warm_beige.webp',
+              wallpaperAssetPath:
+                  'assets/shop/wallpapers/common/wallpaper_mist_blue.webp',
             ),
           ],
         ),
       ),
     );
 
-    expect(find.byKey(const Key('homeBackgroundWallpaperImage')), findsOneWidget);
-    expect(find.byKey(const Key('homeBackgroundWallpaperOverlay')), findsOneWidget);
-    expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsNothing);
-    expect(find.byKey(const Key('homeBackgroundDefaultBackground')), findsNothing);
+    expect(
+        find.byKey(const Key('homeBackgroundWallpaperImage')), findsOneWidget);
+    expect(find.byKey(const Key('homeBackgroundWallpaperOverlay')),
+        findsOneWidget);
+    expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsOneWidget);
+    expect(find.byKey(const Key('homeBackgroundDefaultBackground')),
+        findsOneWidget);
   });
 
-  testWidgets('home background resolves equipped wallpaper from cosmetics state',
+  testWidgets(
+      'home background resolves equipped wallpaper from cosmetics state',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     await ShopCosmeticsRepository().save(
       ShopCosmeticsState(
-        ownedAssetIds: const <String>['wallpaper_warm_beige'],
+        ownedAssetIds: const <String>['wallpaper_mist_blue'],
         ownedBundleIds: const <String>[],
-        equippedWallpaperId: 'wallpaper_warm_beige',
+        equippedWallpaperId: 'wallpaper_mist_blue',
       ),
     );
     final store = await _createStore();
+    final cosmeticsController = ShopCosmeticsController(userStateStore: store);
+    await cosmeticsController.hydrate();
 
     await tester.pumpWidget(
       _app(
-        ChangeNotifierProvider<UserStateStore>.value(
-          value: store,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<UserStateStore>.value(value: store),
+            ChangeNotifierProvider<ShopCosmeticsController>.value(
+              value: cosmeticsController,
+            ),
+          ],
           child: const Stack(
             children: [
               HomeBackground(),
@@ -84,10 +99,10 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('homeBackgroundWallpaperImage')), findsOneWidget);
-    expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsNothing);
+    expect(
+        find.byKey(const Key('homeBackgroundWallpaperImage')), findsOneWidget);
+    expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsOneWidget);
   });
 
   testWidgets('home background invalid wallpaper falls back without crashing',
@@ -106,9 +121,67 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('homeBackgroundWallpaperImage')), findsOneWidget);
-    expect(find.byKey(const Key('homeBackgroundDefaultBackground')), findsOneWidget);
+    expect(
+        find.byKey(const Key('homeBackgroundWallpaperImage')), findsOneWidget);
+    expect(find.byKey(const Key('homeBackgroundDefaultBackground')),
+        findsOneWidget);
     expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsOneWidget);
+  });
+
+  testWidgets(
+      'home background reacts to equipped wallpaper changes in the same session',
+      (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    await ShopCosmeticsRepository().save(
+      ShopCosmeticsState(
+        ownedAssetIds: const <String>[
+          'wallpaper_mist_blue',
+          'wallpaper_soft_sage',
+        ],
+        ownedBundleIds: const <String>[],
+        equippedWallpaperId: 'wallpaper_mist_blue',
+      ),
+    );
+    final store = await _createStore();
+    final cosmeticsController = ShopCosmeticsController(userStateStore: store);
+    await cosmeticsController.hydrate();
+
+    await tester.pumpWidget(
+      _app(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<UserStateStore>.value(value: store),
+            ChangeNotifierProvider<ShopCosmeticsController>.value(
+              value: cosmeticsController,
+            ),
+          ],
+          child: const Stack(
+            children: [
+              HomeBackground(),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(_wallpaperAssetName(tester), contains('wallpaper_mist_blue'));
+
+    await cosmeticsController.equipAsset('wallpaper_soft_sage');
+    await tester.pumpAndSettle();
+
+    expect(
+      cosmeticsController.state?.equippedWallpaperId,
+      'wallpaper_soft_sage',
+    );
+    expect(
+      find.byKey(const Key('homeBackgroundWallpaperImage')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('homeBackgroundDefaultBackground')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('habit card keeps fallback design when no skin is set',
@@ -136,12 +209,42 @@ void main() {
           familyColor: Colors.blue,
           progress: 0,
           backgroundImageAssetPath:
-              'assets/shop/habit_cards/common/habit_card_warm_beige.webp',
+              'assets/shop/habit_cards/common/habit_card_rutio_beige.webp',
         ),
       ),
     );
 
     expect(find.byKey(const Key('habitCardBackgroundImage')), findsOneWidget);
+  });
+
+  testWidgets('habit card applies configured alignment and overlay',
+      (tester) async {
+    final asset = ShopAssetsCatalog.getAssetById('habit_card_violet_flame')!;
+
+    await tester.pumpWidget(
+      _app(
+        HabitCardWidget(
+          title: 'Read',
+          description: '20 min',
+          familyColor: Colors.blue,
+          progress: 0,
+          backgroundImageAssetPath: asset.assetPath,
+          backgroundImageProvider: asset.imageProvider,
+          backgroundImageFit: asset.imageFit,
+          backgroundImageAlignment: asset.imageAlignment,
+          backgroundOverlayColor: asset.overlayColor,
+          backgroundOverlayOpacity: asset.overlayOpacity,
+        ),
+      ),
+    );
+
+    final image = tester.widget<Image>(
+      find.byKey(const Key('habitCardBackgroundImage')),
+    );
+
+    expect(image.fit, BoxFit.cover);
+    expect(image.alignment, const Alignment(0.65, 0));
+    expect(find.byType(ClipRRect), findsWidgets);
   });
 
   testWidgets('user identity row keeps fallback design when no skin is set',
@@ -158,7 +261,8 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const Key('userIdentityRowBackgroundImage')), findsNothing);
+    expect(
+        find.byKey(const Key('userIdentityRowBackgroundImage')), findsNothing);
   });
 
   testWidgets('user identity row renders equipped skin image layer',
@@ -176,10 +280,12 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const Key('userIdentityRowBackgroundImage')), findsOneWidget);
+    expect(find.byKey(const Key('userIdentityRowBackgroundImage')),
+        findsOneWidget);
   });
 
-  testWidgets('user identity row resolves equipped user card from cosmetics state',
+  testWidgets(
+      'user identity row resolves equipped user card from cosmetics state',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     await ShopCosmeticsRepository().save(
@@ -190,11 +296,18 @@ void main() {
       ),
     );
     final store = await _createStore();
+    final cosmeticsController = ShopCosmeticsController(userStateStore: store);
+    await cosmeticsController.hydrate();
 
     await tester.pumpWidget(
       _app(
-        ChangeNotifierProvider<UserStateStore>.value(
-          value: store,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<UserStateStore>.value(value: store),
+            ChangeNotifierProvider<ShopCosmeticsController>.value(
+              value: cosmeticsController,
+            ),
+          ],
           child: const UserIdentityRow(
             username: 'Alex',
             level: 4,
@@ -206,7 +319,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('userIdentityRowBackgroundImage')), findsOneWidget);
+    expect(find.byKey(const Key('userIdentityRowBackgroundImage')),
+        findsOneWidget);
   });
 }
 
@@ -226,4 +340,15 @@ Future<UserStateStore> _createStore() async {
     },
   );
   return store;
+}
+
+String _wallpaperAssetName(WidgetTester tester) {
+  final image = tester.widget<Image>(
+    find.byKey(const Key('homeBackgroundWallpaperImage')),
+  );
+  final provider = image.image;
+  if (provider is AssetImage) {
+    return provider.assetName;
+  }
+  return provider.toString();
 }

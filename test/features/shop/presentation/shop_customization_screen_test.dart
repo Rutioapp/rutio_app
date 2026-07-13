@@ -19,7 +19,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final List<ShopItem> ownedItems = <ShopItem>[
-    ShopCatalog.getItemById('wallpaper_warm_beige')!,
+    ShopCatalog.getItemById('wallpaper_mist_blue')!,
     ShopCatalog.getItemById('habit_card_soft_camel')!,
     ShopCatalog.getItemById('user_card_dune_layers')!,
   ];
@@ -99,7 +99,7 @@ void main() {
           _screen(
             items: ownedItems,
             equippedCosmetics: const EquippedCosmetics(
-              backgroundItemId: 'wallpaper_warm_beige',
+              backgroundItemId: 'wallpaper_mist_blue',
               userCardItemId: 'user_card_dune_layers',
             ),
           ),
@@ -108,7 +108,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(
-        find.byKey(const Key('shopOwnedStatus-wallpaper_warm_beige')),
+        find.byKey(const Key('shopOwnedStatus-wallpaper_mist_blue')),
         findsOneWidget,
       );
       expect(find.text('Equipado'), findsAtLeastNWidgets(1));
@@ -122,21 +122,21 @@ void main() {
         _app(
           _screen(
             items: ownedItems,
-            onEquipPressed: (String itemId) => pressedItemId = itemId,
+            onEquipPressed: (String itemId) async => pressedItemId = itemId,
           ),
         ),
       );
       await tester.pump(const Duration(milliseconds: 16));
 
       await tester.ensureVisible(
-        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+        find.byKey(const Key('shopOwnedEquip-wallpaper_mist_blue')),
       );
       await tester.tap(
-        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+        find.byKey(const Key('shopOwnedEquip-wallpaper_mist_blue')),
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(pressedItemId, 'wallpaper_warm_beige');
+      expect(pressedItemId, 'wallpaper_mist_blue');
     });
 
     testWidgets('equipped object shows correct state',
@@ -146,7 +146,7 @@ void main() {
           _screen(
             items: ownedItems,
             equippedCosmetics: const EquippedCosmetics(
-              backgroundItemId: 'wallpaper_warm_beige',
+              backgroundItemId: 'wallpaper_mist_blue',
             ),
           ),
         ),
@@ -155,7 +155,7 @@ void main() {
 
       expect(find.text('Equipado'), findsAtLeastNWidgets(1));
       expect(
-        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+        find.byKey(const Key('shopOwnedEquip-wallpaper_mist_blue')),
         findsOneWidget,
       );
       expect(find.text('Disponible'), findsNothing);
@@ -216,7 +216,7 @@ void main() {
       final controller = await _createCosmeticsController(
         walletCoins: 640,
         cosmeticsState: ShopCosmeticsState(
-          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedAssetIds: const <String>['wallpaper_mist_blue'],
           ownedBundleIds: const <String>['bundle_warm_beige'],
           equippedHabitCardSkinId: 'habit_card_warm_beige',
         ),
@@ -233,7 +233,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const Key('shopOwnedItem-wallpaper_warm_beige')),
+        find.byKey(const Key('shopOwnedItem-wallpaper_mist_blue')),
         findsOneWidget,
       );
       expect(
@@ -282,35 +282,213 @@ void main() {
       final controller = await _createCosmeticsController(
         walletCoins: 640,
         cosmeticsState: ShopCosmeticsState(
-          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedAssetIds: const <String>[
+            'wallpaper_mist_blue',
+            'wallpaper_soft_sage',
+          ],
           ownedBundleIds: const <String>[],
+          equippedWallpaperId: 'wallpaper_mist_blue',
         ),
       );
 
       await tester.pumpWidget(
         _app(
-          _CustomizationHarness(
-            cosmeticsController: controller,
+          _screen(items: const <ShopItem>[], cosmeticsController: controller),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedStatus-wallpaper_mist_blue')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedStatus-wallpaper_soft_sage')),
+        findsNothing,
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_soft_sage')),
+      );
+      await tester.tap(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_soft_sage')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedStatus-wallpaper_soft_sage')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedStatus-wallpaper_mist_blue')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('controller-backed equip refreshes habit cards immediately',
+        (WidgetTester tester) async {
+      final controller = await _createCosmeticsController(
+        walletCoins: 640,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>[
+            'habit_card_warm_beige',
+            'habit_card_soft_camel',
+          ],
+          ownedBundleIds: const <String>[],
+          equippedHabitCardSkinId: 'habit_card_warm_beige',
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          _screen(items: const <ShopItem>[], cosmeticsController: controller),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-habitCards')),
+      );
+      await tester
+          .tap(find.byKey(const Key('shopCustomizationFilter-habitCards')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedStatus-habit_card_warm_beige')),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopOwnedEquip-habit_card_soft_camel')),
+      );
+      await tester
+          .tap(find.byKey(const Key('shopOwnedEquip-habit_card_soft_camel')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedStatus-habit_card_soft_camel')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedStatus-habit_card_warm_beige')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('controller-backed equip refreshes user cards immediately',
+        (WidgetTester tester) async {
+      final controller = await _createCosmeticsController(
+        walletCoins: 640,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>[
+            'user_card_warm_beige',
+            'user_card_soft_camel',
+          ],
+          ownedBundleIds: const <String>[],
+          equippedUserCardSkinId: 'user_card_warm_beige',
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          _screen(items: const <ShopItem>[], cosmeticsController: controller),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-userCards')),
+      );
+      await tester
+          .tap(find.byKey(const Key('shopCustomizationFilter-userCards')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedStatus-user_card_warm_beige')),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopOwnedEquip-user_card_soft_camel')),
+      );
+      await tester
+          .tap(find.byKey(const Key('shopOwnedEquip-user_card_soft_camel')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedStatus-user_card_soft_camel')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedStatus-user_card_warm_beige')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('equipped item button stays disabled and cannot re-equip',
+        (WidgetTester tester) async {
+      var pressedCount = 0;
+
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            items: <ShopItem>[ShopCatalog.getItemById('wallpaper_mist_blue')!],
+            equippedCosmetics: const EquippedCosmetics(
+              backgroundItemId: 'wallpaper_mist_blue',
+            ),
+            onEquipPressed: (_) async {
+              pressedCount += 1;
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Disponible'), findsNothing);
-
-      await tester.ensureVisible(
-        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+      final button = tester.widget<InkWell>(
+        find.descendant(
+          of: find.byKey(const Key('shopOwnedEquip-wallpaper_mist_blue')),
+          matching: find.byType(InkWell),
+        ),
       );
-      await tester.tap(
-        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+      expect(button.onTap, isNull);
+      expect(pressedCount, 0);
+    });
+
+    testWidgets('preview updates immediately when equipped wallpaper changes',
+        (WidgetTester tester) async {
+      final controller = await _createCosmeticsController(
+        walletCoins: 640,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>[
+            'wallpaper_mist_blue',
+            'wallpaper_soft_sage',
+          ],
+          ownedBundleIds: const <String>[],
+          equippedWallpaperId: 'wallpaper_mist_blue',
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          _screen(items: const <ShopItem>[], cosmeticsController: controller),
+        ),
       );
       await tester.pumpAndSettle();
 
       expect(
-        find.descendant(
-          of: find.byKey(const Key('shopOwnedItem-wallpaper_warm_beige')),
-          matching: find.text('Equipado'),
-        ),
+        find.text('Mist Blue Wallpaper'),
+        findsWidgets,
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopOwnedEquip-wallpaper_soft_sage')),
+      );
+      await tester
+          .tap(find.byKey(const Key('shopOwnedEquip-wallpaper_soft_sage')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Soft Sage Wallpaper'),
         findsWidgets,
       );
     });
@@ -319,10 +497,10 @@ void main() {
         'owned cosmetics grid does not overflow with long wallpaper names',
         (WidgetTester tester) async {
       final List<ShopItem> longWallpaperItems = <ShopItem>[
-        ShopCatalog.getItemById('wallpaper_warm_beige')!,
-        ShopCatalog.getItemById('wallpaper_soft_camel')!,
-        ShopCatalog.getItemById('wallpaper_sand_plain')!,
-        ShopCatalog.getItemById('wallpaper_cream_light')!,
+        ShopCatalog.getItemById('wallpaper_mist_blue')!,
+        ShopCatalog.getItemById('wallpaper_soft_sage')!,
+        ShopCatalog.getItemById('wallpaper_off_white')!,
+        ShopCatalog.getItemById('wallpaper_cream_yellow')!,
       ];
 
       tester.view.physicalSize = const Size(360, 900);
@@ -333,11 +511,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const Key('shopOwnedEquip-wallpaper_warm_beige')),
+        find.byKey(const Key('shopOwnedEquip-wallpaper_mist_blue')),
         findsOneWidget,
       );
       expect(
-        find.byKey(const Key('shopOwnedEquip-wallpaper_sand_plain')),
+        find.byKey(const Key('shopOwnedEquip-wallpaper_off_white')),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
@@ -349,7 +527,7 @@ void main() {
         _app(
           _screen(
             items: <ShopItem>[
-              ShopCatalog.getItemById('wallpaper_warm_beige')!,
+              ShopCatalog.getItemById('wallpaper_mist_blue')!,
             ],
           ),
         ),
@@ -376,7 +554,7 @@ Widget _app(Widget child) {
 Widget _screen({
   required List<ShopItem> items,
   EquippedCosmetics equippedCosmetics = const EquippedCosmetics(),
-  ValueChanged<String>? onEquipPressed,
+  Future<void> Function(String itemId)? onEquipPressed,
   ValueChanged<String>? onItemPressed,
   VoidCallback? onOpenCosmetics,
   ShopCosmeticsController? cosmeticsController,
@@ -386,7 +564,8 @@ Widget _screen({
     equippedCosmetics: equippedCosmetics,
     ownedCosmeticItems: items,
     onBackPressed: () {},
-    onEquipPressed: onEquipPressed ?? (_) {},
+    onEquipPressed:
+        onEquipPressed ?? cosmeticsController?.equipAsset ?? (_) async {},
     onItemPressed: onItemPressed ?? (_) {},
     onOpenCosmetics: onOpenCosmetics,
     cosmeticsController: cosmeticsController,
@@ -416,40 +595,4 @@ Future<ShopCosmeticsController> _createCosmeticsController({
   );
 
   return ShopCosmeticsController(userStateStore: store);
-}
-
-class _CustomizationHarness extends StatefulWidget {
-  const _CustomizationHarness({
-    required this.cosmeticsController,
-  });
-
-  final ShopCosmeticsController cosmeticsController;
-
-  @override
-  State<_CustomizationHarness> createState() => _CustomizationHarnessState();
-}
-
-class _CustomizationHarnessState extends State<_CustomizationHarness> {
-  int _refreshTick = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShopCustomizationScreen(
-      key: ValueKey<int>(_refreshTick),
-      walletCoins: 0,
-      equippedCosmetics: const EquippedCosmetics(),
-      ownedCosmeticItems: const <ShopItem>[],
-      cosmeticsController: widget.cosmeticsController,
-      onBackPressed: () {},
-      onItemPressed: (_) {},
-      onOpenCosmetics: () {},
-      onEquipPressed: (String itemId) async {
-        await widget.cosmeticsController.equipAsset(itemId);
-        if (!mounted) return;
-        setState(() {
-          _refreshTick++;
-        });
-      },
-    );
-  }
 }

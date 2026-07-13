@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,7 +10,7 @@ class ShopCosmeticsRepository {
   ShopCosmeticsRepository({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     String? Function()? scopeResolver,
-  }) : _sharedPreferencesProvider =
+  })  : _sharedPreferencesProvider =
             sharedPreferencesProvider ?? SharedPreferences.getInstance,
         _scopeResolver = scopeResolver;
 
@@ -23,9 +25,8 @@ class ShopCosmeticsRepository {
       final prefs = await _sharedPreferencesProvider();
       final scope = _resolvedScope();
       final scopedStorageKey = _storageKeyForScope(scope);
-      final rawScoped = scopedStorageKey == null
-          ? null
-          : prefs.getString(scopedStorageKey);
+      final rawScoped =
+          scopedStorageKey == null ? null : prefs.getString(scopedStorageKey);
       final rawLegacy = prefs.getString(legacyStorageKey);
       final legacyScopeOwner = prefs.getString(legacyScopeOwnerKey)?.trim();
       final canUseLegacyForScope = scope == null ||
@@ -64,7 +65,9 @@ class ShopCosmeticsRepository {
         return const ShopCosmeticsState.initial();
       }
 
-      final state = ShopCosmeticsState.fromJson(Map<String, dynamic>.from(decoded));
+      final rawState =
+          ShopCosmeticsState.fromJson(Map<String, dynamic>.from(decoded));
+      final state = _sanitizeState(rawState);
       _log(
         'loadState scope=${scope ?? 'guest'} storageKey=$sourceKey '
         'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds} '
@@ -82,6 +85,15 @@ class ShopCosmeticsRepository {
         await prefs.setString(legacyScopeOwnerKey, scope!);
         _log(
           'migrateLegacyState scope=$scope from=$legacyStorageKey to=$scopedStorageKey',
+        );
+      }
+
+      if (state != rawState) {
+        await save(state);
+        _log(
+          'sanitizeState scope=${scope ?? 'guest'} storageKey=$sourceKey '
+          'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds} '
+          'equippedWallpaperId=${state.equippedWallpaperId}',
         );
       }
 
@@ -140,5 +152,64 @@ class ShopCosmeticsRepository {
   void _log(String message) {
     if (!kDebugMode) return;
     debugPrint('[ShopCosmetics] $message');
+  }
+
+  ShopCosmeticsState _sanitizeState(ShopCosmeticsState state) {
+    final validAssetIds =
+        ShopAssetsCatalog.allAssets.map((asset) => asset.id).toSet();
+    final validBundleIds =
+        ShopAssetsCatalog.allBundles.map((bundle) => bundle.id).toSet();
+
+    final sanitized = state.copyWith(
+      ownedAssetIds: state.ownedAssetIds
+          .where(validAssetIds.contains)
+          .toList(growable: false),
+      ownedBundleIds: state.ownedBundleIds
+          .where(validBundleIds.contains)
+          .toList(growable: false),
+      equippedWallpaperId: _sanitizeEquippedId(
+        state.equippedWallpaperId,
+        ShopAssetCategory.wallpaper,
+      ),
+      equippedHabitCardSkinId: _sanitizeEquippedId(
+        state.equippedHabitCardSkinId,
+        ShopAssetCategory.habitCard,
+      ),
+      equippedUserCardSkinId: _sanitizeEquippedId(
+        state.equippedUserCardSkinId,
+        ShopAssetCategory.userCard,
+      ),
+    );
+
+    return sanitized.copyWith(
+      equippedWallpaperId: sanitized.isAssetOwned(
+        sanitized.equippedWallpaperId ?? '',
+        bundles: ShopAssetsCatalog.allBundles,
+      )
+          ? sanitized.equippedWallpaperId
+          : null,
+      equippedHabitCardSkinId: sanitized.isAssetOwned(
+        sanitized.equippedHabitCardSkinId ?? '',
+        bundles: ShopAssetsCatalog.allBundles,
+      )
+          ? sanitized.equippedHabitCardSkinId
+          : null,
+      equippedUserCardSkinId: sanitized.isAssetOwned(
+        sanitized.equippedUserCardSkinId ?? '',
+        bundles: ShopAssetsCatalog.allBundles,
+      )
+          ? sanitized.equippedUserCardSkinId
+          : null,
+    );
+  }
+
+  String? _sanitizeEquippedId(String? assetId, ShopAssetCategory category) {
+    final cleaned = assetId?.trim();
+    if (cleaned == null || cleaned.isEmpty) return null;
+    final asset = ShopAssetsCatalog.getAssetById(cleaned);
+    if (asset == null || asset.category != category) {
+      return null;
+    }
+    return cleaned;
   }
 }

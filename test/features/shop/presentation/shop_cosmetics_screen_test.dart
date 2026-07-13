@@ -26,7 +26,7 @@ void main() {
 
       expect(find.text('Cosméticos'), findsOneWidget);
       expect(
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
         findsOneWidget,
       );
       expect(
@@ -43,10 +43,10 @@ void main() {
           .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('shopCosmeticsFilter-wallpapers')));
+      await tester.tap(find.byKey(const Key('shopCosmeticsFilter-cards')));
       await tester.pumpAndSettle();
       expect(
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
         findsOneWidget,
       );
       expect(
@@ -69,7 +69,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
         findsNothing,
       );
 
@@ -80,7 +80,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
         findsNothing,
       );
     });
@@ -96,7 +96,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Comprar'),
         ),
@@ -122,7 +122,7 @@ void main() {
         walletCoins: 600,
         cosmeticsState: ShopCosmeticsState(
           ownedAssetIds: const <String>[
-            'wallpaper_warm_beige',
+            'wallpaper_mist_blue',
             'habit_card_warm_beige',
           ],
           ownedBundleIds: const <String>[],
@@ -137,10 +137,10 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.byKey(
-            const Key('shopCosmeticsAction-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAction-wallpaper_mist_blue'),
           ),
         ),
         findsNothing,
@@ -148,7 +148,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Comprado'),
         ),
@@ -216,21 +216,21 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(
-        find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAction-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
 
       expect(
         find.byKey(
           const Key(
-              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_mist_blue'),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Comprar'),
         ),
@@ -247,7 +247,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(
-        find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAction-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
       await tester.tap(
@@ -258,7 +258,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Comprar'),
         ),
@@ -275,13 +275,13 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(
-        find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAction-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
       await tester.tap(
         find.byKey(
           const Key(
-              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_mist_blue'),
         ),
       );
       await tester.pumpAndSettle();
@@ -289,10 +289,10 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.byKey(
-            const Key('shopCosmeticsAction-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAction-wallpaper_mist_blue'),
           ),
         ),
         findsNothing,
@@ -300,7 +300,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Comprado'),
         ),
@@ -342,7 +342,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Comprar'),
         ),
@@ -378,11 +378,13 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-habit_card_warm_beige'),
           ),
-          matching: find.text('Incluido en pack'),
+          matching: find.byKey(
+            const Key('shopCosmeticsAction-habit_card_warm_beige'),
+          ),
         ),
-        findsWidgets,
+        findsNothing,
       );
     });
 
@@ -397,7 +399,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Saldo insuficiente'),
         ),
@@ -410,7 +412,7 @@ void main() {
       final controller = await _createController(
         walletCoins: 600,
         cosmeticsState: ShopCosmeticsState(
-          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedAssetIds: const <String>['wallpaper_mist_blue'],
           ownedBundleIds: const <String>[],
         ),
       );
@@ -422,10 +424,10 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.byKey(
-            const Key('shopCosmeticsAction-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAction-wallpaper_mist_blue'),
           ),
         ),
         findsNothing,
@@ -433,7 +435,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Comprado'),
         ),
@@ -446,7 +448,7 @@ void main() {
       final controller = await _createController(
         walletCoins: 600,
         cosmeticsState: ShopCosmeticsState(
-          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedAssetIds: const <String>['wallpaper_mist_blue'],
           ownedBundleIds: const <String>[],
         ),
       );
@@ -457,8 +459,7 @@ void main() {
 
       final double ownedDy = tester
           .getTopLeft(
-            find.byKey(
-                const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+            find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
           )
           .dy;
       final double unownedDy = tester
@@ -480,7 +481,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
 

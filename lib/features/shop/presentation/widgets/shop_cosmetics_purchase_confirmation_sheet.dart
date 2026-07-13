@@ -92,7 +92,8 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                               ),
                               const SizedBox(width: 12),
                               ShopCosmeticsRarityBadge(
-                                rarity: _isBundle ? bundle!.rarity : asset!.rarity,
+                                rarity:
+                                    _isBundle ? bundle!.rarity : asset!.rarity,
                                 compact: true,
                               ),
                             ],
@@ -172,9 +173,8 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                                 ? 'shopCosmeticsPurchaseConfirmationConfirm-${bundle!.id}'
                                 : 'shopCosmeticsPurchaseConfirmationConfirm-${asset!.id}',
                           ),
-                          label: _isBundle
-                              ? 'Confirmar pack'
-                              : 'Confirmar compra',
+                          label:
+                              _isBundle ? 'Confirmar pack' : 'Confirmar compra',
                           onPressed: _hasEnoughCoins ? onConfirm : null,
                           expanded: true,
                           icon: _hasEnoughCoins

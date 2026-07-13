@@ -30,7 +30,8 @@ class ShopSectionHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (subtitle != null && subtitle!.trim().isNotEmpty) ...<Widget>[
+                if (subtitle != null &&
+                    subtitle!.trim().isNotEmpty) ...<Widget>[
                   const SizedBox(height: 6),
                   Text(
                     subtitle!,

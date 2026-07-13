@@ -127,7 +127,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     required BuildContext context,
     required Map<String, dynamic> habit,
     bool compact = false,
-    String? backgroundImageAssetPath,
+    ShopAsset? backgroundAsset,
   }) {
     final familyId =
         (habit['familyId'] ?? habit['family'] ?? habit['familyKey'] ?? '')
@@ -297,7 +297,13 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     final card = HabitCardWidget(
       title: title,
       description: description,
-      backgroundImageAssetPath: backgroundImageAssetPath,
+      backgroundImageAssetPath: backgroundAsset?.assetPath,
+      backgroundImageProvider: backgroundAsset?.imageProvider,
+      backgroundImageFit: backgroundAsset?.imageFit ?? BoxFit.cover,
+      backgroundImageAlignment:
+          backgroundAsset?.imageAlignment ?? Alignment.center,
+      backgroundOverlayColor: backgroundAsset?.overlayColor,
+      backgroundOverlayOpacity: backgroundAsset?.overlayOpacity ?? 0,
       emoji: resolvedEmoji.isEmpty ? null : resolvedEmoji,
       onEmojiTap: resolvedEmoji.isEmpty
           ? null

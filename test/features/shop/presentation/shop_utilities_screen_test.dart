@@ -55,26 +55,26 @@ void main() {
         find.byKey(const Key('shopUtilitiesFilter-streaks')),
         findsOneWidget,
       );
-      expect(find.byKey(const Key('shopUtilitiesSection-Boosts')),
-          findsOneWidget);
-      expect(find.byKey(const Key('shopUtilitiesSection-Rachas')),
-          findsOneWidget);
+      expect(
+          find.byKey(const Key('shopUtilitiesSection-Boosts')), findsOneWidget);
+      expect(
+          find.byKey(const Key('shopUtilitiesSection-Rachas')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('shopUtilitiesFilter-boosts')));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('shopUtilitiesSection-Boosts')),
-          findsOneWidget);
-      expect(find.byKey(const Key('shopUtilitiesSection-Rachas')),
-          findsNothing);
+      expect(
+          find.byKey(const Key('shopUtilitiesSection-Boosts')), findsOneWidget);
+      expect(
+          find.byKey(const Key('shopUtilitiesSection-Rachas')), findsNothing);
 
       await tester.tap(find.byKey(const Key('shopUtilitiesFilter-streaks')));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('shopUtilitiesSection-Boosts')),
-          findsNothing);
-      expect(find.byKey(const Key('shopUtilitiesSection-Rachas')),
-          findsOneWidget);
+      expect(
+          find.byKey(const Key('shopUtilitiesSection-Boosts')), findsNothing);
+      expect(
+          find.byKey(const Key('shopUtilitiesSection-Rachas')), findsOneWidget);
     });
   });
 }

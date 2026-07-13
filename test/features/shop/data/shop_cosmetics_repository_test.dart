@@ -16,17 +16,17 @@ void main() {
 
       await demoRepository.save(
         ShopCosmeticsState(
-          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedAssetIds: const <String>['wallpaper_mist_blue'],
           ownedBundleIds: const <String>[],
-          equippedWallpaperId: 'wallpaper_warm_beige',
+          equippedWallpaperId: 'wallpaper_mist_blue',
         ),
       );
 
       final demoState = await demoRepository.load();
       final otherState = await otherRepository.load();
 
-      expect(demoState.equippedWallpaperId, 'wallpaper_warm_beige');
-      expect(demoState.ownedAssetIds, contains('wallpaper_warm_beige'));
+      expect(demoState.equippedWallpaperId, 'wallpaper_mist_blue');
+      expect(demoState.ownedAssetIds, contains('wallpaper_mist_blue'));
       expect(otherState, const ShopCosmeticsState.initial());
     });
 
@@ -44,6 +44,20 @@ void main() {
 
       expect(state.equippedHabitCardSkinId, 'habit_card_warm_beige');
       expect(reloaded.equippedHabitCardSkinId, 'habit_card_warm_beige');
+    });
+
+    test('sanitizes obsolete rare wallpaper ids safely', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ShopCosmeticsRepository.legacyStorageKey:
+            '{"ownedAssetIds":["wallpaper_calm_sand","wallpaper_mist_blue"],"ownedBundleIds":[],"equippedWallpaperId":"wallpaper_calm_sand","equippedHabitCardSkinId":null,"equippedUserCardSkinId":null}',
+      });
+      final repository =
+          ShopCosmeticsRepository(scopeResolver: () => 'demo_user');
+
+      final state = await repository.load();
+
+      expect(state.ownedAssetIds, equals(<String>['wallpaper_mist_blue']));
+      expect(state.equippedWallpaperId, isNull);
     });
   });
 }

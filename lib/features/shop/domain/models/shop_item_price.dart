@@ -15,7 +15,9 @@ class ShopItemPrice {
 
   factory ShopItemPrice.fromJson(Map<String, dynamic> json) {
     return ShopItemPrice(
-      coins: (json['coins'] as num?)?.toInt() ?? (json['priceCoins'] as num?)?.toInt() ?? 0,
+      coins: (json['coins'] as num?)?.toInt() ??
+          (json['priceCoins'] as num?)?.toInt() ??
+          0,
     );
   }
 

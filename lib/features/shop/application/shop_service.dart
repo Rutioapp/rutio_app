@@ -64,8 +64,7 @@ class ShopService {
 
       return _result(
         ShopOperationStatus.success,
-        nextState: addResult.state.copyWith(
-        ),
+        nextState: addResult.state.copyWith(),
         walletCoins: walletCoins - item.priceCoins,
         itemId: item.id,
       );
@@ -75,7 +74,8 @@ class ShopService {
   }
 
   ShopOperationResult equipCosmetic(ShopItem item) {
-    if (item.category != ShopItemCategory.cosmetic || item.cosmeticSlot == null) {
+    if (item.category != ShopItemCategory.cosmetic ||
+        item.cosmeticSlot == null) {
       return _result(ShopOperationStatus.invalidItemType, itemId: item.id);
     }
 
@@ -114,11 +114,11 @@ class ShopService {
       return _result(ShopOperationStatus.invalidQuantity);
     }
 
-      return _result(
-        ShopOperationStatus.success,
-        walletCoins: walletCoins + amount,
-      );
-    }
+    return _result(
+      ShopOperationStatus.success,
+      walletCoins: walletCoins + amount,
+    );
+  }
 
   ShopOperationResult spendCoins(int amount) {
     if (amount < 0) {
@@ -141,7 +141,8 @@ class ShopService {
     }
 
     final nextItems = List<BackpackItem>.from(state.backpackItems);
-    final index = nextItems.indexWhere((BackpackItem item) => item.itemId == itemId);
+    final index =
+        nextItems.indexWhere((BackpackItem item) => item.itemId == itemId);
     if (index == -1) {
       nextItems.add(BackpackItem(itemId: itemId, quantity: quantity));
     } else {
@@ -159,7 +160,8 @@ class ShopService {
 
   ShopOperationResult consumeBackpackItem(String itemId) {
     final nextItems = List<BackpackItem>.from(state.backpackItems);
-    final index = nextItems.indexWhere((BackpackItem item) => item.itemId == itemId);
+    final index =
+        nextItems.indexWhere((BackpackItem item) => item.itemId == itemId);
     if (index == -1) {
       return _result(ShopOperationStatus.backpackItemNotFound, itemId: itemId);
     }

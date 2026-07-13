@@ -25,22 +25,22 @@ void main() {
     });
 
     test('rootBundle loads the runtime-reported common wallpapers', () async {
-      final sandPlain = await rootBundle.load(
-        'assets/shop/wallpapers/common/wallpaper_sand_plain.webp',
+      final softSage = await rootBundle.load(
+        'assets/shop/wallpapers/common/wallpaper_soft_sage.webp',
       );
-      final creamLight = await rootBundle.load(
-        'assets/shop/wallpapers/common/wallpaper_cream_light.webp',
+      final offWhite = await rootBundle.load(
+        'assets/shop/wallpapers/common/wallpaper_off_white.webp',
       );
 
       expect(
-        sandPlain.lengthInBytes,
+        softSage.lengthInBytes,
         greaterThan(0),
-        reason: 'assets/shop/wallpapers/common/wallpaper_sand_plain.webp',
+        reason: 'assets/shop/wallpapers/common/wallpaper_soft_sage.webp',
       );
       expect(
-        creamLight.lengthInBytes,
+        offWhite.lengthInBytes,
         greaterThan(0),
-        reason: 'assets/shop/wallpapers/common/wallpaper_cream_light.webp',
+        reason: 'assets/shop/wallpapers/common/wallpaper_off_white.webp',
       );
     });
   });

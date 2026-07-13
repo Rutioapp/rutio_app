@@ -63,7 +63,8 @@ class ShopFeaturedCollectionCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         collection.title,
-                        style: ShopUiTextStyles.cardTitle.copyWith(fontSize: 26),
+                        style:
+                            ShopUiTextStyles.cardTitle.copyWith(fontSize: 26),
                       ),
                       const SizedBox(height: 8),
                       Text(

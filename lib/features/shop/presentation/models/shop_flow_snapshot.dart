@@ -77,7 +77,8 @@ class ShopFlowSnapshot {
       return BackpackItemViewModel(
         itemId: item.itemId,
         title: catalogItem?.title ?? item.itemId,
-        description: catalogItem?.description ?? 'Utilidad disponible en la mochila.',
+        description:
+            catalogItem?.description ?? 'Utilidad disponible en la mochila.',
         quantity: item.quantity,
         rarity: catalogItem?.rarity ?? ShopItemRarity.common,
         type: catalogItem?.type ?? ShopItemType.mysteryBox,

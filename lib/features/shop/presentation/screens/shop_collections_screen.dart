@@ -44,18 +44,21 @@ class ShopCollectionsScreen extends StatelessWidget {
               children: <Widget>[
                 const ShopSectionHeader(
                   title: 'Explora',
-                  subtitle: 'Ordenadas por progreso y por sortOrder del catalogo.',
+                  subtitle:
+                      'Ordenadas por progreso y por sortOrder del catalogo.',
                 ),
                 const SizedBox(height: 4),
                 for (int index = 0; index < cards.length; index++) ...<Widget>[
                   ShopCollectionCard(
-                    key: Key('shopCollectionCard-${cards[index].collection.id}'),
+                    key:
+                        Key('shopCollectionCard-${cards[index].collection.id}'),
                     collection: cards[index].collection,
                     totalItems: cards[index].totalItems,
                     ownedItems: cards[index].ownedItems,
                     isUnlocked: cards[index].isUnlocked,
                     featuredItem: cards[index].featuredItem,
-                    onTap: () => onCollectionPressed(cards[index].collection.id),
+                    onTap: () =>
+                        onCollectionPressed(cards[index].collection.id),
                   ),
                   if (index < cards.length - 1)
                     const SizedBox(height: ShopUiTokens.sectionSpacing),
@@ -67,31 +70,30 @@ class ShopCollectionsScreen extends StatelessWidget {
 
   List<_CollectionCardData> _buildCards() {
     final Map<String, ShopCollection> collectionById = <String, ShopCollection>{
-      for (final ShopCollection collection in collections) collection.id: collection,
+      for (final ShopCollection collection in collections)
+        collection.id: collection,
     };
 
     final List<_CollectionCardData> cards = collections
         .where((ShopCollection collection) => collection.isEnabled)
         .map((ShopCollection collection) {
-          final List<ShopItem> items = ShopCatalog.itemsByCollection(collection.id);
-          final int ownedItemsCount = items
-              .where((ShopItem item) => ownedItemIds.contains(item.id))
-              .length;
-          final ShopItem? featuredItem = items.isNotEmpty
-              ? items.firstWhere(
-                  (ShopItem item) => ownedItemIds.contains(item.id),
-                  orElse: () => items.first,
-                )
-              : null;
-          return _CollectionCardData(
-            collection: collectionById[collection.id] ?? collection,
-            totalItems: items.length,
-            ownedItems: ownedItemsCount,
-            isUnlocked: ownedItemsCount > 0,
-            featuredItem: featuredItem,
-          );
-        })
-        .toList(growable: false);
+      final List<ShopItem> items = ShopCatalog.itemsByCollection(collection.id);
+      final int ownedItemsCount =
+          items.where((ShopItem item) => ownedItemIds.contains(item.id)).length;
+      final ShopItem? featuredItem = items.isNotEmpty
+          ? items.firstWhere(
+              (ShopItem item) => ownedItemIds.contains(item.id),
+              orElse: () => items.first,
+            )
+          : null;
+      return _CollectionCardData(
+        collection: collectionById[collection.id] ?? collection,
+        totalItems: items.length,
+        ownedItems: ownedItemsCount,
+        isUnlocked: ownedItemsCount > 0,
+        featuredItem: featuredItem,
+      );
+    }).toList(growable: false);
 
     cards.sort((_CollectionCardData a, _CollectionCardData b) {
       if (a.isUnlocked != b.isUnlocked) {

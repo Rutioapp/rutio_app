@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/shop_screen.dart';
 import 'package:rutio/stores/user_state_store.dart';
@@ -21,11 +22,14 @@ void main() {
 
       await tester.pumpWidget(_wrapWithStore(
         env.store,
-        MaterialApp(
-          theme: AppTheme.theme,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const ShopScreen(),
+        ChangeNotifierProvider<ShopCosmeticsController>.value(
+          value: ShopCosmeticsController(userStateStore: env.store),
+          child: MaterialApp(
+            theme: AppTheme.theme,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const ShopScreen(),
+          ),
         ),
       ));
       await tester.pump(const Duration(milliseconds: 16));
@@ -44,14 +48,17 @@ void main() {
       await tester.pumpWidget(
         _wrapWithStore(
           env.store,
-          MaterialApp(
-            theme: AppTheme.theme,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            initialRoute: '/shop',
-            routes: <String, WidgetBuilder>{
-              '/shop': (_) => const ShopScreen(),
-            },
+          ChangeNotifierProvider<ShopCosmeticsController>.value(
+            value: ShopCosmeticsController(userStateStore: env.store),
+            child: MaterialApp(
+              theme: AppTheme.theme,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              initialRoute: '/shop',
+              routes: <String, WidgetBuilder>{
+                '/shop': (_) => const ShopScreen(),
+              },
+            ),
           ),
         ),
       );

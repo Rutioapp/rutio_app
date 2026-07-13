@@ -64,7 +64,8 @@ class ShopPurchaseConfirmationSheet extends StatelessWidget {
                         children: <Widget>[
                           Text(
                             item.title,
-                            style: ShopUiTextStyles.label.copyWith(fontSize: 15),
+                            style:
+                                ShopUiTextStyles.label.copyWith(fontSize: 15),
                           ),
                           const SizedBox(height: 16),
                           _InfoRow(
@@ -122,9 +123,8 @@ class ShopPurchaseConfirmationSheet extends StatelessWidget {
                           label: hasEnoughCoins
                               ? 'Comprar'
                               : 'Sin monedas suficientes',
-                          onPressed: hasEnoughCoins
-                              ? () => onConfirm(item.id)
-                              : null,
+                          onPressed:
+                              hasEnoughCoins ? () => onConfirm(item.id) : null,
                           expanded: true,
                           icon: hasEnoughCoins
                               ? Icons.monetization_on_outlined

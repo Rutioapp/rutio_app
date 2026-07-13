@@ -15,9 +15,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(find.text('Colecciones'), findsOneWidget);
-      expect(find.byKey(const Key('shopCollectionCard-minimal')), findsOneWidget);
-      expect(find.byKey(const Key('shopCollectionCard-gradient')), findsOneWidget);
-      expect(find.byKey(const Key('shopCollectionCard-landscape')), findsOneWidget);
+      expect(
+          find.byKey(const Key('shopCollectionCard-minimal')), findsOneWidget);
+      expect(
+          find.byKey(const Key('shopCollectionCard-gradient')), findsOneWidget);
+      expect(find.byKey(const Key('shopCollectionCard-landscape')),
+          findsOneWidget);
     });
 
     testWidgets('shows progress', (WidgetTester tester) async {
@@ -26,14 +29,15 @@ void main() {
         _app(
           _screen(
             ownedItemIds: const <String>{
-              'wallpaper_warm_beige',
+              'wallpaper_mist_blue',
             },
           ),
         ),
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.byKey(const Key('shopCollectionProgress-minimal')), findsOneWidget);
+      expect(find.byKey(const Key('shopCollectionProgress-minimal')),
+          findsOneWidget);
       expect(find.text('1 / $minimalTotal'), findsOneWidget);
     });
 
@@ -42,21 +46,24 @@ void main() {
         _app(
           _screen(
             ownedItemIds: const <String>{
-              'wallpaper_warm_beige',
+              'wallpaper_mist_blue',
             },
           ),
         ),
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      final double minimalDy =
-          tester.getTopLeft(find.byKey(const Key('shopCollectionCard-minimal'))).dy;
-      final double gradientDy =
-          tester.getTopLeft(find.byKey(const Key('shopCollectionCard-gradient'))).dy;
+      final double minimalDy = tester
+          .getTopLeft(find.byKey(const Key('shopCollectionCard-minimal')))
+          .dy;
+      final double gradientDy = tester
+          .getTopLeft(find.byKey(const Key('shopCollectionCard-gradient')))
+          .dy;
       expect(minimalDy < gradientDy, isTrue);
     });
 
-    testWidgets('tapping collection calls callback', (WidgetTester tester) async {
+    testWidgets('tapping collection calls callback',
+        (WidgetTester tester) async {
       String? pressedCollectionId;
 
       await tester.pumpWidget(

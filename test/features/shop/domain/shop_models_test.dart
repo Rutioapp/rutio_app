@@ -205,7 +205,8 @@ void main() {
         quantity: 3,
       );
 
-      expect(item.copyWith(quantity: 5), const BackpackItem(itemId: 'xp_boost_small', quantity: 5));
+      expect(item.copyWith(quantity: 5),
+          const BackpackItem(itemId: 'xp_boost_small', quantity: 5));
     });
   });
 }

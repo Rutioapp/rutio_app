@@ -69,7 +69,8 @@ class ShopCategoryTile extends StatelessWidget {
                         fontSize: 15,
                       ),
                     ),
-                    if (subtitle != null && subtitle!.trim().isNotEmpty) ...<Widget>[
+                    if (subtitle != null &&
+                        subtitle!.trim().isNotEmpty) ...<Widget>[
                       const SizedBox(height: 4),
                       Text(
                         subtitle!,

@@ -3,6 +3,7 @@ import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
@@ -18,27 +19,41 @@ void main() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final controller = await _createController(walletCoins: 500);
 
-      final result = await controller.purchaseAsset('wallpaper_warm_beige');
+      final result = await controller.purchaseAsset('wallpaper_mist_blue');
       final persisted = await ShopCosmeticsRepository().load();
 
       expect(result.isSuccess, isTrue);
       expect(await controller.getWalletCoins(), 380);
-      expect(persisted.ownedAssetIds, contains('wallpaper_warm_beige'));
+      expect(persisted.ownedAssetIds, contains('wallpaper_mist_blue'));
     });
 
-    test('purchaseBundle unlocks assets and persists equipped ids later', () async {
+    test('demo-sized wallet still spends coins normally on purchase', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final asset = ShopAssetsCatalog.getAssetById('wallpaper_mist_blue')!;
+      final controller = await _createController(walletCoins: 999999);
+
+      final result = await controller.purchaseAsset(asset.id);
+
+      expect(result.isSuccess, isTrue);
+      expect(await controller.getWalletCoins(), 999999 - asset.priceAmber);
+    });
+
+    test('rare wallpaper purchase persists ownership and equipped state',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final controller = await _createController(walletCoins: 1000);
 
-      final bundleResult = await controller.purchaseBundle('bundle_warm_beige');
-      final equipResult = await controller.equipAsset('wallpaper_warm_beige');
+      final purchaseResult =
+          await controller.purchaseAsset('wallpaper_jungle_sunrise');
+      final equipResult =
+          await controller.equipAsset('wallpaper_jungle_sunrise');
       final persisted = await ShopCosmeticsRepository().load();
 
-      expect(bundleResult.isSuccess, isTrue);
+      expect(purchaseResult.isSuccess, isTrue);
       expect(equipResult.isSuccess, isTrue);
-      expect(await controller.getWalletCoins(), 700);
-      expect(persisted.ownedBundleIds, contains('bundle_warm_beige'));
-      expect(persisted.equippedWallpaperId, 'wallpaper_warm_beige');
+      expect(await controller.getWalletCoins(), 750);
+      expect(persisted.ownedAssetIds, contains('wallpaper_jungle_sunrise'));
+      expect(persisted.equippedWallpaperId, 'wallpaper_jungle_sunrise');
     });
 
     test('restores owned and equipped state from persistence', () async {
@@ -47,11 +62,11 @@ void main() {
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[
-            'wallpaper_warm_beige',
+            'wallpaper_mist_blue',
             'habit_card_warm_beige',
           ],
           ownedBundleIds: <String>['bundle_warm_beige'],
-          equippedWallpaperId: 'wallpaper_warm_beige',
+          equippedWallpaperId: 'wallpaper_mist_blue',
           equippedHabitCardSkinId: 'habit_card_warm_beige',
         ),
       );
@@ -60,13 +75,14 @@ void main() {
       final state = await controller.getState();
 
       expect(state.ownedBundleIds, contains('bundle_warm_beige'));
-      expect(state.ownedAssetIds, contains('wallpaper_warm_beige'));
+      expect(state.ownedAssetIds, contains('wallpaper_mist_blue'));
       expect(
-        await controller.getEquippedAssetForCategory(ShopAssetCategory.wallpaper),
+        await controller
+            .getEquippedAssetForCategory(ShopAssetCategory.wallpaper),
         isNotNull,
       );
       expect(
-        await controller.assetOwnershipState('wallpaper_warm_beige'),
+        await controller.assetOwnershipState('wallpaper_mist_blue'),
         ShopAssetOwnershipState.equipped,
       );
     });
@@ -103,7 +119,8 @@ void main() {
       expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
     });
 
-    test('equipped wallpaper helper returns null when equipped asset is not owned',
+    test(
+        'equipped wallpaper helper returns null when equipped asset is not owned',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final repository = ShopCosmeticsRepository();
@@ -111,7 +128,7 @@ void main() {
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
           ownedBundleIds: <String>[],
-          equippedWallpaperId: 'wallpaper_warm_beige',
+          equippedWallpaperId: 'wallpaper_mist_blue',
         ),
       );
 
@@ -120,7 +137,8 @@ void main() {
       expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
     });
 
-    test('equipped wallpaper helper returns null for empty equipped id', () async {
+    test('equipped wallpaper helper returns null for empty equipped id',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final repository = ShopCosmeticsRepository();
       await repository.save(
@@ -141,17 +159,38 @@ void main() {
       final repository = ShopCosmeticsRepository();
       await repository.save(
         ShopCosmeticsState(
-          ownedAssetIds: <String>['wallpaper_warm_beige'],
+          ownedAssetIds: <String>['wallpaper_mist_blue'],
           ownedBundleIds: <String>[],
-          equippedWallpaperId: 'wallpaper_warm_beige',
+          equippedWallpaperId: 'wallpaper_mist_blue',
         ),
       );
 
       final controller = await _createController(walletCoins: 0);
       final asset = await controller.getEquippedWallpaperAssetOrNull();
 
-      expect(asset?.id, 'wallpaper_warm_beige');
+      expect(asset?.id, 'wallpaper_mist_blue');
       expect(asset?.category, ShopAssetCategory.wallpaper);
+    });
+
+    test('sync wallpaper helper resolves hydrated asset from memory', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>['wallpaper_mist_blue'],
+          ownedBundleIds: <String>[],
+          equippedWallpaperId: 'wallpaper_mist_blue',
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+      await controller.hydrate();
+
+      expect(
+        controller.getEquippedWallpaperAssetOrNullSync()?.id,
+        'wallpaper_mist_blue',
+      );
+      expect(controller.hasStateForCurrentScope, isTrue);
     });
 
     test('equipped habit card helper resolves valid asset', () async {
@@ -264,7 +303,7 @@ void main() {
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
           ownedBundleIds: <String>[],
-          equippedUserCardSkinId: 'wallpaper_warm_beige',
+          equippedUserCardSkinId: 'wallpaper_mist_blue',
         ),
       );
 
@@ -273,7 +312,8 @@ void main() {
       expect(await controller.getEquippedUserCardAssetOrNull(), isNull);
     });
 
-    test('getWalletCoins falls back to zero when root state is missing', () async {
+    test('getWalletCoins falls back to zero when root state is missing',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final repo = UserStateRepository(storage: UserStateStorage())
         ..setActiveUserScope('shop-cosmetics-empty-user');
@@ -291,12 +331,12 @@ void main() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final controller = await _createController(walletCoins: 500);
 
-      await controller.purchaseAsset('wallpaper_warm_beige');
-      await controller.equipAsset('wallpaper_warm_beige');
+      await controller.purchaseAsset('wallpaper_mist_blue');
+      await controller.equipAsset('wallpaper_mist_blue');
 
       expect(
         (await controller.getEquippedWallpaperAssetOrNull())?.id,
-        'wallpaper_warm_beige',
+        'wallpaper_mist_blue',
       );
     });
 
@@ -305,12 +345,12 @@ void main() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final controller = await _createController(walletCoins: 500);
 
-      await controller.purchaseAsset('habit_card_warm_beige');
-      await controller.equipAsset('habit_card_warm_beige');
+      await controller.purchaseAsset('habit_card_violet_flame');
+      await controller.equipAsset('habit_card_violet_flame');
 
       expect(
         (await controller.getEquippedHabitCardAssetOrNull())?.id,
-        'habit_card_warm_beige',
+        'habit_card_violet_flame',
       );
     });
 
@@ -332,31 +372,76 @@ void main() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final controller = await _createController(walletCoins: 1000);
 
-      await controller.purchaseAsset('wallpaper_warm_beige');
+      await controller.purchaseAsset('wallpaper_mist_blue');
       await controller.purchaseAsset('habit_card_warm_beige');
       await controller.purchaseAsset('user_card_warm_beige');
 
-      final wallpaperResult = await controller.equipAsset('wallpaper_warm_beige');
-      final habitCardResult = await controller.equipAsset('habit_card_warm_beige');
-      final userCardResult = await controller.equipAsset('user_card_warm_beige');
+      final wallpaperResult =
+          await controller.equipAsset('wallpaper_mist_blue');
+      final habitCardResult =
+          await controller.equipAsset('habit_card_warm_beige');
+      final userCardResult =
+          await controller.equipAsset('user_card_warm_beige');
       final persisted = await ShopCosmeticsRepository().load();
 
       expect(wallpaperResult.isSuccess, isTrue);
       expect(habitCardResult.isSuccess, isTrue);
       expect(userCardResult.isSuccess, isTrue);
-      expect(persisted.equippedWallpaperId, 'wallpaper_warm_beige');
+      expect(persisted.equippedWallpaperId, 'wallpaper_mist_blue');
       expect(persisted.equippedHabitCardSkinId, 'habit_card_warm_beige');
       expect(persisted.equippedUserCardSkinId, 'user_card_warm_beige');
+    });
+
+    test('equipAsset notifies listeners with the new equipped wallpaper id',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 500);
+      await controller.purchaseAsset('wallpaper_mist_blue');
+
+      var notificationCount = 0;
+      controller.addListener(() {
+        notificationCount += 1;
+      });
+
+      final result = await controller.equipAsset('wallpaper_mist_blue');
+
+      expect(result.isSuccess, isTrue);
+      expect(notificationCount, greaterThan(0));
+      expect(controller.state?.equippedWallpaperId, 'wallpaper_mist_blue');
+    });
+
+    test('equipAsset notifies listeners with the new equipped habit card id',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 500);
+      await controller.purchaseAsset('habit_card_violet_flame');
+
+      var notificationCount = 0;
+      controller.addListener(() {
+        notificationCount += 1;
+      });
+
+      final result = await controller.equipAsset('habit_card_violet_flame');
+      final persisted = await ShopCosmeticsRepository().load();
+
+      expect(result.isSuccess, isTrue);
+      expect(notificationCount, greaterThan(0));
+      expect(
+        controller.state?.equippedHabitCardSkinId,
+        'habit_card_violet_flame',
+      );
+      expect(persisted.equippedHabitCardSkinId, 'habit_card_violet_flame');
     });
 
     test('equipAsset fails for unowned asset', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final controller = await _createController(walletCoins: 0);
 
-      final result = await controller.equipAsset('wallpaper_warm_beige');
+      final result = await controller.equipAsset('wallpaper_mist_blue');
 
       expect(result.status, ShopCosmeticsOperationStatus.assetNotOwned);
-      expect((await ShopCosmeticsRepository().load()).equippedWallpaperId, isNull);
+      expect(
+          (await ShopCosmeticsRepository().load()).equippedWallpaperId, isNull);
     });
 
     test('equipAsset fails for missing asset id', () async {
@@ -367,11 +452,43 @@ void main() {
 
       expect(result.status, ShopCosmeticsOperationStatus.assetNotFound);
     });
+
+    test('equipAsset restores previous in-memory state when persistence fails',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = _FailingShopCosmeticsRepository(
+        ShopCosmeticsState(
+          ownedAssetIds: const <String>[
+            'wallpaper_mist_blue',
+            'wallpaper_soft_sage',
+          ],
+          ownedBundleIds: const <String>[],
+          equippedWallpaperId: 'wallpaper_mist_blue',
+        ),
+      );
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
+      await controller.hydrate();
+
+      await expectLater(
+        controller.equipAsset('wallpaper_soft_sage'),
+        throwsA(isA<StateError>()),
+      );
+
+      expect(controller.state?.equippedWallpaperId, 'wallpaper_mist_blue');
+      expect(
+        controller.getEquippedWallpaperAssetOrNullSync()?.id,
+        'wallpaper_mist_blue',
+      );
+    });
   });
 }
 
 Future<ShopCosmeticsController> _createController({
   required int walletCoins,
+  ShopCosmeticsRepository? repository,
 }) async {
   final repo = UserStateRepository(storage: UserStateStorage())
     ..setActiveUserScope('shop-cosmetics-user');
@@ -380,7 +497,10 @@ Future<ShopCosmeticsController> _createController({
     journalEntrySyncService: JournalEntrySyncService(),
   );
   await store.save(_baseState(walletCoins: walletCoins));
-  return ShopCosmeticsController(userStateStore: store);
+  return ShopCosmeticsController(
+    userStateStore: store,
+    repository: repository,
+  );
 }
 
 Map<String, dynamic> _baseState({
@@ -440,4 +560,18 @@ Map<String, dynamic> _baseState({
       'activeHabits': <dynamic>[],
     },
   };
+}
+
+class _FailingShopCosmeticsRepository extends ShopCosmeticsRepository {
+  _FailingShopCosmeticsRepository(this._state);
+
+  final ShopCosmeticsState _state;
+
+  @override
+  Future<ShopCosmeticsState> load() async => _state;
+
+  @override
+  Future<void> save(ShopCosmeticsState state) async {
+    throw StateError('persistence failed');
+  }
 }

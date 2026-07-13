@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/widgets.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
@@ -7,15 +8,19 @@ void main() {
   group('ShopAsset', () {
     test('serializes and deserializes safely', () {
       const asset = ShopAsset(
-        id: 'wallpaper_warm_beige',
-        familyId: 'warm_beige',
+        id: 'wallpaper_mist_blue',
+        familyId: 'mist_blue',
         category: ShopAssetCategory.wallpaper,
         rarity: ShopAssetRarity.common,
         nameEs: 'Fondo Beige calido',
-        nameEn: 'Warm Beige Wallpaper',
+        nameEn: 'Mist Blue Wallpaper',
         priceAmber: 120,
-        assetPath: 'assets/shop/wallpapers/common/wallpaper_warm_beige.webp',
-        previewAssetPath: 'assets/shop/wallpapers/common/wallpaper_warm_beige.webp',
+        assetPath: 'assets/shop/wallpapers/common/wallpaper_mist_blue.webp',
+        previewAssetPath:
+            'assets/shop/wallpapers/common/wallpaper_mist_blue.webp',
+        imageAlignmentX: 0.5,
+        overlayColorValue: 0xCCFFFFFF,
+        overlayOpacity: 0.2,
         sortOrder: 1,
       );
 
@@ -26,26 +31,35 @@ void main() {
 
     test('copyWith updates fields safely', () {
       const asset = ShopAsset(
-        id: 'wallpaper_warm_beige',
-        familyId: 'warm_beige',
+        id: 'wallpaper_mist_blue',
+        familyId: 'mist_blue',
         category: ShopAssetCategory.wallpaper,
         rarity: ShopAssetRarity.common,
         nameEs: 'Fondo Beige calido',
-        nameEn: 'Warm Beige Wallpaper',
+        nameEn: 'Mist Blue Wallpaper',
         priceAmber: 120,
-        assetPath: 'assets/shop/wallpapers/common/wallpaper_warm_beige.webp',
-        previewAssetPath: 'assets/shop/wallpapers/common/wallpaper_warm_beige.webp',
+        assetPath: 'assets/shop/wallpapers/common/wallpaper_mist_blue.webp',
+        previewAssetPath:
+            'assets/shop/wallpapers/common/wallpaper_mist_blue.webp',
       );
 
       final updated = asset.copyWith(
         rarity: ShopAssetRarity.rare,
         priceAmber: 250,
+        imageFit: BoxFit.contain,
+        imageAlignmentX: 0.25,
+        overlayColorValue: 0x99FFFFFF,
+        overlayOpacity: 0.12,
         sortOrder: 4,
       );
 
       expect(updated.rarity, ShopAssetRarity.rare);
       expect(updated.priceAmber, 250);
       expect(updated.sortOrder, 4);
+      expect(updated.imageFit, BoxFit.contain);
+      expect(updated.imageAlignmentX, 0.25);
+      expect(updated.overlayColorValue, 0x99FFFFFF);
+      expect(updated.overlayOpacity, 0.12);
       expect(updated.id, asset.id);
     });
   });
@@ -60,7 +74,7 @@ void main() {
         nameEn: 'Warm Beige Bundle',
         priceAmber: 300,
         assetIds: const <String>[
-          'wallpaper_warm_beige',
+          'wallpaper_mist_blue',
           'habit_card_warm_beige',
           'user_card_warm_beige',
         ],
@@ -81,7 +95,7 @@ void main() {
         nameEn: 'Warm Beige Bundle',
         priceAmber: 300,
         assetIds: const <String>[
-          'wallpaper_warm_beige',
+          'wallpaper_mist_blue',
           'habit_card_warm_beige',
           'user_card_warm_beige',
         ],

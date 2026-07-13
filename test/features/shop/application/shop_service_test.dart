@@ -15,7 +15,7 @@ void main() {
         coins: 420,
         inventory: <OwnedShopItem>[
           OwnedShopItem(
-            itemId: 'wallpaper_warm_beige',
+            itemId: 'wallpaper_mist_blue',
             quantity: 1,
             acquiredAtMillis: 123456,
             source: 'shop_purchase',
@@ -25,7 +25,7 @@ void main() {
           BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
         ],
         equippedCosmetics: EquippedCosmetics(
-          backgroundItemId: 'wallpaper_warm_beige',
+          backgroundItemId: 'wallpaper_mist_blue',
         ),
       );
 
@@ -51,7 +51,7 @@ void main() {
 
   group('ShopService', () {
     test('purchases a cosmetic correctly', () {
-      final item = ShopCatalog.getItemById('wallpaper_warm_beige')!;
+      final item = ShopCatalog.getItemById('wallpaper_mist_blue')!;
       final service = ShopService(
         state: const ShopState(coins: 999),
         walletCoins: 200,
@@ -64,7 +64,7 @@ void main() {
       expect(result.walletCoins, 80);
       expect(result.state.coins, 999);
       expect(result.state.inventory, hasLength(1));
-      expect(result.state.inventory.first.itemId, 'wallpaper_warm_beige');
+      expect(result.state.inventory.first.itemId, 'wallpaper_mist_blue');
       expect(result.state.inventory.first.acquiredAtMillis, 111);
     });
 
@@ -111,7 +111,7 @@ void main() {
     });
 
     test('does not purchase without enough coins', () {
-      final item = ShopCatalog.getItemById('wallpaper_dune_layers')!;
+      final item = ShopCatalog.getItemById('wallpaper_city_sunrise')!;
       final service = ShopService(
         state: const ShopState(coins: 999),
         walletCoins: 200,
@@ -125,12 +125,12 @@ void main() {
     });
 
     test('does not duplicate a cosmetic', () {
-      final item = ShopCatalog.getItemById('wallpaper_warm_beige')!;
+      final item = ShopCatalog.getItemById('wallpaper_mist_blue')!;
       final service = ShopService(
         state: const ShopState(
           coins: 500,
           inventory: <OwnedShopItem>[
-            OwnedShopItem(itemId: 'wallpaper_warm_beige'),
+            OwnedShopItem(itemId: 'wallpaper_mist_blue'),
           ],
         ),
         walletCoins: 500,
@@ -145,11 +145,11 @@ void main() {
     });
 
     test('equips a purchased background', () {
-      final item = ShopCatalog.getItemById('wallpaper_warm_beige')!;
+      final item = ShopCatalog.getItemById('wallpaper_mist_blue')!;
       final service = ShopService(
         state: const ShopState(
           inventory: <OwnedShopItem>[
-            OwnedShopItem(itemId: 'wallpaper_warm_beige'),
+            OwnedShopItem(itemId: 'wallpaper_mist_blue'),
           ],
         ),
         walletCoins: 0,
@@ -158,11 +158,12 @@ void main() {
       final result = service.equipCosmetic(item);
 
       expect(result.status, ShopOperationStatus.success);
-      expect(result.state.equippedCosmetics.backgroundItemId, 'wallpaper_warm_beige');
+      expect(result.state.equippedCosmetics.backgroundItemId,
+          'wallpaper_mist_blue');
     });
 
     test('fails when equipping an unowned cosmetic', () {
-      final item = ShopCatalog.getItemById('wallpaper_warm_beige')!;
+      final item = ShopCatalog.getItemById('wallpaper_mist_blue')!;
       final service = ShopService(
         state: const ShopState(),
         walletCoins: 0,
@@ -261,7 +262,7 @@ void main() {
       final service = ShopService(
         state: const ShopState(
           equippedCosmetics: EquippedCosmetics(
-            backgroundItemId: 'wallpaper_warm_beige',
+            backgroundItemId: 'wallpaper_mist_blue',
             habitCardItemId: 'habit_card_soft_camel',
           ),
         ),
@@ -272,11 +273,12 @@ void main() {
 
       expect(result.status, ShopOperationStatus.success);
       expect(result.state.equippedCosmetics.backgroundItemId, isNull);
-      expect(result.state.equippedCosmetics.habitCardItemId, 'habit_card_soft_camel');
+      expect(result.state.equippedCosmetics.habitCardItemId,
+          'habit_card_soft_camel');
     });
 
     test('purchase flow uses wallet coins instead of ShopState coins', () {
-      final item = ShopCatalog.getItemById('wallpaper_warm_beige')!;
+      final item = ShopCatalog.getItemById('wallpaper_mist_blue')!;
       final service = ShopService(
         state: const ShopState(coins: 1000),
         walletCoins: 0,

@@ -73,10 +73,10 @@ void main() {
       final env = await _createEnv(
         shopState: const ShopState(
           inventory: <OwnedShopItem>[
-            OwnedShopItem(itemId: 'wallpaper_warm_beige'),
+            OwnedShopItem(itemId: 'wallpaper_mist_blue'),
           ],
           equippedCosmetics:
-              EquippedCosmetics(backgroundItemId: 'wallpaper_warm_beige'),
+              EquippedCosmetics(backgroundItemId: 'wallpaper_mist_blue'),
         ),
       );
 
@@ -103,7 +103,7 @@ void main() {
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
 
@@ -122,19 +122,19 @@ void main() {
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
         find.byKey(
           const Key(
-              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_mist_blue'),
         ),
       );
       await tester.pumpAndSettle();
@@ -142,25 +142,25 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Comprado'),
         ),
         findsWidgets,
       );
       expect(
-        find.byKey(const Key('shopCosmeticsAction-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAction-wallpaper_mist_blue')),
         findsNothing,
       );
 
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_mist_blue')),
         findsOneWidget,
       );
       expect(find.text('Equipar'), findsOneWidget);
@@ -178,37 +178,37 @@ void main() {
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
         find.byKey(
           const Key(
-              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_warm_beige'),
+              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_mist_blue'),
         ),
       );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_warm_beige')),
+        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_mist_blue')),
       );
       await tester.pumpAndSettle();
 
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_warm_beige'),
+            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
           ),
           matching: find.text('Equipado'),
         ),
@@ -263,7 +263,8 @@ void main() {
 
       expect(find.text('XP Boost 1 Dia'), findsAtLeastNWidgets(1));
       expect(
-        find.text('Aumenta temporalmente la experiencia obtenida al completar habitos.'),
+        find.text(
+            'Aumenta temporalmente la experiencia obtenida al completar habitos.'),
         findsAtLeastNWidgets(1),
       );
       expect(
@@ -302,7 +303,7 @@ void main() {
       final env = await _createEnv(
         walletCoins: 500,
         cosmeticsState: ShopCosmeticsState(
-          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedAssetIds: const <String>['wallpaper_mist_blue'],
           ownedBundleIds: const <String>[],
         ),
       );
@@ -317,7 +318,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 32));
       await _tapVisible(
         tester,
-        find.byKey(const Key('shopOwnedItem-wallpaper_warm_beige')),
+        find.byKey(const Key('shopOwnedItem-wallpaper_mist_blue')),
       );
       await tester.pump(const Duration(milliseconds: 32));
       await _pumpUntilText(tester, 'Detalle');
@@ -334,12 +335,12 @@ void main() {
         walletCoins: 500,
         shopState: const ShopState(
           equippedCosmetics:
-              EquippedCosmetics(backgroundItemId: 'wallpaper_soft_camel'),
+              EquippedCosmetics(backgroundItemId: 'wallpaper_soft_sage'),
         ),
         cosmeticsState: ShopCosmeticsState(
-          ownedAssetIds: const <String>['wallpaper_warm_beige'],
+          ownedAssetIds: const <String>['wallpaper_mist_blue'],
           ownedBundleIds: const <String>[],
-          equippedWallpaperId: 'wallpaper_warm_beige',
+          equippedWallpaperId: 'wallpaper_mist_blue',
         ),
       );
 
@@ -354,13 +355,50 @@ void main() {
 
       expect(
         find.descendant(
-          of: find.byKey(const Key('shopOwnedItem-wallpaper_warm_beige')),
+          of: find.byKey(const Key('shopOwnedItem-wallpaper_mist_blue')),
           matching: find.text('Equipado'),
         ),
         findsWidgets,
       );
-      expect(find.byKey(const Key('shopOwnedItem-wallpaper_soft_camel')),
+      expect(find.byKey(const Key('shopOwnedItem-wallpaper_soft_sage')),
           findsNothing);
+    });
+
+    testWidgets('customization equip does not show success snackbar',
+        (WidgetTester tester) async {
+      final env = await _createEnv(
+        walletCoins: 500,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>[
+            'wallpaper_mist_blue',
+            'wallpaper_soft_sage',
+          ],
+          ownedBundleIds: const <String>[],
+          equippedWallpaperId: 'wallpaper_mist_blue',
+        ),
+      );
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pumpAndSettle();
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeHeroCustomization')),
+      );
+      await tester.pumpAndSettle();
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopOwnedEquip-wallpaper_soft_sage')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cosmetico equipado'), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(
+        find.byKey(const Key('shopOwnedStatus-wallpaper_soft_sage')),
+        findsOneWidget,
+      );
     });
   });
 }

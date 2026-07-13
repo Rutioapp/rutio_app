@@ -11,14 +11,16 @@ class ShopOwnedItemCard extends StatelessWidget {
     super.key,
     required this.item,
     required this.isEquipped,
+    this.busy = false,
     required this.onTap,
     required this.onEquipPressed,
   });
 
   final ShopItem item;
   final bool isEquipped;
+  final bool busy;
   final VoidCallback onTap;
-  final ValueChanged<String> onEquipPressed;
+  final Future<void> Function(String itemId) onEquipPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +65,8 @@ class ShopOwnedItemCard extends StatelessWidget {
                   icon: isEquipped
                       ? Icons.check_rounded
                       : Icons.playlist_add_rounded,
-                  onPressed: isEquipped ? null : () => onEquipPressed(item.id),
+                  onPressed:
+                      isEquipped || busy ? null : () => onEquipPressed(item.id),
                 ),
               ],
             ),
