@@ -143,11 +143,19 @@ class ShopService {
     final nextItems = List<BackpackItem>.from(state.backpackItems);
     final index =
         nextItems.indexWhere((BackpackItem item) => item.itemId == itemId);
+    final updatedAtMillis = _nowMillisProvider();
     if (index == -1) {
-      nextItems.add(BackpackItem(itemId: itemId, quantity: quantity));
+      nextItems.add(
+        BackpackItem(
+          itemId: itemId,
+          quantity: quantity,
+          updatedAtMillis: updatedAtMillis,
+        ),
+      );
     } else {
       nextItems[index] = nextItems[index].copyWith(
         quantity: nextItems[index].quantity + quantity,
+        updatedAtMillis: updatedAtMillis,
       );
     }
 
@@ -174,7 +182,10 @@ class ShopService {
     if (current.quantity <= 1) {
       nextItems.removeAt(index);
     } else {
-      nextItems[index] = current.copyWith(quantity: current.quantity - 1);
+      nextItems[index] = current.copyWith(
+        quantity: current.quantity - 1,
+        updatedAtMillis: _nowMillisProvider(),
+      );
     }
 
     return _result(

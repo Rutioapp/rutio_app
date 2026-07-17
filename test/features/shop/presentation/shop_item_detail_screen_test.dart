@@ -17,6 +17,8 @@ void main() {
       ShopCatalog.getItemById('utility_streak_recover_1')!;
   final ShopItem streakShieldItem =
       ShopCatalog.getItemById('utility_streak_shield_1')!;
+  final ShopItem mysteryBoxItem =
+      ShopCatalog.getItemById('utility_mystery_box_basic')!;
 
   group('ShopItemDetailScreen', () {
     testWidgets('renders title name and description',
@@ -64,7 +66,7 @@ void main() {
           .pumpWidget(_app(_screen(item: cosmeticItem, walletCoins: 10)));
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Sin monedas suficientes'), findsOneWidget);
+      expect(find.text('Saldo insuficiente'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('owned cosmetic shows Equipar', (WidgetTester tester) async {
@@ -101,7 +103,7 @@ void main() {
           find.byKey(const Key('shopItemDetailStatusValue')), findsOneWidget);
     });
 
-    testWidgets('utility with quantity shows En mochila xN',
+    testWidgets('utility with quantity keeps purchase CTA visible',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         _app(
@@ -114,7 +116,25 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('En mochila x3'), findsAtLeastNWidgets(1));
+      expect(find.text('Comprar'), findsOneWidget);
+      expect(find.text('Comprado'), findsNothing);
+    });
+
+    testWidgets('utility with quantity still keeps Comprar enabled',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            item: utilityItem,
+            walletCoins: 540,
+            backpackQuantity: 3,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(find.text('Comprar'), findsOneWidget);
+      expect(find.text('Comprado'), findsNothing);
     });
 
     testWidgets('XP Boost detail renders summary content',
@@ -129,7 +149,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('XP Boost 1 Dia'), findsOneWidget);
+      expect(find.text('Potenciador de XP de 1 día'), findsOneWidget);
       expect(find.text('Utilidad'), findsNothing);
       expect(
         tester.getTopLeft(find.byKey(const Key('shopItemDetailTitle'))).dy <
@@ -142,7 +162,7 @@ void main() {
       );
       expect(
         find.text(
-            'Aumenta temporalmente la experiencia obtenida al completar habitos.'),
+            'Aumenta temporalmente la experiencia obtenida al completar hábitos.'),
         findsOneWidget,
       );
       expect(find.byKey(const Key('shopItemDetailTitle')), findsOneWidget);
@@ -160,7 +180,7 @@ void main() {
         find.byKey(const Key('shopItemDetailUtilityEffectValue')),
         findsOneWidget,
       );
-      expect(find.text('75 coins'), findsOneWidget);
+      expect(find.text('75 monedas'), findsOneWidget);
       expect(find.text('Comprar'), findsOneWidget);
       expect(find.text('Necesitas mas monedas para conseguir esta utilidad.'),
           findsNothing);
@@ -178,11 +198,11 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Coin Boost 1 Dia'), findsOneWidget);
+      expect(find.text('Potenciador de monedas de 1 día'), findsOneWidget);
       expect(find.text('Utilidad'), findsNothing);
       expect(
         find.text(
-            'Aumenta temporalmente las monedas obtenidas al completar habitos.'),
+            'Aumenta temporalmente las monedas obtenidas al completar hábitos.'),
         findsOneWidget,
       );
       expect(
@@ -194,7 +214,7 @@ void main() {
         find.byKey(const Key('shopItemDetailUtilityEffectValue')),
         findsOneWidget,
       );
-      expect(find.text('100 coins'), findsOneWidget);
+      expect(find.text('100 monedas'), findsOneWidget);
       expect(find.text('Comprar'), findsOneWidget);
     });
 
@@ -210,12 +230,9 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Streak Recover'), findsOneWidget);
+      expect(find.text('Recuperación de racha'), findsAtLeastNWidgets(2));
       expect(find.text('Utilidad'), findsNothing);
-      expect(
-        find.text('Permite recuperar una racha perdida una vez.'),
-        findsOneWidget,
-      );
+      expect(find.text('Recupera una racha perdida una vez.'), findsOneWidget);
       expect(
         find.byKey(const Key('shopItemDetailUtilityTypeValue')),
         findsOneWidget,
@@ -225,7 +242,7 @@ void main() {
         find.byKey(const Key('shopItemDetailUtilityEffectValue')),
         findsOneWidget,
       );
-      expect(find.text('250 coins'), findsOneWidget);
+      expect(find.text('250 monedas'), findsOneWidget);
       expect(find.text('Comprar'), findsOneWidget);
     });
 
@@ -241,10 +258,10 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Streak Shield'), findsOneWidget);
+      expect(find.text('Escudo de racha'), findsOneWidget);
       expect(find.text('Utilidad'), findsNothing);
       expect(
-        find.text('Protege una racha frente a un dia fallado.'),
+        find.text('Protege una racha frente a un día fallado.'),
         findsOneWidget,
       );
       expect(
@@ -256,8 +273,27 @@ void main() {
         find.byKey(const Key('shopItemDetailUtilityEffectValue')),
         findsOneWidget,
       );
-      expect(find.text('300 coins'), findsOneWidget);
+      expect(find.text('300 monedas'), findsOneWidget);
       expect(find.text('Comprar'), findsOneWidget);
+    });
+
+    testWidgets('Mystery Box detail uses a larger preview scale',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            item: mysteryBoxItem,
+            walletCoins: 540,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(
+        find.byKey(const Key('shopUtilityAssetArt-utility_mystery_box_basic')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('tap Comprar calls onPurchasePressed',
@@ -279,6 +315,29 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(pressedId, cosmeticItem.id);
+    });
+
+    testWidgets('tap Comprar on utility with quantity calls onPurchasePressed',
+        (WidgetTester tester) async {
+      String? pressedId;
+
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            item: utilityItem,
+            walletCoins: 540,
+            backpackQuantity: 2,
+            onPurchasePressed: (String itemId) => pressedId = itemId,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+
+      await tester.ensureVisible(find.text('Comprar'));
+      await tester.tap(find.text('Comprar'));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(pressedId, utilityItem.id);
     });
 
     testWidgets('tap Equipar calls onEquipPressed',
@@ -310,6 +369,7 @@ Widget _app(Widget child) {
     theme: AppTheme.theme,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
+    locale: const Locale('es'),
     home: child,
   );
 }

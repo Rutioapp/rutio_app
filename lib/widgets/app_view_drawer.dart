@@ -138,7 +138,7 @@ class AppViewDrawer extends StatelessWidget {
                     if (onGoShop != null) ...[
                       _DrawerTile(
                         icon: Icons.storefront_outlined,
-                        label: 'Tienda',
+                        label: context.l10n.shopTitle,
                         isSelected: selected == 'shop',
                         onTap: () => _go(context, onGoShop!),
                       ),

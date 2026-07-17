@@ -192,6 +192,7 @@ void main() {
       const item = BackpackItem(
         itemId: 'xp_boost_small',
         quantity: 3,
+        updatedAtMillis: 1710000000000,
       );
 
       final restored = BackpackItem.fromJson(item.toJson());
@@ -205,8 +206,14 @@ void main() {
         quantity: 3,
       );
 
-      expect(item.copyWith(quantity: 5),
-          const BackpackItem(itemId: 'xp_boost_small', quantity: 5));
+      expect(
+        item.copyWith(quantity: 5, updatedAtMillis: 1710000000000),
+        const BackpackItem(
+          itemId: 'xp_boost_small',
+          quantity: 5,
+          updatedAtMillis: 1710000000000,
+        ),
+      );
     });
   });
 }

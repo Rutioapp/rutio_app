@@ -4,7 +4,6 @@ import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
-import 'package:rutio/features/shop/domain/models/backpack_item.dart';
 import 'package:rutio/features/shop/domain/shop_state.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,12 +48,46 @@ void main() {
       expect(success, isTrue);
       expect(_walletCoins(store), 125);
       expect(shopState.inventory, isEmpty);
-      expect(
-        shopState.backpackItems,
-        const <BackpackItem>[
-          BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 1),
-        ],
+      expect(shopState.backpackItems, hasLength(1));
+      expect(shopState.backpackItems.first.itemId, 'utility_xp_boost_1d');
+      expect(shopState.backpackItems.first.quantity, 1);
+      expect(shopState.backpackItems.first.updatedAtMillis, isNotNull);
+    });
+
+    test('buying a utility three times accumulates quantity and persists',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final item = ShopCatalog.getItemById('utility_xp_boost_1d')!;
+      final store = await _seedStore(walletCoins: 300);
+
+      final first = await store.buyItem(
+        itemId: item.id,
+        price: item.priceCoins,
       );
+      final second = await store.buyItem(
+        itemId: item.id,
+        price: item.priceCoins,
+      );
+      final third = await store.buyItem(
+        itemId: item.id,
+        price: item.priceCoins,
+      );
+
+      final shopState = await ShopLocalRepository().load();
+      expect(first, isTrue);
+      expect(second, isTrue);
+      expect(third, isTrue);
+      expect(_walletCoins(store), 75);
+      expect(shopState.inventory, isEmpty);
+      expect(shopState.backpackItems, hasLength(1));
+      expect(shopState.backpackItems.first.itemId, 'utility_xp_boost_1d');
+      expect(shopState.backpackItems.first.quantity, 3);
+
+      final reloaded = await ShopLocalRepository().load();
+      expect(reloaded.backpackItems, hasLength(1));
+      expect(reloaded.backpackItems.first.itemId, 'utility_xp_boost_1d');
+      expect(reloaded.backpackItems.first.quantity, 3);
     });
 
     test('purchase fails when wallet does not have enough coins', () async {

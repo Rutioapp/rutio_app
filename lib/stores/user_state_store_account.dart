@@ -421,8 +421,7 @@ Future<void> _bestEffortSyncProfileBasics(
     final result = await repository.updateProfileBasics(
       email: store.authEmail,
       displayName: _nullableTrimValue(displayName),
-      avatarUrl:
-          shouldClearAvatarUrl ? null : _nullableTrimValue(avatarUrl),
+      avatarUrl: shouldClearAvatarUrl ? null : _nullableTrimValue(avatarUrl),
       clearAvatarUrl: shouldClearAvatarUrl,
     );
     if (!result.isSuccess && kDebugMode) {
@@ -541,7 +540,9 @@ Future<bool> _buyItem(
 
   final wallet = _map(userState['wallet']);
   final coins = ((wallet['coins'] as num?) ?? 0).toInt();
-  final shopRepository = ShopLocalRepository();
+  final shopRepository = ShopLocalRepository(
+    scopeResolver: () => store.activeLocalScopeUserId ?? store.userId,
+  );
   final shopState = await shopRepository.load();
   final result = ShopService(
     state: shopState,

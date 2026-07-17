@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopPurchaseConfirmationSheet extends StatelessWidget {
   const ShopPurchaseConfirmationSheet({
@@ -22,6 +24,8 @@ class ShopPurchaseConfirmationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return SafeArea(
       top: false,
       child: Padding(
@@ -53,7 +57,7 @@ class ShopPurchaseConfirmationSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Confirmar compra',
+                    l10n.shopConfirmPurchaseTitle,
                     style: ShopUiTextStyles.cardTitle,
                   ),
                   const SizedBox(height: 8),
@@ -63,30 +67,32 @@ class ShopPurchaseConfirmationSheet extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
                           Text(
-                            item.title,
+                            l10n.shopUtilityTitleForItem(item),
                             style:
                                 ShopUiTextStyles.label.copyWith(fontSize: 15),
                           ),
                           const SizedBox(height: 16),
                           _InfoRow(
-                            label: 'Precio',
-                            value: '${item.priceCoins} coins',
+                            label: l10n.shopPriceLabel,
+                            value: l10n.shopPriceCoins(item.priceCoins),
                           ),
                           const SizedBox(height: 10),
                           _InfoRow(
-                            label: 'Saldo actual',
-                            value: '$walletCoins coins',
+                            label: l10n.shopCurrentBalanceLabel,
+                            value: l10n.shopPriceCoins(walletCoins),
                           ),
                           const SizedBox(height: 10),
                           _InfoRow(
-                            label: 'Saldo despues',
-                            value: '${remainingCoins.clamp(0, 1 << 31)} coins',
+                            label: l10n.shopRemainingBalanceLabel,
+                            value: l10n.shopPriceCoins(
+                              remainingCoins.clamp(0, 1 << 31),
+                            ),
                           ),
                           const SizedBox(height: 14),
                           Text(
                             hasEnoughCoins
-                                ? 'Se añadira a tu ${item.cosmeticSlot != null ? 'coleccion' : 'mochila'}.'
-                                : 'No tienes monedas suficientes para completar esta compra.',
+                                ? l10n.shopActionAvailable
+                                : l10n.shopStatusInsufficientCoins,
                             style: ShopUiTextStyles.bodySmall.copyWith(
                               color: hasEnoughCoins
                                   ? ShopUiTokens.textSecondary
@@ -113,7 +119,7 @@ class ShopPurchaseConfirmationSheet extends StatelessWidget {
                               borderRadius: ShopUiTokens.radiusXlShape,
                             ),
                           ),
-                          child: const Text('Cancelar'),
+                          child: Text(l10n.shopCancel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -121,8 +127,8 @@ class ShopPurchaseConfirmationSheet extends StatelessWidget {
                         child: ShopPrimaryButton(
                           key: const Key('shopPurchaseConfirmButton'),
                           label: hasEnoughCoins
-                              ? 'Comprar'
-                              : 'Sin monedas suficientes',
+                              ? l10n.shopActionBuy
+                              : l10n.shopStatusInsufficientCoins,
                           onPressed:
                               hasEnoughCoins ? () => onConfirm(item.id) : null,
                           expanded: true,

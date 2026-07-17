@@ -18,7 +18,7 @@ class ShopBackpackSection extends StatelessWidget {
   final String? subtitle;
   final List<BackpackItemViewModel> items;
   final ValueChanged<String> onItemPressed;
-  final ValueChanged<String> onUsePressed;
+  final Future<void> Function(String) onUsePressed;
 
   @override
   Widget build(BuildContext context) {

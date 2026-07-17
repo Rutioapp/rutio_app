@@ -5716,6 +5716,822 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Menu'**
   String get monthlyMenuTooltip;
+
+  /// No description provided for @shopTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tienda'**
+  String get shopTitle;
+
+  /// No description provided for @shopHomeSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejora tu experiencia Rutio'**
+  String get shopHomeSubtitle;
+
+  /// No description provided for @shopExploreTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Explora'**
+  String get shopExploreTitle;
+
+  /// No description provided for @shopExploreSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tres accesos rápidos para entrar en la nueva tienda.'**
+  String get shopExploreSubtitle;
+
+  /// No description provided for @shopCosmeticsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cosméticos'**
+  String get shopCosmeticsTitle;
+
+  /// No description provided for @shopCosmeticsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Fondos, tarjetas de hábitos y tarjetas de usuario con estilo Rutio.'**
+  String get shopCosmeticsSubtitle;
+
+  /// No description provided for @shopUtilitiesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Utilidades'**
+  String get shopUtilitiesTitle;
+
+  /// No description provided for @shopUtilitiesSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Boosts y ayudas listas para integrarse más adelante.'**
+  String get shopUtilitiesSubtitle;
+
+  /// No description provided for @shopBackpackTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mochila'**
+  String get shopBackpackTitle;
+
+  /// No description provided for @shopBackpackSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Gestiona tus consumibles'**
+  String get shopBackpackSubtitle;
+
+  /// No description provided for @shopCustomizationTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Personalización'**
+  String get shopCustomizationTitle;
+
+  /// No description provided for @shopCustomizationSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Gestiona los cosméticos que ya son tuyos'**
+  String get shopCustomizationSubtitle;
+
+  /// No description provided for @shopCollectionsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Colecciones'**
+  String get shopCollectionsTitle;
+
+  /// No description provided for @shopCollectionsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada colección es un pequeño universo'**
+  String get shopCollectionsSubtitle;
+
+  /// No description provided for @shopDetailTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle'**
+  String get shopDetailTitle;
+
+  /// No description provided for @shopDetailUnavailableTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle no disponible'**
+  String get shopDetailUnavailableTitle;
+
+  /// No description provided for @shopDetailUnavailableMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido cargar este item.'**
+  String get shopDetailUnavailableMessage;
+
+  /// No description provided for @shopNoDescriptionYet.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin descripción todavía.'**
+  String get shopNoDescriptionYet;
+
+  /// No description provided for @shopEmptyStateNoResultsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin resultados'**
+  String get shopEmptyStateNoResultsTitle;
+
+  /// No description provided for @shopEmptyStateNoResultsMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay resultados para este filtro.'**
+  String get shopEmptyStateNoResultsMessage;
+
+  /// No description provided for @shopEmptyBackpackTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'La mochila está vacía'**
+  String get shopEmptyBackpackTitle;
+
+  /// No description provided for @shopEmptyBackpackMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Las utilidades compradas aparecerán aquí.'**
+  String get shopEmptyBackpackMessage;
+
+  /// No description provided for @shopEmptyUtilitiesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Nada por mostrar'**
+  String get shopEmptyUtilitiesTitle;
+
+  /// No description provided for @shopEmptyUtilitiesMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay utilidades disponibles en esta categoría.'**
+  String get shopEmptyUtilitiesMessage;
+
+  /// No description provided for @shopEmptyCollectionsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay colecciones disponibles.'**
+  String get shopEmptyCollectionsTitle;
+
+  /// No description provided for @shopEmptyCollectionsMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Vuelve más tarde para descubrir nuevas colecciones.'**
+  String get shopEmptyCollectionsMessage;
+
+  /// No description provided for @shopActionBuy.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprar'**
+  String get shopActionBuy;
+
+  /// No description provided for @shopActionBuyPack.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprar pack'**
+  String get shopActionBuyPack;
+
+  /// No description provided for @shopActionActivate.
+  ///
+  /// In es, this message translates to:
+  /// **'Activar'**
+  String get shopActionActivate;
+
+  /// No description provided for @shopActionOpen.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir'**
+  String get shopActionOpen;
+
+  /// No description provided for @shopActionContinue.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get shopActionContinue;
+
+  /// No description provided for @shopActionUse.
+  ///
+  /// In es, this message translates to:
+  /// **'Usar'**
+  String get shopActionUse;
+
+  /// No description provided for @shopActionAccept.
+  ///
+  /// In es, this message translates to:
+  /// **'Aceptar'**
+  String get shopActionAccept;
+
+  /// No description provided for @shopActionEquip.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipar'**
+  String get shopActionEquip;
+
+  /// No description provided for @shopActionEquipped.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipado'**
+  String get shopActionEquipped;
+
+  /// No description provided for @shopActionAvailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Disponible'**
+  String get shopActionAvailable;
+
+  /// No description provided for @shopActionActive.
+  ///
+  /// In es, this message translates to:
+  /// **'Activo'**
+  String get shopActionActive;
+
+  /// No description provided for @shopStatusPurchased.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprado'**
+  String get shopStatusPurchased;
+
+  /// No description provided for @shopStatusBlocked.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloqueado'**
+  String get shopStatusBlocked;
+
+  /// No description provided for @shopStatusIncludedInPack.
+  ///
+  /// In es, this message translates to:
+  /// **'Incluido en pack'**
+  String get shopStatusIncludedInPack;
+
+  /// No description provided for @shopStatusInsufficientCoins.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo insuficiente'**
+  String get shopStatusInsufficientCoins;
+
+  /// No description provided for @shopStatusProcessing.
+  ///
+  /// In es, this message translates to:
+  /// **'Procesando...'**
+  String get shopStatusProcessing;
+
+  /// No description provided for @shopStatusBusyOpening.
+  ///
+  /// In es, this message translates to:
+  /// **'Abriendo...'**
+  String get shopStatusBusyOpening;
+
+  /// No description provided for @shopRarityCommon.
+  ///
+  /// In es, this message translates to:
+  /// **'Común'**
+  String get shopRarityCommon;
+
+  /// No description provided for @shopRarityUncommon.
+  ///
+  /// In es, this message translates to:
+  /// **'Poco común'**
+  String get shopRarityUncommon;
+
+  /// No description provided for @shopRarityRare.
+  ///
+  /// In es, this message translates to:
+  /// **'Raro'**
+  String get shopRarityRare;
+
+  /// No description provided for @shopRarityEpic.
+  ///
+  /// In es, this message translates to:
+  /// **'Épico'**
+  String get shopRarityEpic;
+
+  /// No description provided for @shopRarityLegendary.
+  ///
+  /// In es, this message translates to:
+  /// **'Legendario'**
+  String get shopRarityLegendary;
+
+  /// No description provided for @shopFilterAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos'**
+  String get shopFilterAll;
+
+  /// No description provided for @shopFilterBoosts.
+  ///
+  /// In es, this message translates to:
+  /// **'Boosts'**
+  String get shopFilterBoosts;
+
+  /// No description provided for @shopFilterStreak.
+  ///
+  /// In es, this message translates to:
+  /// **'Racha'**
+  String get shopFilterStreak;
+
+  /// No description provided for @shopFilterBoxes.
+  ///
+  /// In es, this message translates to:
+  /// **'Cajas'**
+  String get shopFilterBoxes;
+
+  /// No description provided for @shopFilterWallpapers.
+  ///
+  /// In es, this message translates to:
+  /// **'Fondos'**
+  String get shopFilterWallpapers;
+
+  /// No description provided for @shopFilterCards.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjetas'**
+  String get shopFilterCards;
+
+  /// No description provided for @shopFilterPacks.
+  ///
+  /// In es, this message translates to:
+  /// **'Packs'**
+  String get shopFilterPacks;
+
+  /// No description provided for @shopCategoryPack.
+  ///
+  /// In es, this message translates to:
+  /// **'Pack'**
+  String get shopCategoryPack;
+
+  /// No description provided for @shopCategoryWallpaper.
+  ///
+  /// In es, this message translates to:
+  /// **'Fondo'**
+  String get shopCategoryWallpaper;
+
+  /// No description provided for @shopCategoryHabitCard.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjeta de hábitos'**
+  String get shopCategoryHabitCard;
+
+  /// No description provided for @shopCategoryUserCard.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjeta de usuario'**
+  String get shopCategoryUserCard;
+
+  /// No description provided for @shopCategoryUtility.
+  ///
+  /// In es, this message translates to:
+  /// **'Utilidad'**
+  String get shopCategoryUtility;
+
+  /// No description provided for @shopCategoryBoosts.
+  ///
+  /// In es, this message translates to:
+  /// **'Boosts'**
+  String get shopCategoryBoosts;
+
+  /// No description provided for @shopCategoryStreaks.
+  ///
+  /// In es, this message translates to:
+  /// **'Rachas'**
+  String get shopCategoryStreaks;
+
+  /// No description provided for @shopCategoryBoxes.
+  ///
+  /// In es, this message translates to:
+  /// **'Cajas'**
+  String get shopCategoryBoxes;
+
+  /// No description provided for @shopPriceCoins.
+  ///
+  /// In es, this message translates to:
+  /// **'{value} monedas'**
+  String shopPriceCoins(int value);
+
+  /// No description provided for @shopPriceAmber.
+  ///
+  /// In es, this message translates to:
+  /// **'{value} ámbar'**
+  String shopPriceAmber(int value);
+
+  /// No description provided for @shopRemainingUses.
+  ///
+  /// In es, this message translates to:
+  /// **'{remaining} de {total} completaciones'**
+  String shopRemainingUses(int remaining, int total);
+
+  /// No description provided for @shopOwnedCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} objetos'**
+  String shopOwnedCount(int count);
+
+  /// No description provided for @shopBackpackCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Mochila x{count}'**
+  String shopBackpackCount(int count);
+
+  /// No description provided for @shopXpBoostTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Potenciador de XP de 1 día'**
+  String get shopXpBoostTitle;
+
+  /// No description provided for @shopXpBoostDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Aumenta temporalmente la experiencia obtenida al completar hábitos.'**
+  String get shopXpBoostDescription;
+
+  /// No description provided for @shopXpBoostEffect.
+  ///
+  /// In es, this message translates to:
+  /// **'Multiplicador de XP x2'**
+  String get shopXpBoostEffect;
+
+  /// No description provided for @shopCoinBoostTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Potenciador de monedas de 1 día'**
+  String get shopCoinBoostTitle;
+
+  /// No description provided for @shopCoinBoostDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Aumenta temporalmente las monedas obtenidas al completar hábitos.'**
+  String get shopCoinBoostDescription;
+
+  /// No description provided for @shopCoinBoostEffect.
+  ///
+  /// In es, this message translates to:
+  /// **'Multiplicador de monedas x2'**
+  String get shopCoinBoostEffect;
+
+  /// No description provided for @shopStreakRecoverTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuperación de racha'**
+  String get shopStreakRecoverTitle;
+
+  /// No description provided for @shopStreakRecoverDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Recupera una racha perdida una vez.'**
+  String get shopStreakRecoverDescription;
+
+  /// No description provided for @shopStreakRecoverEffect.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuperación de racha'**
+  String get shopStreakRecoverEffect;
+
+  /// No description provided for @shopStreakShieldTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Escudo de racha'**
+  String get shopStreakShieldTitle;
+
+  /// No description provided for @shopStreakShieldDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Protege una racha frente a un día fallado.'**
+  String get shopStreakShieldDescription;
+
+  /// No description provided for @shopStreakShieldEffect.
+  ///
+  /// In es, this message translates to:
+  /// **'Protección de racha'**
+  String get shopStreakShieldEffect;
+
+  /// No description provided for @shopMysteryBoxTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Caja misteriosa'**
+  String get shopMysteryBoxTitle;
+
+  /// No description provided for @shopMysteryBoxDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Una caja misteriosa básica con una sorpresa en su interior.'**
+  String get shopMysteryBoxDescription;
+
+  /// No description provided for @shopMysteryBoxEffect.
+  ///
+  /// In es, this message translates to:
+  /// **'Sorpresa futura'**
+  String get shopMysteryBoxEffect;
+
+  /// No description provided for @shopUtilityDurationHours.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{1 hora} other{{count} horas}}'**
+  String shopUtilityDurationHours(int count);
+
+  /// No description provided for @shopUtilityCharges.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{1 uso} other{{count} usos}}'**
+  String shopUtilityCharges(int count);
+
+  /// No description provided for @shopMysteryBoxOpeningTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu Mystery Box está lista'**
+  String get shopMysteryBoxOpeningTitle;
+
+  /// No description provided for @shopMysteryBoxTapToOpen.
+  ///
+  /// In es, this message translates to:
+  /// **'Pulsa para abrir'**
+  String get shopMysteryBoxTapToOpen;
+
+  /// No description provided for @shopMysteryBoxOpenButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir Mystery Box'**
+  String get shopMysteryBoxOpenButton;
+
+  /// No description provided for @shopMysteryBoxRewardTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu recompensa'**
+  String get shopMysteryBoxRewardTitle;
+
+  /// No description provided for @shopMysteryBoxRewardContinue.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get shopMysteryBoxRewardContinue;
+
+  /// No description provided for @shopMysteryBoxRewardDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'La apertura ha terminado. Todo ya está guardado en tu cuenta y en tu mochila.'**
+  String get shopMysteryBoxRewardDescription;
+
+  /// No description provided for @shopMysteryBoxErrorNoBoxes.
+  ///
+  /// In es, this message translates to:
+  /// **'No quedan Mystery Boxes disponibles.'**
+  String get shopMysteryBoxErrorNoBoxes;
+
+  /// No description provided for @shopMysteryBoxErrorConfig.
+  ///
+  /// In es, this message translates to:
+  /// **'La Mystery Box no está configurada correctamente.'**
+  String get shopMysteryBoxErrorConfig;
+
+  /// No description provided for @shopMysteryBoxErrorPersist.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos guardar la apertura. Inténtalo otra vez.'**
+  String get shopMysteryBoxErrorPersist;
+
+  /// No description provided for @shopMysteryBoxErrorPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya hay una apertura pendiente para esta Mystery Box.'**
+  String get shopMysteryBoxErrorPending;
+
+  /// No description provided for @shopMysteryBoxErrorOpen.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos completar la apertura. Inténtalo otra vez.'**
+  String get shopMysteryBoxErrorOpen;
+
+  /// No description provided for @shopMysteryBoxErrorReward.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos mostrar la recompensa.'**
+  String get shopMysteryBoxErrorReward;
+
+  /// No description provided for @shopCollectionMinimalTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Minimal'**
+  String get shopCollectionMinimalTitle;
+
+  /// No description provided for @shopCollectionMinimalDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Colores planos y familias suaves para una base calmada.'**
+  String get shopCollectionMinimalDescription;
+
+  /// No description provided for @shopCollectionGradientTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Gradient'**
+  String get shopCollectionGradientTitle;
+
+  /// No description provided for @shopCollectionGradientDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Texturas y degradados sutiles con identidad editorial.'**
+  String get shopCollectionGradientDescription;
+
+  /// No description provided for @shopCollectionLandscapeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Landscape'**
+  String get shopCollectionLandscapeTitle;
+
+  /// No description provided for @shopCollectionLandscapeDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Composiciones con más presencia visual y profundidad suave.'**
+  String get shopCollectionLandscapeDescription;
+
+  /// No description provided for @shopConfirmPurchaseTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar compra'**
+  String get shopConfirmPurchaseTitle;
+
+  /// No description provided for @shopCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get shopCancel;
+
+  /// No description provided for @shopPriceLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Precio'**
+  String get shopPriceLabel;
+
+  /// No description provided for @shopCurrentBalanceLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo actual'**
+  String get shopCurrentBalanceLabel;
+
+  /// No description provided for @shopRemainingBalanceLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Saldo restante'**
+  String get shopRemainingBalanceLabel;
+
+  /// No description provided for @shopCategoryLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Categoría'**
+  String get shopCategoryLabel;
+
+  /// No description provided for @shopOriginalPriceLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Precio original'**
+  String get shopOriginalPriceLabel;
+
+  /// No description provided for @shopSavingsLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahorro'**
+  String get shopSavingsLabel;
+
+  /// No description provided for @shopIncludesLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Incluye'**
+  String get shopIncludesLabel;
+
+  /// No description provided for @shopRarityLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Rareza'**
+  String get shopRarityLabel;
+
+  /// No description provided for @shopTypeLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo'**
+  String get shopTypeLabel;
+
+  /// No description provided for @shopStyleLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Estilo'**
+  String get shopStyleLabel;
+
+  /// No description provided for @shopStatusLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Estado'**
+  String get shopStatusLabel;
+
+  /// No description provided for @shopDurationLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Duración'**
+  String get shopDurationLabel;
+
+  /// No description provided for @shopEffectLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Efecto'**
+  String get shopEffectLabel;
+
+  /// No description provided for @shopProcessingLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Procesando...'**
+  String get shopProcessingLabel;
+
+  /// No description provided for @shopBackpackEmptyAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Ir a Utilidades'**
+  String get shopBackpackEmptyAction;
+
+  /// No description provided for @shopBackpackActiveEffectsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Efectos activos'**
+  String get shopBackpackActiveEffectsTitle;
+
+  /// No description provided for @shopBackpackActiveEffectsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes efectos activos.'**
+  String get shopBackpackActiveEffectsEmpty;
+
+  /// No description provided for @shopBackpackActiveEffectsActiveLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Activo'**
+  String get shopBackpackActiveEffectsActiveLabel;
+
+  /// No description provided for @shopBackpackActiveEffectsProgressLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'{remaining} de {total} usos restantes'**
+  String shopBackpackActiveEffectsProgressLabel(int remaining, int total);
+
+  /// No description provided for @shopHomeHeroTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu espacio, más tuyo'**
+  String get shopHomeHeroTitle;
+
+  /// No description provided for @shopHomeHeroSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Combina fondos, cards y estilo Rutio'**
+  String get shopHomeHeroSubtitle;
+
+  /// No description provided for @shopHomeHeroBackpackTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mochila'**
+  String get shopHomeHeroBackpackTitle;
+
+  /// No description provided for @shopHomeHeroBackpackSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus objetos'**
+  String get shopHomeHeroBackpackSubtitle;
+
+  /// No description provided for @shopHomeHeroCustomizationTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Personalizar'**
+  String get shopHomeHeroCustomizationTitle;
+
+  /// No description provided for @shopHomeHeroCustomizationSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu estilo'**
+  String get shopHomeHeroCustomizationSubtitle;
+
+  /// No description provided for @shopCollectionStatusCompleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Completada'**
+  String get shopCollectionStatusCompleted;
+
+  /// No description provided for @shopCollectionStatusStarted.
+  ///
+  /// In es, this message translates to:
+  /// **'Empezada'**
+  String get shopCollectionStatusStarted;
+
+  /// No description provided for @shopCollectionStatusNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva'**
+  String get shopCollectionStatusNew;
+
+  /// No description provided for @shopCollectionStatusBlocked.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloqueada'**
+  String get shopCollectionStatusBlocked;
+
+  /// No description provided for @shopCollectionItemsLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} objetos'**
+  String shopCollectionItemsLabel(int count);
+
+  /// No description provided for @shopCollectionViewCollection.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver colección'**
+  String get shopCollectionViewCollection;
 }
 
 class _AppLocalizationsDelegate

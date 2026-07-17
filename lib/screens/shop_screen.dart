@@ -20,7 +20,11 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
   void initState() {
     super.initState();
-    _shopRepository = ShopLocalRepository();
+    final userStateStore = context.read<UserStateStore>();
+    _shopRepository = ShopLocalRepository(
+      scopeResolver: () =>
+          userStateStore.activeLocalScopeUserId ?? userStateStore.userId,
+    );
   }
 
   @override

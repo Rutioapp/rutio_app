@@ -84,8 +84,7 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
   for (final record in records) {
     if (rewardAppliedIds.contains(record.id)) continue;
 
-    final reward =
-        AchievementRewardResolver.resolveForUnlockedRecord(record);
+    final reward = AchievementRewardResolver.resolveForUnlockedRecord(record);
     if (reward.rewardXp <= 0 && reward.rewardAmber <= 0) {
       rewardAppliedIds.add(record.id);
       continue;
@@ -173,9 +172,8 @@ Future<void> _setFeaturedAchievementIds(
 
   final userState = _ensureUserStateRoot(root);
   final achievements = _ensureAchievementsRoot(userState);
-  final unlockedIds = _unlockedAchievementRecords(store)
-      .map((record) => record.id)
-      .toSet();
+  final unlockedIds =
+      _unlockedAchievementRecords(store).map((record) => record.id).toSet();
 
   final sanitized = <String>[];
   for (final id in achievementIds) {
@@ -348,9 +346,8 @@ HabitStreakSnapshot _familyConsistencySnapshotForFamily(
   required String familyId,
   DateTime? today,
 }) {
-  final normalizedFamilyId = FamilyTheme.order.contains(familyId)
-      ? familyId
-      : FamilyTheme.fallbackId;
+  final normalizedFamilyId =
+      FamilyTheme.order.contains(familyId) ? familyId : FamilyTheme.fallbackId;
   final activeHabits = _mutableActiveHabits(userState)
       .where((habit) => _habitFamilyId(habit) == normalizedFamilyId)
       .map((habit) => Map<String, dynamic>.from(habit))
@@ -380,8 +377,8 @@ HabitStreakSnapshot _familyConsistencySnapshotForFamily(
     habitId: normalizedFamilyId,
     currentStreak: _computeCurrentStreak(countsByDay, referenceDay),
     bestStreak: _computeBestStreak(countsByDay),
-    totalCompletedDays:
-        countsByDay.values.fold<int>(0, (sum, value) => sum + (value > 0 ? 1 : 0)),
+    totalCompletedDays: countsByDay.values
+        .fold<int>(0, (sum, value) => sum + (value > 0 ? 1 : 0)),
   );
 }
 
@@ -395,18 +392,33 @@ HabitStreakSnapshot _habitStreakSnapshotForHabit(
     userState,
     habit: habit,
   );
+  final continuityByDay = _extractHabitStreakContinuityByDay(
+    userState,
+    habit: habit,
+  );
   final now = DateTime(
     (today ?? DateTime.now()).year,
     (today ?? DateTime.now()).month,
     (today ?? DateTime.now()).day,
   );
+  final currentStreak = _computeHabitCurrentStreak(
+    continuityByDay,
+    now,
+    userState: userState,
+    habitId: habitId,
+  );
+  final bestStreak = _computeHabitBestStreak(
+    continuityByDay,
+    userState: userState,
+    habitId: habitId,
+  );
 
   return HabitStreakSnapshot(
     habitId: habitId,
-    currentStreak: _computeCurrentStreak(countsByDay, now),
-    bestStreak: _computeBestStreak(countsByDay),
-    totalCompletedDays:
-        countsByDay.values.fold<int>(0, (sum, value) => sum + (value > 0 ? 1 : 0)),
+    currentStreak: currentStreak,
+    bestStreak: bestStreak,
+    totalCompletedDays: countsByDay.values
+        .fold<int>(0, (sum, value) => sum + (value > 0 ? 1 : 0)),
   );
 }
 
@@ -448,9 +460,8 @@ Map<DateTime, int> _extractFamilyDoneCountsByDay(
   final output = <DateTime, int>{};
   if (habits.isEmpty) return output;
 
-  final normalizedFamilyId = FamilyTheme.order.contains(familyId)
-      ? familyId
-      : FamilyTheme.fallbackId;
+  final normalizedFamilyId =
+      FamilyTheme.order.contains(familyId) ? familyId : FamilyTheme.fallbackId;
   final history = _ensureHistoryRoot(userState);
   final completions = _map(history['habitCompletions']);
   final countValues = _map(history['habitCountValues']);
@@ -756,9 +767,8 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
     }
   }
 
-  final completionDays = globalCountsByDay.values
-      .where((value) => value > 0)
-      .length;
+  final completionDays =
+      globalCountsByDay.values.where((value) => value > 0).length;
   final bestSevenDayFamilyDiversity = _computeMaxDistinctFamiliesInWindow(
     completedFamiliesByDay,
     windowLengthDays: 7,
@@ -791,7 +801,8 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
     bestHabitStreak: bestHabitStreak,
     completionDays: completionDays,
     totalCompletions: totalCompletions,
-    currentGlobalStreak: _computeCurrentStreak(globalCountsByDay, DateTime.now()),
+    currentGlobalStreak:
+        _computeCurrentStreak(globalCountsByDay, DateTime.now()),
     bestGlobalStreak: _computeBestStreak(globalCountsByDay),
     recoveryCount: _computeRecoveryCount(globalCountsByDay),
     comebackAfterGapCount: _computeComebackAfterGapCount(globalCountsByDay),
@@ -851,9 +862,9 @@ bool _isOnTimeCompletion(
   int toleranceMinutes = 10,
 }) {
   final habit = activeHabits.cast<Map<String, dynamic>?>().firstWhere(
-    (candidate) => _habitIdValue(candidate) == habitId,
-    orElse: () => null,
-  );
+        (candidate) => _habitIdValue(candidate) == habitId,
+        orElse: () => null,
+      );
   if (habit == null) return false;
 
   final reminderEnabled =
@@ -907,7 +918,8 @@ int _computeRecoveryCount(Map<DateTime, int> countsByDay) {
   var recoveries = 0;
   for (var index = 0; index < positiveDays.length; index += 1) {
     final previous = index == 0 ? null : positiveDays[index - 1];
-    if (previous != null && positiveDays[index].difference(previous).inDays == 1) {
+    if (previous != null &&
+        positiveDays[index].difference(previous).inDays == 1) {
       continue;
     }
 
@@ -1157,8 +1169,10 @@ _AchievementSyncOutcome _syncAchievementsFromCurrentHabits(
 
   final unlocked = unlockedById.values.toList(growable: false)
     ..sort((a, b) {
-      final aDate = _parsedUnlockedAt(a) ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = _parsedUnlockedAt(b) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final aDate =
+          _parsedUnlockedAt(a) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate =
+          _parsedUnlockedAt(b) ?? DateTime.fromMillisecondsSinceEpoch(0);
       return bDate.compareTo(aDate);
     });
 
@@ -1333,8 +1347,8 @@ Future<AchievementBackfillSummary> _syncExistingLocalAchievementsOnce(
         );
       }
 
-      final remoteCount = await store._achievementSyncService
-          .fetchCurrentUserAchievementCount(
+      final remoteCount =
+          await store._achievementSyncService.fetchCurrentUserAchievementCount(
         expectedLocalUserId: authenticatedUserId,
       );
       if (remoteCount != null && remoteCount > 0) {
@@ -1369,8 +1383,8 @@ Future<AchievementBackfillSummary> _syncExistingLocalAchievementsOnce(
     final achievements = _ensureAchievementsRoot(userState);
     final rewardAppliedIds = _rewardAppliedAchievementIdsSet(achievements);
 
-    final summary = await store._achievementSyncService
-        .syncExistingLocalAchievementsOnce(
+    final summary =
+        await store._achievementSyncService.syncExistingLocalAchievementsOnce(
       localUnlockedAchievements: records,
       rewardAppliedAchievementIds: rewardAppliedIds,
       expectedLocalUserId: authenticatedUserId,

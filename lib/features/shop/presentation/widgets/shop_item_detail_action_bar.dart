@@ -3,6 +3,8 @@ import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopItemDetailActionBar extends StatelessWidget {
   const ShopItemDetailActionBar({
@@ -28,7 +30,8 @@ class ShopItemDetailActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _ActionState action = _resolveAction();
+    final l10n = context.l10n;
+    final _ActionState action = _resolveAction(l10n);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -42,9 +45,9 @@ class ShopItemDetailActionBar extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (item.category != ShopItemCategory.utility) ...<Widget>[
+            if (action.helperText != null) ...<Widget>[
               Text(
-                action.helperText,
+                action.helperText!,
                 style: ShopUiTextStyles.bodySmall,
               ),
               const SizedBox(height: 12),
@@ -60,56 +63,50 @@ class ShopItemDetailActionBar extends StatelessWidget {
     );
   }
 
-  _ActionState _resolveAction() {
+  _ActionState _resolveAction(AppLocalizations l10n) {
     final bool hasStock = (backpackQuantity ?? 0) > 0;
     final bool hasEnoughCoins = walletCoins >= item.priceCoins;
 
     if (item.category == ShopItemCategory.utility) {
-      if (hasStock) {
-        return _ActionState(
-          label: 'En mochila x$backpackQuantity',
-          helperText: 'Ya tienes esta utilidad guardada para usarla despues.',
-          icon: Icons.inventory_2_outlined,
-        );
-      }
-
       if (!hasEnoughCoins) {
-        return const _ActionState(
-          label: 'Sin monedas suficientes',
-          helperText: 'Necesitas mas monedas para conseguir esta utilidad.',
+        return _ActionState(
+          label: l10n.shopStatusInsufficientCoins,
+          helperText: l10n.shopStatusInsufficientCoins,
           icon: Icons.lock_outline_rounded,
         );
       }
 
       return _ActionState(
-        label: 'Comprar',
-        helperText: 'Se añadira a tu mochila al comprarla.',
+        label: l10n.shopActionBuy,
+        helperText: hasStock
+            ? l10n.shopBackpackCount(backpackQuantity ?? 0)
+            : l10n.shopEmptyBackpackMessage,
         icon: Icons.monetization_on_outlined,
         onPressed: () => onPurchasePressed(item.id),
       );
     }
 
     if (!isOwned && !hasStock && !hasEnoughCoins) {
-      return const _ActionState(
-        label: 'Sin monedas suficientes',
-        helperText: 'Necesitas mas monedas para conseguir este item.',
+      return _ActionState(
+        label: l10n.shopStatusInsufficientCoins,
+        helperText: l10n.shopStatusInsufficientCoins,
         icon: Icons.lock_outline_rounded,
       );
     }
 
     if (item.cosmeticSlot != null) {
       if (isEquipped) {
-        return const _ActionState(
-          label: 'Equipado',
-          helperText: 'Este cosmetico ya esta activo en tu perfil.',
+        return _ActionState(
+          label: l10n.shopActionEquipped,
+          helperText: l10n.shopActionEquipped,
           icon: Icons.check_circle_outline_rounded,
         );
       }
 
       if (isOwned) {
         return _ActionState(
-          label: 'Equipar',
-          helperText: 'Puedes aplicar este cosmetico cuando quieras.',
+          label: l10n.shopActionEquip,
+          helperText: l10n.shopActionAvailable,
           icon: Icons.auto_fix_high_rounded,
           onPressed: () => onEquipPressed(item.id),
         );
@@ -118,17 +115,17 @@ class ShopItemDetailActionBar extends StatelessWidget {
 
     if (item.consumableType != null && hasStock) {
       return _ActionState(
-        label: 'En mochila x$backpackQuantity',
+        label: l10n.shopBackpackCount(backpackQuantity ?? 0),
         helperText: onConsumePressed == null
-            ? 'Ya tienes unidades guardadas para una fase futura.'
-            : 'Ya tienes unidades guardadas en tu mochila.',
+            ? l10n.shopStatusPurchased
+            : l10n.shopStatusPurchased,
         icon: Icons.inventory_2_outlined,
       );
     }
 
     return _ActionState(
-      label: 'Comprar',
-      helperText: 'Se añadira a tu coleccion al comprarlo.',
+      label: l10n.shopActionBuy,
+      helperText: l10n.shopActionAvailable,
       icon: Icons.monetization_on_outlined,
       onPressed: () => onPurchasePressed(item.id),
     );
@@ -138,13 +135,13 @@ class ShopItemDetailActionBar extends StatelessWidget {
 class _ActionState {
   const _ActionState({
     required this.label,
-    required this.helperText,
     required this.icon,
     this.onPressed,
+    this.helperText,
   });
 
   final String label;
-  final String helperText;
+  final String? helperText;
   final IconData icon;
   final VoidCallback? onPressed;
 }

@@ -250,8 +250,8 @@ void main() {
             onGoDiaryV2: () {},
             onGoArchived: () {},
             onGoStats: () {},
-            onGoShop: () => Navigator.of(scaffoldKey.currentContext!)
-                .pushNamed('/shop'),
+            onGoShop: () =>
+                Navigator.of(scaffoldKey.currentContext!).pushNamed('/shop'),
             onGoProfile: () {},
           ),
           body: const SizedBox.shrink(),
@@ -263,11 +263,57 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    await tester.tap(find.text('Tienda'));
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+
+    await tester.tap(find.text(l10n.shopTitle));
     await tester.pump(const Duration(milliseconds: 600));
 
     expect(observer.lastPushedRouteName, '/shop');
-    expect(find.text('Tienda'), findsOneWidget);
+    expect(find.text(l10n.shopTitle), findsOneWidget);
+  });
+
+  testWidgets('AppViewDrawer Shop entry is localized in English', (
+    WidgetTester tester,
+  ) async {
+    final scaffoldKey = GlobalKey<ScaffoldState>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          key: scaffoldKey,
+          drawer: AppViewDrawer(
+            onGoDaily: () {},
+            onGoWeekly: () {},
+            onGoMonthly: () {},
+            onGoTodo: () {},
+            onGoDiary: () {},
+            onGoDiaryV2: () {},
+            onGoArchived: () {},
+            onGoStats: () {},
+            onGoShop: () {},
+            onGoProfile: () {},
+          ),
+          body: const SizedBox.shrink(),
+        ),
+      ),
+    );
+
+    scaffoldKey.currentState!.openDrawer();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+    expect(find.text(l10n.shopTitle), findsOneWidget);
   });
 }
 

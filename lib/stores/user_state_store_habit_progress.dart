@@ -1,4 +1,5 @@
 part of 'user_state_store.dart';
+
 const String _lastCelebratedLevelMetaKey = 'lastCelebratedLevel';
 const LevelEventResolver _levelEventResolver = LevelEventResolver();
 const LevelRewardResolver _levelRewardResolver = LevelRewardResolver();
@@ -55,14 +56,17 @@ _ProgressSyncSnapshot _buildProgressSyncSnapshot(
   );
 }
 
-_ProgressSyncSnapshot _buildRemoteProgressSnapshot(RemoteUserProgress progress) {
+_ProgressSyncSnapshot _buildRemoteProgressSnapshot(
+    RemoteUserProgress progress) {
   final safeXp = progress.totalXp < 0 ? 0 : progress.totalXp;
   final safeLevel = progress.level < 1 ? 1 : progress.level;
   final levelProgress = LevelProgression.fromTotalXp(safeXp);
-  final xpInCurrentLevel =
-      progress.currentLevelXp < 0 ? levelProgress.currentLevelXp : progress.currentLevelXp;
-  final xpToNextLevel =
-      progress.nextLevelXp < 1 ? levelProgress.xpToNextLevel : progress.nextLevelXp;
+  final xpInCurrentLevel = progress.currentLevelXp < 0
+      ? levelProgress.currentLevelXp
+      : progress.currentLevelXp;
+  final xpToNextLevel = progress.nextLevelXp < 1
+      ? levelProgress.xpToNextLevel
+      : progress.nextLevelXp;
   final safeCoins = progress.ambarBalance < 0 ? 0 : progress.ambarBalance;
 
   return _ProgressSyncSnapshot(
@@ -159,8 +163,9 @@ Future<SupabaseUserProgressRestoreResult>
   final progression = _map(userState['progression']);
   final wallet = _map(userState['wallet']);
   final previousCelebratedLevel = _lastCelebratedLevel(userState);
-  final nextCelebratedLevel =
-      remoteSnapshot.level > previousCelebratedLevel ? remoteSnapshot.level : previousCelebratedLevel;
+  final nextCelebratedLevel = remoteSnapshot.level > previousCelebratedLevel
+      ? remoteSnapshot.level
+      : previousCelebratedLevel;
 
   progression['xp'] = remoteSnapshot.xp;
   progression['level'] = remoteSnapshot.level;
@@ -172,12 +177,13 @@ Future<SupabaseUserProgressRestoreResult>
   _setLastCelebratedLevel(userState, level: nextCelebratedLevel);
   _touchLastSavedAt(userState);
 
-  final celebrationQueueChanged =
-      store._pendingLevelCelebrations.isNotEmpty || store._pendingAchievementUnlocks.isNotEmpty;
+  final celebrationQueueChanged = store._pendingLevelCelebrations.isNotEmpty ||
+      store._pendingAchievementUnlocks.isNotEmpty;
   store._pendingLevelCelebrations.clear();
   store._pendingAchievementUnlocks.clear();
 
-  final changed = !snapshotsMatch || previousCelebratedLevel != nextCelebratedLevel;
+  final changed =
+      !snapshotsMatch || previousCelebratedLevel != nextCelebratedLevel;
   if (!changed && !celebrationQueueChanged) {
     return const SupabaseUserProgressRestoreResult(
       status: SupabaseUserProgressRestoreStatus.alreadyAligned,
@@ -522,80 +528,6 @@ void _syncHabitHistoryFromState(
       value: _safeNum(habit['progress'], fallback: 0),
     );
   }
-}
-
-void _applyHabitRewards(
-  UserStateStore store,
-  Map<String, dynamic> userState, {
-  required String familyId,
-  required int xpGain,
-  required int coinsGain,
-}) {
-  if (xpGain <= 0 && coinsGain <= 0) return;
-
-  final progression = _map(userState['progression']);
-  final currentXp = ((progression['xp'] as num?) ?? 0).toInt();
-  final newXp = currentXp + xpGain;
-  _updateProgressionLevelFromXp(
-    progression,
-    totalXp: newXp,
-  );
-  _queueLevelCelebrationForXpChange(
-    store,
-    userState: userState,
-    previousXp: currentXp,
-    currentXp: newXp,
-  );
-
-  final wallet = _map(userState['wallet']);
-  final currentCoins = ((wallet['coins'] as num?) ?? 0).toInt();
-  wallet['coins'] = currentCoins + coinsGain;
-
-  final familyXp = _map(userState['familyXp']);
-  familyXp[familyId] = ((familyXp[familyId] as num?) ?? 0).toInt() + xpGain;
-
-  final daily = _map(userState['daily']);
-  daily['xpEarnedToday'] =
-      ((daily['xpEarnedToday'] as num?) ?? 0).toInt() + xpGain;
-  daily['coinsEarnedToday'] =
-      ((daily['coinsEarnedToday'] as num?) ?? 0).toInt() + coinsGain;
-
-  userState['progression'] = progression;
-  userState['wallet'] = wallet;
-  userState['familyXp'] = familyXp;
-  userState['daily'] = daily;
-}
-
-int _coinsForCompletedHabitReward(Map<String, dynamic> habit) {
-  if (!_isCountHabit(habit)) return _coinsForCheck();
-  final xpGain = _xpForCountCompletion(_habitTarget(habit));
-  return _coinsForCountCompletion(xpGain);
-}
-
-int _revokeGrantedHabitRewardCoins(
-  Map<String, dynamic> userState, {
-  required Map<String, dynamic> habit,
-  required String habitId,
-}) {
-  if (!_hasDailyRewardGrant(userState, habitId: habitId)) return 0;
-
-  final wallet = _map(userState['wallet']);
-  final currentCoins = _safeInt(wallet['coins'], fallback: 0);
-  final coinsToRevoke = _coinsForCompletedHabitReward(habit);
-  final revokedCoins =
-      coinsToRevoke <= 0 ? 0 : currentCoins.clamp(0, coinsToRevoke).toInt();
-
-  wallet['coins'] = currentCoins - revokedCoins;
-  userState['wallet'] = wallet;
-
-  final daily = _map(userState['daily']);
-  final currentDailyCoins = _safeInt(daily['coinsEarnedToday'], fallback: 0);
-  daily['coinsEarnedToday'] =
-      (currentDailyCoins - revokedCoins).clamp(0, 1 << 30).toInt();
-  userState['daily'] = daily;
-
-  _setDailyRewardGrant(userState, habitId: habitId, granted: false);
-  return revokedCoins;
 }
 
 _HabitProgressResult _setCountHabitProgress(

@@ -14,6 +14,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final ShopItem cosmeticItem = ShopCatalog.getItemById('wallpaper_mist_blue')!;
+  final ShopItem utilityItem = ShopCatalog.getItemById('utility_xp_boost_1d')!;
 
   group('ShopItemDetailContainer', () {
     testWidgets('pressing Comprar in detail opens confirmation sheet',
@@ -107,6 +108,129 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(find.text('Sin monedas suficientes'), findsOneWidget);
+    });
+
+    testWidgets('utility detail allows repeated purchases',
+        (WidgetTester tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800, 1200);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+
+      var purchaseCount = 0;
+      var quantity = 0;
+      var walletCoins = 500;
+
+      await tester.pumpWidget(
+        _app(
+          _container(
+            item: utilityItem,
+            loadItemState: (String itemId) async => ShopItemState(
+              item: utilityItem,
+              walletCoins: walletCoins,
+              isOwned: false,
+              isEquipped: false,
+              backpackQuantity: quantity,
+            ),
+            purchaseItem: (String itemId) async {
+              purchaseCount++;
+              quantity++;
+              walletCoins -= utilityItem.priceCoins;
+              return ShopControllerResult(
+                status: ShopControllerStatus.success,
+                item: utilityItem,
+                shopState: const ShopState.initial(),
+                walletCoins: walletCoins,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      await tester.tap(find.text('Comprar'));
+      await tester.pump(const Duration(milliseconds: 16));
+      tester
+          .widget<ShopPurchaseConfirmationSheet>(
+            find.byType(ShopPurchaseConfirmationSheet),
+          )
+          .onConfirm(utilityItem.id);
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(purchaseCount, 1);
+      expect(find.text('Comprar'), findsOneWidget);
+
+      await tester.tap(find.text('Comprar'));
+      await tester.pump(const Duration(milliseconds: 16));
+      tester
+          .widget<ShopPurchaseConfirmationSheet>(
+            find.byType(ShopPurchaseConfirmationSheet),
+          )
+          .onConfirm(utilityItem.id);
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(purchaseCount, 2);
+      expect(find.text('Comprar'), findsOneWidget);
+    });
+
+    testWidgets('double tap while purchase is in flight does not duplicate',
+        (WidgetTester tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800, 1200);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+
+      var purchaseCount = 0;
+      var quantity = 0;
+      var walletCoins = 500;
+
+      await tester.pumpWidget(
+        _app(
+          _container(
+            item: utilityItem,
+            loadItemState: (String itemId) async => ShopItemState(
+              item: utilityItem,
+              walletCoins: walletCoins,
+              isOwned: false,
+              isEquipped: false,
+              backpackQuantity: quantity,
+            ),
+            purchaseItem: (String itemId) async {
+              purchaseCount++;
+              await Future<void>.delayed(const Duration(milliseconds: 200));
+              quantity++;
+              walletCoins -= utilityItem.priceCoins;
+              return ShopControllerResult(
+                status: ShopControllerStatus.success,
+                item: utilityItem,
+                shopState: const ShopState.initial(),
+                walletCoins: walletCoins,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      await tester.tap(find.text('Comprar'));
+      await tester.pump(const Duration(milliseconds: 16));
+      tester
+          .widget<ShopPurchaseConfirmationSheet>(
+            find.byType(ShopPurchaseConfirmationSheet),
+          )
+          .onConfirm(utilityItem.id);
+      await tester.pump(const Duration(milliseconds: 16));
+
+      await tester.tap(find.text('Comprar'), warnIfMissed: false);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(purchaseCount, 1);
+      expect(find.text('Comprar'), findsOneWidget);
     });
   });
 }

@@ -6,6 +6,7 @@ import 'package:rutio/features/shop/presentation/widgets/shop_home_hero.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_page_shell.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_section_header.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopHomeScreen extends StatelessWidget {
   const ShopHomeScreen({
@@ -35,8 +36,8 @@ class ShopHomeScreen extends StatelessWidget {
       drawer: drawer,
       header: Builder(
         builder: (BuildContext context) => ShopHeader(
-          title: 'Tienda',
-          subtitle: 'Mejora tu experiencia Rutio',
+          title: context.l10n.shopTitle,
+          subtitle: context.l10n.shopHomeSubtitle,
           leadingIcon: onBackPressed != null
               ? Icons.arrow_back_ios_new_rounded
               : Icons.menu_rounded,
@@ -55,15 +56,17 @@ class ShopHomeScreen extends StatelessWidget {
             onOpenCustomization: onOpenCustomization,
           ),
           const SizedBox(height: ShopUiTokens.sectionSpacing),
-          const ShopSectionHeader(
-            title: 'Explora',
-            subtitle: 'Tres accesos rapidos para entrar en la nueva tienda.',
+          Builder(
+            builder: (BuildContext context) => ShopSectionHeader(
+              title: context.l10n.shopExploreTitle,
+              subtitle: context.l10n.shopExploreSubtitle,
+            ),
           ),
           const SizedBox(height: 4),
           ShopHomeEntryTile(
             key: const Key('shopHomeEntryCosmetics'),
-            title: 'Cosméticos',
-            subtitle: 'Fondos, habit cards y user cards con estilo Rutio.',
+            title: context.l10n.shopCosmeticsTitle,
+            subtitle: context.l10n.shopCosmeticsSubtitle,
             onTap: onOpenCosmetics,
             icon: Icons.palette_outlined,
             placeholderTone: ShopPreviewPlaceholderTone.camel,
@@ -71,8 +74,8 @@ class ShopHomeScreen extends StatelessWidget {
           const SizedBox(height: 12),
           ShopHomeEntryTile(
             key: const Key('shopHomeEntryUtilities'),
-            title: 'Utilidades',
-            subtitle: 'Boosts y ayudas listas para integrarse mas adelante.',
+            title: context.l10n.shopUtilitiesTitle,
+            subtitle: context.l10n.shopUtilitiesSubtitle,
             onTap: onOpenUtilities,
             icon: Icons.bolt_rounded,
             placeholderTone: ShopPreviewPlaceholderTone.sage,

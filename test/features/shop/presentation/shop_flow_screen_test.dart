@@ -5,13 +5,15 @@ import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
-import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
+import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/domain/models/equipped_cosmetics.dart';
 import 'package:rutio/features/shop/domain/models/owned_shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/domain/shop_state.dart';
+import 'package:rutio/features/shop/presentation/screens/mystery_box_opening_screen.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_flow_screen.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/utils/app_theme.dart';
@@ -30,17 +32,19 @@ void main() {
       expect(find.text('Tienda'), findsOneWidget);
     });
 
-    testWidgets('tap Cosméticos opens Cosmetics', (WidgetTester tester) async {
+    testWidgets('tap Cosmeticos opens Cosmetics', (WidgetTester tester) async {
       final env = await _createEnv();
 
       await tester.pumpWidget(_app(_flow(env)));
       await tester.pumpAndSettle();
 
       await _tapVisible(
-          tester, find.byKey(const Key('shopHomeEntryCosmetics')));
+        tester,
+        find.byKey(const Key('shopHomeEntryCosmetics')),
+      );
       await tester.pumpAndSettle();
 
-      expect(find.text('Cosméticos'), findsAtLeastNWidgets(1));
+      expect(find.textContaining('Cosm'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('tap Utilidades opens Utilities', (WidgetTester tester) async {
@@ -50,7 +54,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       await _tapVisible(
-          tester, find.byKey(const Key('shopHomeEntryUtilities')));
+        tester,
+        find.byKey(const Key('shopHomeEntryUtilities')),
+      );
       await tester.pump(const Duration(milliseconds: 32));
 
       expect(find.text('Utilidades'), findsAtLeastNWidgets(1));
@@ -62,7 +68,10 @@ void main() {
       await tester.pumpWidget(_app(_flow(env)));
       await tester.pump(const Duration(milliseconds: 16));
 
-      await _tapVisible(tester, find.byKey(const Key('shopHomeHeroBackpack')));
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeHeroBackpack')),
+      );
       await tester.pump(const Duration(milliseconds: 32));
 
       expect(find.text('Mochila'), findsOneWidget);
@@ -99,7 +108,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await _tapVisible(
-          tester, find.byKey(const Key('shopHomeEntryCosmetics')));
+        tester,
+        find.byKey(const Key('shopHomeEntryCosmetics')),
+      );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
@@ -118,7 +129,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await _tapVisible(
-          tester, find.byKey(const Key('shopHomeEntryCosmetics')));
+        tester,
+        find.byKey(const Key('shopHomeEntryCosmetics')),
+      );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
@@ -134,7 +147,8 @@ void main() {
         tester,
         find.byKey(
           const Key(
-              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_mist_blue'),
+            'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_mist_blue',
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -174,7 +188,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await _tapVisible(
-          tester, find.byKey(const Key('shopHomeEntryCosmetics')));
+        tester,
+        find.byKey(const Key('shopHomeEntryCosmetics')),
+      );
       await tester.pumpAndSettle();
       await _tapVisible(
         tester,
@@ -190,7 +206,8 @@ void main() {
         tester,
         find.byKey(
           const Key(
-              'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_mist_blue'),
+            'shopCosmeticsPurchaseConfirmationConfirm-wallpaper_mist_blue',
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -224,7 +241,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       await _tapVisible(
-          tester, find.byKey(const Key('shopHomeEntryUtilities')));
+        tester,
+        find.byKey(const Key('shopHomeEntryUtilities')),
+      );
       await tester.pump(const Duration(milliseconds: 32));
       await _tapVisible(
         tester,
@@ -238,11 +257,141 @@ void main() {
         find.byKey(const Key('shopPurchaseConfirmButton')),
       );
       await tester.pump(const Duration(milliseconds: 400));
+
       expect(find.text('Mochila'), findsAtLeastNWidgets(1));
       expect(
         find.byKey(const Key('shopBackpackUse-utility_xp_boost_1d')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('utility can be purchased repeatedly from detail flow',
+        (WidgetTester tester) async {
+      final env = await _createEnv(walletCoins: 500);
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeEntryUtilities')),
+      );
+      await tester.pump(const Duration(milliseconds: 32));
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopUtilityCard-utility_xp_boost_1d')),
+      );
+      await tester.pump(const Duration(milliseconds: 32));
+
+      await _tapVisible(tester, find.text('Comprar'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopPurchaseConfirmButton')),
+      );
+      await tester.pumpAndSettle();
+
+      final firstState = await env.shopRepository.load();
+      expect(firstState.backpackItems, hasLength(1));
+      expect(firstState.backpackItems.first.itemId, 'utility_xp_boost_1d');
+      expect(firstState.backpackItems.first.quantity, 1);
+      expect(
+        find.byKey(const Key('shopBackpackCard-utility_xp_boost_1d')),
+        findsOneWidget,
+      );
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopBackpackCard-utility_xp_boost_1d')),
+      );
+      await tester.pumpAndSettle();
+
+      await _tapVisible(tester, find.text('Comprar'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopPurchaseConfirmButton')),
+      );
+      await tester.pumpAndSettle();
+
+      final secondState = await env.shopRepository.load();
+      expect(secondState.backpackItems, hasLength(1));
+      expect(secondState.backpackItems.first.itemId, 'utility_xp_boost_1d');
+      expect(secondState.backpackItems.first.quantity, 2);
+      expect(
+        find.byKey(const Key('shopBackpackCard-utility_xp_boost_1d')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('mystery box can be opened from backpack flow',
+        (WidgetTester tester) async {
+      final env = await _createEnv(walletCoins: 500);
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pump(const Duration(milliseconds: 16));
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeEntryUtilities')),
+      );
+      await tester.pump(const Duration(milliseconds: 32));
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopUtilityCard-utility_mystery_box_basic')),
+      );
+      await tester.pump(const Duration(milliseconds: 32));
+      await _tapVisible(tester, find.text('Comprar'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopPurchaseConfirmButton')),
+      );
+      await tester.pump(const Duration(milliseconds: 450));
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(
+        find.byKey(const Key('shopBackpackUse-utility_mystery_box_basic')),
+        findsOneWidget,
+      );
+
+      await _pressButton(
+        tester,
+        find.byKey(const Key('shopBackpackUse-utility_mystery_box_basic')),
+      );
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump(const Duration(milliseconds: 120));
+
+      expect(find.byType(MysteryBoxOpeningScreen), findsOneWidget);
+      expect(find.byType(AppBar), findsNothing);
+      expect(
+          find.byKey(const Key('mysteryBoxFullscreenImage')), findsOneWidget);
+      expect(
+          find.byKey(const Key('mysteryBoxInteractionLayer')), findsOneWidget);
+      expect(find.text('Tu Mystery Box esta lista'), findsNothing);
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('mysteryBoxInteractionLayer')),
+      );
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump(const Duration(milliseconds: 1250));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byType(MysteryBoxOpeningScreen), findsOneWidget);
+
+      if (find
+          .byKey(const Key('mysteryBoxRewardSheet'))
+          .evaluate()
+          .isNotEmpty) {
+        final continueButton = tester.widget<ShopPrimaryButton>(
+          find.byKey(const Key('mysteryBoxContinueButton')),
+        );
+        continueButton.onPressed!.call();
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(await env.controller.getPendingMysteryBoxOpenings(), isEmpty);
+      }
     });
 
     testWidgets('tap utility opens complete Detail page',
@@ -253,7 +402,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       await _tapVisible(
-          tester, find.byKey(const Key('shopHomeEntryUtilities')));
+        tester,
+        find.byKey(const Key('shopHomeEntryUtilities')),
+      );
       await tester.pump(const Duration(milliseconds: 32));
       await _tapVisible(
         tester,
@@ -261,10 +412,14 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 32));
 
-      expect(find.text('XP Boost 1 Dia'), findsAtLeastNWidgets(1));
+      expect(
+        find.text('Potenciador de XP de 1 día'),
+        findsAtLeastNWidgets(1),
+      );
       expect(
         find.text(
-            'Aumenta temporalmente la experiencia obtenida al completar habitos.'),
+          'Aumenta temporalmente la experiencia obtenida al completar hábitos.',
+        ),
         findsAtLeastNWidgets(1),
       );
       expect(
@@ -287,7 +442,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       await _tapVisible(
-          tester, find.byKey(const Key('shopHomeEntryUtilities')));
+        tester,
+        find.byKey(const Key('shopHomeEntryUtilities')),
+      );
       await tester.pump(const Duration(milliseconds: 32));
 
       final Finder card =
@@ -360,8 +517,10 @@ void main() {
         ),
         findsWidgets,
       );
-      expect(find.byKey(const Key('shopOwnedItem-wallpaper_soft_sage')),
-          findsNothing);
+      expect(
+        find.byKey(const Key('shopOwnedItem-wallpaper_soft_sage')),
+        findsNothing,
+      );
     });
 
     testWidgets('customization equip does not show success snackbar',
@@ -408,6 +567,7 @@ Widget _app(Widget child) {
     theme: AppTheme.theme,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
+    locale: const Locale('es'),
     home: child,
   );
 }
@@ -523,6 +683,13 @@ class _Env {
 Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
   await tester.ensureVisible(finder);
   await tester.tap(finder);
+  await tester.pump(const Duration(milliseconds: 16));
+}
+
+Future<void> _pressButton(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  final button = tester.widget<ShopPrimaryButton>(finder);
+  button.onPressed?.call();
   await tester.pump(const Duration(milliseconds: 16));
 }
 

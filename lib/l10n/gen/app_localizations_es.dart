@@ -3208,4 +3208,465 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get monthlyMenuTooltip => 'Menu';
+
+  @override
+  String get shopTitle => 'Tienda';
+
+  @override
+  String get shopHomeSubtitle => 'Mejora tu experiencia Rutio';
+
+  @override
+  String get shopExploreTitle => 'Explora';
+
+  @override
+  String get shopExploreSubtitle =>
+      'Tres accesos rápidos para entrar en la nueva tienda.';
+
+  @override
+  String get shopCosmeticsTitle => 'Cosméticos';
+
+  @override
+  String get shopCosmeticsSubtitle =>
+      'Fondos, tarjetas de hábitos y tarjetas de usuario con estilo Rutio.';
+
+  @override
+  String get shopUtilitiesTitle => 'Utilidades';
+
+  @override
+  String get shopUtilitiesSubtitle =>
+      'Boosts y ayudas listas para integrarse más adelante.';
+
+  @override
+  String get shopBackpackTitle => 'Mochila';
+
+  @override
+  String get shopBackpackSubtitle => 'Gestiona tus consumibles';
+
+  @override
+  String get shopCustomizationTitle => 'Personalización';
+
+  @override
+  String get shopCustomizationSubtitle =>
+      'Gestiona los cosméticos que ya son tuyos';
+
+  @override
+  String get shopCollectionsTitle => 'Colecciones';
+
+  @override
+  String get shopCollectionsSubtitle => 'Cada colección es un pequeño universo';
+
+  @override
+  String get shopDetailTitle => 'Detalle';
+
+  @override
+  String get shopDetailUnavailableTitle => 'Detalle no disponible';
+
+  @override
+  String get shopDetailUnavailableMessage =>
+      'No hemos podido cargar este item.';
+
+  @override
+  String get shopNoDescriptionYet => 'Sin descripción todavía.';
+
+  @override
+  String get shopEmptyStateNoResultsTitle => 'Sin resultados';
+
+  @override
+  String get shopEmptyStateNoResultsMessage =>
+      'No hay resultados para este filtro.';
+
+  @override
+  String get shopEmptyBackpackTitle => 'La mochila está vacía';
+
+  @override
+  String get shopEmptyBackpackMessage =>
+      'Las utilidades compradas aparecerán aquí.';
+
+  @override
+  String get shopEmptyUtilitiesTitle => 'Nada por mostrar';
+
+  @override
+  String get shopEmptyUtilitiesMessage =>
+      'No hay utilidades disponibles en esta categoría.';
+
+  @override
+  String get shopEmptyCollectionsTitle => 'No hay colecciones disponibles.';
+
+  @override
+  String get shopEmptyCollectionsMessage =>
+      'Vuelve más tarde para descubrir nuevas colecciones.';
+
+  @override
+  String get shopActionBuy => 'Comprar';
+
+  @override
+  String get shopActionBuyPack => 'Comprar pack';
+
+  @override
+  String get shopActionActivate => 'Activar';
+
+  @override
+  String get shopActionOpen => 'Abrir';
+
+  @override
+  String get shopActionContinue => 'Continuar';
+
+  @override
+  String get shopActionUse => 'Usar';
+
+  @override
+  String get shopActionAccept => 'Aceptar';
+
+  @override
+  String get shopActionEquip => 'Equipar';
+
+  @override
+  String get shopActionEquipped => 'Equipado';
+
+  @override
+  String get shopActionAvailable => 'Disponible';
+
+  @override
+  String get shopActionActive => 'Activo';
+
+  @override
+  String get shopStatusPurchased => 'Comprado';
+
+  @override
+  String get shopStatusBlocked => 'Bloqueado';
+
+  @override
+  String get shopStatusIncludedInPack => 'Incluido en pack';
+
+  @override
+  String get shopStatusInsufficientCoins => 'Saldo insuficiente';
+
+  @override
+  String get shopStatusProcessing => 'Procesando...';
+
+  @override
+  String get shopStatusBusyOpening => 'Abriendo...';
+
+  @override
+  String get shopRarityCommon => 'Común';
+
+  @override
+  String get shopRarityUncommon => 'Poco común';
+
+  @override
+  String get shopRarityRare => 'Raro';
+
+  @override
+  String get shopRarityEpic => 'Épico';
+
+  @override
+  String get shopRarityLegendary => 'Legendario';
+
+  @override
+  String get shopFilterAll => 'Todos';
+
+  @override
+  String get shopFilterBoosts => 'Boosts';
+
+  @override
+  String get shopFilterStreak => 'Racha';
+
+  @override
+  String get shopFilterBoxes => 'Cajas';
+
+  @override
+  String get shopFilterWallpapers => 'Fondos';
+
+  @override
+  String get shopFilterCards => 'Tarjetas';
+
+  @override
+  String get shopFilterPacks => 'Packs';
+
+  @override
+  String get shopCategoryPack => 'Pack';
+
+  @override
+  String get shopCategoryWallpaper => 'Fondo';
+
+  @override
+  String get shopCategoryHabitCard => 'Tarjeta de hábitos';
+
+  @override
+  String get shopCategoryUserCard => 'Tarjeta de usuario';
+
+  @override
+  String get shopCategoryUtility => 'Utilidad';
+
+  @override
+  String get shopCategoryBoosts => 'Boosts';
+
+  @override
+  String get shopCategoryStreaks => 'Rachas';
+
+  @override
+  String get shopCategoryBoxes => 'Cajas';
+
+  @override
+  String shopPriceCoins(int value) {
+    return '$value monedas';
+  }
+
+  @override
+  String shopPriceAmber(int value) {
+    return '$value ámbar';
+  }
+
+  @override
+  String shopRemainingUses(int remaining, int total) {
+    return '$remaining de $total completaciones';
+  }
+
+  @override
+  String shopOwnedCount(int count) {
+    return '$count objetos';
+  }
+
+  @override
+  String shopBackpackCount(int count) {
+    return 'Mochila x$count';
+  }
+
+  @override
+  String get shopXpBoostTitle => 'Potenciador de XP de 1 día';
+
+  @override
+  String get shopXpBoostDescription =>
+      'Aumenta temporalmente la experiencia obtenida al completar hábitos.';
+
+  @override
+  String get shopXpBoostEffect => 'Multiplicador de XP x2';
+
+  @override
+  String get shopCoinBoostTitle => 'Potenciador de monedas de 1 día';
+
+  @override
+  String get shopCoinBoostDescription =>
+      'Aumenta temporalmente las monedas obtenidas al completar hábitos.';
+
+  @override
+  String get shopCoinBoostEffect => 'Multiplicador de monedas x2';
+
+  @override
+  String get shopStreakRecoverTitle => 'Recuperación de racha';
+
+  @override
+  String get shopStreakRecoverDescription =>
+      'Recupera una racha perdida una vez.';
+
+  @override
+  String get shopStreakRecoverEffect => 'Recuperación de racha';
+
+  @override
+  String get shopStreakShieldTitle => 'Escudo de racha';
+
+  @override
+  String get shopStreakShieldDescription =>
+      'Protege una racha frente a un día fallado.';
+
+  @override
+  String get shopStreakShieldEffect => 'Protección de racha';
+
+  @override
+  String get shopMysteryBoxTitle => 'Caja misteriosa';
+
+  @override
+  String get shopMysteryBoxDescription =>
+      'Una caja misteriosa básica con una sorpresa en su interior.';
+
+  @override
+  String get shopMysteryBoxEffect => 'Sorpresa futura';
+
+  @override
+  String shopUtilityDurationHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count horas',
+      one: '1 hora',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String shopUtilityCharges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count usos',
+      one: '1 uso',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shopMysteryBoxOpeningTitle => 'Tu Mystery Box está lista';
+
+  @override
+  String get shopMysteryBoxTapToOpen => 'Pulsa para abrir';
+
+  @override
+  String get shopMysteryBoxOpenButton => 'Abrir Mystery Box';
+
+  @override
+  String get shopMysteryBoxRewardTitle => 'Tu recompensa';
+
+  @override
+  String get shopMysteryBoxRewardContinue => 'Continuar';
+
+  @override
+  String get shopMysteryBoxRewardDescription =>
+      'La apertura ha terminado. Todo ya está guardado en tu cuenta y en tu mochila.';
+
+  @override
+  String get shopMysteryBoxErrorNoBoxes =>
+      'No quedan Mystery Boxes disponibles.';
+
+  @override
+  String get shopMysteryBoxErrorConfig =>
+      'La Mystery Box no está configurada correctamente.';
+
+  @override
+  String get shopMysteryBoxErrorPersist =>
+      'No pudimos guardar la apertura. Inténtalo otra vez.';
+
+  @override
+  String get shopMysteryBoxErrorPending =>
+      'Ya hay una apertura pendiente para esta Mystery Box.';
+
+  @override
+  String get shopMysteryBoxErrorOpen =>
+      'No pudimos completar la apertura. Inténtalo otra vez.';
+
+  @override
+  String get shopMysteryBoxErrorReward => 'No pudimos mostrar la recompensa.';
+
+  @override
+  String get shopCollectionMinimalTitle => 'Minimal';
+
+  @override
+  String get shopCollectionMinimalDescription =>
+      'Colores planos y familias suaves para una base calmada.';
+
+  @override
+  String get shopCollectionGradientTitle => 'Gradient';
+
+  @override
+  String get shopCollectionGradientDescription =>
+      'Texturas y degradados sutiles con identidad editorial.';
+
+  @override
+  String get shopCollectionLandscapeTitle => 'Landscape';
+
+  @override
+  String get shopCollectionLandscapeDescription =>
+      'Composiciones con más presencia visual y profundidad suave.';
+
+  @override
+  String get shopConfirmPurchaseTitle => 'Confirmar compra';
+
+  @override
+  String get shopCancel => 'Cancelar';
+
+  @override
+  String get shopPriceLabel => 'Precio';
+
+  @override
+  String get shopCurrentBalanceLabel => 'Saldo actual';
+
+  @override
+  String get shopRemainingBalanceLabel => 'Saldo restante';
+
+  @override
+  String get shopCategoryLabel => 'Categoría';
+
+  @override
+  String get shopOriginalPriceLabel => 'Precio original';
+
+  @override
+  String get shopSavingsLabel => 'Ahorro';
+
+  @override
+  String get shopIncludesLabel => 'Incluye';
+
+  @override
+  String get shopRarityLabel => 'Rareza';
+
+  @override
+  String get shopTypeLabel => 'Tipo';
+
+  @override
+  String get shopStyleLabel => 'Estilo';
+
+  @override
+  String get shopStatusLabel => 'Estado';
+
+  @override
+  String get shopDurationLabel => 'Duración';
+
+  @override
+  String get shopEffectLabel => 'Efecto';
+
+  @override
+  String get shopProcessingLabel => 'Procesando...';
+
+  @override
+  String get shopBackpackEmptyAction => 'Ir a Utilidades';
+
+  @override
+  String get shopBackpackActiveEffectsTitle => 'Efectos activos';
+
+  @override
+  String get shopBackpackActiveEffectsEmpty => 'No tienes efectos activos.';
+
+  @override
+  String get shopBackpackActiveEffectsActiveLabel => 'Activo';
+
+  @override
+  String shopBackpackActiveEffectsProgressLabel(int remaining, int total) {
+    return '$remaining de $total usos restantes';
+  }
+
+  @override
+  String get shopHomeHeroTitle => 'Tu espacio, más tuyo';
+
+  @override
+  String get shopHomeHeroSubtitle => 'Combina fondos, cards y estilo Rutio';
+
+  @override
+  String get shopHomeHeroBackpackTitle => 'Mochila';
+
+  @override
+  String get shopHomeHeroBackpackSubtitle => 'Tus objetos';
+
+  @override
+  String get shopHomeHeroCustomizationTitle => 'Personalizar';
+
+  @override
+  String get shopHomeHeroCustomizationSubtitle => 'Tu estilo';
+
+  @override
+  String get shopCollectionStatusCompleted => 'Completada';
+
+  @override
+  String get shopCollectionStatusStarted => 'Empezada';
+
+  @override
+  String get shopCollectionStatusNew => 'Nueva';
+
+  @override
+  String get shopCollectionStatusBlocked => 'Bloqueada';
+
+  @override
+  String shopCollectionItemsLabel(int count) {
+    return '$count objetos';
+  }
+
+  @override
+  String get shopCollectionViewCollection => 'Ver colección';
 }

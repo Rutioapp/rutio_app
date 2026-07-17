@@ -31,14 +31,26 @@ import '../features/achievements/domain/models/achievement.dart';
 import '../features/achievements/domain/models/habit_streak_snapshot.dart';
 import '../features/achievements/domain/models/unlocked_achievement_record.dart';
 import '../features/gamification/application/level_up_celebration_controller.dart';
+import '../features/habits/domain/models/habit_occurrence_status.dart';
 import '../models/daily_mood.dart';
 import '../features/shop/application/shop_service.dart';
 import '../features/shop/data/shop_catalog.dart';
+import '../features/shop/data/local_active_utility_effects_repository.dart';
 import '../features/shop/data/shop_local_repository.dart';
+import '../features/shop/domain/active_utility_effects_repository.dart';
+import '../features/shop/domain/models/active_utility_effect.dart';
+import '../features/habits/domain/habit_reward_calculator.dart';
+import '../features/habits/domain/models/active_streak_shield.dart';
+import '../features/habits/domain/models/recoverable_streak_break.dart';
+import '../features/habits/domain/models/streak_recover_operation_result.dart';
+import '../features/habits/domain/models/streak_shield_operation_result.dart';
 import '../features/gamification/domain/level_event.dart';
 import '../features/gamification/domain/level_event_resolver.dart';
 import '../features/gamification/domain/level_progression.dart';
 import '../features/gamification/domain/level_reward_resolver.dart';
+import '../features/habits/data/local_habit_reward_transaction_repository.dart';
+import '../features/habits/domain/habit_reward_transaction_repository.dart';
+import '../features/habits/domain/models/habit_reward_transaction.dart';
 import '../models/diary_entry.dart';
 import '../screens/todo/models/todo_item.dart';
 import '../utils/family_theme.dart';
@@ -104,6 +116,8 @@ class UserStateStore extends ChangeNotifier {
   DiaryV2SupabaseRepository? _diaryV2SupabaseRepository;
   HabitRepository? _habitRepository;
   HabitLogRepository? _habitLogRepository;
+  ActiveUtilityEffectsRepository? _activeUtilityEffectsRepository;
+  HabitRewardTransactionRepository? _habitRewardTransactionRepository;
   final UserProgressRepository? _userProgressRepository;
   final ProfileRepository? _profileRepository;
   final LevelUpCelebrationController _levelUpCelebrationController;
@@ -120,6 +134,8 @@ class UserStateStore extends ChangeNotifier {
     DiaryV2SupabaseRepository? diaryV2SupabaseRepository,
     HabitRepository? habitRepository,
     HabitLogRepository? habitLogRepository,
+    ActiveUtilityEffectsRepository? activeUtilityEffectsRepository,
+    HabitRewardTransactionRepository? habitRewardTransactionRepository,
     UserProgressRepository? userProgressRepository,
     ProfileRepository? profileRepository,
     CurrentUserIdProvider? currentSupabaseUserIdProvider,
@@ -137,6 +153,8 @@ class UserStateStore extends ChangeNotifier {
         _diaryV2SupabaseRepository = diaryV2SupabaseRepository,
         _habitRepository = habitRepository,
         _habitLogRepository = habitLogRepository,
+        _activeUtilityEffectsRepository = activeUtilityEffectsRepository,
+        _habitRewardTransactionRepository = habitRewardTransactionRepository,
         _userProgressRepository = userProgressRepository,
         _profileRepository = profileRepository,
         _levelUpCelebrationController = const LevelUpCelebrationController(),
@@ -196,8 +214,10 @@ class UserStateStore extends ChangeNotifier {
       _isSupabaseJournalEntriesBackfillRunning;
   bool get isDiaryV2RemotePullRunning => _isDiaryV2RemotePullRunning;
   bool get isHabitsRemotePullRunning => _isHabitsRemotePullRunning;
-  DateTime? get lastDiaryV2RemotePullAttemptAt => _lastDiaryV2RemotePullAttemptAt;
-  DateTime? get lastDiaryV2RemotePullSuccessAt => _lastDiaryV2RemotePullSuccessAt;
+  DateTime? get lastDiaryV2RemotePullAttemptAt =>
+      _lastDiaryV2RemotePullAttemptAt;
+  DateTime? get lastDiaryV2RemotePullSuccessAt =>
+      _lastDiaryV2RemotePullSuccessAt;
   DateTime? get lastHabitsRemotePullAttemptAt => _lastHabitsRemotePullAttemptAt;
   DateTime? get lastHabitsRemotePullSuccessAt => _lastHabitsRemotePullSuccessAt;
   Object? get accountDeletionError => _accountDeletionError;
@@ -620,6 +640,43 @@ class UserStateStore extends ChangeNotifier {
 
   Future<void> setFeaturedAchievementIds(List<String> achievementIds) =>
       _setFeaturedAchievementIds(this, achievementIds);
+
+  List<ActiveStreakShield> get activeStreakShields =>
+      _activeStreakShields(this);
+
+  List<RecoverableStreakBreak> get recoverableStreakBreaks =>
+      _recoverableStreakBreaks(this);
+
+  ActiveStreakShield? activeStreakShieldForHabit(String habitId) =>
+      _activeStreakShieldForHabit(this, habitId);
+
+  RecoverableStreakBreak? recoverableStreakBreakForHabit(String habitId) =>
+      _recoverableStreakBreakForHabitStore(this, habitId);
+
+  Future<StreakShieldOperationResult> activateStreakShield({
+    required String habitId,
+    required String operationId,
+    String? utilityId,
+  }) =>
+      _activateStreakShield(
+        this,
+        habitId: habitId,
+        operationId: operationId,
+        utilityId: utilityId,
+      );
+
+  Future<StreakRecoverOperationResult> recoverStreakBreak({
+    required String breakId,
+    required String operationId,
+  }) =>
+      _recoverStreakBreak(
+        this,
+        breakId: breakId,
+        operationId: operationId,
+      );
+
+  Future<void> expireRecoverableStreakBreaks() =>
+      _expireRecoverableStreakBreaks(this);
 
   HabitStreakSnapshot habitStreakSnapshotForHabitId(
     String habitId, {
