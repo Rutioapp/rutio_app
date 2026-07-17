@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_header.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_item_detail_action_bar.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_item_detail_info_row.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_item_detail_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_page_shell.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_utility_asset_art.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopItemDetailScreen extends StatelessWidget {
   const ShopItemDetailScreen({
@@ -37,6 +40,7 @@ class ShopItemDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (item.category == ShopItemCategory.utility) {
       return _UtilityItemDetailScreen(
         item: item,
@@ -53,8 +57,8 @@ class ShopItemDetailScreen extends StatelessWidget {
 
     return ShopPageShell(
       header: ShopHeader(
-        title: 'Detalle',
-        subtitle: _headerSubtitle(item),
+        title: l10n.shopDetailTitle,
+        subtitle: _headerSubtitle(context),
         leadingIcon: Icons.arrow_back_ios_new_rounded,
         onLeadingPressed: onBackPressed,
         walletCoins: walletCoins,
@@ -80,15 +84,15 @@ class ShopItemDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: ShopUiTokens.sectionSpacing),
           Text(
-            item.title,
+            l10n.shopUtilityTitleForItem(item),
             key: const Key('shopItemDetailTitle'),
             style: ShopUiTextStyles.pageTitle.copyWith(fontSize: 30),
           ),
           const SizedBox(height: 10),
           Text(
             item.description.isEmpty
-                ? 'Sin descripcion todavia.'
-                : item.description,
+                ? l10n.shopNoDescriptionYet
+                : l10n.shopUtilityDescriptionForItem(item),
             key: const Key('shopItemDetailDescription'),
             style: ShopUiTextStyles.subtitle,
           ),
@@ -106,39 +110,39 @@ class ShopItemDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   ShopItemDetailInfoRow(
-                    label: 'Rareza',
-                    value: _rarityLabel(item.rarity),
+                    label: l10n.shopRarityLabel,
+                    value: l10n.shopRarityLabelByShopItem(item.rarity),
                   ),
                   const SizedBox(height: 12),
                   ShopItemDetailInfoRow(
-                    label: 'Tipo',
-                    value: _typeLabel(item.type),
+                    label: l10n.shopTypeLabel,
+                    value: l10n.shopItemTypeLabel(item.type),
                   ),
                   if (collectionName != null &&
                       collectionName!.trim().isNotEmpty) ...<Widget>[
                     const SizedBox(height: 12),
                     ShopItemDetailInfoRow(
-                      label: 'Coleccion',
+                      label: l10n.shopCollectionsTitle,
                       value: collectionName!,
                     ),
                   ],
                   const SizedBox(height: 12),
                   ShopItemDetailInfoRow(
-                    label: 'Precio',
-                    value: '${item.priceCoins} coins',
+                    label: l10n.shopPriceLabel,
+                    value: l10n.shopPriceCoins(item.priceCoins),
                   ),
                   const SizedBox(height: 12),
                   ShopItemDetailInfoRow(
-                    label: 'Estado',
-                    value: _statusLabel(),
+                    label: l10n.shopStatusLabel,
+                    value: _statusLabel(context),
                     valueKey: const Key('shopItemDetailStatusValue'),
                   ),
                   if (backpackQuantity != null &&
                       backpackQuantity! > 0) ...<Widget>[
                     const SizedBox(height: 12),
                     ShopItemDetailInfoRow(
-                      label: 'Mochila',
-                      value: 'x$backpackQuantity',
+                      label: l10n.shopBackpackTitle,
+                      value: l10n.shopBackpackCount(backpackQuantity!),
                     ),
                   ],
                 ],
@@ -151,60 +155,21 @@ class ShopItemDetailScreen extends StatelessWidget {
     );
   }
 
-  String _headerSubtitle(ShopItem item) {
-    if (item.cosmeticSlot != null) {
-      return 'Cosmetico';
-    }
-    return 'Utilidad';
+  String _headerSubtitle(BuildContext context) {
+    return context.l10n.shopCategoryUtility;
   }
 
-  String _statusLabel() {
+  String _statusLabel(BuildContext context) {
     if (isEquipped) {
-      return 'Equipado';
+      return context.l10n.shopActionEquipped;
     }
     if ((backpackQuantity ?? 0) > 0) {
-      return 'En mochila x$backpackQuantity';
+      return context.l10n.shopBackpackCount(backpackQuantity!);
     }
     if (isOwned) {
-      return 'Comprado';
+      return context.l10n.shopStatusPurchased;
     }
-    return 'Disponible';
-  }
-
-  String _rarityLabel(ShopItemRarity rarity) {
-    switch (rarity) {
-      case ShopItemRarity.uncommon:
-        return 'Uncommon';
-      case ShopItemRarity.rare:
-        return 'Rare';
-      case ShopItemRarity.epic:
-        return 'Epic';
-      case ShopItemRarity.legendary:
-        return 'Legendary';
-      case ShopItemRarity.common:
-        return 'Common';
-    }
-  }
-
-  String _typeLabel(ShopItemType type) {
-    switch (type) {
-      case ShopItemType.background:
-        return 'Fondo';
-      case ShopItemType.habitCard:
-        return 'Habit card';
-      case ShopItemType.userCard:
-        return 'User card';
-      case ShopItemType.xpBoost:
-        return 'XP Boost';
-      case ShopItemType.coinBoost:
-        return 'Coin Boost';
-      case ShopItemType.streakRecover:
-        return 'Streak Recover';
-      case ShopItemType.streakShield:
-        return 'Streak Shield';
-      case ShopItemType.mysteryBox:
-        return 'Mystery Box';
-    }
+    return context.l10n.shopActionAvailable;
   }
 }
 
@@ -233,9 +198,10 @@ class _UtilityItemDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ShopPageShell(
       header: ShopHeader(
-        title: 'Detalle',
+        title: l10n.shopDetailTitle,
         leadingIcon: Icons.arrow_back_ios_new_rounded,
         onLeadingPressed: onBackPressed,
         walletCoins: walletCoins,
@@ -244,7 +210,7 @@ class _UtilityItemDetailScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            item.title,
+            l10n.shopUtilityTitleForItem(item),
             key: const Key('shopItemDetailTitle'),
             style: ShopUiTextStyles.pageTitle.copyWith(fontSize: 30),
           ),
@@ -255,7 +221,7 @@ class _UtilityItemDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: ShopUiTokens.sectionSpacing),
           Text(
-            item.description,
+            l10n.shopUtilityDescriptionForItem(item),
             key: const Key('shopItemDetailDescription'),
             style: ShopUiTextStyles.subtitle,
           ),
@@ -273,34 +239,34 @@ class _UtilityItemDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   ShopItemDetailInfoRow(
-                    label: 'Tipo',
-                    value: ShopCatalog.utilityCategoryLabel(item),
+                    label: l10n.shopRarityLabel,
+                    value: l10n.shopRarityLabelByShopItem(item.rarity),
                     valueKey: const Key('shopItemDetailUtilityTypeValue'),
                   ),
                   const SizedBox(height: 12),
                   ShopItemDetailInfoRow(
-                    label: 'Rareza',
-                    value: _rarityLabel(item.rarity),
+                    label: l10n.shopTypeLabel,
+                    value: l10n.shopUtilityCategoryLabelForItem(item),
                     valueKey: const Key('shopItemDetailUtilityRarityValue'),
                   ),
                   const SizedBox(height: 12),
                   ShopItemDetailInfoRow(
-                    label: 'Duracion',
-                    value: ShopCatalog.utilityDurationLabel(item),
+                    label: l10n.shopDurationLabel,
+                    value: l10n.shopUtilityDurationLabel(item),
                     valueKey: const Key('shopItemDetailUtilityDurationValue'),
                   ),
                   const SizedBox(height: 12),
                   ShopItemDetailInfoRow(
-                    label: 'Efecto',
-                    value: ShopCatalog.utilityEffectLabel(item),
+                    label: l10n.shopEffectLabel,
+                    value: l10n.shopUtilityEffectLabelForItem(item),
                     valueKey: const Key('shopItemDetailUtilityEffectValue'),
                     valueStyle: ShopUiTextStyles.label.copyWith(fontSize: 12.5),
                     valueMaxLines: 2,
                   ),
                   const SizedBox(height: 12),
                   ShopItemDetailInfoRow(
-                    label: 'Precio',
-                    value: '${item.priceCoins} coins',
+                    label: l10n.shopPriceLabel,
+                    value: l10n.shopPriceCoins(item.priceCoins),
                   ),
                 ],
               ),
@@ -322,21 +288,6 @@ class _UtilityItemDetailScreen extends StatelessWidget {
       ),
     );
   }
-
-  String _rarityLabel(ShopItemRarity rarity) {
-    switch (rarity) {
-      case ShopItemRarity.uncommon:
-        return 'Uncommon';
-      case ShopItemRarity.rare:
-        return 'Rare';
-      case ShopItemRarity.epic:
-        return 'Epic';
-      case ShopItemRarity.legendary:
-        return 'Legendary';
-      case ShopItemRarity.common:
-        return 'Common';
-    }
-  }
 }
 
 class _UtilityPreviewCard extends StatelessWidget {
@@ -349,6 +300,7 @@ class _UtilityPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: ShopUiTokens.surfaceRaised,
@@ -377,12 +329,12 @@ class _UtilityPreviewCard extends StatelessWidget {
               runSpacing: 8,
               children: <Widget>[
                 _UtilityBadge(
-                  label: _rarityLabel(item.rarity),
+                  label: l10n.shopRarityLabelByShopItem(item.rarity),
                   backgroundColor: _rarityBackground(item.rarity),
                   foregroundColor: _rarityForeground(item.rarity),
                 ),
                 _UtilityBadge(
-                  label: ShopCatalog.utilityCategoryLabel(item),
+                  label: l10n.shopUtilityCategoryLabelForItem(item),
                   backgroundColor: ShopUiTokens.backgroundAlt,
                   foregroundColor: ShopUiTokens.textPrimary,
                 ),
@@ -392,21 +344,6 @@ class _UtilityPreviewCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _rarityLabel(ShopItemRarity rarity) {
-    switch (rarity) {
-      case ShopItemRarity.uncommon:
-        return 'Uncommon';
-      case ShopItemRarity.rare:
-        return 'Rare';
-      case ShopItemRarity.epic:
-        return 'Epic';
-      case ShopItemRarity.legendary:
-        return 'Legendary';
-      case ShopItemRarity.common:
-        return 'Common';
-    }
   }
 
   Color _rarityBackground(ShopItemRarity rarity) {
@@ -478,9 +415,11 @@ class _UtilityPreviewImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final String? assetPath = item.assetRef;
     if (assetPath != null && assetPath.startsWith('assets/shop/utilities/')) {
-      return Image.asset(
-        assetPath,
-        fit: BoxFit.contain,
+      return ShopUtilityAssetArt(
+        key: Key('shopUtilityDetailPreviewScale-${item.id}'),
+        item: item,
+        fallbackTone: _toneForItem(item.type),
+        fallbackIcon: _fallbackIconForItem(item),
         filterQuality: FilterQuality.high,
       );
     }
@@ -516,6 +455,24 @@ class _UtilityPreviewImage extends StatelessWidget {
       case ShopItemType.habitCard:
       case ShopItemType.userCard:
         return Icons.inventory_2_rounded;
+    }
+  }
+
+  ShopPreviewPlaceholderTone _toneForItem(ShopItemType type) {
+    switch (type) {
+      case ShopItemType.xpBoost:
+        return ShopPreviewPlaceholderTone.sage;
+      case ShopItemType.coinBoost:
+        return ShopPreviewPlaceholderTone.camel;
+      case ShopItemType.streakRecover:
+      case ShopItemType.streakShield:
+        return ShopPreviewPlaceholderTone.sand;
+      case ShopItemType.mysteryBox:
+        return ShopPreviewPlaceholderTone.clay;
+      case ShopItemType.background:
+      case ShopItemType.habitCard:
+      case ShopItemType.userCard:
+        return ShopPreviewPlaceholderTone.charcoal;
     }
   }
 }

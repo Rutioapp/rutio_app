@@ -6,6 +6,10 @@ Map<String, dynamic> _map(dynamic value) {
   return <String, dynamic>{};
 }
 
+Map<String, dynamic> _cloneMap(Map<String, dynamic> value) {
+  return (jsonDecode(jsonEncode(value)) as Map).cast<String, dynamic>();
+}
+
 List<dynamic> _list(dynamic value) => value is List ? value : <dynamic>[];
 
 bool _clearTransientGamificationStateInternal(UserStateStore store) {
@@ -441,6 +445,10 @@ Map<String, dynamic> _ensureHistoryRoot(Map<String, dynamic> userState) {
   history['habitCompletions'] = _map(history['habitCompletions']);
   history['habitCountValues'] = _map(history['habitCountValues']);
   history['habitSkips'] = _map(history['habitSkips']);
+  history['habitCompletionTimes'] = _map(history['habitCompletionTimes']);
+  history['habitOccurrenceStatuses'] = _map(history['habitOccurrenceStatuses']);
+  history['habitStreakBreaks'] = _map(history['habitStreakBreaks']);
+  history['habitStreakShields'] = _map(history['habitStreakShields']);
   userState['history'] = history;
   return history;
 }
@@ -518,46 +526,15 @@ void _ensureDailyReset(Map<String, dynamic> userState) {
 
   final previousDayKey = lastResetDate;
   if (previousDayKey.isNotEmpty) {
-    final history = _ensureHistoryRoot(userState);
-    final habitCompletions = _map(history['habitCompletions']);
-    final habitCountValues = _map(history['habitCountValues']);
-    final habitSkips = _map(history['habitSkips']);
-
-    final previousDone = _map(habitCompletions[previousDayKey]);
-    final previousCounts = _map(habitCountValues[previousDayKey]);
-    final previousSkips = _map(habitSkips[previousDayKey]);
-
     final activeHabits = _list(userState['activeHabits'])
         .whereType<Map>()
         .map((entry) => entry.cast<String, dynamic>())
         .toList();
-
-    for (final habit in activeHabits) {
-      final habitId = (habit['id'] ?? '').toString();
-      final type = (habit['type'] ?? 'check').toString();
-      final skipped = habit['skippedToday'] == true;
-
-      previousSkips[habitId] = skipped;
-
-      if (type == 'count') {
-        final value = skipped ? 0 : _safeNum(habit['progress'], fallback: 0);
-        final target = _safePositiveNum(habit['target'], fallback: 1);
-
-        previousCounts[habitId] = value;
-        previousDone[habitId] = !skipped && value >= target;
-        continue;
-      }
-
-      previousDone[habitId] = !skipped && habit['doneToday'] == true;
-    }
-
-    habitCompletions[previousDayKey] = previousDone;
-    habitCountValues[previousDayKey] = previousCounts;
-    habitSkips[previousDayKey] = previousSkips;
-    history['habitCompletions'] = habitCompletions;
-    history['habitCountValues'] = habitCountValues;
-    history['habitSkips'] = habitSkips;
-    userState['history'] = history;
+    _finalizeHabitDayRollover(
+      userState,
+      dayKey: previousDayKey,
+      activeHabits: activeHabits,
+    );
   }
 
   daily['lastResetDate'] = today;
@@ -580,6 +557,120 @@ void _ensureDailyReset(Map<String, dynamic> userState) {
   }
 
   userState['activeHabits'] = activeHabits;
+}
+
+void _finalizeHabitDayRollover(
+  Map<String, dynamic> userState, {
+  required String dayKey,
+  required List<Map<String, dynamic>> activeHabits,
+}) {
+  final history = _ensureHistoryRoot(userState);
+  final habitCompletions = _map(history['habitCompletions']);
+  final habitCountValues = _map(history['habitCountValues']);
+  final habitSkips = _map(history['habitSkips']);
+  final occurrenceStatuses = _map(history['habitOccurrenceStatuses']);
+  final shields = _habitStreakShieldsRoot(userState);
+  final breaks = _habitStreakBreaksRoot(userState);
+
+  final previousDone = _map(habitCompletions[dayKey]);
+  final previousCounts = _map(habitCountValues[dayKey]);
+  final previousSkips = _map(habitSkips[dayKey]);
+  final previousStatuses = _map(occurrenceStatuses[dayKey]);
+
+  for (final habit in activeHabits) {
+    final habitId = (habit['id'] ?? '').toString().trim();
+    if (habitId.isEmpty) continue;
+    if (!_isHabitExpectedForDate(habit, _dateFromKey(dayKey))) {
+      previousStatuses[habitId] = HabitOccurrenceStatus.notScheduled.key;
+      continue;
+    }
+
+    final type = (habit['type'] ?? 'check').toString();
+    final done = type == 'count'
+        ? _safeNum(habit['progress'], fallback: 0) >=
+            _safePositiveNum(habit['target'], fallback: 1)
+        : habit['doneToday'] == true;
+    final skipped = habit['skippedToday'] == true;
+
+    previousSkips[habitId] = skipped;
+    if (done && !skipped) {
+      previousDone[habitId] = true;
+      if (type == 'count') {
+        previousCounts[habitId] = _safeNum(habit['progress'], fallback: 0);
+      }
+      previousStatuses[habitId] = HabitOccurrenceStatus.completed.key;
+      continue;
+    }
+
+    final activeShield = _map(shields[habitId]);
+    final hasShield = activeShield.isNotEmpty &&
+        (activeShield['status'] ?? '').toString().trim() == 'armed';
+    if (hasShield) {
+      previousDone[habitId] = false;
+      previousStatuses[habitId] = _habitStreakTypeProtected;
+      shields[habitId] = {
+        ...activeShield,
+        'status': 'consumed',
+        'consumedAtMillis': DateTime.now().millisecondsSinceEpoch,
+        'protectedOccurrenceDateKey': dayKey,
+      };
+      continue;
+    }
+
+    previousDone[habitId] = false;
+    previousStatuses[habitId] = HabitOccurrenceStatus.missed.key;
+
+    final activeBreak = _recoverableStreakBreakForHabit(
+      userState,
+      habitId,
+    );
+    if (activeBreak != null &&
+        (activeBreak['status'] ?? '').toString().trim() == 'recoverable') {
+      continue;
+    }
+
+    final previousStreak = _currentHabitStreakBeforeDay(
+      userState,
+      habit,
+      _dateFromKey(dayKey),
+    );
+    final breakId = 'streak_break_${habitId}_$dayKey';
+    breaks[breakId] = RecoverableStreakBreak(
+      id: breakId,
+      userId: (userState['userId'] ?? userState['id'] ?? '').toString().trim(),
+      habitId: habitId,
+      brokenAtMillis: DateTime.now().millisecondsSinceEpoch,
+      missedOccurrenceDateKey: dayKey,
+      previousStreak: previousStreak,
+      currentStreakAfterBreak: 0,
+      status: RecoverableStreakBreakStatus.recoverable,
+    ).toJson();
+  }
+
+  habitCompletions[dayKey] = previousDone;
+  habitCountValues[dayKey] = previousCounts;
+  habitSkips[dayKey] = previousSkips;
+  occurrenceStatuses[dayKey] = previousStatuses;
+  history['habitCompletions'] = habitCompletions;
+  history['habitCountValues'] = habitCountValues;
+  history['habitSkips'] = habitSkips;
+  history['habitOccurrenceStatuses'] = occurrenceStatuses;
+  history['habitStreakBreaks'] = breaks;
+  history['habitStreakShields'] = shields;
+  userState['history'] = history;
+}
+
+int _currentHabitStreakBeforeDay(
+  Map<String, dynamic> userState,
+  Map<String, dynamic> habit,
+  DateTime closedDay,
+) {
+  final continuityByDay = _extractHabitStreakContinuityByDay(
+    userState,
+    habit: habit,
+  );
+  final reference = closedDay.subtract(const Duration(days: 1));
+  return _computeCurrentStreak(continuityByDay, reference);
 }
 
 Future<void> _loadStore(
@@ -644,7 +735,8 @@ Future<void> _loadStore(
 
       _touchLastSavedAt(userState);
       if (epochAtStart != store._scopeEpoch ||
-          scopeAtStart != _normalizedScopeUserId(store._activeLocalScopeUserId)) {
+          scopeAtStart !=
+              _normalizedScopeUserId(store._activeLocalScopeUserId)) {
         if (kDebugMode) {
           debugPrint(
             '[user_state_store] skipped stale post-load save '

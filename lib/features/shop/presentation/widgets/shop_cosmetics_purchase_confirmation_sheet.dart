@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
-import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_rarity_badge.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
   const ShopCosmeticsPurchaseConfirmationSheet.asset({
@@ -40,6 +41,8 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return SafeArea(
       top: false,
       child: Padding(
@@ -71,7 +74,7 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Confirmar compra',
+                    l10n.shopConfirmPurchaseTitle,
                     style: ShopUiTextStyles.cardTitle,
                   ),
                   const SizedBox(height: 8),
@@ -101,38 +104,48 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                           const SizedBox(height: 16),
                           if (!_isBundle) ...<Widget>[
                             _InfoRow(
-                              label: 'Categoria',
-                              value: _assetCategoryLabel(asset!.category),
+                              label: l10n.shopCategoryLabel,
+                              value: l10n.shopAssetCategoryLabel(
+                                asset!.category,
+                              ),
                             ),
                             const SizedBox(height: 10),
                           ],
                           if (_isBundle) ...<Widget>[
                             _InfoRow(
-                              label: 'Precio original',
-                              value: '${bundle!.originalPriceAmber} ambar',
+                              label: l10n.shopOriginalPriceLabel,
+                              value: l10n.shopPriceAmber(
+                                bundle!.originalPriceAmber,
+                              ),
                             ),
                             const SizedBox(height: 10),
                             _InfoRow(
-                              label: 'Ahorro',
-                              value: '${bundle!.savingsAmber} ambar',
+                              label: l10n.shopSavingsLabel,
+                              value: l10n.shopPriceAmber(bundle!.savingsAmber),
                             ),
                             const SizedBox(height: 10),
                           ],
-                          _InfoRow(label: 'Precio', value: '$_price ambar'),
+                          _InfoRow(
+                            label: l10n.shopPriceLabel,
+                            value: l10n.shopPriceAmber(_price),
+                          ),
                           const SizedBox(height: 10),
                           _InfoRow(
-                            label: 'Saldo actual',
-                            value: '$walletCoins ambar',
+                            label: l10n.shopCurrentBalanceLabel,
+                            value: l10n.shopPriceAmber(walletCoins),
                           ),
                           if (_isBundle) ...<Widget>[
                             const SizedBox(height: 14),
-                            Text('Incluye', style: ShopUiTextStyles.label),
+                            Text(
+                              l10n.shopIncludesLabel,
+                              style: ShopUiTextStyles.label,
+                            ),
                             const SizedBox(height: 8),
                             ...bundleAssets.map(
                               (ShopAsset includedAsset) => Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: _InfoRow(
-                                  label: _assetCategoryLabel(
+                                  label: l10n.shopAssetCategoryLabel(
                                     includedAsset.category,
                                   ),
                                   value: includedAsset.nameEs,
@@ -143,8 +156,8 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                           const SizedBox(height: 14),
                           Text(
                             _hasEnoughCoins
-                                ? 'La compra solo se completara cuando confirmes.'
-                                : 'No tienes ambar suficiente para completar esta compra.',
+                                ? l10n.shopActionAvailable
+                                : l10n.shopStatusInsufficientCoins,
                             style: ShopUiTextStyles.bodySmall.copyWith(
                               color: _hasEnoughCoins
                                   ? ShopUiTokens.textSecondary
@@ -174,7 +187,7 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                               borderRadius: ShopUiTokens.radiusXlShape,
                             ),
                           ),
-                          child: const Text('Cancelar'),
+                          child: Text(l10n.shopCancel),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -185,8 +198,9 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                                 ? 'shopCosmeticsPurchaseConfirmationConfirm-${bundle!.id}'
                                 : 'shopCosmeticsPurchaseConfirmationConfirm-${asset!.id}',
                           ),
-                          label:
-                              _isBundle ? 'Confirmar pack' : 'Confirmar compra',
+                          label: _isBundle
+                              ? l10n.shopActionBuyPack
+                              : l10n.shopActionBuy,
                           onPressed: _hasEnoughCoins ? onConfirm : null,
                           expanded: true,
                           icon: _hasEnoughCoins
@@ -203,17 +217,6 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _assetCategoryLabel(ShopAssetCategory category) {
-    switch (category) {
-      case ShopAssetCategory.wallpaper:
-        return 'Fondo';
-      case ShopAssetCategory.habitCard:
-        return 'Habit card';
-      case ShopAssetCategory.userCard:
-        return 'User card';
-    }
   }
 }
 

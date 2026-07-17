@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopItemDetailPreview extends StatelessWidget {
   const ShopItemDetailPreview({
@@ -21,6 +23,7 @@ class ShopItemDetailPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: ShopUiTokens.surfaceRaised,
@@ -61,36 +64,36 @@ class ShopItemDetailPreview extends StatelessWidget {
               runSpacing: 8,
               children: <Widget>[
                 _Badge(
-                  label: _rarityLabel(item.rarity),
+                  label: l10n.shopRarityLabelByShopItem(item.rarity),
                   backgroundColor: _rarityBackground(item.rarity),
                   foregroundColor: _rarityForeground(item.rarity),
                 ),
                 _Badge(
-                  label: _typeLabel(item.type),
+                  label: l10n.shopItemTypeLabel(item.type),
                   backgroundColor: ShopUiTokens.backgroundAlt,
                   foregroundColor: ShopUiTokens.textPrimary,
                 ),
                 if (isEquipped)
-                  const _Badge(
-                    label: 'Equipado',
+                  _Badge(
+                    label: l10n.shopActionEquipped,
                     backgroundColor: ShopUiTokens.successSoft,
                     foregroundColor: ShopUiTokens.success,
                   )
                 else if (backpackQuantity != null && backpackQuantity! > 0)
                   _Badge(
-                    label: 'En mochila x$backpackQuantity',
+                    label: l10n.shopBackpackCount(backpackQuantity!),
                     backgroundColor: ShopUiTokens.coinSoft,
                     foregroundColor: ShopUiTokens.textPrimary,
                   )
                 else if (isOwned)
-                  const _Badge(
-                    label: 'Comprado',
+                  _Badge(
+                    label: l10n.shopStatusPurchased,
                     backgroundColor: ShopUiTokens.backgroundAlt,
                     foregroundColor: ShopUiTokens.textPrimary,
                   )
                 else
-                  const _Badge(
-                    label: 'Disponible',
+                  _Badge(
+                    label: l10n.shopActionAvailable,
                     backgroundColor: ShopUiTokens.surfaceMuted,
                     foregroundColor: ShopUiTokens.textPrimary,
                   ),
@@ -140,42 +143,6 @@ class ShopItemDetailPreview extends StatelessWidget {
         return Icons.shield_outlined;
       case ShopItemType.mysteryBox:
         return Icons.card_giftcard_rounded;
-    }
-  }
-
-  String _typeLabel(ShopItemType type) {
-    switch (type) {
-      case ShopItemType.background:
-        return 'Fondo';
-      case ShopItemType.habitCard:
-        return 'Card de habitos';
-      case ShopItemType.userCard:
-        return 'Card de usuario';
-      case ShopItemType.xpBoost:
-        return 'XP Boost';
-      case ShopItemType.coinBoost:
-        return 'Coin Boost';
-      case ShopItemType.streakRecover:
-        return 'Streak Recover';
-      case ShopItemType.streakShield:
-        return 'Streak Shield';
-      case ShopItemType.mysteryBox:
-        return 'Mystery Box';
-    }
-  }
-
-  String _rarityLabel(ShopItemRarity rarity) {
-    switch (rarity) {
-      case ShopItemRarity.uncommon:
-        return 'Uncommon';
-      case ShopItemRarity.rare:
-        return 'Rare';
-      case ShopItemRarity.epic:
-        return 'Epic';
-      case ShopItemRarity.legendary:
-        return 'Legendary';
-      case ShopItemRarity.common:
-        return 'Common';
     }
   }
 

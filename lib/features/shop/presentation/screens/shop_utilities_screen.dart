@@ -8,24 +8,13 @@ import 'package:rutio/features/shop/presentation/widgets/shop_header.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_page_shell.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_section_header.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_utility_item_card.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 enum ShopUtilitiesFilter {
   all,
   boosts,
   streaks,
-}
-
-extension ShopUtilitiesFilterX on ShopUtilitiesFilter {
-  String get label {
-    switch (this) {
-      case ShopUtilitiesFilter.all:
-        return 'Todo';
-      case ShopUtilitiesFilter.boosts:
-        return 'Boosts';
-      case ShopUtilitiesFilter.streaks:
-        return 'Rachas';
-    }
-  }
 }
 
 class ShopUtilitiesScreen extends StatefulWidget {
@@ -51,13 +40,14 @@ class _ShopUtilitiesScreenState extends State<ShopUtilitiesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final List<_UtilitySectionData> sections =
-        _sectionsForFilter(widget.items, _selectedFilter);
+        _sectionsForFilter(widget.items, _selectedFilter, l10n);
 
     return ShopPageShell(
       header: ShopHeader(
-        title: 'Utilidades',
-        subtitle: 'Ayudas suaves para Rutio',
+        title: l10n.shopUtilitiesTitle,
+        subtitle: l10n.shopUtilitiesSubtitle,
         titleStyle: ShopUiTextStyles.headerTitle.copyWith(fontSize: 22.5),
         leadingIcon: Icons.arrow_back_ios_new_rounded,
         onLeadingPressed: widget.onBackPressed,
@@ -77,9 +67,9 @@ class _ShopUtilitiesScreenState extends State<ShopUtilitiesScreen> {
           ),
           const SizedBox(height: 18),
           if (sections.isEmpty)
-            const ShopEmptyState(
-              title: 'Nada por mostrar',
-              message: 'No hay utilidades disponibles en esta categoría.',
+            ShopEmptyState(
+              title: l10n.shopEmptyUtilitiesTitle,
+              message: l10n.shopEmptyUtilitiesMessage,
             )
           else
             ..._buildSections(sections),
@@ -110,10 +100,11 @@ class _ShopUtilitiesScreenState extends State<ShopUtilitiesScreen> {
   List<_UtilitySectionData> _sectionsForFilter(
     List<ShopItem> items,
     ShopUtilitiesFilter filter,
+    AppLocalizations l10n,
   ) {
     final List<_UtilitySectionData> allSections = <_UtilitySectionData>[
       _UtilitySectionData(
-        title: 'Boosts',
+        title: l10n.shopCategoryBoosts,
         filter: ShopUtilitiesFilter.boosts,
         items: items
             .where((ShopItem item) =>
@@ -122,7 +113,7 @@ class _ShopUtilitiesScreenState extends State<ShopUtilitiesScreen> {
             .toList(growable: false),
       ),
       _UtilitySectionData(
-        title: 'Rachas',
+        title: l10n.shopCategoryStreaks,
         filter: ShopUtilitiesFilter.streaks,
         items: items
             .where((ShopItem item) =>
@@ -131,7 +122,7 @@ class _ShopUtilitiesScreenState extends State<ShopUtilitiesScreen> {
             .toList(growable: false),
       ),
       _UtilitySectionData(
-        title: 'Cajas',
+        title: l10n.shopCategoryBoxes,
         filter: ShopUtilitiesFilter.all,
         items: items
             .where((ShopItem item) => item.type == ShopItemType.mysteryBox)
@@ -170,20 +161,26 @@ class _UtilitiesFilterRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
         children: <Widget>[
-          _buildChip(ShopUtilitiesFilter.all),
+          _buildChip(context, ShopUtilitiesFilter.all),
           const SizedBox(width: 10),
-          _buildChip(ShopUtilitiesFilter.boosts),
+          _buildChip(context, ShopUtilitiesFilter.boosts),
           const SizedBox(width: 10),
-          _buildChip(ShopUtilitiesFilter.streaks),
+          _buildChip(context, ShopUtilitiesFilter.streaks),
         ],
       ),
     );
   }
 
-  Widget _buildChip(ShopUtilitiesFilter filter) {
+  Widget _buildChip(BuildContext context, ShopUtilitiesFilter filter) {
+    final l10n = context.l10n;
+    final label = switch (filter) {
+      ShopUtilitiesFilter.all => l10n.shopFilterAll,
+      ShopUtilitiesFilter.boosts => l10n.shopFilterBoosts,
+      ShopUtilitiesFilter.streaks => l10n.shopFilterStreak,
+    };
     return ShopFilterChip(
       key: Key('shopUtilitiesFilter-${filter.name}'),
-      label: filter.label,
+      label: label,
       selected: selectedFilter == filter,
       onTap: () => onFilterSelected(filter),
     );

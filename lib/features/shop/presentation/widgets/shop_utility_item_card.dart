@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
+import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_utility_asset_art.dart';
 import 'package:rutio/widgets/currency/amber_coin_icon.dart';
 
 class ShopUtilityItemCard extends StatelessWidget {
@@ -17,6 +21,7 @@ class ShopUtilityItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Material(
       color: ShopUiTokens.surfaceRaised,
       elevation: 1,
@@ -44,7 +49,7 @@ class ShopUtilityItemCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                item.title,
+                context.l10n.shopUtilityTitleForItem(item),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: ShopUiTextStyles.cardTitle.copyWith(fontSize: 17),
@@ -52,7 +57,8 @@ class ShopUtilityItemCard extends StatelessWidget {
               const SizedBox(height: 5),
               Row(
                 children: <Widget>[
-                  Flexible(child: _TagPill(label: _labelForItem(item))),
+                  Flexible(
+                      child: _TagPill(label: _labelForItem(context, item))),
                   const SizedBox(width: 6),
                   _PricePill(price: item.priceCoins),
                 ],
@@ -60,9 +66,10 @@ class ShopUtilityItemCard extends StatelessWidget {
               const Spacer(),
               const SizedBox(height: 12),
               ShopPrimaryButton(
-                label: 'Comprar',
+                label: l10n.shopActionBuy,
                 onPressed: onTap,
                 expanded: true,
+                compact: true,
               ),
             ],
           ),
@@ -71,18 +78,19 @@ class ShopUtilityItemCard extends StatelessWidget {
     );
   }
 
-  String _labelForItem(ShopItem item) {
+  String _labelForItem(BuildContext context, ShopItem item) {
+    final l10n = context.l10n;
     switch (item.rarity) {
       case ShopItemRarity.common:
-        return 'Common';
+        return l10n.shopRarityCommon;
       case ShopItemRarity.uncommon:
-        return 'Uncommon';
+        return l10n.shopRarityUncommon;
       case ShopItemRarity.rare:
-        return 'Rare';
+        return l10n.shopRarityRare;
       case ShopItemRarity.epic:
-        return 'Epic';
+        return l10n.shopRarityEpic;
       case ShopItemRarity.legendary:
-        return 'Legendary';
+        return l10n.shopRarityLegendary;
     }
   }
 }
@@ -94,51 +102,11 @@ class _UtilityPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String? assetPath = _assetPathForItem(item);
-
-    if (assetPath != null) {
-      return Padding(
-        padding: const EdgeInsets.all(10),
-        child: Image.asset(
-          assetPath,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
-          errorBuilder: (_, __, ___) => _FallbackGraphic(item: item),
-        ),
-      );
-    }
-
-    return _FallbackGraphic(item: item);
-  }
-
-  String? _assetPathForItem(ShopItem item) {
-    final String? assetRef = item.assetRef;
-    if (assetRef != null && assetRef.startsWith('assets/shop/utilities/')) {
-      return assetRef;
-    }
-    return null;
-  }
-}
-
-class _FallbackGraphic extends StatelessWidget {
-  const _FallbackGraphic({required this.item});
-
-  final ShopItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: ShopUiTokens.backgroundAlt,
-        borderRadius: ShopUiTokens.radiusMdShape,
-      ),
-      child: Center(
-        child: Icon(
-          _fallbackIconForItem(item),
-          color: ShopUiTokens.textPrimary,
-          size: 34,
-        ),
-      ),
+    return ShopUtilityAssetArt(
+      key: Key('shopUtilityPreviewScale-${item.id}'),
+      item: item,
+      fallbackTone: _toneForItem(item.type),
+      fallbackIcon: _fallbackIconForItem(item),
     );
   }
 
@@ -158,6 +126,24 @@ class _FallbackGraphic extends StatelessWidget {
       case ShopItemType.habitCard:
       case ShopItemType.userCard:
         return Icons.inventory_2_rounded;
+    }
+  }
+
+  ShopPreviewPlaceholderTone _toneForItem(ShopItemType type) {
+    switch (type) {
+      case ShopItemType.xpBoost:
+        return ShopPreviewPlaceholderTone.sage;
+      case ShopItemType.coinBoost:
+        return ShopPreviewPlaceholderTone.camel;
+      case ShopItemType.streakRecover:
+      case ShopItemType.streakShield:
+        return ShopPreviewPlaceholderTone.sand;
+      case ShopItemType.mysteryBox:
+        return ShopPreviewPlaceholderTone.clay;
+      case ShopItemType.background:
+      case ShopItemType.habitCard:
+      case ShopItemType.userCard:
+        return ShopPreviewPlaceholderTone.charcoal;
     }
   }
 }

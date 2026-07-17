@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_header.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
@@ -8,6 +9,7 @@ import 'package:rutio/features/shop/presentation/widgets/shop_item_detail_info_r
 import 'package:rutio/features/shop/presentation/widgets/shop_page_shell.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopCosmeticDetailScreen extends StatelessWidget {
   const ShopCosmeticDetailScreen({
@@ -27,12 +29,14 @@ class ShopCosmeticDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String status = isEquipped ? 'Equipado' : 'Comprado';
+    final l10n = context.l10n;
+    final String status =
+        isEquipped ? l10n.shopActionEquipped : l10n.shopStatusPurchased;
 
     return ShopPageShell(
       header: ShopHeader(
-        title: 'Detalle',
-        subtitle: _headerSubtitle(item.type),
+        title: l10n.shopDetailTitle,
+        subtitle: l10n.shopItemTypeLabel(item.type),
         leadingIcon: Icons.arrow_back_ios_new_rounded,
         onLeadingPressed: onBackPressed,
       ),
@@ -51,22 +55,26 @@ class ShopCosmeticDetailScreen extends StatelessWidget {
           _InfoCard(
             children: <Widget>[
               ShopItemDetailInfoRow(
-                label: 'Rareza',
-                value: _rarityLabel(item.rarity),
+                label: l10n.shopRarityLabel,
+                value: l10n.shopRarityLabelByShopItem(item.rarity),
               ),
               const SizedBox(height: 12),
               ShopItemDetailInfoRow(
-                label: 'Tipo',
-                value: _typeLabel(item.type),
+                label: l10n.shopTypeLabel,
+                value: l10n.shopItemTypeLabel(item.type),
               ),
               const SizedBox(height: 12),
               ShopItemDetailInfoRow(
-                label: 'Estilo',
-                value: collectionName ?? _styleLabel(item.collectionId),
+                label: l10n.shopStyleLabel,
+                value: collectionName ??
+                    l10n.shopCollectionTitle(
+                      item.collectionId ?? '',
+                      fallback: l10n.shopCollectionsTitle,
+                    ),
               ),
               const SizedBox(height: 12),
               ShopItemDetailInfoRow(
-                label: 'Estado',
+                label: l10n.shopStatusLabel,
                 value: status,
                 valueKey: const Key('shopCosmeticDetailStatusValue'),
               ),
@@ -75,7 +83,7 @@ class ShopCosmeticDetailScreen extends StatelessWidget {
           const SizedBox(height: 18),
           _ActionCard(
             key: const Key('shopCosmeticDetailActionCard'),
-            label: isEquipped ? 'Equipado' : 'Equipar',
+            label: isEquipped ? l10n.shopActionEquipped : l10n.shopActionEquip,
             enabled: !isEquipped,
             onPressed: isEquipped ? null : () => onEquipPressed(item.id),
           ),
@@ -83,55 +91,6 @@ class ShopCosmeticDetailScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _headerSubtitle(ShopItemType type) {
-    return switch (type) {
-      ShopItemType.background => 'Fondo',
-      ShopItemType.habitCard => 'Habit Card',
-      ShopItemType.userCard => 'User Card',
-      ShopItemType.xpBoost => 'Cosmético',
-      ShopItemType.coinBoost => 'Cosmético',
-      ShopItemType.streakRecover => 'Cosmético',
-      ShopItemType.streakShield => 'Cosmético',
-      ShopItemType.mysteryBox => 'Cosmético',
-    };
-  }
-
-  String _styleLabel(String? collectionId) {
-    switch (collectionId) {
-      case 'minimal':
-        return 'Minimal';
-      case 'gradient':
-        return 'Gradient';
-      case 'landscape':
-        return 'Landscape';
-      default:
-        return 'Rutio';
-    }
-  }
-
-  String _typeLabel(ShopItemType type) {
-    return switch (type) {
-      ShopItemType.background => 'Fondo',
-      ShopItemType.habitCard => 'Habit Card',
-      ShopItemType.userCard => 'User Card',
-      ShopItemType.xpBoost => 'XP Boost',
-      ShopItemType.coinBoost => 'Coin Boost',
-      ShopItemType.streakRecover => 'Streak Recover',
-      ShopItemType.streakShield => 'Streak Shield',
-      ShopItemType.mysteryBox => 'Mystery Box',
-    };
-  }
-
-  String _rarityLabel(ShopItemRarity rarity) {
-    return switch (rarity) {
-      ShopItemRarity.common => 'Common',
-      ShopItemRarity.uncommon => 'Uncommon',
-      ShopItemRarity.rare => 'Rare',
-      ShopItemRarity.epic => 'Epic',
-      ShopItemRarity.legendary => 'Legendary',
-    };
   }
 }
 

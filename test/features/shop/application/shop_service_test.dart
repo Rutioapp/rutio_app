@@ -82,10 +82,11 @@ void main() {
       expect(result.state.coins, 777);
       expect(
         result.state.backpackItems,
-        const <BackpackItem>[
-          BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 1),
-        ],
+        hasLength(1),
       );
+      expect(result.state.backpackItems.first.itemId, 'utility_xp_boost_1d');
+      expect(result.state.backpackItems.first.quantity, 1);
+      expect(result.state.backpackItems.first.updatedAtMillis, isNotNull);
     });
 
     test('purchasing the same utility twice increments backpack quantity', () {
@@ -104,10 +105,13 @@ void main() {
       expect(secondPurchase.walletCoins, 150);
       expect(
         secondPurchase.state.backpackItems,
-        const <BackpackItem>[
-          BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
-        ],
+        hasLength(1),
       );
+      expect(secondPurchase.state.backpackItems.first.itemId,
+          'utility_xp_boost_1d');
+      expect(secondPurchase.state.backpackItems.first.quantity, 2);
+      expect(
+          secondPurchase.state.backpackItems.first.updatedAtMillis, isNotNull);
     });
 
     test('does not purchase without enough coins', () {
@@ -142,6 +146,27 @@ void main() {
       expect(result.walletCoins, 500);
       expect(result.state.coins, 500);
       expect(result.state.inventory, hasLength(1));
+    });
+
+    test('utility legacy present in inventory still can be purchased', () {
+      final item = ShopCatalog.getItemById('utility_xp_boost_1d')!;
+      final service = ShopService(
+        state: const ShopState(
+          inventory: <OwnedShopItem>[
+            OwnedShopItem(itemId: 'utility_xp_boost_1d'),
+          ],
+        ),
+        walletCoins: 300,
+      );
+
+      final result = service.purchaseItem(item);
+
+      expect(result.status, ShopOperationStatus.success);
+      expect(result.walletCoins, 225);
+      expect(result.state.inventory, hasLength(1));
+      expect(result.state.backpackItems, hasLength(1));
+      expect(result.state.backpackItems.first.itemId, 'utility_xp_boost_1d');
+      expect(result.state.backpackItems.first.quantity, 1);
     });
 
     test('equips a purchased background', () {
@@ -190,10 +215,11 @@ void main() {
       expect(result.status, ShopOperationStatus.success);
       expect(
         result.state.backpackItems,
-        const <BackpackItem>[
-          BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 1),
-        ],
+        hasLength(1),
       );
+      expect(result.state.backpackItems.first.itemId, 'utility_xp_boost_1d');
+      expect(result.state.backpackItems.first.quantity, 1);
+      expect(result.state.backpackItems.first.updatedAtMillis, isNotNull);
     });
 
     test('consuming the last backpack item removes it', () {

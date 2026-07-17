@@ -6,6 +6,7 @@ import 'package:rutio/features/shop/presentation/widgets/shop_collection_progres
 import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopCollectionCard extends StatelessWidget {
   const ShopCollectionCard({
@@ -29,6 +30,14 @@ class ShopCollectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final String stateLabel = isCompleted
+        ? l10n.shopCollectionStatusCompleted
+        : ownedItems > 0
+            ? l10n.shopCollectionStatusStarted
+            : isUnlocked
+                ? l10n.shopCollectionStatusNew
+                : l10n.shopCollectionStatusBlocked;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -69,7 +78,7 @@ class ShopCollectionCard extends StatelessWidget {
                       runSpacing: 8,
                       children: <Widget>[
                         _StatePill(
-                          label: _stateLabel(),
+                          label: stateLabel,
                           backgroundColor: _stateBackground(),
                           textColor: _stateForeground(),
                         ),
@@ -89,15 +98,13 @@ class ShopCollectionCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       collection.description.isEmpty
-                          ? 'Coleccion editorial del catalogo Rutio.'
+                          ? l10n.shopCollectionsSubtitle
                           : collection.description,
                       style: ShopUiTextStyles.subtitle,
                     ),
                     const SizedBox(height: 14),
-                    Text(
-                      '$totalItems objetos',
-                      style: ShopUiTextStyles.labelSmall,
-                    ),
+                    Text(l10n.shopCollectionItemsLabel(totalItems),
+                        style: ShopUiTextStyles.labelSmall),
                     const SizedBox(height: 10),
                     ShopCollectionProgress(
                       key: Key('shopCollectionProgress-${collection.id}'),
@@ -106,7 +113,9 @@ class ShopCollectionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     ShopPrimaryButton(
-                      label: isUnlocked ? 'Ver coleccion' : 'Bloqueada',
+                      label: isUnlocked
+                          ? l10n.shopCollectionViewCollection
+                          : l10n.shopCollectionStatusBlocked,
                       icon: Icons.arrow_forward_rounded,
                       onPressed: onTap,
                     ),
@@ -138,16 +147,6 @@ class ShopCollectionCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _stateLabel() {
-    if (isCompleted) {
-      return 'Completada';
-    }
-    if (ownedItems > 0) {
-      return 'Empezada';
-    }
-    return isUnlocked ? 'Nueva' : 'Bloqueada';
   }
 
   Color _stateBackground() {

@@ -50,7 +50,11 @@ void main() {
     test('save and load preserves backpack', () async {
       const state = ShopState(
         backpackItems: <BackpackItem>[
-          BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
+          BackpackItem(
+            itemId: 'utility_xp_boost_1d',
+            quantity: 2,
+            updatedAtMillis: 123,
+          ),
         ],
       );
 
@@ -109,6 +113,63 @@ void main() {
       final restored = await repository.load();
 
       expect(restored, const ShopState.initial());
+    });
+
+    test('persists and restores state per scope', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final demoRepository = ShopLocalRepository(scopeResolver: () => 'demo');
+      final otherRepository = ShopLocalRepository(scopeResolver: () => 'other');
+
+      await demoRepository.save(
+        const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
+          ],
+        ),
+      );
+
+      final demoState = await demoRepository.load();
+      final otherState = await otherRepository.load();
+
+      expect(demoState.backpackItems, hasLength(1));
+      expect(otherState, const ShopState.initial());
+    });
+
+    test('migrates legacy data into active scope once', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ShopLocalRepository.storageKey:
+            '{"coins":0,"inventory":[],"backpackItems":[{"itemId":"utility_xp_boost_1d","quantity":2}],"equippedCosmetics":{"backgroundItemId":null,"habitCardItemId":null,"userCardItemId":null}}',
+      });
+      final repository = ShopLocalRepository(scopeResolver: () => 'demo');
+
+      final state = await repository.load();
+      final reloaded = await repository.load();
+
+      expect(state.backpackItems, const <BackpackItem>[
+        BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
+      ]);
+      expect(reloaded.backpackItems, state.backpackItems);
+    });
+
+    test('sanitizes legacy invalid or duplicated backpack entries', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ShopLocalRepository.storageKey:
+            '{"coins":0,"inventory":[],"backpackItems":[{"itemId":"utility_xp_boost_1d","quantity":2,"updatedAtMillis":10},{"utilityId":"utility_xp_boost_1d","quantity":1,"updatedAtMillis":20},{"itemId":"utility_coin_boost_1d","quantity":0},{"itemId":"wallpaper_mist_blue","quantity":5}],"equippedCosmetics":{"backgroundItemId":null,"habitCardItemId":null,"userCardItemId":null}}',
+      });
+      repository = ShopLocalRepository(scopeResolver: () => 'demo');
+
+      final restored = await repository.load();
+
+      expect(
+        restored.backpackItems,
+        const <BackpackItem>[
+          BackpackItem(
+            itemId: 'utility_xp_boost_1d',
+            quantity: 3,
+            updatedAtMillis: 20,
+          ),
+        ],
+      );
     });
   });
 }

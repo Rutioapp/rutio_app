@@ -8,12 +8,14 @@ class ShopPrimaryButton extends StatelessWidget {
     this.onPressed,
     this.icon,
     this.expanded = true,
+    this.compact = false,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
   final bool expanded;
+  final bool compact;
 
   bool get isEnabled => onPressed != null;
 
@@ -26,8 +28,10 @@ class ShopPrimaryButton extends StatelessWidget {
         onTap: onPressed,
         borderRadius: ShopUiTokens.radiusXlShape,
         child: Ink(
-          height: ShopUiTokens.buttonHeight,
-          padding: ShopUiTokens.buttonPadding,
+          height: compact ? 48 : ShopUiTokens.buttonHeight,
+          padding: compact
+              ? const EdgeInsets.symmetric(horizontal: 16)
+              : ShopUiTokens.buttonPadding,
           decoration: BoxDecoration(
             borderRadius: ShopUiTokens.radiusXlShape,
           ),
@@ -38,7 +42,7 @@ class ShopPrimaryButton extends StatelessWidget {
               if (icon != null) ...<Widget>[
                 Icon(
                   icon,
-                  size: 18,
+                  size: compact ? 16 : 18,
                   color: isEnabled
                       ? ShopUiTokens.surfaceRaised
                       : ShopUiTokens.textTertiary,
@@ -51,8 +55,13 @@ class ShopPrimaryButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: isEnabled
-                      ? ShopUiTextStyles.button
-                      : ShopUiTextStyles.buttonDisabled,
+                      ? (compact
+                          ? ShopUiTextStyles.button.copyWith(fontSize: 13.5)
+                          : ShopUiTextStyles.button)
+                      : (compact
+                          ? ShopUiTextStyles.buttonDisabled
+                              .copyWith(fontSize: 13.5)
+                          : ShopUiTextStyles.buttonDisabled),
                 ),
               ),
             ],

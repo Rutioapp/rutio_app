@@ -8,6 +8,8 @@ HabitLogRepository _habitLogRepositoryForStore(UserStateStore store) {
   return store._habitLogRepository ??= HabitLogRepository();
 }
 
+const HabitRewardCalculator _habitRewardCalculator = HabitRewardCalculator();
+
 const String _supabaseHabitsBackfillCompletedByUserKey =
     'supabaseHabitsBackfillCompletedByUser';
 const String _supabaseHabitLogsBackfillCompletedByUserKey =
@@ -21,13 +23,6 @@ Map<String, dynamic> _dailyRewardGrants(Map<String, dynamic> userState) {
   daily['habitsCompletedToday'] = grants;
   userState['daily'] = daily;
   return grants;
-}
-
-bool _hasDailyRewardGrant(
-  Map<String, dynamic> userState, {
-  required String habitId,
-}) {
-  return _dailyRewardGrants(userState)[habitId] == true;
 }
 
 void _setDailyRewardGrant(
@@ -253,7 +248,8 @@ Future<void> _runHabitsRemotePull(
       final remoteHabitId = (remoteHabit.id ?? '').trim();
       if (remoteHabitId.isEmpty) continue;
 
-      final logsResult = await _habitLogRepositoryForStore(store).fetchLogsForHabit(
+      final logsResult =
+          await _habitLogRepositoryForStore(store).fetchLogsForHabit(
         remoteHabitId,
       );
       if (!logsResult.isSuccess) {
@@ -578,7 +574,9 @@ _HabitLogRemoteMergeResult _mergeRemoteHabitLogsIntoLocalState({
 }
 
 class _RemotePullScopeValidation {
-  const _RemotePullScopeValidation.safe() : isSafe = true, reason = null;
+  const _RemotePullScopeValidation.safe()
+      : isSafe = true,
+        reason = null;
 
   const _RemotePullScopeValidation.unsafe(this.reason) : isSafe = false;
 
@@ -2347,6 +2345,8 @@ Future<void> _setCountHabitValue(
 }) async {
   final root = store._state;
   if (root == null) return;
+  final originalRoot = _cloneMap(root);
+  final now = store._nowProvider();
 
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(userState);
@@ -2357,46 +2357,71 @@ Future<void> _setCountHabitValue(
   if (index == -1) return;
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
-  if (!_isHabitExpectedForDate(habit, DateTime.now())) return;
+  if (!_isHabitExpectedForDate(habit, now)) return;
   if (!_isCountHabit(habit)) return;
 
-  final rewardAlreadyGranted =
-      _hasDailyRewardGrant(userState, habitId: habitId);
+  final dayKey = _dateKey(now);
+  final existingTransaction = await _habitRewardTransactionForDate(
+    store,
+    habitId: habitId,
+    localDateKey: dayKey,
+  );
+  final rewardAlreadyGranted = existingTransaction != null;
   final wasCompletedBeforeChange = habit['doneToday'] == true;
   final progressResult = _setCountHabitProgress(
     habit,
     value: value,
     rewardAlreadyGranted: rewardAlreadyGranted,
   );
-  final dayKey = _today();
 
   _setHabitCompletionTimeState(
     userState,
     dateKey: dayKey,
     habitId: habitId,
     done: habit['doneToday'] == true,
-    epochMillis: DateTime.now().millisecondsSinceEpoch,
+    epochMillis: now.millisecondsSinceEpoch,
   );
 
-  if (progressResult.grantDailyReward) {
-    _applyHabitRewards(
+  _HabitRewardCompletionOutcome completionOutcome =
+      const _HabitRewardCompletionOutcome(
+    granted: false,
+    baseXp: 0,
+    bonusXp: 0,
+    baseCoins: 0,
+    bonusCoins: 0,
+    appliedEffectIds: <String>[],
+  );
+  if (progressResult.grantDailyReward && !rewardAlreadyGranted) {
+    completionOutcome = await _applyHabitRewardCompletion(
       store,
       userState,
-      familyId: _habitFamilyId(habit),
-      xpGain: progressResult.xpGain,
-      coinsGain: progressResult.coinsGain,
+      habit: habit,
+      habitId: habitId,
+      dateKey: dayKey,
+      baseXp: progressResult.xpGain,
+      baseCoins: progressResult.coinsGain,
     );
-    _setDailyRewardGrant(userState, habitId: habitId, granted: true);
+    if (completionOutcome.granted) {
+      _setDailyRewardGrant(userState, habitId: habitId, granted: true);
+    }
   }
 
-  final revokedCoins =
-      rewardAlreadyGranted && wasCompletedBeforeChange && habit['doneToday'] != true
-      ? _revokeGrantedHabitRewardCoins(
+  final shouldReverse = rewardAlreadyGranted &&
+      wasCompletedBeforeChange &&
+      habit['doneToday'] != true;
+  final revokedOutcome = shouldReverse
+      ? await _reverseHabitRewardCompletion(
+          store,
           userState,
           habit: habit,
           habitId: habitId,
+          dateKey: dayKey,
         )
-      : 0;
+      : const _HabitRewardReversalOutcome(
+          revokedXp: 0,
+          revokedCoins: 0,
+          reversed: false,
+        );
 
   activeHabits[index] = habit;
   userState['activeHabits'] = activeHabits;
@@ -2413,29 +2438,56 @@ Future<void> _setCountHabitValue(
     enqueueVisualTrigger: true,
   );
 
-  await store.save(root);
+  try {
+    await store.save(root);
+    if (completionOutcome.granted) {
+      await _saveActiveUtilityEffectsForStore(
+        store,
+        completionOutcome.nextEffects,
+      );
+      if (completionOutcome.transaction != null) {
+        await _saveHabitRewardTransactionForStore(
+          store,
+          completionOutcome.transaction!,
+        );
+      }
+    }
+    if (revokedOutcome.reversed && revokedOutcome.transaction != null) {
+      await _saveHabitRewardTransactionForStore(
+          store, revokedOutcome.transaction!);
+    }
+  } catch (_) {
+    await _rollbackHabitRewardPersistence(
+      store,
+      originalRoot: originalRoot,
+      originalEffects:
+          completionOutcome.granted ? completionOutcome.sourceEffects : null,
+    );
+    rethrow;
+  }
+
   _queueBestEffortAchievementUnlockSync(
     store,
     userState: userState,
     records: achievementSyncOutcome.newlyUnlockedRecords,
   );
-  if (progressResult.xpGain != 0 || progressResult.coinsGain != 0) {
+  if (completionOutcome.granted) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
-      xpDelta: progressResult.xpGain,
-      coinsDelta: progressResult.coinsGain,
+      xpDelta: completionOutcome.totalXp,
+      coinsDelta: completionOutcome.totalCoins,
       source: 'habit_completion',
       xpReason: 'habit_completion_reward',
       currencyReason: 'habit_completion_reward',
     );
   }
-  if (revokedCoins != 0) {
+  if (revokedOutcome.reversed) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
-      xpDelta: 0,
-      coinsDelta: -revokedCoins,
+      xpDelta: -revokedOutcome.revokedXp,
+      coinsDelta: -revokedOutcome.revokedCoins,
       source: 'refund',
       currencyReason: 'habit_completion_rollback',
     );
@@ -2456,7 +2508,7 @@ Future<void> _setCountHabitValue(
     userState: userState,
     habit: habit,
     habitId: habitId,
-    date: DateTime.now(),
+    date: now,
   );
 }
 
@@ -2467,6 +2519,8 @@ Future<void> _completeHabit(
 }) async {
   final root = store._state;
   if (root == null) return;
+  final originalRoot = _cloneMap(root);
+  final now = store._nowProvider();
 
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(userState);
@@ -2477,12 +2531,16 @@ Future<void> _completeHabit(
   if (index == -1) return;
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
-  if (!_isHabitExpectedForDate(habit, DateTime.now())) return;
+  if (!_isHabitExpectedForDate(habit, now)) return;
 
   final type = _normalizedHabitType(habit['type']);
-  final rewardAlreadyGranted =
-      _hasDailyRewardGrant(userState, habitId: habitId);
-  final dayKey = _today();
+  final dayKey = _dateKey(now);
+  final existingTransaction = await _habitRewardTransactionForDate(
+    store,
+    habitId: habitId,
+    localDateKey: dayKey,
+  );
+  final rewardAlreadyGranted = existingTransaction != null;
 
   if (type == 'check') {
     if (habit['doneToday'] == true) return;
@@ -2498,18 +2556,33 @@ Future<void> _completeHabit(
     dateKey: dayKey,
     habitId: habitId,
     done: habit['doneToday'] == true,
-    epochMillis: DateTime.now().millisecondsSinceEpoch,
+    epochMillis: now.millisecondsSinceEpoch,
   );
-  _applyHabitRewards(
-    store,
-    userState,
-    familyId: _habitFamilyId(habit),
-    xpGain: progressResult.xpGain,
-    coinsGain: progressResult.coinsGain,
+  _HabitRewardCompletionOutcome completionOutcome =
+      const _HabitRewardCompletionOutcome(
+    granted: false,
+    baseXp: 0,
+    bonusXp: 0,
+    baseCoins: 0,
+    bonusCoins: 0,
+    appliedEffectIds: <String>[],
   );
 
-  if (habit['doneToday'] == true && progressResult.grantDailyReward) {
-    _setDailyRewardGrant(userState, habitId: habitId, granted: true);
+  if (habit['doneToday'] == true &&
+      progressResult.grantDailyReward &&
+      !rewardAlreadyGranted) {
+    completionOutcome = await _applyHabitRewardCompletion(
+      store,
+      userState,
+      habit: habit,
+      habitId: habitId,
+      dateKey: dayKey,
+      baseXp: progressResult.xpGain,
+      baseCoins: progressResult.coinsGain,
+    );
+    if (completionOutcome.granted) {
+      _setDailyRewardGrant(userState, habitId: habitId, granted: true);
+    }
   }
 
   activeHabits[index] = habit;
@@ -2526,18 +2599,40 @@ Future<void> _completeHabit(
     enqueueVisualTrigger: true,
   );
 
-  await store.save(root);
+  try {
+    await store.save(root);
+    if (completionOutcome.granted) {
+      await _saveActiveUtilityEffectsForStore(
+        store,
+        completionOutcome.nextEffects,
+      );
+      if (completionOutcome.transaction != null) {
+        await _saveHabitRewardTransactionForStore(
+          store,
+          completionOutcome.transaction!,
+        );
+      }
+    }
+  } catch (_) {
+    await _rollbackHabitRewardPersistence(
+      store,
+      originalRoot: originalRoot,
+      originalEffects:
+          completionOutcome.granted ? completionOutcome.sourceEffects : null,
+    );
+    rethrow;
+  }
   _queueBestEffortAchievementUnlockSync(
     store,
     userState: userState,
     records: achievementSyncOutcome.newlyUnlockedRecords,
   );
-  if (progressResult.xpGain != 0 || progressResult.coinsGain != 0) {
+  if (completionOutcome.granted) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
-      xpDelta: progressResult.xpGain,
-      coinsDelta: progressResult.coinsGain,
+      xpDelta: completionOutcome.totalXp,
+      coinsDelta: completionOutcome.totalCoins,
       source: 'habit_completion',
       xpReason: 'habit_completion_reward',
       currencyReason: 'habit_completion_reward',
@@ -2559,7 +2654,7 @@ Future<void> _completeHabit(
     userState: userState,
     habit: habit,
     habitId: habitId,
-    date: DateTime.now(),
+    date: now,
   );
 }
 
@@ -2573,7 +2668,7 @@ Future<void> _toggleHabitDoneForDate(
 
   final userState = _ensureUserStateRoot(root);
 
-  if (_isSameDay(date, DateTime.now())) {
+  if (_isSameDay(date, store._nowProvider())) {
     await store.completeHabit(habitId: habitId);
     return;
   }
@@ -2631,27 +2726,41 @@ Future<void> _setHabitCompletionForKey(
   _ensureDailyReset(userState);
 
   final date = _dateFromKey(dateKey);
+  final originalRoot = _cloneMap(root);
   final activeHabits = _mutableActiveHabits(userState);
   final index = _activeHabitIndex(activeHabits, habitId);
   if (index == -1) return;
   final habit = Map<String, dynamic>.from(activeHabits[index]);
   if (!_isHabitExpectedForDate(habit, date)) return;
-  var revokedCoins = 0;
+  var revokedOutcome = const _HabitRewardReversalOutcome(
+    revokedXp: 0,
+    revokedCoins: 0,
+    reversed: false,
+  );
 
-  if (_isSameDay(date, DateTime.now())) {
+  if (_isSameDay(date, store._nowProvider())) {
     if (done) {
       await store.completeHabit(habitId: habitId);
       return;
     }
-    final type = _normalizedHabitType(habit['type']);
-    revokedCoins = _revokeGrantedHabitRewardCoins(
-      userState,
-      habit: habit,
+    final existingTransaction = await _habitRewardTransactionForDate(
+      store,
       habitId: habitId,
+      localDateKey: dateKey,
     );
+    if (existingTransaction != null && !existingTransaction.isReversed) {
+      revokedOutcome = await _reverseHabitRewardCompletion(
+        store,
+        userState,
+        habit: habit,
+        habitId: habitId,
+        dateKey: dateKey,
+      );
+    }
 
     habit['doneToday'] = false;
     habit['skippedToday'] = false;
+    final type = _normalizedHabitType(habit['type']);
     habit['progress'] =
         type == 'count' ? _safeNum(habit['progress'], fallback: 0) : 0;
 
@@ -2679,13 +2788,25 @@ Future<void> _setHabitCompletionForKey(
     skipped: false,
   );
 
-  await store.save(root);
-  if (revokedCoins != 0) {
+  try {
+    await store.save(root);
+    if (revokedOutcome.reversed && revokedOutcome.transaction != null) {
+      await _saveHabitRewardTransactionForStore(
+          store, revokedOutcome.transaction!);
+    }
+  } catch (_) {
+    await _rollbackHabitRewardPersistence(
+      store,
+      originalRoot: originalRoot,
+    );
+    rethrow;
+  }
+  if (revokedOutcome.reversed) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
-      xpDelta: 0,
-      coinsDelta: -revokedCoins,
+      xpDelta: -revokedOutcome.revokedXp,
+      coinsDelta: -revokedOutcome.revokedCoins,
       source: 'refund',
       currencyReason: 'habit_completion_rollback',
     );
@@ -2718,21 +2839,35 @@ Future<void> _setHabitSkipForKey(
   _ensureDailyReset(userState);
 
   final date = _dateFromKey(dateKey);
+  final originalRoot = _cloneMap(root);
   final activeHabits = _mutableActiveHabits(userState);
   final index = _activeHabitIndex(activeHabits, habitId);
   if (index == -1) return;
   final habit = Map<String, dynamic>.from(activeHabits[index]);
   if (!_isHabitExpectedForDate(habit, date)) return;
-  var revokedCoins = 0;
+  var revokedOutcome = const _HabitRewardReversalOutcome(
+    revokedXp: 0,
+    revokedCoins: 0,
+    reversed: false,
+  );
 
-  if (_isSameDay(date, DateTime.now())) {
-    revokedCoins = skipped
-        ? _revokeGrantedHabitRewardCoins(
-            userState,
-            habit: habit,
-            habitId: habitId,
-          )
-        : 0;
+  if (_isSameDay(date, store._nowProvider())) {
+    if (skipped) {
+      final existingTransaction = await _habitRewardTransactionForDate(
+        store,
+        habitId: habitId,
+        localDateKey: dateKey,
+      );
+      if (existingTransaction != null && !existingTransaction.isReversed) {
+        revokedOutcome = await _reverseHabitRewardCompletion(
+          store,
+          userState,
+          habit: habit,
+          habitId: habitId,
+          dateKey: dateKey,
+        );
+      }
+    }
     habit['skippedToday'] = skipped;
     if (skipped) {
       habit['doneToday'] = false;
@@ -2783,13 +2918,25 @@ Future<void> _setHabitSkipForKey(
     );
   }
 
-  await store.save(root);
-  if (revokedCoins != 0) {
+  try {
+    await store.save(root);
+    if (revokedOutcome.reversed && revokedOutcome.transaction != null) {
+      await _saveHabitRewardTransactionForStore(
+          store, revokedOutcome.transaction!);
+    }
+  } catch (_) {
+    await _rollbackHabitRewardPersistence(
+      store,
+      originalRoot: originalRoot,
+    );
+    rethrow;
+  }
+  if (revokedOutcome.reversed) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
-      xpDelta: 0,
-      coinsDelta: -revokedCoins,
+      xpDelta: -revokedOutcome.revokedXp,
+      coinsDelta: -revokedOutcome.revokedCoins,
       source: 'refund',
       currencyReason: 'habit_completion_rollback',
     );
@@ -2821,7 +2968,7 @@ Future<void> _setCountHabitValueForDate(
 
   final userState = _ensureUserStateRoot(root);
 
-  if (_isSameDay(date, DateTime.now())) {
+  if (_isSameDay(date, store._nowProvider())) {
     await store.setCountHabitValue(habitId: habitId, value: value);
     return;
   }
@@ -2963,4 +3110,895 @@ List<Map<String, dynamic>> _activeHabits(UserStateStore store) {
       .whereType<Map>()
       .map((entry) => Map<String, dynamic>.from(_map(entry)))
       .toList(growable: false);
+}
+
+ActiveUtilityEffectsRepository _activeUtilityEffectsRepositoryForStore(
+  UserStateStore store,
+) {
+  return store._activeUtilityEffectsRepository ??=
+      LocalActiveUtilityEffectsRepository(
+    scopeResolver: () => store.activeLocalScopeUserId ?? store.userId,
+  );
+}
+
+HabitRewardTransactionRepository _habitRewardTransactionRepositoryForStore(
+  UserStateStore store,
+) {
+  return store._habitRewardTransactionRepository ??=
+      LocalHabitRewardTransactionRepository(
+    scopeResolver: () => store.activeLocalScopeUserId ?? store.userId,
+  );
+}
+
+String _rewardScopeForStore(UserStateStore store) {
+  return (store.activeLocalScopeUserId ?? store.userId ?? '').trim();
+}
+
+Future<HabitRewardTransaction?> _habitRewardTransactionForDate(
+  UserStateStore store, {
+  required String habitId,
+  required String localDateKey,
+}) {
+  return _habitRewardTransactionRepositoryForStore(store).findByCompletion(
+    userScope: _rewardScopeForStore(store),
+    habitId: habitId,
+    localDateKey: localDateKey,
+  );
+}
+
+Future<void> _saveHabitRewardTransactionForStore(
+  UserStateStore store,
+  HabitRewardTransaction transaction,
+) {
+  return _habitRewardTransactionRepositoryForStore(store).saveTransaction(
+    _rewardScopeForStore(store),
+    transaction,
+  );
+}
+
+Future<void> _saveActiveUtilityEffectsForStore(
+  UserStateStore store,
+  List<ActiveUtilityEffect> effects,
+) {
+  return _activeUtilityEffectsRepositoryForStore(store).saveEffects(
+    _rewardScopeForStore(store),
+    effects,
+  );
+}
+
+ActiveUtilityEffect? _activeUtilityEffectForType(
+  List<ActiveUtilityEffect> effects,
+  ActiveUtilityEffectType type,
+) {
+  final matches = effects
+      .where((effect) => effect.type == type)
+      .toList(growable: false)
+    ..sort((a, b) {
+      final byActivated = b.activatedAtMillis.compareTo(a.activatedAtMillis);
+      if (byActivated != 0) return byActivated;
+      return b.id.compareTo(a.id);
+    });
+  if (matches.isEmpty) return null;
+  return matches.first;
+}
+
+String _habitRewardTransactionId(
+  String habitId,
+  String localDateKey,
+) {
+  return 'habit_reward_${habitId.trim()}_${localDateKey.trim()}';
+}
+
+void _applyHabitRewardValues(
+  UserStateStore store,
+  Map<String, dynamic> userState, {
+  required Map<String, dynamic> habit,
+  required int totalXp,
+  required int totalCoins,
+}) {
+  if (totalXp == 0 && totalCoins == 0) return;
+
+  final familyId = _habitFamilyId(habit);
+  final progression = _map(userState['progression']);
+  final currentXp = _safeInt(progression['xp'], fallback: 0);
+  final nextXp = currentXp + totalXp;
+  _queueLevelCelebrationForXpChange(
+    store,
+    userState: userState,
+    previousXp: currentXp,
+    currentXp: nextXp,
+  );
+  _updateProgressionLevelFromXp(progression, totalXp: nextXp);
+  progression['xp'] = nextXp < 0 ? 0 : nextXp;
+  userState['progression'] = progression;
+
+  if (totalXp != 0) {
+    final familyXp = _map(userState['familyXp']);
+    familyXp[familyId] = (_safeInt(familyXp[familyId], fallback: 0) + totalXp)
+        .clamp(0, 1 << 30)
+        .toInt();
+    userState['familyXp'] = familyXp;
+  }
+
+  final wallet = _map(userState['wallet']);
+  final currentCoins = _safeInt(wallet['coins'], fallback: 0);
+  wallet['coins'] = (currentCoins + totalCoins).clamp(0, 1 << 30).toInt();
+  userState['wallet'] = wallet;
+
+  final daily = _map(userState['daily']);
+  daily['xpEarnedToday'] =
+      (_safeInt(daily['xpEarnedToday'], fallback: 0) + totalXp)
+          .clamp(0, 1 << 30)
+          .toInt();
+  daily['coinsEarnedToday'] =
+      (_safeInt(daily['coinsEarnedToday'], fallback: 0) + totalCoins)
+          .clamp(0, 1 << 30)
+          .toInt();
+  userState['daily'] = daily;
+}
+
+void _revokeHabitRewardValues(
+  Map<String, dynamic> userState, {
+  required Map<String, dynamic> habit,
+  required int revokedXp,
+  required int revokedCoins,
+}) {
+  if (revokedXp == 0 && revokedCoins == 0) return;
+
+  final familyId = _habitFamilyId(habit);
+  final progression = _map(userState['progression']);
+  final currentXp = _safeInt(progression['xp'], fallback: 0);
+  final nextXp = (currentXp - revokedXp).clamp(0, 1 << 30).toInt();
+  _updateProgressionLevelFromXp(progression, totalXp: nextXp);
+  progression['xp'] = nextXp;
+  userState['progression'] = progression;
+
+  if (revokedXp != 0) {
+    final familyXp = _map(userState['familyXp']);
+    familyXp[familyId] = (_safeInt(familyXp[familyId], fallback: 0) - revokedXp)
+        .clamp(0, 1 << 30)
+        .toInt();
+    userState['familyXp'] = familyXp;
+  }
+
+  final wallet = _map(userState['wallet']);
+  final currentCoins = _safeInt(wallet['coins'], fallback: 0);
+  wallet['coins'] = (currentCoins - revokedCoins).clamp(0, 1 << 30).toInt();
+  userState['wallet'] = wallet;
+
+  final daily = _map(userState['daily']);
+  daily['xpEarnedToday'] =
+      (_safeInt(daily['xpEarnedToday'], fallback: 0) - revokedXp)
+          .clamp(0, 1 << 30)
+          .toInt();
+  daily['coinsEarnedToday'] =
+      (_safeInt(daily['coinsEarnedToday'], fallback: 0) - revokedCoins)
+          .clamp(0, 1 << 30)
+          .toInt();
+  userState['daily'] = daily;
+}
+
+Future<_HabitRewardCompletionOutcome> _applyHabitRewardCompletion(
+  UserStateStore store,
+  Map<String, dynamic> userState, {
+  required Map<String, dynamic> habit,
+  required String habitId,
+  required String dateKey,
+  required int baseXp,
+  required int baseCoins,
+}) async {
+  final existingTransaction = await _habitRewardTransactionForDate(
+    store,
+    habitId: habitId,
+    localDateKey: dateKey,
+  );
+  if (existingTransaction != null) {
+    return _HabitRewardCompletionOutcome(
+      granted: false,
+      baseXp: existingTransaction.baseXp,
+      bonusXp: existingTransaction.bonusXp,
+      baseCoins: existingTransaction.baseCoins,
+      bonusCoins: existingTransaction.bonusCoins,
+      appliedEffectIds: existingTransaction.appliedEffectIds,
+      transaction: existingTransaction,
+    );
+  }
+
+  final scope = _rewardScopeForStore(store);
+  final effectRepo = _activeUtilityEffectsRepositoryForStore(store);
+  final currentEffects = await effectRepo.loadEffects(scope);
+  final now = store._nowProvider();
+  final xpBoost = _activeUtilityEffectForType(
+    currentEffects,
+    ActiveUtilityEffectType.xpBoost,
+  );
+  final coinBoost = _activeUtilityEffectForType(
+    currentEffects,
+    ActiveUtilityEffectType.coinBoost,
+  );
+  final reward = _habitRewardCalculator.calculate(
+    baseXp: baseXp,
+    baseCoins: baseCoins,
+    xpBoost: xpBoost,
+    coinBoost: coinBoost,
+  );
+
+  final nextEffects = <ActiveUtilityEffect>[];
+  final appliedEffectIds = <String>[];
+
+  for (final effect in currentEffects) {
+    var nextEffect = effect;
+    var consumed = false;
+
+    if (xpBoost != null &&
+        effect.id == xpBoost.id &&
+        reward.consumesXpBoostUse &&
+        effect.remainingUses > 0) {
+      nextEffect = effect.copyWith(remainingUses: effect.remainingUses - 1);
+      consumed = true;
+    } else if (coinBoost != null &&
+        effect.id == coinBoost.id &&
+        reward.consumesCoinBoostUse &&
+        effect.remainingUses > 0) {
+      nextEffect = effect.copyWith(remainingUses: effect.remainingUses - 1);
+      consumed = true;
+    }
+
+    if (consumed) {
+      appliedEffectIds.add(effect.id);
+      if (nextEffect.remainingUses > 0) {
+        nextEffects.add(nextEffect);
+      }
+      continue;
+    }
+
+    nextEffects.add(nextEffect);
+  }
+
+  _applyHabitRewardValues(
+    store,
+    userState,
+    habit: habit,
+    totalXp: reward.totalXp,
+    totalCoins: reward.totalCoins,
+  );
+
+  final transaction = HabitRewardTransaction(
+    id: _habitRewardTransactionId(habitId, dateKey),
+    habitId: habitId,
+    localDateKey: dateKey,
+    baseXp: reward.baseXp,
+    bonusXp: reward.bonusXp,
+    baseCoins: reward.baseCoins,
+    bonusCoins: reward.bonusCoins,
+    appliedEffectIds: appliedEffectIds,
+    createdAtMillis: now.millisecondsSinceEpoch,
+    isReversed: false,
+  );
+
+  return _HabitRewardCompletionOutcome(
+    granted: true,
+    baseXp: reward.baseXp,
+    bonusXp: reward.bonusXp,
+    baseCoins: reward.baseCoins,
+    bonusCoins: reward.bonusCoins,
+    appliedEffectIds: appliedEffectIds,
+    nextEffects: nextEffects,
+    sourceEffects: currentEffects,
+    transaction: transaction,
+  );
+}
+
+Future<_HabitRewardReversalOutcome> _reverseHabitRewardCompletion(
+  UserStateStore store,
+  Map<String, dynamic> userState, {
+  required Map<String, dynamic> habit,
+  required String habitId,
+  required String dateKey,
+}) async {
+  final existingTransaction = await _habitRewardTransactionForDate(
+    store,
+    habitId: habitId,
+    localDateKey: dateKey,
+  );
+  if (existingTransaction == null || existingTransaction.isReversed) {
+    return const _HabitRewardReversalOutcome(
+      revokedXp: 0,
+      revokedCoins: 0,
+      reversed: false,
+    );
+  }
+
+  final revokedXp = (existingTransaction.baseXp + existingTransaction.bonusXp)
+      .clamp(0, 1 << 30)
+      .toInt();
+  final revokedCoins =
+      (existingTransaction.baseCoins + existingTransaction.bonusCoins)
+          .clamp(0, 1 << 30)
+          .toInt();
+
+  _revokeHabitRewardValues(
+    userState,
+    habit: habit,
+    revokedXp: revokedXp,
+    revokedCoins: revokedCoins,
+  );
+  _setDailyRewardGrant(userState, habitId: habitId, granted: false);
+
+  final updatedTransaction = existingTransaction.copyWith(isReversed: true);
+  return _HabitRewardReversalOutcome(
+    revokedXp: revokedXp,
+    revokedCoins: revokedCoins,
+    reversed: true,
+    transaction: updatedTransaction,
+  );
+}
+
+class _HabitRewardCompletionOutcome {
+  const _HabitRewardCompletionOutcome({
+    required this.granted,
+    required this.baseXp,
+    required this.bonusXp,
+    required this.baseCoins,
+    required this.bonusCoins,
+    required this.appliedEffectIds,
+    this.nextEffects = const <ActiveUtilityEffect>[],
+    this.sourceEffects = const <ActiveUtilityEffect>[],
+    this.transaction,
+  });
+
+  final bool granted;
+  final int baseXp;
+  final int bonusXp;
+  final int baseCoins;
+  final int bonusCoins;
+  final List<String> appliedEffectIds;
+  final List<ActiveUtilityEffect> nextEffects;
+  final List<ActiveUtilityEffect> sourceEffects;
+  final HabitRewardTransaction? transaction;
+
+  int get totalXp => baseXp + bonusXp;
+  int get totalCoins => baseCoins + bonusCoins;
+}
+
+class _HabitRewardReversalOutcome {
+  const _HabitRewardReversalOutcome({
+    required this.revokedXp,
+    required this.revokedCoins,
+    required this.reversed,
+    this.transaction,
+  });
+
+  final int revokedXp;
+  final int revokedCoins;
+  final bool reversed;
+  final HabitRewardTransaction? transaction;
+}
+
+Future<void> _rollbackHabitRewardPersistence(
+  UserStateStore store, {
+  required Map<String, dynamic> originalRoot,
+  List<ActiveUtilityEffect>? originalEffects,
+}) async {
+  try {
+    if (originalEffects != null) {
+      await _saveActiveUtilityEffectsForStore(store, originalEffects);
+    }
+  } finally {
+    store._state = originalRoot;
+    await store._repo.save(originalRoot);
+  }
+}
+
+const Duration streakRecoveryWindow = Duration(hours: 48);
+const String _habitOccurrenceStatusesKey = 'habitOccurrenceStatuses';
+const String _habitStreakBreaksKey = 'habitStreakBreaks';
+const String _habitStreakShieldsKey = 'habitStreakShields';
+const String _habitStreakTypeProtected = 'protected';
+
+Map<String, dynamic> _habitStreakBreaksRoot(Map<String, dynamic> userState) {
+  final history = _ensureHistoryRoot(userState);
+  final breaks = _map(history[_habitStreakBreaksKey]);
+  history[_habitStreakBreaksKey] = breaks;
+  userState['history'] = history;
+  return breaks;
+}
+
+Map<String, dynamic> _habitStreakShieldsRoot(Map<String, dynamic> userState) {
+  final history = _ensureHistoryRoot(userState);
+  final shields = _map(history[_habitStreakShieldsKey]);
+  history[_habitStreakShieldsKey] = shields;
+  userState['history'] = history;
+  return shields;
+}
+
+Map<String, dynamic>? _activeStreakShieldRecordForHabit(
+  Map<String, dynamic> userState,
+  String habitId,
+) {
+  final shields = _habitStreakShieldsRoot(userState);
+  final raw = _map(shields[habitId.trim()]);
+  if (raw.isEmpty) return null;
+  return raw;
+}
+
+List<Map<String, dynamic>> _activeStreakShieldRecords(
+  Map<String, dynamic> userState,
+) {
+  final shields = _habitStreakShieldsRoot(userState);
+  return shields.values
+      .whereType<Map>()
+      .map((entry) => Map<String, dynamic>.from(_map(entry)))
+      .where((entry) {
+    final status = (entry['status'] ?? '').toString().trim();
+    return status == 'armed';
+  }).toList(growable: false);
+}
+
+List<Map<String, dynamic>> _recoverableStreakBreakRecords(
+  Map<String, dynamic> userState,
+) {
+  final breaks = _habitStreakBreaksRoot(userState);
+  return breaks.values
+      .whereType<Map>()
+      .map((entry) => Map<String, dynamic>.from(_map(entry)))
+      .where((entry) {
+    final status = (entry['status'] ?? '').toString().trim();
+    return status == 'recoverable' || status == 'recovered';
+  }).toList(growable: false);
+}
+
+Map<String, dynamic>? _recoverableStreakBreakForHabit(
+  Map<String, dynamic> userState,
+  String habitId,
+) {
+  final breaks = _habitStreakBreaksRoot(userState);
+  final candidates = breaks.values
+      .whereType<Map>()
+      .map((entry) => Map<String, dynamic>.from(_map(entry)))
+      .where((entry) {
+    return (entry['habitId'] ?? '').toString().trim() == habitId.trim() &&
+        (entry['status'] ?? '').toString().trim() != 'expired';
+  }).toList(growable: false)
+    ..sort((a, b) {
+      final byBroken = (b['brokenAtMillis'] as num? ?? 0)
+          .toInt()
+          .compareTo((a['brokenAtMillis'] as num? ?? 0).toInt());
+      if (byBroken != 0) return byBroken;
+      return (b['id'] ?? '').toString().compareTo((a['id'] ?? '').toString());
+    });
+  if (candidates.isEmpty) return null;
+  return candidates.first;
+}
+
+bool _isWithinRecoveryWindow(
+  DateTime now,
+  String missedOccurrenceDateKey,
+) {
+  final missedDate = _dateFromKey(missedOccurrenceDateKey);
+  final missedAt = DateTime(missedDate.year, missedDate.month, missedDate.day);
+  return now.difference(missedAt) <= streakRecoveryWindow;
+}
+
+int _habitContinuityDaysAfterDate(
+  Map<String, dynamic> userState, {
+  required Map<String, dynamic> habit,
+  required String afterDateKey,
+  required DateTime until,
+}) {
+  final continuityByDay = _extractHabitStreakContinuityByDay(
+    userState,
+    habit: habit,
+  );
+  var streak = 0;
+  var cursor = _dateFromKey(afterDateKey).add(const Duration(days: 1));
+  final end = DateTime(until.year, until.month, until.day);
+  while (!cursor.isAfter(end)) {
+    final value = continuityByDay[cursor] ?? 0;
+    if (value <= 0) break;
+    streak += 1;
+    cursor = cursor.add(const Duration(days: 1));
+  }
+  return streak;
+}
+
+Map<DateTime, int> _extractHabitStreakContinuityByDay(
+  Map<String, dynamic> userState, {
+  required Map<String, dynamic> habit,
+}) {
+  final output = <DateTime, int>{};
+  final habitId = _habitIdValue(habit);
+  if (habitId == null || habitId.isEmpty) return output;
+
+  final history = _ensureHistoryRoot(userState);
+  final completions = _map(history['habitCompletions']);
+  final countValues = _map(history['habitCountValues']);
+  final occurrenceStatuses = _map(history[_habitOccurrenceStatusesKey]);
+  final breakRecords = _map(history[_habitStreakBreaksKey]);
+  final keys = <String>{
+    ...completions.keys.map((key) => key.toString()),
+    ...countValues.keys.map((key) => key.toString()),
+    ...occurrenceStatuses.keys.map((key) => key.toString()),
+    ...breakRecords.values
+        .whereType<Map>()
+        .map((entry) => (entry['missedOccurrenceDateKey'] ?? '').toString())
+        .where((key) => key.trim().isNotEmpty),
+  };
+
+  for (final dayKey in keys) {
+    final date = _dateFromKey(dayKey);
+    final day = DateTime(date.year, date.month, date.day);
+    if (!_isScheduledForDate(habit, day)) continue;
+
+    final completionMap = _map(completions[dayKey]);
+    final countValueMap = _map(countValues[dayKey]);
+    final statusMap = _map(occurrenceStatuses[dayKey]);
+    final status = (statusMap[habitId] ?? '').toString().trim();
+    final breakForDay = _recoverableStreakBreakForHabitDate(
+      userState,
+      habitId: habitId,
+      dateKey: dayKey,
+    );
+
+    final continuity = _normalizedHabitType(habit['type']) == 'count'
+        ? _safeNum(countValueMap[habitId], fallback: 0) > 0
+        : completionMap[habitId] == true;
+    final protected = status == _habitStreakTypeProtected;
+    final recovered =
+        breakForDay != null && breakForDay['status'] == 'recovered';
+
+    output[day] = (continuity || protected || recovered) ? 1 : 0;
+  }
+
+  return output;
+}
+
+Map<String, dynamic>? _recoverableStreakBreakForHabitDate(
+  Map<String, dynamic> userState, {
+  required String habitId,
+  required String dateKey,
+}) {
+  final breaks = _habitStreakBreaksRoot(userState);
+  for (final entry in breaks.values.whereType<Map>()) {
+    final record = Map<String, dynamic>.from(_map(entry));
+    final recordHabitId = (record['habitId'] ?? '').toString().trim();
+    final recordDate =
+        (record['missedOccurrenceDateKey'] ?? '').toString().trim();
+    if (recordHabitId == habitId.trim() && recordDate == dateKey.trim()) {
+      return record;
+    }
+  }
+  return null;
+}
+
+int _computeHabitCurrentStreak(
+  Map<DateTime, int> continuityByDay,
+  DateTime today, {
+  required Map<String, dynamic> userState,
+  required String habitId,
+}) {
+  final derived = _computeCurrentStreak(continuityByDay, today);
+  final breakRecord = _recoverableStreakBreakForHabit(
+    userState,
+    habitId,
+  );
+  if (breakRecord == null) return derived;
+
+  final status = (breakRecord['status'] ?? '').toString().trim();
+  if (status != 'recovered') return derived;
+
+  final missedOccurrenceDateKey =
+      (breakRecord['missedOccurrenceDateKey'] ?? '').toString().trim();
+  if (missedOccurrenceDateKey.isEmpty) return derived;
+
+  final streakAfterRecovery = _habitContinuityDaysAfterDate(
+    userState,
+    habit: _habitByIdFromState(userState, habitId) ??
+        <String, dynamic>{'id': habitId},
+    afterDateKey: missedOccurrenceDateKey,
+    until: today,
+  );
+
+  final previousStreak =
+      (_safeInt(breakRecord['previousStreak'], fallback: 0)).clamp(0, 1 << 30);
+  final recoveredFloor = previousStreak + streakAfterRecovery;
+  return derived > recoveredFloor ? derived : recoveredFloor;
+}
+
+int _computeHabitBestStreak(
+  Map<DateTime, int> continuityByDay, {
+  required Map<String, dynamic> userState,
+  required String habitId,
+}) {
+  final derived = _computeBestStreak(continuityByDay);
+  final breakRecords = _habitStreakBreaksRoot(userState)
+      .values
+      .whereType<Map>()
+      .map((entry) => Map<String, dynamic>.from(_map(entry)))
+      .where((entry) {
+    return (entry['habitId'] ?? '').toString().trim() == habitId.trim() &&
+        (entry['status'] ?? '').toString().trim() == 'recovered';
+  }).toList(growable: false);
+
+  var best = derived;
+  for (final record in breakRecords) {
+    final previousStreak = _safeInt(record['previousStreak'], fallback: 0);
+    final streakAfterRecovery = _habitContinuityDaysAfterDate(
+      userState,
+      habit: _habitByIdFromState(userState, habitId) ??
+          <String, dynamic>{'id': habitId},
+      afterDateKey: (record['missedOccurrenceDateKey'] ?? '').toString(),
+      until: DateTime.now(),
+    );
+    final recovered = previousStreak + streakAfterRecovery;
+    if (recovered > best) best = recovered;
+  }
+
+  return best;
+}
+
+Map<String, dynamic>? _habitByIdFromState(
+  Map<String, dynamic> userState,
+  String habitId,
+) {
+  final activeHabits = _list(userState['activeHabits']).whereType<Map>();
+  for (final habit in activeHabits) {
+    final mapHabit = Map<String, dynamic>.from(_map(habit));
+    if (_habitIdValue(mapHabit) == habitId) return mapHabit;
+  }
+  return null;
+}
+
+List<ActiveStreakShield> _activeStreakShields(UserStateStore store) {
+  final root = store._state;
+  if (root == null) return const <ActiveStreakShield>[];
+  final userState = _ensureUserStateRoot(root);
+  return _activeStreakShieldRecords(userState)
+      .map(ActiveStreakShield.fromJson)
+      .toList(growable: false);
+}
+
+List<RecoverableStreakBreak> _recoverableStreakBreaks(UserStateStore store) {
+  final root = store._state;
+  if (root == null) return const <RecoverableStreakBreak>[];
+  final userState = _ensureUserStateRoot(root);
+  return _recoverableStreakBreakRecords(userState)
+      .map(RecoverableStreakBreak.fromJson)
+      .toList(growable: false);
+}
+
+ActiveStreakShield? _activeStreakShieldForHabit(
+  UserStateStore store,
+  String habitId,
+) {
+  final root = store._state;
+  if (root == null) return null;
+  final userState = _ensureUserStateRoot(root);
+  final record = _activeStreakShieldRecordForHabit(userState, habitId);
+  if (record == null) return null;
+  return ActiveStreakShield.fromJson(record);
+}
+
+RecoverableStreakBreak? _recoverableStreakBreakForHabitStore(
+  UserStateStore store,
+  String habitId,
+) {
+  final root = store._state;
+  if (root == null) return null;
+  final userState = _ensureUserStateRoot(root);
+  final record = _recoverableStreakBreakForHabit(userState, habitId);
+  if (record == null) return null;
+  return RecoverableStreakBreak.fromJson(record);
+}
+
+Future<StreakShieldOperationResult> _activateStreakShield(
+  UserStateStore store, {
+  required String habitId,
+  required String operationId,
+  String? utilityId,
+}) async {
+  final root = store._state;
+  if (root == null) {
+    return const StreakShieldOperationResult(
+      status: StreakShieldOperationStatus.persistenceFailure,
+    );
+  }
+
+  final normalizedHabitId = habitId.trim();
+  final normalizedOperationId = operationId.trim();
+  final normalizedUtilityId = (utilityId ?? 'utility_streak_shield_1').trim();
+  if (normalizedHabitId.isEmpty || normalizedOperationId.isEmpty) {
+    return const StreakShieldOperationResult(
+      status: StreakShieldOperationStatus.operationAlreadyProcessed,
+    );
+  }
+
+  final userState = _ensureUserStateRoot(root);
+  _ensureDailyReset(userState);
+  final habit = _habitByIdFromState(userState, normalizedHabitId);
+  if (habit == null) {
+    return const StreakShieldOperationResult(
+      status: StreakShieldOperationStatus.habitNotFound,
+    );
+  }
+  if (_isArchivedHabit(habit)) {
+    return const StreakShieldOperationResult(
+      status: StreakShieldOperationStatus.habitNotEligible,
+    );
+  }
+
+  final currentShield = _activeStreakShieldRecordForHabit(
+    userState,
+    normalizedHabitId,
+  );
+  if (currentShield != null) {
+    final currentOperationId =
+        (currentShield['operationId'] ?? '').toString().trim();
+    if (currentOperationId == normalizedOperationId) {
+      return StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.success,
+        shield: ActiveStreakShield.fromJson(currentShield),
+      );
+    }
+    if ((currentShield['status'] ?? '').toString().trim() == 'armed') {
+      return const StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.shieldAlreadyActive,
+      );
+    }
+  }
+
+  final now = store._nowProvider();
+  final shield = ActiveStreakShield(
+    id: 'streak_shield_${normalizedHabitId}_$normalizedOperationId',
+    userId: (store.activeLocalScopeUserId ?? store.userId ?? '').trim(),
+    habitId: normalizedHabitId,
+    utilityId: normalizedUtilityId,
+    activatedAtMillis: now.millisecondsSinceEpoch,
+    status: ActiveStreakShieldStatus.armed,
+    protectedOccurrenceDateKey: null,
+    operationId: normalizedOperationId,
+  );
+
+  final rootCopy = _cloneMap(root);
+  final nextUserState = _ensureUserStateRoot(rootCopy);
+  final shields = _habitStreakShieldsRoot(nextUserState);
+  shields[normalizedHabitId] = shield.toJson();
+  final history = _ensureHistoryRoot(nextUserState);
+  history[_habitStreakShieldsKey] = shields;
+  nextUserState['history'] = history;
+  rootCopy['userState'] = nextUserState;
+
+  try {
+    await store.save(rootCopy);
+  } catch (error) {
+    return StreakShieldOperationResult(
+      status: StreakShieldOperationStatus.persistenceFailure,
+      errorMessage: error.toString(),
+    );
+  }
+
+  return StreakShieldOperationResult(
+    status: StreakShieldOperationStatus.success,
+    shield: shield,
+  );
+}
+
+Future<StreakRecoverOperationResult> _recoverStreakBreak(
+  UserStateStore store, {
+  required String breakId,
+  required String operationId,
+}) async {
+  final root = store._state;
+  if (root == null) {
+    return const StreakRecoverOperationResult(
+      status: StreakRecoverOperationStatus.persistenceFailure,
+    );
+  }
+
+  final normalizedBreakId = breakId.trim();
+  final normalizedOperationId = operationId.trim();
+  if (normalizedBreakId.isEmpty || normalizedOperationId.isEmpty) {
+    return const StreakRecoverOperationResult(
+      status: StreakRecoverOperationStatus.operationAlreadyProcessed,
+    );
+  }
+
+  final userState = _ensureUserStateRoot(root);
+  _ensureDailyReset(userState);
+  final breaks = _habitStreakBreaksRoot(userState);
+  final rawBreak = _map(breaks[normalizedBreakId]);
+  if (rawBreak.isEmpty) {
+    return const StreakRecoverOperationResult(
+      status: StreakRecoverOperationStatus.noRecoverableBreak,
+    );
+  }
+
+  final breakRecord = RecoverableStreakBreak.fromJson(rawBreak);
+  if (breakRecord.isRecovered) {
+    if ((rawBreak['recoveryOperationId'] ?? '').toString().trim() ==
+        normalizedOperationId) {
+      return StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.success,
+        recoveredBreak: breakRecord,
+      );
+    }
+    return const StreakRecoverOperationResult(
+      status: StreakRecoverOperationStatus.alreadyRecovered,
+    );
+  }
+
+  final now = store._nowProvider();
+  if (!_isWithinRecoveryWindow(now, breakRecord.missedOccurrenceDateKey)) {
+    final expired = breakRecord.copyWith(
+      status: RecoverableStreakBreakStatus.expired,
+    );
+    breaks[normalizedBreakId] = expired.toJson();
+    final history = _ensureHistoryRoot(userState);
+    history[_habitStreakBreaksKey] = breaks;
+    userState['history'] = history;
+    final nextRoot = _cloneMap(root);
+    nextRoot['userState'] = userState;
+    await store.save(nextRoot);
+    return const StreakRecoverOperationResult(
+      status: StreakRecoverOperationStatus.recoveryExpired,
+    );
+  }
+
+  final updated = breakRecord.copyWith(
+    status: RecoverableStreakBreakStatus.recovered,
+    recoveredAtMillis: now.millisecondsSinceEpoch,
+    recoveryOperationId: normalizedOperationId,
+  );
+  breaks[normalizedBreakId] = updated.toJson();
+  final history = _ensureHistoryRoot(userState);
+  history[_habitStreakBreaksKey] = breaks;
+  userState['history'] = history;
+  final nextRoot = _cloneMap(root);
+  nextRoot['userState'] = userState;
+
+  try {
+    await store.save(nextRoot);
+  } catch (error) {
+    return StreakRecoverOperationResult(
+      status: StreakRecoverOperationStatus.persistenceFailure,
+      errorMessage: error.toString(),
+    );
+  }
+
+  return StreakRecoverOperationResult(
+    status: StreakRecoverOperationStatus.success,
+    recoveredBreak: updated,
+  );
+}
+
+Future<void> _expireRecoverableStreakBreaks(UserStateStore store) async {
+  final root = store._state;
+  if (root == null) return;
+  final userState = _ensureUserStateRoot(root);
+  final breaks = _habitStreakBreaksRoot(userState);
+  final now = store._nowProvider();
+  var changed = false;
+
+  for (final entry in breaks.entries.toList(growable: false)) {
+    final rawBreak = _map(entry.value);
+    if (rawBreak.isEmpty) continue;
+    final breakRecord = RecoverableStreakBreak.fromJson(rawBreak);
+    if (!breakRecord.isRecoverable) continue;
+    if (_isWithinRecoveryWindow(now, breakRecord.missedOccurrenceDateKey)) {
+      continue;
+    }
+
+    breaks[entry.key] = breakRecord
+        .copyWith(status: RecoverableStreakBreakStatus.expired)
+        .toJson();
+    changed = true;
+  }
+
+  if (!changed) return;
+  final history = _ensureHistoryRoot(userState);
+  history[_habitStreakBreaksKey] = breaks;
+  userState['history'] = history;
+  final nextRoot = _cloneMap(root);
+  nextRoot['userState'] = userState;
+  await store.save(nextRoot);
 }

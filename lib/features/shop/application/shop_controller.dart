@@ -1,9 +1,26 @@
 import 'package:rutio/features/shop/application/shop_operation_result.dart';
 import 'package:rutio/features/shop/application/shop_service.dart';
+import 'package:rutio/features/shop/application/mystery_box_operation_result.dart';
+import 'package:rutio/features/shop/application/open_mystery_box_use_case.dart';
+import 'package:rutio/features/shop/application/present_mystery_box_result_use_case.dart';
+import 'package:rutio/features/habits/application/activate_streak_shield_use_case.dart';
+import 'package:rutio/features/habits/application/recover_streak_use_case.dart';
+import 'package:rutio/features/habits/domain/models/active_streak_shield.dart';
+import 'package:rutio/features/habits/domain/models/recoverable_streak_break.dart';
+import 'package:rutio/features/habits/domain/models/streak_recover_operation_result.dart';
+import 'package:rutio/features/habits/domain/models/streak_shield_operation_result.dart';
+import 'package:rutio/features/shop/data/local_active_utility_effects_repository.dart';
+import 'package:rutio/features/shop/data/dart_random_source.dart';
+import 'package:rutio/features/shop/data/local_mystery_box_opening_repository.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
+import 'package:rutio/features/shop/domain/active_utility_effects_repository.dart';
+import 'package:rutio/features/shop/domain/models/active_utility_effect.dart';
+import 'package:rutio/features/shop/domain/mystery_box_opening_repository.dart';
+import 'package:rutio/features/shop/domain/random_source.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
+import 'package:rutio/features/shop/domain/models/mystery_box_opening_transaction.dart';
 import 'package:rutio/features/shop/domain/shop_state.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
@@ -16,6 +33,8 @@ enum ShopControllerStatus {
   itemNotOwned,
   invalidItemType,
   backpackItemNotFound,
+  utilityAlreadyActive,
+  utilityActivationInProgress,
 }
 
 class ShopItemState {
@@ -57,11 +76,40 @@ class ShopController {
   ShopController({
     required UserStateStore userStateStore,
     ShopLocalRepository? shopRepository,
+    ActiveUtilityEffectsRepository? activeUtilityEffectsRepository,
+    MysteryBoxOpeningRepository? mysteryBoxOpeningRepository,
+    RandomSource? randomSource,
+    DateTime Function()? nowProvider,
   })  : _userStateStore = userStateStore,
-        _shopRepository = shopRepository ?? ShopLocalRepository();
+        _shopRepository = shopRepository ??
+            ShopLocalRepository(
+              scopeResolver: () =>
+                  userStateStore.activeLocalScopeUserId ??
+                  userStateStore.userId,
+            ),
+        _activeUtilityEffectsRepository = activeUtilityEffectsRepository ??
+            LocalActiveUtilityEffectsRepository(
+              scopeResolver: () =>
+                  userStateStore.activeLocalScopeUserId ??
+                  userStateStore.userId,
+            ),
+        _mysteryBoxOpeningRepository = mysteryBoxOpeningRepository ??
+            LocalMysteryBoxOpeningRepository(
+              scopeResolver: () =>
+                  userStateStore.activeLocalScopeUserId ??
+                  userStateStore.userId,
+            ),
+        _randomSource = randomSource ?? DartRandomSource(),
+        _nowProvider = nowProvider ?? DateTime.now;
 
   final UserStateStore _userStateStore;
   final ShopLocalRepository _shopRepository;
+  final ActiveUtilityEffectsRepository _activeUtilityEffectsRepository;
+  final MysteryBoxOpeningRepository _mysteryBoxOpeningRepository;
+  final RandomSource _randomSource;
+  final DateTime Function() _nowProvider;
+  final Set<String> _pendingUtilityActivations = <String>{};
+  final Set<String> _pendingMysteryBoxScopes = <String>{};
 
   int getWalletCoins() {
     final root = _userStateStore.state;
@@ -225,6 +273,288 @@ class ShopController {
     );
   }
 
+  Future<List<ActiveUtilityEffect>> getActiveUtilityEffects() async {
+    final scope = _currentScopeUserId();
+    final repoEffects = scope == null
+        ? const <ActiveUtilityEffect>[]
+        : await _activeUtilityEffectsRepository.loadEffects(scope);
+    return <ActiveUtilityEffect>[
+      ...repoEffects,
+      ..._streakShieldEffectsFromStore(),
+    ];
+  }
+
+  List<Map<String, dynamic>> getActiveHabits() {
+    return _userStateStore.activeHabits;
+  }
+
+  List<RecoverableStreakBreak> getRecoverableStreakBreaks() {
+    return _userStateStore.recoverableStreakBreaks;
+  }
+
+  ActiveStreakShield? getActiveStreakShieldForHabit(String habitId) {
+    return _userStateStore.activeStreakShieldForHabit(habitId);
+  }
+
+  RecoverableStreakBreak? getRecoverableStreakBreakForHabit(String habitId) {
+    return _userStateStore.recoverableStreakBreakForHabit(habitId);
+  }
+
+  Future<List<MysteryBoxOpeningTransaction>> getPendingMysteryBoxOpenings() {
+    return _loadPendingMysteryBoxOpenings();
+  }
+
+  bool isUtilityActivationPending(String utilityId) {
+    return _pendingUtilityActivations.contains(_activationKey(utilityId));
+  }
+
+  Future<ShopControllerResult> activateBoost(String utilityId) async {
+    final normalizedUtilityId = utilityId.trim();
+    final item = ShopCatalog.getItemById(normalizedUtilityId);
+    if (item == null) {
+      return _controllerResult(
+        ShopControllerStatus.itemNotFound,
+        item: null,
+        shopState: await _shopRepository.load(),
+      );
+    }
+
+    if (item.category != ShopItemCategory.utility) {
+      return _controllerResult(
+        ShopControllerStatus.invalidItemType,
+        item: item,
+        shopState: await _shopRepository.load(),
+      );
+    }
+
+    if (item.type != ShopItemType.xpBoost &&
+        item.type != ShopItemType.coinBoost) {
+      return _controllerResult(
+        ShopControllerStatus.invalidItemType,
+        item: item,
+        shopState: await _shopRepository.load(),
+      );
+    }
+
+    final activationKey = _activationKey(normalizedUtilityId);
+    if (_pendingUtilityActivations.contains(activationKey)) {
+      return _controllerResult(
+        ShopControllerStatus.utilityActivationInProgress,
+        item: item,
+        shopState: await _shopRepository.load(),
+      );
+    }
+
+    _pendingUtilityActivations.add(activationKey);
+    try {
+      final root = await _ensureRoot();
+      if (root == null) {
+        return _controllerResult(
+          ShopControllerStatus.unavailableState,
+          item: item,
+          shopState: await _shopRepository.load(),
+        );
+      }
+
+      final shopState = await _shopRepository.load();
+      final walletCoins = _walletCoinsFromRoot(root);
+      final scope = _currentScopeUserId();
+      if (scope == null) {
+        return _controllerResult(
+          ShopControllerStatus.unavailableState,
+          item: item,
+          shopState: shopState,
+          walletCoins: walletCoins,
+        );
+      }
+      final itemState = _buildItemState(
+        item: item,
+        shopState: shopState,
+        walletCoins: walletCoins,
+      );
+      if (!itemState.isInBackpack) {
+        return _controllerResult(
+          ShopControllerStatus.backpackItemNotFound,
+          item: item,
+          shopState: shopState,
+          walletCoins: walletCoins,
+        );
+      }
+
+      final activeEffects =
+          await _activeUtilityEffectsRepository.loadEffects(scope);
+      final effectType = switch (item.type) {
+        ShopItemType.xpBoost => ActiveUtilityEffectType.xpBoost,
+        ShopItemType.coinBoost => ActiveUtilityEffectType.coinBoost,
+        _ => null,
+      };
+      if (effectType == null) {
+        return _controllerResult(
+          ShopControllerStatus.invalidItemType,
+          item: item,
+          shopState: shopState,
+          walletCoins: walletCoins,
+        );
+      }
+
+      final hasActiveEffect = activeEffects.any(
+        (effect) => effect.type == effectType,
+      );
+      if (hasActiveEffect) {
+        return _controllerResult(
+          ShopControllerStatus.utilityAlreadyActive,
+          item: item,
+          shopState: shopState,
+          walletCoins: walletCoins,
+        );
+      }
+
+      final service = ShopService(
+        state: shopState,
+        walletCoins: walletCoins,
+      );
+      final consumeResult = service.consumeBackpackItem(item.id);
+      if (!consumeResult.isSuccess) {
+        return _controllerResult(
+          ShopControllerStatus.backpackItemNotFound,
+          item: item,
+          shopState: shopState,
+          walletCoins: walletCoins,
+        );
+      }
+
+      final activatedAtMillis = _nowProvider().millisecondsSinceEpoch;
+      final nextEffect = ActiveUtilityEffect(
+        id: _activationEffectId(item.id, activatedAtMillis),
+        utilityId: item.id,
+        type: effectType,
+        activatedAtMillis: activatedAtMillis,
+        remainingUses: 10,
+        totalUses: 10,
+      );
+      final nextEffects = <ActiveUtilityEffect>[
+        ...activeEffects,
+        nextEffect,
+      ];
+
+      try {
+        await _shopRepository.save(consumeResult.state);
+        await _activeUtilityEffectsRepository.saveEffects(scope, nextEffects);
+      } catch (_) {
+        try {
+          await _shopRepository.save(shopState);
+        } catch (_) {}
+        return _controllerResult(
+          ShopControllerStatus.unavailableState,
+          item: item,
+          shopState: shopState,
+          walletCoins: walletCoins,
+        );
+      }
+
+      return _controllerResult(
+        ShopControllerStatus.success,
+        item: item,
+        shopState: consumeResult.state,
+        walletCoins: consumeResult.walletCoins,
+      );
+    } finally {
+      _pendingUtilityActivations.remove(activationKey);
+    }
+  }
+
+  Future<MysteryBoxOperationResult> openMysteryBox({
+    String? transactionId,
+  }) async {
+    final normalizedTransactionId = transactionId?.trim();
+    final effectiveTransactionId =
+        normalizedTransactionId == null || normalizedTransactionId.isEmpty
+            ? _generateMysteryBoxTransactionId()
+            : normalizedTransactionId;
+    final scope = _currentScopeUserId();
+    if (scope == null) {
+      return const MysteryBoxOperationResult(
+        status: MysteryBoxOperationStatus.unavailableState,
+      );
+    }
+
+    if (_pendingMysteryBoxScopes.contains(scope)) {
+      return const MysteryBoxOperationResult(
+        status: MysteryBoxOperationStatus.duplicateTransaction,
+      );
+    }
+
+    _pendingMysteryBoxScopes.add(scope);
+    try {
+      final pending = await _loadPendingMysteryBoxOpenings();
+      if (pending.isNotEmpty &&
+          !pending.any((entry) => entry.id == effectiveTransactionId)) {
+        return MysteryBoxOperationResult(
+          status: MysteryBoxOperationStatus.duplicateTransaction,
+          transaction: pending.first,
+        );
+      }
+
+      final result = await OpenMysteryBoxUseCase(
+        userStateStore: _userStateStore,
+        shopRepository: _shopRepository,
+        mysteryBoxOpeningRepository: _mysteryBoxOpeningRepository,
+        randomSource: _randomSource,
+        nowProvider: _nowProvider,
+      ).open(transactionId: effectiveTransactionId);
+
+      return result;
+    } finally {
+      _pendingMysteryBoxScopes.remove(scope);
+    }
+  }
+
+  Future<MysteryBoxOperationResult> presentMysteryBoxResult(
+    String transactionId,
+  ) {
+    return PresentMysteryBoxResultUseCase(
+      OpenMysteryBoxUseCase(
+        userStateStore: _userStateStore,
+        shopRepository: _shopRepository,
+        mysteryBoxOpeningRepository: _mysteryBoxOpeningRepository,
+        randomSource: _randomSource,
+        nowProvider: _nowProvider,
+      ),
+    ).present(transactionId: transactionId);
+  }
+
+  Future<StreakShieldOperationResult> activateStreakShield({
+    required String habitId,
+    required String operationId,
+    String utilityId = 'utility_streak_shield_1',
+  }) {
+    return ActivateStreakShieldUseCase(
+      userStateStore: _userStateStore,
+      shopRepository: _shopRepository,
+      nowProvider: _nowProvider,
+    ).execute(
+      habitId: habitId,
+      operationId: operationId,
+      utilityId: utilityId,
+    );
+  }
+
+  Future<StreakRecoverOperationResult> recoverStreakBreak({
+    required String breakId,
+    required String operationId,
+    String utilityId = 'utility_streak_recover_1',
+  }) {
+    return RecoverStreakUseCase(
+      userStateStore: _userStateStore,
+      shopRepository: _shopRepository,
+      nowProvider: _nowProvider,
+    ).execute(
+      breakId: breakId,
+      operationId: operationId,
+      utilityId: utilityId,
+    );
+  }
+
   Future<Map<String, dynamic>?> _ensureRoot() async {
     if (_userStateStore.state == null) {
       await _userStateStore.load();
@@ -260,7 +590,8 @@ class ShopController {
     required ShopState shopState,
     required int walletCoins,
   }) {
-    final owned = shopState.inventory.any((entry) => entry.itemId == item.id);
+    final owned = item.category == ShopItemCategory.cosmetic &&
+        shopState.inventory.any((entry) => entry.itemId == item.id);
     final backpackQuantity = shopState.backpackItems
         .where((entry) => entry.itemId == item.id)
         .fold<int>(0, (sum, entry) => sum + entry.quantity);
@@ -319,5 +650,61 @@ class ShopController {
       shopState: shopState,
       walletCoins: walletCoins ?? getWalletCoins(),
     );
+  }
+
+  String? _currentScopeUserId() {
+    final scope =
+        (_userStateStore.activeLocalScopeUserId ?? _userStateStore.userId ?? '')
+            .trim();
+    return scope.isEmpty ? null : scope;
+  }
+
+  String _activationKey(String utilityId) {
+    return '${_currentScopeUserId() ?? ''}|${utilityId.trim()}';
+  }
+
+  Future<List<MysteryBoxOpeningTransaction>>
+      _loadPendingMysteryBoxOpenings() async {
+    final scope = _currentScopeUserId();
+    if (scope == null) return const <MysteryBoxOpeningTransaction>[];
+    final transactions =
+        await _mysteryBoxOpeningRepository.loadTransactions(scope);
+    return transactions
+        .where((transaction) => transaction.isPendingPresentation)
+        .toList(growable: false);
+  }
+
+  String _generateMysteryBoxTransactionId() {
+    final nowMillis = _nowProvider().microsecondsSinceEpoch;
+    final randomPart = _randomSource.nextInt(1 << 31);
+    return 'mystery_box_${nowMillis}_$randomPart';
+  }
+
+  List<ActiveUtilityEffect> _streakShieldEffectsFromStore() {
+    final effects = <ActiveUtilityEffect>[];
+    for (final shield in _userStateStore.activeStreakShields) {
+      if (!shield.isActive) continue;
+      effects.add(
+        ActiveUtilityEffect(
+          id: shield.id,
+          utilityId: shield.utilityId,
+          type: ActiveUtilityEffectType.streakShield,
+          activatedAtMillis: shield.activatedAtMillis,
+          remainingUses: 1,
+          totalUses: 1,
+          habitId: shield.habitId,
+        ),
+      );
+    }
+    effects.sort((a, b) {
+      final byActivation = a.activatedAtMillis.compareTo(b.activatedAtMillis);
+      if (byActivation != 0) return byActivation;
+      return a.id.compareTo(b.id);
+    });
+    return effects;
+  }
+
+  String _activationEffectId(String utilityId, int activatedAtMillis) {
+    return '${utilityId.trim()}_$activatedAtMillis';
   }
 }

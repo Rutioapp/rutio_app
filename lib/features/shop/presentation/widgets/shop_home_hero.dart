@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopHomeHero extends StatelessWidget {
   const ShopHomeHero({
@@ -13,6 +14,8 @@ class ShopHomeHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: ShopUiTokens.radiusXlShape,
@@ -34,12 +37,12 @@ class ShopHomeHero extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
-              'Tu espacio, mas tuyo',
+              l10n.shopHomeHeroTitle,
               style: ShopUiTextStyles.cardTitle.copyWith(fontSize: 24),
             ),
             const SizedBox(height: 6),
             Text(
-              'Combina fondos, cards y estilo Rutio',
+              l10n.shopHomeHeroSubtitle,
               style: ShopUiTextStyles.subtitle,
             ),
             const SizedBox(height: 14),
@@ -178,21 +181,23 @@ class _HeroActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     if (isCompact) {
       return Column(
         children: <Widget>[
           _QuickLink(
             key: const Key('shopHomeHeroBackpack'),
-            title: 'Backpack',
-            subtitle: 'Tus objetos',
+            title: l10n.shopHomeHeroBackpackTitle,
+            subtitle: l10n.shopHomeHeroBackpackSubtitle,
             icon: Icons.inventory_2_outlined,
             onTap: onOpenBackpack,
           ),
           const SizedBox(height: 10),
           _QuickLink(
             key: const Key('shopHomeHeroCustomization'),
-            title: 'Personalizar',
-            subtitle: 'Tu estilo',
+            title: l10n.shopHomeHeroCustomizationTitle,
+            subtitle: l10n.shopHomeHeroCustomizationSubtitle,
             icon: Icons.tune_rounded,
             onTap: onOpenCustomization,
           ),
@@ -205,8 +210,8 @@ class _HeroActions extends StatelessWidget {
         Expanded(
           child: _QuickLink(
             key: const Key('shopHomeHeroBackpack'),
-            title: 'Backpack',
-            subtitle: 'Tus objetos',
+            title: l10n.shopHomeHeroBackpackTitle,
+            subtitle: l10n.shopHomeHeroBackpackSubtitle,
             icon: Icons.inventory_2_outlined,
             onTap: onOpenBackpack,
           ),
@@ -215,8 +220,8 @@ class _HeroActions extends StatelessWidget {
         Expanded(
           child: _QuickLink(
             key: const Key('shopHomeHeroCustomization'),
-            title: 'Personalizar',
-            subtitle: 'Tu estilo',
+            title: l10n.shopHomeHeroCustomizationTitle,
+            subtitle: l10n.shopHomeHeroCustomizationSubtitle,
             icon: Icons.tune_rounded,
             onTap: onOpenCustomization,
           ),
