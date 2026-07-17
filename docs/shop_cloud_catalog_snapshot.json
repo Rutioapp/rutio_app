@@ -1,0 +1,2555 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-17T00:00:00+02:00",
+  "generatedFrom": "local_shop_catalog",
+  "counts": {
+    "cosmetic": 62,
+    "utility": 5,
+    "bundle": 22,
+    "total": 89
+  },
+  "items": [
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_mist_blue",
+      "proposedCanonicalId": "wallpaper_mist_blue",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_mist_blue.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_mist_blue.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 0,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_rutio_beige",
+      "proposedCanonicalId": "wallpaper_rutio_beige",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_rutio_beige.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_rutio_beige.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 1,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_off_white",
+      "proposedCanonicalId": "wallpaper_off_white",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_off_white.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_off_white.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 2,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_mellow_camel",
+      "proposedCanonicalId": "wallpaper_mellow_camel",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_mellow_camel.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_mellow_camel.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 3,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_stone_gray",
+      "proposedCanonicalId": "wallpaper_stone_gray",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_stone_gray.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_stone_gray.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 4,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_dusty_lilac",
+      "proposedCanonicalId": "wallpaper_dusty_lilac",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_dusty_lilac.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_dusty_lilac.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 5,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_clay_rose",
+      "proposedCanonicalId": "wallpaper_clay_rose",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_clay_rose.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_clay_rose.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 6,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_soft_terracotta",
+      "proposedCanonicalId": "wallpaper_soft_terracotta",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_soft_terracotta.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_soft_terracotta.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 7,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_soft_sage",
+      "proposedCanonicalId": "wallpaper_soft_sage",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_soft_sage.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_soft_sage.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 8,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_cream_yellow",
+      "proposedCanonicalId": "wallpaper_cream_yellow",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/wallpapers/common/wallpaper_cream_yellow.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_cream_yellow.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 9,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_warm_beige",
+      "proposedCanonicalId": "habit_card_warm_beige",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_rutio_beige.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_rutio_beige.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 10,
+      "notes": [
+        "asset filename differs (habit_card_rutio_beige.webp)",
+        "legacy naming kept for compatibility"
+      ]
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_soft_camel",
+      "proposedCanonicalId": "habit_card_soft_camel",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_soft_camel.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_soft_camel.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 11,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_sand_plain",
+      "proposedCanonicalId": "habit_card_sand_plain",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_off_white.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_off_white.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 12,
+      "notes": [
+        "asset filename differs (habit_card_off_white.webp)",
+        "legacy naming kept for compatibility"
+      ]
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_cream_light",
+      "proposedCanonicalId": "habit_card_cream_light",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_cream_yellow.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_cream_yellow.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 13,
+      "notes": [
+        "asset filename differs (habit_card_cream_yellow.webp)",
+        "legacy naming kept for compatibility"
+      ]
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_mist_blue",
+      "proposedCanonicalId": "habit_card_mist_blue",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_mist_blue.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_mist_blue.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 14,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_stone_gray",
+      "proposedCanonicalId": "habit_card_stone_gray",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_stone_gray.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_stone_gray.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 15,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_dusty_lilac",
+      "proposedCanonicalId": "habit_card_dusty_lilac",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_dusty_lilac.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_dusty_lilac.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 16,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_clay_rose",
+      "proposedCanonicalId": "habit_card_clay_rose",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_clay_rose.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_clay_rose.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 17,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_soft_terracotta",
+      "proposedCanonicalId": "habit_card_soft_terracotta",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_soft_terracotta.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_soft_terracotta.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 18,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_soft_sage",
+      "proposedCanonicalId": "habit_card_soft_sage",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/habit_cards/common/habit_card_soft_sage.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/common/habit_card_soft_sage.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 19,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_jungle_sunrise",
+      "proposedCanonicalId": "wallpaper_jungle_sunrise",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/wallpapers/rare/wallpaper_jungle_sunrise.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/rare/wallpaper_jungle_sunrise.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 20,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_lilac_dawn",
+      "proposedCanonicalId": "habit_card_lilac_dawn",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/habit_cards/rare/habit_card_lilac_dawn.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/rare/habit_card_lilac_dawn.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 21,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_carnival_pastel",
+      "proposedCanonicalId": "wallpaper_carnival_pastel",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/wallpapers/rare/wallpaper_carnival_pastel.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/rare/wallpaper_carnival_pastel.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 22,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_lavender_blue",
+      "proposedCanonicalId": "habit_card_lavender_blue",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/habit_cards/rare/habit_card_lavender_blue.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/rare/habit_card_lavender_blue.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 23,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_strawberry_pastel",
+      "proposedCanonicalId": "wallpaper_strawberry_pastel",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/wallpapers/rare/wallpaper_strawberry_pastel.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/rare/wallpaper_strawberry_pastel.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 24,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_golden_camel",
+      "proposedCanonicalId": "habit_card_golden_camel",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/habit_cards/rare/habit_card_golden_camel.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/rare/habit_card_golden_camel.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 25,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_sage_bloom",
+      "proposedCanonicalId": "habit_card_sage_bloom",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/habit_cards/rare/habit_card_sage_bloom.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/rare/habit_card_sage_bloom.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 26,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_dusty_rose",
+      "proposedCanonicalId": "habit_card_dusty_rose",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/habit_cards/rare/habit_card_dusty_rose.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/rare/habit_card_dusty_rose.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 27,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_pastel_sky",
+      "proposedCanonicalId": "habit_card_pastel_sky",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/habit_cards/rare/habit_card_pastel_sky.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/rare/habit_card_pastel_sky.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 28,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_soft_peach",
+      "proposedCanonicalId": "habit_card_soft_peach",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/habit_cards/rare/habit_card_soft_peach.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/rare/habit_card_soft_peach.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 29,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_ocean_depth",
+      "proposedCanonicalId": "habit_card_ocean_depth",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/habit_cards/epic/habit_card_ocean_depth.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/epic/habit_card_ocean_depth.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 30,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_city_sunrise",
+      "proposedCanonicalId": "habit_card_city_sunrise",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/habit_cards/epic/habit_card_city_sunrise.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/epic/habit_card_city_sunrise.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 31,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_leopard",
+      "proposedCanonicalId": "habit_card_leopard",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/habit_cards/epic/habit_card_leopard.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/epic/habit_card_leopard.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 32,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_full_moon",
+      "proposedCanonicalId": "habit_card_full_moon",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/habit_cards/epic/habit_card_full_moon.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/epic/habit_card_full_moon.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 33,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_golden_clouds",
+      "proposedCanonicalId": "habit_card_golden_clouds",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/habit_cards/epic/habit_card_golden_clouds.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/epic/habit_card_golden_clouds.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 34,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "habit_card_zebra_minimal",
+      "proposedCanonicalId": "habit_card_zebra_minimal",
+      "category": "habitCard",
+      "subtype": "habitCard",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/habit_cards/epic/habit_card_zebra_minimal.webp",
+      "assetFiles": [
+        "assets/shop/habit_cards/epic/habit_card_zebra_minimal.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "habit_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 35,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_starry_sky",
+      "proposedCanonicalId": "wallpaper_starry_sky",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/wallpapers/epic/wallpaper_starry_sky.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_starry_sky.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 36,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_mint_abstract",
+      "proposedCanonicalId": "wallpaper_mint_abstract",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/wallpapers/epic/wallpaper_mint_abstract.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_mint_abstract.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 37,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_zebra_minimal",
+      "proposedCanonicalId": "wallpaper_zebra_minimal",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/wallpapers/epic/wallpaper_zebra_minimal.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_zebra_minimal.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 38,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_wild_stripes",
+      "proposedCanonicalId": "wallpaper_wild_stripes",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/wallpapers/epic/wallpaper_wild_stripes.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_wild_stripes.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 39,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_cow_spots",
+      "proposedCanonicalId": "wallpaper_cow_spots",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/wallpapers/epic/wallpaper_cow_spots.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_cow_spots.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 40,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_city_sunrise",
+      "proposedCanonicalId": "wallpaper_city_sunrise",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/wallpapers/epic/wallpaper_city_sunrise.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_city_sunrise.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 41,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_ocean_depth",
+      "proposedCanonicalId": "wallpaper_ocean_depth",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/wallpapers/epic/wallpaper_ocean_depth.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_ocean_depth.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 42,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "wallpaper_golden_dawn",
+      "proposedCanonicalId": "wallpaper_golden_dawn",
+      "category": "background",
+      "subtype": "background",
+      "rarity": "legendary",
+      "priceCoins": 1200,
+      "assetKey": "assets/shop/wallpapers/legendary/wallpaper_golden_dawn.webp",
+      "assetFiles": [
+        "assets/shop/wallpapers/legendary/wallpaper_golden_dawn.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "screen_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 43,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_warm_beige",
+      "proposedCanonicalId": "user_card_warm_beige",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_rutio_beige.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_rutio_beige.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 44,
+      "notes": [
+        "asset filename differs (user_card_rutio_beige.webp)",
+        "legacy naming kept for compatibility"
+      ]
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_soft_camel",
+      "proposedCanonicalId": "user_card_soft_camel",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_soft_camel.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_soft_camel.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 45,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_sand_plain",
+      "proposedCanonicalId": "user_card_sand_plain",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_off_white.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_off_white.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 46,
+      "notes": [
+        "asset filename differs (user_card_off_white.webp)",
+        "legacy naming kept for compatibility"
+      ]
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_cream_light",
+      "proposedCanonicalId": "user_card_cream_light",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_cream_yellow.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_cream_yellow.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 47,
+      "notes": [
+        "asset filename differs (user_card_cream_yellow.webp)",
+        "legacy naming kept for compatibility"
+      ]
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_mist_blue",
+      "proposedCanonicalId": "user_card_mist_blue",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_mist_blue.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_mist_blue.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 48,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_stone_gray",
+      "proposedCanonicalId": "user_card_stone_gray",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_stone_gray.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_stone_gray.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 49,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_dusty_lilac",
+      "proposedCanonicalId": "user_card_dusty_lilac",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_dusty_lilac.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_dusty_lilac.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 50,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_clay_rose",
+      "proposedCanonicalId": "user_card_clay_rose",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_clay_rose.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_clay_rose.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 51,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_soft_terracotta",
+      "proposedCanonicalId": "user_card_soft_terracotta",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_soft_terracotta.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_soft_terracotta.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 52,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_soft_sage",
+      "proposedCanonicalId": "user_card_soft_sage",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "common",
+      "priceCoins": 120,
+      "assetKey": "assets/shop/user_cards/common/user_card_soft_sage.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/common/user_card_soft_sage.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 53,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_lilac_dawn",
+      "proposedCanonicalId": "user_card_lilac_dawn",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/user_cards/rare/user_card_lilac_dawn.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/rare/user_card_lilac_dawn.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 54,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_dusty_rose",
+      "proposedCanonicalId": "user_card_dusty_rose",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/user_cards/rare/user_card_dusty_rose.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/rare/user_card_dusty_rose.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 55,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_golden_camel",
+      "proposedCanonicalId": "user_card_golden_camel",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/user_cards/rare/user_card_golden_camel.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/rare/user_card_golden_camel.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 56,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_pastel_sky",
+      "proposedCanonicalId": "user_card_pastel_sky",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/user_cards/rare/user_card_pastel_sky.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/rare/user_card_pastel_sky.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 57,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_soft_peach",
+      "proposedCanonicalId": "user_card_soft_peach",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/user_cards/rare/user_card_soft_peach.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/rare/user_card_soft_peach.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 58,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_ocean_depth",
+      "proposedCanonicalId": "user_card_ocean_depth",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/user_cards/epic/user_card_ocean_depth.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/epic/user_card_ocean_depth.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 59,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_city_sunrise",
+      "proposedCanonicalId": "user_card_city_sunrise",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/user_cards/epic/user_card_city_sunrise.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/epic/user_card_city_sunrise.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 60,
+      "notes": []
+    },
+    {
+      "kind": "cosmetic",
+      "currentId": "user_card_full_moon",
+      "proposedCanonicalId": "user_card_full_moon",
+      "category": "userCard",
+      "subtype": "userCard",
+      "rarity": "epic",
+      "priceCoins": 550,
+      "assetKey": "assets/shop/user_cards/epic/user_card_full_moon.webp",
+      "assetFiles": [
+        "assets/shop/user_cards/epic/user_card_full_moon.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": "user_card_background",
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 61,
+      "notes": []
+    },
+    {
+      "kind": "utility",
+      "currentId": "utility_xp_boost_1d",
+      "proposedCanonicalId": "utility_xp_boost_1d",
+      "category": "utility",
+      "subtype": "xpBoost",
+      "rarity": "common",
+      "priceCoins": 75,
+      "assetKey": "assets/shop/utilities/boost_xp.png",
+      "assetFiles": [
+        "assets/shop/utilities/boost_xp.png"
+      ],
+      "localizationKey": "shopXpBoostTitle",
+      "descriptionKey": "shopXpBoostDescription",
+      "isCosmetic": false,
+      "isConsumable": true,
+      "isStackable": true,
+      "maxQuantity": null,
+      "equipSlot": null,
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 0,
+      "notes": [
+        "durationHours=24",
+        "multiplier=2"
+      ]
+    },
+    {
+      "kind": "utility",
+      "currentId": "utility_coin_boost_1d",
+      "proposedCanonicalId": "utility_coin_boost_1d",
+      "category": "utility",
+      "subtype": "coinBoost",
+      "rarity": "common",
+      "priceCoins": 100,
+      "assetKey": "assets/shop/utilities/boost_coins.png",
+      "assetFiles": [
+        "assets/shop/utilities/boost_coins.png"
+      ],
+      "localizationKey": "shopCoinBoostTitle",
+      "descriptionKey": "shopCoinBoostDescription",
+      "isCosmetic": false,
+      "isConsumable": true,
+      "isStackable": true,
+      "maxQuantity": null,
+      "equipSlot": null,
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 1,
+      "notes": [
+        "durationHours=24",
+        "multiplier=2"
+      ]
+    },
+    {
+      "kind": "utility",
+      "currentId": "utility_streak_recover_1",
+      "proposedCanonicalId": "utility_streak_recover_1",
+      "category": "utility",
+      "subtype": "streakRecover",
+      "rarity": "rare",
+      "priceCoins": 250,
+      "assetKey": "assets/shop/utilities/streak_recover.png",
+      "assetFiles": [
+        "assets/shop/utilities/streak_recover.png"
+      ],
+      "localizationKey": "shopStreakRecoverTitle",
+      "descriptionKey": "shopStreakRecoverDescription",
+      "isCosmetic": false,
+      "isConsumable": true,
+      "isStackable": true,
+      "maxQuantity": null,
+      "equipSlot": null,
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 2,
+      "notes": [
+        "charges=1"
+      ]
+    },
+    {
+      "kind": "utility",
+      "currentId": "utility_streak_shield_1",
+      "proposedCanonicalId": "utility_streak_shield_1",
+      "category": "utility",
+      "subtype": "streakShield",
+      "rarity": "rare",
+      "priceCoins": 300,
+      "assetKey": "assets/shop/utilities/streak_shield.png",
+      "assetFiles": [
+        "assets/shop/utilities/streak_shield.png"
+      ],
+      "localizationKey": "shopStreakShieldTitle",
+      "descriptionKey": "shopStreakShieldDescription",
+      "isCosmetic": false,
+      "isConsumable": true,
+      "isStackable": true,
+      "maxQuantity": null,
+      "equipSlot": null,
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 3,
+      "notes": [
+        "charges=1"
+      ]
+    },
+    {
+      "kind": "utility",
+      "currentId": "utility_mystery_box_basic",
+      "proposedCanonicalId": "utility_mystery_box_basic",
+      "category": "utility",
+      "subtype": "mysteryBox",
+      "rarity": "common",
+      "priceCoins": 100,
+      "assetKey": "assets/shop/utilities/mystery_box_basic.png",
+      "assetFiles": [
+        "assets/shop/utilities/mystery_box_basic.png"
+      ],
+      "localizationKey": "shopMysteryBoxTitle",
+      "descriptionKey": "shopMysteryBoxDescription",
+      "isCosmetic": false,
+      "isConsumable": true,
+      "isStackable": true,
+      "maxQuantity": null,
+      "equipSlot": null,
+      "isActive": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_catalog.dart"
+      ],
+      "sourceOrder": 4,
+      "notes": [
+        "boxTier=basic"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_beige_rutio",
+      "proposedCanonicalId": "pack_beige_rutio",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "common",
+      "priceCoins": 325,
+      "originalPriceCoins": 360,
+      "discountPercentage": 10,
+      "assetKey": "pack_beige_rutio",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_rutio_beige.webp",
+        "assets/shop/habit_cards/common/habit_card_rutio_beige.webp",
+        "assets/shop/user_cards/common/user_card_rutio_beige.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 0,
+      "notes": [
+        "familyId=pack_beige_rutio",
+        "bundleAssetIds=wallpaper_rutio_beige,habit_card_warm_beige,user_card_warm_beige",
+        "title=Rutio Beige Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_camel_suave",
+      "proposedCanonicalId": "pack_camel_suave",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "common",
+      "priceCoins": 325,
+      "originalPriceCoins": 360,
+      "discountPercentage": 10,
+      "assetKey": "pack_camel_suave",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_mellow_camel.webp",
+        "assets/shop/habit_cards/common/habit_card_soft_camel.webp",
+        "assets/shop/user_cards/common/user_card_soft_camel.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 1,
+      "notes": [
+        "familyId=pack_camel_suave",
+        "bundleAssetIds=wallpaper_mellow_camel,habit_card_soft_camel,user_card_soft_camel",
+        "title=Soft Camel Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_blanco_roto",
+      "proposedCanonicalId": "pack_blanco_roto",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "common",
+      "priceCoins": 325,
+      "originalPriceCoins": 360,
+      "discountPercentage": 10,
+      "assetKey": "pack_blanco_roto",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_off_white.webp",
+        "assets/shop/habit_cards/common/habit_card_off_white.webp",
+        "assets/shop/user_cards/common/user_card_off_white.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 2,
+      "notes": [
+        "familyId=pack_blanco_roto",
+        "bundleAssetIds=wallpaper_off_white,habit_card_sand_plain,user_card_sand_plain",
+        "title=Off White Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_verde_savia",
+      "proposedCanonicalId": "pack_verde_savia",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "common",
+      "priceCoins": 325,
+      "originalPriceCoins": 360,
+      "discountPercentage": 10,
+      "assetKey": "pack_verde_savia",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_soft_sage.webp",
+        "assets/shop/habit_cards/common/habit_card_soft_sage.webp",
+        "assets/shop/user_cards/common/user_card_soft_sage.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 3,
+      "notes": [
+        "familyId=pack_verde_savia",
+        "bundleAssetIds=wallpaper_soft_sage,habit_card_soft_sage,user_card_soft_sage",
+        "title=Soft Sage Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_amanecer_lila",
+      "proposedCanonicalId": "pack_amanecer_lila",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "rare",
+      "priceCoins": 545,
+      "originalPriceCoins": 620,
+      "discountPercentage": 12,
+      "assetKey": "pack_amanecer_lila",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_dusty_lilac.webp",
+        "assets/shop/habit_cards/rare/habit_card_lilac_dawn.webp",
+        "assets/shop/user_cards/rare/user_card_lilac_dawn.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 4,
+      "notes": [
+        "familyId=pack_amanecer_lila",
+        "bundleAssetIds=wallpaper_dusty_lilac,habit_card_lilac_dawn,user_card_lilac_dawn",
+        "title=Lilac Dawn Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_azul_lavanda",
+      "proposedCanonicalId": "pack_azul_lavanda",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "rare",
+      "priceCoins": 545,
+      "originalPriceCoins": 620,
+      "discountPercentage": 12,
+      "assetKey": "pack_azul_lavanda",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_mist_blue.webp",
+        "assets/shop/habit_cards/rare/habit_card_lavender_blue.webp",
+        "assets/shop/user_cards/rare/user_card_pastel_sky.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 5,
+      "notes": [
+        "familyId=pack_azul_lavanda",
+        "bundleAssetIds=wallpaper_mist_blue,habit_card_lavender_blue,user_card_pastel_sky",
+        "title=Lavender Blue Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_camel_dorado",
+      "proposedCanonicalId": "pack_camel_dorado",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "rare",
+      "priceCoins": 545,
+      "originalPriceCoins": 620,
+      "discountPercentage": 12,
+      "assetKey": "pack_camel_dorado",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_cream_yellow.webp",
+        "assets/shop/habit_cards/rare/habit_card_golden_camel.webp",
+        "assets/shop/user_cards/rare/user_card_golden_camel.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 6,
+      "notes": [
+        "familyId=pack_camel_dorado",
+        "bundleAssetIds=wallpaper_cream_yellow,habit_card_golden_camel,user_card_golden_camel",
+        "title=Golden Camel Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_rosa_empolvado",
+      "proposedCanonicalId": "pack_rosa_empolvado",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "rare",
+      "priceCoins": 545,
+      "originalPriceCoins": 620,
+      "discountPercentage": 12,
+      "assetKey": "pack_rosa_empolvado",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_clay_rose.webp",
+        "assets/shop/habit_cards/rare/habit_card_dusty_rose.webp",
+        "assets/shop/user_cards/rare/user_card_dusty_rose.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 7,
+      "notes": [
+        "familyId=pack_rosa_empolvado",
+        "bundleAssetIds=wallpaper_clay_rose,habit_card_dusty_rose,user_card_dusty_rose",
+        "title=Dusty Rose Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_oceano_profundo",
+      "proposedCanonicalId": "pack_oceano_profundo",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "epic",
+      "priceCoins": 1405,
+      "originalPriceCoins": 1650,
+      "discountPercentage": 15,
+      "assetKey": "pack_oceano_profundo",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_ocean_depth.webp",
+        "assets/shop/habit_cards/epic/habit_card_ocean_depth.webp",
+        "assets/shop/user_cards/epic/user_card_ocean_depth.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 8,
+      "notes": [
+        "familyId=pack_oceano_profundo",
+        "bundleAssetIds=wallpaper_ocean_depth,habit_card_ocean_depth,user_card_ocean_depth",
+        "title=Ocean Depth Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_amanecer_ciudad",
+      "proposedCanonicalId": "pack_amanecer_ciudad",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "epic",
+      "priceCoins": 1405,
+      "originalPriceCoins": 1650,
+      "discountPercentage": 15,
+      "assetKey": "pack_amanecer_ciudad",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_city_sunrise.webp",
+        "assets/shop/habit_cards/epic/habit_card_city_sunrise.webp",
+        "assets/shop/user_cards/epic/user_card_city_sunrise.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 9,
+      "notes": [
+        "familyId=pack_amanecer_ciudad",
+        "bundleAssetIds=wallpaper_city_sunrise,habit_card_city_sunrise,user_card_city_sunrise",
+        "title=City Sunrise Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_luna_llena",
+      "proposedCanonicalId": "pack_luna_llena",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "epic",
+      "priceCoins": 1405,
+      "originalPriceCoins": 1650,
+      "discountPercentage": 15,
+      "assetKey": "pack_luna_llena",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_starry_sky.webp",
+        "assets/shop/habit_cards/epic/habit_card_full_moon.webp",
+        "assets/shop/user_cards/epic/user_card_full_moon.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 10,
+      "notes": [
+        "familyId=pack_luna_llena",
+        "bundleAssetIds=wallpaper_starry_sky,habit_card_full_moon,user_card_full_moon",
+        "title=Full Moon Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_zebra_minimal",
+      "proposedCanonicalId": "pack_zebra_minimal",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "epic",
+      "priceCoins": 1035,
+      "originalPriceCoins": 1220,
+      "discountPercentage": 15,
+      "assetKey": "pack_zebra_minimal",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_zebra_minimal.webp",
+        "assets/shop/habit_cards/epic/habit_card_zebra_minimal.webp",
+        "assets/shop/user_cards/common/user_card_stone_gray.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 11,
+      "notes": [
+        "familyId=pack_zebra_minimal",
+        "bundleAssetIds=wallpaper_zebra_minimal,habit_card_zebra_minimal,user_card_stone_gray",
+        "title=Minimal Zebra Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_mineral_urbano",
+      "proposedCanonicalId": "pack_mineral_urbano",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "common",
+      "priceCoins": 325,
+      "originalPriceCoins": 360,
+      "discountPercentage": 10,
+      "assetKey": "pack_mineral_urbano",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_stone_gray.webp",
+        "assets/shop/habit_cards/common/habit_card_stone_gray.webp",
+        "assets/shop/user_cards/common/user_card_stone_gray.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 12,
+      "notes": [
+        "familyId=pack_mineral_urbano",
+        "bundleAssetIds=wallpaper_stone_gray,habit_card_stone_gray,user_card_stone_gray",
+        "title=Urban Mineral Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_terracota_suave",
+      "proposedCanonicalId": "pack_terracota_suave",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "common",
+      "priceCoins": 325,
+      "originalPriceCoins": 360,
+      "discountPercentage": 10,
+      "assetKey": "pack_terracota_suave",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_soft_terracotta.webp",
+        "assets/shop/habit_cards/common/habit_card_soft_terracotta.webp",
+        "assets/shop/user_cards/common/user_card_soft_terracotta.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 13,
+      "notes": [
+        "familyId=pack_terracota_suave",
+        "bundleAssetIds=wallpaper_soft_terracotta,habit_card_soft_terracotta,user_card_soft_terracotta",
+        "title=Soft Terracotta Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_hielo_pastel",
+      "proposedCanonicalId": "pack_hielo_pastel",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "common",
+      "priceCoins": 325,
+      "originalPriceCoins": 360,
+      "discountPercentage": 10,
+      "assetKey": "pack_hielo_pastel",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_mist_blue.webp",
+        "assets/shop/habit_cards/common/habit_card_mist_blue.webp",
+        "assets/shop/user_cards/common/user_card_mist_blue.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 14,
+      "notes": [
+        "familyId=pack_hielo_pastel",
+        "bundleAssetIds=wallpaper_mist_blue,habit_card_mist_blue,user_card_mist_blue",
+        "title=Pastel Ice Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_crema_clara",
+      "proposedCanonicalId": "pack_crema_clara",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "common",
+      "priceCoins": 325,
+      "originalPriceCoins": 360,
+      "discountPercentage": 10,
+      "assetKey": "pack_crema_clara",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_cream_yellow.webp",
+        "assets/shop/habit_cards/common/habit_card_cream_yellow.webp",
+        "assets/shop/user_cards/common/user_card_cream_yellow.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 15,
+      "notes": [
+        "familyId=pack_crema_clara",
+        "bundleAssetIds=wallpaper_cream_yellow,habit_card_cream_light,user_card_cream_light",
+        "title=Clear Cream Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_lila_profunda",
+      "proposedCanonicalId": "pack_lila_profunda",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "rare",
+      "priceCoins": 315,
+      "originalPriceCoins": 360,
+      "discountPercentage": 12,
+      "assetKey": "pack_lila_profunda",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_dusty_lilac.webp",
+        "assets/shop/habit_cards/common/habit_card_dusty_lilac.webp",
+        "assets/shop/user_cards/common/user_card_dusty_lilac.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 16,
+      "notes": [
+        "familyId=pack_lila_profunda",
+        "bundleAssetIds=wallpaper_dusty_lilac,habit_card_dusty_lilac,user_card_dusty_lilac",
+        "title=Deep Lilac Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_coral_atardecer",
+      "proposedCanonicalId": "pack_coral_atardecer",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "rare",
+      "priceCoins": 315,
+      "originalPriceCoins": 360,
+      "discountPercentage": 12,
+      "assetKey": "pack_coral_atardecer",
+      "assetFiles": [
+        "assets/shop/wallpapers/common/wallpaper_clay_rose.webp",
+        "assets/shop/habit_cards/common/habit_card_clay_rose.webp",
+        "assets/shop/user_cards/common/user_card_clay_rose.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 17,
+      "notes": [
+        "familyId=pack_coral_atardecer",
+        "bundleAssetIds=wallpaper_clay_rose,habit_card_clay_rose,user_card_clay_rose",
+        "title=Coral Sunset Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_fresa_crema",
+      "proposedCanonicalId": "pack_fresa_crema",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "rare",
+      "priceCoins": 660,
+      "originalPriceCoins": 750,
+      "discountPercentage": 12,
+      "assetKey": "pack_fresa_crema",
+      "assetFiles": [
+        "assets/shop/wallpapers/rare/wallpaper_strawberry_pastel.webp",
+        "assets/shop/habit_cards/rare/habit_card_soft_peach.webp",
+        "assets/shop/user_cards/rare/user_card_soft_peach.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 18,
+      "notes": [
+        "familyId=pack_fresa_crema",
+        "bundleAssetIds=wallpaper_strawberry_pastel,habit_card_soft_peach,user_card_soft_peach",
+        "title=Strawberry Cream Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_noche_lunar",
+      "proposedCanonicalId": "pack_noche_lunar",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "epic",
+      "priceCoins": 1405,
+      "originalPriceCoins": 1650,
+      "discountPercentage": 15,
+      "assetKey": "pack_noche_lunar",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_starry_sky.webp",
+        "assets/shop/habit_cards/epic/habit_card_full_moon.webp",
+        "assets/shop/user_cards/epic/user_card_full_moon.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": true,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 19,
+      "notes": [
+        "familyId=pack_noche_lunar",
+        "bundleAssetIds=wallpaper_starry_sky,habit_card_full_moon,user_card_full_moon",
+        "title=Lunar Night Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_bruma_abstracta",
+      "proposedCanonicalId": "pack_bruma_abstracta",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "epic",
+      "priceCoins": 1035,
+      "originalPriceCoins": 1220,
+      "discountPercentage": 15,
+      "assetKey": "pack_bruma_abstracta",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_mint_abstract.webp",
+        "assets/shop/habit_cards/epic/habit_card_zebra_minimal.webp",
+        "assets/shop/user_cards/common/user_card_stone_gray.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 20,
+      "notes": [
+        "familyId=pack_bruma_abstracta",
+        "bundleAssetIds=wallpaper_mint_abstract,habit_card_zebra_minimal,user_card_stone_gray",
+        "title=Abstract Mist Pack"
+      ]
+    },
+    {
+      "kind": "bundle",
+      "currentId": "pack_manchas_salvajes",
+      "proposedCanonicalId": "pack_manchas_salvajes",
+      "category": "bundle",
+      "subtype": "bundle_pack",
+      "rarity": "epic",
+      "priceCoins": 1035,
+      "originalPriceCoins": 1220,
+      "discountPercentage": 15,
+      "assetKey": "pack_manchas_salvajes",
+      "assetFiles": [
+        "assets/shop/wallpapers/epic/wallpaper_cow_spots.webp",
+        "assets/shop/habit_cards/epic/habit_card_leopard.webp",
+        "assets/shop/user_cards/common/user_card_stone_gray.webp"
+      ],
+      "localizationKey": null,
+      "descriptionKey": null,
+      "isCosmetic": true,
+      "isConsumable": false,
+      "isStackable": false,
+      "maxQuantity": 1,
+      "equipSlot": null,
+      "isActive": true,
+      "isFeatured": false,
+      "sourceFiles": [
+        "lib/features/shop/data/shop_assets_catalog.dart"
+      ],
+      "sourceOrder": 21,
+      "notes": [
+        "familyId=pack_manchas_salvajes",
+        "bundleAssetIds=wallpaper_cow_spots,habit_card_leopard,user_card_stone_gray",
+        "title=Wild Spots Pack"
+      ]
+    }
+  ]
+}
