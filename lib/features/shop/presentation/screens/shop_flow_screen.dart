@@ -70,9 +70,9 @@ class ShopFlowScreen extends StatefulWidget {
 
 class _ShopFlowScreenState extends State<ShopFlowScreen> {
   final List<_ShopFlowPage> _stack = <_ShopFlowPage>[_ShopFlowPage.home];
-  late final ShopLocalRepository _shopRepository;
 
   ShopFlowSnapshot? _snapshot;
+  ShopCloudEconomyStatus? _economyStatus;
   String? _selectedItemId;
   bool _loading = true;
   bool _isMysteryBoxRouteVisible = false;
@@ -81,7 +81,6 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   @override
   void initState() {
     super.initState();
-    _shopRepository = widget.shopRepository ?? ShopLocalRepository();
     _reloadSnapshot();
   }
 
@@ -95,13 +94,23 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
 
     setState(() {
       _snapshot = snapshot;
+      _economyStatus = widget.controller.economyStatus;
       _loading = false;
     });
   }
 
-  Future<ShopFlowSnapshot> _loadSnapshot() async {
-    final int walletCoins = widget.controller.getWalletCoins();
-    final shopState = await _shopRepository.load();
+  Future<ShopFlowSnapshot?> _loadSnapshot() async {
+    if (widget.controller.isCloudEconomyEnabled) {
+      await widget.controller.resolvePendingPurchasesForCurrentUser();
+      await widget.controller.hydrateVisibleEconomy();
+      if (!_isRenderableEconomyStatus(widget.controller.economyStatus)) {
+        return null;
+      }
+    }
+
+    final int walletCoins = widget.controller.visibleCoinBalance ??
+        widget.controller.getWalletCoins();
+    final shopState = await widget.controller.getVisibleShopState();
     final cosmeticsState = await widget.cosmeticsController.getState();
     final activeUtilityEffects =
         await widget.controller.getActiveUtilityEffects();
@@ -114,6 +123,12 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
       activeUtilityEffects: activeUtilityEffects,
       pendingMysteryBoxOpenings: pendingMysteryBoxOpenings,
     );
+  }
+
+  bool _isRenderableEconomyStatus(ShopCloudEconomyStatus status) {
+    return status == ShopCloudEconomyStatus.disabled ||
+        status == ShopCloudEconomyStatus.ready ||
+        status == ShopCloudEconomyStatus.stale;
   }
 
   void _pushPage(_ShopFlowPage page) {
@@ -238,6 +253,15 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         break;
       case ShopControllerStatus.unavailableState:
         _showSnack('No pudimos actualizar tu estado');
+        break;
+      case ShopControllerStatus.cloudPurchaseInProgress:
+        _showSnack('Compra en curso');
+        break;
+      case ShopControllerStatus.cloudPurchasePending:
+        _showSnack('Compra en curso');
+        break;
+      case ShopControllerStatus.cloudPurchaseFailed:
+        _showSnack('No se ha podido activar');
         break;
       case ShopControllerStatus.insufficientCoins:
       case ShopControllerStatus.alreadyOwned:
@@ -544,9 +568,13 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading || _snapshot == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      if (!_loading &&
+          widget.controller.isCloudEconomyEnabled &&
+          _economyStatus != null &&
+          !_isRenderableEconomyStatus(_economyStatus!)) {
+        return _buildEconomyUnavailableState(_economyStatus!);
+      }
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final snapshot = _snapshot!;
@@ -559,6 +587,31 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         }
       },
       child: _buildCurrentPage(snapshot),
+    );
+  }
+
+  Widget _buildEconomyUnavailableState(ShopCloudEconomyStatus status) {
+    final message = switch (status) {
+      ShopCloudEconomyStatus.walletMissing =>
+        'No encontramos la wallet cloud de este usuario.',
+      ShopCloudEconomyStatus.unauthenticated =>
+        'Inicia sesión para ver la tienda cloud.',
+      ShopCloudEconomyStatus.failed => 'No pudimos cargar la wallet cloud.',
+      ShopCloudEconomyStatus.loading =>
+        'La wallet cloud todavía se está cargando.',
+      ShopCloudEconomyStatus.disabled => 'La tienda cloud está desactivada.',
+      ShopCloudEconomyStatus.ready => 'La tienda cloud está lista.',
+      ShopCloudEconomyStatus.stale =>
+        'La wallet cloud está temporalmente desactualizada.',
+    };
+
+    return Scaffold(
+      body: Center(
+        child: ShopEmptyState(
+          title: 'Tienda no disponible',
+          message: message,
+        ),
+      ),
     );
   }
 

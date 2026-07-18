@@ -93,6 +93,10 @@ class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
     final ShopItemState? state = _itemState;
     if (state == null || _busy) return;
 
+    setState(() {
+      _busy = true;
+    });
+
     final bool? shouldConfirm = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -110,17 +114,23 @@ class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
       },
     );
 
-    if (shouldConfirm != true || !mounted) return;
+    if (shouldConfirm != true) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
+      return;
+    }
 
-    setState(() {
-      _busy = true;
-    });
+    if (!mounted) return;
 
     final ShopControllerResult result = await widget.purchaseItem(itemId);
     if (!mounted) return;
 
     widget.onPurchaseCompleted?.call(result);
     await _refreshItemState();
+    if (!mounted) return;
 
     setState(() {
       _busy = false;
@@ -141,6 +151,7 @@ class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
 
     widget.onEquipCompleted?.call(result);
     await _refreshItemState();
+    if (!mounted) return;
 
     setState(() {
       _busy = false;
@@ -163,6 +174,9 @@ class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
     if (result.status == ShopControllerStatus.success) {
       final bool isCosmetic = result.item?.cosmeticSlot != null;
       return isCosmetic ? 'Añadido a tu colección' : 'Añadido a la mochila';
+    }
+    if (result.status == ShopControllerStatus.cloudPurchasePending) {
+      return 'La compra ha quedado pendiente de confirmación';
     }
     return 'No se ha podido completar la compra';
   }

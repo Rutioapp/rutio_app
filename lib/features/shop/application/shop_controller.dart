@@ -1,11 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:rutio/features/shop/application/shop_operation_result.dart';
 import 'package:rutio/features/shop/application/shop_service.dart';
+import 'package:rutio/features/shop/application/purchase_cloud_utility_use_case.dart';
 import 'package:rutio/features/shop/application/mystery_box_operation_result.dart';
 import 'package:rutio/features/shop/application/open_mystery_box_use_case.dart';
 import 'package:rutio/features/shop/application/present_mystery_box_result_use_case.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_config.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_repository.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_read_repository.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
 import 'package:rutio/features/habits/application/activate_streak_shield_use_case.dart';
@@ -17,16 +21,22 @@ import 'package:rutio/features/habits/domain/models/streak_shield_operation_resu
 import 'package:rutio/features/shop/data/local_active_utility_effects_repository.dart';
 import 'package:rutio/features/shop/data/dart_random_source.dart';
 import 'package:rutio/features/shop/data/local_mystery_box_opening_repository.dart';
+import 'package:rutio/features/shop/data/pending_shop_operation_store.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/domain/active_utility_effects_repository.dart';
 import 'package:rutio/features/shop/domain/models/active_utility_effect.dart';
+import 'package:rutio/features/shop/domain/models/backpack_item.dart';
 import 'package:rutio/features/shop/domain/mystery_box_opening_repository.dart';
+import 'package:rutio/features/shop/domain/pending_shop_operation_store.dart';
 import 'package:rutio/features/shop/domain/random_source.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/domain/models/mystery_box_opening_transaction.dart';
 import 'package:rutio/features/shop/domain/shop_state.dart';
+import 'package:rutio/features/shop/domain/shop_purchase_failure.dart';
+import 'package:rutio/features/shop/domain/shop_purchase_result.dart';
+import 'package:rutio/core/supabase/rutio_supabase_client.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
 enum ShopControllerStatus {
@@ -40,6 +50,24 @@ enum ShopControllerStatus {
   backpackItemNotFound,
   utilityAlreadyActive,
   utilityActivationInProgress,
+  cloudPurchasePending,
+  cloudPurchaseInProgress,
+  cloudPurchaseFailed,
+}
+
+enum ShopEconomySource {
+  local,
+  cloud,
+}
+
+enum ShopCloudEconomyStatus {
+  disabled,
+  loading,
+  ready,
+  stale,
+  walletMissing,
+  unauthenticated,
+  failed,
 }
 
 class ShopItemState {
@@ -67,17 +95,23 @@ class ShopControllerResult {
     required this.shopState,
     required this.walletCoins,
     this.item,
+    this.purchaseFailure,
+    this.cloudPurchaseResult,
+    this.cloudRefreshFailed = false,
   });
 
   final ShopControllerStatus status;
   final ShopState shopState;
   final int walletCoins;
   final ShopItem? item;
+  final ShopPurchaseFailure? purchaseFailure;
+  final ShopPurchaseResult? cloudPurchaseResult;
+  final bool cloudRefreshFailed;
 
   bool get isSuccess => status == ShopControllerStatus.success;
 }
 
-class ShopController {
+class ShopController extends ChangeNotifier {
   ShopController({
     required UserStateStore userStateStore,
     ShopLocalRepository? shopRepository,
@@ -86,7 +120,19 @@ class ShopController {
     RandomSource? randomSource,
     DateTime Function()? nowProvider,
     ShopCloudReadRepository? shopCloudReadRepository,
+    ShopCloudPurchaseRepository? shopCloudPurchaseRepository,
+    PendingShopOperationStore? pendingShopOperationStore,
+    PurchaseCloudUtilityUseCase? purchaseCloudUtilityUseCase,
+    String? Function()? currentSupabaseUserIdProvider,
+    bool? cloudReadEnabled,
+    bool? cloudPurchaseEnabled,
   })  : _userStateStore = userStateStore,
+        _currentSupabaseUserIdProvider =
+            currentSupabaseUserIdProvider ?? _defaultCurrentSupabaseUserId,
+        _cloudReadEnabled =
+            ShopCloudConfig.resolveReadEnabled(override: cloudReadEnabled),
+        _cloudPurchaseEnabled = ShopCloudConfig.resolvePurchaseEnabled(
+            override: cloudPurchaseEnabled),
         _shopRepository = shopRepository ??
             ShopLocalRepository(
               scopeResolver: () =>
@@ -109,7 +155,30 @@ class ShopController {
         _nowProvider = nowProvider ?? DateTime.now,
         _shopCloudReadRepository = shopCloudReadRepository ??
             ShopCloudReadRepository(
-              readEnabled: ShopCloudConfig.isReadEnabled,
+              readEnabled: ShopCloudConfig.resolveReadEnabled(
+                override: cloudReadEnabled,
+              ),
+            ),
+        _purchaseCloudUtilityUseCase = purchaseCloudUtilityUseCase ??
+            PurchaseCloudUtilityUseCase(
+              purchaseRepository:
+                  shopCloudPurchaseRepository ?? ShopCloudPurchaseRepository(),
+              pendingOperationStore: pendingShopOperationStore ??
+                  SharedPreferencesPendingShopOperationStore(),
+              cloudReadRepository: shopCloudReadRepository ??
+                  ShopCloudReadRepository(
+                    readEnabled: ShopCloudConfig.resolveReadEnabled(
+                      override: cloudReadEnabled,
+                    ),
+                  ),
+              currentUserIdProvider: () => (currentSupabaseUserIdProvider ??
+                  _defaultCurrentSupabaseUserId)(),
+              purchaseEnabled: ShopCloudConfig.resolvePurchaseEnabled(
+                override: cloudPurchaseEnabled,
+              ),
+              readEnabled: ShopCloudConfig.resolveReadEnabled(
+                  override: cloudReadEnabled),
+              nowProvider: nowProvider,
             );
 
   final UserStateStore _userStateStore;
@@ -118,14 +187,94 @@ class ShopController {
   final MysteryBoxOpeningRepository _mysteryBoxOpeningRepository;
   final RandomSource _randomSource;
   final DateTime Function() _nowProvider;
+  final String? Function() _currentSupabaseUserIdProvider;
+  final bool _cloudReadEnabled;
+  final bool _cloudPurchaseEnabled;
   final ShopCloudReadRepository _shopCloudReadRepository;
+  final PurchaseCloudUtilityUseCase _purchaseCloudUtilityUseCase;
+  final Map<String, ShopCloudSnapshot> _cloudSnapshotByUserId =
+      <String, ShopCloudSnapshot>{};
+  final Map<String, Future<void>> _cloudHydrationFutureByUserId =
+      <String, Future<void>>{};
   final Set<String> _pendingUtilityActivations = <String>{};
   final Set<String> _pendingMysteryBoxScopes = <String>{};
+  final Map<String, Future<ShopControllerResult>> _activeCloudPurchaseByItemId =
+      <String, Future<ShopControllerResult>>{};
+  String? _cloudEconomyUserId;
+  ShopEconomySource _economySource = ShopEconomySource.local;
+  ShopCloudEconomyStatus _economyStatus = ShopCloudEconomyStatus.disabled;
+  int? _cloudPurchaseWalletCoins;
+  final Map<String, int> _cloudPurchaseInventoryQuantityByItemId =
+      <String, int>{};
+
+  ShopEconomySource get economySource => _economySource;
+
+  ShopCloudEconomyStatus get economyStatus => _economyStatus;
+
+  bool get isCloudEconomyReady =>
+      _economySource == ShopEconomySource.cloud &&
+      (_economyStatus == ShopCloudEconomyStatus.ready ||
+          _economyStatus == ShopCloudEconomyStatus.stale);
+
+  int? get visibleCoinBalance {
+    if (!isCloudEconomyEnabled) {
+      return getWalletCoins();
+    }
+    if (!isCloudEconomyReady) {
+      return null;
+    }
+    return _cloudPurchaseWalletCoins;
+  }
 
   int getWalletCoins() {
     final root = _userStateStore.state;
     if (root == null) return 0;
     return _walletCoinsFromRoot(root);
+  }
+
+  bool get isCloudPurchaseEnabled => _cloudPurchaseEnabled;
+
+  bool get isCloudEconomyEnabled => _cloudReadEnabled && _cloudPurchaseEnabled;
+
+  Future<void> hydrateVisibleEconomy({bool force = false}) async {
+    if (!isCloudEconomyEnabled) {
+      _setEconomyState(
+        source: ShopEconomySource.local,
+        status: ShopCloudEconomyStatus.disabled,
+      );
+      return;
+    }
+
+    final currentUserId = _currentSupabaseUserId();
+    if (currentUserId == null) {
+      _setUnauthenticatedVisibleEconomy();
+      return;
+    }
+
+    final cachedSnapshot = _cloudSnapshotByUserId[currentUserId];
+    if (!force &&
+        _cloudEconomyUserId == currentUserId &&
+        cachedSnapshot != null &&
+        isCloudEconomyReady) {
+      return;
+    }
+
+    final existingFuture = _cloudHydrationFutureByUserId[currentUserId];
+    if (existingFuture != null && !force) {
+      await existingFuture;
+      return;
+    }
+
+    final future = _hydrateVisibleEconomy(currentUserId);
+    _cloudHydrationFutureByUserId[currentUserId] = future;
+    try {
+      await future;
+    } finally {
+      final activeFuture = _cloudHydrationFutureByUserId[currentUserId];
+      if (identical(activeFuture, future)) {
+        _cloudHydrationFutureByUserId.remove(currentUserId);
+      }
+    }
   }
 
   Future<ShopItemState?> getItemState(String itemId) async {
@@ -135,12 +284,26 @@ class ShopController {
     final root = await _ensureRoot();
     if (root == null) return null;
 
-    final shopState = await _shopRepository.load();
+    final shopState = await getVisibleShopState();
+    final walletCoins = _walletCoinsForItem(item, root);
     return _buildItemState(
       item: item,
       shopState: shopState,
-      walletCoins: _walletCoinsFromRoot(root),
+      walletCoins: walletCoins,
     );
+  }
+
+  Future<ShopState> getVisibleShopState() async {
+    final shopState = await _shopRepository.load();
+    if (!isCloudEconomyEnabled) {
+      return shopState;
+    }
+
+    await hydrateVisibleEconomy();
+    if (!isCloudEconomyReady) {
+      return shopState;
+    }
+    return _adjustShopStateForCloudPurchase(null, shopState);
   }
 
   Future<ShopControllerResult> purchaseItem(String itemId) async {
@@ -151,6 +314,52 @@ class ShopController {
         item: null,
         shopState: await _shopRepository.load(),
       );
+    }
+
+    if (isCloudEconomyEnabled &&
+        item.category == ShopItemCategory.utility &&
+        !_supportedCloudUtilityIds.contains(item.id)) {
+      return _controllerResult(
+        ShopControllerStatus.cloudPurchaseFailed,
+        item: item,
+        shopState: await _shopRepository.load(),
+        purchaseFailure: const ShopPurchaseFailure(
+          code: ShopPurchaseFailureCode.unsupportedCloudItem,
+          message: 'The requested item is not supported by cloud purchase.',
+          definitive: true,
+        ),
+      );
+    }
+
+    if (isCloudEconomyEnabled &&
+        item.category == ShopItemCategory.utility &&
+        _supportedCloudUtilityIds.contains(item.id)) {
+      if (!_cloudEconomyCanPurchase()) {
+        await hydrateVisibleEconomy(force: false);
+      }
+      if (!_cloudEconomyCanPurchase()) {
+        return _controllerResult(
+          ShopControllerStatus.cloudPurchaseFailed,
+          item: item,
+          shopState: await _adjustedLocalShopState(item),
+          walletCoins: visibleCoinBalance ?? 0,
+          purchaseFailure: _cloudPurchaseUnavailableFailure(),
+        );
+      }
+
+      final normalizedItemId = item.id.trim();
+      final existingFuture = _activeCloudPurchaseByItemId[normalizedItemId];
+      if (existingFuture != null) {
+        return existingFuture;
+      }
+
+      final future = _purchaseCloudUtility(item);
+      _activeCloudPurchaseByItemId[normalizedItemId] = future;
+      try {
+        return await future;
+      } finally {
+        _activeCloudPurchaseByItemId.remove(normalizedItemId);
+      }
     }
 
     final root = await _ensureRoot();
@@ -568,7 +777,7 @@ class ShopController {
 
   Future<ShopCloudReadResult<ShopCloudSnapshot>?>
       loadCloudSnapshotForDiagnostics() async {
-    if (!ShopCloudConfig.isReadEnabled) {
+    if (!isCloudEconomyEnabled) {
       return null;
     }
 
@@ -612,6 +821,362 @@ class ShopController {
     userState['wallet'] = wallet;
     root['userState'] = userState;
     await _userStateStore.save(root);
+  }
+
+  bool _shouldUseCloudPurchase(ShopItem item) {
+    return isCloudEconomyEnabled &&
+        item.category == ShopItemCategory.utility &&
+        _supportedCloudUtilityIds.contains(item.id) &&
+        _cloudEconomyCanPurchase();
+  }
+
+  static const Set<String> _supportedCloudUtilityIds = <String>{
+    'utility_xp_boost_1d',
+    'utility_coin_boost_1d',
+    'utility_streak_recover_1',
+    'utility_streak_shield_1',
+    'utility_mystery_box_basic',
+  };
+
+  bool _cloudEconomyCanPurchase() {
+    if (!isCloudEconomyEnabled) return false;
+    return isCloudEconomyReady && _cloudPurchaseWalletCoins != null;
+  }
+
+  ShopPurchaseFailure _cloudPurchaseUnavailableFailure() {
+    switch (_economyStatus) {
+      case ShopCloudEconomyStatus.unauthenticated:
+        return const ShopPurchaseFailure(
+          code: ShopPurchaseFailureCode.unauthenticated,
+          message: 'No authenticated user session is available.',
+          definitive: true,
+        );
+      case ShopCloudEconomyStatus.walletMissing:
+        return const ShopPurchaseFailure(
+          code: ShopPurchaseFailureCode.cloudWalletMissing,
+          message: 'Cloud wallet row is missing.',
+          definitive: true,
+        );
+      case ShopCloudEconomyStatus.loading:
+        return const ShopPurchaseFailure(
+          code: ShopPurchaseFailureCode.operationPending,
+          message: 'Shop cloud economy is still loading.',
+        );
+      case ShopCloudEconomyStatus.failed:
+      case ShopCloudEconomyStatus.stale:
+      case ShopCloudEconomyStatus.ready:
+      case ShopCloudEconomyStatus.disabled:
+        return const ShopPurchaseFailure(
+          code: ShopPurchaseFailureCode.unknown,
+          message: 'Shop cloud economy is not ready.',
+        );
+    }
+  }
+
+  Future<void> _hydrateVisibleEconomy(String currentUserId) async {
+    _setEconomyState(
+      source: ShopEconomySource.cloud,
+      status: ShopCloudEconomyStatus.loading,
+      userId: currentUserId,
+    );
+
+    final snapshotResult = await _shopCloudReadRepository.fetchShopSnapshot();
+    final activeUserId = _currentSupabaseUserId();
+    if (activeUserId == null || activeUserId != currentUserId) {
+      _clearCloudEconomyForSessionChange();
+      return;
+    }
+
+    if (!snapshotResult.isSuccess || snapshotResult.data == null) {
+      _handleHydrationFailure(
+        currentUserId: currentUserId,
+        errorCode: snapshotResult.error?.code,
+      );
+      return;
+    }
+
+    final snapshot = snapshotResult.data!;
+    if (snapshot.authenticatedUserId.trim() != currentUserId) {
+      _clearCloudEconomyForSessionChange();
+      return;
+    }
+
+    if (snapshot.wallet == null) {
+      _cloudSnapshotByUserId[currentUserId] = snapshot;
+      _cloudEconomyUserId = currentUserId;
+      _cloudPurchaseWalletCoins = null;
+      _cloudPurchaseInventoryQuantityByItemId.clear();
+      _setEconomyState(
+        source: ShopEconomySource.cloud,
+        status: ShopCloudEconomyStatus.walletMissing,
+        userId: currentUserId,
+        snapshot: snapshot,
+      );
+      return;
+    }
+
+    _cloudSnapshotByUserId[currentUserId] = snapshot;
+    _cloudEconomyUserId = currentUserId;
+    _cloudPurchaseWalletCoins = snapshot.wallet?.coins;
+    _cloudPurchaseInventoryQuantityByItemId
+      ..clear()
+      ..addEntries(
+        snapshot.inventory
+            .where((row) => _supportedCloudUtilityIds.contains(row.itemId))
+            .map((row) => MapEntry(row.itemId, row.quantity)),
+      );
+    _setEconomyState(
+      source: ShopEconomySource.cloud,
+      status: ShopCloudEconomyStatus.ready,
+      userId: currentUserId,
+      snapshot: snapshot,
+    );
+  }
+
+  void _handleHydrationFailure({
+    required String currentUserId,
+    ShopCloudErrorCode? errorCode,
+  }) {
+    final hasCachedSnapshot = _cloudSnapshotByUserId.containsKey(currentUserId);
+    switch (errorCode) {
+      case ShopCloudErrorCode.walletMissing:
+        _setEconomyState(
+          source: ShopEconomySource.cloud,
+          status: ShopCloudEconomyStatus.walletMissing,
+          userId: currentUserId,
+        );
+        break;
+      case ShopCloudErrorCode.unauthenticated:
+      case ShopCloudErrorCode.sessionChanged:
+        _clearCloudEconomyForSessionChange();
+        break;
+      case ShopCloudErrorCode.featureDisabled:
+        _setEconomyState(
+          source: ShopEconomySource.local,
+          status: ShopCloudEconomyStatus.disabled,
+        );
+        break;
+      case ShopCloudErrorCode.networkUnavailable:
+      case ShopCloudErrorCode.timeout:
+      case ShopCloudErrorCode.malformedResponse:
+      case ShopCloudErrorCode.invalidRemoteItem:
+      case ShopCloudErrorCode.unknown:
+      case null:
+        _setEconomyState(
+          source: ShopEconomySource.cloud,
+          status: hasCachedSnapshot
+              ? ShopCloudEconomyStatus.stale
+              : ShopCloudEconomyStatus.failed,
+          userId: currentUserId,
+        );
+        break;
+    }
+  }
+
+  void _clearCloudEconomyForSessionChange() {
+    _cloudEconomyUserId = null;
+    _cloudPurchaseWalletCoins = null;
+    _cloudPurchaseInventoryQuantityByItemId.clear();
+    _setEconomyState(
+      source: ShopEconomySource.local,
+      status: ShopCloudEconomyStatus.unauthenticated,
+    );
+  }
+
+  void _setUnauthenticatedVisibleEconomy() {
+    _clearCloudEconomyForSessionChange();
+  }
+
+  void _setEconomyState({
+    required ShopEconomySource source,
+    required ShopCloudEconomyStatus status,
+    String? userId,
+    ShopCloudSnapshot? snapshot,
+  }) {
+    final changed = _economySource != source ||
+        _economyStatus != status ||
+        _cloudEconomyUserId != userId;
+    _economySource = source;
+    _economyStatus = status;
+    if (snapshot != null && userId != null) {
+      _cloudSnapshotByUserId[userId] = snapshot;
+    }
+    if (userId != null) {
+      _cloudEconomyUserId = userId;
+    }
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
+  Future<ShopControllerResult> _purchaseCloudUtility(ShopItem item) async {
+    try {
+      final result = await _purchaseCloudUtilityUseCase.purchaseCloudUtility(
+        itemId: item.id,
+      );
+
+      if (result.isSuccess && result.remoteResult != null) {
+        await _applyCloudPurchaseResult(result.remoteResult!);
+        final refreshFailed = await _refreshCloudPurchaseSnapshot(force: true);
+        return _controllerResult(
+          ShopControllerStatus.success,
+          item: item,
+          shopState: await _adjustedLocalShopState(item),
+          walletCoins: _cloudPurchaseWalletCoins ?? getWalletCoins(),
+          purchaseFailure: null,
+          cloudPurchaseResult: result,
+          cloudRefreshFailed: refreshFailed,
+        );
+      }
+
+      if (result.isPending) {
+        return _controllerResult(
+          ShopControllerStatus.cloudPurchasePending,
+          item: item,
+          shopState: await _adjustedLocalShopState(item),
+          walletCoins: _cloudPurchaseWalletCoins ?? getWalletCoins(),
+          purchaseFailure: result.failure,
+          cloudPurchaseResult: result,
+        );
+      }
+
+      return _controllerResult(
+        ShopControllerStatus.cloudPurchaseFailed,
+        item: item,
+        shopState: await _adjustedLocalShopState(item),
+        walletCoins: _cloudPurchaseWalletCoins ?? getWalletCoins(),
+        purchaseFailure: result.failure,
+        cloudPurchaseResult: result,
+      );
+    } catch (error) {
+      return _controllerResult(
+        ShopControllerStatus.cloudPurchaseFailed,
+        item: item,
+        shopState: await _adjustedLocalShopState(item),
+        walletCoins: visibleCoinBalance ?? 0,
+        purchaseFailure: ShopPurchaseFailure(
+          code: ShopPurchaseFailureCode.unknown,
+          message: 'Unexpected cloud purchase error.',
+          cause: error,
+        ),
+      );
+    }
+  }
+
+  Future<bool> _refreshCloudPurchaseSnapshot({bool force = false}) async {
+    if (!isCloudEconomyEnabled) return false;
+    final currentUserId = _currentSupabaseUserId();
+    if (currentUserId == null) {
+      _clearCloudEconomyForSessionChange();
+      return false;
+    }
+
+    if (!force && isCloudEconomyReady && _cloudEconomyUserId == currentUserId) {
+      return false;
+    }
+
+    await hydrateVisibleEconomy(force: force);
+    return _economyStatus != ShopCloudEconomyStatus.ready;
+  }
+
+  Future<void> _applyCloudPurchaseResult(
+    RemoteShopPurchaseResultDto remoteResult,
+  ) async {
+    _cloudEconomyUserId = _currentSupabaseUserId();
+    _cloudPurchaseWalletCoins = remoteResult.coins;
+    _cloudPurchaseInventoryQuantityByItemId[remoteResult.itemId] =
+        remoteResult.inventoryQuantity;
+    if (_cloudEconomyUserId != null) {
+      _cloudSnapshotByUserId[_cloudEconomyUserId!] = ShopCloudSnapshot(
+        authenticatedUserId: _cloudEconomyUserId!,
+        catalogItems: const <RemoteShopItemDto>[],
+        wallet: RemoteWalletDto(
+          userId: _cloudEconomyUserId!,
+          coins: remoteResult.coins,
+          version: remoteResult.walletVersion,
+          createdAt: _nowProvider().toUtc(),
+          updatedAt: _nowProvider().toUtc(),
+        ),
+        inventory: <RemoteInventoryItemDto>[
+          RemoteInventoryItemDto(
+            id: 'pending-${remoteResult.requestId}-${remoteResult.itemId}',
+            userId: _cloudEconomyUserId!,
+            itemId: remoteResult.itemId,
+            quantity: remoteResult.inventoryQuantity,
+            acquisitionSource: 'purchase',
+            acquiredAt: _nowProvider().toUtc(),
+            updatedAt: _nowProvider().toUtc(),
+          ),
+        ],
+        equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
+        fetchedAt: _nowProvider().toUtc(),
+        catalogVersion: null,
+        warnings: const <ShopCloudWarning>[],
+      );
+      _setEconomyState(
+        source: ShopEconomySource.cloud,
+        status: ShopCloudEconomyStatus.stale,
+        userId: _cloudEconomyUserId,
+      );
+    }
+  }
+
+  Future<ShopState> _adjustedLocalShopState(ShopItem item) async {
+    final shopState = await _shopRepository.load();
+    return _adjustShopStateForCloudPurchase(item, shopState);
+  }
+
+  ShopState _adjustShopStateForCloudPurchase(
+    ShopItem? item,
+    ShopState shopState,
+  ) {
+    if (!isCloudEconomyEnabled) {
+      return shopState;
+    }
+
+    final updatedBackpackItems = shopState.backpackItems.map((entry) {
+      final cloudQuantity =
+          _cloudPurchaseInventoryQuantityByItemId[entry.itemId];
+      if (cloudQuantity == null) return entry;
+      return entry.copyWith(quantity: cloudQuantity);
+    }).toList(growable: true);
+
+    for (final entry in _cloudPurchaseInventoryQuantityByItemId.entries) {
+      if (entry.value <= 0 ||
+          updatedBackpackItems.any((item) => item.itemId == entry.key)) {
+        continue;
+      }
+      updatedBackpackItems.add(
+        BackpackItem(
+          itemId: entry.key,
+          quantity: entry.value,
+          updatedAtMillis: _nowProvider().millisecondsSinceEpoch,
+        ),
+      );
+    }
+
+    if (item != null && _shouldUseCloudPurchase(item)) {
+      final cloudQuantity = _cloudPurchaseInventoryQuantityByItemId[item.id];
+      if (cloudQuantity != null &&
+          !updatedBackpackItems.any((entry) => entry.itemId == item.id)) {
+        updatedBackpackItems.add(
+          BackpackItem(
+            itemId: item.id,
+            quantity: cloudQuantity,
+            updatedAtMillis: _nowProvider().millisecondsSinceEpoch,
+          ),
+        );
+      }
+    }
+
+    return shopState.copyWith(backpackItems: updatedBackpackItems);
+  }
+
+  int _walletCoinsForItem(ShopItem item, Map<String, dynamic> root) {
+    if (_shouldUseCloudPurchase(item) && _cloudPurchaseWalletCoins != null) {
+      return _cloudPurchaseWalletCoins!;
+    }
+    return _walletCoinsFromRoot(root);
   }
 
   int _walletCoinsFromRoot(Map<String, dynamic> root) {
@@ -678,13 +1243,36 @@ class ShopController {
     required ShopItem? item,
     required ShopState shopState,
     int? walletCoins,
+    ShopPurchaseFailure? purchaseFailure,
+    ShopPurchaseResult? cloudPurchaseResult,
+    bool cloudRefreshFailed = false,
   }) {
     return ShopControllerResult(
       status: status,
       item: item,
       shopState: shopState,
       walletCoins: walletCoins ?? getWalletCoins(),
+      purchaseFailure: purchaseFailure,
+      cloudPurchaseResult: cloudPurchaseResult,
+      cloudRefreshFailed: cloudRefreshFailed,
     );
+  }
+
+  Future<void> refreshCloudPurchaseSnapshot() async {
+    await _refreshCloudPurchaseSnapshot();
+  }
+
+  Future<List<ShopPurchaseResult>> resolvePendingPurchasesForCurrentUser({
+    int maxOperations = 3,
+  }) async {
+    final results = await _purchaseCloudUtilityUseCase
+        .resolvePendingPurchasesForCurrentUser(
+      maxOperations: maxOperations,
+    );
+    if (results.any((result) => result.isSuccess)) {
+      await _refreshCloudPurchaseSnapshot(force: true);
+    }
+    return results;
   }
 
   String? _currentScopeUserId() {
@@ -692,6 +1280,26 @@ class ShopController {
         (_userStateStore.activeLocalScopeUserId ?? _userStateStore.userId ?? '')
             .trim();
     return scope.isEmpty ? null : scope;
+  }
+
+  static String? _defaultCurrentSupabaseUserId() {
+    try {
+      final userId = RutioSupabaseClient.instance.auth.currentUser?.id.trim();
+      if (userId == null || userId.isEmpty) return null;
+      return userId;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _currentSupabaseUserId() {
+    try {
+      final userId = _currentSupabaseUserIdProvider()?.trim();
+      if (userId == null || userId.isEmpty) return null;
+      return userId;
+    } catch (_) {
+      return null;
+    }
   }
 
   String _activationKey(String utilityId) {

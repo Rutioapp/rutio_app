@@ -5,6 +5,10 @@ import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_read_repository.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/domain/models/equipped_cosmetics.dart';
@@ -30,6 +34,23 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(find.text('Tienda'), findsOneWidget);
+    });
+
+    testWidgets('cloud wallet balance is shown in the home header',
+        (WidgetTester tester) async {
+      final env = await _createEnv(
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-flow-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(walletCoins: 10000),
+        ),
+      );
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('10000'), findsOneWidget);
     });
 
     testWidgets('tap Cosmeticos opens Cosmetics', (WidgetTester tester) async {
@@ -584,6 +605,10 @@ Future<_Env> _createEnv({
   int walletCoins = 320,
   ShopState shopState = const ShopState.initial(),
   ShopCosmeticsState cosmeticsState = const ShopCosmeticsState.initial(),
+  bool? cloudReadEnabled,
+  bool? cloudPurchaseEnabled,
+  ShopCloudReadRepository? shopCloudReadRepository,
+  String? Function()? currentSupabaseUserIdProvider,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -603,6 +628,10 @@ Future<_Env> _createEnv({
     controller: ShopController(
       userStateStore: store,
       shopRepository: shopRepository,
+      cloudReadEnabled: cloudReadEnabled,
+      cloudPurchaseEnabled: cloudPurchaseEnabled,
+      shopCloudReadRepository: shopCloudReadRepository,
+      currentSupabaseUserIdProvider: currentSupabaseUserIdProvider,
     ),
     cosmeticsController: ShopCosmeticsController(userStateStore: store),
     shopRepository: shopRepository,
@@ -678,6 +707,61 @@ class _Env {
   final ShopController controller;
   final ShopCosmeticsController cosmeticsController;
   final ShopLocalRepository shopRepository;
+}
+
+class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
+  _FakeShopCloudReadRepository({
+    required this.snapshotFactory,
+  }) : super(
+          readEnabled: true,
+          currentUserIdProvider: () => 'shop-flow-user',
+        );
+
+  final ShopCloudSnapshot Function() snapshotFactory;
+
+  @override
+  Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
+    return ShopCloudReadResult<ShopCloudSnapshot>.success(
+      data: snapshotFactory(),
+    );
+  }
+}
+
+ShopCloudSnapshot _cloudSnapshot({
+  int? walletCoins = 10000,
+  String itemId = 'utility_xp_boost_1d',
+  int quantity = 0,
+}) {
+  return ShopCloudSnapshot(
+    authenticatedUserId: 'shop-flow-user',
+    catalogItems: const <RemoteShopItemDto>[],
+    wallet: walletCoins == null
+        ? null
+        : RemoteWalletDto(
+            userId: 'shop-flow-user',
+            coins: walletCoins,
+            version: 1,
+            createdAt: DateTime.utc(2026, 7, 18),
+            updatedAt: DateTime.utc(2026, 7, 18),
+          ),
+    inventory: quantity > 0
+        ? <RemoteInventoryItemDto>[
+            RemoteInventoryItemDto(
+              id: 'inv-1',
+              userId: 'shop-flow-user',
+              itemId: itemId,
+              quantity: quantity,
+              acquisitionSource: 'purchase',
+              acquiredAt: DateTime.utc(2026, 7, 18),
+              updatedAt: DateTime.utc(2026, 7, 18),
+            ),
+          ]
+        : const <RemoteInventoryItemDto>[],
+    equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
+    fetchedAt: DateTime.utc(2026, 7, 18),
+    catalogVersion: 1,
+    warnings: const <ShopCloudWarning>[],
+  );
 }
 
 Future<void> _tapVisible(WidgetTester tester, Finder finder) async {

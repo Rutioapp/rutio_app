@@ -6,6 +6,10 @@ import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/application/mystery_box_operation_result.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_read_repository.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
 import 'package:rutio/features/shop/data/local_active_utility_effects_repository.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/domain/active_utility_effects_repository.dart';
@@ -27,6 +31,74 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ShopController', () {
+    test('cloud economy disabled stays local when purchase flag is off',
+        () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: false,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(walletCoins: 10000),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+
+      expect(controller.economySource, ShopEconomySource.local);
+      expect(controller.visibleCoinBalance, 500);
+    });
+
+    test('cloud economy becomes visible when both flags are enabled', () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_xp_boost_1d',
+            quantity: 1,
+          ),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+      final visibleShopState = await controller.getVisibleShopState();
+
+      expect(controller.economySource, ShopEconomySource.cloud);
+      expect(controller.economyStatus, ShopCloudEconomyStatus.ready);
+      expect(controller.visibleCoinBalance, 10000);
+      expect(
+        visibleShopState.backpackItems
+            .singleWhere(
+              (entry) => entry.itemId == 'utility_xp_boost_1d',
+            )
+            .quantity,
+        1,
+      );
+    });
+
+    test('cloud economy reports walletMissing when remote wallet is absent',
+        () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(walletCoins: null),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+
+      expect(controller.economySource, ShopEconomySource.cloud);
+      expect(controller.economyStatus, ShopCloudEconomyStatus.walletMissing);
+      expect(controller.visibleCoinBalance, isNull);
+    });
+
     test('purchaseItem with missing item fails in a controlled way', () async {
       final controller = await _createController(walletCoins: 500);
 
@@ -337,7 +409,7 @@ void main() {
             'userId': 'shop-controller-user',
             'habitId': 'habit-1',
             'brokenAtMillis': 1,
-            'missedOccurrenceDateKey': '2026-07-16',
+            'missedOccurrenceDateKey': '2026-07-17',
             'previousStreak': 5,
             'currentStreakAfterBreak': 0,
             'status': 'recoverable',
@@ -456,6 +528,10 @@ Future<ShopController> _createController({
   MysteryBoxOpeningRepository? mysteryBoxOpeningRepository,
   FixedRandomSource? randomSource,
   DateTime Function()? nowProvider,
+  bool? cloudReadEnabled,
+  bool? cloudPurchaseEnabled,
+  ShopCloudReadRepository? shopCloudReadRepository,
+  String? Function()? currentSupabaseUserIdProvider,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -483,6 +559,10 @@ Future<ShopController> _createController({
     mysteryBoxOpeningRepository: mysteryBoxOpeningRepository,
     randomSource: randomSource,
     nowProvider: nowProvider,
+    cloudReadEnabled: cloudReadEnabled,
+    cloudPurchaseEnabled: cloudPurchaseEnabled,
+    shopCloudReadRepository: shopCloudReadRepository,
+    currentSupabaseUserIdProvider: currentSupabaseUserIdProvider,
   );
 }
 
@@ -546,6 +626,61 @@ class _BlockingMysteryBoxOpeningRepository
       ..clear()
       ..addAll(transactions);
   }
+}
+
+class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
+  _FakeShopCloudReadRepository({
+    required this.snapshotFactory,
+  }) : super(
+          readEnabled: true,
+          currentUserIdProvider: () => 'shop-controller-user',
+        );
+
+  final ShopCloudSnapshot Function() snapshotFactory;
+
+  @override
+  Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
+    return ShopCloudReadResult<ShopCloudSnapshot>.success(
+      data: snapshotFactory(),
+    );
+  }
+}
+
+ShopCloudSnapshot _cloudSnapshot({
+  int? walletCoins = 10000,
+  String itemId = 'utility_xp_boost_1d',
+  int quantity = 0,
+}) {
+  return ShopCloudSnapshot(
+    authenticatedUserId: 'shop-controller-user',
+    catalogItems: <RemoteShopItemDto>[],
+    wallet: walletCoins == null
+        ? null
+        : RemoteWalletDto(
+            userId: 'shop-controller-user',
+            coins: walletCoins,
+            version: 1,
+            createdAt: DateTime.utc(2026, 7, 18),
+            updatedAt: DateTime.utc(2026, 7, 18),
+          ),
+    inventory: quantity > 0
+        ? <RemoteInventoryItemDto>[
+            RemoteInventoryItemDto(
+              id: 'inv-1',
+              userId: 'shop-controller-user',
+              itemId: itemId,
+              quantity: quantity,
+              acquisitionSource: 'purchase',
+              acquiredAt: DateTime.utc(2026, 7, 18),
+              updatedAt: DateTime.utc(2026, 7, 18),
+            ),
+          ]
+        : const <RemoteInventoryItemDto>[],
+    equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
+    fetchedAt: DateTime.utc(2026, 7, 18),
+    catalogVersion: 1,
+    warnings: const <ShopCloudWarning>[],
+  );
 }
 
 Map<String, dynamic> _baseState({
