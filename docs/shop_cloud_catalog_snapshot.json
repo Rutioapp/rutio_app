@@ -1138,32 +1138,6 @@
     },
     {
       "kind": "cosmetic",
-      "currentId": "wallpaper_golden_dawn",
-      "proposedCanonicalId": "wallpaper_golden_dawn",
-      "category": "background",
-      "subtype": "background",
-      "rarity": "legendary",
-      "priceCoins": 1200,
-      "assetKey": "assets/shop/wallpapers/legendary/wallpaper_golden_dawn.webp",
-      "assetFiles": [
-        "assets/shop/wallpapers/legendary/wallpaper_golden_dawn.webp"
-      ],
-      "localizationKey": null,
-      "descriptionKey": null,
-      "isCosmetic": true,
-      "isConsumable": false,
-      "isStackable": false,
-      "maxQuantity": 1,
-      "equipSlot": "screen_background",
-      "isActive": true,
-      "sourceFiles": [
-        "lib/features/shop/data/shop_catalog.dart"
-      ],
-      "sourceOrder": 43,
-      "notes": []
-    },
-    {
-      "kind": "cosmetic",
       "currentId": "user_card_warm_beige",
       "proposedCanonicalId": "user_card_warm_beige",
       "category": "userCard",

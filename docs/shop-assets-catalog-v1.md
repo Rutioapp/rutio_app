@@ -133,7 +133,6 @@ Examples:
 | paper_dawn | Amanecer de papel | Paper Dawn | rare | Warm soft gradient with paper-like depth. |
 | lavender_mist | Niebla lavanda | Lavender Mist | epic | Beige base with soft lavender mist accents. |
 | dune_layers | Capas de duna | Dune Layers | epic | Organic dune-like layers with subtle depth. |
-| golden_dawn | Amanecer dorado | Golden Dawn | legendary | Premium warm composition with soft golden detail. |
 
 ## 8. Individual Asset Catalog
 
@@ -166,9 +165,6 @@ Examples:
 | wallpaper_dune_layers | dune_layers | wallpaper | Fondo Capas de duna | Dune Layers Wallpaper | epic | 550 | Global background |
 | habit_card_dune_layers | dune_layers | habit_card | Card Capas de duna | Dune Layers Habit Card | epic | 550 | Habit cards |
 | user_card_dune_layers | dune_layers | user_card | Tarjeta Capas de duna | Dune Layers User Card | epic | 550 | User card |
-| wallpaper_golden_dawn | golden_dawn | wallpaper | Fondo Amanecer dorado | Golden Dawn Wallpaper | legendary | 1200 | Global background |
-| habit_card_golden_dawn | golden_dawn | habit_card | Card Amanecer dorado | Golden Dawn Habit Card | legendary | 1200 | Habit cards |
-| user_card_golden_dawn | golden_dawn | user_card | Tarjeta Amanecer dorado | Golden Dawn User Card | legendary | 1200 | User card |
 
 ## 9. Bundle Catalog
 
@@ -183,7 +179,6 @@ Examples:
 | bundle_paper_dawn | paper_dawn | Pack Amanecer de papel | Paper Dawn Bundle | rare | 650 | `wallpaper_paper_dawn`, `habit_card_paper_dawn`, `user_card_paper_dawn` |
 | bundle_lavender_mist | lavender_mist | Pack Niebla lavanda | Lavender Mist Bundle | epic | 1400 | `wallpaper_lavender_mist`, `habit_card_lavender_mist`, `user_card_lavender_mist` |
 | bundle_dune_layers | dune_layers | Pack Capas de duna | Dune Layers Bundle | epic | 1400 | `wallpaper_dune_layers`, `habit_card_dune_layers`, `user_card_dune_layers` |
-| bundle_golden_dawn | golden_dawn | Pack Amanecer dorado | Golden Dawn Bundle | legendary | 3000 | `wallpaper_golden_dawn`, `habit_card_golden_dawn`, `user_card_golden_dawn` |
 
 ## 10. Recommended Asset Paths
 
@@ -198,7 +193,6 @@ Examples:
 * `assets/shop/wallpapers/common/wallpaper_warm_beige.webp`
 * `assets/shop/wallpapers/rare/wallpaper_calm_sand.webp`
 * `assets/shop/habit_cards/epic/habit_card_lavender_mist.webp`
-* `assets/shop/user_cards/legendary/user_card_golden_dawn.webp`
 
 In V1, `previewAssetPath` can be equal to `assetPath` to reduce complexity.
 

@@ -25,7 +25,6 @@ The visual families covered in this document are:
 * `paper_dawn`
 * `lavender_mist`
 * `dune_layers`
-* `golden_dawn`
 
 ## 2. Global Rutio Visual Direction
 
@@ -198,7 +197,6 @@ Recommended output: clean rounded rectangular user card-style asset with transpa
 | paper_dawn | rare | warm paper-like dawn gradient | Use a warm dawn-inspired gradient with paper-like softness. Blend cream, beige, peach and camel tones gently, with no strong contrast. |
 | lavender_mist | epic | beige base with soft lavender mist | Use a beige and cream base with soft lavender mist accents. The composition should feel atmospheric, calm and slightly more distinctive. |
 | dune_layers | epic | organic dune-like layered composition | Create subtle organic dune-like layers using warm sand, beige, camel and soft terracotta tones. Add gentle depth while keeping the interface readable. |
-| golden_dawn | legendary | premium warm golden dawn composition | Create a premium warm dawn composition with soft golden, camel, cream and sand tones. Use refined texture and elegant depth. Avoid shiny metallic gold or flashy luxury effects. |
 
 ## 6. Complete Wallpaper Prompts
 
@@ -362,24 +360,6 @@ Avoid cartoon style, childish aesthetics, strong contrast, harsh shadows, busy p
 Asset ID: wallpaper_dune_layers
 Family: dune_layers
 Rarity: Epic
-```
-
-### wallpaper_golden_dawn
-
-```text
-Create a premium minimal visual asset for a calm habit tracking mobile app called Rutio. The visual direction is calm, warm, elegant, iOS-first and editorial. Use a beige, camel, cream and soft sand color palette with subtle natural depth. The asset must feel modern, clean, premium and emotionally quiet.
-
-Rarity: Legendary. Create a premium and highly polished cosmetic asset with elegant depth, refined texture and soft golden or camel details. The asset should feel exclusive and carefully crafted, but never flashy, shiny, overloaded or luxurious in a casino-like way. Maintain the calm Rutio identity.
-
-Create a vertical mobile wallpaper background for a calm premium habit tracking app. The image must work behind white, cream and beige UI cards. Keep the center visually quiet with enough empty space for interface elements. Use subtle depth, soft texture and calm warm tones. Do not include text, logos, icons, characters, objects or strong patterns.
-
-Create a premium warm dawn composition with soft golden, camel, cream and sand tones. Use refined texture and elegant depth. Avoid shiny metallic gold or flashy luxury effects.
-
-Avoid cartoon style, childish aesthetics, strong contrast, harsh shadows, busy patterns, glossy effects, aggressive gradients, visible text, logos, icons, characters or objects. Recommended output: vertical mobile background, high resolution, 1536x2048 or equivalent.
-
-Asset ID: wallpaper_golden_dawn
-Family: golden_dawn
-Rarity: Legendary
 ```
 
 ## 7. Complete Habit Card Skin Prompts
@@ -546,24 +526,6 @@ Family: dune_layers
 Rarity: Epic
 ```
 
-### habit_card_golden_dawn
-
-```text
-Create a premium minimal visual asset for a calm habit tracking mobile app called Rutio. The visual direction is calm, warm, elegant, iOS-first and editorial. Use a beige, camel, cream and soft sand color palette with subtle natural depth. The asset must feel modern, clean, premium and emotionally quiet.
-
-Rarity: Legendary. Create a premium and highly polished cosmetic asset with elegant depth, refined texture and soft golden or camel details. The asset should feel exclusive and carefully crafted, but never flashy, shiny, overloaded or luxurious in a casino-like way. Maintain the calm Rutio identity.
-
-Create a premium minimal habit card skin for a mobile habit tracking app. The design should work as the background of a rounded rectangular card containing habit text, emoji, progress indicators and small metadata. Keep contrast soft and readability high. Use subtle texture, gentle borders or very soft depth if needed. Avoid busy patterns, strong gradients, text, icons, characters or objects.
-
-Create a premium warm dawn composition with soft golden, camel, cream and sand tones. Use refined texture and elegant depth. Avoid shiny metallic gold or flashy luxury effects.
-
-Avoid cartoon style, childish aesthetics, strong contrast, harsh shadows, busy patterns, glossy effects, aggressive gradients, visible text, logos, icons, characters or objects. Recommended output: clean rounded rectangular card-style asset with transparent or neutral background.
-
-Asset ID: habit_card_golden_dawn
-Family: golden_dawn
-Rarity: Legendary
-```
-
 ## 8. Complete User Card Skin Prompts
 
 ### user_card_warm_beige
@@ -726,24 +688,6 @@ Avoid cartoon style, childish aesthetics, strong contrast, harsh shadows, busy p
 Asset ID: user_card_dune_layers
 Family: dune_layers
 Rarity: Epic
-```
-
-### user_card_golden_dawn
-
-```text
-Create a premium minimal visual asset for a calm habit tracking mobile app called Rutio. The visual direction is calm, warm, elegant, iOS-first and editorial. Use a beige, camel, cream and soft sand color palette with subtle natural depth. The asset must feel modern, clean, premium and emotionally quiet.
-
-Rarity: Legendary. Create a premium and highly polished cosmetic asset with elegant depth, refined texture and soft golden or camel details. The asset should feel exclusive and carefully crafted, but never flashy, shiny, overloaded or luxurious in a casino-like way. Maintain the calm Rutio identity.
-
-Create a premium minimal user summary card skin for a calm mobile habit tracking app. The card should feel slightly more special than a standard habit card, while remaining clean and highly readable. It must support UI elements such as avatar, level, progress, coins and short stats. Use soft warm tones, subtle depth and refined texture. Avoid visual clutter, text, icons, characters, objects or strong decorative patterns.
-
-Create a premium warm dawn composition with soft golden, camel, cream and sand tones. Use refined texture and elegant depth. Avoid shiny metallic gold or flashy luxury effects.
-
-Avoid cartoon style, childish aesthetics, strong contrast, harsh shadows, busy patterns, glossy effects, aggressive gradients, visible text, logos, icons, characters or objects. Recommended output: clean rounded rectangular user card-style asset with transparent or neutral background.
-
-Asset ID: user_card_golden_dawn
-Family: golden_dawn
-Rarity: Legendary
 ```
 
 ## 9. Negative Prompt Guidelines
