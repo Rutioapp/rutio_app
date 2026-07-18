@@ -21,6 +21,50 @@ bool _clearTransientGamificationStateInternal(UserStateStore store) {
   return true;
 }
 
+void _clearHydrationBaselinesInternal(UserStateStore store) {
+  if (store._hydratedXpBaselineByUserId.isEmpty &&
+      store._hydratedLevelBaselineByUserId.isEmpty) {
+    return;
+  }
+
+  store._hydratedXpBaselineByUserId.clear();
+  store._hydratedLevelBaselineByUserId.clear();
+}
+
+void _primeHydrationBaselineFromUserState(
+  UserStateStore store,
+  Map<String, dynamic> userState,
+  XpMutationOrigin origin,
+) {
+  final userId = (store.userId ?? '').trim();
+  if (userId.isEmpty) return;
+
+  final progression = _map(userState['progression']);
+  final xp = _safeInt(progression['xp'], fallback: 0).clamp(0, 1 << 30);
+  final level = LevelProgression.fromTotalXp(xp).level;
+
+  store._hydratedXpBaselineByUserId[userId] = xp;
+  store._hydratedLevelBaselineByUserId[userId] = level;
+
+  if (kDebugMode) {
+    final originLabel = origin.name;
+    final existingXp = store._hydratedXpBaselineByUserId[userId];
+    final existingLevel = store._hydratedLevelBaselineByUserId[userId];
+    debugPrint(
+      '[user_state_store] primed xp baseline '
+      '(user=${_debugUserIdLabel(userId)}, origin=$originLabel, '
+      'xp=$existingXp, level=$existingLevel)',
+    );
+  }
+}
+
+String _debugUserIdLabel(String userId) {
+  final normalized = userId.trim();
+  if (normalized.isEmpty) return 'guest';
+  if (normalized.length <= 8) return normalized;
+  return '${normalized.substring(0, 4)}…${normalized.substring(normalized.length - 4)}';
+}
+
 void _clearTransientGamificationState(UserStateStore store) {
   final changed = _clearTransientGamificationStateInternal(store);
   if (changed) {
@@ -149,6 +193,7 @@ Future<void> _switchLocalScope(
     store._state = null;
     store._error = null;
     _clearTransientGamificationStateInternal(store);
+    _clearHydrationBaselinesInternal(store);
     store._emitChanged();
   }
 
@@ -723,9 +768,10 @@ Future<void> _loadStore(
       _ensureTodosRoot(userState);
       _ensureAchievementsRoot(userState);
       _syncAchievementsFromCurrentHabits(store, userState);
-      _restorePendingLevelCelebrationFromProgress(
+      _primeHydrationBaselineFromUserState(
         store,
-        userState: userState,
+        userState,
+        XpMutationOrigin.hydration,
       );
 
       final viewKey = _activeViewDateKey(userState);

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/constants/reward_constants.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
@@ -67,6 +68,28 @@ void main() {
       },
     );
 
+    test(
+      'reloading hydrated state for the same user does not generate celebrations',
+      () async {
+        final store = await _seedStore(
+          xp: LevelProgression.xpToReachLevel(5),
+          lastCelebratedLevel: 4,
+          habits: const <Map<String, dynamic>>[],
+        );
+
+        await store.load();
+        expect(store.pendingLevelCelebrationCount, 0);
+        expect(store.peekNextPendingLevelCelebration(), isNull);
+        expect(_lastCelebratedLevelFromStore(store), 4);
+
+        await store.load();
+        expect(store.pendingLevelCelebrationCount, 0);
+        expect(store.peekNextPendingLevelCelebration(), isNull);
+        expect(_lastCelebratedLevelFromStore(store), 4);
+        expect(_walletCoinsFromStore(store), 0);
+      },
+    );
+
     test('enqueueing level-up does not mark level as celebrated', () async {
       final thresholdLevel2 = LevelProgression.xpToReachLevel(2);
       final store = await _seedStore(
@@ -81,7 +104,8 @@ void main() {
       expect(_lastCelebratedLevelFromStore(store), 0);
     });
 
-    test('consuming level-up marks level as celebrated and persists it', () async {
+    test('consuming level-up marks level as celebrated and persists it',
+        () async {
       final thresholdLevel2 = LevelProgression.xpToReachLevel(2);
       final store = await _seedStore(
         xp: thresholdLevel2 - 10,
@@ -122,7 +146,8 @@ void main() {
       expect(_lastCelebratedLevelFromStore(store), 2);
     });
 
-    test('two XP gains in same level do not duplicate level-up popup', () async {
+    test('two XP gains in same level do not duplicate level-up popup',
+        () async {
       final thresholdLevel2 = LevelProgression.xpToReachLevel(2);
       final store = await _seedStore(
         xp: thresholdLevel2 - 10,
@@ -161,8 +186,9 @@ void main() {
         expect(store.pendingAchievementUnlockCount, 0);
         expect(store.shouldShowGamificationOverlays, isFalse);
 
-        final previousScopeRepo = UserStateRepository(storage: UserStateStorage())
-          ..setActiveUserScope('user_123');
+        final previousScopeRepo =
+            UserStateRepository(storage: UserStateStorage())
+              ..setActiveUserScope('user_123');
         final previousScopeState = await previousScopeRepo.loadOrCreate();
         expect(_lastCelebratedLevelFromRoot(previousScopeState), 0);
 
@@ -189,7 +215,8 @@ void main() {
       },
     );
 
-    test('enqueueing milestone celebration does not grant amber yet', () async {
+    test('hydrated milestone state does not enqueue celebration or grant amber',
+        () async {
       final store = await _seedStore(
         xp: LevelProgression.xpToReachLevel(5),
         lastCelebratedLevel: 4,
@@ -197,30 +224,41 @@ void main() {
       );
       await store.load();
 
-      expect(store.pendingLevelCelebrationCount, 1);
-      expect(store.peekNextPendingLevelCelebration()?.level, 5);
+      expect(store.pendingLevelCelebrationCount, 0);
+      expect(store.peekNextPendingLevelCelebration(), isNull);
+      expect(_lastCelebratedLevelFromStore(store), 4);
       expect(_walletCoinsFromStore(store), 0);
     });
 
     test(
-      'milestone reward is granted once when level celebration is consumed',
+      'milestone reward is granted once when a gameplay celebration is consumed',
       () async {
+        final thresholdLevel5 = LevelProgression.xpToReachLevel(5).toInt();
         final store = await _seedStore(
-          xp: LevelProgression.xpToReachLevel(5),
+          xp: thresholdLevel5 - RewardConstants.habitCheckXpReward,
           lastCelebratedLevel: 4,
-          habits: const <Map<String, dynamic>>[],
+          habits: [_checkHabit('habit_one')],
         );
-        await store.load();
 
-        expect(_walletCoinsFromStore(store), 0);
+        await store.completeHabit(habitId: 'habit_one');
+
+        expect(_walletCoinsFromStore(store), RewardConstants.habitCheckAmbarReward);
+        expect(store.pendingLevelCelebrationCount, 1);
+        expect(store.peekNextPendingLevelCelebration()?.level, 5);
         await store.markLevelCelebrationAsCelebrated(level: 5);
 
-        expect(_walletCoinsFromStore(store), 50);
+        expect(
+          _walletCoinsFromStore(store),
+          RewardConstants.habitCheckAmbarReward + 50,
+        );
         expect(_lastCelebratedLevelFromStore(store), 5);
         expect(store.pendingLevelCelebrationCount, 0);
 
         await store.markLevelCelebrationAsCelebrated(level: 5);
-        expect(_walletCoinsFromStore(store), 50);
+        expect(
+          _walletCoinsFromStore(store),
+          RewardConstants.habitCheckAmbarReward + 50,
+        );
       },
     );
 
@@ -231,7 +269,7 @@ void main() {
         habits: const <Map<String, dynamic>>[],
       );
       await store.load();
-      expect(store.pendingLevelCelebrationCount, 1);
+      expect(store.pendingLevelCelebrationCount, 0);
 
       store.suppressGamificationOverlaysDuringLogout();
       await store.markLevelCelebrationAsCelebrated(level: 5);
@@ -249,19 +287,15 @@ void main() {
           habits: const <Map<String, dynamic>>[],
         );
         await seeded.load();
-        expect(seeded.pendingLevelCelebrationCount, 1);
+        expect(seeded.pendingLevelCelebrationCount, 0);
         expect(_walletCoinsFromStore(seeded), 0);
 
         final reloaded = await _buildStore(resetStorage: false);
         await reloaded.load();
 
-        expect(reloaded.pendingLevelCelebrationCount, 1);
-        expect(reloaded.peekNextPendingLevelCelebration()?.level, 5);
-        expect(_walletCoinsFromStore(reloaded), 0);
-
-        await reloaded.markLevelCelebrationAsCelebrated(level: 5);
-        expect(_walletCoinsFromStore(reloaded), 50);
         expect(reloaded.pendingLevelCelebrationCount, 0);
+        expect(reloaded.peekNextPendingLevelCelebration(), isNull);
+        expect(_walletCoinsFromStore(reloaded), 0);
       },
     );
 

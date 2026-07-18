@@ -23,12 +23,19 @@ class LevelUpCelebrationController {
     required int previousXp,
     required int newXp,
     required int lastCelebratedLevel,
+    XpMutationOrigin origin = XpMutationOrigin.gameplayReward,
   }) {
     final safePreviousXp = previousXp < 0 ? 0 : previousXp;
     final safeNewXp = newXp < 0 ? 0 : newXp;
-    final safeLastCelebratedLevel = lastCelebratedLevel < 0
-        ? 0
-        : lastCelebratedLevel;
+    final safeLastCelebratedLevel =
+        lastCelebratedLevel < 0 ? 0 : lastCelebratedLevel;
+
+    if (!_shouldCelebrateOrigin(origin)) {
+      return LevelUpCelebrationDecision(
+        event: null,
+        lastCelebratedLevel: safeLastCelebratedLevel,
+      );
+    }
 
     final previousLevel = LevelProgression.fromTotalXp(safePreviousXp).level;
     final currentLevel = LevelProgression.fromTotalXp(safeNewXp).level;
@@ -65,5 +72,19 @@ class LevelUpCelebrationController {
       // actually consumed by the user.
       lastCelebratedLevel: safeLastCelebratedLevel,
     );
+  }
+
+  bool _shouldCelebrateOrigin(XpMutationOrigin origin) {
+    switch (origin) {
+      case XpMutationOrigin.userAction:
+      case XpMutationOrigin.gameplayReward:
+        return true;
+      case XpMutationOrigin.hydration:
+      case XpMutationOrigin.localRestore:
+      case XpMutationOrigin.remoteSync:
+      case XpMutationOrigin.demoSeed:
+      case XpMutationOrigin.adminAdjustment:
+        return false;
+    }
   }
 }
