@@ -4,6 +4,16 @@ enum LevelEventType {
   majorMilestone,
 }
 
+enum XpMutationOrigin {
+  hydration,
+  localRestore,
+  remoteSync,
+  demoSeed,
+  userAction,
+  gameplayReward,
+  adminAdjustment,
+}
+
 class LevelEvent {
   const LevelEvent({
     required this.level,

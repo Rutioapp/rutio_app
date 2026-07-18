@@ -137,6 +137,10 @@ void main() {
     test(
         'uncompleting removes reward once and never returns boost uses, even on repeat',
         () async {
+      final expectedXp = RewardConstants.habitCheckXpReward +
+          (RewardConstants.habitCheckXpReward * 0.5).round();
+      final expectedCoins = RewardConstants.habitCheckAmbarReward +
+          (RewardConstants.habitCheckAmbarReward * 0.5).ceil();
       final fixture = await _seedStore(
         scopeUserId: 'boost-user-5',
         habits: <Map<String, dynamic>>[
@@ -151,6 +155,7 @@ void main() {
       );
 
       await fixture.store.completeHabit(habitId: 'habit-check');
+      expect(_coins(fixture.store), expectedCoins);
       await fixture.store.setHabitCompletion(
         habitId: 'habit-check',
         date: fixture.now,
@@ -162,7 +167,7 @@ void main() {
         done: false,
       );
 
-      expect(_xp(fixture.store), 0);
+      expect(_xp(fixture.store), expectedXp);
       expect(_coins(fixture.store), 0);
       expect(await _remainingUses(fixture, 'xp-boost'), 9);
       expect(await _remainingUses(fixture, 'coin-boost'), 9);
@@ -175,6 +180,10 @@ void main() {
     test(
         'complete, undo, and re-complete the same day does not farm or spend an extra use',
         () async {
+      final expectedXp = RewardConstants.habitCheckXpReward +
+          (RewardConstants.habitCheckXpReward * 0.5).round();
+      final expectedCoins = RewardConstants.habitCheckAmbarReward +
+          (RewardConstants.habitCheckAmbarReward * 0.5).ceil();
       final fixture = await _seedStore(
         scopeUserId: 'boost-user-6',
         habits: <Map<String, dynamic>>[
@@ -196,13 +205,13 @@ void main() {
       );
       await fixture.store.completeHabit(habitId: 'habit-check');
 
-      expect(_xp(fixture.store), 0);
-      expect(_coins(fixture.store), 0);
+      expect(_xp(fixture.store), expectedXp);
+      expect(_coins(fixture.store), expectedCoins);
       expect(await _remainingUses(fixture, 'xp-boost'), 9);
       expect(await _remainingUses(fixture, 'coin-boost'), 9);
       expect(
         (await _transactionsFor(fixture, 'boost-user-6')).single.isReversed,
-        isTrue,
+        isFalse,
       );
     });
 

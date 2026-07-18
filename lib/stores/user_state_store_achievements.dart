@@ -102,6 +102,7 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
       userState: userState,
       previousXp: currentXp,
       currentXp: nextXp,
+      origin: XpMutationOrigin.gameplayReward,
     );
     userState['progression'] = progression;
 

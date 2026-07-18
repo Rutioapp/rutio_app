@@ -136,6 +136,7 @@ _DiaryRewardResult _tryApplyDailyDiaryReward(
     userState: userState,
     previousXp: currentXp,
     currentXp: nextXp,
+    origin: XpMutationOrigin.gameplayReward,
   );
   userState['progression'] = progression;
 
@@ -597,9 +598,8 @@ Future<void> _runDiaryV2RemotePull(
   try {
     final diaryEntriesResult = await _diaryV2SupabaseRepositoryForStore(store)
         .fetchDiaryEntriesForCurrentUser();
-    final dailyMoodsResult =
-        await _diaryV2SupabaseRepositoryForStore(store)
-            .fetchDailyMoodsForCurrentUser();
+    final dailyMoodsResult = await _diaryV2SupabaseRepositoryForStore(store)
+        .fetchDailyMoodsForCurrentUser();
 
     if (!diaryEntriesResult.isSuccess) {
       _debugDiaryV2Sync(

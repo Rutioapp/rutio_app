@@ -175,6 +175,11 @@ Future<SupabaseUserProgressRestoreResult>
   userState['wallet'] = wallet;
 
   _setLastCelebratedLevel(userState, level: nextCelebratedLevel);
+  _primeHydrationBaselineFromUserState(
+    store,
+    userState,
+    XpMutationOrigin.remoteSync,
+  );
   _touchLastSavedAt(userState);
 
   final celebrationQueueChanged = store._pendingLevelCelebrations.isNotEmpty ||
@@ -266,6 +271,7 @@ void _queueLevelCelebrationForXpChange(
   required Map<String, dynamic> userState,
   required int previousXp,
   required int currentXp,
+  XpMutationOrigin origin = XpMutationOrigin.gameplayReward,
 }) {
   final currentLevel =
       LevelProgression.fromTotalXp(currentXp < 0 ? 0 : currentXp).level;
@@ -275,33 +281,12 @@ void _queueLevelCelebrationForXpChange(
     previousXp: previousXp,
     newXp: currentXp,
     lastCelebratedLevel: _lastCelebratedLevel(userState),
+    origin: origin,
   );
   final event = decision.event;
   if (event == null) return;
 
   _enqueueLevelCelebration(store, event);
-}
-
-void _restorePendingLevelCelebrationFromProgress(
-  UserStateStore store, {
-  required Map<String, dynamic> userState,
-}) {
-  if (!_canQueueGamificationOverlays(store, userState: userState)) return;
-
-  final progression = _map(userState['progression']);
-  final safeXp = _safeInt(progression['xp'], fallback: 0).clamp(0, 1 << 30);
-  final currentLevel = LevelProgression.fromTotalXp(safeXp).level;
-  final celebratedLevel = _lastCelebratedLevel(userState);
-
-  if (!_levelEventResolver.isCelebrationEligibleLevel(currentLevel)) return;
-  if (currentLevel <= celebratedLevel) return;
-  _enqueueLevelCelebration(
-    store,
-    LevelEvent(
-      level: currentLevel,
-      type: _levelEventResolver.eventTypeForLevel(currentLevel),
-    ),
-  );
 }
 
 Future<void> _markLevelCelebrationAsCelebrated(

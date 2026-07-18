@@ -18,6 +18,18 @@ void main() {
       expect(decision.lastCelebratedLevel, 0);
     });
 
+    test('hydration never emits a celebration even when level increases', () {
+      final decision = controller.evaluateXpChange(
+        previousXp: 0,
+        newXp: LevelProgression.xpToReachLevel(4),
+        lastCelebratedLevel: 0,
+        origin: XpMutationOrigin.hydration,
+      );
+
+      expect(decision.event, isNull);
+      expect(decision.lastCelebratedLevel, 0);
+    });
+
     test('does not emit event when previousLevel is 1 and newLevel is 1', () {
       final previousXp = 0;
       final nextXp = LevelProgression.xpToReachLevel(2) - 1;
@@ -75,7 +87,9 @@ void main() {
       expect(decision.lastCelebratedLevel, 0);
     });
 
-    test('when one XP grant crosses several levels, only final level is emitted', () {
+    test(
+        'when one XP grant crosses several levels, only final level is emitted',
+        () {
       final previousXp = LevelProgression.xpToReachLevel(4) - 1;
       final nextXp = LevelProgression.xpToReachLevel(7);
 

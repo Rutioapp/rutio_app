@@ -184,6 +184,8 @@ class UserStateStore extends ChangeNotifier {
   String? _activeLocalScopeUserId;
   int _scopeEpoch = 0;
   Future<void> _scopeSwitchChain = Future<void>.value();
+  final Map<String, int> _hydratedXpBaselineByUserId = <String, int>{};
+  final Map<String, int> _hydratedLevelBaselineByUserId = <String, int>{};
   final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
       <UnlockedAchievementRecord>[];
   final List<LevelEvent> _pendingLevelCelebrations = <LevelEvent>[];

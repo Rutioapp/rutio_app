@@ -2366,12 +2366,15 @@ Future<void> _setCountHabitValue(
     habitId: habitId,
     localDateKey: dayKey,
   );
-  final rewardAlreadyGranted = existingTransaction != null;
+  final hasActiveRewardTransaction =
+      existingTransaction != null && !existingTransaction.isReversed;
+  final hasReversedRewardTransaction =
+      existingTransaction?.isReversed == true;
   final wasCompletedBeforeChange = habit['doneToday'] == true;
   final progressResult = _setCountHabitProgress(
     habit,
     value: value,
-    rewardAlreadyGranted: rewardAlreadyGranted,
+    rewardAlreadyGranted: hasActiveRewardTransaction,
   );
 
   _setHabitCompletionTimeState(
@@ -2391,7 +2394,21 @@ Future<void> _setCountHabitValue(
     bonusCoins: 0,
     appliedEffectIds: <String>[],
   );
-  if (progressResult.grantDailyReward && !rewardAlreadyGranted) {
+  _HabitRewardRestorationOutcome restorationOutcome =
+      const _HabitRewardRestorationOutcome(
+    restored: false,
+    restoredCoins: 0,
+    transaction: null,
+  );
+
+  if (hasReversedRewardTransaction && habit['doneToday'] == true) {
+    restorationOutcome = await _restoreHabitRewardCompletion(
+      store,
+      userState,
+      habitId: habitId,
+      dateKey: dayKey,
+    );
+  } else if (progressResult.grantDailyReward && !hasActiveRewardTransaction) {
     completionOutcome = await _applyHabitRewardCompletion(
       store,
       userState,
@@ -2406,7 +2423,7 @@ Future<void> _setCountHabitValue(
     }
   }
 
-  final shouldReverse = rewardAlreadyGranted &&
+  final shouldReverse = hasActiveRewardTransaction &&
       wasCompletedBeforeChange &&
       habit['doneToday'] != true;
   final revokedOutcome = shouldReverse
@@ -2452,6 +2469,12 @@ Future<void> _setCountHabitValue(
         );
       }
     }
+    if (restorationOutcome.restored && restorationOutcome.transaction != null) {
+      await _saveHabitRewardTransactionForStore(
+        store,
+        restorationOutcome.transaction!,
+      );
+    }
     if (revokedOutcome.reversed && revokedOutcome.transaction != null) {
       await _saveHabitRewardTransactionForStore(
           store, revokedOutcome.transaction!);
@@ -2482,11 +2505,21 @@ Future<void> _setCountHabitValue(
       currencyReason: 'habit_completion_reward',
     );
   }
+  if (restorationOutcome.restored) {
+    _queueBestEffortProgressAndRewardSync(
+      store,
+      userState: userState,
+      xpDelta: 0,
+      coinsDelta: restorationOutcome.restoredCoins,
+      source: 'habit_completion_restore',
+      currencyReason: 'habit_completion_restore',
+    );
+  }
   if (revokedOutcome.reversed) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
-      xpDelta: -revokedOutcome.revokedXp,
+      xpDelta: 0,
       coinsDelta: -revokedOutcome.revokedCoins,
       source: 'refund',
       currencyReason: 'habit_completion_rollback',
@@ -2540,7 +2573,10 @@ Future<void> _completeHabit(
     habitId: habitId,
     localDateKey: dayKey,
   );
-  final rewardAlreadyGranted = existingTransaction != null;
+  final hasActiveRewardTransaction =
+      existingTransaction != null && !existingTransaction.isReversed;
+  final hasReversedRewardTransaction =
+      existingTransaction?.isReversed == true;
 
   if (type == 'check') {
     if (habit['doneToday'] == true) return;
@@ -2549,7 +2585,7 @@ Future<void> _completeHabit(
   final progressResult = _applyHabitProgressDelta(
     habit,
     delta: delta,
-    rewardAlreadyGranted: rewardAlreadyGranted,
+    rewardAlreadyGranted: hasActiveRewardTransaction,
   );
   _setHabitCompletionTimeState(
     userState,
@@ -2567,10 +2603,23 @@ Future<void> _completeHabit(
     bonusCoins: 0,
     appliedEffectIds: <String>[],
   );
+  _HabitRewardRestorationOutcome restorationOutcome =
+      const _HabitRewardRestorationOutcome(
+    restored: false,
+    restoredCoins: 0,
+    transaction: null,
+  );
 
-  if (habit['doneToday'] == true &&
+  if (hasReversedRewardTransaction && habit['doneToday'] == true) {
+    restorationOutcome = await _restoreHabitRewardCompletion(
+      store,
+      userState,
+      habitId: habitId,
+      dateKey: dayKey,
+    );
+  } else if (habit['doneToday'] == true &&
       progressResult.grantDailyReward &&
-      !rewardAlreadyGranted) {
+      !hasActiveRewardTransaction) {
     completionOutcome = await _applyHabitRewardCompletion(
       store,
       userState,
@@ -2613,6 +2662,12 @@ Future<void> _completeHabit(
         );
       }
     }
+    if (restorationOutcome.restored && restorationOutcome.transaction != null) {
+      await _saveHabitRewardTransactionForStore(
+        store,
+        restorationOutcome.transaction!,
+      );
+    }
   } catch (_) {
     await _rollbackHabitRewardPersistence(
       store,
@@ -2636,6 +2691,16 @@ Future<void> _completeHabit(
       source: 'habit_completion',
       xpReason: 'habit_completion_reward',
       currencyReason: 'habit_completion_reward',
+    );
+  }
+  if (restorationOutcome.restored) {
+    _queueBestEffortProgressAndRewardSync(
+      store,
+      userState: userState,
+      xpDelta: 0,
+      coinsDelta: restorationOutcome.restoredCoins,
+      source: 'habit_completion_restore',
+      currencyReason: 'habit_completion_restore',
     );
   }
   for (final reward in achievementSyncOutcome.appliedRewards) {
@@ -2805,7 +2870,7 @@ Future<void> _setHabitCompletionForKey(
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
-      xpDelta: -revokedOutcome.revokedXp,
+      xpDelta: 0,
       coinsDelta: -revokedOutcome.revokedCoins,
       source: 'refund',
       currencyReason: 'habit_completion_rollback',
@@ -2935,7 +3000,7 @@ Future<void> _setHabitSkipForKey(
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
-      xpDelta: -revokedOutcome.revokedXp,
+      xpDelta: 0,
       coinsDelta: -revokedOutcome.revokedCoins,
       source: 'refund',
       currencyReason: 'habit_completion_rollback',
@@ -3207,6 +3272,7 @@ void _applyHabitRewardValues(
     userState: userState,
     previousXp: currentXp,
     currentXp: nextXp,
+    origin: XpMutationOrigin.gameplayReward,
   );
   _updateProgressionLevelFromXp(progression, totalXp: nextXp);
   progression['xp'] = nextXp < 0 ? 0 : nextXp;
@@ -3239,27 +3305,9 @@ void _applyHabitRewardValues(
 
 void _revokeHabitRewardValues(
   Map<String, dynamic> userState, {
-  required Map<String, dynamic> habit,
-  required int revokedXp,
   required int revokedCoins,
 }) {
-  if (revokedXp == 0 && revokedCoins == 0) return;
-
-  final familyId = _habitFamilyId(habit);
-  final progression = _map(userState['progression']);
-  final currentXp = _safeInt(progression['xp'], fallback: 0);
-  final nextXp = (currentXp - revokedXp).clamp(0, 1 << 30).toInt();
-  _updateProgressionLevelFromXp(progression, totalXp: nextXp);
-  progression['xp'] = nextXp;
-  userState['progression'] = progression;
-
-  if (revokedXp != 0) {
-    final familyXp = _map(userState['familyXp']);
-    familyXp[familyId] = (_safeInt(familyXp[familyId], fallback: 0) - revokedXp)
-        .clamp(0, 1 << 30)
-        .toInt();
-    userState['familyXp'] = familyXp;
-  }
+  if (revokedCoins == 0) return;
 
   final wallet = _map(userState['wallet']);
   final currentCoins = _safeInt(wallet['coins'], fallback: 0);
@@ -3267,12 +3315,27 @@ void _revokeHabitRewardValues(
   userState['wallet'] = wallet;
 
   final daily = _map(userState['daily']);
-  daily['xpEarnedToday'] =
-      (_safeInt(daily['xpEarnedToday'], fallback: 0) - revokedXp)
-          .clamp(0, 1 << 30)
-          .toInt();
   daily['coinsEarnedToday'] =
       (_safeInt(daily['coinsEarnedToday'], fallback: 0) - revokedCoins)
+          .clamp(0, 1 << 30)
+          .toInt();
+  userState['daily'] = daily;
+}
+
+void _restoreHabitRewardValues(
+  Map<String, dynamic> userState, {
+  required int restoredCoins,
+}) {
+  if (restoredCoins == 0) return;
+
+  final wallet = _map(userState['wallet']);
+  final currentCoins = _safeInt(wallet['coins'], fallback: 0);
+  wallet['coins'] = (currentCoins + restoredCoins).clamp(0, 1 << 30).toInt();
+  userState['wallet'] = wallet;
+
+  final daily = _map(userState['daily']);
+  daily['coinsEarnedToday'] =
+      (_safeInt(daily['coinsEarnedToday'], fallback: 0) + restoredCoins)
           .clamp(0, 1 << 30)
           .toInt();
   userState['daily'] = daily;
@@ -3419,8 +3482,6 @@ Future<_HabitRewardReversalOutcome> _reverseHabitRewardCompletion(
 
   _revokeHabitRewardValues(
     userState,
-    habit: habit,
-    revokedXp: revokedXp,
     revokedCoins: revokedCoins,
   );
   _setDailyRewardGrant(userState, habitId: habitId, granted: false);
@@ -3430,6 +3491,40 @@ Future<_HabitRewardReversalOutcome> _reverseHabitRewardCompletion(
     revokedXp: revokedXp,
     revokedCoins: revokedCoins,
     reversed: true,
+    transaction: updatedTransaction,
+  );
+}
+
+Future<_HabitRewardRestorationOutcome> _restoreHabitRewardCompletion(
+  UserStateStore store,
+  Map<String, dynamic> userState, {
+  required String habitId,
+  required String dateKey,
+}) async {
+  final existingTransaction = await _habitRewardTransactionForDate(
+    store,
+    habitId: habitId,
+    localDateKey: dateKey,
+  );
+  if (existingTransaction == null || !existingTransaction.isReversed) {
+    return const _HabitRewardRestorationOutcome(
+      restored: false,
+      restoredCoins: 0,
+      transaction: null,
+    );
+  }
+
+  final restoredCoins = existingTransaction.totalCoins;
+  _restoreHabitRewardValues(
+    userState,
+    restoredCoins: restoredCoins,
+  );
+  _setDailyRewardGrant(userState, habitId: habitId, granted: true);
+
+  final updatedTransaction = existingTransaction.copyWith(isReversed: false);
+  return _HabitRewardRestorationOutcome(
+    restored: true,
+    restoredCoins: restoredCoins,
     transaction: updatedTransaction,
   );
 }
@@ -3472,6 +3567,18 @@ class _HabitRewardReversalOutcome {
   final int revokedXp;
   final int revokedCoins;
   final bool reversed;
+  final HabitRewardTransaction? transaction;
+}
+
+class _HabitRewardRestorationOutcome {
+  const _HabitRewardRestorationOutcome({
+    required this.restored,
+    required this.restoredCoins,
+    required this.transaction,
+  });
+
+  final bool restored;
+  final int restoredCoins;
   final HabitRewardTransaction? transaction;
 }
 
