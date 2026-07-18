@@ -217,9 +217,19 @@ class _MysteryBoxOpeningScreenState extends State<MysteryBoxOpeningScreen>
                 _revealController,
               ]),
               builder: (BuildContext context, _) {
-                final currentAsset = _showOpenedBox
-                    ? MysteryBoxHeroView.openedAssetPath
-                    : MysteryBoxHeroView.defaultAssetPath;
+                final currentAsset = switch (_state.status) {
+                  MysteryBoxOpeningUiStatus.ready =>
+                    MysteryBoxHeroView.defaultAssetPath,
+                  MysteryBoxOpeningUiStatus.openingInProgress =>
+                    MysteryBoxHeroView.defaultAssetPath,
+                  MysteryBoxOpeningUiStatus.revealAnimation => _showOpenedBox
+                      ? MysteryBoxHeroView.openedAssetPath
+                      : MysteryBoxHeroView.defaultAssetPath,
+                  MysteryBoxOpeningUiStatus.rewardVisible =>
+                    MysteryBoxHeroView.openedAssetPath,
+                  MysteryBoxOpeningUiStatus.error =>
+                    MysteryBoxHeroView.defaultAssetPath,
+                };
                 final idleBoxScale = showIdleMotion ? _idleBoxScale.value : 1.0;
                 final idleRotation =
                     showIdleMotion ? _idleBoxRotation.value : 0.0;
