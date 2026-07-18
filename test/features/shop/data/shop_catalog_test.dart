@@ -50,7 +50,7 @@ void main() {
       final utilityItems =
           ShopCatalog.itemsByCategory(ShopItemCategory.utility);
 
-      expect(cosmeticItems, hasLength(62));
+      expect(cosmeticItems, hasLength(61));
       expect(utilityItems, hasLength(5));
       expect(
           cosmeticItems
@@ -68,7 +68,7 @@ void main() {
       final userCardItems = ShopCatalog.itemsByType(ShopItemType.userCard);
       final mysteryBoxes = ShopCatalog.itemsByType(ShopItemType.mysteryBox);
 
-      expect(backgroundItems, hasLength(21));
+      expect(backgroundItems, hasLength(20));
       expect(habitCardItems, hasLength(23));
       expect(userCardItems, hasLength(18));
       expect(mysteryBoxes.map((item) => item.id),
@@ -147,7 +147,7 @@ void main() {
 
       expect(minimalItems, hasLength(30));
       expect(gradientItems, hasLength(15));
-      expect(landscapeItems, hasLength(17));
+      expect(landscapeItems, hasLength(16));
       expect(
           minimalItems.every((item) => item.collectionId == 'minimal'), isTrue);
       expect(gradientItems.every((item) => item.collectionId == 'gradient'),

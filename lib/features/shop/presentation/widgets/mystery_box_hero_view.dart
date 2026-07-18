@@ -13,9 +13,9 @@ class MysteryBoxHeroView extends StatelessWidget {
   });
 
   static const String defaultAssetPath =
-      'assets/shop/utilities/mystery_box/mystery_box_closed.png';
+      'assets/shop/utilities/mystery_box_basic.png';
   static const String openedAssetPath =
-      'assets/shop/utilities/mystery_box/mystery_box_opened.png';
+      'assets/shop/utilities/mystery_box_basic.png';
   static const double _sourceAspectRatio = 941 / 1673;
 
   final VoidCallback? onTap;

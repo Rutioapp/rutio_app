@@ -16,7 +16,6 @@ void main() {
           ShopAssetRarity.common,
           ShopAssetRarity.rare,
           ShopAssetRarity.epic,
-          ShopAssetRarity.legendary,
         }),
       );
       expect(
@@ -33,7 +32,7 @@ void main() {
       );
       expect(
         ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.legendary),
-        hasLength(1),
+        hasLength(0),
       );
     });
 
@@ -50,15 +49,15 @@ void main() {
         }),
       );
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.wallpaper),
-          hasLength(21));
+          hasLength(20));
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.habitCard),
           hasLength(23));
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.userCard),
           hasLength(18));
     });
 
-    test('contains exactly 62 assets', () {
-      expect(ShopAssetsCatalog.allAssets, hasLength(62));
+    test('contains exactly 61 assets', () {
+      expect(ShopAssetsCatalog.allAssets, hasLength(61));
     });
 
     test('contains the expected 22 bundle packs', () {
@@ -132,7 +131,6 @@ void main() {
           'mint_abstract',
           'wild_stripes',
           'cow_spots',
-          'golden_dawn',
         }),
       );
 
@@ -345,11 +343,6 @@ void main() {
         isNot(contains(
             'assets/shop/habit_cards/epic/habit_card_dune_layers.webp')),
       );
-      expect(
-        habitCards,
-        isNot(contains(
-            'assets/shop/habit_cards/legendary/habit_card_golden_dawn.webp')),
-      );
     });
 
     test('user card assets point to the new definitive webp filenames', () {
@@ -417,7 +410,7 @@ void main() {
 
     test('filters by category family and rarity', () {
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.wallpaper),
-          hasLength(21));
+          hasLength(20));
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.habitCard),
           hasLength(23));
       expect(ShopAssetsCatalog.assetsByCategory(ShopAssetCategory.userCard),
@@ -433,7 +426,7 @@ void main() {
       expect(ShopAssetsCatalog.assetsByFamily('golden_clouds'), hasLength(1));
       expect(ShopAssetsCatalog.bundlesByFamily('lavender_mist'), isEmpty);
       expect(ShopAssetsCatalog.assetsByRarity(ShopAssetRarity.legendary),
-          hasLength(1));
+          hasLength(0));
     });
 
     test('common habit card catalog contains the restored production set', () {

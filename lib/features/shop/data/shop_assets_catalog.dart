@@ -413,15 +413,6 @@ class ShopAssetsCatalog {
       sortOrder: 42,
     ),
     _asset(
-      id: 'wallpaper_golden_dawn',
-      familyId: 'golden_dawn',
-      category: ShopAssetCategory.wallpaper,
-      rarity: ShopAssetRarity.legendary,
-      nameEs: 'Fondo Amanecer dorado',
-      nameEn: 'Golden Dawn Wallpaper',
-      sortOrder: 43,
-    ),
-    _asset(
       id: 'user_card_warm_beige',
       familyId: 'warm_beige',
       category: ShopAssetCategory.userCard,

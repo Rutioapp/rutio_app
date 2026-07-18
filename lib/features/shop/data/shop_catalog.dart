@@ -468,16 +468,6 @@ class ShopCatalog {
       collectionId: 'landscape',
     ),
     _cosmetic(
-      id: 'wallpaper_golden_dawn',
-      title: 'Golden Dawn Wallpaper',
-      description: 'Fondo premium calido con detalle dorado suave.',
-      type: ShopItemType.background,
-      rarity: ShopItemRarity.legendary,
-      priceCoins: 1200,
-      familyId: 'golden_dawn',
-      collectionId: 'landscape',
-    ),
-    _cosmetic(
       id: 'user_card_warm_beige',
       title: 'Rutio Beige User Card',
       description: 'User card beige Rutio, limpia y serena.',

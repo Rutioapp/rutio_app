@@ -4,7 +4,7 @@ Generated from the local shop catalogs on 2026-07-17. The machine-readable snaps
 
 ## Summary
 
-- Cosmetics: 62
+- Cosmetics: 61
 - Utilities: 5
 - Bundles: 22
 - Total catalog entries: 89
@@ -56,7 +56,6 @@ Generated from the local shop catalogs on 2026-07-17. The machine-readable snaps
 | wallpaper_cow_spots | background | background | epic | 550 | assets/shop/wallpapers/epic/wallpaper_cow_spots.webp | - | No | No | 1 | screen_background | Yes | lib/features/shop/data/shop_catalog.dart |  |
 | wallpaper_city_sunrise | background | background | epic | 550 | assets/shop/wallpapers/epic/wallpaper_city_sunrise.webp | - | No | No | 1 | screen_background | Yes | lib/features/shop/data/shop_catalog.dart |  |
 | wallpaper_ocean_depth | background | background | epic | 550 | assets/shop/wallpapers/epic/wallpaper_ocean_depth.webp | - | No | No | 1 | screen_background | Yes | lib/features/shop/data/shop_catalog.dart |  |
-| wallpaper_golden_dawn | background | background | legendary | 1200 | assets/shop/wallpapers/legendary/wallpaper_golden_dawn.webp | - | No | No | 1 | screen_background | Yes | lib/features/shop/data/shop_catalog.dart |  |
 | user_card_warm_beige | userCard | userCard | common | 120 | assets/shop/user_cards/common/user_card_rutio_beige.webp | - | No | No | 1 | user_card_background | Yes | lib/features/shop/data/shop_catalog.dart | asset filename differs (user_card_rutio_beige.webp); legacy naming kept for compatibility |
 | user_card_soft_camel | userCard | userCard | common | 120 | assets/shop/user_cards/common/user_card_soft_camel.webp | - | No | No | 1 | user_card_background | Yes | lib/features/shop/data/shop_catalog.dart |  |
 | user_card_sand_plain | userCard | userCard | common | 120 | assets/shop/user_cards/common/user_card_off_white.webp | - | No | No | 1 | user_card_background | Yes | lib/features/shop/data/shop_catalog.dart | asset filename differs (user_card_off_white.webp); legacy naming kept for compatibility |
