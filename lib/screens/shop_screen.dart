@@ -16,6 +16,7 @@ class ShopScreen extends StatefulWidget {
 
 class _ShopScreenState extends State<ShopScreen> {
   late final ShopLocalRepository _shopRepository;
+  late final ShopController _shopController;
 
   @override
   void initState() {
@@ -25,18 +26,18 @@ class _ShopScreenState extends State<ShopScreen> {
       scopeResolver: () =>
           userStateStore.activeLocalScopeUserId ?? userStateStore.userId,
     );
+    _shopController = ShopController(
+      userStateStore: userStateStore,
+      shopRepository: _shopRepository,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final userStateStore = context.read<UserStateStore>();
     final cosmeticsController = context.read<ShopCosmeticsController>();
 
     return ShopFlowScreen(
-      controller: ShopController(
-        userStateStore: userStateStore,
-        shopRepository: _shopRepository,
-      ),
+      controller: _shopController,
       cosmeticsController: cosmeticsController,
       shopRepository: _shopRepository,
     );
