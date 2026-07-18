@@ -1,8 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:rutio/features/shop/application/shop_operation_result.dart';
 import 'package:rutio/features/shop/application/shop_service.dart';
 import 'package:rutio/features/shop/application/mystery_box_operation_result.dart';
 import 'package:rutio/features/shop/application/open_mystery_box_use_case.dart';
 import 'package:rutio/features/shop/application/present_mystery_box_result_use_case.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_config.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_read_repository.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
 import 'package:rutio/features/habits/application/activate_streak_shield_use_case.dart';
 import 'package:rutio/features/habits/application/recover_streak_use_case.dart';
 import 'package:rutio/features/habits/domain/models/active_streak_shield.dart';
@@ -80,6 +85,7 @@ class ShopController {
     MysteryBoxOpeningRepository? mysteryBoxOpeningRepository,
     RandomSource? randomSource,
     DateTime Function()? nowProvider,
+    ShopCloudReadRepository? shopCloudReadRepository,
   })  : _userStateStore = userStateStore,
         _shopRepository = shopRepository ??
             ShopLocalRepository(
@@ -100,7 +106,11 @@ class ShopController {
                   userStateStore.userId,
             ),
         _randomSource = randomSource ?? DartRandomSource(),
-        _nowProvider = nowProvider ?? DateTime.now;
+        _nowProvider = nowProvider ?? DateTime.now,
+        _shopCloudReadRepository = shopCloudReadRepository ??
+            ShopCloudReadRepository(
+              readEnabled: ShopCloudConfig.isReadEnabled,
+            );
 
   final UserStateStore _userStateStore;
   final ShopLocalRepository _shopRepository;
@@ -108,6 +118,7 @@ class ShopController {
   final MysteryBoxOpeningRepository _mysteryBoxOpeningRepository;
   final RandomSource _randomSource;
   final DateTime Function() _nowProvider;
+  final ShopCloudReadRepository _shopCloudReadRepository;
   final Set<String> _pendingUtilityActivations = <String>{};
   final Set<String> _pendingMysteryBoxScopes = <String>{};
 
@@ -553,6 +564,30 @@ class ShopController {
       operationId: operationId,
       utilityId: utilityId,
     );
+  }
+
+  Future<ShopCloudReadResult<ShopCloudSnapshot>?>
+      loadCloudSnapshotForDiagnostics() async {
+    if (!ShopCloudConfig.isReadEnabled) {
+      return null;
+    }
+
+    final result = await _shopCloudReadRepository.fetchShopSnapshot();
+    if (kDebugMode) {
+      if (result.isSuccess && result.data != null) {
+        final snapshot = result.data!;
+        debugPrint(
+          '[shop_cloud_read] snapshot fetched for user=${snapshot.authenticatedUserId} '
+          'catalog=${snapshot.catalogItems.length} inventory=${snapshot.inventory.length} '
+          'equipped=${snapshot.equippedCosmetics.length} warnings=${snapshot.warnings.length}',
+        );
+      } else {
+        debugPrint(
+          '[shop_cloud_read] snapshot fetch failed: ${result.error?.code.name}',
+        );
+      }
+    }
+    return result;
   }
 
   Future<Map<String, dynamic>?> _ensureRoot() async {
