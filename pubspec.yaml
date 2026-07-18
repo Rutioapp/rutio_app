@@ -87,6 +87,7 @@ flutter:
     - assets/data/habits_catalog.json
     - assets/images/statistics/
     - assets/shop/utilities/
+    - assets/shop/utilities/mystery_box/
     - assets/shop/wallpapers/common/
     - assets/shop/wallpapers/rare/
     - assets/shop/wallpapers/epic/

@@ -159,8 +159,12 @@ void main() {
             .opacity,
         0,
       );
+      expect(_currentAssetName(tester), MysteryBoxHeroView.defaultAssetPath);
 
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 180));
+      expect(_currentAssetName(tester), MysteryBoxHeroView.defaultAssetPath);
+
+      await tester.pump(const Duration(milliseconds: 80));
 
       final duringFlash = tester
           .widget<Opacity>(find.byKey(const Key('mysteryBoxFlashOverlay')));
@@ -411,7 +415,7 @@ void main() {
       expect(presentedTransaction?.id, 'tx-1');
     });
 
-    testWidgets('uses the production opening asset',
+    testWidgets('does not render the legacy opening frame',
         (WidgetTester tester) async {
       await tester.pumpWidget(_app(_screen(onClose: () {})));
       await tester.pump();
