@@ -1,3 +1,5 @@
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/presentation/global_wallet_ui_state.dart';
 import 'package:rutio/features/gamification/domain/level_progression.dart';
 
 class MonthlyHeaderVM {
@@ -67,7 +69,10 @@ class MonthlyStateUtils {
     return true;
   }
 
-  static MonthlyHeaderVM headerVM(Map<String, dynamic>? root) {
+  static MonthlyHeaderVM headerVM(
+    Map<String, dynamic>? root, {
+    GlobalWalletController? walletController,
+  }) {
     final us = userState(root);
     final profile = mapCast(us['profile']);
     final progression = mapCast(us['progression']);
@@ -88,13 +93,21 @@ class MonthlyStateUtils {
     final levelProgress = LevelProgression.fromTotalXp(totalXp);
     final level = levelProgress.level;
     final xpValue = levelProgress.progress;
-
-    final coins = ((wallet['coins'] as num?) ??
-            (us['coins'] as num?) ??
-            (us['money'] as num?) ??
-            (us['gold'] as num?) ??
-            0)
-        .toInt();
+    final coins = walletController == null
+        ? ((wallet['coins'] as num?) ??
+                (us['coins'] as num?) ??
+                (us['money'] as num?) ??
+                (us['gold'] as num?) ??
+                0)
+            .toInt()
+        : walletController.resolveCoinsForUi(
+            legacyCoinsBuilder: () => ((wallet['coins'] as num?) ??
+                    (us['coins'] as num?) ??
+                    (us['money'] as num?) ??
+                    (us['gold'] as num?) ??
+                    0)
+                .toInt(),
+          );
 
     return MonthlyHeaderVM(
       username: username,

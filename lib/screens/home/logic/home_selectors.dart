@@ -41,8 +41,7 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
     final isTimesPerWeekCheck = _isTimesPerWeekCheckHabit(out);
     out['isTimesPerWeekCheck'] = isTimesPerWeekCheck;
 
-    final useSelectedDaySnapshot =
-        selectedKey != todayKey ||
+    final useSelectedDaySnapshot = selectedKey != todayKey ||
         selectedSkipsMap.containsKey(id) ||
         selectedDoneMap.containsKey(id) ||
         selectedCountMap.containsKey(id);
@@ -53,15 +52,18 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
       out['skippedToday'] = skipped;
       if (type == 'check') {
         // For normal checks, skip wins over done in the selected day snapshot.
-        out['doneToday'] =
-            isTimesPerWeekCheck ? doneFromSelectedDay : !skipped && doneFromSelectedDay;
+        out['doneToday'] = isTimesPerWeekCheck
+            ? doneFromSelectedDay
+            : !skipped && doneFromSelectedDay;
       } else {
         final target = _readNum(out['target'], fallback: 1);
         final val = skipped ? 0 : _readNum(selectedCountMap[id], fallback: 0);
         out['progress'] = val;
         out['doneToday'] = !skipped && (doneFromSelectedDay || (val >= target));
       }
-    } else if (type == 'check' && !isTimesPerWeekCheck && out['skippedToday'] == true) {
+    } else if (type == 'check' &&
+        !isTimesPerWeekCheck &&
+        out['skippedToday'] == true) {
       // Defensive guard for stale in-memory flags: normal checks cannot be done+skipped.
       out['doneToday'] = false;
     }
@@ -133,8 +135,6 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
   final xpInLevel = levelProgress.currentLevelXp;
   final xpToNext = levelProgress.xpToNextLevel;
   final xpProgress = levelProgress.progress;
-  final coins =
-      _readInt(rootMap, ['userState', 'wallet', 'coins'], fallback: 0);
 
   return HomeViewData(
     visibleHabits: visibleHabits,
@@ -150,7 +150,6 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
     xpInLevel: xpInLevel,
     xpToNext: xpToNext,
     xpProgress: xpProgress,
-    coins: coins,
   );
 }
 
@@ -229,8 +228,7 @@ bool _isTimesPerWeekCheckHabit(Map<String, dynamic> habit) {
   final type = (habit['type'] ?? 'check').toString().trim().toLowerCase();
   if (type != 'check') return false;
   final schedule = _map(habit['schedule']);
-  final scheduleType =
-      (schedule['type'] ?? '').toString().trim().toLowerCase();
+  final scheduleType = (schedule['type'] ?? '').toString().trim().toLowerCase();
   return scheduleType == 'timesperweek';
 }
 

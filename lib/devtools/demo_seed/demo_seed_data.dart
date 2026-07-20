@@ -9,7 +9,7 @@ import 'demo_seed_history.dart';
 class DemoSeedData {
   const DemoSeedData._();
 
-  static const int initialDemoCoins = 999999;
+  static const int initialDemoCoins = 1240;
 
   static DemoSeedPayload build({required DateTime now}) {
     final today = DemoSeedDates.dateOnly(now.toLocal());

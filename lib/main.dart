@@ -17,6 +17,7 @@ import 'data/repositories/user_state_repository.dart';
 import 'data/local/user_state_storage.dart';
 import 'data/local/asset_json_loader.dart';
 import 'features/shop/application/shop_cosmetics_controller.dart';
+import 'features/global_wallet/application/global_wallet_controller.dart';
 import 'features/achievements/presentation/screens/achievements_screen.dart';
 import 'features/achievements/presentation/widgets/achievement_unlock_overlay_host.dart';
 import 'stores/user_state_store.dart';
@@ -83,6 +84,9 @@ class MyApp extends StatelessWidget {
             assets: assets,
           ),
         ),
+        ChangeNotifierProvider<GlobalWalletController>(
+          create: (_) => GlobalWalletController(),
+        ),
         ChangeNotifierProvider<UserStateStore>(
           create: (context) {
             final userStateRepository = context.read<UserStateRepository>();
@@ -93,6 +97,7 @@ class MyApp extends StatelessWidget {
 
             return UserStateStore(
               userStateRepository,
+              globalWalletController: context.read<GlobalWalletController>(),
               profileRepository: context.read<ProfileRepository>(),
             )..load();
           },
@@ -100,6 +105,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<ShopCosmeticsController>(
           create: (context) => ShopCosmeticsController(
             userStateStore: context.read<UserStateStore>(),
+            globalWalletController: context.read<GlobalWalletController>(),
           ),
         ),
         ChangeNotifierProvider<AuthController>(
@@ -107,6 +113,7 @@ class MyApp extends StatelessWidget {
             context.read<AuthRepository>(),
             userStateStore: context.read<UserStateStore>(),
             profileRepository: context.read<ProfileRepository>(),
+            globalWalletController: context.read<GlobalWalletController>(),
           ),
         ),
       ],

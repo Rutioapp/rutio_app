@@ -1,0 +1,235 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
+import '../../../../core/supabase/rutio_supabase_client.dart';
+import '../data/cloud/cloud_wallet_errors.dart';
+import '../data/cloud/cloud_wallet_repository.dart';
+import '../data/cloud/cloud_wallet_snapshot.dart';
+import '../data/cloud/global_cloud_wallet_config.dart';
+import '../data/cloud/wallet_cache.dart';
+import 'global_wallet_state.dart';
+
+class GlobalWalletController extends ChangeNotifier {
+  GlobalWalletController({
+    CloudWalletRepository? repository,
+    WalletCache? cache,
+    String? Function()? currentUserIdProvider,
+    bool? enabled,
+    DateTime Function()? nowProvider,
+  })  : _repository = repository ?? SupabaseCloudWalletRepository(),
+        _cache = cache ?? SharedPreferencesWalletCache(),
+        _currentUserIdProvider =
+            currentUserIdProvider ?? _defaultCurrentUserIdProvider,
+        _enabled = GlobalCloudWalletConfig.resolveEnabled(override: enabled),
+        _nowProvider = nowProvider ?? DateTime.now;
+
+  final CloudWalletRepository _repository;
+  final WalletCache _cache;
+  final String? Function() _currentUserIdProvider;
+  final bool _enabled;
+  final DateTime Function() _nowProvider;
+
+  GlobalWalletState _state = GlobalWalletState.unauthenticated();
+  String? _activeUserId;
+  int _requestEpoch = 0;
+
+  GlobalWalletState get state => _state;
+
+  bool get isEnabled => _enabled;
+
+  String? get activeUserId => _activeUserId;
+
+  Future<GlobalWalletState> syncSession({
+    String? userId,
+    bool force = false,
+  }) async {
+    final normalizedUserId = _normalizeUserId(userId ?? _currentUserId());
+    if (normalizedUserId == null) {
+      return _clearSession();
+    }
+
+    _activeUserId = normalizedUserId;
+    _requestEpoch += 1;
+    final requestEpoch = _requestEpoch;
+
+    if (!_enabled) {
+      _state = GlobalWalletState.failed(
+        failure: const WalletFailure(
+          code: WalletFailureCode.featureDisabled,
+          message: 'Global cloud wallet is disabled.',
+        ),
+        userId: normalizedUserId,
+      );
+      notifyListeners();
+      return _state;
+    }
+
+    final cachedEntry = await _cache.read(normalizedUserId);
+    if (!_isRequestCurrent(requestEpoch, normalizedUserId)) {
+      return _state;
+    }
+
+    _state = cachedEntry != null
+        ? GlobalWalletState.syncing(
+            userId: normalizedUserId, cache: cachedEntry)
+        : GlobalWalletState.loading(userId: normalizedUserId);
+    notifyListeners();
+
+    final result = await _repository.fetchWallet();
+    if (!_isRequestCurrent(requestEpoch, normalizedUserId)) {
+      return _state;
+    }
+
+    if (!result.isSuccess || result.data == null) {
+      final failure = result.failure ??
+          const WalletFailure(
+            code: WalletFailureCode.unknown,
+            message: 'Could not fetch global wallet.',
+          );
+
+      if (failure.code == WalletFailureCode.walletMissing) {
+        _state = GlobalWalletState.walletMissing(
+          userId: normalizedUserId,
+          failure: failure,
+        );
+        notifyListeners();
+        return _state;
+      }
+
+      if (cachedEntry != null) {
+        _state = GlobalWalletState.stale(
+          userId: normalizedUserId,
+          cacheEntry: cachedEntry,
+          failure: failure,
+        );
+        notifyListeners();
+        return _state;
+      }
+
+      _state = GlobalWalletState.failed(
+        failure: failure,
+        userId: normalizedUserId,
+      );
+      notifyListeners();
+      return _state;
+    }
+
+    final snapshot = result.data!;
+    if (snapshot.userId.trim() != normalizedUserId) {
+      final failure = const WalletFailure(
+        code: WalletFailureCode.sessionChanged,
+        message: 'Wallet response did not match the active user.',
+      );
+      if (cachedEntry != null) {
+        _state = GlobalWalletState.stale(
+          userId: normalizedUserId,
+          cacheEntry: cachedEntry,
+          failure: failure,
+        );
+      } else {
+        _state = GlobalWalletState.failed(
+          failure: failure,
+          userId: normalizedUserId,
+        );
+      }
+      notifyListeners();
+      return _state;
+    }
+
+    final storedEntry = await _cache.save(snapshot);
+    if (!_isRequestCurrent(requestEpoch, normalizedUserId)) {
+      return _state;
+    }
+
+    final latestCache = await _cache.read(normalizedUserId);
+    if (!_isRequestCurrent(requestEpoch, normalizedUserId)) {
+      return _state;
+    }
+
+    final effectiveCache = latestCache ??
+        storedEntry ??
+        WalletCacheEntry.fromSnapshot(
+          snapshot,
+          cachedAt: _nowProvider().toUtc(),
+        );
+
+    if (!snapshotIsNewerOrEqual(snapshot, effectiveCache)) {
+      _state = GlobalWalletState.stale(
+        userId: normalizedUserId,
+        cacheEntry: effectiveCache,
+      );
+      notifyListeners();
+      return _state;
+    }
+
+    _state = GlobalWalletState.ready(
+      userId: normalizedUserId,
+      snapshot: snapshot,
+      cache: effectiveCache,
+    );
+    notifyListeners();
+    return _state;
+  }
+
+  Future<GlobalWalletState> refresh({bool force = false}) {
+    return syncSession(force: force);
+  }
+
+  Future<GlobalWalletState> clearSession() {
+    return _clearSession();
+  }
+
+  Future<GlobalWalletState> _clearSession() async {
+    _requestEpoch += 1;
+    _activeUserId = null;
+    _state = GlobalWalletState.unauthenticated();
+    notifyListeners();
+    return _state;
+  }
+
+  bool snapshotIsNewerOrEqual(
+    CloudWalletSnapshot snapshot,
+    WalletCacheEntry cacheEntry,
+  ) {
+    if (snapshot.version != cacheEntry.version) {
+      return snapshot.version > cacheEntry.version;
+    }
+    final updatedComparison =
+        snapshot.updatedAt.toUtc().compareTo(cacheEntry.updatedAt);
+    if (updatedComparison != 0) return updatedComparison >= 0;
+    return true;
+  }
+
+  bool _isRequestCurrent(int requestEpoch, String userId) {
+    if (_requestEpoch != requestEpoch) return false;
+    final currentUserId = _normalizeUserId(_currentUserId());
+    if (currentUserId != userId) return false;
+    if (_activeUserId != userId) return false;
+    return true;
+  }
+
+  String? _currentUserId() {
+    try {
+      return _currentUserIdProvider()?.trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _normalizeUserId(String? userId) {
+    final normalized = (userId ?? '').trim();
+    if (normalized.isEmpty) return null;
+    return normalized;
+  }
+
+  static String? _defaultCurrentUserIdProvider() {
+    try {
+      final userId = RutioSupabaseClient.instance.auth.currentUser?.id.trim();
+      if (userId == null || userId.isEmpty) return null;
+      return userId;
+    } catch (_) {
+      return null;
+    }
+  }
+}

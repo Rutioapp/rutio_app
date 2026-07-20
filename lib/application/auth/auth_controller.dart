@@ -6,14 +6,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../devtools/rutio_runtime_profile.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/profile_repository.dart';
+import '../../features/global_wallet/application/global_wallet_controller.dart';
 import '../../stores/user_state_store.dart';
 
 class AuthController extends ChangeNotifier {
   AuthController(
     this._authRepository, {
     required UserStateStore userStateStore,
+    required GlobalWalletController globalWalletController,
     ProfileRepository? profileRepository,
   })  : _userStateStore = userStateStore,
+        _globalWalletController = globalWalletController,
         _profileRepository = profileRepository {
     if (RutioRuntimeProfile.isDemo) {
       // Demo profile is intentionally local-only: avoid binding to any live
@@ -40,6 +43,9 @@ class AuthController extends ChangeNotifier {
       final initialUserId = _currentUser!.id;
       unawaited(() async {
         await _userStateStore.switchLocalScope(userId: initialUserId);
+        unawaited(
+          _globalWalletController.syncSession(userId: initialUserId),
+        );
         await _bootstrapCurrentUserProfileMetadata(
           reason: 'controller_init',
           touchLastLogin: true,
@@ -51,6 +57,7 @@ class AuthController extends ChangeNotifier {
 
   final AuthRepository _authRepository;
   final UserStateStore _userStateStore;
+  final GlobalWalletController _globalWalletController;
   final ProfileRepository? _profileRepository;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -114,6 +121,9 @@ class AuthController extends ChangeNotifier {
       }
       _userStateStore.restoreGamificationOverlaysAfterLogout();
       await _userStateStore.switchLocalScope(userId: _currentUser!.id);
+      unawaited(
+        _globalWalletController.syncSession(userId: _currentUser!.id),
+      );
       unawaited(
         _bootstrapCurrentUserProfileMetadata(
           reason: 'sign_in',
@@ -190,6 +200,9 @@ class AuthController extends ChangeNotifier {
       _userStateStore.restoreGamificationOverlaysAfterLogout();
       await _userStateStore.switchLocalScope(userId: _currentUser!.id);
       unawaited(
+        _globalWalletController.syncSession(userId: _currentUser!.id),
+      );
+      unawaited(
         _bootstrapCurrentUserProfileMetadata(
           reason: 'sign_up',
           touchLastLogin: true,
@@ -228,6 +241,7 @@ class AuthController extends ChangeNotifier {
       await _authRepository.signOut();
       _currentUser = null;
       _userStateStore.suppressGamificationOverlaysDuringLogout();
+      await _globalWalletController.clearSession();
       await _userStateStore.switchLocalScope(
         userId: null,
         forceReload: true,
@@ -322,6 +336,7 @@ class AuthController extends ChangeNotifier {
       final userId = _currentUser!.id;
       unawaited(() async {
         await _userStateStore.switchLocalScope(userId: userId);
+        unawaited(_globalWalletController.syncSession(userId: userId));
         await _bootstrapCurrentUserProfileMetadata(
           reason: 'auth_state_${state.event.name}',
           touchLastLogin: _shouldTouchLastLogin(state.event),
@@ -330,6 +345,7 @@ class AuthController extends ChangeNotifier {
       }());
     } else {
       _userStateStore.suppressGamificationOverlaysDuringLogout();
+      unawaited(_globalWalletController.clearSession());
       unawaited(
         _userStateStore.switchLocalScope(
           userId: null,
@@ -450,7 +466,8 @@ class AuthController extends ChangeNotifier {
           );
         }
 
-        final habitSummary = await _userStateStore.syncExistingLocalHabitsOnce();
+        final habitSummary =
+            await _userStateStore.syncExistingLocalHabitsOnce();
         if (kDebugMode) {
           debugPrint(
             '[auth] habit backfill summary: '

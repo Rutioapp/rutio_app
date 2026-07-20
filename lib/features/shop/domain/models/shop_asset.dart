@@ -2,6 +2,7 @@ import 'package:flutter/painting.dart';
 
 import 'package:rutio/features/shop/domain/models/habit_card_content_tone.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 
 const Object _shopAssetUnset = Object();
 
@@ -48,6 +49,17 @@ class ShopAsset {
   final bool useContentScrim;
   final bool isPurchasable;
   final int sortOrder;
+
+  CosmeticSlot? get cosmeticSlot {
+    switch (category) {
+      case ShopAssetCategory.wallpaper:
+        return CosmeticSlot.background;
+      case ShopAssetCategory.habitCard:
+        return CosmeticSlot.habitCard;
+      case ShopAssetCategory.userCard:
+        return CosmeticSlot.userCard;
+    }
+  }
 
   AssetImage get imageProvider =>
       _assetImageCache.putIfAbsent(assetPath, () => AssetImage(assetPath));

@@ -272,7 +272,11 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   }
 
   Future<void> _handleCosmeticsEquipPressed(String itemId) async {
-    final result = await widget.cosmeticsController.equipAsset(itemId);
+    final traceId = 'tap-${DateTime.now().microsecondsSinceEpoch}';
+    final result = await widget.cosmeticsController.equipAsset(
+      itemId,
+      traceId: traceId,
+    );
     if (!mounted) return;
     if (!result.isSuccess) {
       _showSnack('No se ha podido equipar el cosmetico');

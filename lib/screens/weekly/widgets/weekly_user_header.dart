@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'package:rutio/features/gamification/domain/level_progression.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/presentation/global_wallet_ui_state.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/widgets/app_header/app_header.dart';
 import 'package:rutio/widgets/app_header/user_stats_card.dart';
@@ -63,7 +66,11 @@ class WeeklyUserHeader extends StatelessWidget {
     final levelProgress = LevelProgression.fromTotalXp(xpTotal);
     final int level = levelProgress.level;
     final double xpValue = levelProgress.progress;
-    final int coins = _readInt(userState, ['wallet', 'coins'], fallback: 0);
+    final walletController = context.watch<GlobalWalletController>();
+    final int coins = walletController.resolveCoinsForUi(
+      legacyCoinsBuilder: () =>
+          _readInt(userState, ['wallet', 'coins'], fallback: 0),
+    );
 
     final String profileName =
         _readString(userState, ['profile', 'displayName'], fallback: '').trim();

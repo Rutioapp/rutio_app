@@ -26,16 +26,27 @@ import '../data/repositories/user_state_repository.dart';
 import '../devtools/demo_seed/demo_seed_models.dart';
 import '../devtools/rutio_runtime_profile.dart';
 import '../features/achievements/application/achievement_catalog.dart';
+import '../features/achievements/application/achievement_level_reward_coordinator.dart';
 import '../features/achievements/application/achievement_reward_resolver.dart';
+import '../features/achievements/data/cloud/achievement_level_reward_config.dart';
+import '../features/achievements/data/cloud/achievement_level_reward_repository.dart';
+import '../features/achievements/data/cloud/shared_preferences_pending_reward_claim_store.dart';
 import '../features/achievements/domain/models/achievement.dart';
 import '../features/achievements/domain/models/habit_streak_snapshot.dart';
 import '../features/achievements/domain/models/unlocked_achievement_record.dart';
 import '../features/gamification/application/level_up_celebration_controller.dart';
 import '../features/habits/domain/models/habit_occurrence_status.dart';
+import '../features/habits/application/habit_currency_reward_coordinator.dart';
+import '../features/habits/data/cloud/habit_currency_reward_repository.dart';
+import '../features/habits/data/cloud/habit_currency_rewards_config.dart';
+import '../features/habits/data/cloud/shared_preferences_pending_currency_operation_store.dart';
 import '../models/daily_mood.dart';
+import '../features/global_wallet/application/global_wallet_controller.dart';
 import '../features/shop/application/shop_service.dart';
 import '../features/shop/data/shop_catalog.dart';
 import '../features/shop/data/local_active_utility_effects_repository.dart';
+import '../features/shop/data/cloud/utility_consumption_config.dart';
+import '../features/shop/data/cloud/utility_consumption_repository.dart';
 import '../features/shop/data/shop_local_repository.dart';
 import '../features/shop/domain/active_utility_effects_repository.dart';
 import '../features/shop/domain/models/active_utility_effect.dart';
@@ -113,13 +124,17 @@ class UserStateStore extends ChangeNotifier {
   final HabitLogSyncService _habitLogSyncService;
   final UserProgressSyncService _userProgressSyncService;
   final JournalEntrySyncService _journalEntrySyncService;
+  final HabitCurrencyRewardCoordinator _habitCurrencyRewardCoordinator;
+  final AchievementLevelRewardCoordinator _achievementLevelRewardCoordinator;
   DiaryV2SupabaseRepository? _diaryV2SupabaseRepository;
   HabitRepository? _habitRepository;
   HabitLogRepository? _habitLogRepository;
   ActiveUtilityEffectsRepository? _activeUtilityEffectsRepository;
+  final UtilityConsumptionRepository? _utilityConsumptionRepository;
   HabitRewardTransactionRepository? _habitRewardTransactionRepository;
   final UserProgressRepository? _userProgressRepository;
   final ProfileRepository? _profileRepository;
+  final GlobalWalletController? _globalWalletController;
   final LevelUpCelebrationController _levelUpCelebrationController;
   final CurrentUserIdProvider _currentSupabaseUserIdProvider;
   final DateTime Function() _nowProvider;
@@ -131,13 +146,17 @@ class UserStateStore extends ChangeNotifier {
     HabitLogSyncService? habitLogSyncService,
     UserProgressSyncService? userProgressSyncService,
     JournalEntrySyncService? journalEntrySyncService,
+    HabitCurrencyRewardCoordinator? habitCurrencyRewardCoordinator,
     DiaryV2SupabaseRepository? diaryV2SupabaseRepository,
     HabitRepository? habitRepository,
     HabitLogRepository? habitLogRepository,
     ActiveUtilityEffectsRepository? activeUtilityEffectsRepository,
+    UtilityConsumptionRepository? utilityConsumptionRepository,
     HabitRewardTransactionRepository? habitRewardTransactionRepository,
     UserProgressRepository? userProgressRepository,
     ProfileRepository? profileRepository,
+    GlobalWalletController? globalWalletController,
+    AchievementLevelRewardCoordinator? achievementLevelRewardCoordinator,
     CurrentUserIdProvider? currentSupabaseUserIdProvider,
     DateTime Function()? nowProvider,
   })  : _achievementSyncService =
@@ -150,13 +169,45 @@ class UserStateStore extends ChangeNotifier {
             JournalEntrySyncService(
               journalEntryRepository: JournalEntryRepository(),
             ),
+        _habitCurrencyRewardCoordinator = habitCurrencyRewardCoordinator ??
+            HabitCurrencyRewardCoordinator(
+              rewardRepository: SupabaseHabitCurrencyRewardRepository(),
+              pendingOperationStore:
+                  SharedPreferencesPendingCurrencyOperationStore(),
+              transactionRepository: habitRewardTransactionRepository ??
+                  LocalHabitRewardTransactionRepository(),
+              currentUserIdProvider: currentSupabaseUserIdProvider ??
+                  _authenticatedSupabaseUserId,
+              enabled: HabitCurrencyRewardsConfig.resolveEnabled(),
+            ),
+        _achievementLevelRewardCoordinator =
+            achievementLevelRewardCoordinator ??
+                AchievementLevelRewardCoordinator(
+                  rewardRepository:
+                      SupabaseAchievementLevelRewardRepository(),
+                  pendingClaimStore:
+                      SharedPreferencesPendingRewardClaimStore(),
+                  currentUserIdProvider: currentSupabaseUserIdProvider ??
+                      _authenticatedSupabaseUserId,
+                  enabled: AchievementLevelRewardConfig.resolveEnabled(),
+                ),
         _diaryV2SupabaseRepository = diaryV2SupabaseRepository,
         _habitRepository = habitRepository,
         _habitLogRepository = habitLogRepository,
-        _activeUtilityEffectsRepository = activeUtilityEffectsRepository,
+        _utilityConsumptionRepository = utilityConsumptionRepository ??
+            (UtilityConsumptionConfig.resolveEnabled()
+                ? SupabaseUtilityConsumptionRepository()
+                : null),
+        _activeUtilityEffectsRepository = activeUtilityEffectsRepository ??
+            (UtilityConsumptionConfig.resolveEnabled()
+                ? ((utilityConsumptionRepository ??
+                        SupabaseUtilityConsumptionRepository())
+                    as ActiveUtilityEffectsRepository)
+                : null),
         _habitRewardTransactionRepository = habitRewardTransactionRepository,
         _userProgressRepository = userProgressRepository,
         _profileRepository = profileRepository,
+        _globalWalletController = globalWalletController,
         _levelUpCelebrationController = const LevelUpCelebrationController(),
         _currentSupabaseUserIdProvider =
             currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId,

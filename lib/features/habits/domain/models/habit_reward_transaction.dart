@@ -3,6 +3,10 @@ class HabitRewardTransaction {
     required this.id,
     required this.habitId,
     required this.localDateKey,
+    this.completionEventId,
+    this.applyRequestId,
+    this.reverseRequestId,
+    this.cloudOperationType,
     required this.baseXp,
     required this.bonusXp,
     required this.baseCoins,
@@ -15,6 +19,10 @@ class HabitRewardTransaction {
   final String id;
   final String habitId;
   final String localDateKey;
+  final String? completionEventId;
+  final String? applyRequestId;
+  final String? reverseRequestId;
+  final String? cloudOperationType;
   final int baseXp;
   final int bonusXp;
   final int baseCoins;
@@ -31,6 +39,10 @@ class HabitRewardTransaction {
     String? id,
     String? habitId,
     String? localDateKey,
+    String? completionEventId,
+    String? applyRequestId,
+    String? reverseRequestId,
+    String? cloudOperationType,
     int? baseXp,
     int? bonusXp,
     int? baseCoins,
@@ -43,6 +55,10 @@ class HabitRewardTransaction {
       id: id ?? this.id,
       habitId: habitId ?? this.habitId,
       localDateKey: localDateKey ?? this.localDateKey,
+      completionEventId: completionEventId ?? this.completionEventId,
+      applyRequestId: applyRequestId ?? this.applyRequestId,
+      reverseRequestId: reverseRequestId ?? this.reverseRequestId,
+      cloudOperationType: cloudOperationType ?? this.cloudOperationType,
       baseXp: baseXp ?? this.baseXp,
       bonusXp: bonusXp ?? this.bonusXp,
       baseCoins: baseCoins ?? this.baseCoins,
@@ -64,6 +80,10 @@ class HabitRewardTransaction {
       id: (json['id'] ?? '').toString(),
       habitId: (json['habitId'] ?? '').toString(),
       localDateKey: (json['localDateKey'] ?? '').toString(),
+      completionEventId: _nullableTrim(json['completionEventId']),
+      applyRequestId: _nullableTrim(json['applyRequestId']),
+      reverseRequestId: _nullableTrim(json['reverseRequestId']),
+      cloudOperationType: _nullableTrim(json['cloudOperationType']),
       baseXp: (json['baseXp'] as num?)?.toInt() ?? 0,
       bonusXp: (json['bonusXp'] as num?)?.toInt() ?? 0,
       baseCoins: (json['baseCoins'] as num?)?.toInt() ?? 0,
@@ -79,6 +99,10 @@ class HabitRewardTransaction {
       'id': id,
       'habitId': habitId,
       'localDateKey': localDateKey,
+      'completionEventId': completionEventId,
+      'applyRequestId': applyRequestId,
+      'reverseRequestId': reverseRequestId,
+      'cloudOperationType': cloudOperationType,
       'baseXp': baseXp,
       'bonusXp': bonusXp,
       'baseCoins': baseCoins,
@@ -96,6 +120,10 @@ class HabitRewardTransaction {
         other.id == id &&
         other.habitId == habitId &&
         other.localDateKey == localDateKey &&
+        other.completionEventId == completionEventId &&
+        other.applyRequestId == applyRequestId &&
+        other.reverseRequestId == reverseRequestId &&
+        other.cloudOperationType == cloudOperationType &&
         other.baseXp == baseXp &&
         other.bonusXp == bonusXp &&
         other.baseCoins == baseCoins &&
@@ -110,6 +138,10 @@ class HabitRewardTransaction {
         id,
         habitId,
         localDateKey,
+        completionEventId,
+        applyRequestId,
+        reverseRequestId,
+        cloudOperationType,
         baseXp,
         bonusXp,
         baseCoins,
@@ -118,6 +150,11 @@ class HabitRewardTransaction {
         createdAtMillis,
         isReversed,
       );
+}
+
+String? _nullableTrim(Object? value) {
+  final normalized = (value ?? '').toString().trim();
+  return normalized.isEmpty ? null : normalized;
 }
 
 bool _listEquals(List<String> a, List<String> b) {

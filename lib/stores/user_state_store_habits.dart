@@ -2371,6 +2371,7 @@ Future<void> _setCountHabitValue(
   final hasReversedRewardTransaction =
       existingTransaction?.isReversed == true;
   final wasCompletedBeforeChange = habit['doneToday'] == true;
+  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled();
   final progressResult = _setCountHabitProgress(
     habit,
     value: value,
@@ -2401,7 +2402,22 @@ Future<void> _setCountHabitValue(
     transaction: null,
   );
 
-  if (hasReversedRewardTransaction && habit['doneToday'] == true) {
+  if (cloudHabitRewardsEnabled) {
+    if (habit['doneToday'] == true && progressResult.grantDailyReward) {
+      completionOutcome = await _applyHabitRewardCompletion(
+        store,
+        userState,
+        habit: habit,
+        habitId: habitId,
+        dateKey: dayKey,
+        baseXp: progressResult.xpGain,
+        baseCoins: progressResult.coinsGain,
+      );
+      if (completionOutcome.granted) {
+        _setDailyRewardGrant(userState, habitId: habitId, granted: true);
+      }
+    }
+  } else if (hasReversedRewardTransaction && habit['doneToday'] == true) {
     restorationOutcome = await _restoreHabitRewardCompletion(
       store,
       userState,
@@ -2457,7 +2473,7 @@ Future<void> _setCountHabitValue(
 
   try {
     await store.save(root);
-    if (completionOutcome.granted) {
+    if (completionOutcome.granted && !cloudHabitRewardsEnabled) {
       await _saveActiveUtilityEffectsForStore(
         store,
         completionOutcome.nextEffects,
@@ -2494,7 +2510,14 @@ Future<void> _setCountHabitValue(
     userState: userState,
     records: achievementSyncOutcome.newlyUnlockedRecords,
   );
-  if (completionOutcome.granted) {
+  if (store._achievementLevelRewardCoordinator.isEnabled) {
+    await _claimCloudAchievementAndLevelRewardsBestEffort(
+      store,
+      achievementRecords: achievementSyncOutcome.newlyUnlockedRecords,
+      resolvePendingFirst: false,
+    );
+  }
+  if (completionOutcome.granted && !cloudHabitRewardsEnabled) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
@@ -2505,7 +2528,7 @@ Future<void> _setCountHabitValue(
       currencyReason: 'habit_completion_reward',
     );
   }
-  if (restorationOutcome.restored) {
+  if (restorationOutcome.restored && !cloudHabitRewardsEnabled) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
@@ -2515,7 +2538,7 @@ Future<void> _setCountHabitValue(
       currencyReason: 'habit_completion_restore',
     );
   }
-  if (revokedOutcome.reversed) {
+  if (revokedOutcome.reversed && !cloudHabitRewardsEnabled) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
@@ -2525,16 +2548,18 @@ Future<void> _setCountHabitValue(
       currencyReason: 'habit_completion_rollback',
     );
   }
-  for (final reward in achievementSyncOutcome.appliedRewards) {
-    _queueBestEffortProgressAndRewardSync(
-      store,
-      userState: userState,
-      xpDelta: reward.rewardXp,
-      coinsDelta: reward.rewardAmber,
-      source: 'achievement_unlocked',
-      xpReason: 'achievement_unlocked:${reward.achievementId}',
-      currencyReason: 'achievement_unlocked:${reward.achievementId}',
-    );
+  if (!store._achievementLevelRewardCoordinator.isEnabled) {
+    for (final reward in achievementSyncOutcome.appliedRewards) {
+      _queueBestEffortProgressAndRewardSync(
+        store,
+        userState: userState,
+        xpDelta: reward.rewardXp,
+        coinsDelta: reward.rewardAmber,
+        source: 'achievement_unlocked',
+        xpReason: 'achievement_unlocked:${reward.achievementId}',
+        currencyReason: 'achievement_unlocked:${reward.achievementId}',
+      );
+    }
   }
   _queueBestEffortHabitLogSyncForDate(
     store,
@@ -2577,6 +2602,7 @@ Future<void> _completeHabit(
       existingTransaction != null && !existingTransaction.isReversed;
   final hasReversedRewardTransaction =
       existingTransaction?.isReversed == true;
+  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled();
 
   if (type == 'check') {
     if (habit['doneToday'] == true) return;
@@ -2610,7 +2636,22 @@ Future<void> _completeHabit(
     transaction: null,
   );
 
-  if (hasReversedRewardTransaction && habit['doneToday'] == true) {
+  if (cloudHabitRewardsEnabled) {
+    if (habit['doneToday'] == true && progressResult.grantDailyReward) {
+      completionOutcome = await _applyHabitRewardCompletion(
+        store,
+        userState,
+        habit: habit,
+        habitId: habitId,
+        dateKey: dayKey,
+        baseXp: progressResult.xpGain,
+        baseCoins: progressResult.coinsGain,
+      );
+      if (completionOutcome.granted) {
+        _setDailyRewardGrant(userState, habitId: habitId, granted: true);
+      }
+    }
+  } else if (hasReversedRewardTransaction && habit['doneToday'] == true) {
     restorationOutcome = await _restoreHabitRewardCompletion(
       store,
       userState,
@@ -2650,7 +2691,7 @@ Future<void> _completeHabit(
 
   try {
     await store.save(root);
-    if (completionOutcome.granted) {
+    if (completionOutcome.granted && !cloudHabitRewardsEnabled) {
       await _saveActiveUtilityEffectsForStore(
         store,
         completionOutcome.nextEffects,
@@ -2682,7 +2723,7 @@ Future<void> _completeHabit(
     userState: userState,
     records: achievementSyncOutcome.newlyUnlockedRecords,
   );
-  if (completionOutcome.granted) {
+  if (completionOutcome.granted && !cloudHabitRewardsEnabled) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
@@ -2693,7 +2734,7 @@ Future<void> _completeHabit(
       currencyReason: 'habit_completion_reward',
     );
   }
-  if (restorationOutcome.restored) {
+  if (restorationOutcome.restored && !cloudHabitRewardsEnabled) {
     _queueBestEffortProgressAndRewardSync(
       store,
       userState: userState,
@@ -3367,6 +3408,39 @@ Future<_HabitRewardCompletionOutcome> _applyHabitRewardCompletion(
     );
   }
 
+  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled();
+  if (cloudHabitRewardsEnabled) {
+    final result = await store._habitCurrencyRewardCoordinator.applyHabitReward(
+      habitId: habitId,
+      logicalDateKey: dateKey,
+      completionEventId: existingTransaction?.isReversed == true
+          ? null
+          : existingTransaction?.completionEventId,
+    );
+    if (result.isSuccess && result.transaction != null) {
+      final transaction = result.transaction!;
+      return _HabitRewardCompletionOutcome(
+        granted: true,
+        baseXp: transaction.baseXp,
+        bonusXp: transaction.bonusXp,
+        baseCoins: transaction.baseCoins,
+        bonusCoins: transaction.bonusCoins,
+        appliedEffectIds: const <String>[],
+        transaction: transaction,
+      );
+    }
+
+    return _HabitRewardCompletionOutcome(
+      granted: false,
+      baseXp: 0,
+      bonusXp: 0,
+      baseCoins: 0,
+      bonusCoins: 0,
+      appliedEffectIds: const <String>[],
+      transaction: result.transaction ?? existingTransaction,
+    );
+  }
+
   final scope = _rewardScopeForStore(store);
   final effectRepo = _activeUtilityEffectsRepositoryForStore(store);
   final currentEffects = await effectRepo.loadEffects(scope);
@@ -3469,6 +3543,41 @@ Future<_HabitRewardReversalOutcome> _reverseHabitRewardCompletion(
       revokedXp: 0,
       revokedCoins: 0,
       reversed: false,
+    );
+  }
+
+  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled();
+  if (cloudHabitRewardsEnabled &&
+      existingTransaction.cloudOperationType != null) {
+    final result = await store._habitCurrencyRewardCoordinator.reverseHabitReward(
+      habitId: habitId,
+      logicalDateKey: dateKey,
+      completionEventId: existingTransaction.completionEventId,
+    );
+    if (result.isSuccess) {
+      final revokedXp =
+          (existingTransaction.baseXp + existingTransaction.bonusXp)
+              .clamp(0, 1 << 30)
+              .toInt();
+      final revokedCoins =
+          (existingTransaction.baseCoins + existingTransaction.bonusCoins)
+              .clamp(0, 1 << 30)
+              .toInt();
+      final updatedTransaction = (result.transaction ?? existingTransaction)
+          .copyWith(isReversed: true);
+      return _HabitRewardReversalOutcome(
+        revokedXp: revokedXp,
+        revokedCoins: revokedCoins,
+        reversed: true,
+        transaction: updatedTransaction,
+      );
+    }
+
+    return _HabitRewardReversalOutcome(
+      revokedXp: 0,
+      revokedCoins: 0,
+      reversed: false,
+      transaction: existingTransaction,
     );
   }
 
@@ -3955,6 +4064,26 @@ Future<StreakShieldOperationResult> _activateStreakShield(
   }
 
   final now = store._nowProvider();
+  if (store._utilityConsumptionRepository != null &&
+      UtilityConsumptionConfig.resolveEnabled()) {
+    try {
+      await store._utilityConsumptionRepository!.activateUtilityEffect(
+        requestId:
+            'utility_activate:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedOperationId',
+        utilityId: normalizedUtilityId,
+        operationType: 'activate',
+        sourceType: 'streak_shield',
+        sourceId: normalizedOperationId,
+        habitId: normalizedHabitId,
+      );
+    } catch (error) {
+      return StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.persistenceFailure,
+        errorMessage: error.toString(),
+      );
+    }
+  }
+
   final shield = ActiveStreakShield(
     id: 'streak_shield_${normalizedHabitId}_$normalizedOperationId',
     userId: (store.activeLocalScopeUserId ?? store.userId ?? '').trim(),
@@ -4035,6 +4164,24 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
   }
 
   final now = store._nowProvider();
+  if (store._utilityConsumptionRepository != null &&
+      UtilityConsumptionConfig.resolveEnabled()) {
+    try {
+      await store._utilityConsumptionRepository!.applyStreakRecover(
+        requestId:
+            'utility_recover:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedOperationId',
+        utilityId: 'utility_streak_recover_1',
+        operationType: 'recover',
+        breakId: normalizedBreakId,
+      );
+    } catch (error) {
+      return StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.persistenceFailure,
+        errorMessage: error.toString(),
+      );
+    }
+  }
+
   if (!_isWithinRecoveryWindow(now, breakRecord.missedOccurrenceDateKey)) {
     final expired = breakRecord.copyWith(
       status: RecoverableStreakBreakStatus.expired,

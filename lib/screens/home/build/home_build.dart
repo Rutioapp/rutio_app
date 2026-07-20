@@ -10,6 +10,7 @@ part of 'package:rutio/screens/home/home_screen.dart';
 extension _HomeScreenBuild on _HomeScreenState {
   Widget buildContent(BuildContext context) {
     final store = context.watch<UserStateStore>();
+    final walletController = context.watch<GlobalWalletController>();
     final isLoading = store.isLoading;
     final error = store.error;
     final root = store.state;
@@ -77,6 +78,10 @@ extension _HomeScreenBuild on _HomeScreenState {
                 : context.l10n.homeFallbackUsername;
 
     final habitCardBackgroundAsset = _equippedHabitCardAsset();
+    final coins = walletController.resolveCoinsForUi(
+      legacyCoinsBuilder: () =>
+          _readInt(rootMap, ['userState', 'wallet', 'coins'], fallback: 0),
+    );
 
     return _HomeLoadedView(
       scaffoldKey: _scaffoldKey,
@@ -92,7 +97,7 @@ extension _HomeScreenBuild on _HomeScreenState {
         username: username,
         level: homeData.level,
         xpProgress: homeData.xpProgress,
-        coins: homeData.coins,
+        coins: coins,
         avatarUrl: store.avatarUrl,
       ),
       weekStrip: _weekStrip(),
@@ -196,6 +201,7 @@ class _HomeLoadedView extends StatelessWidget {
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: Stack(
           children: [
+            const _HomeCosmeticsTraceListener(),
             const HomeBackground(),
             SafeArea(
               bottom: false,
@@ -265,6 +271,31 @@ class _HomeLoadedView extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _HomeCosmeticsTraceListener extends StatelessWidget {
+  const _HomeCosmeticsTraceListener();
+
+  @override
+  Widget build(BuildContext context) {
+    ShopCosmeticsController controller;
+    try {
+      controller = context.watch<ShopCosmeticsController>();
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+    if (kDebugMode) {
+      debugPrint(
+        '[cosmetic_trace] stage=home_listener '
+        'traceId=${controller.lastTraceId ?? 'none'} '
+        'userId=${controller.cloudState.userId ?? 'none'} '
+        'revision=${controller.cloudSnapshotRevision} '
+        'controllerHash=${identityHashCode(controller)} '
+        'snapshotHash=${controller.cloudState.snapshot == null ? 'none' : identityHashCode(controller.cloudState.snapshot)}',
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 

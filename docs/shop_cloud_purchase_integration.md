@@ -211,7 +211,7 @@ Ejemplo de ejecucion:
 
 ```bash
 flutter run \
-  --dart-define-from-file=.env/dev.json \
+  --dart-define-from-file=dart_defines/dev.json \
   --dart-define=SHOP_CLOUD_READ_ENABLED=true \
   --dart-define=SHOP_CLOUD_PURCHASE_ENABLED=true
 ```

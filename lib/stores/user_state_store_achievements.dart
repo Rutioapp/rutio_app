@@ -72,6 +72,14 @@ Set<String> _rewardAppliedAchievementIdsSet(Map<String, dynamic> achievements) {
       .toSet();
 }
 
+Set<String> _confirmedAchievementRewardIds(Map<String, dynamic> userState) {
+  final claims = _ensureClaimsRoot(userState);
+  return _list(claims['achievementRewardsClaimed'])
+      .map((entry) => entry.toString().trim())
+      .where((entry) => entry.isNotEmpty)
+      .toSet();
+}
+
 List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
   UserStateStore store,
   Map<String, dynamic> userState, {
@@ -79,14 +87,21 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
   required Iterable<UnlockedAchievementRecord> records,
 }) {
   final rewardAppliedIds = _rewardAppliedAchievementIdsSet(achievements);
+  final confirmedIds = _confirmedAchievementRewardIds(userState);
+  final cloudRewardsEnabled =
+      store._achievementLevelRewardCoordinator.isEnabled;
   final appliedRewards = <_AppliedAchievementReward>[];
 
   for (final record in records) {
-    if (rewardAppliedIds.contains(record.id)) continue;
+    if (rewardAppliedIds.contains(record.id) ||
+        confirmedIds.contains(record.id)) {
+      continue;
+    }
 
     final reward = AchievementRewardResolver.resolveForUnlockedRecord(record);
     if (reward.rewardXp <= 0 && reward.rewardAmber <= 0) {
       rewardAppliedIds.add(record.id);
+      confirmedIds.add(record.id);
       continue;
     }
 
@@ -106,19 +121,24 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
     );
     userState['progression'] = progression;
 
-    final wallet = _map(userState['wallet']);
-    final currentCoins = _safeInt(wallet['coins'], fallback: 0);
-    wallet['coins'] = currentCoins + reward.rewardAmber;
-    userState['wallet'] = wallet;
-
     final daily = _map(userState['daily']);
     daily['xpEarnedToday'] =
         _safeInt(daily['xpEarnedToday'], fallback: 0) + reward.rewardXp;
-    daily['coinsEarnedToday'] =
-        _safeInt(daily['coinsEarnedToday'], fallback: 0) + reward.rewardAmber;
+    if (!cloudRewardsEnabled) {
+      final wallet = _map(userState['wallet']);
+      final currentCoins = _safeInt(wallet['coins'], fallback: 0);
+      wallet['coins'] = currentCoins + reward.rewardAmber;
+      userState['wallet'] = wallet;
+      daily['coinsEarnedToday'] =
+          _safeInt(daily['coinsEarnedToday'], fallback: 0) +
+              reward.rewardAmber;
+    }
     userState['daily'] = daily;
 
-    rewardAppliedIds.add(record.id);
+    if (!cloudRewardsEnabled) {
+      rewardAppliedIds.add(record.id);
+      confirmedIds.add(record.id);
+    }
     appliedRewards.add(
       _AppliedAchievementReward(
         achievementId: record.id,
@@ -130,6 +150,10 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
 
   achievements['rewardAppliedAchievementIds'] =
       rewardAppliedIds.toList(growable: false);
+  final claims = _ensureClaimsRoot(userState);
+  claims['achievementRewardsClaimed'] =
+      confirmedIds.toList(growable: false);
+  userState['claims'] = claims;
   return appliedRewards;
 }
 
@@ -188,6 +212,107 @@ Future<void> _setFeaturedAchievementIds(
 
   achievements['featured'] = sanitized;
   await store.save(root);
+}
+
+Future<void> _claimCloudAchievementAndLevelRewardsBestEffort(
+  UserStateStore store, {
+  Iterable<UnlockedAchievementRecord> achievementRecords =
+      const <UnlockedAchievementRecord>[],
+  Iterable<int> levelRewards = const <int>[],
+  bool resolvePendingFirst = false,
+}) async {
+  if (!store._achievementLevelRewardCoordinator.isEnabled) return;
+
+  final root = store._state;
+  if (root == null) return;
+
+  final userState = _ensureUserStateRoot(root);
+  _ensureAchievementsRoot(userState);
+  final claims = _ensureClaimsRoot(userState);
+  final achievements = _ensureAchievementsRoot(userState);
+  final confirmedAchievementIds = <String>{
+    ..._rewardAppliedAchievementIdsSet(achievements),
+    ..._confirmedAchievementRewardIds(userState),
+  };
+  final confirmedLevelIds = _list(claims['milestonesClaimed'])
+      .map((entry) => entry.toString().trim())
+      .where((entry) => entry.isNotEmpty)
+      .toSet();
+  final rewardAppliedIds = _rewardAppliedAchievementIdsSet(achievements);
+  var changed = false;
+
+  if (resolvePendingFirst) {
+    final pendingResults =
+        await store._achievementLevelRewardCoordinator.resolvePendingForCurrentUser();
+    for (final result in pendingResults) {
+      final ledger = result.data;
+      if (!result.isSuccess || ledger == null) continue;
+      if (ledger.isAchievementClaim) {
+        if (confirmedAchievementIds.add(ledger.sourceId)) {
+          rewardAppliedIds.add(ledger.sourceId);
+          changed = true;
+        }
+      } else if (ledger.isLevelClaim) {
+        if (confirmedLevelIds.add(ledger.sourceId)) {
+          changed = true;
+        }
+      }
+    }
+  }
+
+  for (final record in achievementRecords) {
+    final id = record.id.trim();
+    if (id.isEmpty || confirmedAchievementIds.contains(id)) continue;
+
+    final reward = AchievementRewardResolver.resolveForUnlockedRecord(record);
+    if (reward.rewardXp <= 0 && reward.rewardAmber <= 0) {
+      if (confirmedAchievementIds.add(id)) {
+        rewardAppliedIds.add(id);
+        changed = true;
+      }
+      continue;
+    }
+
+    final result = await store._achievementLevelRewardCoordinator
+        .claimAchievementReward(achievementId: id);
+    final ledger = result.data;
+    if (!result.isSuccess || ledger == null) continue;
+
+    if (confirmedAchievementIds.add(ledger.sourceId)) {
+      rewardAppliedIds.add(ledger.sourceId);
+      changed = true;
+    }
+  }
+
+  for (final level in levelRewards) {
+    final safeLevel = level < 1 ? 1 : level;
+    final key = safeLevel.toString();
+    if (confirmedLevelIds.contains(key)) continue;
+
+    final result = await store._achievementLevelRewardCoordinator
+        .claimLevelReward(level: safeLevel);
+    final ledger = result.data;
+    if (!result.isSuccess || ledger == null) continue;
+
+    if (confirmedLevelIds.add(ledger.sourceId)) {
+      changed = true;
+    }
+  }
+
+  if (!changed) return;
+
+  claims['milestonesClaimed'] = confirmedLevelIds.toList(growable: false);
+  claims['achievementRewardsClaimed'] =
+      confirmedAchievementIds.toList(growable: false);
+  userState['claims'] = claims;
+  achievements['rewardAppliedAchievementIds'] =
+      rewardAppliedIds.toList(growable: false);
+  root['userState'] = userState;
+  store._state = root;
+  _touchLastSavedAt(userState);
+  await store.save(root);
+
+  unawaited(store._globalWalletController?.refresh(force: true));
 }
 
 class _AchievementHistoryStats {

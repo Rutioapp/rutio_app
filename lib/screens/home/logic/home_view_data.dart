@@ -17,7 +17,6 @@ class HomeViewData {
   final int xpInLevel;
   final int xpToNext;
   final double xpProgress;
-  final int coins;
 
   const HomeViewData({
     required this.visibleHabits,
@@ -33,6 +32,5 @@ class HomeViewData {
     required this.xpInLevel,
     required this.xpToNext,
     required this.xpProgress,
-    required this.coins,
   });
 }

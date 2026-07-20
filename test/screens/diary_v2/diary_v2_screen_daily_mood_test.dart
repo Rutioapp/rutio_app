@@ -11,7 +11,8 @@ import 'package:rutio/stores/user_state_store.dart';
 void main() {
   Provider.debugCheckInvalidValueType = null;
 
-  testWidgets('selected day mood changes with the week strip and saves updates', (
+  testWidgets('selected day mood changes with the week strip and saves updates',
+      (
     tester,
   ) async {
     final today = DateUtils.dateOnly(DateTime.now());
@@ -38,6 +39,7 @@ void main() {
     await tester.pumpWidget(_app(store: store));
     await tester.pumpAndSettle();
 
+    expect(store.autoSyncDiaryV2FromRemoteIfNeededCalls, 1);
     expect(find.text('Estado del día'), findsOneWidget);
     expect(find.text('Bien'), findsOneWidget);
 
@@ -78,6 +80,7 @@ class _FakeDiaryV2Store extends ChangeNotifier implements UserStateStore {
 
   final List<DiaryEntry> entries;
   final List<DailyMood> _moods;
+  int autoSyncDiaryV2FromRemoteIfNeededCalls = 0;
 
   @override
   List<DiaryEntry> get diaryEntries => entries;
@@ -100,7 +103,8 @@ class _FakeDiaryV2Store extends ChangeNotifier implements UserStateStore {
   List<DailyMood> dailyMoodsForMonth(DateTime month) {
     return _moods
         .where(
-          (mood) => mood.date.year == month.year && mood.date.month == month.month,
+          (mood) =>
+              mood.date.year == month.year && mood.date.month == month.month,
         )
         .toList(growable: false);
   }
@@ -116,6 +120,11 @@ class _FakeDiaryV2Store extends ChangeNotifier implements UserStateStore {
       _moods.add(dailyMood);
     }
     notifyListeners();
+  }
+
+  @override
+  Future<void> autoSyncDiaryV2FromRemoteIfNeeded() async {
+    autoSyncDiaryV2FromRemoteIfNeededCalls += 1;
   }
 
   String _dateKey(DateTime date) {

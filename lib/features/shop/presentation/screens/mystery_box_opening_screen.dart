@@ -570,6 +570,10 @@ class _MysteryBoxOpeningScreenState extends State<MysteryBoxOpeningScreen>
         return l10n.shopMysteryBoxErrorPersist;
       case MysteryBoxOperationStatus.duplicateTransaction:
         return l10n.shopMysteryBoxErrorPending;
+      case MysteryBoxOperationStatus.timeout:
+      case MysteryBoxOperationStatus.networkUnavailable:
+      case MysteryBoxOperationStatus.malformedResponse:
+      case MysteryBoxOperationStatus.requestConflict:
       case MysteryBoxOperationStatus.invalidTransactionId:
       case MysteryBoxOperationStatus.transactionNotFound:
       case MysteryBoxOperationStatus.unavailableState:

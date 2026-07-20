@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:rutio/features/gamification/domain/level_progression.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/presentation/global_wallet_ui_state.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../stores/user_state_store.dart';
@@ -16,7 +19,7 @@ class StatsRow extends StatelessWidget {
     required this.coins,
   });
 
-  factory StatsRow.fromStore(UserStateStore store) {
+  factory StatsRow.fromStore(BuildContext context, UserStateStore store) {
     final state = store.state;
     final userState = (state?['userState'] as Map?)?.cast<String, dynamic>() ??
         <String, dynamic>{};
@@ -28,7 +31,10 @@ class StatsRow extends StatelessWidget {
 
     final xp = ((progression['xp'] as num?) ?? 0).toInt();
     final level = LevelProgression.fromTotalXp(xp).level;
-    final coins = ((wallet['coins'] as num?) ?? 0).toInt();
+    final walletController = context.watch<GlobalWalletController>();
+    final coins = walletController.resolveCoinsForUi(
+      legacyCoinsBuilder: () => ((wallet['coins'] as num?) ?? 0).toInt(),
+    );
 
     return StatsRow(level: level, xp: xp, coins: coins);
   }
