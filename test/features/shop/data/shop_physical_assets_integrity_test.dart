@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 
+import 'shop_asset_test_support.dart';
+
 void main() {
   group('Shop physical assets integrity', () {
     final projectRoot = Directory.current.path;
@@ -78,7 +80,7 @@ void main() {
     });
 
     test('assets/shop contains no obvious orphan files', () {
-      final expectedPaths = ShopAssetsCatalog.allAssets
+      final catalogReferencedAssets = ShopAssetsCatalog.allAssets
           .expand((asset) => <String>{asset.assetPath, asset.previewAssetPath})
           .followedBy(
             ShopCatalog.allItems
@@ -88,13 +90,48 @@ void main() {
           )
           .map((path) => p.normalize(p.join(projectRoot, path)))
           .toSet();
+      final allowedPhysicalAssets = <String>{
+        ...catalogReferencedAssets,
+        ...explicitlyRegisteredAuxiliaryShopAssets
+            .map((path) => p.normalize(p.join(projectRoot, path))),
+      };
       final actualPaths = Directory(p.join(projectRoot, 'assets', 'shop'))
           .listSync(recursive: true)
           .whereType<File>()
           .map((file) => p.normalize(file.path))
+          .where((path) => !isStructuralShopAssetPath(path))
           .toSet();
+      final unexpectedPhysicalAssets =
+          actualPaths.difference(allowedPhysicalAssets);
+      final missingAssets = catalogReferencedAssets.difference(actualPaths);
 
-      expect(actualPaths, equals(expectedPaths));
+      expect(
+        unexpectedPhysicalAssets,
+        isEmpty,
+        reason: [
+          'Unexpected files under assets/shop:',
+          formatAssetPathList(
+            unexpectedPhysicalAssets.map(
+              (path) =>
+                  p.relative(path, from: projectRoot).replaceAll('\\', '/'),
+            ),
+          ),
+          'Register them as catalog assets, auxiliary assets, or remove them.',
+        ].join('\n'),
+      );
+      expect(
+        missingAssets,
+        isEmpty,
+        reason: [
+          'Referenced but missing assets:',
+          formatAssetPathList(
+            missingAssets.map(
+              (path) =>
+                  p.relative(path, from: projectRoot).replaceAll('\\', '/'),
+            ),
+          ),
+        ].join('\n'),
+      );
     });
   });
 }

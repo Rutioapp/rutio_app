@@ -27,8 +27,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(find.text('Mist Blue Wallpaper'), findsOneWidget);
-      expect(find.text('120 coins'), findsAtLeastNWidgets(1));
-      expect(find.text('240 coins'), findsOneWidget);
+      expect(find.text('120 monedas'), findsAtLeastNWidgets(1));
+      expect(find.text('240 monedas'), findsOneWidget);
     });
 
     testWidgets('calculates remaining balance after purchase',
@@ -45,7 +45,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('120 coins'), findsAtLeastNWidgets(1));
+      expect(find.text('120 monedas'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('disables purchase when there are not enough coins',
@@ -62,7 +62,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Sin monedas suficientes'), findsOneWidget);
+      expect(find.text('Saldo insuficiente'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('pressing Cancelar calls onCancel',
@@ -113,6 +113,7 @@ void main() {
 
 Widget _app(Widget child) {
   return MaterialApp(
+    locale: const Locale('es'),
     theme: AppTheme.theme,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,

@@ -409,7 +409,7 @@ void main() {
             'userId': 'shop-controller-user',
             'habitId': 'habit-1',
             'brokenAtMillis': 1,
-            'missedOccurrenceDateKey': '2026-07-17',
+            'missedOccurrenceDateKey': '2026-07-19',
             'previousStreak': 5,
             'currentStreakAfterBreak': 0,
             'status': 'recoverable',

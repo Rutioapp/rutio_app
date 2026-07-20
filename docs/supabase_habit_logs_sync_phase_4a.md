@@ -64,7 +64,7 @@ Daily habit log sync requires the local habit to have a persisted `remoteId` (ma
 Run:
 
 ```bash
-flutter run --dart-define-from-file=.env/dev.json
+flutter run --dart-define-from-file=dart_defines/dev.json
 ```
 
 Then validate:

@@ -93,7 +93,7 @@ Use at least one authenticated test account. Use two accounts for scope-separati
 - Start the app with:
 
 ```bash
-flutter run --dart-define-from-file=.env/dev.json
+flutter run --dart-define-from-file=dart_defines/dev.json
 ```
 
 - Sign in with an account that already has remote `user_progress` data.

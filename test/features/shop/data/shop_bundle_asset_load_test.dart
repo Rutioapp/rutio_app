@@ -2,6 +2,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 
+import 'shop_asset_test_support.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -42,6 +44,13 @@ void main() {
         greaterThan(0),
         reason: 'assets/shop/wallpapers/common/wallpaper_off_white.webp',
       );
+    });
+
+    test('rootBundle loads auxiliary mystery box assets', () async {
+      for (final assetPath in explicitlyRegisteredAuxiliaryShopAssets) {
+        final byteData = await rootBundle.load(assetPath);
+        expect(byteData.lengthInBytes, greaterThan(0), reason: assetPath);
+      }
     });
   });
 }

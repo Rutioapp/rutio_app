@@ -320,14 +320,9 @@ Future<void> _markLevelCelebrationAsCelebrated(
   }
 
   final safeLevel = level < 0 ? 0 : level;
-
-  store._pendingLevelCelebrations
-      .removeWhere((queuedEvent) => queuedEvent.level <= safeLevel);
-  if (!_levelEventResolver.isCelebrationEligibleLevel(safeLevel)) {
-    store._pendingLevelCelebrations.removeWhere(
-      (queuedEvent) =>
-          !_levelEventResolver.isCelebrationEligibleLevel(queuedEvent.level),
-    );
+  final hasPendingCelebration = store._pendingLevelCelebrations
+      .any((queuedEvent) => queuedEvent.level == safeLevel);
+  if (!hasPendingCelebration) {
     store._emitChanged();
     return;
   }
@@ -336,10 +331,42 @@ Future<void> _markLevelCelebrationAsCelebrated(
   if (root != null) {
     final userState = _ensureUserStateRoot(root);
     final currentCelebratedLevel = _lastCelebratedLevel(userState);
-    if (safeLevel > currentCelebratedLevel) {
+    if (safeLevel > currentCelebratedLevel &&
+        _levelEventResolver.isCelebrationEligibleLevel(safeLevel)) {
+      final claims = _ensureClaimsRoot(userState);
+      final milestonesClaimed = _list(claims['milestonesClaimed'])
+          .map((entry) => entry.toString().trim())
+          .where((entry) => entry.isNotEmpty)
+          .toSet()
+          .toList(growable: true);
+      final milestoneKey = safeLevel.toString();
+      final rewardAlreadyConfirmed = milestonesClaimed.contains(milestoneKey);
+      if (!rewardAlreadyConfirmed) {
+        final reward = _levelRewardResolver.rewardForLevel(safeLevel);
+        if (reward > 0) {
+          final wallet = _map(userState['wallet']);
+          final currentCoins = _safeInt(wallet['coins'], fallback: 0);
+          wallet['coins'] = currentCoins + reward;
+          userState['wallet'] = wallet;
+        }
+
+        milestonesClaimed.add(milestoneKey);
+        claims['milestonesClaimed'] = milestonesClaimed;
+        userState['claims'] = claims;
+      }
+
       _setLastCelebratedLevel(userState, level: safeLevel);
       await store._repo.save(root);
     }
+  }
+
+  store._pendingLevelCelebrations
+      .removeWhere((queuedEvent) => queuedEvent.level <= safeLevel);
+  if (!_levelEventResolver.isCelebrationEligibleLevel(safeLevel)) {
+    store._pendingLevelCelebrations.removeWhere(
+      (queuedEvent) =>
+          !_levelEventResolver.isCelebrationEligibleLevel(queuedEvent.level),
+    );
   }
 
   store._emitChanged();

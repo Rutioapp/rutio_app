@@ -1,4 +1,4 @@
-﻿# Supabase Phase 1 (Rutio)
+# Supabase Phase 1 (Rutio)
 
 Phase 1 introduces Supabase auth foundation and startup/auth gates while
 keeping existing app features (achievements, diary, habits, notifications,
@@ -19,20 +19,20 @@ values every run.
 1. Copy the example file:
 
 ```bash
-cp .env/dev.example.json .env/dev.json
+cp .env/dev.example.json dart_defines/dev.json
 ```
 
 PowerShell equivalent:
 
 ```powershell
-Copy-Item .env/dev.example.json .env/dev.json
+Copy-Item .env/dev.example.json dart_defines/dev.json
 ```
 
-2. Fill `.env/dev.json` with your real project values.
+2. Fill `dart_defines/dev.json` with your real project values.
 3. Run the app with:
 
 ```bash
-flutter run --dart-define-from-file=.env/dev.json
+flutter run --dart-define-from-file=dart_defines/dev.json
 ```
 
 Real Supabase credentials must never be committed to Git.

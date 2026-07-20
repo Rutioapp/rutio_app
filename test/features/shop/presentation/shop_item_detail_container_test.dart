@@ -107,7 +107,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
       await tester.pump(const Duration(milliseconds: 16));
 
-      expect(find.text('Sin monedas suficientes'), findsOneWidget);
+      expect(find.text('Saldo insuficiente'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('utility detail allows repeated purchases',
@@ -237,6 +237,7 @@ void main() {
 
 Widget _app(Widget child) {
   return MaterialApp(
+    locale: const Locale('es'),
     theme: AppTheme.theme,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,

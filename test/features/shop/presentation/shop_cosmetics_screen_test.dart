@@ -544,6 +544,7 @@ void main() {
 
 Widget _app(Widget child) {
   return MaterialApp(
+    locale: const Locale('es'),
     theme: AppTheme.theme,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
