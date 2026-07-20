@@ -498,6 +498,28 @@ Map<String, dynamic> _ensureHistoryRoot(Map<String, dynamic> userState) {
   return history;
 }
 
+Map<String, dynamic> _ensureClaimsRoot(Map<String, dynamic> userState) {
+  final claims = _map(userState['claims']);
+  claims['milestonesClaimed'] = _list(claims['milestonesClaimed'])
+      .map((entry) => entry.toString().trim())
+      .where((entry) => entry.isNotEmpty)
+      .toSet()
+      .toList(growable: false);
+  claims['achievementRewardsClaimed'] =
+      _list(claims['achievementRewardsClaimed'])
+          .map((entry) => entry.toString().trim())
+          .where((entry) => entry.isNotEmpty)
+          .toSet()
+          .toList(growable: false);
+  claims['prestigeClaimed'] = _list(claims['prestigeClaimed'])
+      .map((entry) => entry.toString().trim())
+      .where((entry) => entry.isNotEmpty)
+      .toSet()
+      .toList(growable: false);
+  userState['claims'] = claims;
+  return claims;
+}
+
 List<Map<String, dynamic>> _ensureDiaryEntriesRoot(
   Map<String, dynamic> userState,
 ) {
@@ -766,8 +788,17 @@ Future<void> _loadStore(
       _ensureDailyMoodsRoot(userState);
       _ensureDiaryRewardAppliedDateKeys(userState);
       _ensureTodosRoot(userState);
-      _ensureAchievementsRoot(userState);
-      _syncAchievementsFromCurrentHabits(store, userState);
+      final achievementSyncOutcome = _syncAchievementsFromCurrentHabits(
+        store,
+        userState,
+      );
+      if (store._achievementLevelRewardCoordinator.isEnabled) {
+        await _claimCloudAchievementAndLevelRewardsBestEffort(
+          store,
+          achievementRecords: achievementSyncOutcome.newlyUnlockedRecords,
+          resolvePendingFirst: true,
+        );
+      }
       _primeHydrationBaselineFromUserState(
         store,
         userState,

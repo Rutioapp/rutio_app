@@ -287,6 +287,26 @@ void _queueLevelCelebrationForXpChange(
   if (event == null) return;
 
   _enqueueLevelCelebration(store, event);
+
+  if (store._achievementLevelRewardCoordinator.isEnabled) {
+    unawaited(
+      _claimCloudAchievementAndLevelRewardsBestEffort(
+        store,
+        levelRewards: _levelEventResolver
+            .resolveLevelUps(
+              previousLevel:
+                  LevelProgression.fromTotalXp(previousXp < 0 ? 0 : previousXp)
+                      .level,
+              currentLevel:
+                  LevelProgression.fromTotalXp(currentXp < 0 ? 0 : currentXp)
+                      .level,
+            )
+            .map((levelEvent) => levelEvent.level)
+            .where((level) => _levelRewardResolver.hasRewardForLevel(level)),
+        resolvePendingFirst: true,
+      ),
+    );
+  }
 }
 
 Future<void> _markLevelCelebrationAsCelebrated(
@@ -317,32 +337,8 @@ Future<void> _markLevelCelebrationAsCelebrated(
     final userState = _ensureUserStateRoot(root);
     final currentCelebratedLevel = _lastCelebratedLevel(userState);
     if (safeLevel > currentCelebratedLevel) {
-      final rewardAmbar = _levelRewardResolver.rewardForLevel(safeLevel);
-      if (rewardAmbar > 0) {
-        final wallet = _map(userState['wallet']);
-        final currentCoins = _safeInt(wallet['coins'], fallback: 0);
-        wallet['coins'] = currentCoins + rewardAmbar;
-        userState['wallet'] = wallet;
-
-        final daily = _map(userState['daily']);
-        daily['coinsEarnedToday'] =
-            _safeInt(daily['coinsEarnedToday'], fallback: 0) + rewardAmbar;
-        userState['daily'] = daily;
-      }
-
       _setLastCelebratedLevel(userState, level: safeLevel);
       await store._repo.save(root);
-
-      if (rewardAmbar > 0) {
-        _queueBestEffortProgressAndRewardSync(
-          store,
-          userState: userState,
-          xpDelta: 0,
-          coinsDelta: rewardAmbar,
-          source: 'level_up_milestone',
-          currencyReason: 'level_up_milestone:$safeLevel',
-        );
-      }
     }
   }
 

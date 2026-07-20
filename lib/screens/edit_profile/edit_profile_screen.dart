@@ -145,7 +145,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               onTap: _showImageSourceSheet,
                             ),
                             const SizedBox(height: 24),
-                            StatsRow.fromStore(store),
+                            StatsRow.fromStore(context, store),
                             const SizedBox(height: 32),
                             SectionHeader(
                               icon: Icons.person_outline,

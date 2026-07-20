@@ -2,7 +2,14 @@ import 'dart:convert';
 
 import 'package:rutio/features/gamification/domain/level_progression.dart';
 import 'package:rutio/features/shop/application/mystery_box_operation_result.dart';
+import 'package:rutio/features/shop/application/shop_service.dart';
+import 'package:rutio/features/shop/data/cloud/mystery_box_cloud_config.dart';
+import 'package:rutio/features/shop/data/cloud/mystery_box_opening_errors.dart';
+import 'package:rutio/features/shop/data/cloud/mystery_box_opening_repository.dart';
+import 'package:rutio/features/shop/data/cloud/pending_mystery_box_operation_store.dart';
 import 'package:rutio/features/shop/data/mystery_box_reward_catalog.dart';
+import 'package:rutio/features/shop/data/shop_catalog.dart';
+import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/domain/mystery_box_opening_repository.dart';
 import 'package:rutio/features/shop/domain/mystery_box_reward_resolver.dart';
 import 'package:rutio/features/shop/domain/models/mystery_box_opening_transaction.dart';
@@ -10,9 +17,6 @@ import 'package:rutio/features/shop/domain/models/mystery_box_reward_result.dart
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/domain/random_source.dart';
 import 'package:rutio/features/shop/domain/shop_state.dart';
-import 'package:rutio/features/shop/data/shop_catalog.dart';
-import 'package:rutio/features/shop/application/shop_service.dart';
-import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
 class OpenMysteryBoxUseCase {
@@ -21,17 +25,29 @@ class OpenMysteryBoxUseCase {
     required ShopLocalRepository shopRepository,
     required MysteryBoxOpeningRepository mysteryBoxOpeningRepository,
     required RandomSource randomSource,
+    CloudMysteryBoxOpeningRepository? cloudMysteryBoxOpeningRepository,
+    PendingMysteryBoxOperationStore? pendingMysteryBoxOperationStore,
+    bool? cloudEnabled,
     DateTime Function()? nowProvider,
   })  : _userStateStore = userStateStore,
         _shopRepository = shopRepository,
         _mysteryBoxOpeningRepository = mysteryBoxOpeningRepository,
         _randomSource = randomSource,
+        _cloudMysteryBoxOpeningRepository = cloudMysteryBoxOpeningRepository ??
+            SupabaseCloudMysteryBoxOpeningRepository(enabled: cloudEnabled),
+        _pendingMysteryBoxOperationStore = pendingMysteryBoxOperationStore ??
+            SharedPreferencesPendingMysteryBoxOperationStore(),
+        _cloudEnabled =
+            MysteryBoxCloudConfig.resolveEnabled(override: cloudEnabled),
         _nowProvider = nowProvider ?? DateTime.now;
 
   final UserStateStore _userStateStore;
   final ShopLocalRepository _shopRepository;
   final MysteryBoxOpeningRepository _mysteryBoxOpeningRepository;
   final RandomSource _randomSource;
+  final CloudMysteryBoxOpeningRepository _cloudMysteryBoxOpeningRepository;
+  final PendingMysteryBoxOperationStore _pendingMysteryBoxOperationStore;
+  final bool _cloudEnabled;
   final DateTime Function() _nowProvider;
 
   Future<MysteryBoxOperationResult> open({
@@ -44,6 +60,10 @@ class OpenMysteryBoxUseCase {
       );
     }
 
+    if (_cloudEnabled) {
+      return _openCloud(transactionId: normalizedTransactionId);
+    }
+
     final scope = _currentScopeUserId();
     if (scope == null) {
       return const MysteryBoxOperationResult(
@@ -53,16 +73,14 @@ class OpenMysteryBoxUseCase {
 
     final pendingTransactions =
         await _mysteryBoxOpeningRepository.loadTransactions(scope);
-    MysteryBoxOpeningTransaction? existingTransaction;
-    for (final transaction in pendingTransactions) {
-      if (transaction.id == normalizedTransactionId) {
-        existingTransaction = transaction;
-        break;
-      }
-    }
+    final existingTransaction = pendingTransactions
+        .where((transaction) => transaction.id == normalizedTransactionId)
+        .cast<MysteryBoxOpeningTransaction?>()
+        .firstOrNull;
+
     if (existingTransaction != null) {
-      final root = await _ensureRoot();
       if (existingTransaction.isPresented || existingTransaction.isGranted) {
+        final root = await _ensureRoot();
         return MysteryBoxOperationResult(
           status: MysteryBoxOperationStatus.success,
           transaction: existingTransaction,
@@ -103,7 +121,6 @@ class OpenMysteryBoxUseCase {
 
     final originalRoot = _cloneMap(root);
     final originalShopState = await _shopRepository.load();
-    final originalTransactions = pendingTransactions;
 
     final mysteryBoxItem = ShopCatalog.getItemById(
       MysteryBoxRewardCatalog.mysteryBoxUtilityId,
@@ -144,10 +161,7 @@ class OpenMysteryBoxUseCase {
       consumeResult.state,
       reward.utilityRewards,
     );
-    final nextRoot = _applyRewardToRoot(
-      root,
-      reward: reward,
-    );
+    final nextRoot = _applyRewardToRoot(root, reward: reward);
     final transaction = MysteryBoxOpeningTransaction(
       id: normalizedTransactionId,
       userScope: scope,
@@ -163,25 +177,15 @@ class OpenMysteryBoxUseCase {
 
     try {
       await _shopRepository.save(nextShopState);
-      await _mysteryBoxOpeningRepository.saveTransactions(
-        scope,
-        nextTransactions,
-      );
+      await _mysteryBoxOpeningRepository.saveTransactions(scope, nextTransactions);
       await _userStateStore.save(nextRoot);
     } catch (error) {
       try {
         await _shopRepository.save(originalShopState);
       } catch (_) {}
       try {
-        await _mysteryBoxOpeningRepository.saveTransactions(
-          scope,
-          originalTransactions,
-        );
-      } catch (_) {}
-      try {
         await _userStateStore.save(originalRoot);
       } catch (_) {}
-
       return MysteryBoxOperationResult(
         status: MysteryBoxOperationStatus.persistenceError,
         errorMessage: error.toString(),
@@ -194,6 +198,124 @@ class OpenMysteryBoxUseCase {
       shopState: nextShopState,
       walletCoins: _walletCoinsFromRoot(nextRoot),
     );
+  }
+
+  Future<MysteryBoxOperationResult> _openCloud({
+    required String transactionId,
+  }) async {
+    final scope = _currentScopeUserId();
+    if (scope == null) {
+      return const MysteryBoxOperationResult(
+        status: MysteryBoxOperationStatus.unavailableState,
+      );
+    }
+
+    final pendingOperations =
+        await _pendingMysteryBoxOperationStore.loadPendingOperations(scope);
+    final existingPending =
+        pendingOperations.isNotEmpty ? pendingOperations.first : null;
+
+    final effectiveRequestId = existingPending?.requestId.trim().isNotEmpty == true
+        ? existingPending!.requestId.trim()
+        : transactionId.trim().isNotEmpty
+            ? transactionId.trim()
+            : _generateMysteryBoxTransactionId();
+
+    final currentTransactions =
+        await _mysteryBoxOpeningRepository.loadTransactions(scope);
+    final matchingTransaction = currentTransactions
+        .where((transaction) => transaction.id == effectiveRequestId)
+        .cast<MysteryBoxOpeningTransaction?>()
+        .firstOrNull;
+    if (matchingTransaction != null &&
+        (matchingTransaction.isGranted || matchingTransaction.isPresented)) {
+      return MysteryBoxOperationResult(
+        status: MysteryBoxOperationStatus.success,
+        transaction: matchingTransaction,
+      );
+    }
+
+    final pendingPresentationTransactions = currentTransactions
+        .where((transaction) => transaction.isPendingPresentation)
+        .toList(growable: false);
+    if (pendingPresentationTransactions.isNotEmpty &&
+        pendingPresentationTransactions.first.id != effectiveRequestId) {
+      return MysteryBoxOperationResult(
+        status: MysteryBoxOperationStatus.duplicateTransaction,
+        transaction: pendingPresentationTransactions.first,
+      );
+    }
+
+    final nowMillis = _nowProvider().toUtc().millisecondsSinceEpoch;
+    final pendingOperation = (existingPending ?? PendingMysteryBoxOpening(
+      userId: scope,
+      requestId: effectiveRequestId,
+      createdAtMillis: nowMillis,
+      lastAttemptAtMillis: nowMillis,
+      attemptCount: 0,
+    )).copyWith(
+      lastAttemptAtMillis: nowMillis,
+      attemptCount: (existingPending?.attemptCount ?? 0) + 1,
+    );
+
+    await _upsertPendingCloudMysteryBoxOperation(pendingOperation);
+
+    try {
+      final remoteResult = await _cloudMysteryBoxOpeningRepository
+          .openMysteryBox(requestId: effectiveRequestId);
+      final transaction = remoteResult.toTransaction();
+      final nextTransactions = <MysteryBoxOpeningTransaction>[
+        ...currentTransactions.where((entry) => entry.id != transaction.id),
+        transaction,
+      ];
+
+      try {
+        await _mysteryBoxOpeningRepository.saveTransactions(
+          scope,
+          nextTransactions,
+        );
+        await _pendingMysteryBoxOperationStore.clearPendingOperations(scope);
+      } catch (error) {
+        return MysteryBoxOperationResult(
+          status: MysteryBoxOperationStatus.persistenceError,
+          transaction: transaction,
+          errorMessage: error.toString(),
+        );
+      }
+
+      final root = await _ensureRoot();
+      if (root != null && transaction.reward.xp > 0) {
+        final nextRoot = _applyRewardToRoot(
+          root,
+          reward: transaction.reward,
+          applyCoins: false,
+          applyXp: true,
+        );
+        try {
+          await _userStateStore.save(nextRoot);
+        } catch (_) {}
+      }
+
+      return MysteryBoxOperationResult(
+        status: MysteryBoxOperationStatus.success,
+        transaction: transaction,
+        walletCoins: remoteResult.balanceAfter,
+      );
+    } on MysteryBoxOpeningCloudException catch (error) {
+      if (!error.keepPending) {
+        await _pendingMysteryBoxOperationStore.clearPendingOperations(scope);
+      }
+      return MysteryBoxOperationResult(
+        status: _statusForCloudFailure(error.code),
+        errorMessage: error.message,
+      );
+    } catch (error) {
+      await _pendingMysteryBoxOperationStore.clearPendingOperations(scope);
+      return MysteryBoxOperationResult(
+        status: MysteryBoxOperationStatus.persistenceError,
+        errorMessage: error.toString(),
+      );
+    }
   }
 
   Future<List<MysteryBoxOpeningTransaction>> loadPendingOpenings() async {
@@ -283,6 +405,8 @@ class OpenMysteryBoxUseCase {
   Map<String, dynamic> _applyRewardToRoot(
     Map<String, dynamic> root, {
     required MysteryBoxRewardResult reward,
+    bool applyCoins = true,
+    bool applyXp = true,
   }) {
     final nextRoot = _cloneMap(root);
     final userState = _ensureUserStateRoot(nextRoot);
@@ -291,24 +415,32 @@ class OpenMysteryBoxUseCase {
     final daily = _map(userState['daily']);
 
     final currentXp = (progression['xp'] as num?)?.toInt() ?? 0;
-    final nextXp = (currentXp + reward.xp).clamp(0, 1 << 30).toInt();
-    final levelProgress = LevelProgression.fromTotalXp(nextXp);
-    progression['xp'] = nextXp;
-    progression['level'] = levelProgress.level;
+    if (applyXp && reward.xp > 0) {
+      final nextXp = (currentXp + reward.xp).clamp(0, 1 << 30).toInt();
+      final levelProgress = LevelProgression.fromTotalXp(nextXp);
+      progression['xp'] = nextXp;
+      progression['level'] = levelProgress.level;
+    }
     userState['progression'] = progression;
 
-    final currentCoins = (wallet['coins'] as num?)?.toInt() ?? 0;
-    wallet['coins'] = (currentCoins + reward.coins).clamp(0, 1 << 30).toInt();
+    if (applyCoins && reward.coins > 0) {
+      final currentCoins = (wallet['coins'] as num?)?.toInt() ?? 0;
+      wallet['coins'] = (currentCoins + reward.coins).clamp(0, 1 << 30).toInt();
+    }
     userState['wallet'] = wallet;
 
-    daily['xpEarnedToday'] =
-        (((daily['xpEarnedToday'] as num?)?.toInt() ?? 0) + reward.xp)
-            .clamp(0, 1 << 30)
-            .toInt();
-    daily['coinsEarnedToday'] =
-        (((daily['coinsEarnedToday'] as num?)?.toInt() ?? 0) + reward.coins)
-            .clamp(0, 1 << 30)
-            .toInt();
+    if (applyXp && reward.xp > 0) {
+      daily['xpEarnedToday'] =
+          (((daily['xpEarnedToday'] as num?)?.toInt() ?? 0) + reward.xp)
+              .clamp(0, 1 << 30)
+              .toInt();
+    }
+    if (applyCoins && reward.coins > 0) {
+      daily['coinsEarnedToday'] =
+          (((daily['coinsEarnedToday'] as num?)?.toInt() ?? 0) + reward.coins)
+              .clamp(0, 1 << 30)
+              .toInt();
+    }
     userState['daily'] = daily;
     nextRoot['userState'] = userState;
     return nextRoot;
@@ -343,7 +475,8 @@ class OpenMysteryBoxUseCase {
   }
 
   Map<String, dynamic> _ensureUserStateRoot(Map<String, dynamic> root) {
-    final userState = Map<String, dynamic>.from(root['userState'] as Map? ?? <String, dynamic>{});
+    final userState =
+        Map<String, dynamic>.from(root['userState'] as Map? ?? <String, dynamic>{});
     root['userState'] = userState;
     return userState;
   }
@@ -353,4 +486,58 @@ class OpenMysteryBoxUseCase {
     if (value is Map) return Map<String, dynamic>.from(value.cast<String, dynamic>());
     return <String, dynamic>{};
   }
+
+  MysteryBoxOperationStatus _statusForCloudFailure(
+    MysteryBoxOpeningCloudErrorCode code,
+  ) {
+    switch (code) {
+      case MysteryBoxOpeningCloudErrorCode.timeout:
+        return MysteryBoxOperationStatus.timeout;
+      case MysteryBoxOpeningCloudErrorCode.networkUnavailable:
+        return MysteryBoxOperationStatus.networkUnavailable;
+      case MysteryBoxOpeningCloudErrorCode.malformedResponse:
+        return MysteryBoxOperationStatus.malformedResponse;
+      case MysteryBoxOpeningCloudErrorCode.requestConflict:
+        return MysteryBoxOperationStatus.requestConflict;
+      case MysteryBoxOpeningCloudErrorCode.noInventory:
+        return MysteryBoxOperationStatus.noBoxes;
+      case MysteryBoxOpeningCloudErrorCode.walletMissing:
+      case MysteryBoxOpeningCloudErrorCode.unauthenticated:
+      case MysteryBoxOpeningCloudErrorCode.sessionChanged:
+      case MysteryBoxOpeningCloudErrorCode.featureDisabled:
+        return MysteryBoxOperationStatus.unavailableState;
+      case MysteryBoxOpeningCloudErrorCode.unknown:
+        return MysteryBoxOperationStatus.persistenceError;
+    }
+  }
+
+  Future<void> _upsertPendingCloudMysteryBoxOperation(
+    PendingMysteryBoxOpening operation,
+  ) async {
+    final userId = operation.userId.trim();
+    if (userId.isEmpty) return;
+
+    final current =
+        await _pendingMysteryBoxOperationStore.loadPendingOperations(userId);
+    final next = <PendingMysteryBoxOpening>[
+      for (final existing in current)
+        if (existing.requestId != operation.requestId) existing,
+      operation,
+    ]..sort((a, b) {
+        final byCreated = a.createdAtMillis.compareTo(b.createdAtMillis);
+        if (byCreated != 0) return byCreated;
+        return a.requestId.compareTo(b.requestId);
+      });
+
+    await _pendingMysteryBoxOperationStore.savePendingOperations(userId, next);
+  }
+
+  String _generateMysteryBoxTransactionId() {
+    final nowMillis = _nowProvider().microsecondsSinceEpoch;
+    return 'mystery_box_${nowMillis}_${_randomSource.nextInt(1 << 31)}';
+  }
+}
+
+extension<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
@@ -26,8 +27,10 @@ class _ShopScreenState extends State<ShopScreen> {
       scopeResolver: () =>
           userStateStore.activeLocalScopeUserId ?? userStateStore.userId,
     );
+    final globalWalletController = context.read<GlobalWalletController>();
     _shopController = ShopController(
       userStateStore: userStateStore,
+      globalWalletController: globalWalletController,
       shopRepository: _shopRepository,
     );
   }

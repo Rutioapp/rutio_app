@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:rutio/features/shop/application/shop_operation_result.dart';
 import 'package:rutio/features/shop/application/shop_service.dart';
@@ -12,6 +14,11 @@ import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_repository.da
 import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_read_repository.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
+import 'package:rutio/features/shop/data/cloud/mystery_box_cloud_config.dart';
+import 'package:rutio/features/shop/data/cloud/mystery_box_opening_repository.dart';
+import 'package:rutio/features/shop/data/cloud/pending_mystery_box_operation_store.dart';
+import 'package:rutio/features/shop/data/cloud/utility_consumption_config.dart';
+import 'package:rutio/features/shop/data/cloud/utility_consumption_repository.dart';
 import 'package:rutio/features/habits/application/activate_streak_shield_use_case.dart';
 import 'package:rutio/features/habits/application/recover_streak_use_case.dart';
 import 'package:rutio/features/habits/domain/models/active_streak_shield.dart';
@@ -37,6 +44,7 @@ import 'package:rutio/features/shop/domain/shop_state.dart';
 import 'package:rutio/features/shop/domain/shop_purchase_failure.dart';
 import 'package:rutio/features/shop/domain/shop_purchase_result.dart';
 import 'package:rutio/core/supabase/rutio_supabase_client.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
 enum ShopControllerStatus {
@@ -114,43 +122,61 @@ class ShopControllerResult {
 class ShopController extends ChangeNotifier {
   ShopController({
     required UserStateStore userStateStore,
+    GlobalWalletController? globalWalletController,
     ShopLocalRepository? shopRepository,
     ActiveUtilityEffectsRepository? activeUtilityEffectsRepository,
     MysteryBoxOpeningRepository? mysteryBoxOpeningRepository,
+    CloudMysteryBoxOpeningRepository? cloudMysteryBoxOpeningRepository,
+    PendingMysteryBoxOperationStore? pendingMysteryBoxOperationStore,
     RandomSource? randomSource,
     DateTime Function()? nowProvider,
     ShopCloudReadRepository? shopCloudReadRepository,
     ShopCloudPurchaseRepository? shopCloudPurchaseRepository,
     PendingShopOperationStore? pendingShopOperationStore,
     PurchaseCloudUtilityUseCase? purchaseCloudUtilityUseCase,
+    UtilityConsumptionRepository? utilityConsumptionRepository,
     String? Function()? currentSupabaseUserIdProvider,
     bool? cloudReadEnabled,
     bool? cloudPurchaseEnabled,
+    bool? mysteryBoxCloudEnabled,
+    bool? utilityConsumptionEnabled,
   })  : _userStateStore = userStateStore,
+        _globalWalletController = globalWalletController,
         _currentSupabaseUserIdProvider =
             currentSupabaseUserIdProvider ?? _defaultCurrentSupabaseUserId,
         _cloudReadEnabled =
             ShopCloudConfig.resolveReadEnabled(override: cloudReadEnabled),
         _cloudPurchaseEnabled = ShopCloudConfig.resolvePurchaseEnabled(
             override: cloudPurchaseEnabled),
-        _shopRepository = shopRepository ??
+        _mysteryBoxCloudEnabled =
+            MysteryBoxCloudConfig.resolveEnabled(
+              override: mysteryBoxCloudEnabled,
+            ),
+        _shopRepository = shopRepository ?? 
             ShopLocalRepository(
               scopeResolver: () =>
                   userStateStore.activeLocalScopeUserId ??
                   userStateStore.userId,
             ),
         _activeUtilityEffectsRepository = activeUtilityEffectsRepository ??
-            LocalActiveUtilityEffectsRepository(
-              scopeResolver: () =>
-                  userStateStore.activeLocalScopeUserId ??
-                  userStateStore.userId,
-            ),
+            (UtilityConsumptionConfig.resolveEnabled(
+                    override: utilityConsumptionEnabled)
+                ? ((utilityConsumptionRepository ??
+                        SupabaseUtilityConsumptionRepository())
+                    as ActiveUtilityEffectsRepository)
+                : LocalActiveUtilityEffectsRepository(
+                    scopeResolver: () =>
+                        userStateStore.activeLocalScopeUserId ??
+                        userStateStore.userId,
+                  )),
         _mysteryBoxOpeningRepository = mysteryBoxOpeningRepository ??
             LocalMysteryBoxOpeningRepository(
               scopeResolver: () =>
                   userStateStore.activeLocalScopeUserId ??
                   userStateStore.userId,
             ),
+        _cloudMysteryBoxOpeningRepository = cloudMysteryBoxOpeningRepository,
+        _pendingMysteryBoxOperationStore = pendingMysteryBoxOperationStore,
         _randomSource = randomSource ?? DartRandomSource(),
         _nowProvider = nowProvider ?? DateTime.now,
         _shopCloudReadRepository = shopCloudReadRepository ??
@@ -182,14 +208,18 @@ class ShopController extends ChangeNotifier {
             );
 
   final UserStateStore _userStateStore;
+  final GlobalWalletController? _globalWalletController;
   final ShopLocalRepository _shopRepository;
   final ActiveUtilityEffectsRepository _activeUtilityEffectsRepository;
   final MysteryBoxOpeningRepository _mysteryBoxOpeningRepository;
+  final CloudMysteryBoxOpeningRepository? _cloudMysteryBoxOpeningRepository;
+  final PendingMysteryBoxOperationStore? _pendingMysteryBoxOperationStore;
   final RandomSource _randomSource;
   final DateTime Function() _nowProvider;
   final String? Function() _currentSupabaseUserIdProvider;
   final bool _cloudReadEnabled;
   final bool _cloudPurchaseEnabled;
+  final bool _mysteryBoxCloudEnabled;
   final ShopCloudReadRepository _shopCloudReadRepository;
   final PurchaseCloudUtilityUseCase _purchaseCloudUtilityUseCase;
   final Map<String, ShopCloudSnapshot> _cloudSnapshotByUserId =
@@ -218,18 +248,16 @@ class ShopController extends ChangeNotifier {
 
   int? get visibleCoinBalance {
     if (!isCloudEconomyEnabled) {
-      return getWalletCoins();
+      return _walletCoins();
     }
     if (!isCloudEconomyReady) {
       return null;
     }
-    return _cloudPurchaseWalletCoins;
+    return _cloudPurchaseWalletCoins ?? _walletCoins();
   }
 
   int getWalletCoins() {
-    final root = _userStateStore.state;
-    if (root == null) return 0;
-    return _walletCoinsFromRoot(root);
+    return _walletCoins();
   }
 
   bool get isCloudPurchaseEnabled => _cloudPurchaseEnabled;
@@ -285,7 +313,7 @@ class ShopController extends ChangeNotifier {
     if (root == null) return null;
 
     final shopState = await getVisibleShopState();
-    final walletCoins = _walletCoinsForItem(item, root);
+    final walletCoins = _walletCoinsForItem(item);
     return _buildItemState(
       item: item,
       shopState: shopState,
@@ -372,7 +400,7 @@ class ShopController extends ChangeNotifier {
     }
 
     final shopState = await _shopRepository.load();
-    final walletCoins = _walletCoinsFromRoot(root);
+    final walletCoins = _walletCoins();
     final result = ShopService(
       state: shopState,
       walletCoins: walletCoins,
@@ -414,7 +442,7 @@ class ShopController extends ChangeNotifier {
     final shopState = await _shopRepository.load();
     final result = ShopService(
       state: shopState,
-      walletCoins: _walletCoinsFromRoot(root),
+      walletCoins: _walletCoins(),
     ).equipCosmetic(item);
 
     if (!result.isSuccess) {
@@ -443,7 +471,7 @@ class ShopController extends ChangeNotifier {
     final shopState = await _shopRepository.load();
     final result = ShopService(
       state: shopState,
-      walletCoins: _walletCoinsFromRoot(root),
+      walletCoins: _walletCoins(),
     ).unequipCosmetic(slot);
 
     await _shopRepository.save(result.state);
@@ -477,7 +505,7 @@ class ShopController extends ChangeNotifier {
     final shopState = await _shopRepository.load();
     final result = ShopService(
       state: shopState,
-      walletCoins: _walletCoinsFromRoot(root),
+      walletCoins: _walletCoins(),
     ).consumeBackpackItem(itemId);
 
     if (!result.isSuccess) {
@@ -577,7 +605,7 @@ class ShopController extends ChangeNotifier {
       }
 
       final shopState = await _shopRepository.load();
-      final walletCoins = _walletCoinsFromRoot(root);
+      final walletCoins = _walletCoins();
       final scope = _currentScopeUserId();
       if (scope == null) {
         return _controllerResult(
@@ -719,9 +747,25 @@ class ShopController extends ChangeNotifier {
         userStateStore: _userStateStore,
         shopRepository: _shopRepository,
         mysteryBoxOpeningRepository: _mysteryBoxOpeningRepository,
+        cloudMysteryBoxOpeningRepository: _cloudMysteryBoxOpeningRepository,
+        pendingMysteryBoxOperationStore: _pendingMysteryBoxOperationStore,
         randomSource: _randomSource,
+        cloudEnabled: _mysteryBoxCloudEnabled,
         nowProvider: _nowProvider,
       ).open(transactionId: effectiveTransactionId);
+
+      if (result.isSuccess && _mysteryBoxCloudEnabled) {
+        await _refreshCloudPurchaseSnapshot(force: true);
+        final currentUserId = _currentSupabaseUserId();
+        if (currentUserId != null) {
+          unawaited(
+            _globalWalletController?.syncSession(
+              userId: currentUserId,
+              force: true,
+            ),
+          );
+        }
+      }
 
       return result;
     } finally {
@@ -1119,6 +1163,13 @@ class ShopController extends ChangeNotifier {
         userId: _cloudEconomyUserId,
       );
     }
+    final currentUserId = _currentSupabaseUserId();
+    if (currentUserId != null) {
+      unawaited(
+        _globalWalletController?.syncSession(
+            userId: currentUserId, force: true),
+      );
+    }
   }
 
   Future<ShopState> _adjustedLocalShopState(ShopItem item) async {
@@ -1172,17 +1223,28 @@ class ShopController extends ChangeNotifier {
     return shopState.copyWith(backpackItems: updatedBackpackItems);
   }
 
-  int _walletCoinsForItem(ShopItem item, Map<String, dynamic> root) {
+  int _walletCoinsForItem(ShopItem item) {
     if (_shouldUseCloudPurchase(item) && _cloudPurchaseWalletCoins != null) {
       return _cloudPurchaseWalletCoins!;
     }
-    return _walletCoinsFromRoot(root);
+    return _walletCoins();
   }
 
   int _walletCoinsFromRoot(Map<String, dynamic> root) {
     final userState = root['userState'] as Map?;
     final wallet = userState?['wallet'] as Map?;
     return ((wallet?['coins'] as num?) ?? 0).toInt();
+  }
+
+  int _walletCoins() {
+    final globalWalletController = _globalWalletController;
+    if (globalWalletController != null && globalWalletController.isEnabled) {
+      return globalWalletController.state.coins ?? 0;
+    }
+
+    final root = _userStateStore.state;
+    if (root == null) return 0;
+    return _walletCoinsFromRoot(root);
   }
 
   ShopItemState _buildItemState({
@@ -1271,6 +1333,15 @@ class ShopController extends ChangeNotifier {
     );
     if (results.any((result) => result.isSuccess)) {
       await _refreshCloudPurchaseSnapshot(force: true);
+      final currentUserId = _currentSupabaseUserId();
+      if (currentUserId != null) {
+        unawaited(
+          _globalWalletController?.syncSession(
+            userId: currentUserId,
+            force: true,
+          ),
+        );
+      }
     }
     return results;
   }

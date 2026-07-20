@@ -10,6 +10,7 @@ part of 'package:rutio/screens/home/home_screen.dart';
 extension _HomeScreenBuild on _HomeScreenState {
   Widget buildContent(BuildContext context) {
     final store = context.watch<UserStateStore>();
+    final walletController = context.watch<GlobalWalletController>();
     final isLoading = store.isLoading;
     final error = store.error;
     final root = store.state;
@@ -77,6 +78,10 @@ extension _HomeScreenBuild on _HomeScreenState {
                 : context.l10n.homeFallbackUsername;
 
     final habitCardBackgroundAsset = _equippedHabitCardAsset();
+    final coins = walletController.resolveCoinsForUi(
+      legacyCoinsBuilder: () =>
+          _readInt(rootMap, ['userState', 'wallet', 'coins'], fallback: 0),
+    );
 
     return _HomeLoadedView(
       scaffoldKey: _scaffoldKey,
@@ -92,7 +97,7 @@ extension _HomeScreenBuild on _HomeScreenState {
         username: username,
         level: homeData.level,
         xpProgress: homeData.xpProgress,
-        coins: homeData.coins,
+        coins: coins,
         avatarUrl: store.avatarUrl,
       ),
       weekStrip: _weekStrip(),

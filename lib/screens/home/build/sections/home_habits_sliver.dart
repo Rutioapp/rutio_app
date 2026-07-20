@@ -195,7 +195,7 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
   }) {
     return SliverReorderableList(
       itemCount: habits.length,
-      onReorder: onReorder,
+      onReorderItem: onReorder,
       onReorderStart: (index) => _handleReorderStart(habits, index),
       onReorderEnd: _handleReorderEnd,
       proxyDecorator: (child, index, animation) {

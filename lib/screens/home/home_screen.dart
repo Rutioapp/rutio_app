@@ -10,6 +10,8 @@ import 'package:rutio/features/notifications/application/notification_permission
 import 'package:rutio/features/notifications/presentation/notification_permission_onboarding_sheet.dart';
 import 'package:rutio/features/notifications/presentation/notification_permission_recovery_sheet.dart';
 import 'package:rutio/features/gamification/domain/level_progression.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/presentation/global_wallet_ui_state.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/domain/models/habit_card_content_tone.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';

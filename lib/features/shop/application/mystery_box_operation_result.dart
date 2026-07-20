@@ -10,6 +10,10 @@ enum MysteryBoxOperationStatus {
   persistenceError,
   duplicateTransaction,
   transactionNotFound,
+  timeout,
+  networkUnavailable,
+  malformedResponse,
+  requestConflict,
 }
 
 class MysteryBoxOperationResult {

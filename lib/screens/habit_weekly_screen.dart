@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/gamification/domain/level_progression.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/presentation/global_wallet_ui_state.dart';
 
 import '../l10n/l10n.dart';
 import '../stores/user_state_store.dart';
@@ -121,7 +123,11 @@ class _HabitWeeklyScreenState extends State<HabitWeeklyScreen>
     final levelProgress = LevelProgression.fromTotalXp(xpTotal);
     final level = levelProgress.level;
     final xpProgress = levelProgress.progress;
-    final coins = _readInt(root, ['userState', 'wallet', 'coins'], fallback: 0);
+    final walletController = context.watch<GlobalWalletController>();
+    final coins = walletController.resolveCoinsForUi(
+      legacyCoinsBuilder: () =>
+          _readInt(root, ['userState', 'wallet', 'coins'], fallback: 0),
+    );
     final display = (store.displayName ?? '').trim();
     final fallbackName = _readString(
       root,
@@ -206,20 +212,20 @@ class _HabitWeeklyScreenState extends State<HabitWeeklyScreen>
         Scaffold(
           backgroundColor: Colors.transparent,
           drawer: AppViewDrawer(
-              selected: 'weekly',
-              onGoDaily: () => _replaceWith(const HomeScreen()),
-              onGoWeekly: () {},
-              onGoMonthly: () => _replaceWith(
-                const HabitMonthlyScreen(initialMode: MonthlyFilterMode.all),
-              ),
-              onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-              onGoDiary: () => _replaceNamedAny(const ['/diary']),
-              onGoDiaryV2: () => _replaceNamed('/diary'),
-              onGoArchived: () => _replaceNamedAny(const ['/archived']),
-              onGoStats: () => _replaceWith(const StatisticsV3Screen()),
-              onGoShop: () => Navigator.pushNamed(context, '/shop'),
-              onGoProfile: () => _replaceNamed('/profile'),
+            selected: 'weekly',
+            onGoDaily: () => _replaceWith(const HomeScreen()),
+            onGoWeekly: () {},
+            onGoMonthly: () => _replaceWith(
+              const HabitMonthlyScreen(initialMode: MonthlyFilterMode.all),
             ),
+            onGoTodo: () => Navigator.pushNamed(context, '/todo'),
+            onGoDiary: () => _replaceNamedAny(const ['/diary']),
+            onGoDiaryV2: () => _replaceNamed('/diary'),
+            onGoArchived: () => _replaceNamedAny(const ['/archived']),
+            onGoStats: () => _replaceWith(const StatisticsV3Screen()),
+            onGoShop: () => Navigator.pushNamed(context, '/shop'),
+            onGoProfile: () => _replaceNamed('/profile'),
+          ),
           body: SafeArea(
             bottom: false,
             child: body,
