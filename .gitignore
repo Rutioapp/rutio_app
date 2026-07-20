@@ -65,3 +65,5 @@ upload-keystore.jks
 # Local environment files (keep only safe examples tracked)
 .env/*.json
 !.env/dev.example.json
+
+dart_defines/dev.json

@@ -61,6 +61,14 @@ class CloudCosmeticsSnapshot {
     );
   }
 
+  String? equippedItemIdForCategory(ShopAssetCategory category) {
+    return switch (category) {
+      ShopAssetCategory.wallpaper => equippedWallpaperId,
+      ShopAssetCategory.habitCard => equippedHabitCardSkinId,
+      ShopAssetCategory.userCard => equippedUserCardSkinId,
+    };
+  }
+
   CloudCosmeticsSnapshot copyWith({
     List<String>? ownedAssetIds,
     Object? equippedWallpaperId = _cloudCosmeticsUnset,
@@ -73,10 +81,9 @@ class CloudCosmeticsSnapshot {
     return CloudCosmeticsSnapshot(
       userId: userId,
       ownedAssetIds: ownedAssetIds ?? this.ownedAssetIds,
-      equippedWallpaperId:
-          identical(equippedWallpaperId, _cloudCosmeticsUnset)
-              ? this.equippedWallpaperId
-              : equippedWallpaperId as String?,
+      equippedWallpaperId: identical(equippedWallpaperId, _cloudCosmeticsUnset)
+          ? this.equippedWallpaperId
+          : equippedWallpaperId as String?,
       equippedHabitCardSkinId:
           identical(equippedHabitCardSkinId, _cloudCosmeticsUnset)
               ? this.equippedHabitCardSkinId
@@ -187,7 +194,9 @@ CloudCosmeticsSnapshotComparison compareCloudCosmeticsSnapshots(
 }
 
 DateTime _resolveUpdatedAt(ShopCloudSnapshot snapshot) {
-  final values = <DateTime>[snapshot.fetchedAt];
+  // `fetchedAt` is only the read time on this client. It must not make a stale
+  // remote read look newer than a confirmed equip that already reached memory.
+  final values = <DateTime>[];
   if (snapshot.wallet != null) {
     values.add(snapshot.wallet!.updatedAt);
   }
@@ -199,9 +208,8 @@ DateTime _resolveUpdatedAt(ShopCloudSnapshot snapshot) {
 
 List<String> _resolveOwnedAssetIds(List<RemoteInventoryItemDto> inventory) {
   final assetIds = <String>{};
-  final knownAssetIds = ShopAssetsCatalog.allAssets
-      .map((asset) => asset.id)
-      .toSet();
+  final knownAssetIds =
+      ShopAssetsCatalog.allAssets.map((asset) => asset.id).toSet();
   for (final row in inventory) {
     if (row.quantity <= 0) continue;
     if (!knownAssetIds.contains(row.itemId)) continue;

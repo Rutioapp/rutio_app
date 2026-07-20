@@ -18,6 +18,7 @@ class RemoteShopEquipResultDto {
   factory RemoteShopEquipResultDto.fromRpcResponse(
     Object? response, {
     required String requestedItemId,
+    String? requestedSlot,
     required String requestId,
   }) {
     final payload = _extractMap(response);
@@ -27,21 +28,26 @@ class RemoteShopEquipResultDto {
 
     final normalizedRequestId =
         _trim(payload['requestId'] ?? payload['request_id']);
-    final operation = _trim(payload['operation']);
+    final operation = _trim(payload['operation']) ?? 'equip';
     final itemId = _trim(payload['itemId'] ?? payload['item_id']);
     final slot = _trim(payload['slot']);
-    final createdAt = _dateTime(payload['createdAt'] ?? payload['created_at']);
+    final createdAt =
+        _dateTime(payload['createdAt'] ?? payload['created_at']) ??
+            DateTime.now().toUtc();
 
     if (normalizedRequestId == null ||
-        operation == null ||
         operation != 'equip' ||
         itemId == null ||
         itemId.isEmpty ||
         itemId != requestedItemId ||
         slot == null ||
-        slot.isEmpty ||
-        createdAt == null) {
+        slot.isEmpty) {
       throw const FormatException('Invalid shop equip response payload.');
+    }
+
+    final normalizedRequestedSlot = _trim(requestedSlot);
+    if (normalizedRequestedSlot != null && slot != normalizedRequestedSlot) {
+      throw const FormatException('Shop equip slot mismatch.');
     }
 
     if (normalizedRequestId != requestId.trim()) {
@@ -60,9 +66,18 @@ class RemoteShopEquipResultDto {
 
 Map<String, dynamic>? _extractMap(Object? response) {
   if (response == null) return null;
-  if (response is Map<String, dynamic>) return response;
   if (response is Map) {
-    return Map<String, dynamic>.from(response.cast<String, dynamic>());
+    final payload = Map<String, dynamic>.from(response.cast<String, dynamic>());
+    if (_looksLikeEquipPayload(payload)) {
+      return payload;
+    }
+    for (final nestedKey in <String>['data', 'result']) {
+      final nested = _extractMap(payload[nestedKey]);
+      if (nested != null) {
+        return nested;
+      }
+    }
+    return payload;
   }
   if (response is List && response.isNotEmpty) {
     final first = response.first;
@@ -78,6 +93,15 @@ Map<String, dynamic>? _extractMap(Object? response) {
     return _extractMap(decoded);
   }
   return null;
+}
+
+bool _looksLikeEquipPayload(Map<String, dynamic> payload) {
+  return payload.containsKey('requestId') ||
+      payload.containsKey('request_id') ||
+      payload.containsKey('itemId') ||
+      payload.containsKey('item_id') ||
+      payload.containsKey('slot') ||
+      payload.containsKey('operation');
 }
 
 String? _trim(Object? value) {

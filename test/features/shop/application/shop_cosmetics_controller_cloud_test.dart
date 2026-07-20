@@ -7,13 +7,16 @@ import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_cache.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_snapshot.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_equip_repository.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cosmetics_cloud_repository.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_equip_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_dtos.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
-import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
+import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -77,9 +80,46 @@ void main() {
       final repo = _FakeCloudCosmeticsRepository(
         fetchResponses: <_FetchResponseFactory>[
           () async => _failure(
-            ShopCloudErrorCode.networkUnavailable,
-            'network unavailable',
-          ),
+                ShopCloudErrorCode.networkUnavailable,
+                'network unavailable',
+              ),
+        ],
+      );
+
+      final env = await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      );
+      final controller = env.controller;
+
+      final state = await controller.getState();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(state.ownedAssetIds, contains('user_card_full_moon'));
+      expect(controller.getEquippedUserCardAssetOrNullSync()?.id,
+          'user_card_full_moon');
+      expect(controller.state?.equippedUserCardSkinId, 'user_card_full_moon');
+    });
+
+    test('cloud state ignores legacy bundles when resolving wallpaper',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      await ShopCosmeticsRepository().save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>['wallpaper_mist_blue'],
+          ownedBundleIds: <String>['pack_blanco_roto'],
+          equippedWallpaperId: 'wallpaper_mist_blue',
+        ),
+      );
+
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['wallpaper_dusty_lilac'],
+        wallpaperId: 'wallpaper_dusty_lilac',
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
         ],
       );
 
@@ -91,10 +131,10 @@ void main() {
 
       final state = await controller.getState();
 
-      expect(controller.cloudState.status, ShopCosmeticsCloudStatus.stale);
-      expect(state.ownedAssetIds, contains('user_card_full_moon'));
-      expect(controller.getEquippedUserCardAssetOrNullSync()?.id,
-          'user_card_full_moon');
+      expect(state.ownedBundleIds, isEmpty);
+      expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
+          'wallpaper_dusty_lilac');
+      expect(controller.state?.equippedWallpaperId, 'wallpaper_dusty_lilac');
     });
 
     test('cloud purchase updates the cloud state without touching legacy data',
@@ -103,20 +143,21 @@ void main() {
       final repo = _FakeCloudCosmeticsRepository(
         fetchResponses: <_FetchResponseFactory>[
           () async => _success(
-            _snapshot(
-              userId: 'shop-cloud-user',
-              ownedAssetIds: const <String>[],
-            ),
-          ),
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: const <String>[],
+                ),
+              ),
           () async => _success(
-            _snapshot(
-              userId: 'shop-cloud-user',
-              ownedAssetIds: <String>['wallpaper_mist_blue'],
-            ),
-          ),
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_mist_blue'],
+                ),
+              ),
         ],
       );
-      final controller = (await _createController(cloudRepository: repo)).controller;
+      final controller =
+          (await _createController(cloudRepository: repo)).controller;
 
       await controller.purchaseAsset('wallpaper_mist_blue');
       final legacyState = await ShopCosmeticsRepository().load();
@@ -126,30 +167,248 @@ void main() {
 
     test('cloud equip switches the correct slot and survives reload', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['habit_card_warm_beige'],
+      );
       final repo = _FakeCloudCosmeticsRepository(
         fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
           () async => _success(
-            _snapshot(
-              userId: 'shop-cloud-user',
-              ownedAssetIds: <String>['habit_card_warm_beige'],
-            ),
-          ),
-          () async => _success(
-            _snapshot(
-              userId: 'shop-cloud-user',
-              ownedAssetIds: <String>['habit_card_warm_beige'],
-              habitCardId: 'habit_card_warm_beige',
-            ),
-          ),
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['habit_card_warm_beige'],
+                  habitCardId: 'habit_card_warm_beige',
+                ),
+              ),
         ],
       );
-      final controller = (await _createController(cloudRepository: repo)).controller;
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
 
       final result = await controller.equipAsset('habit_card_warm_beige');
 
       expect(result.isSuccess, isTrue);
       expect(controller.getEquippedHabitCardAssetOrNullSync()?.id,
           'habit_card_warm_beige');
+      expect(repo.equipCalls.single.slot, CosmeticSlot.habitCard.remoteDbKey);
+      expect(repo.equipCalls.single.requestId, isNotEmpty);
+    });
+
+    test('cloud equip sends the wallpaper slot through to RPC', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipAsset('wallpaper_mist_blue');
+
+      expect(result.isSuccess, isTrue);
+      expect(repo.equipCalls.single.slot, CosmeticSlot.background.remoteDbKey);
+      expect(await controller.getWalletCoins(), 500);
+      expect(controller.state?.ownedAssetIds, isNotEmpty);
+    });
+
+    test('cloud equip sends the user card slot through to RPC', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['user_card_full_moon'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipAsset('user_card_full_moon');
+
+      expect(result.isSuccess, isTrue);
+      expect(repo.equipCalls.single.slot, CosmeticSlot.userCard.remoteDbKey);
+    });
+
+    test('cloud equip replaces the previous cosmetic in the same slot',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'wallpaper_rutio_beige',
+        ],
+        wallpaperId: 'wallpaper_mist_blue',
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipAsset('wallpaper_rutio_beige');
+
+      expect(result.isSuccess, isTrue);
+      expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
+          'wallpaper_rutio_beige');
+      expect(
+          controller.state?.ownedAssetIds,
+          containsAll(<String>[
+            'wallpaper_mist_blue',
+            'wallpaper_rutio_beige',
+          ]));
+      expect(await controller.getWalletCoins(), 500);
+    });
+
+    test(
+        'cloud equip survives a stale in-flight fetch without reverting the new slot',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final fetchGate = Completer<void>();
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'wallpaper_soft_sage',
+        ],
+        wallpaperId: 'wallpaper_mist_blue',
+      );
+      final updatedSnapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'wallpaper_soft_sage',
+        ],
+        wallpaperId: 'wallpaper_soft_sage',
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async {
+            await fetchGate.future;
+            return _success(snapshot);
+          },
+          () async => _success(updatedSnapshot),
+        ],
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+
+      final loadFuture = controller.getState();
+      await Future<void>.delayed(Duration.zero);
+
+      final result = await controller.equipAsset('wallpaper_soft_sage');
+      expect(result.isSuccess, isTrue);
+      expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
+          'wallpaper_soft_sage');
+
+      fetchGate.complete();
+      await loadFuture;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
+          'wallpaper_soft_sage');
+      expect(repo.equipCalls.single.slot, CosmeticSlot.background.remoteDbKey);
+      expect(repo.equipCalls.single.requestId, isNotEmpty);
+    });
+
+    test(
+        'cloud equip keeps the confirmed wallpaper when the follow-up refresh fails',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'wallpaper_dusty_lilac',
+        ],
+        wallpaperId: 'wallpaper_mist_blue',
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+          () async => _failure(
+                ShopCloudErrorCode.networkUnavailable,
+                'refresh failed',
+              ),
+        ],
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+      final initialRevision = controller.cloudSnapshotRevision;
+
+      final result = await controller.equipAsset('wallpaper_dusty_lilac');
+
+      expect(result.isSuccess, isTrue);
+      expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
+          'wallpaper_dusty_lilac');
+      expect(controller.state?.equippedWallpaperId, 'wallpaper_dusty_lilac');
+      expect(controller.cloudSnapshotRevision, greaterThan(initialRevision));
+      expect(repo.equipCalls.single.requestId, isNotEmpty);
+      expect(repo.equipCalls, hasLength(1));
+    });
+
+    test('cloud equip maps invalid slot errors to a controlled failure',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+        equipError: const ShopCloudEquipException(
+          code: ShopCosmeticsOperationFailureCode.invalidEquipSlot,
+          message: 'Invalid equip slot.',
+          definitive: true,
+        ),
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipAsset('wallpaper_mist_blue');
+
+      expect(result.isSuccess, isFalse);
+      expect(result.status, ShopCosmeticsOperationStatus.bundleNotFound);
+      expect(controller.getEquippedWallpaperAssetOrNullSync(), isNull);
     });
 
     test('switching users clears the previous cloud state immediately',
@@ -169,12 +428,12 @@ void main() {
             );
           },
           () async => _success(
-            _snapshot(
-              userId: 'shop-cosmetics-user-b',
-              ownedAssetIds: <String>['user_card_full_moon'],
-              userCardId: 'user_card_full_moon',
-            ),
-          ),
+                _snapshot(
+                  userId: 'shop-cosmetics-user-b',
+                  ownedAssetIds: <String>['user_card_full_moon'],
+                  userCardId: 'user_card_full_moon',
+                ),
+              ),
         ],
       );
       final env = await _createController(cloudRepository: repo);
@@ -188,7 +447,8 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(controller.cloudState.userId, 'shop-cosmetics-user-b');
-      expect(controller.state?.ownedAssetIds, isNot(contains('wallpaper_mist_blue')));
+      expect(controller.state?.ownedAssetIds,
+          isNot(contains('wallpaper_mist_blue')));
     });
 
     test('logout clears the in-memory cloud state', () async {
@@ -220,7 +480,8 @@ void main() {
 
     test('cloud flag disabled keeps the legacy flow', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final controller = (await _createController(cloudEnabled: false)).controller;
+      final controller =
+          (await _createController(cloudEnabled: false)).controller;
 
       expect(controller.isCloudEnabled, isFalse);
 
@@ -404,25 +665,35 @@ class _MemoryCloudCosmeticsCache implements CloudCosmeticsCache {
 class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
   _FakeCloudCosmeticsRepository({
     required List<_FetchResponseFactory> fetchResponses,
+    this.equipError,
   }) : _fetchResponses = fetchResponses;
 
   final List<_FetchResponseFactory> _fetchResponses;
   final List<String> purchaseCalls = <String>[];
-  final List<String> equipCalls = <String>[];
+  final List<_EquipCall> equipCalls = <_EquipCall>[];
+  final ShopCloudEquipException? equipError;
 
   int _fetchIndex = 0;
 
   @override
   Future<RemoteShopEquipResultDto> equipAsset({
     required String itemId,
+    required String slot,
     required String requestId,
   }) async {
-    equipCalls.add(itemId);
+    equipCalls.add(_EquipCall(
+      itemId: itemId,
+      slot: slot,
+      requestId: requestId,
+    ));
+    if (equipError != null) {
+      throw equipError!;
+    }
     return RemoteShopEquipResultDto(
       requestId: requestId,
       operation: 'equip',
       itemId: itemId,
-      slot: ShopAssetsCatalog.getAssetById(itemId)!.category.key,
+      slot: slot,
       createdAt: DateTime.utc(2026, 7, 19, 12),
     );
   }
@@ -453,4 +724,16 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
       inventoryQuantity: 1,
     );
   }
+}
+
+class _EquipCall {
+  const _EquipCall({
+    required this.itemId,
+    required this.slot,
+    required this.requestId,
+  });
+
+  final String itemId;
+  final String slot;
+  final String requestId;
 }

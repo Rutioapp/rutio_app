@@ -69,4 +69,3 @@ join candidate_users using (user_id)
 on conflict (user_id) do nothing;
 
 commit;
-

@@ -2,17 +2,17 @@
 
 ## Objetivo
 
-Preparar el corte final de la economía cloud de Rutio y retirar la economía legacy de forma progresiva, segura y reversible por fases.
+Preparar el corte final de la economÃ­a cloud de Rutio y retirar la economÃ­a legacy de forma progresiva, segura y reversible por fases.
 
 La regla de oro de esta fase es:
 
-- `public.user_wallets` es la fuente canónica de monedas.
-- `public.user_progress.ambar_balance` sigue existiendo solo por compatibilidad y auditoría.
+- `public.user_wallets` es la fuente canÃ³nica de monedas.
+- `public.user_progress.ambar_balance` sigue existiendo solo por compatibilidad y auditorÃ­a.
 - Flutter no debe volver a escribir monedas en dos autoridades a la vez.
 
 ## Estado actual de la base
 
-### Autoridad canónica
+### Autoridad canÃ³nica
 
 - `public.user_wallets`
 - Escritura autoritativa de tienda cloud, recompensas cloud, utilidades, Mystery Box y equipamiento.
@@ -20,7 +20,7 @@ La regla de oro de esta fase es:
 ### Legacy compatible
 
 - `public.user_progress.ambar_balance`
-- Sigue siendo un snapshot legado de la economía global.
+- Sigue siendo un snapshot legado de la economÃ­a global.
 - Sigue alimentando el restore local-first y varias rutas de compatibilidad.
 
 ### Ledgers y colas
@@ -32,11 +32,11 @@ La regla de oro de esta fase es:
 - `public.utility_consumption_ledger`
 - Colas persistentes en `SharedPreferences` para:
   - compras pendientes
-  - recompensas de hábitos pendientes
+  - recompensas de hÃ¡bitos pendientes
   - claims de logros pendientes
   - Mystery Box pendiente
 
-## Auditoría final de código legacy
+## AuditorÃ­a final de cÃ³digo legacy
 
 ### Lecturas de `ambar_balance`
 
@@ -44,22 +44,22 @@ Actualmente siguen existiendo solo en estas rutas:
 
 - [`lib/data/repositories/user_progress_repository.dart`](../lib/data/repositories/user_progress_repository.dart)
 - [`lib/data/models/remote/remote_user_progress.dart`](../lib/data/models/remote/remote_user_progress.dart)
-- [`lib/data/services/user_progress_sync_service.dart`](../lib/data/services/user_progress_sync_service.dart) por el flujo de sincronización del snapshot legacy
+- [`lib/data/services/user_progress_sync_service.dart`](../lib/data/services/user_progress_sync_service.dart) por el flujo de sincronizaciÃ³n del snapshot legacy
 - tests de snapshot y restore que caracterizan el comportamiento legacy
 
 ### Escrituras locales de monedas
 
-Las escrituras locales restantes están concentradas en:
+Las escrituras locales restantes estÃ¡n concentradas en:
 
 - [`lib/stores/user_state_store_habits.dart`](../lib/stores/user_state_store_habits.dart)
 - [`lib/stores/user_state_store_diary.dart`](../lib/stores/user_state_store_diary.dart)
 - [`lib/stores/user_state_store_achievements.dart`](../lib/stores/user_state_store_achievements.dart)
 - [`lib/stores/user_state_store_account.dart`](../lib/stores/user_state_store_account.dart)
 
-En la práctica:
+En la prÃ¡ctica:
 
-- hábitos, diario, logros y algunas rutas de compatibilidad siguen actualizando `userState.wallet.coins`
-- cuando los flags cloud están activos, la UI ya debe leer del controlador global y no de `UserStateStore`
+- hÃ¡bitos, diario, logros y algunas rutas de compatibilidad siguen actualizando `userState.wallet.coins`
+- cuando los flags cloud estÃ¡n activos, la UI ya debe leer del controlador global y no de `UserStateStore`
 - la escritura local sigue existiendo como compatibilidad hasta el apagado final
 
 ### Feature flags relevantes
@@ -76,49 +76,49 @@ Flags ya presentes en la base:
 - `SHOP_CLOUD_READ_ENABLED`
 - `SHOP_CLOUD_PURCHASE_ENABLED`
 
-## Migración final propuesta
+## MigraciÃ³n final propuesta
 
-La transición final no debe sobrescribir actividad cloud válida.
+La transiciÃ³n final no debe sobrescribir actividad cloud vÃ¡lida.
 
 ### 1. Usuarios sin wallet
 
 - Crear `public.user_wallets` si no existe fila para el usuario.
 - Usar el `ambar_balance` legacy solo como fuente inicial de arranque.
-- Registrar el backfill en auditoría.
+- Registrar el backfill en auditorÃ­a.
 
 ### 2. Usuarios con wallet ya activa
 
 - No sobrescribir la wallet.
 - No aplicar `max()` ni reconciliaciones silenciosas.
-- Si hay diferencia entre `user_wallets.coins` y `ambar_balance`, registrar la divergencia para revisión.
+- Si hay diferencia entre `user_wallets.coins` y `ambar_balance`, registrar la divergencia para revisiÃ³n.
 
 ### 3. Diferencias entre balances
 
 - Tratar `user_wallets` como autoridad.
 - Tratar `ambar_balance` como snapshot legacy.
-- No intentar "fusionar" ambos balances automáticamente.
+- No intentar "fusionar" ambos balances automÃ¡ticamente.
 
 ### 4. Inventario local pendiente y equipamiento
 
 - No migrar desde una lista libre sin validar.
-- La migración segura debe ser explícita y por usuario.
+- La migraciÃ³n segura debe ser explÃ­cita y por usuario.
 - El inventario y el equipamiento cloud ya viven en `public.user_inventory` y `public.user_equipped_cosmetics`.
 
 ### 5. Operaciones pendientes
 
 - Las colas pendientes son locales y separadas por usuario.
 - No se migran desde SQL.
-- El rollout solo debe conservarlas y drenarlas de forma segura al recuperar conexión.
+- El rollout solo debe conservarlas y drenarlas de forma segura al recuperar conexiÃ³n.
 
 ### 6. Valores demo
 
 - `demo` debe seguir siendo local-only.
-- No debe usarse como fuente de producción.
+- No debe usarse como fuente de producciÃ³n.
 - Los datos demo se regeneran con `lib/devtools/demo_seed/*`.
 
-### 7. Tabla de auditoría y snapshot de rollout
+### 7. Tabla de auditorÃ­a y snapshot de rollout
 
-Se añadió una migración segura e idempotente:
+Se aÃ±adiÃ³ una migraciÃ³n segura e idempotente:
 
 - [`supabase/migrations/20260720143000_prepare_cloud_economy_rollout_audit.sql`](../supabase/migrations/20260720143000_prepare_cloud_economy_rollout_audit.sql)
 
@@ -127,7 +127,7 @@ Incluye:
 - `public.global_cloud_economy_rollout_audit`
 - `public.global_cloud_economy_rollout_status`
 
-Propósito:
+PropÃ³sito:
 
 - registrar backfill y discrepancias
 - revisar wallets existentes
@@ -139,13 +139,13 @@ Propósito:
 ### 1. Desarrollo
 
 - Flags apagados por defecto.
-- Verificación local con datos demo y tests unitarios/integración.
-- No activar nada en producción.
+- VerificaciÃ³n local con datos demo y tests unitarios/integraciÃ³n.
+- No activar nada en producciÃ³n.
 
 Rollback:
 
 - desactivar flags
-- limpiar caché local y colas persistentes
+- limpiar cachÃ© local y colas persistentes
 
 ### 2. Usuarios internos
 
@@ -159,13 +159,13 @@ Rollback:
 
 ### 3. Porcentaje reducido
 
-- habilitar wallet cloud y consumos cloud a un subconjunto pequeño
+- habilitar wallet cloud y consumos cloud a un subconjunto pequeÃ±o
 - mantener legacy como fallback de compatibilidad
 
 Rollback:
 
 - volver a legacy solo en UI/feature flags
-- no revertir datos cloud válidos
+- no revertir datos cloud vÃ¡lidos
 
 ### 4. Lectura cloud global
 
@@ -185,10 +185,10 @@ Rollback:
 
 - apagar flags cloud y rehidratar desde el snapshot local
 
-### 6. Desactivación legacy
+### 6. DesactivaciÃ³n legacy
 
 - dejar de depender de `ambar_balance` para UI y autoridad
-- mantenerlo solo como columna histórica mientras haya consumidores
+- mantenerlo solo como columna histÃ³rica mientras haya consumidores
 
 Rollback:
 
@@ -197,15 +197,15 @@ Rollback:
 ### 7. Limpieza posterior
 
 - eliminar fallback legacy cuando no queden consumidores
-- retirar columnas/campos solo con migración y test
+- retirar columnas/campos solo con migraciÃ³n y test
 
 Rollback:
 
-- solo mediante migración inversa o restauración de backup
+- solo mediante migraciÃ³n inversa o restauraciÃ³n de backup
 
 ## Observabilidad segura
 
-La observabilidad debe ser útil sin filtrar datos sensibles.
+La observabilidad debe ser Ãºtil sin filtrar datos sensibles.
 
 Eventos que conviene registrar:
 
@@ -215,10 +215,10 @@ Eventos que conviene registrar:
 - request conflict
 - divergencia detectada
 - cola pendiente
-- error de sesión
-- operación idempotente recuperada
+- error de sesiÃ³n
+- operaciÃ³n idempotente recuperada
 
-Qué registrar:
+QuÃ© registrar:
 
 - `userId` solo si ya es un contexto autenticado y necesario
 - `requestId`
@@ -228,29 +228,29 @@ Qué registrar:
 - `walletVersion`
 - `balanceAfter`
 
-Qué no registrar:
+QuÃ© no registrar:
 
 - tokens
 - payloads completos
 - tablas internas
-- JSON sin redacción
+- JSON sin redacciÃ³n
 
 ## Seguridad
 
-Revisión final requerida:
+RevisiÃ³n final requerida:
 
 - `auth.uid()` en RPCs y policies
 - RLS habilitado en tablas autoritativas
-- grants mínimos
+- grants mÃ­nimos
 - ausencia de `service_role`
 - `search_path = ''` en funciones `security definer`
-- parámetros manipulables validados en servidor
+- parÃ¡metros manipulables validados en servidor
 - precios y rewards calculados por servidor
 - locks transaccionales y unique constraints para idempotencia
 
-## Tests y verificación
+## Tests y verificaciÃ³n
 
-### SQL de verificación
+### SQL de verificaciÃ³n
 
 - [`supabase/tests/cloud_economy_rollout_verification.sql`](../supabase/tests/cloud_economy_rollout_verification.sql)
 
@@ -265,18 +265,18 @@ Revisión final requerida:
 - equip
 - cambio de usuario
 - reintento/idempotencia
-- migración/backfill
-- rollback lógico
+- migraciÃ³n/backfill
+- rollback lÃ³gico
 
-### Validación manual recomendada
+### ValidaciÃ³n manual recomendada
 
 - ejecutar `flutter analyze`
 - ejecutar los tests cloud relevantes
-- correr el SQL de verificación local sobre la base preparada
+- correr el SQL de verificaciÃ³n local sobre la base preparada
 
 ## Checklist de lanzamiento
 
-- [ ] Flags cloud apagados en producción
+- [ ] Flags cloud apagados en producciÃ³n
 - [ ] `user_wallets` poblada para usuarios existentes
 - [ ] backfill auditable aplicado
 - [ ] divergencias revisadas
@@ -289,7 +289,7 @@ Revisión final requerida:
 
 ## Riesgos pendientes
 
-- consumers todavía leyendo `ambar_balance`
+- consumers todavÃ­a leyendo `ambar_balance`
 - pantallas o servicios que sigan usando `wallet.coins` local como autoridad visual
 - divergencias antiguas entre wallets y snapshot legacy
 - operaciones pendientes arrastradas durante cambio de usuario
@@ -299,7 +299,6 @@ Revisión final requerida:
 
 Mantener esta fase en modo "rollout controlado" hasta que:
 
-- la UI principal no lea más saldo legacy
+- la UI principal no lea mÃ¡s saldo legacy
 - no queden escrituras monetarias locales activas
 - el equipo valide que los ledgers cloud cubren todas las rutas monetarias
-

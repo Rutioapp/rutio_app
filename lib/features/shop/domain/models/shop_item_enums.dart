@@ -150,6 +150,17 @@ extension CosmeticSlotX on CosmeticSlot {
         return CosmeticSlot.background;
     }
   }
+
+  String get remoteDbKey {
+    switch (this) {
+      case CosmeticSlot.background:
+        return 'screen_background';
+      case CosmeticSlot.habitCard:
+        return 'habit_card_background';
+      case CosmeticSlot.userCard:
+        return 'user_card_background';
+    }
+  }
 }
 
 enum ConsumableType {

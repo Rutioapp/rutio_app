@@ -46,7 +46,7 @@ The UI recognizes these controller states:
 Display rules:
 
 - do not show zero while a confirmed cache exists
-- do not show another user’s balance after a session change
+- do not show another userâ€™s balance after a session change
 - do not present pending cloud changes as confirmed balance
 - `stale` keeps the last confirmed balance visible with a stale status
 - `walletMissing` surfaces as a controlled empty/error state instead of silently falling back
@@ -139,4 +139,3 @@ The next phase should finish migrating the remaining wallet-adjacent flows:
 - habit reward writes and reversals
 - any leftover legacy reads in secondary screens
 - final removal of visual dependence on `UserStateStore.wallet.coins`
-

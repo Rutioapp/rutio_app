@@ -9,11 +9,13 @@ import 'shop_cloud_equip_dtos.dart';
 
 enum ShopCosmeticsOperationFailureCode {
   requestIdRequired,
-  requestIdConflict,
-  itemNotFoundOrInactive,
+  requestConflict,
+  itemNotFound,
+  itemInactive,
   itemNotOwned,
-  itemConfigurationInvalid,
-  authRequired,
+  itemNotEquippable,
+  invalidEquipSlot,
+  unauthenticated,
   timeout,
   networkUnavailable,
   malformedResponse,
@@ -50,15 +52,17 @@ class ShopCloudEquipRepository {
 
   Future<RemoteShopEquipResultDto> equipShopCosmetic({
     required String itemId,
+    required String slot,
     required String requestId,
   }) async {
     try {
       final response = await _dataSource
-          .equipShopCosmetic(itemId: itemId, requestId: requestId)
+          .equipShopCosmetic(itemId: itemId, slot: slot, requestId: requestId)
           .timeout(_timeout);
       return RemoteShopEquipResultDto.fromRpcResponse(
         response,
         requestedItemId: itemId,
+        requestedSlot: slot,
         requestId: requestId,
       );
     } on TimeoutException catch (error) {
@@ -112,21 +116,31 @@ ShopCloudEquipException _mapPostgrestException(PostgrestException error) {
       normalizedMessage.contains('already used by another user') ||
       normalizedCode == '23505') {
     return const ShopCloudEquipException(
-      code: ShopCosmeticsOperationFailureCode.requestIdConflict,
+      code: ShopCosmeticsOperationFailureCode.requestConflict,
       message: 'request_id already used by another user.',
       definitive: true,
     );
   }
-  if (normalizedMessage.contains('shop item not found') ||
+  if (normalizedCode == 'ITEM_NOT_FOUND' ||
+      normalizedMessage.contains('item not found')) {
+    return const ShopCloudEquipException(
+      code: ShopCosmeticsOperationFailureCode.itemNotFound,
+      message: 'Shop item not found.',
+      definitive: true,
+    );
+  }
+  if (normalizedCode == 'ITEM_INACTIVE' ||
+      normalizedMessage.contains('item inactive') ||
       normalizedMessage.contains('inactive')) {
     return const ShopCloudEquipException(
-      code: ShopCosmeticsOperationFailureCode.itemNotFoundOrInactive,
-      message: 'Shop item not found or inactive.',
+      code: ShopCosmeticsOperationFailureCode.itemInactive,
+      message: 'Shop item is inactive.',
       definitive: true,
     );
   }
   if (normalizedMessage.contains('item must be owned before equip') ||
-      normalizedMessage.contains('item is not owned')) {
+      normalizedMessage.contains('item is not owned') ||
+      normalizedCode == 'ITEM_NOT_OWNED') {
     return const ShopCloudEquipException(
       code: ShopCosmeticsOperationFailureCode.itemNotOwned,
       message: 'Item must be owned before equip.',
@@ -134,17 +148,30 @@ ShopCloudEquipException _mapPostgrestException(PostgrestException error) {
     );
   }
   if (normalizedMessage.contains('item cannot be equipped') ||
-      normalizedMessage.contains('configuration invalid')) {
+      normalizedMessage.contains('configuration invalid') ||
+      normalizedCode == 'ITEM_NOT_EQUIPPABLE') {
     return const ShopCloudEquipException(
-      code: ShopCosmeticsOperationFailureCode.itemConfigurationInvalid,
+      code: ShopCosmeticsOperationFailureCode.itemNotEquippable,
       message: 'Item configuration is invalid.',
       definitive: true,
     );
   }
-  if (normalizedMessage.contains('user_id is required') ||
+  if (normalizedMessage.contains('invalid equip slot') ||
+      normalizedMessage.contains('invalid_equip_slot') ||
+      normalizedMessage.contains('slot mismatch') ||
+      normalizedCode == 'INVALID_EQUIP_SLOT') {
+    return const ShopCloudEquipException(
+      code: ShopCosmeticsOperationFailureCode.invalidEquipSlot,
+      message: 'Invalid equip slot.',
+      definitive: true,
+    );
+  }
+  if (normalizedMessage.contains('unauthenticated') ||
+      normalizedCode == 'UNAUTHENTICATED' ||
+      normalizedMessage.contains('user_id is required') ||
       normalizedMessage.contains('authenticated user does not match')) {
     return const ShopCloudEquipException(
-      code: ShopCosmeticsOperationFailureCode.authRequired,
+      code: ShopCosmeticsOperationFailureCode.unauthenticated,
       message: 'Authentication is required.',
       definitive: true,
     );

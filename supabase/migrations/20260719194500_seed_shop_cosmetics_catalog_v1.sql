@@ -1,4 +1,4 @@
-﻿begin;
+begin;
 
 -- Seed the active cosmetic catalog (wallpapers, habit cards and user cards).
 -- Assets remain local; Supabase stores only commercial metadata and inventory state.

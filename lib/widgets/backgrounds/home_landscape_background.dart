@@ -25,6 +25,7 @@ class HomeBackground extends StatelessWidget {
     }
 
     try {
+      final controller = context.read<ShopCosmeticsController>();
       final resolvedWallpaperAssetPath =
           context.select<ShopCosmeticsController, String?>(
         (ShopCosmeticsController controller) =>
@@ -32,7 +33,10 @@ class HomeBackground extends StatelessWidget {
       );
       _log(
         'HomeBackground wallpaperAssetPath=$resolvedWallpaperAssetPath '
-        'fallback=${resolvedWallpaperAssetPath == null}',
+        'fallback=${resolvedWallpaperAssetPath == null} '
+        'controllerHash=${identityHashCode(controller)} '
+        'revision=${controller.cloudSnapshotRevision} '
+        'traceId=${controller.lastTraceId ?? 'none'}',
       );
       return _ReactiveHomeBackgroundScene(
         wallpaperAssetPath: resolvedWallpaperAssetPath,
@@ -94,25 +98,18 @@ class _ReactiveHomeBackgroundSceneState
     }
 
     final provider = AssetImage(nextPath);
+    setState(() {
+      _displayedWallpaperAssetPath = nextPath;
+      _preparedWallpaperProvider = provider;
+    });
     precacheImage(provider, context).then((_) {
       if (!mounted || widget.wallpaperAssetPath != nextPath) {
         return;
       }
-      setState(() {
-        _displayedWallpaperAssetPath = nextPath;
-        _preparedWallpaperProvider = provider;
-      });
     }).catchError((Object error, StackTrace stackTrace) {
       HomeBackground._log(
         'HomeLandscapeBackground asset precache failed path=$nextPath',
       );
-      if (!mounted || widget.wallpaperAssetPath != nextPath) {
-        return;
-      }
-      setState(() {
-        _displayedWallpaperAssetPath = nextPath;
-        _preparedWallpaperProvider = provider;
-      });
     });
   }
 

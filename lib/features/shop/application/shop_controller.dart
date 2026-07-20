@@ -148,11 +148,10 @@ class ShopController extends ChangeNotifier {
             ShopCloudConfig.resolveReadEnabled(override: cloudReadEnabled),
         _cloudPurchaseEnabled = ShopCloudConfig.resolvePurchaseEnabled(
             override: cloudPurchaseEnabled),
-        _mysteryBoxCloudEnabled =
-            MysteryBoxCloudConfig.resolveEnabled(
-              override: mysteryBoxCloudEnabled,
-            ),
-        _shopRepository = shopRepository ?? 
+        _mysteryBoxCloudEnabled = MysteryBoxCloudConfig.resolveEnabled(
+          override: mysteryBoxCloudEnabled,
+        ),
+        _shopRepository = shopRepository ??
             ShopLocalRepository(
               scopeResolver: () =>
                   userStateStore.activeLocalScopeUserId ??

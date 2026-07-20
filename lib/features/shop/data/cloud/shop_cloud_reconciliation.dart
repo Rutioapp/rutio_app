@@ -167,26 +167,13 @@ class ShopCloudCatalogReconciler {
     final isUtility = item.category == ShopItemCategory.utility;
     final cosmeticSlot = item.cosmeticSlot;
     return <String, Object?>{
-      'category': isUtility ? 'utility' : cosmeticSlot?.keyToRemoteDb,
+      'category': isUtility ? 'utility' : cosmeticSlot?.remoteDbKey,
       'subtype': item.type.key,
       'rarity': isUtility ? null : item.rarity.key,
       'isConsumable': isUtility,
       'isStackable': isUtility,
       'maxQuantity': isUtility ? null : 1,
-      'equipSlot': isUtility ? null : cosmeticSlot?.keyToRemoteDb,
+      'equipSlot': isUtility ? null : cosmeticSlot?.remoteDbKey,
     };
-  }
-}
-
-extension _CosmeticSlotRemoteDbKey on CosmeticSlot {
-  String get keyToRemoteDb {
-    switch (this) {
-      case CosmeticSlot.background:
-        return 'screen_background';
-      case CosmeticSlot.habitCard:
-        return 'habit_card_background';
-      case CosmeticSlot.userCard:
-        return 'user_card_background';
-    }
   }
 }

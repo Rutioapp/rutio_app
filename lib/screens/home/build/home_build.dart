@@ -201,6 +201,7 @@ class _HomeLoadedView extends StatelessWidget {
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: Stack(
           children: [
+            const _HomeCosmeticsTraceListener(),
             const HomeBackground(),
             SafeArea(
               bottom: false,
@@ -270,6 +271,31 @@ class _HomeLoadedView extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _HomeCosmeticsTraceListener extends StatelessWidget {
+  const _HomeCosmeticsTraceListener();
+
+  @override
+  Widget build(BuildContext context) {
+    ShopCosmeticsController controller;
+    try {
+      controller = context.watch<ShopCosmeticsController>();
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+    if (kDebugMode) {
+      debugPrint(
+        '[cosmetic_trace] stage=home_listener '
+        'traceId=${controller.lastTraceId ?? 'none'} '
+        'userId=${controller.cloudState.userId ?? 'none'} '
+        'revision=${controller.cloudSnapshotRevision} '
+        'controllerHash=${identityHashCode(controller)} '
+        'snapshotHash=${controller.cloudState.snapshot == null ? 'none' : identityHashCode(controller.cloudState.snapshot)}',
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 

@@ -16,6 +16,7 @@ abstract class CloudCosmeticsRepository {
 
   Future<RemoteShopEquipResultDto> equipAsset({
     required String itemId,
+    required String slot,
     required String requestId,
   });
 }
@@ -27,7 +28,8 @@ class SupabaseCloudCosmeticsRepository implements CloudCosmeticsRepository {
     ShopCloudEquipRepository? equipRepository,
   })  : _readRepository =
             readRepository ?? ShopCloudReadRepository(readEnabled: true),
-        _purchaseRepository = purchaseRepository ?? ShopCloudPurchaseRepository(),
+        _purchaseRepository =
+            purchaseRepository ?? ShopCloudPurchaseRepository(),
         _equipRepository = equipRepository ?? ShopCloudEquipRepository();
 
   final ShopCloudReadRepository _readRepository;
@@ -68,10 +70,12 @@ class SupabaseCloudCosmeticsRepository implements CloudCosmeticsRepository {
   @override
   Future<RemoteShopEquipResultDto> equipAsset({
     required String itemId,
+    required String slot,
     required String requestId,
   }) async {
     return _equipRepository.equipShopCosmetic(
       itemId: itemId,
+      slot: slot,
       requestId: requestId,
     );
   }
