@@ -409,13 +409,14 @@ void main() {
             'userId': 'shop-controller-user',
             'habitId': 'habit-1',
             'brokenAtMillis': 1,
-            'missedOccurrenceDateKey': '2026-07-19',
+            'missedOccurrenceDateKey': '2026-07-20',
             'previousStreak': 5,
             'currentStreakAfterBreak': 0,
             'status': 'recoverable',
             'shieldProtected': false,
           },
         },
+        nowProvider: () => DateTime.utc(2026, 7, 21, 12),
       );
 
       final result = await controller.recoverStreakBreak(
@@ -436,6 +437,46 @@ void main() {
             ?.backpackQuantity,
         0,
       );
+    });
+
+    test('recoverStreakBreak returns recoveryExpired after the window',
+        () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_streak_recover_1', quantity: 1),
+          ],
+        ),
+        activeHabits: const <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'habit-1',
+            'title': 'Leer',
+          },
+        ],
+        recoverableBreaks: const <String, dynamic>{
+          'break-1': <String, dynamic>{
+            'id': 'break-1',
+            'userId': 'shop-controller-user',
+            'habitId': 'habit-1',
+            'brokenAtMillis': 1,
+            'missedOccurrenceDateKey': '2026-07-18',
+            'previousStreak': 5,
+            'currentStreakAfterBreak': 0,
+            'status': 'recoverable',
+            'shieldProtected': false,
+          },
+        },
+        nowProvider: () => DateTime.utc(2026, 7, 21, 12),
+      );
+
+      final result = await controller.recoverStreakBreak(
+        breakId: 'break-1',
+        operationId: 'recover-op-expired',
+      );
+
+      expect(result.status, StreakRecoverOperationStatus.recoveryExpired);
+      expect(result.isSuccess, isFalse);
     });
 
     test('openMysteryBox consumes one box and persists the result', () async {

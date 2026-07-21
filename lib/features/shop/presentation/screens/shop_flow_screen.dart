@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,9 +7,12 @@ import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
+import 'package:rutio/features/shop/domain/models/active_utility_effect.dart';
 import 'package:rutio/features/shop/domain/models/mystery_box_opening_transaction.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
+import 'package:rutio/features/shop/domain/shop_state.dart';
 import 'package:rutio/features/shop/presentation/models/shop_flow_snapshot.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_cosmetic_detail_container.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_backpack_screen.dart';
@@ -72,40 +77,42 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   final List<_ShopFlowPage> _stack = <_ShopFlowPage>[_ShopFlowPage.home];
 
   ShopFlowSnapshot? _snapshot;
-  ShopCloudEconomyStatus? _economyStatus;
   String? _selectedItemId;
-  bool _loading = true;
   bool _isMysteryBoxRouteVisible = false;
   bool _isStreakUtilityFlowVisible = false;
 
   @override
   void initState() {
     super.initState();
-    _reloadSnapshot();
+    _snapshot = _buildImmediateSnapshot();
+    unawaited(_reloadSnapshot());
   }
 
   Future<void> _reloadSnapshot() async {
-    setState(() {
-      _loading = true;
-    });
-
     final snapshot = await _loadSnapshot();
     if (!mounted) return;
-
+    if (snapshot == null) return;
     setState(() {
       _snapshot = snapshot;
-      _economyStatus = widget.controller.economyStatus;
-      _loading = false;
     });
+  }
+
+  ShopFlowSnapshot _buildImmediateSnapshot() {
+    return ShopFlowSnapshot.fromStore(
+      walletCoins: widget.controller.visibleCoinBalance ??
+          widget.controller.getWalletCoins(),
+      shopState: const ShopState.initial(),
+      cosmeticsState: widget.cosmeticsController.state ??
+          const ShopCosmeticsState.initial(),
+      activeUtilityEffects: const <ActiveUtilityEffect>[],
+      pendingMysteryBoxOpenings: const <MysteryBoxOpeningTransaction>[],
+    );
   }
 
   Future<ShopFlowSnapshot?> _loadSnapshot() async {
     if (widget.controller.isCloudEconomyEnabled) {
       await widget.controller.resolvePendingPurchasesForCurrentUser();
       await widget.controller.hydrateVisibleEconomy();
-      if (!_isRenderableEconomyStatus(widget.controller.economyStatus)) {
-        return null;
-      }
     }
 
     final int walletCoins = widget.controller.visibleCoinBalance ??
@@ -123,12 +130,6 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
       activeUtilityEffects: activeUtilityEffects,
       pendingMysteryBoxOpenings: pendingMysteryBoxOpenings,
     );
-  }
-
-  bool _isRenderableEconomyStatus(ShopCloudEconomyStatus status) {
-    return status == ShopCloudEconomyStatus.disabled ||
-        status == ShopCloudEconomyStatus.ready ||
-        status == ShopCloudEconomyStatus.stale;
   }
 
   void _pushPage(_ShopFlowPage page) {
@@ -571,17 +572,7 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading || _snapshot == null) {
-      if (!_loading &&
-          widget.controller.isCloudEconomyEnabled &&
-          _economyStatus != null &&
-          !_isRenderableEconomyStatus(_economyStatus!)) {
-        return _buildEconomyUnavailableState(_economyStatus!);
-      }
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final snapshot = _snapshot!;
+    final snapshot = _snapshot ?? _buildImmediateSnapshot();
 
     return PopScope(
       canPop: _stack.length <= 1,
@@ -591,31 +582,6 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         }
       },
       child: _buildCurrentPage(snapshot),
-    );
-  }
-
-  Widget _buildEconomyUnavailableState(ShopCloudEconomyStatus status) {
-    final message = switch (status) {
-      ShopCloudEconomyStatus.walletMissing =>
-        'No encontramos la wallet cloud de este usuario.',
-      ShopCloudEconomyStatus.unauthenticated =>
-        'Inicia sesión para ver la tienda cloud.',
-      ShopCloudEconomyStatus.failed => 'No pudimos cargar la wallet cloud.',
-      ShopCloudEconomyStatus.loading =>
-        'La wallet cloud todavía se está cargando.',
-      ShopCloudEconomyStatus.disabled => 'La tienda cloud está desactivada.',
-      ShopCloudEconomyStatus.ready => 'La tienda cloud está lista.',
-      ShopCloudEconomyStatus.stale =>
-        'La wallet cloud está temporalmente desactualizada.',
-    };
-
-    return Scaffold(
-      body: Center(
-        child: ShopEmptyState(
-          title: 'Tienda no disponible',
-          message: message,
-        ),
-      ),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
@@ -49,28 +51,77 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   @override
   void initState() {
     super.initState();
-    _reload();
+    widget.controller.addListener(_handleControllerChanged);
+    _syncStateFromController();
+    unawaited(_refreshState());
   }
 
-  Future<void> _reload() async {
-    setState(() {
-      _loading = true;
-    });
+  @override
+  void didUpdateWidget(covariant ShopCosmeticsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) {
+      return;
+    }
+    oldWidget.controller.removeListener(_handleControllerChanged);
+    widget.controller.addListener(_handleControllerChanged);
+    _syncStateFromController();
+    unawaited(_refreshState());
+  }
 
-    final state = await widget.controller.getState();
-    final walletCoins = await widget.controller.getWalletCoins();
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleControllerChanged);
+    super.dispose();
+  }
+
+  void _handleControllerChanged() {
     if (!mounted) return;
+    setState(_syncStateFromController);
+  }
 
-    setState(() {
-      _state = state;
-      _walletCoins = walletCoins;
-      _loading = false;
+  void _syncStateFromController() {
+    _state = widget.controller.state;
+    _loading = _state == null;
+  }
+
+  Future<void> _refreshState() {
+    final hadCachedState = _state != null;
+    if (!hadCachedState) {
+      setState(() {
+        _loading = true;
+      });
+    }
+
+    final stateFuture = widget.controller.getState();
+    final walletCoinsFuture = widget.controller.getWalletCoins();
+
+    stateFuture.then((ShopCosmeticsState nextState) {
+      if (!mounted) return;
+      setState(() {
+        _state = nextState;
+        _loading = false;
+      });
+    }).catchError((_) {
+      if (!mounted || hadCachedState) return;
+      setState(() {
+        _loading = false;
+      });
     });
+
+    walletCoinsFuture.then((int nextWalletCoins) {
+      if (!mounted) return;
+      setState(() {
+        _walletCoins = nextWalletCoins;
+      });
+    }).catchError((_) {});
+
+    return Future<void>.value();
   }
 
   @override
   Widget build(BuildContext context) {
     return ShopPageShell(
+      scrollable: false,
       header: ShopHeader(
         title: 'Cosméticos',
         titleStyle: ShopUiTextStyles.sectionTitle.copyWith(
@@ -84,7 +135,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         walletCoins: _walletCoins,
         useDrawerLeadingStyle: widget.onBackPressed == null,
       ),
-      child: _buildBody(),
+      child: Expanded(child: _buildBody()),
     );
   }
 
@@ -105,7 +156,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     if (entries.isEmpty) {
       return const ShopEmptyState(
         title: 'Nada por mostrar',
-        message: 'No encontramos cosméticos en esta secci?n.',
+        message: 'No encontramos cosméticos en esta sección.',
       );
     }
 
@@ -126,63 +177,66 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
           style: ShopUiTextStyles.bodySmall,
         ),
         const SizedBox(height: 14),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final int crossAxisCount = constraints.maxWidth >= 560 ? 3 : 2;
-            final double mainAxisExtent = crossAxisCount == 3 ? 276 : 292;
+        Expanded(
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final int crossAxisCount = constraints.maxWidth >= 560 ? 3 : 2;
+              final double mainAxisExtent = crossAxisCount == 3 ? 276 : 292;
 
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: entries.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 14,
-                mainAxisExtent: mainAxisExtent,
-              ),
-              itemBuilder: (BuildContext context, int index) {
-                final entry = entries[index];
-                return switch (entry) {
-                  _AssetEntry(:final asset, :final ownershipState) =>
-                    ShopCosmeticsProductCard.asset(
-                      asset: asset,
-                      ownershipState: ownershipState,
-                      hasEnoughCoins: _walletCoins >= asset.priceAmber,
-                      busy: _busyId == asset.id,
-                      onPressed: () => _openAssetDetail(asset, ownershipState),
-                      onPrimaryActionPressed: () =>
-                          _onAssetPrimaryActionPressed(
-                        asset,
-                        ownershipState,
+              return GridView.builder(
+                key: const Key('shopCosmeticsGrid'),
+                padding: EdgeInsets.zero,
+                itemCount: entries.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 14,
+                  crossAxisSpacing: 14,
+                  mainAxisExtent: mainAxisExtent,
+                ),
+                itemBuilder: (BuildContext context, int index) {
+                  final entry = entries[index];
+                  return switch (entry) {
+                    _AssetEntry(:final asset, :final ownershipState) =>
+                      ShopCosmeticsProductCard.asset(
+                        asset: asset,
+                        ownershipState: ownershipState,
+                        hasEnoughCoins: _walletCoins >= asset.priceAmber,
+                        busy: _busyId == asset.id,
+                        onPressed: () =>
+                            _openAssetDetail(asset, ownershipState),
+                        onPrimaryActionPressed: () =>
+                            _onAssetPrimaryActionPressed(
+                          asset,
+                          ownershipState,
+                        ),
                       ),
-                    ),
-                  _BundleEntry(
-                    :final bundle,
-                    :final assets,
-                    :final isOwned,
-                    :final isPartiallyOwned,
-                  ) =>
-                    ShopCosmeticsProductCard.bundle(
-                      bundle: bundle,
-                      bundleAssets: assets,
-                      isBundleOwned: isOwned,
-                      isBundlePartiallyOwned: isPartiallyOwned,
-                      hasEnoughCoins: _walletCoins >= bundle.priceAmber,
-                      busy: _busyId == bundle.id,
-                      onPressed: () => _openBundleDetail(
-                        bundle,
-                        assets,
-                        isOwned,
-                        isPartiallyOwned,
+                    _BundleEntry(
+                      :final bundle,
+                      :final assets,
+                      :final isOwned,
+                      :final isPartiallyOwned,
+                    ) =>
+                      ShopCosmeticsProductCard.bundle(
+                        bundle: bundle,
+                        bundleAssets: assets,
+                        isBundleOwned: isOwned,
+                        isBundlePartiallyOwned: isPartiallyOwned,
+                        hasEnoughCoins: _walletCoins >= bundle.priceAmber,
+                        busy: _busyId == bundle.id,
+                        onPressed: () => _openBundleDetail(
+                          bundle,
+                          assets,
+                          isOwned,
+                          isPartiallyOwned,
+                        ),
+                        onPrimaryActionPressed: () =>
+                            _onBundlePrimaryActionPressed(bundle, assets),
                       ),
-                      onPrimaryActionPressed: () =>
-                          _onBundlePrimaryActionPressed(bundle, assets),
-                    ),
-                };
-              },
-            );
-          },
+                  };
+                },
+              );
+            },
+          ),
         ),
       ],
     );
@@ -212,21 +266,20 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
       ),
     ]..sort(_compareEntries);
 
-    switch (_selectedFilter) {
-      case ShopCosmeticsFilter.all:
-        return allEntries;
-      case ShopCosmeticsFilter.wallpapers:
-        return allEntries.whereType<_AssetEntry>().where((entry) {
+    return switch (_selectedFilter) {
+      ShopCosmeticsFilter.all => allEntries,
+      ShopCosmeticsFilter.wallpapers =>
+        allEntries.whereType<_AssetEntry>().where((entry) {
           return entry.asset.category == ShopAssetCategory.wallpaper;
-        }).toList(growable: false);
-      case ShopCosmeticsFilter.cards:
-        return allEntries.whereType<_AssetEntry>().where((entry) {
+        }).toList(growable: false),
+      ShopCosmeticsFilter.cards =>
+        allEntries.whereType<_AssetEntry>().where((entry) {
           return entry.asset.category == ShopAssetCategory.habitCard ||
               entry.asset.category == ShopAssetCategory.userCard;
-        }).toList(growable: false);
-      case ShopCosmeticsFilter.packs:
-        return allEntries.whereType<_BundleEntry>().toList(growable: false);
-    }
+        }).toList(growable: false),
+      ShopCosmeticsFilter.packs =>
+        allEntries.whereType<_BundleEntry>().toList(growable: false),
+    };
   }
 
   int _compareEntries(_ShopEntry a, _ShopEntry b) {
@@ -289,7 +342,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         await widget.controller.equipAsset(asset.id),
     };
 
-    await _reload();
+    await _refreshState();
     if (!mounted) return;
 
     setState(() {
@@ -318,7 +371,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     });
 
     final result = await widget.controller.purchaseBundle(bundle.id);
-    await _reload();
+    await _refreshState();
     if (!mounted) return;
 
     setState(() {
@@ -628,7 +681,11 @@ class _BundleEntry extends _ShopEntry {
   _EntryCategory get categoryOrder => _EntryCategory.bundle;
 
   @override
-  int get ownershipRank => (isOwned || isPartiallyOwned) ? 1 : 0;
+  int get ownershipRank {
+    if (isOwned) return 0;
+    if (isPartiallyOwned) return 1;
+    return 2;
+  }
 }
 
 enum _EntryCategory {
