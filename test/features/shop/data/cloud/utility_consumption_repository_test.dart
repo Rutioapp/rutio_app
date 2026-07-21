@@ -143,6 +143,8 @@ class _FakeUtilityConsumptionRemoteDataSource
     required String operationType,
     required String sourceType,
     required String sourceId,
+    String? habitId,
+    String? breakId,
   }) async {
     return activateUtilityEffect(
       requestId: requestId,
@@ -150,6 +152,8 @@ class _FakeUtilityConsumptionRemoteDataSource
       operationType: operationType,
       sourceType: sourceType,
       sourceId: sourceId,
+      habitId: habitId,
+      breakId: breakId,
     );
   }
 

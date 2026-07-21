@@ -3,7 +3,6 @@ import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/habits/application/habit_currency_reward_coordinator.dart';
-import 'package:rutio/features/habits/application/habit_currency_reward_result.dart';
 import 'package:rutio/features/habits/data/cloud/habit_currency_reward_errors.dart';
 import 'package:rutio/features/habits/data/cloud/habit_currency_reward_ledger.dart';
 import 'package:rutio/features/habits/data/cloud/habit_currency_reward_repository.dart';
