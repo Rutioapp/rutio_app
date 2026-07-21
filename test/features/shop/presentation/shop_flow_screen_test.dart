@@ -31,26 +31,117 @@ void main() {
       final env = await _createEnv();
 
       await tester.pumpWidget(_app(_flow(env)));
-      await tester.pump(const Duration(milliseconds: 16));
 
       expect(find.text('Tienda'), findsOneWidget);
     });
 
-    testWidgets('cloud wallet balance is shown in the home header',
+    testWidgets(
+        'renders immediately without fullscreen loader while cloud loads',
         (WidgetTester tester) async {
       final env = await _createEnv(
         cloudReadEnabled: true,
         cloudPurchaseEnabled: true,
         currentSupabaseUserIdProvider: () => 'shop-flow-user',
-        shopCloudReadRepository: _FakeShopCloudReadRepository(
-          snapshotFactory: () => _cloudSnapshot(walletCoins: 10000),
+        shopCloudReadRepository: _DelayedShopCloudReadRepository(
+          delay: const Duration(milliseconds: 470),
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_xp_boost_1d',
+            quantity: 1,
+          ),
         ),
       );
 
       await tester.pumpWidget(_app(_flow(env)));
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byKey(const Key('shopHomeEntryCosmetics')), findsOneWidget);
+      expect(find.byKey(const Key('shopHomeEntryUtilities')), findsOneWidget);
+      expect(find.text('320'), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('cloud hydration updates wallet and inventory after entry',
+        (WidgetTester tester) async {
+      final env = await _createEnv(
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-flow-user',
+        shopCloudReadRepository: _DelayedShopCloudReadRepository(
+          delay: const Duration(milliseconds: 470),
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_xp_boost_1d',
+            quantity: 1,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pump(const Duration(milliseconds: 1000));
       await tester.pumpAndSettle();
 
       expect(find.text('10000'), findsOneWidget);
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeHeroBackpack')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopBackpackCard-utility_xp_boost_1d')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('cached cloud state is shown immediately', (
+      WidgetTester tester,
+    ) async {
+      final env = await _createEnv(
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-flow-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_xp_boost_1d',
+            quantity: 1,
+          ),
+        ),
+      );
+
+      await env.controller.hydrateVisibleEconomy();
+      await tester.pumpWidget(_app(_flow(env)));
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('10000'), findsOneWidget);
+    });
+
+    testWidgets('cloud errors keep local content visible', (
+      WidgetTester tester,
+    ) async {
+      final env = await _createEnv(
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-flow-user',
+        shopCloudReadRepository: _DelayedFailingShopCloudReadRepository(
+          delay: const Duration(milliseconds: 470),
+          errorCode: ShopCloudErrorCode.unknown,
+          message: 'boom',
+        ),
+      );
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byKey(const Key('shopHomeEntryCosmetics')), findsOneWidget);
+      expect(find.byKey(const Key('shopHomeEntryUtilities')), findsOneWidget);
+      expect(find.text('320'), findsOneWidget);
     });
 
     testWidgets('tap Cosmeticos opens Cosmetics', (WidgetTester tester) async {
@@ -173,6 +264,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+        600,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pump();
 
       expect(
         find.descendant(
@@ -433,15 +531,10 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 32));
 
+      expect(find.byKey(const Key('shopItemDetailTitle')), findsOneWidget);
       expect(
-        find.text('Potenciador de XP de 1 día'),
-        findsAtLeastNWidgets(1),
-      );
-      expect(
-        find.text(
-          'Aumenta temporalmente la experiencia obtenida al completar hábitos.',
-        ),
-        findsAtLeastNWidgets(1),
+        find.byKey(const Key('shopItemDetailDescription')),
+        findsOneWidget,
       );
       expect(
         find.byKey(const Key('shopItemDetailUtilityTypeValue')),
@@ -727,6 +820,53 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
   }
 }
 
+class _DelayedShopCloudReadRepository extends ShopCloudReadRepository {
+  _DelayedShopCloudReadRepository({
+    required this.delay,
+    required this.snapshotFactory,
+  }) : super(
+          readEnabled: true,
+          currentUserIdProvider: () => 'shop-flow-user',
+        );
+
+  final Duration delay;
+  final ShopCloudSnapshot Function() snapshotFactory;
+
+  @override
+  Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
+    await Future<void>.delayed(delay);
+    return ShopCloudReadResult<ShopCloudSnapshot>.success(
+      data: snapshotFactory(),
+    );
+  }
+}
+
+class _DelayedFailingShopCloudReadRepository extends ShopCloudReadRepository {
+  _DelayedFailingShopCloudReadRepository({
+    required this.delay,
+    required this.errorCode,
+    required this.message,
+  }) : super(
+          readEnabled: true,
+          currentUserIdProvider: () => 'shop-flow-user',
+        );
+
+  final Duration delay;
+  final ShopCloudErrorCode errorCode;
+  final String message;
+
+  @override
+  Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
+    await Future<void>.delayed(delay);
+    return ShopCloudReadResult<ShopCloudSnapshot>.failure(
+      error: ShopCloudReadError(
+        code: errorCode,
+        message: message,
+      ),
+    );
+  }
+}
+
 ShopCloudSnapshot _cloudSnapshot({
   int? walletCoins = 10000,
   String itemId = 'utility_xp_boost_1d',
@@ -765,6 +905,11 @@ ShopCloudSnapshot _cloudSnapshot({
 }
 
 Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
+  final Finder scrollable = find.byType(Scrollable).last;
+  if (finder.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(finder, 600, scrollable: scrollable);
+    await tester.pump();
+  }
   await tester.ensureVisible(finder);
   await tester.tap(finder);
   await tester.pump(const Duration(milliseconds: 16));

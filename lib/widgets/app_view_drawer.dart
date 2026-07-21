@@ -66,7 +66,6 @@ class AppViewDrawer extends StatelessWidget {
     final width = (media.size.width * 0.86).clamp(300.0, 360.0);
     final topInset = media.padding.top;
     final bottomInset = media.padding.bottom;
-
     return Drawer(
       width: width,
       elevation: 0,
@@ -199,10 +198,10 @@ class AppViewDrawer extends StatelessWidget {
   Future<void> _handleReportIssueTap(BuildContext context) async {
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.maybeOf(context);
-    final store = context.read<UserStateStore>();
-    final reporterName = (store.displayName ?? '').trim();
-    final userId = (store.userId ?? '').trim();
-    final email = store.authEmail ?? '';
+    final store = _safeUserStateStore(context);
+    final reporterName = (store?.displayName ?? '').trim();
+    final userId = (store?.userId ?? '').trim();
+    final email = store?.authEmail ?? '';
     final reportIdentity = reporterName.isNotEmpty ? reporterName : userId;
 
     Navigator.of(context).pop();
@@ -222,6 +221,14 @@ class AppViewDrawer extends StatelessWidget {
         ..showSnackBar(
           SnackBar(content: Text(l10n.drawerReportIssueLaunchError)),
         );
+    }
+  }
+
+  UserStateStore? _safeUserStateStore(BuildContext context) {
+    try {
+      return context.read<UserStateStore>();
+    } catch (_) {
+      return null;
     }
   }
 }

@@ -57,7 +57,7 @@ class ShopPageShell extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 child: content,
               )
-            : content,
+            : SizedBox.expand(child: content),
       ),
       bottomNavigationBar: bottomBar == null
           ? null

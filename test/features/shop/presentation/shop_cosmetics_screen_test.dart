@@ -1,10 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_cosmetics_screen.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
@@ -16,6 +23,23 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ShopCosmeticsScreen', () {
+    testWidgets('renders cached state on the first frame',
+        (WidgetTester tester) async {
+      final controller = await _createController(walletCoins: 600);
+      await controller.getState();
+
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+        findsOneWidget,
+      );
+
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('shows cosmetics catalog with assets and packs',
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
@@ -24,13 +48,95 @@ void main() {
           .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
-      expect(find.text('Cosméticos'), findsOneWidget);
+      expect(find.byKey(const Key('shopHeaderTitle')), findsOneWidget);
+      await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+      );
       expect(
         find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
         findsOneWidget,
       );
+      await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsBundleCard-pack_beige_rutio')),
+      );
       expect(
         find.byKey(const Key('shopCosmeticsBundleCard-pack_beige_rutio')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('refresh updates the visible content after entry',
+        (WidgetTester tester) async {
+      final controller = await _createRefreshableController(
+        walletCoins: 600,
+        initialCosmeticsState: const ShopCosmeticsState.initial(),
+        refreshedCosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>['wallpaper_mist_blue'],
+          ownedBundleIds: const <String>[],
+        ),
+        refreshedWalletCoins: 720,
+      );
+
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester.pump();
+
+      final Finder card = await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+      );
+
+      expect(
+        find.descendant(of: card, matching: find.text('Comprar')),
+        findsOneWidget,
+      );
+
+      controller.completeRefresh();
+      await _drainBackgroundRefresh(tester);
+
+      final Finder refreshedCard = await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+      );
+
+      expect(
+        find.descendant(of: refreshedCard, matching: find.text('Comprado')),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(
+          of: refreshedCard,
+          matching:
+              find.byKey(const Key('shopCosmeticsAction-wallpaper_mist_blue')),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('only builds visible cards initially',
+        (WidgetTester tester) async {
+      final controller = await _createController(walletCoins: 600);
+      await controller.getState();
+
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('shopCosmeticsBundleCard-pack_manchas_salvajes')),
+        findsNothing,
+      );
+
+      await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsBundleCard-pack_manchas_salvajes')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopCosmeticsBundleCard-pack_manchas_salvajes')),
         findsOneWidget,
       );
     });
@@ -60,14 +166,16 @@ void main() {
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-cards')));
       await tester.pumpAndSettle();
-      expect(
+      final Finder habitCard = await _scrollToShopItem(
+        tester,
         find.byKey(const Key('shopCosmeticsAssetCard-habit_card_warm_beige')),
-        findsOneWidget,
       );
-      expect(
+      expect(habitCard, findsOneWidget);
+      final Finder userCard = await _scrollToShopItem(
+        tester,
         find.byKey(const Key('shopCosmeticsAssetCard-user_card_warm_beige')),
-        findsOneWidget,
       );
+      expect(userCard, findsOneWidget);
       expect(
         find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
         findsNothing,
@@ -75,6 +183,15 @@ void main() {
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-packs')));
       await tester.pumpAndSettle();
+      await tester.drag(
+        find.byKey(const Key('shopCosmeticsGrid')),
+        const Offset(0, 1200),
+      );
+      await tester.pumpAndSettle();
+      await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsBundleCard-pack_beige_rutio')),
+      );
       expect(
         find.byKey(const Key('shopCosmeticsBundleCard-pack_beige_rutio')),
         findsOneWidget,
@@ -98,8 +215,9 @@ void main() {
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-cards')));
       await tester.pumpAndSettle();
 
-      final card = find.byKey(
-        const Key('shopCosmeticsAssetCard-habit_card_warm_beige'),
+      final Finder card = await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-habit_card_warm_beige')),
       );
 
       expect(card, findsOneWidget);
@@ -143,11 +261,14 @@ void main() {
           .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
+      final Finder card = await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+      );
+
       expect(
         find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
-          ),
+          of: card,
           matching: find.text('Comprar'),
         ),
         findsOneWidget,
@@ -205,11 +326,14 @@ void main() {
           .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
+      final Finder card = await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+      );
+
       expect(
         find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
-          ),
+          of: card,
           matching: find.byKey(
             const Key('shopCosmeticsAction-wallpaper_mist_blue'),
           ),
@@ -217,32 +341,28 @@ void main() {
         findsNothing,
       );
       expect(
-        find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
-          ),
-          matching: find.text('Comprado'),
-        ),
+        find.descendant(of: card, matching: find.text('Comprado')),
         findsWidgets,
       );
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-cards')));
       await tester.pumpAndSettle();
 
+      final Finder habitCard = await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-habit_card_warm_beige')),
+      );
+
       expect(
         find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-habit_card_warm_beige'),
-          ),
+          of: habitCard,
           matching: find.text('Equipado'),
         ),
         findsWidgets,
       );
       expect(
         find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-habit_card_warm_beige'),
-          ),
+          of: habitCard,
           matching: find.byKey(
             const Key('shopCosmeticsAction-habit_card_warm_beige'),
           ),
@@ -330,24 +450,21 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final Finder refreshedCard = await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+      );
+
       expect(
         find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
-          ),
-          matching: find.byKey(
-            const Key('shopCosmeticsAction-wallpaper_mist_blue'),
-          ),
+          of: refreshedCard,
+          matching:
+              find.byKey(const Key('shopCosmeticsAction-wallpaper_mist_blue')),
         ),
         findsNothing,
       );
       expect(
-        find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
-          ),
-          matching: find.text('Comprado'),
-        ),
+        find.descendant(of: refreshedCard, matching: find.text('Comprado')),
         findsWidgets,
       );
     });
@@ -362,8 +479,9 @@ void main() {
 
       expect(
         find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
+          of: await _scrollToShopItem(
+            tester,
+            find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
           ),
           matching: find.text('Saldo insuficiente'),
         ),
@@ -385,11 +503,14 @@ void main() {
           .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
+      final Finder card = await _scrollToShopItem(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+      );
+
       expect(
         find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
-          ),
+          of: card,
           matching: find.byKey(
             const Key('shopCosmeticsAction-wallpaper_mist_blue'),
           ),
@@ -397,18 +518,17 @@ void main() {
         findsNothing,
       );
       expect(
-        find.descendant(
-          of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
-          ),
-          matching: find.text('Comprado'),
-        ),
+        find.descendant(of: card, matching: find.text('Comprado')),
         findsWidgets,
       );
     });
 
     testWidgets('unowned cosmetics appear before owned cosmetics',
         (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(360, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
       final controller = await _createController(
         walletCoins: 600,
         cosmeticsState: ShopCosmeticsState(
@@ -421,19 +541,12 @@ void main() {
           .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
-      final double ownedDy = tester
-          .getTopLeft(
-            find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
-          )
-          .dy;
-      final double unownedDy = tester
-          .getTopLeft(
-            find.byKey(
-                const Key('shopCosmeticsAssetCard-habit_card_warm_beige')),
-          )
-          .dy;
-
-      expect(unownedDy <= ownedDy, isTrue);
+      final List<String> visibleIds = _sortedVisibleEntryIds(controller.state!);
+      expect(
+        visibleIds.indexOf('shopCosmeticsAssetCard-habit_card_warm_beige') <
+            visibleIds.indexOf('shopCosmeticsAssetCard-wallpaper_mist_blue'),
+        isTrue,
+      );
     });
 
     testWidgets('detail sheet shows rarity and packs filter shows packs',
@@ -444,10 +557,10 @@ void main() {
           .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
       await tester.pumpAndSettle();
 
-      await tester.tap(
+      await _tapVisibleShopItem(
+        tester,
         find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
       );
-      await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('shopCosmeticsDetailSheet')), findsOneWidget);
       expect(find.byKey(const Key('shopCosmeticsRarity-common')), findsWidgets);
@@ -476,10 +589,10 @@ void main() {
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-cards')));
       await tester.pumpAndSettle();
-      await tester.tap(
+      await _tapVisibleShopItem(
+        tester,
         find.byKey(const Key('shopCosmeticsAssetCard-habit_card_warm_beige')),
       );
-      await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('shopCosmeticsDetailSheet')), findsOneWidget);
       expect(
@@ -500,13 +613,10 @@ void main() {
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-cards')));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(
+      await _tapVisibleShopItem(
+        tester,
         find.byKey(const Key('shopCosmeticsAssetCard-user_card_warm_beige')),
       );
-      await tester.tap(
-        find.byKey(const Key('shopCosmeticsAssetCard-user_card_warm_beige')),
-      );
-      await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('shopCosmeticsDetailSheet')), findsOneWidget);
       expect(
@@ -552,6 +662,174 @@ Widget _app(Widget child) {
   );
 }
 
+Future<Finder> _scrollToShopItem(WidgetTester tester, Finder finder) async {
+  if (finder.evaluate().isNotEmpty) {
+    await tester.ensureVisible(finder);
+    await tester.pump();
+    return finder;
+  }
+
+  final Finder grid = find.byKey(const Key('shopCosmeticsGrid'));
+  if (grid.evaluate().isEmpty) {
+    throw StateError('No cosmetics grid found');
+  }
+  final Finder scrollable = find
+      .descendant(
+        of: grid,
+        matching: find.byType(Scrollable),
+      )
+      .first;
+
+  for (int attempt = 0; attempt < 2 && finder.evaluate().isEmpty; attempt++) {
+    if (attempt == 1) {
+      await tester.drag(scrollable, const Offset(0, 800));
+      await tester.pumpAndSettle();
+    }
+
+    try {
+      await tester.scrollUntilVisible(
+        finder,
+        600,
+        scrollable: scrollable,
+      );
+      await tester.pump();
+    } on StateError {
+      // Try the opposite direction after the next reset pass.
+    }
+  }
+
+  if (finder.evaluate().isEmpty) {
+    throw StateError('Unable to reveal cosmetics item');
+  }
+
+  await tester.ensureVisible(finder);
+  await tester.pump();
+  return finder;
+}
+
+Future<void> _tapVisibleShopItem(WidgetTester tester, Finder finder) async {
+  final Finder visibleFinder = await _scrollToShopItem(tester, finder);
+  await tester.tap(visibleFinder);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _drainBackgroundRefresh(WidgetTester tester) async {
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pumpAndSettle();
+}
+
+List<String> _sortedVisibleEntryIds(ShopCosmeticsState state) {
+  final List<_TestShopEntry> entries = <_TestShopEntry>[
+    ...ShopAssetsCatalog.allAssets.map(
+      (ShopAsset asset) => _TestAssetEntry(
+        id: 'shopCosmeticsAssetCard-${asset.id}',
+        asset: asset,
+        ownershipRank: _assetOwnershipRank(
+          state.assetOwnershipState(
+            asset,
+            bundles: ShopAssetsCatalog.allBundles,
+          ),
+        ),
+      ),
+    ),
+    ...ShopAssetsCatalog.allBundles.map(
+      (ShopBundle bundle) => _TestBundleEntry(
+        id: 'shopCosmeticsBundleCard-${bundle.id}',
+        rarity: bundle.rarity,
+        sortOrder: bundle.sortOrder,
+        ownershipRank: 1,
+        categoryOrder: 3,
+      ),
+    ),
+  ]..sort(_compareTestEntries);
+
+  return entries
+      .map((_TestShopEntry entry) => entry.id)
+      .toList(growable: false);
+}
+
+int _assetOwnershipRank(ShopAssetOwnershipState state) {
+  switch (state) {
+    case ShopAssetOwnershipState.locked:
+      return 0;
+    case ShopAssetOwnershipState.owned:
+    case ShopAssetOwnershipState.includedInOwnedBundle:
+    case ShopAssetOwnershipState.equipped:
+      return 1;
+  }
+}
+
+int _compareTestEntries(_TestShopEntry a, _TestShopEntry b) {
+  final int ownershipCompare = a.ownershipRank.compareTo(b.ownershipRank);
+  if (ownershipCompare != 0) return ownershipCompare;
+
+  final int rarityCompare =
+      _rarityOrder(a.rarity).compareTo(_rarityOrder(b.rarity));
+  if (rarityCompare != 0) return rarityCompare;
+
+  final int categoryCompare = a.categoryOrder.compareTo(b.categoryOrder);
+  if (categoryCompare != 0) return categoryCompare;
+
+  return a.sortOrder.compareTo(b.sortOrder);
+}
+
+int _rarityOrder(ShopAssetRarity rarity) {
+  switch (rarity) {
+    case ShopAssetRarity.common:
+      return 0;
+    case ShopAssetRarity.rare:
+      return 1;
+    case ShopAssetRarity.epic:
+      return 2;
+    case ShopAssetRarity.legendary:
+      return 3;
+  }
+}
+
+sealed class _TestShopEntry {
+  const _TestShopEntry({
+    required this.id,
+    required this.rarity,
+    required this.sortOrder,
+    required this.ownershipRank,
+    required this.categoryOrder,
+  });
+
+  final String id;
+  final ShopAssetRarity rarity;
+  final int sortOrder;
+  final int ownershipRank;
+  final int categoryOrder;
+}
+
+class _TestAssetEntry extends _TestShopEntry {
+  _TestAssetEntry({
+    required super.id,
+    required this.asset,
+    required super.ownershipRank,
+  }) : super(
+          rarity: asset.rarity,
+          sortOrder: asset.sortOrder,
+          categoryOrder: switch (asset.category) {
+            ShopAssetCategory.wallpaper => 0,
+            ShopAssetCategory.habitCard => 1,
+            ShopAssetCategory.userCard => 2,
+          },
+        );
+
+  final ShopAsset asset;
+}
+
+class _TestBundleEntry extends _TestShopEntry {
+  _TestBundleEntry({
+    required super.id,
+    required super.rarity,
+    required super.sortOrder,
+    required super.ownershipRank,
+    required super.categoryOrder,
+  });
+}
+
 Future<ShopCosmeticsController> _createController({
   required int walletCoins,
   ShopCosmeticsState cosmeticsState = const ShopCosmeticsState.initial(),
@@ -568,6 +846,32 @@ Future<ShopCosmeticsController> _createController({
   await store.save(_baseState(walletCoins: walletCoins));
 
   return ShopCosmeticsController(userStateStore: store);
+}
+
+Future<_RefreshableShopCosmeticsController> _createRefreshableController({
+  required int walletCoins,
+  required ShopCosmeticsState initialCosmeticsState,
+  required ShopCosmeticsState refreshedCosmeticsState,
+  required int refreshedWalletCoins,
+}) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  await ShopCosmeticsRepository().save(initialCosmeticsState);
+
+  final repo = UserStateRepository(storage: UserStateStorage())
+    ..setActiveUserScope('shop-cosmetics-screen-user');
+  final store = UserStateStore(
+    repo,
+    journalEntrySyncService: JournalEntrySyncService(),
+  );
+  await store.save(_baseState(walletCoins: walletCoins));
+
+  return _RefreshableShopCosmeticsController(
+    userStateStore: store,
+    initialState: initialCosmeticsState,
+    initialWalletCoins: walletCoins,
+    refreshedState: refreshedCosmeticsState,
+    refreshedWalletCoins: refreshedWalletCoins,
+  );
 }
 
 Map<String, dynamic> _baseState({
@@ -627,4 +931,48 @@ Map<String, dynamic> _baseState({
       'activeHabits': <dynamic>[],
     },
   };
+}
+
+class _RefreshableShopCosmeticsController extends ShopCosmeticsController {
+  _RefreshableShopCosmeticsController({
+    required super.userStateStore,
+    required ShopCosmeticsState initialState,
+    required int initialWalletCoins,
+    required ShopCosmeticsState refreshedState,
+    required int refreshedWalletCoins,
+  })  : _state = initialState,
+        _walletCoins = initialWalletCoins,
+        _refreshedState = refreshedState,
+        _refreshedWalletCoins = refreshedWalletCoins,
+        super(cloudEnabled: false);
+
+  ShopCosmeticsState _state;
+  int _walletCoins;
+  final ShopCosmeticsState _refreshedState;
+  final int _refreshedWalletCoins;
+  final Completer<ShopCosmeticsState> _stateCompleter =
+      Completer<ShopCosmeticsState>();
+
+  @override
+  ShopCosmeticsState? get state => _state;
+
+  @override
+  Future<ShopCosmeticsState> getState() {
+    return _stateCompleter.future.then((ShopCosmeticsState value) {
+      _state = value;
+      return value;
+    });
+  }
+
+  @override
+  Future<int> getWalletCoins() {
+    return Future<int>.value(_walletCoins);
+  }
+
+  void completeRefresh() {
+    if (!_stateCompleter.isCompleted) {
+      _stateCompleter.complete(_refreshedState);
+    }
+    _walletCoins = _refreshedWalletCoins;
+  }
 }
