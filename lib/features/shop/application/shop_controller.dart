@@ -151,23 +151,38 @@ class ShopController extends ChangeNotifier {
         _mysteryBoxCloudEnabled = MysteryBoxCloudConfig.resolveEnabled(
           override: mysteryBoxCloudEnabled,
         ),
+        _utilityConsumptionEnabled = UtilityConsumptionConfig.resolveEnabled(
+          override: utilityConsumptionEnabled,
+        ),
         _shopRepository = shopRepository ??
             ShopLocalRepository(
               scopeResolver: () =>
                   userStateStore.activeLocalScopeUserId ??
                   userStateStore.userId,
             ),
-        _activeUtilityEffectsRepository = activeUtilityEffectsRepository ??
-            (UtilityConsumptionConfig.resolveEnabled(
-                    override: utilityConsumptionEnabled)
-                ? ((utilityConsumptionRepository ??
-                        SupabaseUtilityConsumptionRepository())
-                    as ActiveUtilityEffectsRepository)
-                : LocalActiveUtilityEffectsRepository(
-                    scopeResolver: () =>
-                        userStateStore.activeLocalScopeUserId ??
-                        userStateStore.userId,
-                  )),
+        _utilityConsumptionRepository = UtilityConsumptionConfig.resolveEnabled(
+          override: utilityConsumptionEnabled,
+        )
+            ? (utilityConsumptionRepository ??
+                (activeUtilityEffectsRepository is UtilityConsumptionRepository
+                    ? activeUtilityEffectsRepository
+                    : SupabaseUtilityConsumptionRepository()))
+            : null,
+        _activeUtilityEffectsRepository =
+            UtilityConsumptionConfig.resolveEnabled(
+          override: utilityConsumptionEnabled,
+        )
+                ? (utilityConsumptionRepository ??
+                    (activeUtilityEffectsRepository
+                            is UtilityConsumptionRepository
+                        ? activeUtilityEffectsRepository
+                        : SupabaseUtilityConsumptionRepository()))
+                : activeUtilityEffectsRepository ??
+                    LocalActiveUtilityEffectsRepository(
+                      scopeResolver: () =>
+                          userStateStore.activeLocalScopeUserId ??
+                          userStateStore.userId,
+                    ),
         _mysteryBoxOpeningRepository = mysteryBoxOpeningRepository ??
             LocalMysteryBoxOpeningRepository(
               scopeResolver: () =>
@@ -210,6 +225,8 @@ class ShopController extends ChangeNotifier {
   final GlobalWalletController? _globalWalletController;
   final ShopLocalRepository _shopRepository;
   final ActiveUtilityEffectsRepository _activeUtilityEffectsRepository;
+  final bool _utilityConsumptionEnabled;
+  final UtilityConsumptionRepository? _utilityConsumptionRepository;
   final MysteryBoxOpeningRepository _mysteryBoxOpeningRepository;
   final CloudMysteryBoxOpeningRepository? _cloudMysteryBoxOpeningRepository;
   final PendingMysteryBoxOperationStore? _pendingMysteryBoxOperationStore;
@@ -594,120 +611,226 @@ class ShopController extends ChangeNotifier {
 
     _pendingUtilityActivations.add(activationKey);
     try {
-      final root = await _ensureRoot();
-      if (root == null) {
-        return _controllerResult(
-          ShopControllerStatus.unavailableState,
-          item: item,
-          shopState: await _shopRepository.load(),
-        );
+      if (_utilityConsumptionEnabled) {
+        return await _activateBoostCloud(item: item);
       }
+      return await _activateBoostLocal(item: item);
+    } finally {
+      _pendingUtilityActivations.remove(activationKey);
+    }
+  }
 
-      final shopState = await _shopRepository.load();
-      final walletCoins = _walletCoins();
-      final scope = _currentScopeUserId();
-      if (scope == null) {
-        return _controllerResult(
-          ShopControllerStatus.unavailableState,
-          item: item,
-          shopState: shopState,
-          walletCoins: walletCoins,
+  Future<ShopControllerResult> _activateBoostCloud({
+    required ShopItem item,
+  }) async {
+    final visibleShopState = await getVisibleShopState();
+    final visibleWalletCoins = visibleCoinBalance ?? getWalletCoins();
+    final visibleItemState = _buildItemState(
+      item: item,
+      shopState: visibleShopState,
+      walletCoins: visibleWalletCoins,
+    );
+    final expectedQuantity = visibleItemState.backpackQuantity > 0
+        ? visibleItemState.backpackQuantity - 1
+        : 0;
+    final currentUserId = _currentSupabaseUserId();
+    if (currentUserId == null) {
+      return _controllerResult(
+        ShopControllerStatus.unavailableState,
+        item: item,
+        shopState: visibleShopState,
+        walletCoins: visibleWalletCoins,
+      );
+    }
+
+    final effectType = switch (item.type) {
+      ShopItemType.xpBoost => ActiveUtilityEffectType.xpBoost,
+      ShopItemType.coinBoost => ActiveUtilityEffectType.coinBoost,
+      _ => null,
+    };
+    if (effectType == null) {
+      return _controllerResult(
+        ShopControllerStatus.invalidItemType,
+        item: item,
+        shopState: visibleShopState,
+        walletCoins: visibleWalletCoins,
+      );
+    }
+
+    final activeEffects = await _activeUtilityEffectsRepository.loadEffects(
+      currentUserId,
+    );
+    if (activeEffects.any((effect) => effect.type == effectType)) {
+      return _controllerResult(
+        ShopControllerStatus.utilityAlreadyActive,
+        item: item,
+        shopState: visibleShopState,
+        walletCoins: visibleWalletCoins,
+      );
+    }
+
+    final requestId = _utilityActivationRequestId(
+      userId: currentUserId,
+      utilityId: item.id,
+    );
+
+    try {
+      await _utilityConsumptionRepository!.activateUtilityEffect(
+        requestId: requestId,
+        utilityId: item.id,
+        operationType: 'activate',
+        sourceType: 'shop_activation',
+        sourceId: requestId,
+      );
+      await _refreshCloudPurchaseSnapshot(force: true);
+      final refreshedQuantity =
+          _cloudPurchaseInventoryQuantityByItemId[item.id];
+      if (refreshedQuantity == null || refreshedQuantity > expectedQuantity) {
+        _cloudPurchaseInventoryQuantityByItemId[item.id] = expectedQuantity;
+      }
+      final refreshedShopState = await getVisibleShopState();
+      final refreshedUserId = _currentSupabaseUserId();
+      if (refreshedUserId != null) {
+        unawaited(
+          _globalWalletController?.syncSession(
+            userId: refreshedUserId,
+            force: true,
+          ),
         );
       }
-      final itemState = _buildItemState(
+      return _controllerResult(
+        ShopControllerStatus.success,
+        item: item,
+        shopState: refreshedShopState,
+        walletCoins: visibleCoinBalance ?? visibleWalletCoins,
+      );
+    } catch (error) {
+      _logUtilityActivationError(item.id, error);
+      final status = _mapUtilityActivationFailure(error);
+      return _controllerResult(
+        status,
+        item: item,
+        shopState: visibleShopState,
+        walletCoins: visibleWalletCoins,
+      );
+    }
+  }
+
+  Future<ShopControllerResult> _activateBoostLocal({
+    required ShopItem item,
+  }) async {
+    final root = await _ensureRoot();
+    if (root == null) {
+      return _controllerResult(
+        ShopControllerStatus.unavailableState,
+        item: item,
+        shopState: await _shopRepository.load(),
+      );
+    }
+
+    final shopState = await _shopRepository.load();
+    final walletCoins = _walletCoins();
+    final scope = _currentScopeUserId();
+    if (scope == null) {
+      return _controllerResult(
+        ShopControllerStatus.unavailableState,
         item: item,
         shopState: shopState,
         walletCoins: walletCoins,
       );
-      if (!itemState.isInBackpack) {
-        return _controllerResult(
-          ShopControllerStatus.backpackItemNotFound,
-          item: item,
-          shopState: shopState,
-          walletCoins: walletCoins,
-        );
-      }
-
-      final activeEffects =
-          await _activeUtilityEffectsRepository.loadEffects(scope);
-      final effectType = switch (item.type) {
-        ShopItemType.xpBoost => ActiveUtilityEffectType.xpBoost,
-        ShopItemType.coinBoost => ActiveUtilityEffectType.coinBoost,
-        _ => null,
-      };
-      if (effectType == null) {
-        return _controllerResult(
-          ShopControllerStatus.invalidItemType,
-          item: item,
-          shopState: shopState,
-          walletCoins: walletCoins,
-        );
-      }
-
-      final hasActiveEffect = activeEffects.any(
-        (effect) => effect.type == effectType,
-      );
-      if (hasActiveEffect) {
-        return _controllerResult(
-          ShopControllerStatus.utilityAlreadyActive,
-          item: item,
-          shopState: shopState,
-          walletCoins: walletCoins,
-        );
-      }
-
-      final service = ShopService(
-        state: shopState,
+    }
+    final itemState = _buildItemState(
+      item: item,
+      shopState: shopState,
+      walletCoins: walletCoins,
+    );
+    if (!itemState.isInBackpack) {
+      return _controllerResult(
+        ShopControllerStatus.backpackItemNotFound,
+        item: item,
+        shopState: shopState,
         walletCoins: walletCoins,
       );
-      final consumeResult = service.consumeBackpackItem(item.id);
-      if (!consumeResult.isSuccess) {
-        return _controllerResult(
-          ShopControllerStatus.backpackItemNotFound,
-          item: item,
-          shopState: shopState,
-          walletCoins: walletCoins,
-        );
-      }
-
-      final activatedAtMillis = _nowProvider().millisecondsSinceEpoch;
-      final nextEffect = ActiveUtilityEffect(
-        id: _activationEffectId(item.id, activatedAtMillis),
-        utilityId: item.id,
-        type: effectType,
-        activatedAtMillis: activatedAtMillis,
-        remainingUses: 10,
-        totalUses: 10,
-      );
-      final nextEffects = <ActiveUtilityEffect>[
-        ...activeEffects,
-        nextEffect,
-      ];
-
-      try {
-        await _shopRepository.save(consumeResult.state);
-        await _activeUtilityEffectsRepository.saveEffects(scope, nextEffects);
-      } catch (_) {
-        try {
-          await _shopRepository.save(shopState);
-        } catch (_) {}
-        return _controllerResult(
-          ShopControllerStatus.unavailableState,
-          item: item,
-          shopState: shopState,
-          walletCoins: walletCoins,
-        );
-      }
-
-      return _controllerResult(
-        ShopControllerStatus.success,
-        item: item,
-        shopState: consumeResult.state,
-        walletCoins: consumeResult.walletCoins,
-      );
-    } finally {
-      _pendingUtilityActivations.remove(activationKey);
     }
+
+    final activeEffects = await _activeUtilityEffectsRepository.loadEffects(
+      scope,
+    );
+    final effectType = switch (item.type) {
+      ShopItemType.xpBoost => ActiveUtilityEffectType.xpBoost,
+      ShopItemType.coinBoost => ActiveUtilityEffectType.coinBoost,
+      _ => null,
+    };
+    if (effectType == null) {
+      return _controllerResult(
+        ShopControllerStatus.invalidItemType,
+        item: item,
+        shopState: shopState,
+        walletCoins: walletCoins,
+      );
+    }
+
+    final hasActiveEffect = activeEffects.any(
+      (effect) => effect.type == effectType,
+    );
+    if (hasActiveEffect) {
+      return _controllerResult(
+        ShopControllerStatus.utilityAlreadyActive,
+        item: item,
+        shopState: shopState,
+        walletCoins: walletCoins,
+      );
+    }
+
+    final service = ShopService(
+      state: shopState,
+      walletCoins: walletCoins,
+    );
+    final consumeResult = service.consumeBackpackItem(item.id);
+    if (!consumeResult.isSuccess) {
+      return _controllerResult(
+        ShopControllerStatus.backpackItemNotFound,
+        item: item,
+        shopState: shopState,
+        walletCoins: walletCoins,
+      );
+    }
+
+    final activatedAtMillis = _nowProvider().millisecondsSinceEpoch;
+    final nextEffect = ActiveUtilityEffect(
+      id: _activationEffectId(item.id, activatedAtMillis),
+      utilityId: item.id,
+      type: effectType,
+      activatedAtMillis: activatedAtMillis,
+      remainingUses: 10,
+      totalUses: 10,
+    );
+    final nextEffects = <ActiveUtilityEffect>[
+      ...activeEffects,
+      nextEffect,
+    ];
+
+    try {
+      await _shopRepository.save(consumeResult.state);
+      await _activeUtilityEffectsRepository.saveEffects(scope, nextEffects);
+    } catch (_) {
+      try {
+        await _shopRepository.save(shopState);
+      } catch (_) {}
+      return _controllerResult(
+        ShopControllerStatus.unavailableState,
+        item: item,
+        shopState: shopState,
+        walletCoins: walletCoins,
+      );
+    }
+
+    return _controllerResult(
+      ShopControllerStatus.success,
+      item: item,
+      shopState: consumeResult.state,
+      walletCoins: consumeResult.walletCoins,
+    );
   }
 
   Future<MysteryBoxOperationResult> openMysteryBox({
@@ -1419,5 +1542,56 @@ class ShopController extends ChangeNotifier {
 
   String _activationEffectId(String utilityId, int activatedAtMillis) {
     return '${utilityId.trim()}_$activatedAtMillis';
+  }
+
+  String _utilityActivationRequestId({
+    required String userId,
+    required String utilityId,
+  }) {
+    final activatedAtMicros = _nowProvider().toUtc().microsecondsSinceEpoch;
+    return 'utility_activate:${userId.trim()}:${utilityId.trim()}:$activatedAtMicros';
+  }
+
+  void _logUtilityActivationError(String utilityId, Object error) {
+    if (!kDebugMode) return;
+    debugPrint('[utility_activation] activateBoost($utilityId) failed: $error');
+  }
+
+  ShopControllerStatus _mapUtilityActivationFailure(Object error) {
+    final normalized = error.toString().toLowerCase();
+    if (normalized.contains('utility inventory unavailable') ||
+        normalized.contains('inventory unavailable') ||
+        normalized.contains('no utility inventory') ||
+        normalized.contains('no backpack item')) {
+      return ShopControllerStatus.backpackItemNotFound;
+    }
+
+    if (normalized.contains('active utility effect') ||
+        normalized.contains('already active') ||
+        normalized.contains('duplicate key') ||
+        normalized.contains('unique constraint') ||
+        normalized.contains('violates unique constraint') ||
+        normalized.contains('request_id already used') ||
+        normalized.contains('source_id already used')) {
+      return ShopControllerStatus.utilityAlreadyActive;
+    }
+
+    if (normalized.contains('authentication required') ||
+        normalized.contains('unauthenticated') ||
+        normalized.contains('session changed') ||
+        normalized.contains('user session') ||
+        normalized.contains('user_id is required') ||
+        normalized.contains('authentication is required')) {
+      return ShopControllerStatus.unavailableState;
+    }
+
+    if (normalized.contains('timeout') ||
+        normalized.contains('network') ||
+        normalized.contains('socket') ||
+        normalized.contains('connection')) {
+      return ShopControllerStatus.unavailableState;
+    }
+
+    return ShopControllerStatus.unavailableState;
   }
 }

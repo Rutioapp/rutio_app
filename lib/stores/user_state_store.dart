@@ -11,6 +11,7 @@ import '../data/services/achievement_sync_service.dart';
 import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
 import '../data/services/journal_entry_sync_service.dart';
+import '../data/mappers/habit_remote_mapper.dart';
 import '../data/models/remote/remote_habit.dart';
 import '../data/models/remote/remote_habit_log.dart';
 import '../data/models/remote/remote_user_progress.dart';
@@ -131,6 +132,7 @@ class UserStateStore extends ChangeNotifier {
   HabitLogRepository? _habitLogRepository;
   ActiveUtilityEffectsRepository? _activeUtilityEffectsRepository;
   final UtilityConsumptionRepository? _utilityConsumptionRepository;
+  final bool? _cloudHabitRewardsEnabledOverride;
   HabitRewardTransactionRepository? _habitRewardTransactionRepository;
   final UserProgressRepository? _userProgressRepository;
   final ProfileRepository? _profileRepository;
@@ -152,6 +154,7 @@ class UserStateStore extends ChangeNotifier {
     HabitLogRepository? habitLogRepository,
     ActiveUtilityEffectsRepository? activeUtilityEffectsRepository,
     UtilityConsumptionRepository? utilityConsumptionRepository,
+    bool? cloudHabitRewardsEnabledOverride,
     HabitRewardTransactionRepository? habitRewardTransactionRepository,
     UserProgressRepository? userProgressRepository,
     ProfileRepository? profileRepository,
@@ -176,17 +179,15 @@ class UserStateStore extends ChangeNotifier {
                   SharedPreferencesPendingCurrencyOperationStore(),
               transactionRepository: habitRewardTransactionRepository ??
                   LocalHabitRewardTransactionRepository(),
-              currentUserIdProvider: currentSupabaseUserIdProvider ??
-                  _authenticatedSupabaseUserId,
+              currentUserIdProvider:
+                  currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId,
               enabled: HabitCurrencyRewardsConfig.resolveEnabled(),
             ),
         _achievementLevelRewardCoordinator =
             achievementLevelRewardCoordinator ??
                 AchievementLevelRewardCoordinator(
-                  rewardRepository:
-                      SupabaseAchievementLevelRewardRepository(),
-                  pendingClaimStore:
-                      SharedPreferencesPendingRewardClaimStore(),
+                  rewardRepository: SupabaseAchievementLevelRewardRepository(),
+                  pendingClaimStore: SharedPreferencesPendingRewardClaimStore(),
                   currentUserIdProvider: currentSupabaseUserIdProvider ??
                       _authenticatedSupabaseUserId,
                   enabled: AchievementLevelRewardConfig.resolveEnabled(),
@@ -205,6 +206,7 @@ class UserStateStore extends ChangeNotifier {
                     as ActiveUtilityEffectsRepository)
                 : null),
         _habitRewardTransactionRepository = habitRewardTransactionRepository,
+        _cloudHabitRewardsEnabledOverride = cloudHabitRewardsEnabledOverride,
         _userProgressRepository = userProgressRepository,
         _profileRepository = profileRepository,
         _globalWalletController = globalWalletController,

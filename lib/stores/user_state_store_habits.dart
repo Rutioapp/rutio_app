@@ -116,6 +116,22 @@ String? _habitRemoteIdValue(Map<String, dynamic> habit) {
   );
 }
 
+String? _cloudRewardHabitId(Map<String, dynamic> habit) {
+  final candidates = <Object?>[
+    habit['remoteId'],
+    habit['remoteHabitId'],
+    habit['supabaseHabitId'],
+  ];
+  for (final candidate in candidates) {
+    final normalized = (candidate ?? '').toString().trim().toLowerCase();
+    if (normalized.isEmpty) continue;
+    if (HabitRemoteMapper.isUuid(normalized)) {
+      return normalized;
+    }
+  }
+  return null;
+}
+
 Future<void> _persistHabitRemoteId(
   UserStateStore store, {
   required String localHabitId,
@@ -2368,14 +2384,28 @@ Future<void> _setCountHabitValue(
   );
   final hasActiveRewardTransaction =
       existingTransaction != null && !existingTransaction.isReversed;
-  final hasReversedRewardTransaction =
-      existingTransaction?.isReversed == true;
+  final hasConfirmedCloudRewardTransaction =
+      _isConfirmedCloudHabitRewardTransaction(existingTransaction);
+  final hasReversedRewardTransaction = existingTransaction?.isReversed == true;
   final wasCompletedBeforeChange = habit['doneToday'] == true;
-  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled();
+  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled(
+    override: store._cloudHabitRewardsEnabledOverride,
+  );
+  final rewardAlreadyGranted = cloudHabitRewardsEnabled
+      ? hasConfirmedCloudRewardTransaction
+      : hasActiveRewardTransaction;
   final progressResult = _setCountHabitProgress(
     habit,
     value: value,
-    rewardAlreadyGranted: hasActiveRewardTransaction,
+    rewardAlreadyGranted: rewardAlreadyGranted,
+  );
+  _logHabitCloudReward(
+    'complete habit=$habitId cloud=$cloudHabitRewardsEnabled '
+    'existing=${existingTransaction != null} '
+    'legacy=${existingTransaction != null && !hasConfirmedCloudRewardTransaction} '
+    'cloudConfirmed=$hasConfirmedCloudRewardTransaction '
+    'rewardAlreadyGranted=$rewardAlreadyGranted '
+    'grantDailyReward=${progressResult.grantDailyReward}',
   );
 
   _setHabitCompletionTimeState(
@@ -2600,9 +2630,15 @@ Future<void> _completeHabit(
   );
   final hasActiveRewardTransaction =
       existingTransaction != null && !existingTransaction.isReversed;
-  final hasReversedRewardTransaction =
-      existingTransaction?.isReversed == true;
-  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled();
+  final hasConfirmedCloudRewardTransaction =
+      _isConfirmedCloudHabitRewardTransaction(existingTransaction);
+  final hasReversedRewardTransaction = existingTransaction?.isReversed == true;
+  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled(
+    override: store._cloudHabitRewardsEnabledOverride,
+  );
+  final rewardAlreadyGranted = cloudHabitRewardsEnabled
+      ? hasConfirmedCloudRewardTransaction
+      : hasActiveRewardTransaction;
 
   if (type == 'check') {
     if (habit['doneToday'] == true) return;
@@ -2611,7 +2647,15 @@ Future<void> _completeHabit(
   final progressResult = _applyHabitProgressDelta(
     habit,
     delta: delta,
-    rewardAlreadyGranted: hasActiveRewardTransaction,
+    rewardAlreadyGranted: rewardAlreadyGranted,
+  );
+  _logHabitCloudReward(
+    'complete habit=$habitId cloud=$cloudHabitRewardsEnabled '
+    'existing=${existingTransaction != null} '
+    'legacy=${existingTransaction != null && !hasConfirmedCloudRewardTransaction} '
+    'cloudConfirmed=$hasConfirmedCloudRewardTransaction '
+    'rewardAlreadyGranted=$rewardAlreadyGranted '
+    'grantDailyReward=${progressResult.grantDailyReward}',
   );
   _setHabitCompletionTimeState(
     userState,
@@ -3272,6 +3316,38 @@ Future<void> _saveActiveUtilityEffectsForStore(
   );
 }
 
+bool _isConfirmedCloudHabitRewardTransaction(
+  HabitRewardTransaction? transaction,
+) {
+  final cloudOperationType = transaction?.cloudOperationType?.trim() ?? '';
+  final applyRequestId = transaction?.applyRequestId?.trim() ?? '';
+  final completionEventId = transaction?.completionEventId?.trim() ?? '';
+  return transaction != null &&
+      transaction.isReversed == false &&
+      cloudOperationType == 'apply' &&
+      applyRequestId.isNotEmpty &&
+      completionEventId.isNotEmpty;
+}
+
+String _cloudHabitRewardCompletionEventId({
+  required String habitId,
+  required String dateKey,
+  HabitRewardTransaction? existingTransaction,
+}) {
+  final existingCompletionEventId =
+      existingTransaction?.completionEventId?.trim() ?? '';
+  if (existingCompletionEventId.isNotEmpty) {
+    return existingCompletionEventId;
+  }
+  return 'habit_cloud_reward|${habitId.trim()}|${dateKey.trim()}';
+}
+
+void _logHabitCloudReward(String message) {
+  if (kDebugMode) {
+    debugPrint('[habit_cloud_reward] $message');
+  }
+}
+
 ActiveUtilityEffect? _activeUtilityEffectForType(
   List<ActiveUtilityEffect> effects,
   ActiveUtilityEffectType type,
@@ -3391,12 +3467,46 @@ Future<_HabitRewardCompletionOutcome> _applyHabitRewardCompletion(
   required int baseXp,
   required int baseCoins,
 }) async {
+  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled(
+    override: store._cloudHabitRewardsEnabledOverride,
+  );
+  final cloudRewardHabitId = _cloudRewardHabitId(habit);
   final existingTransaction = await _habitRewardTransactionForDate(
     store,
     habitId: habitId,
     localDateKey: dateKey,
   );
+  final hasConfirmedCloudRewardTransaction =
+      _isConfirmedCloudHabitRewardTransaction(existingTransaction);
   if (existingTransaction != null) {
+    if (cloudHabitRewardsEnabled && hasConfirmedCloudRewardTransaction) {
+      _logHabitCloudReward(
+        'apply skipped habit=$habitId date=$dateKey '
+        'cloud=$cloudHabitRewardsEnabled existing=true cloudConfirmed=true',
+      );
+      return _HabitRewardCompletionOutcome(
+        granted: false,
+        baseXp: existingTransaction.baseXp,
+        bonusXp: existingTransaction.bonusXp,
+        baseCoins: existingTransaction.baseCoins,
+        bonusCoins: existingTransaction.bonusCoins,
+        appliedEffectIds: existingTransaction.appliedEffectIds,
+        transaction: existingTransaction,
+      );
+    }
+  }
+
+  if (cloudHabitRewardsEnabled) {
+    _logHabitCloudReward(
+      'apply start habit=$habitId date=$dateKey '
+      'cloud=$cloudHabitRewardsEnabled existing=${existingTransaction != null} '
+      'legacy=${existingTransaction != null && !hasConfirmedCloudRewardTransaction} '
+      'cloudConfirmed=$hasConfirmedCloudRewardTransaction '
+      'remoteHabitId=${cloudRewardHabitId ?? "<missing>"}',
+    );
+  }
+
+  if (!cloudHabitRewardsEnabled && existingTransaction != null) {
     return _HabitRewardCompletionOutcome(
       granted: false,
       baseXp: existingTransaction.baseXp,
@@ -3408,24 +3518,57 @@ Future<_HabitRewardCompletionOutcome> _applyHabitRewardCompletion(
     );
   }
 
-  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled();
   if (cloudHabitRewardsEnabled) {
+    if (cloudRewardHabitId == null) {
+      _logHabitCloudReward(
+        'missing remote habit id habit=$habitId date=$dateKey',
+      );
+      return _HabitRewardCompletionOutcome(
+        granted: false,
+        baseXp: 0,
+        bonusXp: 0,
+        baseCoins: 0,
+        bonusCoins: 0,
+        appliedEffectIds: const <String>[],
+        transaction: existingTransaction,
+      );
+    }
+
+    final completionEventId = _cloudHabitRewardCompletionEventId(
+      habitId: habitId,
+      dateKey: dateKey,
+      existingTransaction: existingTransaction,
+    );
     final result = await store._habitCurrencyRewardCoordinator.applyHabitReward(
       habitId: habitId,
+      remoteHabitId: cloudRewardHabitId,
       logicalDateKey: dateKey,
-      completionEventId: existingTransaction?.isReversed == true
-          ? null
-          : existingTransaction?.completionEventId,
+      completionEventId: completionEventId,
+      requestId: _habitRewardTransactionId(habitId, dateKey),
+    );
+    final failure = result.failure;
+    _logHabitCloudReward(
+      'apply result habit=$habitId date=$dateKey '
+      'success=${result.isSuccess} pending=${result.isPending} '
+      'state=${result.state} '
+      'failureCode=${failure?.code} '
+      'failureMessage=${failure?.message} '
+      'failureDefinitive=${failure?.definitive} '
+      'failureRetryable=${failure?.retryable} '
+      'failureCause=${failure?.cause}',
     );
     if (result.isSuccess && result.transaction != null) {
       final transaction = result.transaction!;
+      await _activeUtilityEffectsRepositoryForStore(store).loadEffects(
+        _rewardScopeForStore(store),
+      );
       return _HabitRewardCompletionOutcome(
         granted: true,
         baseXp: transaction.baseXp,
         bonusXp: transaction.bonusXp,
         baseCoins: transaction.baseCoins,
         bonusCoins: transaction.bonusCoins,
-        appliedEffectIds: const <String>[],
+        appliedEffectIds: transaction.appliedEffectIds,
         transaction: transaction,
       );
     }
@@ -3546,15 +3689,36 @@ Future<_HabitRewardReversalOutcome> _reverseHabitRewardCompletion(
     );
   }
 
-  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled();
+  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled(
+    override: store._cloudHabitRewardsEnabledOverride,
+  );
+  final cloudRewardHabitId = _cloudRewardHabitId(habit);
   if (cloudHabitRewardsEnabled &&
-      existingTransaction.cloudOperationType != null) {
-    final result = await store._habitCurrencyRewardCoordinator.reverseHabitReward(
+      _isConfirmedCloudHabitRewardTransaction(existingTransaction)) {
+    if (cloudRewardHabitId == null) {
+      _logHabitCloudReward(
+        'missing remote habit id habit=$habitId date=$dateKey',
+      );
+      return _HabitRewardReversalOutcome(
+        revokedXp: 0,
+        revokedCoins: 0,
+        reversed: false,
+        transaction: existingTransaction,
+      );
+    }
+
+    final result =
+        await store._habitCurrencyRewardCoordinator.reverseHabitReward(
       habitId: habitId,
+      remoteHabitId: cloudRewardHabitId,
       logicalDateKey: dateKey,
       completionEventId: existingTransaction.completionEventId,
+      requestId: _habitRewardTransactionId(habitId, dateKey),
     );
     if (result.isSuccess) {
+      await _activeUtilityEffectsRepositoryForStore(store).loadEffects(
+        _rewardScopeForStore(store),
+      );
       final revokedXp =
           (existingTransaction.baseXp + existingTransaction.bonusXp)
               .clamp(0, 1 << 30)

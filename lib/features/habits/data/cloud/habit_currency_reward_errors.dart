@@ -36,7 +36,8 @@ class HabitCurrencyRewardResult<T> {
   const HabitCurrencyRewardResult.success({required this.data})
       : failure = null;
 
-  const HabitCurrencyRewardResult.failure({required this.failure}) : data = null;
+  const HabitCurrencyRewardResult.failure({required this.failure})
+      : data = null;
 
   final T? data;
   final HabitCurrencyRewardFailure? failure;
