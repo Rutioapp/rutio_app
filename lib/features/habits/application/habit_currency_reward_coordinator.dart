@@ -36,6 +36,7 @@ class HabitCurrencyRewardCoordinator {
 
   Future<HabitCurrencyRewardOperationResult> applyHabitReward({
     required String habitId,
+    String? remoteHabitId,
     required String logicalDateKey,
     String? completionEventId,
     String? requestId,
@@ -43,6 +44,7 @@ class HabitCurrencyRewardCoordinator {
     return _execute(
       operationType: HabitRewardOperationType.apply,
       habitId: habitId,
+      remoteHabitId: remoteHabitId,
       logicalDateKey: logicalDateKey,
       completionEventId: completionEventId,
       requestId: requestId,
@@ -51,6 +53,7 @@ class HabitCurrencyRewardCoordinator {
 
   Future<HabitCurrencyRewardOperationResult> reverseHabitReward({
     required String habitId,
+    String? remoteHabitId,
     required String logicalDateKey,
     String? completionEventId,
     String? requestId,
@@ -58,13 +61,15 @@ class HabitCurrencyRewardCoordinator {
     return _execute(
       operationType: HabitRewardOperationType.reverse,
       habitId: habitId,
+      remoteHabitId: remoteHabitId,
       logicalDateKey: logicalDateKey,
       completionEventId: completionEventId,
       requestId: requestId,
     );
   }
 
-  Future<List<HabitCurrencyRewardOperationResult>> resolvePendingForCurrentUser({
+  Future<List<HabitCurrencyRewardOperationResult>>
+      resolvePendingForCurrentUser({
     int maxOperations = 3,
   }) async {
     if (!_enabled) return const <HabitCurrencyRewardOperationResult>[];
@@ -92,6 +97,7 @@ class HabitCurrencyRewardCoordinator {
   Future<HabitCurrencyRewardOperationResult> _execute({
     required HabitRewardOperationType operationType,
     required String habitId,
+    String? remoteHabitId,
     required String logicalDateKey,
     String? completionEventId,
     String? requestId,
@@ -120,6 +126,7 @@ class HabitCurrencyRewardCoordinator {
     }
 
     final normalizedHabitId = habitId.trim();
+    final normalizedRemoteHabitId = remoteHabitId?.trim();
     final normalizedDateKey = logicalDateKey.trim();
     if (normalizedHabitId.isEmpty || normalizedDateKey.isEmpty) {
       return HabitCurrencyRewardOperationResult(
@@ -162,11 +169,17 @@ class HabitCurrencyRewardCoordinator {
       completionEventId: activeCompletionEventId,
     );
 
+    final hasConfirmedCloudTransaction =
+        _isConfirmedCloudHabitRewardTransaction(transaction);
+    final hasConfirmedCloudReversal =
+        _isConfirmedCloudHabitRewardReversal(transaction);
+
     if (transaction != null) {
       if (operationType == HabitRewardOperationType.apply &&
-          transaction.isReversed == false) {
+          hasConfirmedCloudTransaction) {
         if (activePendingOperation != null) {
-          await _removePendingOperation(userId, activePendingOperation.requestId);
+          await _removePendingOperation(
+              userId, activePendingOperation.requestId);
         }
         return HabitCurrencyRewardOperationResult(
           state: HabitCurrencyRewardState.success,
@@ -174,9 +187,10 @@ class HabitCurrencyRewardCoordinator {
         );
       }
       if (operationType == HabitRewardOperationType.reverse &&
-          transaction.isReversed == true) {
+          hasConfirmedCloudReversal) {
         if (activePendingOperation != null) {
-          await _removePendingOperation(userId, activePendingOperation.requestId);
+          await _removePendingOperation(
+              userId, activePendingOperation.requestId);
         }
         return HabitCurrencyRewardOperationResult(
           state: HabitCurrencyRewardState.success,
@@ -247,7 +261,9 @@ class HabitCurrencyRewardCoordinator {
       final response = await _callRemote(
         operationType: operationType,
         requestId: activeRequestId,
-        habitId: normalizedHabitId,
+        habitId: normalizedRemoteHabitId?.isNotEmpty == true
+            ? normalizedRemoteHabitId!
+            : normalizedHabitId,
         logicalDateKey: normalizedDateKey,
         completionEventId: activeCompletionEventId,
       );
@@ -276,7 +292,8 @@ class HabitCurrencyRewardCoordinator {
           ledger: ledger,
         );
 
-        await _transactionRepository.saveTransaction(userId, updatedTransaction);
+        await _transactionRepository.saveTransaction(
+            userId, updatedTransaction);
         await _removePendingOperation(userId, activeRequestId);
         return HabitCurrencyRewardOperationResult(
           state: HabitCurrencyRewardState.success,
@@ -353,7 +370,8 @@ class HabitCurrencyRewardCoordinator {
     );
   }
 
-  Future<void> _upsertPendingOperation(PendingCurrencyOperation operation) async {
+  Future<void> _upsertPendingOperation(
+      PendingCurrencyOperation operation) async {
     final userId = operation.userId.trim();
     if (userId.isEmpty) return;
     final current = await _pendingOperationStore.loadPendingOperations(userId);
@@ -377,7 +395,8 @@ class HabitCurrencyRewardCoordinator {
     await _pendingOperationStore.savePendingOperations(userId, next);
   }
 
-  Future<void> _savePendingAsAwaiting(PendingCurrencyOperation operation) async {
+  Future<void> _savePendingAsAwaiting(
+      PendingCurrencyOperation operation) async {
     await _upsertPendingOperation(operation.copyWith(
       status: PendingCurrencyOperationStatus.awaitingResolution,
     ));
@@ -392,7 +411,8 @@ class HabitCurrencyRewardCoordinator {
     required HabitCurrencyRewardLedgerEntry ledger,
     required HabitRewardTransaction? transaction,
   }) {
-    final baseCoins = ledger.coinDelta < 0 ? -ledger.coinDelta : ledger.coinDelta;
+    final baseCoins =
+        ledger.coinDelta < 0 ? -ledger.coinDelta : ledger.coinDelta;
     final baseXp = ledger.baseXp;
     final bonusXp = ledger.bonusXp;
     final bonusCoins = ledger.bonusCoins;
@@ -406,8 +426,9 @@ class HabitCurrencyRewardCoordinator {
               habitId: habitId,
               localDateKey: logicalDateKey,
               completionEventId: completionEventId,
-              applyRequestId:
-                  operationType == HabitRewardOperationType.apply ? requestId : null,
+              applyRequestId: operationType == HabitRewardOperationType.apply
+                  ? requestId
+                  : null,
               reverseRequestId:
                   operationType == HabitRewardOperationType.reverse
                       ? requestId
@@ -442,6 +463,32 @@ class HabitCurrencyRewardCoordinator {
 
   String _transactionId(String habitId, String logicalDateKey) {
     return '$habitId|$logicalDateKey';
+  }
+
+  bool _isConfirmedCloudHabitRewardTransaction(
+    HabitRewardTransaction? transaction,
+  ) {
+    final cloudOperationType = transaction?.cloudOperationType?.trim() ?? '';
+    final applyRequestId = transaction?.applyRequestId?.trim() ?? '';
+    final completionEventId = transaction?.completionEventId?.trim() ?? '';
+    return transaction != null &&
+        transaction.isReversed == false &&
+        cloudOperationType == 'apply' &&
+        applyRequestId.isNotEmpty &&
+        completionEventId.isNotEmpty;
+  }
+
+  bool _isConfirmedCloudHabitRewardReversal(
+    HabitRewardTransaction? transaction,
+  ) {
+    final cloudOperationType = transaction?.cloudOperationType?.trim() ?? '';
+    final reverseRequestId = transaction?.reverseRequestId?.trim() ?? '';
+    final completionEventId = transaction?.completionEventId?.trim() ?? '';
+    return transaction != null &&
+        transaction.isReversed == true &&
+        cloudOperationType == 'reverse' &&
+        reverseRequestId.isNotEmpty &&
+        completionEventId.isNotEmpty;
   }
 
   String _resolveCompletionEventId({

@@ -2,7 +2,8 @@ import 'habit_currency_reward_coordinator.dart';
 import 'habit_currency_reward_result.dart';
 
 class ReverseHabitRewardUseCase {
-  ReverseHabitRewardUseCase({required HabitCurrencyRewardCoordinator coordinator})
+  ReverseHabitRewardUseCase(
+      {required HabitCurrencyRewardCoordinator coordinator})
       : _coordinator = coordinator;
 
   final HabitCurrencyRewardCoordinator _coordinator;

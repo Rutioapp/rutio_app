@@ -100,7 +100,8 @@ class PendingCurrencyOperation {
         lastAttemptAtMillis == null ||
         attemptCount == null ||
         status == null) {
-      throw const FormatException('Invalid pending currency operation payload.');
+      throw const FormatException(
+          'Invalid pending currency operation payload.');
     }
 
     return PendingCurrencyOperation(

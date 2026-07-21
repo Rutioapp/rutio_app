@@ -32,6 +32,8 @@ abstract interface class UtilityConsumptionRepository
     required String operationType,
     required String sourceType,
     required String sourceId,
+    String? habitId,
+    String? breakId,
   });
 
   Future<UtilityConsumptionLedgerEntry> applyStreakRecover({
@@ -68,7 +70,8 @@ class SupabaseUtilityConsumptionRepository
     if (userId.isEmpty) return const <ActiveUtilityEffect>[];
 
     try {
-      final rows = await _remoteDataSource.fetchActiveEffectRows(userId: userId);
+      final rows =
+          await _remoteDataSource.fetchActiveEffectRows(userId: userId);
       final parsed = rows
           .map(ActiveUtilityEffectRow.fromMap)
           .whereType<ActiveUtilityEffectRow>()
@@ -108,6 +111,7 @@ class SupabaseUtilityConsumptionRepository
           operationType: 'activate',
           sourceType: 'shop_activation',
           sourceId: effect.id,
+          habitId: effect.habitId,
         );
       } catch (error) {
         if (kDebugMode) {
@@ -127,7 +131,7 @@ class SupabaseUtilityConsumptionRepository
     String? habitId,
     String? breakId,
   }) async {
-    return _execute(
+    return _executeActivate(
       operationType: operationType,
       requestId: requestId,
       utilityId: utilityId,
@@ -145,13 +149,17 @@ class SupabaseUtilityConsumptionRepository
     required String operationType,
     required String sourceType,
     required String sourceId,
+    String? habitId,
+    String? breakId,
   }) async {
-    return _execute(
+    return _executeConsume(
       operationType: operationType,
       requestId: requestId,
       utilityId: utilityId,
       sourceType: sourceType,
       sourceId: sourceId,
+      habitId: habitId,
+      breakId: breakId,
     );
   }
 
@@ -162,7 +170,7 @@ class SupabaseUtilityConsumptionRepository
     required String operationType,
     required String breakId,
   }) async {
-    return _execute(
+    return _executeRecover(
       operationType: operationType,
       requestId: requestId,
       utilityId: utilityId,
@@ -172,7 +180,7 @@ class SupabaseUtilityConsumptionRepository
     );
   }
 
-  Future<UtilityConsumptionLedgerEntry> _execute({
+  Future<UtilityConsumptionLedgerEntry> _executeActivate({
     required String operationType,
     required String requestId,
     required String utilityId,
@@ -218,9 +226,106 @@ class SupabaseUtilityConsumptionRepository
     }
   }
 
+  Future<UtilityConsumptionLedgerEntry> _executeConsume({
+    required String operationType,
+    required String requestId,
+    required String utilityId,
+    required String sourceType,
+    required String sourceId,
+    String? habitId,
+    String? breakId,
+  }) async {
+    if (!_enabled) {
+      throw StateError('Utility cloud consumption is disabled.');
+    }
+
+    final userId = _currentUserId();
+    if (userId == null) {
+      throw StateError('No authenticated user session is available.');
+    }
+
+    try {
+      final response = await _remoteDataSource
+          .consumeUtilityUse(
+            requestId: requestId,
+            utilityId: utilityId,
+            operationType: operationType,
+            sourceType: sourceType,
+            sourceId: sourceId,
+            habitId: habitId,
+            breakId: breakId,
+          )
+          .timeout(_timeout);
+      final ledger = UtilityConsumptionLedgerEntry.fromMap(
+        Map<String, dynamic>.from(response as Map),
+      );
+      if (ledger.userId != userId) {
+        throw StateError('Authentication session changed during utility sync.');
+      }
+      return ledger;
+    } on TimeoutException catch (error) {
+      throw StateError('Utility cloud operation timed out: $error');
+    } on SocketException catch (error) {
+      throw StateError('Network unavailable while syncing utility: $error');
+    } on PostgrestException catch (error) {
+      throw StateError(error.message);
+    }
+  }
+
+  Future<UtilityConsumptionLedgerEntry> _executeRecover({
+    required String operationType,
+    required String requestId,
+    required String utilityId,
+    required String sourceType,
+    required String sourceId,
+    String? habitId,
+    String? breakId,
+  }) async {
+    if (!_enabled) {
+      throw StateError('Utility cloud consumption is disabled.');
+    }
+
+    if (sourceType.trim().isEmpty || sourceId.trim().isEmpty) {
+      throw StateError('Invalid streak recover source.');
+    }
+    if (habitId != null) {
+      throw StateError('habit_id is not allowed for streak recover.');
+    }
+
+    final userId = _currentUserId();
+    if (userId == null) {
+      throw StateError('No authenticated user session is available.');
+    }
+
+    try {
+      final response = await _remoteDataSource
+          .applyStreakRecover(
+            requestId: requestId,
+            utilityId: utilityId,
+            operationType: operationType,
+            breakId: breakId ?? sourceId,
+          )
+          .timeout(_timeout);
+      final ledger = UtilityConsumptionLedgerEntry.fromMap(
+        Map<String, dynamic>.from(response as Map),
+      );
+      if (ledger.userId != userId) {
+        throw StateError('Authentication session changed during utility sync.');
+      }
+      return ledger;
+    } on TimeoutException catch (error) {
+      throw StateError('Utility cloud operation timed out: $error');
+    } on SocketException catch (error) {
+      throw StateError('Network unavailable while syncing utility: $error');
+    } on PostgrestException catch (error) {
+      throw StateError(error.message);
+    }
+  }
+
   ActiveUtilityEffect? _toEffect(ActiveUtilityEffectRow row) {
     final catalogItem = row.catalogItem;
     if (catalogItem == null) return null;
+    if (row.status != 'active') return null;
     if (row.remainingUses <= 0) return null;
     if (row.utilityType == ActiveUtilityEffectType.xpBoost &&
         catalogItem.type != ShopItemType.xpBoost) {

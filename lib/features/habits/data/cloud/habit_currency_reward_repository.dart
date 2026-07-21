@@ -89,8 +89,8 @@ class SupabaseHabitCurrencyRewardRepository
     required String completionEventId,
   }) async {
     if (!_enabled) {
-      return const HabitCurrencyRewardResult<HabitCurrencyRewardLedgerEntry>
-          .failure(
+      return const HabitCurrencyRewardResult<
+          HabitCurrencyRewardLedgerEntry>.failure(
         failure: HabitCurrencyRewardFailure(
           code: HabitCurrencyRewardFailureCode.featureDisabled,
           message: 'Habit cloud rewards are disabled.',
@@ -101,8 +101,8 @@ class SupabaseHabitCurrencyRewardRepository
 
     final userId = _currentUserId();
     if (userId == null) {
-      return const HabitCurrencyRewardResult<HabitCurrencyRewardLedgerEntry>
-          .failure(
+      return const HabitCurrencyRewardResult<
+          HabitCurrencyRewardLedgerEntry>.failure(
         failure: HabitCurrencyRewardFailure(
           code: HabitCurrencyRewardFailureCode.unauthenticated,
           message: 'No authenticated user session is available.',
@@ -129,8 +129,8 @@ class SupabaseHabitCurrencyRewardRepository
       );
 
       if (entry.userId != userId) {
-        return const HabitCurrencyRewardResult<HabitCurrencyRewardLedgerEntry>
-            .failure(
+        return const HabitCurrencyRewardResult<
+            HabitCurrencyRewardLedgerEntry>.failure(
           failure: HabitCurrencyRewardFailure(
             code: HabitCurrencyRewardFailureCode.sessionChanged,
             message: 'Authentication session changed during habit reward.',
@@ -161,12 +161,22 @@ class SupabaseHabitCurrencyRewardRepository
         ),
       );
     } on PostgrestException catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[habit_currency_reward] postgrest error '
+          'code=${error.code} '
+          'message=${error.message} '
+          'details=${error.details} '
+          'hint=${error.hint}',
+        );
+      }
       return HabitCurrencyRewardResult<HabitCurrencyRewardLedgerEntry>.failure(
         failure: _mapPostgrestError(error),
       );
     } on FormatException catch (error) {
       if (kDebugMode) {
-        debugPrint('[habit_currency_reward] malformed response: ${error.message}');
+        debugPrint(
+            '[habit_currency_reward] malformed response: ${error.message}');
       }
       return HabitCurrencyRewardResult<HabitCurrencyRewardLedgerEntry>.failure(
         failure: HabitCurrencyRewardFailure(
@@ -197,6 +207,16 @@ class SupabaseHabitCurrencyRewardRepository
     required String logicalDateKey,
     required String completionEventId,
   }) {
+    if (kDebugMode) {
+      debugPrint(
+        '[habit_currency_reward] rpc call '
+        'operationType=$operationType '
+        'requestId=$requestId '
+        'habitId=$habitId '
+        'logicalDateKey=$logicalDateKey '
+        'completionEventId=$completionEventId',
+      );
+    }
     if (operationType == 'reverse') {
       return _remoteDataSource.reverseHabitCompletionReward(
         requestId: requestId,

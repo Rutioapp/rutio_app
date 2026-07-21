@@ -23,6 +23,8 @@ abstract class UtilityConsumptionRemoteDataSource {
     required String operationType,
     required String sourceType,
     required String sourceId,
+    String? habitId,
+    String? breakId,
   });
 
   Future<Object?> applyStreakRecover({
@@ -51,6 +53,7 @@ class SupabaseUtilityConsumptionRemoteDataSource
         .from('user_utility_effects')
         .select()
         .eq('user_id', userId)
+        .eq('status', 'active')
         .order('activated_at', ascending: false);
     return (rows as List)
         .whereType<Map>()
@@ -89,6 +92,8 @@ class SupabaseUtilityConsumptionRemoteDataSource
     required String operationType,
     required String sourceType,
     required String sourceId,
+    String? habitId,
+    String? breakId,
   }) {
     return _clientOrInstance.rpc(
       'consume_utility_use',
@@ -98,6 +103,8 @@ class SupabaseUtilityConsumptionRemoteDataSource
         'p_operation_type': operationType,
         'p_source_type': sourceType,
         'p_source_id': sourceId,
+        if (habitId != null) 'p_habit_id': habitId,
+        if (breakId != null) 'p_break_id': breakId,
       },
     );
   }
