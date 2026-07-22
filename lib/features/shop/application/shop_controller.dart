@@ -542,6 +542,9 @@ class ShopController extends ChangeNotifier {
     final repoEffects = scope == null
         ? const <ActiveUtilityEffect>[]
         : await _activeUtilityEffectsRepository.loadEffects(scope);
+    if (_utilityConsumptionEnabled) {
+      return repoEffects;
+    }
     return <ActiveUtilityEffect>[
       ...repoEffects,
       ..._streakShieldEffectsFromStore(),
@@ -913,16 +916,48 @@ class ShopController extends ChangeNotifier {
     required String habitId,
     required String operationId,
     String utilityId = 'utility_streak_shield_1',
-  }) {
-    return ActivateStreakShieldUseCase(
-      userStateStore: _userStateStore,
-      shopRepository: _shopRepository,
-      nowProvider: _nowProvider,
-    ).execute(
-      habitId: habitId,
-      operationId: operationId,
-      utilityId: utilityId,
-    );
+  }) async {
+    final normalizedUtilityId = utilityId.trim();
+    final item = ShopCatalog.getItemById(normalizedUtilityId);
+    if (item == null ||
+        item.category != ShopItemCategory.utility ||
+        item.type != ShopItemType.streakShield) {
+      return const StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.habitNotEligible,
+        errorMessage: 'Streak Shield utility is not available.',
+      );
+    }
+
+    final activationKey = _activationKey(normalizedUtilityId);
+    if (_pendingUtilityActivations.contains(activationKey)) {
+      return const StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.operationAlreadyProcessed,
+        errorMessage: 'Streak Shield activation is already in progress.',
+      );
+    }
+
+    _pendingUtilityActivations.add(activationKey);
+    try {
+      if (_utilityConsumptionEnabled) {
+        return await _activateStreakShieldCloud(
+          habitId: habitId,
+          operationId: operationId,
+          item: item,
+        );
+      }
+
+      return await ActivateStreakShieldUseCase(
+        userStateStore: _userStateStore,
+        shopRepository: _shopRepository,
+        nowProvider: _nowProvider,
+      ).execute(
+        habitId: habitId,
+        operationId: operationId,
+        utilityId: normalizedUtilityId,
+      );
+    } finally {
+      _pendingUtilityActivations.remove(activationKey);
+    }
   }
 
   Future<StreakRecoverOperationResult> recoverStreakBreak({
@@ -939,6 +974,54 @@ class ShopController extends ChangeNotifier {
       operationId: operationId,
       utilityId: utilityId,
     );
+  }
+
+  Future<StreakShieldOperationResult> _activateStreakShieldCloud({
+    required String habitId,
+    required String operationId,
+    required ShopItem item,
+  }) async {
+    final visibleShopState = await getVisibleShopState();
+    final visibleWalletCoins = visibleCoinBalance ?? getWalletCoins();
+    final visibleItemState = _buildItemState(
+      item: item,
+      shopState: visibleShopState,
+      walletCoins: visibleWalletCoins,
+    );
+    final expectedQuantity = visibleItemState.backpackQuantity > 0
+        ? visibleItemState.backpackQuantity - 1
+        : 0;
+    final normalizedHabitId = habitId.trim();
+    final normalizedOperationId = operationId.trim();
+    final currentUserId = _currentSupabaseUserId();
+    if (normalizedHabitId.isEmpty || normalizedOperationId.isEmpty) {
+      return const StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.operationAlreadyProcessed,
+      );
+    }
+    if (currentUserId == null) {
+      return const StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.persistenceFailure,
+        errorMessage: 'No authenticated user session is available.',
+      );
+    }
+
+    final result = await _userStateStore.activateStreakShield(
+      habitId: normalizedHabitId,
+      operationId: normalizedOperationId,
+      utilityId: item.id,
+    );
+    if (result.isSuccess && isCloudEconomyEnabled) {
+      await _refreshCloudPurchaseSnapshot(force: true);
+      final refreshedQuantity =
+          _cloudPurchaseInventoryQuantityByItemId[item.id];
+      if (refreshedQuantity == null || refreshedQuantity > expectedQuantity) {
+        _cloudPurchaseInventoryQuantityByItemId[item.id] = expectedQuantity;
+      }
+      await getVisibleShopState();
+      return result;
+    }
+    return result;
   }
 
   Future<ShopCloudReadResult<ShopCloudSnapshot>?>
@@ -1307,40 +1390,20 @@ class ShopController extends ChangeNotifier {
       return shopState;
     }
 
-    final updatedBackpackItems = shopState.backpackItems.map((entry) {
-      final cloudQuantity =
-          _cloudPurchaseInventoryQuantityByItemId[entry.itemId];
-      if (cloudQuantity == null) return entry;
-      return entry.copyWith(quantity: cloudQuantity);
-    }).toList(growable: true);
-
-    for (final entry in _cloudPurchaseInventoryQuantityByItemId.entries) {
-      if (entry.value <= 0 ||
-          updatedBackpackItems.any((item) => item.itemId == entry.key)) {
-        continue;
-      }
-      updatedBackpackItems.add(
-        BackpackItem(
-          itemId: entry.key,
-          quantity: entry.value,
-          updatedAtMillis: _nowProvider().millisecondsSinceEpoch,
-        ),
-      );
-    }
-
-    if (item != null && _shouldUseCloudPurchase(item)) {
-      final cloudQuantity = _cloudPurchaseInventoryQuantityByItemId[item.id];
-      if (cloudQuantity != null &&
-          !updatedBackpackItems.any((entry) => entry.itemId == item.id)) {
-        updatedBackpackItems.add(
+    final updatedBackpackItems = <BackpackItem>[
+      ...shopState.backpackItems
+          .where(
+            (entry) => !_supportedCloudUtilityIds.contains(entry.itemId),
+          )
+          .map((entry) => entry.copyWith()),
+      for (final utilityId in _supportedCloudUtilityIds)
+        if ((_cloudPurchaseInventoryQuantityByItemId[utilityId] ?? 0) > 0)
           BackpackItem(
-            itemId: item.id,
-            quantity: cloudQuantity,
+            itemId: utilityId,
+            quantity: _cloudPurchaseInventoryQuantityByItemId[utilityId]!,
             updatedAtMillis: _nowProvider().millisecondsSinceEpoch,
           ),
-        );
-      }
-    }
+    ];
 
     return shopState.copyWith(backpackItems: updatedBackpackItems);
   }

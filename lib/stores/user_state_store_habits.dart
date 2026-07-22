@@ -3348,6 +3348,12 @@ void _logHabitCloudReward(String message) {
   }
 }
 
+void _logStreakShieldCloud(String message) {
+  if (kDebugMode) {
+    debugPrint('[streak_shield_cloud] $message');
+  }
+}
+
 ActiveUtilityEffect? _activeUtilityEffectForType(
   List<ActiveUtilityEffect> effects,
   ActiveUtilityEffectType type,
@@ -4230,17 +4236,44 @@ Future<StreakShieldOperationResult> _activateStreakShield(
   final now = store._nowProvider();
   if (store._utilityConsumptionRepository != null &&
       UtilityConsumptionConfig.resolveEnabled()) {
+    final cloudRewardHabitId = _cloudRewardHabitId(habit);
+    final requestId =
+        'utility_activate:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedOperationId';
+    _logStreakShieldCloud(
+      'start habitId=$normalizedHabitId remoteHabitId=${cloudRewardHabitId ?? "<missing>"} '
+      'operationId=$normalizedOperationId requestId=$requestId',
+    );
+    if (cloudRewardHabitId == null) {
+      _logStreakShieldCloud(
+        'error habitId=$normalizedHabitId remoteHabitId=<missing> '
+        'operationId=$normalizedOperationId reason=missing_remote_habit_uuid',
+      );
+      return const StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.persistenceFailure,
+        errorMessage:
+            'Missing remote habit UUID for cloud streak shield activation.',
+      );
+    }
     try {
-      await store._utilityConsumptionRepository!.activateUtilityEffect(
-        requestId:
-            'utility_activate:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedOperationId',
+      final ledger =
+          await store._utilityConsumptionRepository!.activateUtilityEffect(
+        requestId: requestId,
         utilityId: normalizedUtilityId,
         operationType: 'activate',
         sourceType: 'streak_shield',
         sourceId: normalizedOperationId,
-        habitId: normalizedHabitId,
+        habitId: cloudRewardHabitId,
+      );
+      _logStreakShieldCloud(
+        'result habitId=$normalizedHabitId remoteHabitId=$cloudRewardHabitId '
+        'operationId=$normalizedOperationId ledgerId=${ledger.id} '
+        'idempotent=${ledger.isIdempotent}',
       );
     } catch (error) {
+      _logStreakShieldCloud(
+        'error habitId=$normalizedHabitId remoteHabitId=$cloudRewardHabitId '
+        'operationId=$normalizedOperationId error=$error',
+      );
       return StreakShieldOperationResult(
         status: StreakShieldOperationStatus.persistenceFailure,
         errorMessage: error.toString(),

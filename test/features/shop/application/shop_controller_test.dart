@@ -10,7 +10,9 @@ import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_read_repository.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
+import 'package:rutio/features/shop/data/cloud/utility_consumption_ledger.dart';
 import 'package:rutio/features/shop/data/local_active_utility_effects_repository.dart';
+import 'package:rutio/features/shop/data/cloud/utility_consumption_repository.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/domain/active_utility_effects_repository.dart';
 import 'package:rutio/features/shop/domain/models/active_utility_effect.dart';
@@ -97,6 +99,126 @@ void main() {
       expect(controller.economySource, ShopEconomySource.cloud);
       expect(controller.economyStatus, ShopCloudEconomyStatus.walletMissing);
       expect(controller.visibleCoinBalance, isNull);
+    });
+
+    test(
+        'cloud inventory removes stale local quantity when remote row is missing',
+        () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
+          ],
+        ),
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () =>
+              _cloudSnapshot(walletCoins: 10000, quantity: 0),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+      final visibleShopState = await controller.getVisibleShopState();
+
+      expect(
+        visibleShopState.backpackItems
+            .where((entry) => entry.itemId == 'utility_xp_boost_1d'),
+        isEmpty,
+      );
+    });
+
+    test('cloud inventory quantity 1 replaces any local quantity', () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
+          ],
+        ),
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_xp_boost_1d',
+            quantity: 1,
+          ),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+      final visibleShopState = await controller.getVisibleShopState();
+      final cloudEntries = visibleShopState.backpackItems
+          .where((entry) => entry.itemId == 'utility_xp_boost_1d')
+          .toList(growable: false);
+
+      expect(cloudEntries, hasLength(1));
+      expect(cloudEntries.single.quantity, 1);
+    });
+
+    test('cloud inventory does not create duplicate backpack entries',
+        () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 1),
+            BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 1),
+          ],
+        ),
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_xp_boost_1d',
+            quantity: 1,
+          ),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+      final visibleShopState = await controller.getVisibleShopState();
+      final cloudEntries = visibleShopState.backpackItems
+          .where((entry) => entry.itemId == 'utility_xp_boost_1d')
+          .toList(growable: false);
+
+      expect(cloudEntries, hasLength(1));
+      expect(cloudEntries.single.quantity, 1);
+    });
+
+    test('non-cloud backpack items keep their local state', () async {
+      final shopRepository = _InMemoryShopRepository();
+      const shopState = ShopState(
+        backpackItems: <BackpackItem>[
+          BackpackItem(itemId: 'utility_custom_local_only', quantity: 3),
+        ],
+      );
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: shopState,
+        shopRepository: shopRepository,
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () =>
+              _cloudSnapshot(walletCoins: 10000, quantity: 0),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+      final visibleShopState = await controller.getVisibleShopState();
+
+      expect(visibleShopState.backpackItems, hasLength(1));
+      expect(visibleShopState.backpackItems.single.itemId,
+          'utility_custom_local_only');
+      expect(visibleShopState.backpackItems.single.quantity, 3);
     });
 
     test('purchaseItem with missing item fails in a controlled way', () async {
@@ -388,6 +510,197 @@ void main() {
       expect(activeEffects.single.habitId, 'habit-1');
     });
 
+    test('activateStreakShield cloud keeps the local shield state intact',
+        () async {
+      final utilityRepo = _RecordingUtilityConsumptionRepository();
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_streak_shield_1', quantity: 1),
+          ],
+        ),
+        activeHabits: const <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'habit-1',
+            'title': 'Leer',
+            'remoteId': '11111111-1111-4111-8111-111111111111',
+          },
+        ],
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        utilityConsumptionEnabled: true,
+        utilityConsumptionRepository: utilityRepo,
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_streak_shield_1',
+            quantity: 1,
+          ),
+        ),
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+      );
+
+      final result = await controller.activateStreakShield(
+        habitId: 'habit-1',
+        operationId: 'shield-op-cloud-1',
+      );
+
+      expect(result.status, StreakShieldOperationStatus.success);
+      expect(result.isSuccess, isTrue);
+      expect(utilityRepo.calls, 1);
+      final activeEffects = await controller.getActiveUtilityEffects();
+      expect(activeEffects, hasLength(1));
+      expect(activeEffects.single.type, ActiveUtilityEffectType.streakShield);
+      expect(
+        activeEffects.single.habitId,
+        '11111111-1111-4111-8111-111111111111',
+      );
+      expect(utilityRepo.requests.single['p_habit_id'],
+          '11111111-1111-4111-8111-111111111111');
+      expect(utilityRepo.requests.single['p_request_id'],
+          'utility_activate:shop-controller-user:shield-op-cloud-1');
+      expect(controller.getActiveStreakShieldForHabit('habit-1'), isNotNull);
+      expect(controller.getActiveStreakShieldForHabit('habit-1')?.habitId,
+          'habit-1');
+      expect(
+        (await controller.getItemState('utility_streak_shield_1'))
+            ?.backpackQuantity,
+        0,
+      );
+    });
+
+    test('activateStreakShield cloud without remote UUID skips the RPC',
+        () async {
+      final utilityRepo = _RecordingUtilityConsumptionRepository();
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_streak_shield_1', quantity: 1),
+          ],
+        ),
+        activeHabits: const <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'habit-1',
+            'title': 'Leer',
+          },
+        ],
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        utilityConsumptionEnabled: true,
+        utilityConsumptionRepository: utilityRepo,
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_streak_shield_1',
+            quantity: 1,
+          ),
+        ),
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+      );
+
+      final result = await controller.activateStreakShield(
+        habitId: 'habit-1',
+        operationId: 'shield-op-cloud-2',
+      );
+
+      expect(result.status, StreakShieldOperationStatus.persistenceFailure);
+      expect(
+          result.errorMessage,
+          contains(
+              'Missing remote habit UUID for cloud streak shield activation'));
+      expect(utilityRepo.calls, 0);
+      expect(controller.getActiveStreakShieldForHabit('habit-1'), isNull);
+      expect(
+        (await controller.getItemState('utility_streak_shield_1'))
+            ?.backpackQuantity,
+        1,
+      );
+    });
+
+    test('activateStreakShield cloud refreshes the visible snapshot', () async {
+      final shopCloudReadRepository = _CountingShopCloudReadRepository(
+        snapshotFactory: () => _cloudSnapshot(walletCoins: 10000),
+      );
+      final utilityRepo = _RecordingUtilityConsumptionRepository();
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_streak_shield_1', quantity: 1),
+          ],
+        ),
+        activeHabits: const <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'habit-1',
+            'title': 'Leer',
+            'remoteId': '11111111-1111-4111-8111-111111111111',
+          },
+        ],
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        utilityConsumptionEnabled: true,
+        utilityConsumptionRepository: utilityRepo,
+        shopCloudReadRepository: shopCloudReadRepository,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+      );
+
+      final result = await controller.activateStreakShield(
+        habitId: 'habit-1',
+        operationId: 'shield-op-cloud-3',
+      );
+
+      expect(result.status, StreakShieldOperationStatus.success);
+      expect(shopCloudReadRepository.fetchCount, greaterThanOrEqualTo(1));
+      expect(controller.visibleCoinBalance, 10000);
+    });
+
+    test('activateStreakShield cloud rejects a second shield on the same habit',
+        () async {
+      final utilityRepo = _RecordingUtilityConsumptionRepository();
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_streak_shield_1', quantity: 1),
+          ],
+        ),
+        activeHabits: const <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'habit-1',
+            'title': 'Leer',
+            'remoteId': '11111111-1111-4111-8111-111111111111',
+          },
+        ],
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        utilityConsumptionEnabled: true,
+        utilityConsumptionRepository: utilityRepo,
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_streak_shield_1',
+            quantity: 1,
+          ),
+        ),
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+      );
+
+      final first = await controller.activateStreakShield(
+        habitId: 'habit-1',
+        operationId: 'shield-op-cloud-4',
+      );
+      final second = await controller.activateStreakShield(
+        habitId: 'habit-1',
+        operationId: 'shield-op-cloud-5',
+      );
+
+      expect(first.status, StreakShieldOperationStatus.success);
+      expect(second.status, StreakShieldOperationStatus.shieldAlreadyActive);
+      expect(utilityRepo.calls, 1);
+    });
+
     test('recoverStreakBreak restores the break and consumes the item',
         () async {
       final controller = await _createController(
@@ -409,7 +722,7 @@ void main() {
             'userId': 'shop-controller-user',
             'habitId': 'habit-1',
             'brokenAtMillis': 1,
-            'missedOccurrenceDateKey': '2026-07-20',
+            'missedOccurrenceDateKey': '2026-07-21',
             'previousStreak': 5,
             'currentStreakAfterBreak': 0,
             'status': 'recoverable',
@@ -565,13 +878,16 @@ Future<ShopController> _createController({
   ShopState shopState = const ShopState.initial(),
   List<Map<String, dynamic>> activeHabits = const <Map<String, dynamic>>[],
   Map<String, dynamic> recoverableBreaks = const <String, dynamic>{},
+  ShopLocalRepository? shopRepository,
   ActiveUtilityEffectsRepository? activeUtilityEffectsRepository,
   MysteryBoxOpeningRepository? mysteryBoxOpeningRepository,
   FixedRandomSource? randomSource,
   DateTime Function()? nowProvider,
   bool? cloudReadEnabled,
   bool? cloudPurchaseEnabled,
+  bool utilityConsumptionEnabled = false,
   ShopCloudReadRepository? shopCloudReadRepository,
+  UtilityConsumptionRepository? utilityConsumptionRepository,
   String? Function()? currentSupabaseUserIdProvider,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -581,6 +897,8 @@ Future<ShopController> _createController({
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
+    utilityConsumptionRepository: utilityConsumptionRepository,
+    utilityConsumptionEnabledOverride: utilityConsumptionEnabled,
   );
   await store.save(
     _baseState(
@@ -590,21 +908,46 @@ Future<ShopController> _createController({
     ),
   );
 
-  final shopRepository = ShopLocalRepository();
-  await shopRepository.save(shopState);
+  final shopRepositoryInstance = shopRepository ?? ShopLocalRepository();
+  await shopRepositoryInstance.save(shopState);
 
   return ShopController(
     userStateStore: store,
-    shopRepository: shopRepository,
+    shopRepository: shopRepositoryInstance,
     activeUtilityEffectsRepository: activeUtilityEffectsRepository,
+    utilityConsumptionRepository: utilityConsumptionRepository,
     mysteryBoxOpeningRepository: mysteryBoxOpeningRepository,
     randomSource: randomSource,
     nowProvider: nowProvider,
     cloudReadEnabled: cloudReadEnabled,
     cloudPurchaseEnabled: cloudPurchaseEnabled,
+    utilityConsumptionEnabled: utilityConsumptionEnabled,
     shopCloudReadRepository: shopCloudReadRepository,
     currentSupabaseUserIdProvider: currentSupabaseUserIdProvider,
   );
+}
+
+class _InMemoryShopRepository implements ShopLocalRepository {
+  _InMemoryShopRepository({
+    ShopState state = const ShopState.initial(),
+  }) : _state = state;
+
+  ShopState _state;
+
+  @override
+  Future<ShopState> load() async {
+    return _state;
+  }
+
+  @override
+  Future<void> save(ShopState state) async {
+    _state = state;
+  }
+
+  @override
+  Future<void> clear() async {
+    _state = const ShopState.initial();
+  }
 }
 
 class _FailingActiveUtilityEffectsRepository
@@ -683,6 +1026,128 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
   Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
     return ShopCloudReadResult<ShopCloudSnapshot>.success(
       data: snapshotFactory(),
+    );
+  }
+}
+
+class _CountingShopCloudReadRepository extends _FakeShopCloudReadRepository {
+  _CountingShopCloudReadRepository({
+    required super.snapshotFactory,
+  });
+
+  int fetchCount = 0;
+
+  @override
+  Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
+    fetchCount += 1;
+    return super.fetchShopSnapshot();
+  }
+}
+
+class _RecordingUtilityConsumptionRepository
+    implements UtilityConsumptionRepository {
+  int calls = 0;
+  final List<Map<String, dynamic>> requests = <Map<String, dynamic>>[];
+  final List<ActiveUtilityEffect> _effects = <ActiveUtilityEffect>[];
+
+  @override
+  Future<List<ActiveUtilityEffect>> loadEffects(String userScope) async {
+    return List<ActiveUtilityEffect>.unmodifiable(_effects);
+  }
+
+  @override
+  Future<void> saveEffects(
+    String userScope,
+    List<ActiveUtilityEffect> effects,
+  ) async {
+    _effects
+      ..clear()
+      ..addAll(effects);
+  }
+
+  @override
+  Future<UtilityConsumptionLedgerEntry> activateUtilityEffect({
+    required String requestId,
+    required String utilityId,
+    required String operationType,
+    required String sourceType,
+    required String sourceId,
+    String? habitId,
+    String? breakId,
+  }) async {
+    calls += 1;
+    requests.add(<String, dynamic>{
+      'p_request_id': requestId,
+      'p_utility_id': utilityId,
+      'p_operation_type': operationType,
+      'p_source_type': sourceType,
+      'p_source_id': sourceId,
+      if (habitId != null) 'p_habit_id': habitId,
+      if (breakId != null) 'p_break_id': breakId,
+    });
+    _effects.add(
+      ActiveUtilityEffect(
+        id: 'effect-$calls',
+        utilityId: utilityId,
+        type: ActiveUtilityEffectType.streakShield,
+        activatedAtMillis: DateTime.utc(2026, 7, 18).millisecondsSinceEpoch,
+        remainingUses: 1,
+        totalUses: 1,
+        habitId: habitId,
+      ),
+    );
+    return UtilityConsumptionLedgerEntry(
+      id: 'ledger-$calls',
+      userId: 'shop-controller-user',
+      requestId: requestId,
+      operationType: operationType,
+      sourceType: sourceType,
+      sourceId: sourceId,
+      utilityId: utilityId,
+      utilityType: ActiveUtilityEffectType.streakShield,
+      effectId: 'effect-$calls',
+      totalUses: 1,
+      remainingUses: 1,
+      createdAt: DateTime.utc(2026, 7, 18),
+      isIdempotent: calls > 1,
+    );
+  }
+
+  @override
+  Future<UtilityConsumptionLedgerEntry> consumeUtilityUse({
+    required String requestId,
+    required String utilityId,
+    required String operationType,
+    required String sourceType,
+    required String sourceId,
+    String? habitId,
+    String? breakId,
+  }) {
+    return activateUtilityEffect(
+      requestId: requestId,
+      utilityId: utilityId,
+      operationType: operationType,
+      sourceType: sourceType,
+      sourceId: sourceId,
+      habitId: habitId,
+      breakId: breakId,
+    );
+  }
+
+  @override
+  Future<UtilityConsumptionLedgerEntry> applyStreakRecover({
+    required String requestId,
+    required String utilityId,
+    required String operationType,
+    required String breakId,
+  }) {
+    return activateUtilityEffect(
+      requestId: requestId,
+      utilityId: utilityId,
+      operationType: operationType,
+      sourceType: 'streak_recover',
+      sourceId: breakId,
+      breakId: breakId,
     );
   }
 }
