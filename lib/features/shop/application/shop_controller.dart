@@ -219,7 +219,9 @@ class ShopController extends ChangeNotifier {
               readEnabled: ShopCloudConfig.resolveReadEnabled(
                   override: cloudReadEnabled),
               nowProvider: nowProvider,
-            );
+            ) {
+    _globalWalletController?.addListener(_handleGlobalWalletChanged);
+  }
 
   final UserStateStore _userStateStore;
   final GlobalWalletController? _globalWalletController;
@@ -274,6 +276,17 @@ class ShopController extends ChangeNotifier {
 
   int getWalletCoins() {
     return _walletCoins();
+  }
+
+  @override
+  void dispose() {
+    _globalWalletController?.removeListener(_handleGlobalWalletChanged);
+    super.dispose();
+  }
+
+  void _handleGlobalWalletChanged() {
+    if (_globalWalletController == null) return;
+    notifyListeners();
   }
 
   bool get isCloudPurchaseEnabled => _cloudPurchaseEnabled;
@@ -1462,9 +1475,19 @@ class ShopController extends ChangeNotifier {
     }
     final currentUserId = _currentSupabaseUserId();
     if (currentUserId != null) {
+      if (_globalWalletController?.isEnabled == true) {
+        await _globalWalletController!.applyConfirmedBalance(
+          userId: currentUserId,
+          coins: remoteResult.coins,
+          version: remoteResult.walletVersion,
+          updatedAt: _nowProvider().toUtc(),
+        );
+      }
       unawaited(
         _globalWalletController?.syncSession(
-            userId: currentUserId, force: true),
+          userId: currentUserId,
+          force: true,
+        ),
       );
     }
   }

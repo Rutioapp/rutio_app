@@ -4,6 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_state.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_errors.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_repository.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
+import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_cache.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_snapshot.dart';
@@ -163,6 +169,126 @@ void main() {
       final legacyState = await ShopCosmeticsRepository().load();
 
       expect(legacyState.ownedAssetIds, isNot(contains('wallpaper_mist_blue')));
+    });
+
+    test('cloud purchase applies the confirmed wallet balance immediately',
+        () async {
+      final walletRepo = _FakeCloudWalletRepository()
+        ..enqueueSuccess(
+          _walletSnapshot(
+            userId: 'shop-cloud-user',
+            coins: 380,
+            version: 2,
+            updatedAt: DateTime.utc(2026, 7, 19, 14),
+          ),
+        );
+      final walletController = GlobalWalletController(
+        repository: walletRepo,
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'shop-cloud-user',
+        enabled: true,
+      );
+      await walletController.applyConfirmedBalance(
+        userId: 'shop-cloud-user',
+        coins: 500,
+        version: 1,
+        updatedAt: DateTime.utc(2026, 7, 19, 13),
+      );
+      final env = await _createController(
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async => _success(
+                  _snapshot(
+                    userId: 'shop-cloud-user',
+                    ownedAssetIds: const <String>[],
+                  ),
+                ),
+            () async => _success(
+                  _snapshot(
+                    userId: 'shop-cloud-user',
+                    ownedAssetIds: const <String>[],
+                  ),
+                ),
+            () async => _success(
+                  _snapshot(
+                    userId: 'shop-cloud-user',
+                    ownedAssetIds: <String>['wallpaper_mist_blue'],
+                  ),
+                ),
+          ],
+        ),
+        globalWalletController: walletController,
+      );
+
+      final result = await env.controller.purchaseAsset('wallpaper_mist_blue');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(result.isSuccess, isTrue);
+      expect(walletController.state.status, GlobalWalletStatus.ready);
+      expect(walletController.state.coins, 380);
+      expect(walletRepo.calls, 1);
+    });
+
+    test('bundle purchase applies the confirmed wallet balance immediately',
+        () async {
+      final walletRepo = _FakeCloudWalletRepository()
+        ..enqueueSuccess(
+          _walletSnapshot(
+            userId: 'shop-cloud-user',
+            coins: 175,
+            version: 2,
+            updatedAt: DateTime.utc(2026, 7, 19, 15),
+          ),
+        );
+      final walletController = GlobalWalletController(
+        repository: walletRepo,
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'shop-cloud-user',
+        enabled: true,
+      );
+      await walletController.applyConfirmedBalance(
+        userId: 'shop-cloud-user',
+        coins: 500,
+        version: 1,
+        updatedAt: DateTime.utc(2026, 7, 19, 13),
+      );
+      final env = await _createController(
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async => _success(
+                  _snapshot(
+                    userId: 'shop-cloud-user',
+                    ownedAssetIds: const <String>[],
+                  ),
+                ),
+            () async => _success(
+                  _snapshot(
+                    userId: 'shop-cloud-user',
+                    ownedAssetIds: const <String>[],
+                  ),
+                ),
+            () async => _success(
+                  _snapshot(
+                    userId: 'shop-cloud-user',
+                    ownedAssetIds: const <String>[
+                      'wallpaper_rutio_beige',
+                      'habit_card_warm_beige',
+                      'user_card_warm_beige',
+                    ],
+                  ),
+                ),
+          ],
+        ),
+        globalWalletController: walletController,
+      );
+
+      final result = await env.controller.purchaseBundle('pack_blanco_roto');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(result.isSuccess, isTrue);
+      expect(walletController.state.status, GlobalWalletStatus.ready);
+      expect(walletController.state.coins, 175);
+      expect(walletRepo.calls, 1);
     });
 
     test('cloud equip switches the correct slot and survives reload', () async {
@@ -498,7 +624,9 @@ Future<_ControllerEnv> _createController({
   CloudCosmeticsRepository? cloudRepository,
   CloudCosmeticsCache? cloudCache,
   bool? cloudEnabled = true,
+  GlobalWalletController? globalWalletController,
 }) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
   final repo = UserStateRepository(storage: UserStateStorage())
     ..setActiveUserScope('shop-cloud-user');
   final store = UserStateStore(
@@ -510,6 +638,7 @@ Future<_ControllerEnv> _createController({
   return (
     controller: ShopCosmeticsController(
       userStateStore: store,
+      globalWalletController: globalWalletController,
       cloudRepository: cloudRepository,
       cloudCache: cloudCache,
       cloudEnabled: cloudEnabled,
@@ -746,6 +875,68 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
       createdAt: DateTime.utc(2026, 7, 19, 12),
     );
   }
+}
+
+class _FakeCloudWalletRepository implements CloudWalletRepository {
+  final List<Future<WalletReadResult<CloudWalletSnapshot>>> _responses =
+      <Future<WalletReadResult<CloudWalletSnapshot>>>[];
+
+  int calls = 0;
+
+  void enqueueSuccess(CloudWalletSnapshot snapshot) {
+    _responses.add(
+      Future<WalletReadResult<CloudWalletSnapshot>>.value(
+        WalletReadResult<CloudWalletSnapshot>.success(data: snapshot),
+      ),
+    );
+  }
+
+  @override
+  Future<WalletReadResult<CloudWalletSnapshot>> fetchWallet() {
+    calls += 1;
+    if (_responses.isEmpty) {
+      throw StateError('No queued wallet response.');
+    }
+    return _responses.removeAt(0);
+  }
+}
+
+class _MemoryWalletCache implements WalletCache {
+  final Map<String, WalletCacheEntry> _entries = <String, WalletCacheEntry>{};
+
+  @override
+  Future<WalletCacheEntry?> read(String userId) async => _entries[userId];
+
+  @override
+  Future<WalletCacheEntry?> save(CloudWalletSnapshot snapshot) async {
+    final next = WalletCacheEntry.fromSnapshot(
+      snapshot,
+      cachedAt: DateTime.now().toUtc(),
+    );
+    _entries[snapshot.userId] = next;
+    return next;
+  }
+
+  @override
+  Future<void> clearForUser(String userId) async {
+    _entries.remove(userId);
+  }
+}
+
+CloudWalletSnapshot _walletSnapshot({
+  required String userId,
+  required int coins,
+  required int version,
+  required DateTime updatedAt,
+}) {
+  return CloudWalletSnapshot(
+    userId: userId,
+    coins: coins,
+    version: version,
+    createdAt: updatedAt,
+    updatedAt: updatedAt,
+    fetchedAt: updatedAt,
+  );
 }
 
 class _EquipCall {

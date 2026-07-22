@@ -299,7 +299,7 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
     ShopCosmeticsController controller,
   ) async {
     await controller.getState();
-    _resolvedWalletCoins = await controller.getWalletCoins();
+    _resolvedWalletCoins = controller.visibleWalletCoins;
   }
 
   _CustomizationViewData _buildControllerViewData(
@@ -319,7 +319,7 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
         .toList(growable: false);
 
     return _CustomizationViewData(
-      walletCoins: _resolvedWalletCoins ?? widget.walletCoins,
+      walletCoins: controller.visibleWalletCoins,
       equippedCosmetics: EquippedCosmetics(
         backgroundItemId: state.equippedWallpaperId,
         habitCardItemId: state.equippedHabitCardSkinId,
