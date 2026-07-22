@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -36,22 +37,25 @@ class AuthController extends ChangeNotifier {
       );
     }
 
-    _authSubscription =
-        _authRepository.authStateChanges.listen(_handleAuthState);
+    _authSubscription = _authRepository.authStateChanges.listen(
+      _handleAuthState,
+      onError: _handleAuthStateError,
+    );
     _finishSessionCheck();
     if (_currentUser != null) {
       final initialUserId = _currentUser!.id;
-      unawaited(() async {
+      _fireAndForget(() async {
         await _userStateStore.switchLocalScope(userId: initialUserId);
-        unawaited(
-          _globalWalletController.syncSession(userId: initialUserId),
+        _fireAndForget(
+          () => _globalWalletController.syncSession(userId: initialUserId),
+          context: 'global wallet sync (controller_init)',
         );
         await _bootstrapCurrentUserProfileMetadata(
           reason: 'controller_init',
           touchLastLogin: true,
         );
         await _syncCurrentUserProfile(reason: 'controller_init');
-      }());
+      }, context: 'auth controller init');
     }
   }
 
@@ -323,46 +327,87 @@ class AuthController extends ChangeNotifier {
   }
 
   void _handleAuthState(AuthState state) {
-    _currentUser = state.session?.user ?? _authRepository.currentUser;
-    if (kDebugMode) {
-      final authUserId = _currentUser?.id ?? 'guest';
-      debugPrint(
-        '[auth] auth state changed: ${_currentUser != null ? 'signedIn' : 'signedOut'} (event=${state.event.name})',
-      );
-      debugPrint('[auth] auth state userId: $authUserId');
-    }
-    if (_currentUser != null) {
-      _userStateStore.restoreGamificationOverlaysAfterLogout();
-      final userId = _currentUser!.id;
-      unawaited(() async {
-        await _userStateStore.switchLocalScope(userId: userId);
-        unawaited(_globalWalletController.syncSession(userId: userId));
-        await _bootstrapCurrentUserProfileMetadata(
-          reason: 'auth_state_${state.event.name}',
-          touchLastLogin: _shouldTouchLastLogin(state.event),
-        );
-        await _syncCurrentUserProfile(reason: 'auth_state_${state.event.name}');
-      }());
-    } else {
-      _userStateStore.suppressGamificationOverlaysDuringLogout();
-      unawaited(_globalWalletController.clearSession());
-      unawaited(
-        _userStateStore.switchLocalScope(
-          userId: null,
-          forceReload: true,
-        ),
-      );
+    try {
+      _currentUser = state.session?.user ?? _authRepository.currentUser;
       if (kDebugMode) {
-        debugPrint('[auth] sign out cleared/updated user state');
+        final authUserId = _currentUser?.id ?? 'guest';
+        debugPrint(
+          '[auth] auth state changed: ${_currentUser != null ? 'signedIn' : 'signedOut'} (event=${state.event.name})',
+        );
+        debugPrint('[auth] auth state userId: $authUserId');
       }
+      if (_currentUser != null) {
+        _userStateStore.restoreGamificationOverlaysAfterLogout();
+        final userId = _currentUser!.id;
+        _fireAndForget(() async {
+          await _userStateStore.switchLocalScope(userId: userId);
+          _fireAndForget(
+            () => _globalWalletController.syncSession(userId: userId),
+            context: 'global wallet sync (auth_state_${state.event.name})',
+          );
+          await _bootstrapCurrentUserProfileMetadata(
+            reason: 'auth_state_${state.event.name}',
+            touchLastLogin: _shouldTouchLastLogin(state.event),
+          );
+          await _syncCurrentUserProfile(
+            reason: 'auth_state_${state.event.name}',
+          );
+        }, context: 'auth state signed in (${state.event.name})');
+      } else {
+        _userStateStore.suppressGamificationOverlaysDuringLogout();
+        _fireAndForget(
+          () => _globalWalletController.clearSession(),
+          context: 'global wallet clear (auth_state_${state.event.name})',
+        );
+        _fireAndForget(
+          () => _userStateStore.switchLocalScope(
+            userId: null,
+            forceReload: true,
+          ),
+          context:
+              'switch local scope cleared (auth_state_${state.event.name})',
+        );
+        if (kDebugMode) {
+          debugPrint('[auth] sign out cleared/updated user state');
+        }
+      }
+      _finishSessionCheck();
+      notifyListeners();
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[auth] auth state handler error: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+      _finishSessionCheck();
+    }
+  }
+
+  void _handleAuthStateError(Object error, StackTrace stackTrace) {
+    final recoverable = _isRecoverableAuthStreamError(error);
+    if (kDebugMode) {
+      debugPrint(
+        recoverable
+            ? '[auth] recoverable auth stream error'
+            : '[auth] auth stream error',
+      );
     }
     _finishSessionCheck();
-    notifyListeners();
   }
 
   bool _shouldTouchLastLogin(AuthChangeEvent event) {
     return event == AuthChangeEvent.signedIn ||
         event == AuthChangeEvent.initialSession;
+  }
+
+  bool _isRecoverableAuthStreamError(Object error) {
+    if (error is AuthRetryableFetchException) {
+      return true;
+    }
+    if (error is SocketException ||
+        error.runtimeType.toString() == 'ClientException') {
+      return true;
+    }
+    return error.toString().contains('Failed host lookup');
   }
 
   Future<void> _syncCurrentUserProfile({required String reason}) async {
@@ -450,7 +495,7 @@ class AuthController extends ChangeNotifier {
         avatarUrl: _normalizedValue(profile?['avatar_url']),
       );
 
-      unawaited(() async {
+      _fireAndForget(() async {
         final progressBootstrap =
             await _userStateStore.syncSupabaseUserProgressBootstrapBestEffort();
         if (kDebugMode) {
@@ -519,7 +564,7 @@ class AuthController extends ChangeNotifier {
             'failed=${achievementSummary.failedCount}',
           );
         }
-      }());
+      }, context: 'profile backfill ($reason)');
 
       if (kDebugMode) {
         debugPrint('[auth] display name applied to UserStateStore');
@@ -646,6 +691,27 @@ class AuthController extends ChangeNotifier {
     }
 
     return 'Authentication failed. Please try again.';
+  }
+
+  void _fireAndForget(
+    Future<void> Function() task, {
+    required String context,
+  }) {
+    unawaited(_guardAsyncTask(task, context: context));
+  }
+
+  Future<void> _guardAsyncTask(
+    Future<void> Function() task, {
+    required String context,
+  }) async {
+    try {
+      await task();
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[auth] background auth task error ($context): $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    }
   }
 
   @override

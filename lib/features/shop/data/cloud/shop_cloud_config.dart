@@ -1,14 +1,16 @@
+import 'shop_cloud_runtime_config.dart';
+
 class ShopCloudConfig {
   const ShopCloudConfig._();
 
-  static const String readEnabledEnvKey = 'SHOP_CLOUD_READ_ENABLED';
-  static const String purchaseEnabledEnvKey = 'SHOP_CLOUD_PURCHASE_ENABLED';
+  static const String readEnabledEnvKey = shopCloudReadEnabledEnvKey;
+  static const String purchaseEnabledEnvKey = shopCloudPurchaseEnabledEnvKey;
 
   static bool get isReadEnabled =>
-      const bool.fromEnvironment(readEnabledEnvKey, defaultValue: false);
+      ShopCloudRuntimeConfig.compiled().shopReadEnabled;
 
   static bool get isPurchaseEnabled =>
-      const bool.fromEnvironment(purchaseEnabledEnvKey, defaultValue: false);
+      ShopCloudRuntimeConfig.compiled().shopPurchaseEnabled;
 
   static bool resolveReadEnabled({bool? override}) {
     return override ?? isReadEnabled;

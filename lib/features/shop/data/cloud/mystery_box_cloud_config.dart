@@ -1,10 +1,12 @@
+import 'shop_cloud_runtime_config.dart';
+
 class MysteryBoxCloudConfig {
   const MysteryBoxCloudConfig._();
 
-  static const String enabledEnvKey = 'CLOUD_MYSTERY_BOX_ENABLED';
+  static const String enabledEnvKey = cloudMysteryBoxEnabledEnvKey;
 
   static bool get isEnabled =>
-      const bool.fromEnvironment(enabledEnvKey, defaultValue: false);
+      ShopCloudRuntimeConfig.compiled().cloudMysteryBoxEnabled;
 
   static bool resolveEnabled({bool? override}) {
     return override ?? isEnabled;
