@@ -173,6 +173,109 @@ void main() {
       expect(cache.readSync('user-b')?.coins, 215);
     });
 
+    test('applies a confirmed balance immediately and notifies listeners',
+        () async {
+      final controller = GlobalWalletController(
+        repository: _FakeCloudWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'user-a',
+        enabled: true,
+      );
+      var notifications = 0;
+      controller.addListener(() {
+        notifications += 1;
+      });
+
+      await controller.applyConfirmedBalance(
+        userId: 'user-a',
+        coins: 420,
+        version: 7,
+        updatedAt: DateTime.utc(2026, 7, 18, 14),
+      );
+
+      expect(controller.state.status, GlobalWalletStatus.ready);
+      expect(controller.state.userId, 'user-a');
+      expect(controller.state.coins, 420);
+      expect(controller.state.snapshot?.version, 7);
+      expect(
+          controller.state.snapshot?.updatedAt, DateTime.utc(2026, 7, 18, 14));
+      expect(controller.state.cachedEntry?.coins, 420);
+      expect(notifications, 1);
+    });
+
+    test('rejects negative balances and ignores other users', () async {
+      final controller = GlobalWalletController(
+        repository: _FakeCloudWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'user-a',
+        enabled: true,
+      );
+
+      expect(
+        () => controller.applyConfirmedBalance(
+          userId: 'user-a',
+          coins: -1,
+        ),
+        throwsArgumentError,
+      );
+
+      await controller.applyConfirmedBalance(
+        userId: 'user-b',
+        coins: 250,
+        version: 3,
+        updatedAt: DateTime.utc(2026, 7, 18, 15),
+      );
+
+      expect(controller.state.status, GlobalWalletStatus.unauthenticated);
+      expect(controller.state.snapshot, isNull);
+      expect(controller.state.userId, isNull);
+    });
+
+    test('keeps a confirmed balance ahead of stale reads and reconciles newer',
+        () async {
+      final repository = _FakeCloudWalletRepository()
+        ..enqueueSuccess(
+          _snapshot(
+            userId: 'user-a',
+            coins: 120,
+            version: 4,
+            updatedAt: DateTime.utc(2026, 7, 18, 9),
+          ),
+        )
+        ..enqueueSuccess(
+          _snapshot(
+            userId: 'user-a',
+            coins: 260,
+            version: 6,
+            updatedAt: DateTime.utc(2026, 7, 18, 16),
+          ),
+        );
+      final controller = GlobalWalletController(
+        repository: repository,
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'user-a',
+        enabled: true,
+      );
+
+      await controller.applyConfirmedBalance(
+        userId: 'user-a',
+        coins: 200,
+        version: 5,
+        updatedAt: DateTime.utc(2026, 7, 18, 12),
+      );
+
+      await controller.syncSession();
+
+      expect(controller.state.status, GlobalWalletStatus.stale);
+      expect(controller.state.coins, 200);
+
+      await controller.syncSession();
+
+      expect(controller.state.status, GlobalWalletStatus.ready);
+      expect(controller.state.coins, 260);
+      expect(controller.state.snapshot?.version, 6);
+    });
+
     test('reports featureDisabled when the flag is off', () async {
       final repository = _FakeCloudWalletRepository();
       final cache = _MemoryWalletCache();

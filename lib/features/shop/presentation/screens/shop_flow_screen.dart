@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/presentation/global_wallet_ui_state.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
@@ -80,21 +83,66 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   String? _selectedItemId;
   bool _isMysteryBoxRouteVisible = false;
   bool _isStreakUtilityFlowVisible = false;
+  Future<void>? _pendingSnapshotReload;
 
   @override
   void initState() {
     super.initState();
+    widget.controller.addListener(_handleStoreChanged);
+    widget.cosmeticsController.addListener(_handleStoreChanged);
     _snapshot = _buildImmediateSnapshot();
     unawaited(_reloadSnapshot());
   }
 
-  Future<void> _reloadSnapshot() async {
-    final snapshot = await _loadSnapshot();
+  @override
+  void didUpdateWidget(covariant ShopFlowScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller.removeListener(_handleStoreChanged);
+      widget.controller.addListener(_handleStoreChanged);
+    }
+    if (!identical(oldWidget.cosmeticsController, widget.cosmeticsController)) {
+      oldWidget.cosmeticsController.removeListener(_handleStoreChanged);
+      widget.cosmeticsController.addListener(_handleStoreChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleStoreChanged);
+    widget.cosmeticsController.removeListener(_handleStoreChanged);
+    super.dispose();
+  }
+
+  void _handleStoreChanged() {
     if (!mounted) return;
-    if (snapshot == null) return;
-    setState(() {
-      _snapshot = snapshot;
-    });
+    unawaited(_reloadSnapshot());
+  }
+
+  Future<void> _reloadSnapshot() async {
+    final pending = _pendingSnapshotReload;
+    if (pending != null) {
+      return pending;
+    }
+
+    final completer = Completer<void>();
+    _pendingSnapshotReload = completer.future;
+    try {
+      final snapshot = await _loadSnapshot();
+      if (!mounted) return;
+      if (snapshot != null) {
+        setState(() {
+          _snapshot = snapshot;
+        });
+      }
+    } finally {
+      if (identical(_pendingSnapshotReload, completer.future)) {
+        _pendingSnapshotReload = null;
+      }
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    }
   }
 
   ShopFlowSnapshot _buildImmediateSnapshot() {
@@ -573,6 +621,10 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   @override
   Widget build(BuildContext context) {
     final snapshot = _snapshot ?? _buildImmediateSnapshot();
+    final walletController = context.watch<GlobalWalletController>();
+    final walletCoins = walletController.resolveCoinsForUi(
+      legacyCoinsBuilder: () => snapshot.walletCoins,
+    );
 
     return PopScope(
       canPop: _stack.length <= 1,
@@ -581,17 +633,17 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
           _popPage();
         }
       },
-      child: _buildCurrentPage(snapshot),
+      child: _buildCurrentPage(snapshot, walletCoins),
     );
   }
 
-  Widget _buildCurrentPage(ShopFlowSnapshot snapshot) {
+  Widget _buildCurrentPage(ShopFlowSnapshot snapshot, int walletCoins) {
     final _ShopFlowPage page = _stack.last;
 
     switch (page) {
       case _ShopFlowPage.home:
         return ShopHomeScreen(
-          walletCoins: snapshot.walletCoins,
+          walletCoins: walletCoins,
           onOpenCosmetics: _openCosmetics,
           onOpenUtilities: _openUtilities,
           onOpenBackpack: _openBackpack,
@@ -614,19 +666,20 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         );
       case _ShopFlowPage.cosmetics:
         return ShopCosmeticsScreen(
+          key: ValueKey<int>(walletCoins),
           controller: widget.cosmeticsController,
           onBackPressed: _popPage,
         );
       case _ShopFlowPage.utilities:
         return ShopUtilitiesScreen(
-          walletCoins: snapshot.walletCoins,
+          walletCoins: walletCoins,
           items: snapshot.utilityCatalogItems,
           onBackPressed: _popPage,
           onItemPressed: _openDetail,
         );
       case _ShopFlowPage.collections:
         return ShopCollectionsScreen(
-          walletCoins: snapshot.walletCoins,
+          walletCoins: walletCoins,
           collections: snapshot.collections,
           ownedItemIds: snapshot.ownedItemIds,
           onBackPressed: _popPage,
@@ -634,7 +687,7 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         );
       case _ShopFlowPage.backpack:
         return ShopBackpackScreen(
-          walletCoins: snapshot.walletCoins,
+          walletCoins: walletCoins,
           items: snapshot.backpackViewModels,
           activeEffects: snapshot.activeUtilityEffects,
           pendingMysteryBoxOpenings: snapshot.pendingMysteryBoxOpenings,
@@ -646,7 +699,7 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         );
       case _ShopFlowPage.customization:
         return ShopCustomizationScreen(
-          walletCoins: snapshot.walletCoins,
+          walletCoins: walletCoins,
           equippedCosmetics: snapshot.equippedCosmetics,
           ownedCosmeticItems: snapshot.ownedCosmeticItems,
           cosmeticsController: widget.cosmeticsController,
@@ -686,6 +739,7 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
 
         if (item.cosmeticSlot != null) {
           return ShopCosmeticDetailContainer(
+            key: ValueKey<int>(walletCoins),
             itemId: itemId,
             controller: widget.cosmeticsController,
             onBackPressed: _popPage,
@@ -695,6 +749,7 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
         }
 
         return ShopItemDetailContainer.withController(
+          key: ValueKey<int>(walletCoins),
           itemId: itemId,
           onBackPressed: _popPage,
           controller: widget.controller,

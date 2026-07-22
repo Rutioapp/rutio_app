@@ -33,6 +33,7 @@ class GlobalWalletController extends ChangeNotifier {
   GlobalWalletState _state = GlobalWalletState.unauthenticated();
   String? _activeUserId;
   int _requestEpoch = 0;
+  final Map<String, int> _confirmedBalanceVersionByUserId = <String, int>{};
 
   GlobalWalletState get state => _state;
 
@@ -172,6 +173,88 @@ class GlobalWalletController extends ChangeNotifier {
     return _state;
   }
 
+  Future<void> applyConfirmedBalance({
+    required String userId,
+    required int coins,
+    int? version,
+    DateTime? updatedAt,
+  }) async {
+    final normalizedUserId = _normalizeUserId(userId);
+    if (normalizedUserId == null) return;
+    if (coins < 0) {
+      throw ArgumentError.value(coins, 'coins', 'must be >= 0');
+    }
+
+    final requestEpoch = _requestEpoch;
+    final currentUserId = _normalizeUserId(_currentUserId());
+    if (currentUserId != normalizedUserId) return;
+    if (_activeUserId != null && _activeUserId != normalizedUserId) return;
+
+    _activeUserId = normalizedUserId;
+
+    final currentSnapshot =
+        _state.userId == normalizedUserId ? _state.snapshot : null;
+    final currentCache =
+        _state.userId == normalizedUserId ? _state.cachedEntry : null;
+    final now = (updatedAt ?? _nowProvider()).toUtc();
+    final confirmedVersion = version ??
+        _deriveConfirmedVersion(
+          userId: normalizedUserId,
+          coins: coins,
+          updatedAt: now,
+          currentSnapshot: currentSnapshot,
+          currentCache: currentCache,
+        );
+
+    final currentKnownVersion = _currentKnownVersion(
+      userId: normalizedUserId,
+      snapshot: currentSnapshot,
+      cacheEntry: currentCache,
+    );
+    if (confirmedVersion < currentKnownVersion) return;
+    if (!_isCurrentSession(requestEpoch, normalizedUserId)) return;
+
+    final snapshot = CloudWalletSnapshot(
+      userId: normalizedUserId,
+      coins: coins,
+      version: confirmedVersion,
+      createdAt: currentSnapshot?.createdAt.toUtc() ?? now,
+      updatedAt: now,
+      fetchedAt: now,
+    );
+
+    final storedEntry = await _cache.save(snapshot);
+    if (!_isCurrentSession(requestEpoch, normalizedUserId)) return;
+
+    final effectiveCache = storedEntry ??
+        (await _cache.read(normalizedUserId)) ??
+        WalletCacheEntry.fromSnapshot(
+          snapshot,
+          cachedAt: now,
+        );
+    if (!_isCurrentSession(requestEpoch, normalizedUserId)) return;
+
+    final latestKnownVersion = _currentKnownVersion(
+      userId: normalizedUserId,
+      snapshot: _state.userId == normalizedUserId ? _state.snapshot : null,
+      cacheEntry: _state.userId == normalizedUserId ? _state.cachedEntry : null,
+    );
+    if (confirmedVersion < latestKnownVersion) return;
+
+    if (!snapshotIsNewerOrEqual(snapshot, effectiveCache) &&
+        confirmedVersion == effectiveCache.version) {
+      return;
+    }
+
+    _confirmedBalanceVersionByUserId[normalizedUserId] = confirmedVersion;
+    _state = GlobalWalletState.ready(
+      userId: normalizedUserId,
+      snapshot: snapshot,
+      cache: effectiveCache,
+    );
+    notifyListeners();
+  }
+
   Future<GlobalWalletState> refresh({bool force = false}) {
     return syncSession(force: force);
   }
@@ -188,6 +271,43 @@ class GlobalWalletController extends ChangeNotifier {
     return _state;
   }
 
+  int _currentKnownVersion({
+    required String userId,
+    CloudWalletSnapshot? snapshot,
+    WalletCacheEntry? cacheEntry,
+  }) {
+    var version = _confirmedBalanceVersionByUserId[userId] ?? -1;
+    if (snapshot != null && snapshot.userId == userId) {
+      version = version > snapshot.version ? version : snapshot.version;
+    }
+    if (cacheEntry != null && cacheEntry.userId == userId) {
+      version = version > cacheEntry.version ? version : cacheEntry.version;
+    }
+    return version;
+  }
+
+  int _deriveConfirmedVersion({
+    required String userId,
+    required int coins,
+    required DateTime updatedAt,
+    CloudWalletSnapshot? currentSnapshot,
+    WalletCacheEntry? currentCache,
+  }) {
+    final knownVersion = _currentKnownVersion(
+      userId: userId,
+      snapshot: currentSnapshot,
+      cacheEntry: currentCache,
+    );
+    final snapshot = currentSnapshot;
+    if (snapshot != null &&
+        snapshot.userId == userId &&
+        snapshot.coins == coins &&
+        !updatedAt.isAfter(snapshot.updatedAt.toUtc())) {
+      return knownVersion;
+    }
+    return knownVersion + 1;
+  }
+
   bool snapshotIsNewerOrEqual(
     CloudWalletSnapshot snapshot,
     WalletCacheEntry cacheEntry,
@@ -202,10 +322,14 @@ class GlobalWalletController extends ChangeNotifier {
   }
 
   bool _isRequestCurrent(int requestEpoch, String userId) {
+    return _isCurrentSession(requestEpoch, userId);
+  }
+
+  bool _isCurrentSession(int requestEpoch, String userId) {
     if (_requestEpoch != requestEpoch) return false;
     final currentUserId = _normalizeUserId(_currentUserId());
     if (currentUserId != userId) return false;
-    if (_activeUserId != userId) return false;
+    if (_activeUserId != null && _activeUserId != userId) return false;
     return true;
   }
 

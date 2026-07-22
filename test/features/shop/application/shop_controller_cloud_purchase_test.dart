@@ -4,6 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_state.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_errors.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_repository.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
+import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
 import 'package:rutio/features/shop/application/purchase_cloud_utility_use_case.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
@@ -106,6 +112,60 @@ void main() {
       expect(localState.backpackItems, isEmpty);
     });
 
+    test(
+        'cloud success updates the confirmed global wallet balance before reconciliation',
+        () async {
+      final walletRepo = _FakeCloudWalletRepository()
+        ..enqueueSuccess(
+          _walletSnapshot(
+            userId: 'shop-controller-user',
+            coins: 4925,
+            version: 2,
+            updatedAt: DateTime.utc(2026, 7, 18, 10),
+          ),
+        );
+      final walletController = GlobalWalletController(
+        repository: walletRepo,
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'shop-controller-user',
+        enabled: true,
+      );
+      final purchaseUseCase = _FakePurchaseCloudUtilityUseCase(
+        resultFactory: () => ShopPurchaseResult.success(
+          itemId: 'utility_xp_boost_1d',
+          requestId: '9f5a1f2a-4a69-4d7c-8cf6-71b0f7df0d8d',
+          remoteResult: RemoteShopPurchaseResultDto(
+            requestId: '9f5a1f2a-4a69-4d7c-8cf6-71b0f7df0d8d',
+            operation: 'purchase',
+            itemId: 'utility_xp_boost_1d',
+            priceCoins: 75,
+            coins: 4925,
+            walletVersion: 2,
+            inventoryQuantity: 1,
+          ),
+        ),
+      );
+      final fixture = await _createController(
+        purchaseUseCase: purchaseUseCase,
+        cloudSnapshot: _cloudSnapshot(
+          walletCoins: 4925,
+          itemId: 'utility_xp_boost_1d',
+          quantity: 1,
+        ),
+        globalWalletController: walletController,
+      );
+
+      final result = await fixture.controller.purchaseItem(
+        'utility_xp_boost_1d',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(result.status, ShopControllerStatus.success);
+      expect(walletController.state.status, GlobalWalletStatus.ready);
+      expect(walletController.state.coins, 4925);
+      expect(walletRepo.calls, 1);
+    });
+
     test('pending cloud purchases keep the operation unresolved', () async {
       final purchaseUseCase = _FakePurchaseCloudUtilityUseCase(
         resultFactory: () => ShopPurchaseResult.pendingResolution(
@@ -142,6 +202,7 @@ void main() {
 Future<_ControllerFixture> _createController({
   required _FakePurchaseCloudUtilityUseCase purchaseUseCase,
   required _FakeShopCloudReadRepository cloudSnapshot,
+  GlobalWalletController? globalWalletController,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final repo = UserStateRepository(storage: UserStateStorage())
@@ -216,6 +277,7 @@ Future<_ControllerFixture> _createController({
   return _ControllerFixture(
     controller: ShopController(
       userStateStore: store,
+      globalWalletController: globalWalletController,
       shopRepository: shopRepository,
       shopCloudReadRepository: cloudSnapshot,
       purchaseCloudUtilityUseCase: purchaseUseCase,
@@ -334,8 +396,8 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
                     'updatedAt': '2026-07-18T00:00:00Z',
                   },
                   expectedUserId: 'shop-controller-user',
-              ),
-            ]
+                ),
+              ]
             : const <RemoteInventoryItemDto>[],
         ownedBundles: const <RemoteOwnedBundleDto>[],
         equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
@@ -416,4 +478,66 @@ class _NoopReadRepository extends ShopCloudReadRepository {
           readEnabled: true,
           currentUserIdProvider: () => 'shop-controller-user',
         );
+}
+
+CloudWalletSnapshot _walletSnapshot({
+  required String userId,
+  required int coins,
+  required int version,
+  required DateTime updatedAt,
+}) {
+  return CloudWalletSnapshot(
+    userId: userId,
+    coins: coins,
+    version: version,
+    createdAt: updatedAt,
+    updatedAt: updatedAt,
+    fetchedAt: updatedAt,
+  );
+}
+
+class _FakeCloudWalletRepository implements CloudWalletRepository {
+  final List<Future<WalletReadResult<CloudWalletSnapshot>>> _responses =
+      <Future<WalletReadResult<CloudWalletSnapshot>>>[];
+
+  int calls = 0;
+
+  void enqueueSuccess(CloudWalletSnapshot snapshot) {
+    _responses.add(
+      Future<WalletReadResult<CloudWalletSnapshot>>.value(
+        WalletReadResult<CloudWalletSnapshot>.success(data: snapshot),
+      ),
+    );
+  }
+
+  @override
+  Future<WalletReadResult<CloudWalletSnapshot>> fetchWallet() {
+    calls += 1;
+    if (_responses.isEmpty) {
+      throw StateError('No queued wallet response.');
+    }
+    return _responses.removeAt(0);
+  }
+}
+
+class _MemoryWalletCache implements WalletCache {
+  final Map<String, WalletCacheEntry> _entries = <String, WalletCacheEntry>{};
+
+  @override
+  Future<WalletCacheEntry?> read(String userId) async => _entries[userId];
+
+  @override
+  Future<WalletCacheEntry?> save(CloudWalletSnapshot snapshot) async {
+    final next = WalletCacheEntry.fromSnapshot(
+      snapshot,
+      cachedAt: DateTime.now().toUtc(),
+    );
+    _entries[snapshot.userId] = next;
+    return next;
+  }
+
+  @override
+  Future<void> clearForUser(String userId) async {
+    _entries.remove(userId);
+  }
 }

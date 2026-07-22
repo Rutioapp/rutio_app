@@ -47,6 +47,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   int _walletCoins = 0;
   bool _loading = true;
   String? _busyId;
+  int _walletCoinsRefreshVersion = 0;
 
   @override
   void initState() {
@@ -80,7 +81,9 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   }
 
   void _syncStateFromController() {
+    _walletCoinsRefreshVersion += 1;
     _state = widget.controller.state;
+    _walletCoins = widget.controller.visibleWalletCoins;
     _loading = _state == null;
   }
 
@@ -94,6 +97,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
 
     final stateFuture = widget.controller.getState();
     final walletCoinsFuture = widget.controller.getWalletCoins();
+    final walletCoinsVersion = _walletCoinsRefreshVersion;
 
     stateFuture.then((ShopCosmeticsState nextState) {
       if (!mounted) return;
@@ -109,7 +113,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     });
 
     walletCoinsFuture.then((int nextWalletCoins) {
-      if (!mounted) return;
+      if (!mounted || walletCoinsVersion != _walletCoinsRefreshVersion) return;
       setState(() {
         _walletCoins = nextWalletCoins;
       });

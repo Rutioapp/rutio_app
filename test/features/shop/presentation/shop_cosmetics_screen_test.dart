@@ -5,6 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_state.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_errors.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_repository.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
+import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
@@ -38,6 +44,58 @@ void main() {
       );
 
       await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'confirmed wallet balance updates the header without re-entering',
+        (WidgetTester tester) async {
+      final walletRepo = _FakeCloudWalletRepository()
+        ..enqueueSuccess(
+          _walletSnapshot(
+            userId: 'shop-cosmetics-screen-user',
+            coins: 777,
+            version: 2,
+            updatedAt: DateTime.utc(2026, 7, 19, 16),
+          ),
+        );
+      final walletController = GlobalWalletController(
+        repository: walletRepo,
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'shop-cosmetics-screen-user',
+        enabled: true,
+      );
+      await walletController.applyConfirmedBalance(
+        userId: 'shop-cosmetics-screen-user',
+        coins: 600,
+        version: 1,
+        updatedAt: DateTime.utc(2026, 7, 19, 15),
+      );
+      final controller = await _createController(
+        walletCoins: 600,
+        globalWalletController: walletController,
+      );
+
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('600'), findsWidgets);
+
+      await walletController.applyConfirmedBalance(
+        userId: 'shop-cosmetics-screen-user',
+        coins: 777,
+        version: 2,
+        updatedAt: DateTime.utc(2026, 7, 19, 16),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('777'), findsWidgets);
+
+      await tester.tap(find.byKey(const Key('shopCosmeticsFilter-packs')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('777'), findsWidgets);
     });
 
     testWidgets('shows cosmetics catalog with assets and packs',
@@ -833,6 +891,7 @@ class _TestBundleEntry extends _TestShopEntry {
 Future<ShopCosmeticsController> _createController({
   required int walletCoins,
   ShopCosmeticsState cosmeticsState = const ShopCosmeticsState.initial(),
+  GlobalWalletController? globalWalletController,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   await ShopCosmeticsRepository().save(cosmeticsState);
@@ -845,7 +904,10 @@ Future<ShopCosmeticsController> _createController({
   );
   await store.save(_baseState(walletCoins: walletCoins));
 
-  return ShopCosmeticsController(userStateStore: store);
+  return ShopCosmeticsController(
+    userStateStore: store,
+    globalWalletController: globalWalletController,
+  );
 }
 
 Future<_RefreshableShopCosmeticsController> _createRefreshableController({
@@ -975,4 +1037,63 @@ class _RefreshableShopCosmeticsController extends ShopCosmeticsController {
     }
     _walletCoins = _refreshedWalletCoins;
   }
+}
+
+class _FakeCloudWalletRepository implements CloudWalletRepository {
+  final List<Future<WalletReadResult<CloudWalletSnapshot>>> _responses =
+      <Future<WalletReadResult<CloudWalletSnapshot>>>[];
+
+  void enqueueSuccess(CloudWalletSnapshot snapshot) {
+    _responses.add(
+      Future<WalletReadResult<CloudWalletSnapshot>>.value(
+        WalletReadResult<CloudWalletSnapshot>.success(data: snapshot),
+      ),
+    );
+  }
+
+  @override
+  Future<WalletReadResult<CloudWalletSnapshot>> fetchWallet() {
+    if (_responses.isEmpty) {
+      throw StateError('No queued wallet response.');
+    }
+    return _responses.removeAt(0);
+  }
+}
+
+class _MemoryWalletCache implements WalletCache {
+  final Map<String, WalletCacheEntry> _entries = <String, WalletCacheEntry>{};
+
+  @override
+  Future<WalletCacheEntry?> read(String userId) async => _entries[userId];
+
+  @override
+  Future<WalletCacheEntry?> save(CloudWalletSnapshot snapshot) async {
+    final next = WalletCacheEntry.fromSnapshot(
+      snapshot,
+      cachedAt: DateTime.now().toUtc(),
+    );
+    _entries[snapshot.userId] = next;
+    return next;
+  }
+
+  @override
+  Future<void> clearForUser(String userId) async {
+    _entries.remove(userId);
+  }
+}
+
+CloudWalletSnapshot _walletSnapshot({
+  required String userId,
+  required int coins,
+  required int version,
+  required DateTime updatedAt,
+}) {
+  return CloudWalletSnapshot(
+    userId: userId,
+    coins: coins,
+    version: version,
+    createdAt: updatedAt,
+    updatedAt: updatedAt,
+    fetchedAt: updatedAt,
+  );
 }

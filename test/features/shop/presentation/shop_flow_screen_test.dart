@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
+import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
@@ -33,6 +37,105 @@ void main() {
       await tester.pumpWidget(_app(_flow(env)));
 
       expect(find.text('Tienda'), findsOneWidget);
+    });
+
+    testWidgets(
+        'confirmed wallet balance updates the active shop pages immediately',
+        (WidgetTester tester) async {
+      final walletController = GlobalWalletController(
+        currentUserIdProvider: () => 'shop-flow-user',
+        cache: _MemoryWalletCache(),
+        enabled: true,
+      );
+      await walletController.applyConfirmedBalance(
+        userId: 'shop-flow-user',
+        coins: 320,
+        version: 1,
+        updatedAt: DateTime.utc(2026, 7, 22, 10),
+      );
+      final env = await _createEnv(
+        walletController: walletController,
+        shopState: const ShopState(
+          inventory: <OwnedShopItem>[
+            OwnedShopItem(itemId: 'wallpaper_mist_blue'),
+          ],
+          equippedCosmetics:
+              EquippedCosmetics(backgroundItemId: 'wallpaper_mist_blue'),
+        ),
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>['wallpaper_mist_blue'],
+          ownedBundleIds: const <String>[],
+          equippedWallpaperId: 'wallpaper_mist_blue',
+        ),
+      );
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('320'), findsWidgets);
+
+      await walletController.applyConfirmedBalance(
+        userId: 'shop-flow-user',
+        coins: 777,
+        version: 2,
+        updatedAt: DateTime.utc(2026, 7, 22, 11),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('777'), findsWidgets);
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeEntryUtilities')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('777'), findsWidgets);
+      await _tapVisible(
+        tester,
+        find.byIcon(Icons.arrow_back_ios_new_rounded),
+      );
+      await tester.pumpAndSettle();
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeHeroBackpack')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('777'), findsWidgets);
+      await _tapVisible(
+        tester,
+        find.byIcon(Icons.arrow_back_ios_new_rounded),
+      );
+      await tester.pumpAndSettle();
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeHeroCustomization')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('777'), findsWidgets);
+      await _tapVisible(
+        tester,
+        find.byIcon(Icons.arrow_back_ios_new_rounded),
+      );
+      await tester.pumpAndSettle();
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeEntryCosmetics')),
+      );
+      await tester.pumpAndSettle();
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('777'), findsWidgets);
+      expect(
+        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_mist_blue')),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
@@ -341,10 +444,20 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopCosmeticsDetailAction-wallpaper_mist_blue')),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: find.byKey(
-            const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
+            const Key('shopCosmeticsDetailAction-wallpaper_mist_blue'),
           ),
           matching: find.text('Equipado'),
         ),
@@ -687,10 +800,13 @@ Widget _app(Widget child) {
 }
 
 Widget _flow(_Env env) {
-  return ShopFlowScreen(
-    controller: env.controller,
-    cosmeticsController: env.cosmeticsController,
-    shopRepository: env.shopRepository,
+  return ChangeNotifierProvider.value(
+    value: env.walletController,
+    child: ShopFlowScreen(
+      controller: env.controller,
+      cosmeticsController: env.cosmeticsController,
+      shopRepository: env.shopRepository,
+    ),
   );
 }
 
@@ -702,6 +818,7 @@ Future<_Env> _createEnv({
   bool? cloudPurchaseEnabled,
   ShopCloudReadRepository? shopCloudReadRepository,
   String? Function()? currentSupabaseUserIdProvider,
+  GlobalWalletController? walletController,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -716,17 +833,24 @@ Future<_Env> _createEnv({
   final shopRepository = ShopLocalRepository();
   await shopRepository.save(shopState);
   await ShopCosmeticsRepository().save(cosmeticsState);
+  final effectiveWalletController =
+      walletController ?? GlobalWalletController(enabled: false);
 
   return _Env(
     controller: ShopController(
       userStateStore: store,
+      globalWalletController: effectiveWalletController,
       shopRepository: shopRepository,
       cloudReadEnabled: cloudReadEnabled,
       cloudPurchaseEnabled: cloudPurchaseEnabled,
       shopCloudReadRepository: shopCloudReadRepository,
       currentSupabaseUserIdProvider: currentSupabaseUserIdProvider,
     ),
-    cosmeticsController: ShopCosmeticsController(userStateStore: store),
+    cosmeticsController: ShopCosmeticsController(
+      userStateStore: store,
+      globalWalletController: effectiveWalletController,
+    ),
+    walletController: effectiveWalletController,
     shopRepository: shopRepository,
   );
 }
@@ -794,11 +918,13 @@ class _Env {
   const _Env({
     required this.controller,
     required this.cosmeticsController,
+    required this.walletController,
     required this.shopRepository,
   });
 
   final ShopController controller;
   final ShopCosmeticsController cosmeticsController;
+  final GlobalWalletController walletController;
   final ShopLocalRepository shopRepository;
 }
 
@@ -864,6 +990,29 @@ class _DelayedFailingShopCloudReadRepository extends ShopCloudReadRepository {
         message: message,
       ),
     );
+  }
+}
+
+class _MemoryWalletCache implements WalletCache {
+  final Map<String, WalletCacheEntry> _entries =
+      <String, WalletCacheEntry>{};
+
+  @override
+  Future<WalletCacheEntry?> read(String userId) async => _entries[userId];
+
+  @override
+  Future<WalletCacheEntry?> save(CloudWalletSnapshot snapshot) async {
+    final next = WalletCacheEntry.fromSnapshot(
+      snapshot,
+      cachedAt: DateTime.now().toUtc(),
+    );
+    _entries[snapshot.userId] = next;
+    return next;
+  }
+
+  @override
+  Future<void> clearForUser(String userId) async {
+    _entries.remove(userId);
   }
 }
 

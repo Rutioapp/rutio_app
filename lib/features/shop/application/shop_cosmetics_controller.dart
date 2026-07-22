@@ -144,6 +144,7 @@ class ShopCosmeticsController extends ChangeNotifier {
         _cloudEnabled =
             CloudCosmeticsConfig.resolveEnabled(override: cloudEnabled) {
     _userStateStore.addListener(_handleUserStateStoreChanged);
+    _globalWalletController?.addListener(_handleGlobalWalletChanged);
     if (_cloudEnabled) {
       unawaited(_syncFromCurrentScope(force: false));
     }
@@ -171,6 +172,21 @@ class ShopCosmeticsController extends ChangeNotifier {
   int get cloudSnapshotRevision => _cloudSnapshotRevision;
   String? get lastTraceId => _lastTraceId;
   bool get isCloudEnabled => _cloudEnabled;
+  int get visibleWalletCoins {
+    final globalWalletController = _globalWalletController;
+    if (globalWalletController != null && globalWalletController.isEnabled) {
+      return globalWalletController.state.coins ?? 0;
+    }
+
+    final root = _userStateStore.state;
+    if (root == null) return 0;
+    final userState = (root['userState'] as Map?)?.cast<String, dynamic>() ??
+        <String, dynamic>{};
+    final wallet = (userState['wallet'] as Map?)?.cast<String, dynamic>() ??
+        <String, dynamic>{};
+    return ((wallet['coins'] as num?) ?? 0).toInt();
+  }
+
   bool get hasStateForCurrentScope =>
       _cachedState != null && _cachedScopeKey == _currentScope();
 
@@ -231,7 +247,13 @@ class ShopCosmeticsController extends ChangeNotifier {
   @override
   void dispose() {
     _userStateStore.removeListener(_handleUserStateStoreChanged);
+    _globalWalletController?.removeListener(_handleGlobalWalletChanged);
     super.dispose();
+  }
+
+  void _handleGlobalWalletChanged() {
+    if (_globalWalletController == null) return;
+    notifyListeners();
   }
 
   ShopAsset? getEquippedAssetForCategorySync(ShopAssetCategory category) {
@@ -629,13 +651,24 @@ class ShopCosmeticsController extends ChangeNotifier {
         stage: 'state_applied',
         nextItemId: assetId,
       );
+      if (_globalWalletController?.isEnabled == true) {
+        await _globalWalletController!.applyConfirmedBalance(
+          userId: resolvedScopeKey,
+          coins: result.coins,
+          version: result.walletVersion,
+          updatedAt: DateTime.now().toUtc(),
+        );
+      }
       unawaited(_syncFromCurrentScope(force: true));
-      unawaited(
-        _globalWalletController?.syncSession(
-          userId: _currentScope(),
-          force: true,
-        ),
-      );
+      final currentUserId = _currentScope();
+      if (currentUserId != null) {
+        unawaited(
+          _globalWalletController?.syncSession(
+            userId: currentUserId,
+            force: true,
+          ),
+        );
+      }
       return ShopCosmeticsOperationResult(
         status: ShopCosmeticsOperationStatus.success,
         state: nextState,
@@ -742,13 +775,23 @@ class ShopCosmeticsController extends ChangeNotifier {
         stage: 'state_applied',
         nextItemId: bundleId,
       );
+      if (_globalWalletController?.isEnabled == true) {
+        await _globalWalletController!.applyConfirmedBalance(
+          userId: resolvedScopeKey,
+          coins: result.walletCoinsAfter,
+          updatedAt: result.createdAt,
+        );
+      }
       unawaited(_syncFromCurrentScope(force: true));
-      unawaited(
-        _globalWalletController?.syncSession(
-          userId: _currentScope(),
-          force: true,
-        ),
-      );
+      final currentUserId = _currentScope();
+      if (currentUserId != null) {
+        unawaited(
+          _globalWalletController?.syncSession(
+            userId: currentUserId,
+            force: true,
+          ),
+        );
+      }
       return ShopCosmeticsOperationResult(
         status: ShopCosmeticsOperationStatus.success,
         state: nextState,
