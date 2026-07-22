@@ -964,7 +964,28 @@ class ShopController extends ChangeNotifier {
     required String breakId,
     required String operationId,
     String utilityId = 'utility_streak_recover_1',
-  }) {
+  }) async {
+    if (_utilityConsumptionEnabled) {
+      final normalizedUtilityId = utilityId.trim();
+      final activationKey = _activationKey(normalizedUtilityId);
+      if (_pendingUtilityActivations.contains(activationKey)) {
+        return const StreakRecoverOperationResult(
+          status: StreakRecoverOperationStatus.operationAlreadyProcessed,
+        );
+      }
+
+      _pendingUtilityActivations.add(activationKey);
+      try {
+        return await _recoverStreakBreakCloud(
+          breakId: breakId,
+          operationId: operationId,
+          utilityId: normalizedUtilityId,
+        );
+      } finally {
+        _pendingUtilityActivations.remove(activationKey);
+      }
+    }
+
     return RecoverStreakUseCase(
       userStateStore: _userStateStore,
       shopRepository: _shopRepository,
@@ -974,6 +995,76 @@ class ShopController extends ChangeNotifier {
       operationId: operationId,
       utilityId: utilityId,
     );
+  }
+
+  Future<StreakRecoverOperationResult> _recoverStreakBreakCloud({
+    required String breakId,
+    required String operationId,
+    required String utilityId,
+  }) async {
+    final normalizedBreakId = breakId.trim();
+    final normalizedOperationId = operationId.trim();
+    final currentUserId = _currentSupabaseUserId();
+    final item = ShopCatalog.getItemById(utilityId);
+    if (currentUserId == null) {
+      return const StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.persistenceFailure,
+        errorMessage: 'No authenticated user session is available.',
+      );
+    }
+    if (item == null ||
+        item.category != ShopItemCategory.utility ||
+        item.type != ShopItemType.streakRecover) {
+      return const StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.persistenceFailure,
+        errorMessage: 'Streak Recover utility is not available.',
+      );
+    }
+
+    final breakRecord = _recoverableStreakBreakById(normalizedBreakId);
+    if (breakRecord == null) {
+      return const StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.noRecoverableBreak,
+      );
+    }
+    if (breakRecord.isRecovered) {
+      if ((breakRecord.recoveryOperationId ?? '').trim() ==
+          normalizedOperationId) {
+        return StreakRecoverOperationResult(
+          status: StreakRecoverOperationStatus.success,
+          recoveredBreak: breakRecord,
+        );
+      }
+      return const StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.alreadyRecovered,
+      );
+    }
+
+    await hydrateVisibleEconomy(force: false);
+    final visibleQuantity =
+        _cloudPurchaseInventoryQuantityByItemId[utilityId] ?? 0;
+    if (visibleQuantity <= 0) {
+      return const StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.noInventory,
+      );
+    }
+
+    final result = await _userStateStore.recoverStreakBreak(
+      breakId: normalizedBreakId,
+      operationId: normalizedOperationId,
+    );
+    if (!result.isSuccess) {
+      return result;
+    }
+
+    await _refreshCloudPurchaseSnapshot(force: true);
+    final expectedQuantity = visibleQuantity > 0 ? visibleQuantity - 1 : 0;
+    final refreshedQuantity =
+        _cloudPurchaseInventoryQuantityByItemId[utilityId];
+    if (refreshedQuantity == null || refreshedQuantity > expectedQuantity) {
+      _cloudPurchaseInventoryQuantityByItemId[utilityId] = expectedQuantity;
+    }
+    return result;
   }
 
   Future<StreakShieldOperationResult> _activateStreakShieldCloud({
@@ -1536,6 +1627,14 @@ class ShopController extends ChangeNotifier {
         (_userStateStore.activeLocalScopeUserId ?? _userStateStore.userId ?? '')
             .trim();
     return scope.isEmpty ? null : scope;
+  }
+
+  RecoverableStreakBreak? _recoverableStreakBreakById(String breakId) {
+    final matches = _userStateStore.recoverableStreakBreaks
+        .where((entry) => entry.id == breakId)
+        .toList(growable: false);
+    if (matches.isEmpty) return null;
+    return matches.first;
   }
 
   static String? _defaultCurrentSupabaseUserId() {

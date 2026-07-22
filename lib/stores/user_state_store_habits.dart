@@ -3354,6 +3354,119 @@ void _logStreakShieldCloud(String message) {
   }
 }
 
+void _logStreakRecoverCloud(String message) {
+  if (kDebugMode) {
+    debugPrint('[streak_recover_cloud] $message');
+  }
+}
+
+void _logStreakRecoverDebugSeed({
+  required String habitId,
+  required String breakId,
+  required String missedOccurrenceDateKey,
+  required String result,
+}) {
+  if (!kDebugMode) return;
+  debugPrint(
+    '[streak_recover_debug_seed] habitId=$habitId breakId=$breakId '
+    'missedOccurrenceDateKey=$missedOccurrenceDateKey result=$result',
+  );
+}
+
+Future<void> _seedDebugRecoverableStreakBreak(
+  UserStateStore store, {
+  bool forceEnabled = false,
+}) async {
+  if (!kDebugMode) return;
+  if (!store._debugStreakRecoverSeedEnabled && !forceEnabled) return;
+  if (store._debugStreakRecoverSeedAttempted) return;
+
+  store._debugStreakRecoverSeedAttempted = true;
+
+  if (store.state == null) {
+    await store.load();
+    if (store.state == null) return;
+  }
+
+  final root = store._state;
+  if (root == null) return;
+  final userState = _ensureUserStateRoot(root);
+  final activeHabits = _list(userState['activeHabits'])
+      .whereType<Map>()
+      .map((entry) => _map(entry))
+      .where((entry) => _habitIdValue(entry) != null)
+      .toList(growable: false);
+
+  if (activeHabits.isEmpty) {
+    _logStreakRecoverDebugSeed(
+      habitId: '<none>',
+      breakId: '<none>',
+      missedOccurrenceDateKey: '<none>',
+      result: 'skipped',
+    );
+    return;
+  }
+
+  final habit = activeHabits.firstWhere(
+    (entry) => _habitIdValue(entry) == 'proyecto_personal',
+    orElse: () => activeHabits.first,
+  );
+  final habitId = (_habitIdValue(habit) ?? '').trim();
+  if (habitId.isEmpty) {
+    _logStreakRecoverDebugSeed(
+      habitId: '<none>',
+      breakId: '<none>',
+      missedOccurrenceDateKey: '<none>',
+      result: 'skipped',
+    );
+    return;
+  }
+
+  final now = store._nowProvider();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
+  final missedOccurrenceDateKey = _dateKey(yesterday);
+  final breakId = 'debug_streak_break_${habitId}_$missedOccurrenceDateKey';
+  final breaks = _habitStreakBreaksRoot(userState);
+  final existing = _map(breaks[breakId]);
+  if (existing.isNotEmpty) {
+    _logStreakRecoverDebugSeed(
+      habitId: habitId,
+      breakId: breakId,
+      missedOccurrenceDateKey: missedOccurrenceDateKey,
+      result: 'already_exists',
+    );
+    return;
+  }
+
+  final seededBreak = RecoverableStreakBreak(
+    id: breakId,
+    userId: (store.activeLocalScopeUserId ?? store.userId ?? '').trim(),
+    habitId: habitId,
+    brokenAtMillis: now.millisecondsSinceEpoch,
+    missedOccurrenceDateKey: missedOccurrenceDateKey,
+    previousStreak: 3,
+    currentStreakAfterBreak: 0,
+    status: RecoverableStreakBreakStatus.recoverable,
+    shieldProtected: false,
+  );
+
+  final nextRoot = _cloneMap(root);
+  final nextUserState = _ensureUserStateRoot(nextRoot);
+  final nextBreaks = _habitStreakBreaksRoot(nextUserState);
+  nextBreaks[breakId] = seededBreak.toJson();
+
+  await store._repo.save(nextRoot);
+  store._state = nextRoot;
+  store._emitChanged();
+  _logStreakRecoverDebugSeed(
+    habitId: habitId,
+    breakId: breakId,
+    missedOccurrenceDateKey: missedOccurrenceDateKey,
+    result: 'created',
+  );
+}
+
 ActiveUtilityEffect? _activeUtilityEffectForType(
   List<ActiveUtilityEffect> effects,
   ActiveUtilityEffectType type,
@@ -4234,8 +4347,7 @@ Future<StreakShieldOperationResult> _activateStreakShield(
   }
 
   final now = store._nowProvider();
-  if (store._utilityConsumptionRepository != null &&
-      UtilityConsumptionConfig.resolveEnabled()) {
+  if (store._utilityConsumptionRepository != null) {
     final cloudRewardHabitId = _cloudRewardHabitId(habit);
     final requestId =
         'utility_activate:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedOperationId';
@@ -4361,24 +4473,6 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
   }
 
   final now = store._nowProvider();
-  if (store._utilityConsumptionRepository != null &&
-      UtilityConsumptionConfig.resolveEnabled()) {
-    try {
-      await store._utilityConsumptionRepository!.applyStreakRecover(
-        requestId:
-            'utility_recover:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedOperationId',
-        utilityId: 'utility_streak_recover_1',
-        operationType: 'recover',
-        breakId: normalizedBreakId,
-      );
-    } catch (error) {
-      return StreakRecoverOperationResult(
-        status: StreakRecoverOperationStatus.persistenceFailure,
-        errorMessage: error.toString(),
-      );
-    }
-  }
-
   if (!_isWithinRecoveryWindow(now, breakRecord.missedOccurrenceDateKey)) {
     final expired = breakRecord.copyWith(
       status: RecoverableStreakBreakStatus.expired,
@@ -4393,6 +4487,34 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
     return const StreakRecoverOperationResult(
       status: StreakRecoverOperationStatus.recoveryExpired,
     );
+  }
+
+  if (store._utilityConsumptionRepository != null) {
+    final requestId =
+        'utility_recover:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedBreakId:$normalizedOperationId';
+    _logStreakRecoverCloud(
+      'start breakId=$normalizedBreakId operationId=$normalizedOperationId requestId=$requestId',
+    );
+    try {
+      final ledger =
+          await store._utilityConsumptionRepository!.applyStreakRecover(
+        requestId: requestId,
+        utilityId: 'utility_streak_recover_1',
+        operationType: 'recover',
+        breakId: normalizedBreakId,
+      );
+      _logStreakRecoverCloud(
+        'result breakId=$normalizedBreakId operationId=$normalizedOperationId requestId=$requestId ledgerId=${ledger.id} idempotent=${ledger.isIdempotent}',
+      );
+    } catch (error) {
+      _logStreakRecoverCloud(
+        'error breakId=$normalizedBreakId operationId=$normalizedOperationId requestId=$requestId error=$error',
+      );
+      return StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.persistenceFailure,
+        errorMessage: error.toString(),
+      );
+    }
   }
 
   final updated = breakRecord.copyWith(

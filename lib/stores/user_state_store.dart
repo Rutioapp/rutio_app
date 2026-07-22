@@ -245,6 +245,11 @@ class UserStateStore extends ChangeNotifier {
   final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
       <UnlockedAchievementRecord>[];
   final List<LevelEvent> _pendingLevelCelebrations = <LevelEvent>[];
+  final bool _debugStreakRecoverSeedEnabled = const bool.fromEnvironment(
+    'RUTIO_DEBUG_STREAK_RECOVER_SEED',
+    defaultValue: false,
+  );
+  bool _debugStreakRecoverSeedAttempted = false;
 
   Map<String, dynamic>? get state => _state;
   bool get isLoading => _loading;
@@ -300,6 +305,11 @@ class UserStateStore extends ChangeNotifier {
   Future<void> load() => _loadStore(this);
   Future<void> save(Map<String, dynamic> newState) =>
       _saveStore(this, newState);
+  Future<void> seedDebugRecoverableStreakBreak({bool forceEnabled = false}) =>
+      _seedDebugRecoverableStreakBreak(
+        this,
+        forceEnabled: forceEnabled,
+      );
   Future<void> switchLocalScope({
     String? userId,
     bool forceReload = false,

@@ -792,6 +792,193 @@ void main() {
       expect(result.isSuccess, isFalse);
     });
 
+    test('recoverStreakBreak cloud calls the RPC and clears one unit',
+        () async {
+      final shopRepository = _TrackingShopRepository();
+      final utilityRepo = _RecordingUtilityConsumptionRepository();
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_streak_recover_1', quantity: 1),
+          ],
+        ),
+        shopRepository: shopRepository,
+        activeHabits: const <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'habit-1',
+            'title': 'Leer',
+            'remoteId': '11111111-1111-4111-8111-111111111111',
+          },
+        ],
+        recoverableBreaks: const <String, dynamic>{
+          'break-1': <String, dynamic>{
+            'id': 'break-1',
+            'userId': 'shop-controller-user',
+            'habitId': 'habit-1',
+            'brokenAtMillis': 1,
+            'missedOccurrenceDateKey': '2026-07-21',
+            'previousStreak': 5,
+            'currentStreakAfterBreak': 0,
+            'status': 'recoverable',
+            'shieldProtected': false,
+          },
+        },
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        utilityConsumptionEnabled: true,
+        utilityConsumptionRepository: utilityRepo,
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_streak_recover_1',
+            quantity: 1,
+          ),
+        ),
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        nowProvider: () => DateTime.utc(2026, 7, 21, 12),
+      );
+
+      final result = await controller.recoverStreakBreak(
+        breakId: 'break-1',
+        operationId: 'recover-op-cloud-1',
+      );
+
+      expect(result.status, StreakRecoverOperationStatus.success);
+      expect(result.isSuccess, isTrue);
+      expect(utilityRepo.calls, 1);
+      expect(shopRepository.loadCalls, 0);
+      expect(shopRepository.saveCalls, 0);
+
+      final visibleShopState = await controller.getVisibleShopState();
+      expect(
+        visibleShopState.backpackItems
+            .where((entry) => entry.itemId == 'utility_streak_recover_1'),
+        isEmpty,
+      );
+    });
+
+    test('recoverStreakBreak cloud does not call the RPC after expiry',
+        () async {
+      final shopRepository = _TrackingShopRepository();
+      final utilityRepo = _RecordingUtilityConsumptionRepository();
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_streak_recover_1', quantity: 1),
+          ],
+        ),
+        shopRepository: shopRepository,
+        activeHabits: const <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'habit-1',
+            'title': 'Leer',
+            'remoteId': '11111111-1111-4111-8111-111111111111',
+          },
+        ],
+        recoverableBreaks: const <String, dynamic>{
+          'break-1': <String, dynamic>{
+            'id': 'break-1',
+            'userId': 'shop-controller-user',
+            'habitId': 'habit-1',
+            'brokenAtMillis': 1,
+            'missedOccurrenceDateKey': '2026-07-18',
+            'previousStreak': 5,
+            'currentStreakAfterBreak': 0,
+            'status': 'recoverable',
+            'shieldProtected': false,
+          },
+        },
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        utilityConsumptionEnabled: true,
+        utilityConsumptionRepository: utilityRepo,
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_streak_recover_1',
+            quantity: 1,
+          ),
+        ),
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        nowProvider: () => DateTime.utc(2026, 7, 21, 12),
+      );
+
+      final result = await controller.recoverStreakBreak(
+        breakId: 'break-1',
+        operationId: 'recover-op-expired-cloud',
+      );
+
+      expect(result.status, StreakRecoverOperationStatus.recoveryExpired);
+      expect(result.isSuccess, isFalse);
+      expect(utilityRepo.calls, 0);
+      expect(shopRepository.loadCalls, 0);
+      expect(shopRepository.saveCalls, 0);
+    });
+
+    test('recoverStreakBreak cloud blocks a second pending recovery', () async {
+      final utilityRepo = _BlockingUtilityConsumptionRepository();
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_streak_recover_1', quantity: 1),
+          ],
+        ),
+        activeHabits: const <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'habit-1',
+            'title': 'Leer',
+            'remoteId': '11111111-1111-4111-8111-111111111111',
+          },
+        ],
+        recoverableBreaks: const <String, dynamic>{
+          'break-1': <String, dynamic>{
+            'id': 'break-1',
+            'userId': 'shop-controller-user',
+            'habitId': 'habit-1',
+            'brokenAtMillis': 1,
+            'missedOccurrenceDateKey': '2026-07-21',
+            'previousStreak': 5,
+            'currentStreakAfterBreak': 0,
+            'status': 'recoverable',
+            'shieldProtected': false,
+          },
+        },
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        utilityConsumptionEnabled: true,
+        utilityConsumptionRepository: utilityRepo,
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            itemId: 'utility_streak_recover_1',
+            quantity: 1,
+          ),
+        ),
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        nowProvider: () => DateTime.utc(2026, 7, 21, 12),
+      );
+
+      final first = controller.recoverStreakBreak(
+        breakId: 'break-1',
+        operationId: 'recover-op-pending',
+      );
+      await utilityRepo.waitForApplyStarted;
+      final second = await controller.recoverStreakBreak(
+        breakId: 'break-1',
+        operationId: 'recover-op-pending',
+      );
+      utilityRepo.release();
+      final firstResult = await first;
+
+      expect(firstResult.status, StreakRecoverOperationStatus.success);
+      expect(second.status,
+          StreakRecoverOperationStatus.operationAlreadyProcessed);
+      expect(utilityRepo.calls, 1);
+    });
+
     test('openMysteryBox consumes one box and persists the result', () async {
       final controller = await _createController(
         walletCoins: 500,
@@ -910,6 +1097,9 @@ Future<ShopController> _createController({
 
   final shopRepositoryInstance = shopRepository ?? ShopLocalRepository();
   await shopRepositoryInstance.save(shopState);
+  if (shopRepositoryInstance is _TrackingShopRepository) {
+    shopRepositoryInstance.resetCounts();
+  }
 
   return ShopController(
     userStateStore: store,
@@ -947,6 +1137,36 @@ class _InMemoryShopRepository implements ShopLocalRepository {
   @override
   Future<void> clear() async {
     _state = const ShopState.initial();
+  }
+}
+
+class _TrackingShopRepository extends _InMemoryShopRepository {
+  _TrackingShopRepository() : super(state: const ShopState.initial());
+
+  int loadCalls = 0;
+  int saveCalls = 0;
+
+  void resetCounts() {
+    loadCalls = 0;
+    saveCalls = 0;
+  }
+
+  @override
+  Future<ShopState> load() async {
+    loadCalls += 1;
+    return super.load();
+  }
+
+  @override
+  Future<void> save(ShopState state) async {
+    saveCalls += 1;
+    await super.save(state);
+  }
+
+  @override
+  Future<void> clear() async {
+    saveCalls += 1;
+    await super.clear();
   }
 }
 
@@ -1147,6 +1367,39 @@ class _RecordingUtilityConsumptionRepository
       operationType: operationType,
       sourceType: 'streak_recover',
       sourceId: breakId,
+      breakId: breakId,
+    );
+  }
+}
+
+class _BlockingUtilityConsumptionRepository
+    extends _RecordingUtilityConsumptionRepository {
+  final Completer<void> _applyStarted = Completer<void>();
+  final Completer<void> _release = Completer<void>();
+
+  Future<void> get waitForApplyStarted => _applyStarted.future;
+
+  void release() {
+    if (!_release.isCompleted) {
+      _release.complete();
+    }
+  }
+
+  @override
+  Future<UtilityConsumptionLedgerEntry> applyStreakRecover({
+    required String requestId,
+    required String utilityId,
+    required String operationType,
+    required String breakId,
+  }) async {
+    if (!_applyStarted.isCompleted) {
+      _applyStarted.complete();
+    }
+    await _release.future;
+    return super.applyStreakRecover(
+      requestId: requestId,
+      utilityId: utilityId,
+      operationType: operationType,
       breakId: breakId,
     );
   }
