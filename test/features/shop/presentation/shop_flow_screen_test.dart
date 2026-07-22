@@ -897,6 +897,7 @@ ShopCloudSnapshot _cloudSnapshot({
             ),
           ]
         : const <RemoteInventoryItemDto>[],
+    ownedBundles: const <RemoteOwnedBundleDto>[],
     equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
     fetchedAt: DateTime.utc(2026, 7, 18),
     catalogVersion: 1,

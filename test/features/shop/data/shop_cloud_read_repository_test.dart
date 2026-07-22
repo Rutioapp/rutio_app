@@ -144,6 +144,15 @@ void main() {
             'item_id': 'wallpaper_mist_blue',
             'equipped_at': '2026-07-17T00:00:00Z',
           },
+        ]
+        ..ownedBundleRows = <Map<String, dynamic>>[
+          <String, dynamic>{
+            'user_id': 'user-1',
+            'bundle_id': 'pack_beige_rutio',
+            'acquisition_source': 'purchase',
+            'acquired_at': '2026-07-17T00:00:00Z',
+            'updated_at': '2026-07-17T00:00:00Z',
+          },
         ];
       final repository = ShopCloudReadRepository(
         catalogRemoteDataSource: catalog,
@@ -162,6 +171,7 @@ void main() {
       expect(result.data!.wallet?.coins, 777);
       expect(result.data!.inventory, hasLength(1));
       expect(result.data!.equippedCosmetics, hasLength(1));
+      expect(result.data!.ownedBundles, hasLength(1));
       expect(result.data!.catalogVersion, 1);
       expect(result.data!.fetchedAt, DateTime.utc(2026, 7, 18));
       expect(catalog.calls, 1);
@@ -208,9 +218,11 @@ class _FakeUserStateDataSource implements ShopUserStateRemoteDataSource {
   int walletCalls = 0;
   int inventoryCalls = 0;
   int equippedCalls = 0;
+  int ownedBundleCalls = 0;
   Map<String, dynamic>? walletRow;
   List<Map<String, dynamic>> inventoryRows = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> equippedRows = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> ownedBundleRows = <Map<String, dynamic>>[];
 
   @override
   Future<Map<String, dynamic>?> fetchWalletRow() async {
@@ -228,6 +240,12 @@ class _FakeUserStateDataSource implements ShopUserStateRemoteDataSource {
   Future<List<Map<String, dynamic>>> fetchEquippedCosmeticsRows() async {
     equippedCalls += 1;
     return equippedRows;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchOwnedBundleRows() async {
+    ownedBundleCalls += 1;
+    return ownedBundleRows;
   }
 }
 

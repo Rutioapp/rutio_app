@@ -14,6 +14,11 @@ abstract class CloudCosmeticsRepository {
     required String requestId,
   });
 
+  Future<RemoteShopBundlePurchaseResultDto> purchaseBundle({
+    required String bundleId,
+    required String requestId,
+  });
+
   Future<RemoteShopEquipResultDto> equipAsset({
     required String itemId,
     required String slot,
@@ -63,6 +68,17 @@ class SupabaseCloudCosmeticsRepository implements CloudCosmeticsRepository {
   }) {
     return _purchaseRepository.purchaseShopItem(
       itemId: itemId,
+      requestId: requestId,
+    );
+  }
+
+  @override
+  Future<RemoteShopBundlePurchaseResultDto> purchaseBundle({
+    required String bundleId,
+    required String requestId,
+  }) {
+    return _purchaseRepository.purchaseShopBundle(
+      bundleId: bundleId,
       requestId: requestId,
     );
   }

@@ -11,6 +11,7 @@ class ShopCloudSnapshot {
     required this.wallet,
     required this.inventory,
     required this.equippedCosmetics,
+    required this.ownedBundles,
     required this.fetchedAt,
     required this.catalogVersion,
     required this.warnings,
@@ -21,6 +22,7 @@ class ShopCloudSnapshot {
   final RemoteWalletDto? wallet;
   final List<RemoteInventoryItemDto> inventory;
   final List<RemoteEquippedCosmeticDto> equippedCosmetics;
+  final List<RemoteOwnedBundleDto> ownedBundles;
   final DateTime fetchedAt;
   final int? catalogVersion;
   final List<ShopCloudWarning> warnings;

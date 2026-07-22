@@ -555,6 +555,7 @@ CloudCosmeticsSnapshot _snapshot({
   return CloudCosmeticsSnapshot(
     userId: userId,
     ownedAssetIds: ownedAssetIds,
+    ownedBundleIds: const <String>[],
     equippedWallpaperId: wallpaperId,
     equippedHabitCardSkinId: habitCardId,
     equippedUserCardSkinId: userCardId,
@@ -722,6 +723,27 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
       coins: 500 - asset.priceAmber,
       walletVersion: 1,
       inventoryQuantity: 1,
+    );
+  }
+
+  @override
+  Future<RemoteShopBundlePurchaseResultDto> purchaseBundle({
+    required String bundleId,
+    required String requestId,
+  }) async {
+    purchaseCalls.add(bundleId);
+    final bundle = ShopAssetsCatalog.getBundleById(bundleId)!;
+    return RemoteShopBundlePurchaseResultDto(
+      requestId: requestId,
+      bundleId: bundleId,
+      userId: 'shop-cloud-user',
+      coinsDelta: -bundle.priceAmber,
+      walletCoinsAfter: 500 - bundle.priceAmber,
+      wallpaperItemId: bundle.wallpaperItemId,
+      habitCardItemId: bundle.habitCardItemId,
+      userCardItemId: bundle.userCardItemId,
+      isIdempotent: false,
+      createdAt: DateTime.utc(2026, 7, 19, 12),
     );
   }
 }

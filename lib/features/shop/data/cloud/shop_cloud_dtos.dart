@@ -421,6 +421,67 @@ class RemoteEquippedCosmeticDto {
   }
 }
 
+class RemoteOwnedBundleDto {
+  const RemoteOwnedBundleDto({
+    required this.userId,
+    required this.bundleId,
+    required this.acquisitionSource,
+    required this.acquiredAt,
+    required this.updatedAt,
+  });
+
+  final String userId;
+  final String bundleId;
+  final String acquisitionSource;
+  final DateTime acquiredAt;
+  final DateTime updatedAt;
+
+  factory RemoteOwnedBundleDto.fromJson(
+    Map<String, dynamic> json, {
+    String? expectedUserId,
+  }) {
+    final userId = _trim(json['userId'] ?? json['user_id']);
+    final bundleId = _trim(json['bundleId'] ?? json['bundle_id']);
+    final acquisitionSource =
+        _trim(json['acquisitionSource'] ?? json['acquisition_source']);
+    final acquiredAt = _dateTime(json['acquiredAt'] ?? json['acquired_at']);
+    final updatedAt = _dateTime(json['updatedAt'] ?? json['updated_at']);
+
+    if (userId == null ||
+        userId.isEmpty ||
+        bundleId == null ||
+        bundleId.isEmpty ||
+        acquisitionSource == null ||
+        acquisitionSource.isEmpty ||
+        acquiredAt == null ||
+        updatedAt == null) {
+      throw const FormatException('Invalid remote owned bundle row.');
+    }
+
+    if (expectedUserId != null && expectedUserId.trim() != userId) {
+      throw const FormatException('Owned bundle user scope mismatch.');
+    }
+
+    return RemoteOwnedBundleDto(
+      userId: userId,
+      bundleId: bundleId,
+      acquisitionSource: acquisitionSource,
+      acquiredAt: acquiredAt,
+      updatedAt: updatedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'userId': userId,
+      'bundleId': bundleId,
+      'acquisitionSource': acquisitionSource,
+      'acquiredAt': acquiredAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+}
+
 String? _trim(Object? value) {
   final normalized = (value ?? '').toString().trim();
   return normalized.isEmpty ? null : normalized;
@@ -432,6 +493,20 @@ bool _bool(Object? value) {
   if (value is bool) return value;
   final normalized = (value ?? '').toString().trim().toLowerCase();
   return normalized == 'true' || normalized == '1' || normalized == 'yes';
+}
+
+bool? _nullableBool(Object? value) {
+  if (value == null) return null;
+  if (value is bool) return value;
+  final normalized = value.toString().trim().toLowerCase();
+  if (normalized.isEmpty) return null;
+  if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
+    return true;
+  }
+  if (normalized == 'false' || normalized == '0' || normalized == 'no') {
+    return false;
+  }
+  return null;
 }
 
 int? _int(Object? value) {

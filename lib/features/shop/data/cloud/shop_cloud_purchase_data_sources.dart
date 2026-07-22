@@ -7,6 +7,11 @@ abstract class ShopCloudPurchaseDataSource {
     required String itemId,
     required String requestId,
   });
+
+  Future<Object?> purchaseShopBundle({
+    required String bundleId,
+    required String requestId,
+  });
 }
 
 class SupabaseShopCloudPurchaseDataSource
@@ -28,6 +33,20 @@ class SupabaseShopCloudPurchaseDataSource
       'purchase_shop_item',
       params: <String, dynamic>{
         'p_item_id': itemId,
+        'p_request_id': requestId,
+      },
+    );
+  }
+
+  @override
+  Future<Object?> purchaseShopBundle({
+    required String bundleId,
+    required String requestId,
+  }) {
+    return _clientOrInstance.rpc(
+      'purchase_shop_bundle',
+      params: <String, dynamic>{
+        'p_bundle_id': bundleId,
         'p_request_id': requestId,
       },
     );

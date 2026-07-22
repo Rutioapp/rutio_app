@@ -334,9 +334,10 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
                     'updatedAt': '2026-07-18T00:00:00Z',
                   },
                   expectedUserId: 'shop-controller-user',
-                ),
-              ]
+              ),
+            ]
             : const <RemoteInventoryItemDto>[],
+        ownedBundles: const <RemoteOwnedBundleDto>[],
         equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
         fetchedAt: DateTime.utc(2026, 7, 18),
         catalogVersion: 1,
@@ -370,6 +371,25 @@ class _NoopPurchaseDataSource implements ShopCloudPurchaseDataSource {
       'coins': 4925,
       'walletVersion': 1,
       'inventoryQuantity': 1,
+    };
+  }
+
+  @override
+  Future<Object?> purchaseShopBundle({
+    required String bundleId,
+    required String requestId,
+  }) async {
+    return <String, dynamic>{
+      'requestId': requestId,
+      'bundleId': bundleId,
+      'userId': 'shop-controller-user',
+      'coinsDelta': -325,
+      'walletCoinsAfter': 4675,
+      'wallpaperItemId': 'wallpaper_rutio_beige',
+      'habitCardItemId': 'habit_card_warm_beige',
+      'userCardItemId': 'user_card_warm_beige',
+      'isIdempotent': false,
+      'createdAt': '2026-07-22T12:00:00Z',
     };
   }
 }
