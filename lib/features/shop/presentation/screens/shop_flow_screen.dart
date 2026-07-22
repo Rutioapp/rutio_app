@@ -332,6 +332,16 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
     }
   }
 
+  Future<void> _handleCosmeticsEquipBundlePressed(String bundleId) async {
+    final result = await widget.cosmeticsController.equipBundle(bundleId);
+    if (!mounted) return;
+    if (result.isSuccess) {
+      _showSnack('Pack equipado');
+      return;
+    }
+    _showSnack('No se ha podido equipar el pack');
+  }
+
   Future<void> _handlePurchaseCompleted(ShopControllerResult result) async {
     if (!mounted) return;
 
@@ -702,9 +712,11 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
           walletCoins: walletCoins,
           equippedCosmetics: snapshot.equippedCosmetics,
           ownedCosmeticItems: snapshot.ownedCosmeticItems,
+          ownedBundles: snapshot.ownedBundles,
           cosmeticsController: widget.cosmeticsController,
           onBackPressed: _popPage,
           onEquipPressed: _handleCosmeticsEquipPressed,
+          onEquipBundlePressed: _handleCosmeticsEquipBundlePressed,
           onItemPressed: _openDetail,
           onOpenCosmetics: _openCosmetics,
         );

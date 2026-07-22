@@ -74,6 +74,60 @@ void main() {
           await controller.isBundlePartiallyOwned('pack_beige_rutio'), isFalse);
     });
 
+    test('equipBundle fails for missing bundle id', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 1000);
+
+      final result = await controller.equipBundle('missing_bundle');
+
+      expect(result.status, ShopCosmeticsOperationStatus.bundleNotFound);
+    });
+
+    test('equipBundle fails when the bundle is not explicitly owned', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final controller = await _createController(walletCoins: 1000);
+
+      final result = await controller.equipBundle('pack_beige_rutio');
+
+      expect(result.status, ShopCosmeticsOperationStatus.assetNotOwned);
+      expect(result.state.equippedWallpaperId, isNull);
+    });
+
+    test('equipBundle equips all three cosmetics and keeps the wallet',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: const <String>[],
+          ownedBundleIds: const <String>['pack_beige_rutio'],
+        ),
+      );
+
+      final controller = await _createController(
+        walletCoins: 1000,
+        repository: repository,
+      );
+
+      var notificationCount = 0;
+      controller.addListener(() {
+        notificationCount += 1;
+      });
+
+      final result = await controller.equipBundle('pack_beige_rutio');
+      final persisted = await ShopCosmeticsRepository().load();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.walletCoins, 1000);
+      expect(result.state.equippedWallpaperId, 'wallpaper_rutio_beige');
+      expect(result.state.equippedHabitCardSkinId, 'habit_card_warm_beige');
+      expect(result.state.equippedUserCardSkinId, 'user_card_warm_beige');
+      expect(persisted.equippedWallpaperId, 'wallpaper_rutio_beige');
+      expect(persisted.equippedHabitCardSkinId, 'habit_card_warm_beige');
+      expect(persisted.equippedUserCardSkinId, 'user_card_warm_beige');
+      expect(notificationCount, greaterThan(0));
+    });
+
     test('bundle purchase is blocked when the user already owns part of it',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
