@@ -1,15 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/equipped_cosmetics.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_customization_screen.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_product_card.dart';
+import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/utils/app_theme.dart';
@@ -37,6 +43,10 @@ void main() {
       await tester.pumpWidget(_app(_screen(items: ownedItems)));
       await tester.pump(const Duration(milliseconds: 16));
 
+      expect(
+        find.byKey(const Key('shopCustomizationFilter-packs')),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const Key('shopCustomizationFilter-backgrounds')),
         findsOneWidget,
@@ -89,6 +99,84 @@ void main() {
         findsNothing,
       );
       expect(find.text('Habit Cards'), findsWidgets);
+    });
+
+    testWidgets('packs filter shows only explicit owned bundles',
+        (WidgetTester tester) async {
+      final controller = await _createCosmeticsController(
+        walletCoins: 640,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>[
+            'wallpaper_mellow_camel',
+            'habit_card_soft_camel',
+            'user_card_soft_camel',
+          ],
+          ownedBundleIds: const <String>['pack_beige_rutio', 'unknown_pack'],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            items: const <ShopItem>[],
+            cosmeticsController: controller,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-packs')),
+      );
+      await tester.tap(find.byKey(const Key('shopCustomizationFilter-packs')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopOwnedBundle-pack_beige_rutio')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopOwnedBundle-pack_camel_suave')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('packs filter shows empty state without explicit bundle ids',
+        (WidgetTester tester) async {
+      final controller = await _createCosmeticsController(
+        walletCoins: 640,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>[
+            'wallpaper_mellow_camel',
+            'habit_card_soft_camel',
+            'user_card_soft_camel',
+          ],
+          ownedBundleIds: const <String>[],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            items: const <ShopItem>[],
+            cosmeticsController: controller,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-packs')),
+      );
+      await tester.tap(find.byKey(const Key('shopCustomizationFilter-packs')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('shopCustomizationBundleEmptyState')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('shopOwnedBundle-pack_beige_rutio')),
+          findsNothing);
     });
 
     testWidgets('renders equipped background in default filter',
@@ -207,6 +295,119 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
 
       expect(openedCosmetics, isTrue);
+    });
+
+    testWidgets('bundle card renders previews and equips by id',
+        (WidgetTester tester) async {
+      String? pressedBundleId;
+
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            items: const <ShopItem>[],
+            ownedBundles: <ShopBundle>[
+              ShopAssetsCatalog.getBundleById('pack_beige_rutio')!,
+            ],
+            onEquipBundlePressed: (String bundleId) async {
+              pressedBundleId = bundleId;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-packs')),
+      );
+      await tester.tap(find.byKey(const Key('shopCustomizationFilter-packs')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('shopOwnedBundle-pack_beige_rutio')),
+          matching: find.byType(ShopCosmeticsAssetPreview),
+        ),
+        findsNWidgets(3),
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopOwnedBundleAction-pack_beige_rutio')),
+      );
+      await tester.tap(
+        find.byKey(const Key('shopOwnedBundleAction-pack_beige_rutio')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(pressedBundleId, 'pack_beige_rutio');
+    });
+
+    testWidgets('bundle card shows equipped and busy states',
+        (WidgetTester tester) async {
+      final bundle = ShopAssetsCatalog.getBundleById('pack_beige_rutio')!;
+      final equippedCosmetics = EquippedCosmetics(
+        backgroundItemId: bundle.wallpaperItemId,
+        habitCardItemId: bundle.habitCardItemId,
+        userCardItemId: bundle.userCardItemId,
+      );
+
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            items: const <ShopItem>[],
+            ownedBundles: <ShopBundle>[bundle],
+            equippedCosmetics: equippedCosmetics,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-packs')),
+      );
+      await tester.tap(find.byKey(const Key('shopCustomizationFilter-packs')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pack equipado'), findsWidgets);
+      final button = tester.widget<ShopPrimaryButton>(
+        find.byKey(const Key('shopOwnedBundleAction-pack_beige_rutio')),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('bundle card shows Equipando while callback is pending',
+        (WidgetTester tester) async {
+      final completer = Completer<void>();
+
+      await tester.pumpWidget(
+        _app(
+          _screen(
+            items: const <ShopItem>[],
+            ownedBundles: <ShopBundle>[
+              ShopAssetsCatalog.getBundleById('pack_beige_rutio')!,
+            ],
+            onEquipBundlePressed: (_) => completer.future,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopCustomizationFilter-packs')),
+      );
+      await tester.tap(find.byKey(const Key('shopCustomizationFilter-packs')));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const Key('shopOwnedBundleAction-pack_beige_rutio')),
+      );
+      await tester.tap(
+        find.byKey(const Key('shopOwnedBundleAction-pack_beige_rutio')),
+      );
+      await tester.pump();
+
+      expect(find.text('Equipando...'), findsWidgets);
+      completer.complete();
+      await tester.pumpAndSettle();
     });
 
     testWidgets('V1 cosmetics controller shows owned assets from new system',
@@ -545,7 +746,9 @@ Widget _app(Widget child) {
 Widget _screen({
   required List<ShopItem> items,
   EquippedCosmetics equippedCosmetics = const EquippedCosmetics(),
+  List<ShopBundle> ownedBundles = const <ShopBundle>[],
   Future<void> Function(String itemId)? onEquipPressed,
+  Future<void> Function(String bundleId)? onEquipBundlePressed,
   ValueChanged<String>? onItemPressed,
   VoidCallback? onOpenCosmetics,
   ShopCosmeticsController? cosmeticsController,
@@ -554,9 +757,13 @@ Widget _screen({
     walletCoins: 640,
     equippedCosmetics: equippedCosmetics,
     ownedCosmeticItems: items,
+    ownedBundles: ownedBundles,
     onBackPressed: () {},
     onEquipPressed:
         onEquipPressed ?? cosmeticsController?.equipAsset ?? (_) async {},
+    onEquipBundlePressed: onEquipBundlePressed ??
+        cosmeticsController?.equipBundle ??
+        (_) async {},
     onItemPressed: onItemPressed ?? (_) {},
     onOpenCosmetics: onOpenCosmetics,
     cosmeticsController: cosmeticsController,

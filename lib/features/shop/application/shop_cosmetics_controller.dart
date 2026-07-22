@@ -166,6 +166,7 @@ class ShopCosmeticsController extends ChangeNotifier {
   String? _lastTraceId;
   ShopCosmeticsCloudState _cloudState =
       ShopCosmeticsCloudState.unauthenticated();
+  final Set<String> _busyBundleEquipIds = <String>{};
 
   ShopCosmeticsState? get state => _cachedState;
   ShopCosmeticsCloudState get cloudState => _cloudState;
@@ -473,6 +474,44 @@ class ShopCosmeticsController extends ChangeNotifier {
       rethrow;
     }
     return result;
+  }
+
+  Future<ShopCosmeticsOperationResult> equipBundle(String bundleId) async {
+    if (_busyBundleEquipIds.contains(bundleId)) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.bundleNotFound,
+        bundleId: bundleId,
+        walletCoins: await _walletCoins(),
+      );
+    }
+
+    _busyBundleEquipIds.add(bundleId);
+    try {
+      if (_cloudEnabled) {
+        return _equipBundleCloud(bundleId);
+      }
+
+      final service = await _service();
+      final result = service.equipBundle(bundleId);
+      _log(
+        'equipBundle bundleId=$bundleId success=${result.isSuccess} '
+        'ownedBundleIds=${result.state.ownedBundleIds} '
+        'equippedWallpaperId=${result.state.equippedWallpaperId} '
+        'equippedHabitCardSkinId=${result.state.equippedHabitCardSkinId} '
+        'equippedUserCardSkinId=${result.state.equippedUserCardSkinId}',
+      );
+      if (!result.isSuccess) return result;
+      _setCachedState(result.state);
+      try {
+        await _persist(result.state, result.walletCoins);
+      } catch (_) {
+        await _restorePersistedStateAfterFailure();
+        rethrow;
+      }
+      return result;
+    } finally {
+      _busyBundleEquipIds.remove(bundleId);
+    }
   }
 
   Future<ShopCosmeticsOperationResult> unequipAsset(
@@ -833,69 +872,23 @@ class ShopCosmeticsController extends ChangeNotifier {
       );
     }
 
-    final requestId = CloudCosmeticsRequestId.generateV4();
-    final equipSlot = _resolveEquipSlot(asset);
     final previousItemId = state.getEquippedAssetIdForCategory(asset.category);
     try {
-      _traceCloudCosmetics(
-        'tap',
-        traceId: traceId,
-        userId: scopeKey,
-        slot: equipSlot,
-        previousItemId: previousItemId,
-        nextItemId: assetId,
-        assetPath: asset.assetPath,
+      final nextState = await _performCloudEquipAssetStep(
+        asset: asset,
         state: state,
-      );
-      _traceCloudCosmetics(
-        'rpc_start',
         traceId: traceId,
-        userId: scopeKey,
-        slot: equipSlot,
+        scopeKey: scopeKey,
         previousItemId: previousItemId,
-        nextItemId: assetId,
-        assetPath: asset.assetPath,
-        state: state,
-        note: 'requestId=$requestId',
       );
-      final rpcResult = await _cloudRepository.equipAsset(
-        itemId: assetId,
-        slot: equipSlot,
-        requestId: requestId,
-      );
-      _traceCloudCosmetics(
-        'rpc_success',
-        traceId: traceId,
-        userId: scopeKey,
-        slot: equipSlot,
-        previousItemId: previousItemId,
-        nextItemId: assetId,
-        assetPath: asset.assetPath,
-        state: state,
-        note:
-            'operation=${rpcResult.operation} requestId=${rpcResult.requestId}',
-      );
-      if (_currentScope() != scopeKey) {
-        return _cloudFailureResult(
-          status: ShopCosmeticsOperationStatus.bundleNotFound,
-          assetId: assetId,
-        );
-      }
       final resolvedScopeKey = scopeKey ?? _currentScope();
       if (resolvedScopeKey == null) {
         return _cloudFailureResult(
           status: ShopCosmeticsOperationStatus.bundleNotFound,
           assetId: assetId,
+          walletCoins: await _walletCoins(),
         );
       }
-      final nextState = switch (asset.category) {
-        ShopAssetCategory.wallpaper =>
-          state.copyWith(equippedWallpaperId: assetId),
-        ShopAssetCategory.habitCard =>
-          state.copyWith(equippedHabitCardSkinId: assetId),
-        ShopAssetCategory.userCard =>
-          state.copyWith(equippedUserCardSkinId: assetId),
-      };
       _markCloudMutation();
       final snapshot = _buildCloudSnapshot(resolvedScopeKey, nextState);
       await _applyConfirmedCloudSnapshot(
@@ -903,7 +896,7 @@ class ShopCosmeticsController extends ChangeNotifier {
         snapshot: snapshot,
         traceId: traceId,
         stage: 'state_applied',
-        slot: equipSlot,
+        slot: _resolveEquipSlot(asset),
         previousItemId: previousItemId,
         nextItemId: assetId,
         assetPath: asset.assetPath,
@@ -920,7 +913,7 @@ class ShopCosmeticsController extends ChangeNotifier {
         'rpc_error',
         traceId: traceId,
         userId: scopeKey,
-        slot: equipSlot,
+        slot: _resolveEquipSlot(asset),
         previousItemId: previousItemId,
         nextItemId: assetId,
         assetPath: asset.assetPath,
@@ -934,6 +927,172 @@ class ShopCosmeticsController extends ChangeNotifier {
         currentState: state,
       );
     }
+  }
+
+  Future<ShopCosmeticsOperationResult> _equipBundleCloud(
+    String bundleId,
+  ) async {
+    final scopeKey = _currentScope();
+    final traceId = _newTraceId('tap');
+    final state = await _combinedCloudState();
+    final bundle = ShopAssetsCatalog.getBundleById(bundleId);
+    if (bundle == null) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.bundleNotFound,
+        state: state,
+        bundleId: bundleId,
+        walletCoins: await _walletCoins(),
+      );
+    }
+    if (!state.isBundleOwned(bundleId)) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.assetNotOwned,
+        state: state,
+        bundleId: bundleId,
+        walletCoins: await _walletCoins(),
+      );
+    }
+
+    final bundleAssets = _resolveOwnedBundleAssets(bundle);
+    if (bundleAssets == null) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.bundleNotFound,
+        state: state,
+        bundleId: bundleId,
+        walletCoins: await _walletCoins(),
+      );
+    }
+
+    try {
+      _traceCloudCosmetics(
+        'tap',
+        traceId: traceId,
+        userId: scopeKey,
+        slot: 'bundle',
+        previousItemId: bundle.wallpaperItemId,
+        nextItemId: bundleId,
+        state: state,
+        note: 'bundle_step=1/3',
+      );
+      var currentState = state;
+      for (var index = 0; index < bundleAssets.length; index += 1) {
+        final asset = bundleAssets[index];
+        currentState = await _performCloudEquipAssetStep(
+          asset: asset,
+          state: currentState,
+          traceId: traceId,
+          scopeKey: scopeKey,
+          previousItemId: currentState.getEquippedAssetIdForCategory(
+            asset.category,
+          ),
+          note: 'bundle_step=${index + 1}/3 bundleId=$bundleId',
+        );
+        if (_currentScope() != scopeKey) {
+          await _syncFromCurrentScope(force: true);
+          return _cloudFailureResult(
+            status: ShopCosmeticsOperationStatus.bundleNotFound,
+            state: currentState,
+            bundleId: bundleId,
+            walletCoins: await _walletCoins(),
+          );
+        }
+      }
+
+      final resolvedScopeKey = scopeKey ?? _currentScope();
+      if (resolvedScopeKey == null) {
+        await _syncFromCurrentScope(force: true);
+        return _cloudFailureResult(
+          status: ShopCosmeticsOperationStatus.bundleNotFound,
+          state: currentState,
+          bundleId: bundleId,
+          walletCoins: await _walletCoins(),
+        );
+      }
+
+      _markCloudMutation();
+      final snapshot = _buildCloudSnapshot(resolvedScopeKey, currentState);
+      await _applyConfirmedCloudSnapshot(
+        scopeKey: resolvedScopeKey,
+        snapshot: snapshot,
+        traceId: traceId,
+        stage: 'state_applied',
+        slot: 'bundle',
+        previousItemId: bundle.id,
+        nextItemId: bundle.id,
+      );
+      unawaited(_syncFromCurrentScope(force: true));
+      return ShopCosmeticsOperationResult(
+        status: ShopCosmeticsOperationStatus.success,
+        state: currentState,
+        walletCoins: await _walletCoins(),
+        bundleId: bundleId,
+      );
+    } on ShopCloudEquipException catch (error) {
+      await _syncFromCurrentScope(force: true);
+      return _mapCloudEquipFailure(
+        error,
+        assetId: bundleId,
+        currentState: state,
+      );
+    }
+  }
+
+  Future<ShopCosmeticsState> _performCloudEquipAssetStep({
+    required ShopAsset asset,
+    required ShopCosmeticsState state,
+    required String traceId,
+    required String? scopeKey,
+    required String? previousItemId,
+    String? note,
+  }) async {
+    final requestId = CloudCosmeticsRequestId.generateV4();
+    final equipSlot = _resolveEquipSlot(asset);
+    _traceCloudCosmetics(
+      'tap',
+      traceId: traceId,
+      userId: scopeKey,
+      slot: equipSlot,
+      previousItemId: previousItemId,
+      nextItemId: asset.id,
+      assetPath: asset.assetPath,
+      state: state,
+      note: note,
+    );
+    _traceCloudCosmetics(
+      'rpc_start',
+      traceId: traceId,
+      userId: scopeKey,
+      slot: equipSlot,
+      previousItemId: previousItemId,
+      nextItemId: asset.id,
+      assetPath: asset.assetPath,
+      state: state,
+      note: 'requestId=$requestId',
+    );
+    final rpcResult = await _cloudRepository.equipAsset(
+      itemId: asset.id,
+      slot: equipSlot,
+      requestId: requestId,
+    );
+    _traceCloudCosmetics(
+      'rpc_success',
+      traceId: traceId,
+      userId: scopeKey,
+      slot: equipSlot,
+      previousItemId: previousItemId,
+      nextItemId: asset.id,
+      assetPath: asset.assetPath,
+      state: state,
+      note: 'operation=${rpcResult.operation} requestId=${rpcResult.requestId}',
+    );
+    return switch (asset.category) {
+      ShopAssetCategory.wallpaper =>
+        state.copyWith(equippedWallpaperId: asset.id),
+      ShopAssetCategory.habitCard =>
+        state.copyWith(equippedHabitCardSkinId: asset.id),
+      ShopAssetCategory.userCard =>
+        state.copyWith(equippedUserCardSkinId: asset.id),
+    };
   }
 
   Future<ShopCosmeticsOperationResult> _unequipAssetCloud(
@@ -988,13 +1147,14 @@ class ShopCosmeticsController extends ChangeNotifier {
     ShopCosmeticsState? state,
     String? assetId,
     String? bundleId,
+    int? walletCoins,
   }) {
     final resolvedState =
         state ?? _cachedState ?? const ShopCosmeticsState.initial();
     return ShopCosmeticsOperationResult(
       status: status,
       state: resolvedState,
-      walletCoins: 0,
+      walletCoins: walletCoins ?? 0,
       assetId: assetId,
       bundleId: bundleId,
     );
@@ -1079,6 +1239,21 @@ class ShopCosmeticsController extends ChangeNotifier {
       }
     }
     return false;
+  }
+
+  List<ShopAsset>? _resolveOwnedBundleAssets(ShopBundle bundle) {
+    final wallpaper = ShopAssetsCatalog.getAssetById(bundle.wallpaperItemId);
+    final habitCard = ShopAssetsCatalog.getAssetById(bundle.habitCardItemId);
+    final userCard = ShopAssetsCatalog.getAssetById(bundle.userCardItemId);
+    if (wallpaper == null ||
+        habitCard == null ||
+        userCard == null ||
+        wallpaper.category != ShopAssetCategory.wallpaper ||
+        habitCard.category != ShopAssetCategory.habitCard ||
+        userCard.category != ShopAssetCategory.userCard) {
+      return null;
+    }
+    return <ShopAsset>[wallpaper, habitCard, userCard];
   }
 
   List<String> _appendUniqueId(List<String> values, String value) {

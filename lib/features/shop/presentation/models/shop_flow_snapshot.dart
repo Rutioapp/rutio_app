@@ -8,6 +8,7 @@ import 'package:rutio/features/shop/domain/models/owned_shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/domain/models/shop_collection.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/domain/shop_state.dart';
@@ -79,6 +80,14 @@ class ShopFlowSnapshot {
         .whereType<ShopItem>()
         .where((ShopItem item) => item.category == ShopItemCategory.cosmetic)
         .toList(growable: false);
+  }
+
+  List<ShopBundle> get ownedBundles {
+    return ShopAssetsCatalog.allBundles
+        .where((ShopBundle bundle) =>
+            cosmeticsState.ownedBundleIds.contains(bundle.id))
+        .toList(growable: false)
+      ..sort((ShopBundle a, ShopBundle b) => a.sortOrder.compareTo(b.sortOrder));
   }
 
   List<BackpackItemViewModel> get backpackViewModels {

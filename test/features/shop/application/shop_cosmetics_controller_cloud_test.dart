@@ -375,6 +375,137 @@ void main() {
       expect(repo.equipCalls.single.slot, CosmeticSlot.userCard.remoteDbKey);
     });
 
+    test('cloud equipBundle performs three RPC calls with unique request ids',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_rutio_beige',
+          'habit_card_warm_beige',
+          'user_card_warm_beige',
+        ],
+        ownedBundleIds: <String>['pack_beige_rutio'],
+        wallpaperId: 'wallpaper_mist_blue',
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+          () async => _success(
+              _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>[
+                    'wallpaper_rutio_beige',
+                    'habit_card_warm_beige',
+                    'user_card_warm_beige',
+                  ],
+                  ownedBundleIds: <String>['pack_beige_rutio'],
+                  wallpaperId: 'wallpaper_rutio_beige',
+                  habitCardId: 'habit_card_warm_beige',
+                  userCardId: 'user_card_warm_beige',
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>[
+                    'wallpaper_rutio_beige',
+                    'habit_card_warm_beige',
+                    'user_card_warm_beige',
+                  ],
+                  ownedBundleIds: <String>['pack_beige_rutio'],
+                  wallpaperId: 'wallpaper_rutio_beige',
+                  habitCardId: 'habit_card_warm_beige',
+                  userCardId: 'user_card_warm_beige',
+                ),
+              ),
+        ],
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipBundle('pack_beige_rutio');
+
+      expect(result.isSuccess, isTrue);
+      expect(repo.equipCalls, hasLength(3));
+      expect(
+        repo.equipCalls.map((call) => call.slot).toList(growable: false),
+        <String>[
+          CosmeticSlot.background.remoteDbKey,
+          CosmeticSlot.habitCard.remoteDbKey,
+          CosmeticSlot.userCard.remoteDbKey,
+        ],
+      );
+      expect(
+        repo.equipCalls.map((call) => call.requestId).toSet().length,
+        3,
+      );
+      expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
+          'wallpaper_rutio_beige');
+      expect(controller.getEquippedHabitCardAssetOrNullSync()?.id,
+          'habit_card_warm_beige');
+      expect(controller.getEquippedUserCardAssetOrNullSync()?.id,
+          'user_card_warm_beige');
+      expect(repo.fetchCalls, greaterThanOrEqualTo(3));
+    });
+
+    test('cloud equipBundle keeps the pack incomplete on partial failure',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_rutio_beige',
+          'habit_card_warm_beige',
+          'user_card_warm_beige',
+        ],
+        ownedBundleIds: <String>['pack_beige_rutio'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+          () async => _success(snapshot),
+          () async => _success(snapshot),
+        ],
+      );
+      repo.equipOutcomes.add(
+        RemoteShopEquipResultDto(
+          requestId: 'req-1',
+          operation: 'equip',
+          itemId: 'wallpaper_rutio_beige',
+          slot: CosmeticSlot.background.remoteDbKey,
+          createdAt: DateTime.utc(2026, 7, 19, 12),
+        ),
+      );
+      repo.equipOutcomes.add(
+        const ShopCloudEquipException(
+          code: ShopCosmeticsOperationFailureCode.networkUnavailable,
+          message: 'network unavailable',
+          retryable: true,
+        ),
+      );
+
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipBundle('pack_beige_rutio');
+
+      expect(result.isSuccess, isFalse);
+      expect(controller.getEquippedWallpaperAssetOrNullSync(), isNull);
+      expect(controller.getEquippedHabitCardAssetOrNullSync(), isNull);
+      expect(controller.getEquippedUserCardAssetOrNullSync(), isNull);
+      expect(repo.equipCalls, hasLength(2));
+      expect(repo.fetchCalls, greaterThanOrEqualTo(2));
+    });
+
     test('cloud equip replaces the previous cosmetic in the same slot',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -676,6 +807,7 @@ ShopCloudReadResult<CloudCosmeticsSnapshot> _failure(
 CloudCosmeticsSnapshot _snapshot({
   required String userId,
   required List<String> ownedAssetIds,
+  List<String> ownedBundleIds = const <String>[],
   String? wallpaperId,
   String? habitCardId,
   String? userCardId,
@@ -684,7 +816,7 @@ CloudCosmeticsSnapshot _snapshot({
   return CloudCosmeticsSnapshot(
     userId: userId,
     ownedAssetIds: ownedAssetIds,
-    ownedBundleIds: const <String>[],
+    ownedBundleIds: ownedBundleIds,
     equippedWallpaperId: wallpaperId,
     equippedHabitCardSkinId: habitCardId,
     equippedUserCardSkinId: userCardId,
@@ -801,6 +933,7 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
   final List<_FetchResponseFactory> _fetchResponses;
   final List<String> purchaseCalls = <String>[];
   final List<_EquipCall> equipCalls = <_EquipCall>[];
+  final List<Object?> equipOutcomes = <Object?>[];
   final ShopCloudEquipException? equipError;
 
   int _fetchIndex = 0;
@@ -816,6 +949,15 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
       slot: slot,
       requestId: requestId,
     ));
+    if (equipOutcomes.isNotEmpty) {
+      final outcome = equipOutcomes.removeAt(0);
+      if (outcome is ShopCloudEquipException) {
+        throw outcome;
+      }
+      if (outcome is RemoteShopEquipResultDto) {
+        return outcome;
+      }
+    }
     if (equipError != null) {
       throw equipError!;
     }
@@ -836,6 +978,8 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
     }
     return _failure(ShopCloudErrorCode.unknown, 'No queued fetch response.');
   }
+
+  int get fetchCalls => _fetchIndex;
 
   @override
   Future<RemoteShopPurchaseResultDto> purchaseAsset({

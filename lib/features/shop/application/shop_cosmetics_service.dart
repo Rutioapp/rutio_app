@@ -151,6 +151,45 @@ class ShopCosmeticsService {
     );
   }
 
+  ShopCosmeticsOperationResult equipBundle(String bundleId) {
+    final bundle = ShopAssetsCatalog.getBundleById(bundleId);
+    if (bundle == null) {
+      return _result(ShopCosmeticsOperationStatus.bundleNotFound);
+    }
+    if (!isBundleOwned(bundleId)) {
+      return _result(
+        ShopCosmeticsOperationStatus.assetNotOwned,
+        bundleId: bundleId,
+      );
+    }
+
+    final wallpaper = ShopAssetsCatalog.getAssetById(bundle.wallpaperItemId);
+    final habitCard = ShopAssetsCatalog.getAssetById(bundle.habitCardItemId);
+    final userCard = ShopAssetsCatalog.getAssetById(bundle.userCardItemId);
+    if (wallpaper == null ||
+        habitCard == null ||
+        userCard == null ||
+        wallpaper.category != ShopAssetCategory.wallpaper ||
+        habitCard.category != ShopAssetCategory.habitCard ||
+        userCard.category != ShopAssetCategory.userCard) {
+      return _result(
+        ShopCosmeticsOperationStatus.bundleNotFound,
+        bundleId: bundleId,
+      );
+    }
+
+    final nextState = state.copyWith(
+      equippedWallpaperId: wallpaper.id,
+      equippedHabitCardSkinId: habitCard.id,
+      equippedUserCardSkinId: userCard.id,
+    );
+    return _result(
+      ShopCosmeticsOperationStatus.success,
+      state: nextState,
+      bundleId: bundleId,
+    );
+  }
+
   ShopCosmeticsOperationResult unequipAsset(ShopAssetCategory category) {
     final nextState = switch (category) {
       ShopAssetCategory.wallpaper => state.copyWith(equippedWallpaperId: null),

@@ -750,6 +750,44 @@ void main() {
       );
     });
 
+    testWidgets('bundle equip updates customization without leaving shop',
+        (WidgetTester tester) async {
+      final env = await _createEnv(
+        walletCoins: 500,
+        cosmeticsState: ShopCosmeticsState(
+          ownedAssetIds: const <String>[],
+          ownedBundleIds: const <String>['pack_beige_rutio'],
+        ),
+      );
+
+      await tester.pumpWidget(_app(_flow(env)));
+      await tester.pumpAndSettle();
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopHomeHeroCustomization')),
+      );
+      await tester.pumpAndSettle();
+
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopCustomizationFilter-packs')),
+      );
+      await tester.pumpAndSettle();
+      await _tapVisible(
+        tester,
+        find.byKey(const Key('shopOwnedBundleAction-pack_beige_rutio')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pack equipado'), findsWidgets);
+      expect(
+        find.byKey(const Key('shopOwnedBundle-pack_beige_rutio')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Personaliz'), findsOneWidget);
+    });
+
     testWidgets('customization equip does not show success snackbar',
         (WidgetTester tester) async {
       final env = await _createEnv(
