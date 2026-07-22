@@ -823,6 +823,9 @@ Future<void> _loadStore(
         return;
       }
       await store._repo.save(store._state!);
+      if (kDebugMode && store._debugStreakRecoverSeedEnabled) {
+        await _seedDebugRecoverableStreakBreak(store);
+      }
     }
   } catch (error) {
     store._error = error;
