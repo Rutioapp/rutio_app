@@ -131,19 +131,80 @@ void main() {
         ),
       );
     });
+
+    test('purchases bundles and parses the result', () async {
+      final dataSource = _FakePurchaseDataSource(
+        bundleResponse: <String, dynamic>{
+          'request_id': 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+          'bundle_id': 'pack_beige_rutio',
+          'user_id': 'd1b5d4d7-6b8e-4f28-9c33-8e0d0c1cb002',
+          'coins_delta': -325,
+          'wallet_coins_after': 675,
+          'wallpaper_item_id': 'wallpaper_rutio_beige',
+          'habit_card_item_id': 'habit_card_warm_beige',
+          'user_card_item_id': 'user_card_warm_beige',
+          'is_idempotent': true,
+          'created_at': '2026-07-22T12:00:00Z',
+        },
+      );
+      final repository = ShopCloudPurchaseRepository(dataSource: dataSource);
+
+      final result = await repository.purchaseShopBundle(
+        bundleId: 'pack_beige_rutio',
+        requestId: 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+      );
+
+      expect(dataSource.bundleIdCalls, ['pack_beige_rutio']);
+      expect(
+        dataSource.bundleRequestIdCalls,
+        ['d2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001'],
+      );
+      expect(result.bundleId, 'pack_beige_rutio');
+      expect(result.walletCoinsAfter, 675);
+      expect(result.isIdempotent, isTrue);
+    });
+
+    test('maps bundle-specific RPC errors', () async {
+      final repository = ShopCloudPurchaseRepository(
+        dataSource: _FakePurchaseDataSource(
+          error: const PostgrestException(
+            message: 'bundle contains owned items',
+            code: 'P0001',
+          ),
+        ),
+      );
+
+      await expectLater(
+        repository.purchaseShopBundle(
+          bundleId: 'pack_beige_rutio',
+          requestId: 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+        ),
+        throwsA(
+          isA<ShopCloudPurchaseException>().having(
+            (error) => error.code,
+            'code',
+            ShopPurchaseFailureCode.bundleContainsOwnedItems,
+          ),
+        ),
+      );
+    });
   });
 }
 
 class _FakePurchaseDataSource implements ShopCloudPurchaseDataSource {
   _FakePurchaseDataSource({
     this.response,
+    this.bundleResponse,
     this.error,
   });
 
   final Object? response;
+  final Object? bundleResponse;
   final Object? error;
   final List<String> itemIdCalls = <String>[];
   final List<String> requestIdCalls = <String>[];
+  final List<String> bundleIdCalls = <String>[];
+  final List<String> bundleRequestIdCalls = <String>[];
 
   @override
   Future<Object?> purchaseShopItem({
@@ -159,5 +220,21 @@ class _FakePurchaseDataSource implements ShopCloudPurchaseDataSource {
       return response;
     }
     return response;
+  }
+
+  @override
+  Future<Object?> purchaseShopBundle({
+    required String bundleId,
+    required String requestId,
+  }) async {
+    bundleIdCalls.add(bundleId);
+    bundleRequestIdCalls.add(requestId);
+    if (error != null) {
+      throw error!;
+    }
+    if (bundleResponse is Future<Object?>) {
+      return bundleResponse;
+    }
+    return bundleResponse;
   }
 }

@@ -14,6 +14,7 @@ void main() {
     final first = CloudCosmeticsSnapshot(
       userId: 'user-a',
       ownedAssetIds: const <String>['wallpaper_mist_blue'],
+      ownedBundleIds: const <String>['pack_beige_rutio'],
       equippedWallpaperId: 'wallpaper_mist_blue',
       equippedHabitCardSkinId: null,
       equippedUserCardSkinId: null,
@@ -24,6 +25,7 @@ void main() {
     final second = CloudCosmeticsSnapshot(
       userId: 'user-b',
       ownedAssetIds: const <String>['user_card_full_moon'],
+      ownedBundleIds: const <String>[],
       equippedWallpaperId: null,
       equippedHabitCardSkinId: null,
       equippedUserCardSkinId: 'user_card_full_moon',
@@ -41,11 +43,29 @@ void main() {
 
     expect(firstEntry?.snapshot.userId, 'user-a');
     expect(firstEntry?.snapshot.ownedAssetIds, contains('wallpaper_mist_blue'));
+    expect(firstEntry?.snapshot.ownedBundleIds, contains('pack_beige_rutio'));
     expect(secondEntry?.snapshot.userId, 'user-b');
     expect(
       secondEntry?.snapshot.equippedUserCardSkinId,
       'user_card_full_moon',
     );
     expect(missingEntry, isNull);
+  });
+
+  test('cloud cosmetics cache reads snapshots without ownedBundleIds', () async {
+    final snapshot = CloudCosmeticsSnapshot.fromJson(
+      <String, dynamic>{
+        'userId': 'user-a',
+        'ownedAssetIds': <String>['wallpaper_mist_blue'],
+        'equippedWallpaperId': 'wallpaper_mist_blue',
+        'equippedHabitCardSkinId': null,
+        'equippedUserCardSkinId': null,
+        'catalogVersion': 1,
+        'fetchedAt': '2026-07-19T12:00:00Z',
+        'updatedAt': '2026-07-19T12:00:00Z',
+      },
+    );
+
+    expect(snapshot.ownedBundleIds, isEmpty);
   });
 }

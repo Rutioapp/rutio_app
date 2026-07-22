@@ -433,6 +433,7 @@ CloudCosmeticsSnapshot _cloudSnapshot({
   return CloudCosmeticsSnapshot(
     userId: userId,
     ownedAssetIds: ownedAssetIds,
+    ownedBundleIds: const <String>[],
     equippedWallpaperId: wallpaperId,
     equippedHabitCardSkinId: null,
     equippedUserCardSkinId: null,
@@ -531,6 +532,14 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
   @override
   Future<RemoteShopPurchaseResultDto> purchaseAsset({
     required String itemId,
+    required String requestId,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<RemoteShopBundlePurchaseResultDto> purchaseBundle({
+    required String bundleId,
     required String requestId,
   }) {
     throw UnimplementedError();

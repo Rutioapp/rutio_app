@@ -1,3 +1,4 @@
+import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -382,6 +383,10 @@ class ShopCosmeticsController extends ChangeNotifier {
   }
 
   Future<ShopCosmeticsOperationResult> purchaseBundle(String bundleId) async {
+    if (_cloudEnabled) {
+      return _purchaseBundleCloud(bundleId);
+    }
+
     final service = await _service();
     final result = service.purchaseBundle(bundleId);
     _log(
@@ -646,12 +651,123 @@ class ShopCosmeticsController extends ChangeNotifier {
     }
   }
 
-  Future<ShopCosmeticsOperationResult> _equipAssetCloud(
-    String assetId,
-    {
-      String? traceId,
-    }
+  Future<ShopCosmeticsOperationResult> _purchaseBundleCloud(
+    String bundleId,
   ) async {
+    final scopeKey = _currentScope();
+    final traceId = _newTraceId('tap');
+    final bundle = ShopAssetsCatalog.getBundleById(bundleId);
+    if (bundle == null) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.bundleNotFound,
+        bundleId: bundleId,
+      );
+    }
+
+    final state = await _combinedCloudState();
+    if (state.isBundleOwned(bundleId)) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.alreadyOwned,
+        state: state,
+        bundleId: bundleId,
+      );
+    }
+    if (_bundleContainsOwnedAssets(state, bundle)) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.bundleContainsOwnedAssets,
+        state: state,
+        bundleId: bundleId,
+      );
+    }
+
+    final requestId = CloudCosmeticsRequestId.generateV4();
+    try {
+      _traceCloudCosmetics(
+        'tap',
+        traceId: traceId,
+        userId: scopeKey,
+        nextItemId: bundleId,
+        state: state,
+        note: 'bundle_purchase_request=$requestId',
+      );
+      final result = await _cloudRepository.purchaseBundle(
+        bundleId: bundleId,
+        requestId: requestId,
+      );
+      if (_currentScope() != scopeKey) {
+        return _cloudFailureResult(
+          status: ShopCosmeticsOperationStatus.bundleNotFound,
+          bundleId: bundleId,
+        );
+      }
+      final resolvedScopeKey = scopeKey ?? _currentScope();
+      if (resolvedScopeKey == null) {
+        return _cloudFailureResult(
+          status: ShopCosmeticsOperationStatus.bundleNotFound,
+          bundleId: bundleId,
+        );
+      }
+
+      final remoteItemIds = <String>[
+        result.wallpaperItemId,
+        result.habitCardItemId,
+        result.userCardItemId,
+      ];
+      final localItemIds = <String>[
+        bundle.wallpaperItemId,
+        bundle.habitCardItemId,
+        bundle.userCardItemId,
+      ];
+      if (!listEquals(remoteItemIds, localItemIds)) {
+        return _cloudFailureResult(
+          status: ShopCosmeticsOperationStatus.bundleNotFound,
+          state: state,
+          bundleId: bundleId,
+        );
+      }
+
+      final nextState = state.copyWith(
+        ownedAssetIds: _appendUniqueIds(
+          state.ownedAssetIds,
+          localItemIds,
+        ),
+        ownedBundleIds: _appendUniqueId(state.ownedBundleIds, bundleId),
+      );
+      _markCloudMutation();
+      final snapshot = _buildCloudSnapshot(resolvedScopeKey, nextState);
+      await _applyConfirmedCloudSnapshot(
+        scopeKey: resolvedScopeKey,
+        snapshot: snapshot,
+        traceId: traceId,
+        stage: 'state_applied',
+        nextItemId: bundleId,
+      );
+      unawaited(_syncFromCurrentScope(force: true));
+      unawaited(
+        _globalWalletController?.syncSession(
+          userId: _currentScope(),
+          force: true,
+        ),
+      );
+      return ShopCosmeticsOperationResult(
+        status: ShopCosmeticsOperationStatus.success,
+        state: nextState,
+        walletCoins: result.walletCoinsAfter,
+        bundleId: bundleId,
+      );
+    } on ShopCloudPurchaseException catch (error) {
+      return _mapCloudBundlePurchaseFailure(
+        error,
+        bundleId: bundleId,
+        currentState: state,
+      );
+    }
+  }
+
+  Future<ShopCosmeticsOperationResult> _equipAssetCloud(
+    String assetId, {
+    String? traceId,
+  }) async {
     final scopeKey = _currentScope();
     traceId ??= _newTraceId('tap');
     final asset = ShopAssetsCatalog.getAssetById(assetId);
@@ -713,7 +829,8 @@ class ShopCosmeticsController extends ChangeNotifier {
         nextItemId: assetId,
         assetPath: asset.assetPath,
         state: state,
-        note: 'operation=${rpcResult.operation} requestId=${rpcResult.requestId}',
+        note:
+            'operation=${rpcResult.operation} requestId=${rpcResult.requestId}',
       );
       if (_currentScope() != scopeKey) {
         return _cloudFailureResult(
@@ -765,7 +882,8 @@ class ShopCosmeticsController extends ChangeNotifier {
         nextItemId: assetId,
         assetPath: asset.assetPath,
         state: state,
-        note: 'code=${error.code.name} retryable=${error.retryable} definitive=${error.definitive}',
+        note:
+            'code=${error.code.name} retryable=${error.retryable} definitive=${error.definitive}',
       );
       return _mapCloudEquipFailure(
         error,
@@ -870,6 +988,74 @@ class ShopCosmeticsController extends ChangeNotifier {
     );
   }
 
+  Future<ShopCosmeticsOperationResult> _mapCloudBundlePurchaseFailure(
+    ShopCloudPurchaseException error, {
+    required String bundleId,
+    required ShopCosmeticsState currentState,
+  }) async {
+    final status = switch (error.code) {
+      ShopPurchaseFailureCode.bundleAlreadyOwned =>
+        ShopCosmeticsOperationStatus.alreadyOwned,
+      ShopPurchaseFailureCode.bundleContainsOwnedItems =>
+        ShopCosmeticsOperationStatus.bundleContainsOwnedAssets,
+      ShopPurchaseFailureCode.insufficientFunds =>
+        ShopCosmeticsOperationStatus.insufficientCoins,
+      ShopPurchaseFailureCode.bundleNotFoundOrInactive ||
+      ShopPurchaseFailureCode.bundleConfigurationInvalid ||
+      ShopPurchaseFailureCode.bundleIdRequired ||
+      ShopPurchaseFailureCode.requestIdConflict ||
+      ShopPurchaseFailureCode.walletNotFoundForUser ||
+      ShopPurchaseFailureCode.authRequired ||
+      ShopPurchaseFailureCode.unauthenticated ||
+      ShopPurchaseFailureCode.featureDisabled ||
+      ShopPurchaseFailureCode.walletNotInitialized ||
+      ShopPurchaseFailureCode.cloudWalletMissing ||
+      ShopPurchaseFailureCode.networkUnavailable ||
+      ShopPurchaseFailureCode.timeout ||
+      ShopPurchaseFailureCode.malformedResponse ||
+      ShopPurchaseFailureCode.unknown =>
+        ShopCosmeticsOperationStatus.bundleNotFound,
+      _ => ShopCosmeticsOperationStatus.bundleNotFound,
+    };
+
+    return ShopCosmeticsOperationResult(
+      status: status,
+      state: currentState,
+      walletCoins: await _walletCoins(),
+      bundleId: bundleId,
+    );
+  }
+
+  bool _bundleContainsOwnedAssets(
+    ShopCosmeticsState state,
+    ShopBundle bundle,
+  ) {
+    for (final assetId in bundle.assetIds) {
+      if (state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  List<String> _appendUniqueId(List<String> values, String value) {
+    final next = <String>[...values];
+    if (!next.contains(value)) {
+      next.add(value);
+    }
+    return next;
+  }
+
+  List<String> _appendUniqueIds(
+      List<String> values, Iterable<String> additions) {
+    final next = <String>[...values];
+    for (final value in additions) {
+      if (next.contains(value)) continue;
+      next.add(value);
+    }
+    return next;
+  }
+
   Future<ShopCosmeticsOperationResult> _mapCloudEquipFailure(
     ShopCloudEquipException error, {
     required String assetId,
@@ -927,10 +1113,9 @@ class ShopCosmeticsController extends ChangeNotifier {
       assetPath: _cachedState == null
           ? null
           : _getValidatedEquippedAssetOrNull(
-                  _cachedState!,
-                  ShopAssetCategory.wallpaper,
-                )
-              ?.assetPath,
+              _cachedState!,
+              ShopAssetCategory.wallpaper,
+            )?.assetPath,
       note: force ? 'runtime_sync' : 'cold_start_sync',
     );
     final pending = _pendingCloudStateLoad;
@@ -1015,8 +1200,8 @@ class ShopCosmeticsController extends ChangeNotifier {
       if (cacheEntry != null) {
         final currentSnapshot = _cloudState.snapshot;
         if (currentSnapshot != null) {
-          final comparison =
-              compareCloudCosmeticsSnapshots(currentSnapshot, cacheEntry.snapshot);
+          final comparison = compareCloudCosmeticsSnapshots(
+              currentSnapshot, cacheEntry.snapshot);
           if (comparison.isNewerOrEqual) {
             _lastTraceId = traceId;
             _traceCloudCosmetics(
@@ -1112,7 +1297,8 @@ class ShopCosmeticsController extends ChangeNotifier {
     final snapshot = result.data!;
     final currentSnapshot = _cloudState.snapshot;
     if (currentSnapshot != null) {
-      final comparison = compareCloudCosmeticsSnapshots(snapshot, currentSnapshot);
+      final comparison =
+          compareCloudCosmeticsSnapshots(snapshot, currentSnapshot);
       if (!comparison.isNewerOrEqual) {
         _traceCloudCosmetics(
           'state_applied',
@@ -1240,6 +1426,7 @@ class ShopCosmeticsController extends ChangeNotifier {
     return CloudCosmeticsSnapshot(
       userId: scopeKey,
       ownedAssetIds: state.ownedAssetIds,
+      ownedBundleIds: state.ownedBundleIds,
       equippedWallpaperId: state.equippedWallpaperId,
       equippedHabitCardSkinId: state.equippedHabitCardSkinId,
       equippedUserCardSkinId: state.equippedUserCardSkinId,

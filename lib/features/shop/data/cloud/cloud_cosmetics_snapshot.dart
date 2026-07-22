@@ -3,14 +3,15 @@ import 'package:flutter/foundation.dart';
 import '../../domain/models/shop_cosmetics_state.dart';
 import '../../domain/models/shop_asset_enums.dart';
 import '../shop_assets_catalog.dart';
-import 'shop_cloud_snapshot.dart';
 import 'shop_cloud_dtos.dart';
+import 'shop_cloud_snapshot.dart';
 
 @immutable
 class CloudCosmeticsSnapshot {
   const CloudCosmeticsSnapshot({
     required this.userId,
     required this.ownedAssetIds,
+    required this.ownedBundleIds,
     required this.equippedWallpaperId,
     required this.equippedHabitCardSkinId,
     required this.equippedUserCardSkinId,
@@ -21,6 +22,7 @@ class CloudCosmeticsSnapshot {
 
   final String userId;
   final List<String> ownedAssetIds;
+  final List<String> ownedBundleIds;
   final String? equippedWallpaperId;
   final String? equippedHabitCardSkinId;
   final String? equippedUserCardSkinId;
@@ -32,6 +34,7 @@ class CloudCosmeticsSnapshot {
     ShopCloudSnapshot snapshot,
   ) {
     final ownedAssetIds = _resolveOwnedAssetIds(snapshot.inventory);
+    final ownedBundleIds = _resolveOwnedBundleIds(snapshot.ownedBundles);
     final equipped = _resolveEquippedCosmetics(
       snapshot.equippedCosmetics,
       ownedAssetIds,
@@ -40,6 +43,7 @@ class CloudCosmeticsSnapshot {
     return CloudCosmeticsSnapshot(
       userId: snapshot.authenticatedUserId,
       ownedAssetIds: ownedAssetIds,
+      ownedBundleIds: ownedBundleIds,
       equippedWallpaperId: equipped.wallpaper,
       equippedHabitCardSkinId: equipped.habitCard,
       equippedUserCardSkinId: equipped.userCard,
@@ -50,11 +54,13 @@ class CloudCosmeticsSnapshot {
   }
 
   ShopCosmeticsState toState({
-    Iterable<String> ownedBundleIds = const <String>[],
+    Iterable<String>? ownedBundleIds,
   }) {
     return ShopCosmeticsState(
       ownedAssetIds: ownedAssetIds,
-      ownedBundleIds: ownedBundleIds.toList(growable: false),
+      ownedBundleIds: (ownedBundleIds ?? this.ownedBundleIds).toList(
+        growable: false,
+      ),
       equippedWallpaperId: equippedWallpaperId,
       equippedHabitCardSkinId: equippedHabitCardSkinId,
       equippedUserCardSkinId: equippedUserCardSkinId,
@@ -71,6 +77,7 @@ class CloudCosmeticsSnapshot {
 
   CloudCosmeticsSnapshot copyWith({
     List<String>? ownedAssetIds,
+    List<String>? ownedBundleIds,
     Object? equippedWallpaperId = _cloudCosmeticsUnset,
     Object? equippedHabitCardSkinId = _cloudCosmeticsUnset,
     Object? equippedUserCardSkinId = _cloudCosmeticsUnset,
@@ -81,6 +88,7 @@ class CloudCosmeticsSnapshot {
     return CloudCosmeticsSnapshot(
       userId: userId,
       ownedAssetIds: ownedAssetIds ?? this.ownedAssetIds,
+      ownedBundleIds: ownedBundleIds ?? this.ownedBundleIds,
       equippedWallpaperId: identical(equippedWallpaperId, _cloudCosmeticsUnset)
           ? this.equippedWallpaperId
           : equippedWallpaperId as String?,
@@ -102,6 +110,7 @@ class CloudCosmeticsSnapshot {
     return <String, dynamic>{
       'userId': userId,
       'ownedAssetIds': ownedAssetIds,
+      'ownedBundleIds': ownedBundleIds,
       'equippedWallpaperId': equippedWallpaperId,
       'equippedHabitCardSkinId': equippedHabitCardSkinId,
       'equippedUserCardSkinId': equippedUserCardSkinId,
@@ -123,6 +132,10 @@ class CloudCosmeticsSnapshot {
       userId: userId,
       ownedAssetIds: _normalizeOwnedAssetIds(
         (json['ownedAssetIds'] as List?)?.map((value) => value.toString()) ??
+            const <String>[],
+      ),
+      ownedBundleIds: _normalizeOwnedBundleIds(
+        (json['ownedBundleIds'] as List?)?.map((value) => value.toString()) ??
             const <String>[],
       ),
       equippedWallpaperId: _normalizeEquippedId(
@@ -195,13 +208,14 @@ CloudCosmeticsSnapshotComparison compareCloudCosmeticsSnapshots(
 
 DateTime _resolveUpdatedAt(ShopCloudSnapshot snapshot) {
   // `fetchedAt` is only the read time on this client. It must not make a stale
-  // remote read look newer than a confirmed equip that already reached memory.
+  // remote read look newer than a confirmed state that already reached memory.
   final values = <DateTime>[];
   if (snapshot.wallet != null) {
     values.add(snapshot.wallet!.updatedAt);
   }
   values.addAll(snapshot.inventory.map((row) => row.updatedAt));
   values.addAll(snapshot.equippedCosmetics.map((row) => row.equippedAt));
+  values.addAll(snapshot.ownedBundles.map((row) => row.updatedAt));
   values.sort();
   return values.last.toUtc();
 }
@@ -220,6 +234,26 @@ List<String> _resolveOwnedAssetIds(List<RemoteInventoryItemDto> inventory) {
   sorted.sort((a, b) {
     final aIndex = _assetIndex[a] ?? 1 << 30;
     final bIndex = _assetIndex[b] ?? 1 << 30;
+    final compare = aIndex.compareTo(bIndex);
+    if (compare != 0) return compare;
+    return a.compareTo(b);
+  });
+  return sorted;
+}
+
+List<String> _resolveOwnedBundleIds(List<RemoteOwnedBundleDto> bundles) {
+  final knownBundleIds =
+      ShopAssetsCatalog.allBundles.map((bundle) => bundle.id).toSet();
+  final bundleIds = <String>{};
+  for (final row in bundles) {
+    if (!knownBundleIds.contains(row.bundleId)) continue;
+    bundleIds.add(row.bundleId);
+  }
+
+  final sorted = List<String>.from(bundleIds);
+  sorted.sort((a, b) {
+    final aIndex = _bundleIndex[a] ?? 1 << 30;
+    final bIndex = _bundleIndex[b] ?? 1 << 30;
     final compare = aIndex.compareTo(bIndex);
     if (compare != 0) return compare;
     return a.compareTo(b);
@@ -276,9 +310,24 @@ List<String> _normalizeOwnedAssetIds(Iterable<String> ids) {
   return List<String>.from(set);
 }
 
+List<String> _normalizeOwnedBundleIds(Iterable<String> ids) {
+  final set = <String>{};
+  for (final raw in ids) {
+    final value = raw.trim();
+    if (value.isEmpty) continue;
+    set.add(value);
+  }
+  return List<String>.from(set);
+}
+
 const Object _cloudCosmeticsUnset = Object();
 
 final Map<String, int> _assetIndex = <String, int>{
   for (var i = 0; i < ShopAssetsCatalog.allAssets.length; i++)
     ShopAssetsCatalog.allAssets[i].id: i,
+};
+
+final Map<String, int> _bundleIndex = <String, int>{
+  for (var i = 0; i < ShopAssetsCatalog.allBundles.length; i++)
+    ShopAssetsCatalog.allBundles[i].id: i,
 };

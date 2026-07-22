@@ -110,16 +110,30 @@ Created migration:
 
 This migration is idempotent and uses `on conflict (id)` to keep the row definitions aligned.
 
-## What Remains Legacy
+## Bundles
 
-Bundles are still handled by the existing local cosmetics flow in this phase.
+Bundles now have a dedicated cloud contract alongside the cosmetic item catalog.
 
-That is intentional. Bundle migration should happen only after the individual cosmetics catalog is stable.
+Created migrations:
+
+- `supabase/migrations/20260722120000_create_shop_bundle_catalog_and_purchase_rpc.sql`
+- `supabase/migrations/20260722121000_seed_shop_bundles_catalog_v1.sql`
+
+The backend contract stores:
+
+- `public.shop_bundles` for bundle metadata and pricing;
+- `public.shop_bundle_items` for the 3 cosmetic items in each bundle;
+- `public.user_owned_bundles` for user ownership;
+- `public.shop_bundle_ledger` for idempotent transactional purchases.
+
+Bundle purchases are handled by `public.purchase_shop_bundle(...)`.
+
+The Flutter purchase flow still remains disconnected in this phase by design, so the UI continues using the legacy local bundle path until the next integration step.
 
 ## Risks
 
-- Bundles still use the legacy flow.
-- Remote catalog and local catalog must stay aligned on ids and prices.
+- The Flutter bundle purchase flow still uses the legacy path until integration lands.
+- Remote catalog and local catalog must stay aligned on ids and prices until the UI switches over.
 - The UI only uses the cloud path when the feature flag is enabled.
 
 ## Next Phase

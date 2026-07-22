@@ -163,4 +163,73 @@ void main() {
       );
     });
   });
+
+  group('RemoteShopBundlePurchaseResultDto', () {
+    test('parses a valid bundle purchase response', () {
+      final dto = RemoteShopBundlePurchaseResultDto.fromRpcResponse(
+        <String, dynamic>{
+          'request_id': 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+          'bundle_id': 'pack_beige_rutio',
+          'user_id': 'd1b5d4d7-6b8e-4f28-9c33-8e0d0c1cb002',
+          'coins_delta': -325,
+          'wallet_coins_after': 675,
+          'wallpaper_item_id': 'wallpaper_rutio_beige',
+          'habit_card_item_id': 'habit_card_warm_beige',
+          'user_card_item_id': 'user_card_warm_beige',
+          'is_idempotent': false,
+          'created_at': '2026-07-22T12:00:00Z',
+        },
+        requestedBundleId: 'pack_beige_rutio',
+        requestId: 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+      );
+
+      expect(dto.bundleId, 'pack_beige_rutio');
+      expect(dto.userId, 'd1b5d4d7-6b8e-4f28-9c33-8e0d0c1cb002');
+      expect(dto.coinsDelta, -325);
+      expect(dto.walletCoinsAfter, 675);
+      expect(dto.isIdempotent, isFalse);
+    });
+
+    test('rejects snake_case mismatch and invalid cosmetic ids', () {
+      expect(
+        () => RemoteShopBundlePurchaseResultDto.fromRpcResponse(
+          <String, dynamic>{
+            'request_id': 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+            'bundle_id': 'pack_beige_rutio',
+            'user_id': 'd1b5d4d7-6b8e-4f28-9c33-8e0d0c1cb002',
+            'coins_delta': -325,
+            'wallet_coins_after': 675,
+            'wallpaper_item_id': 'wallpaper_rutio_beige',
+            'habit_card_item_id': 'habit_card_warm_beige',
+            'user_card_item_id': 'habit_card_warm_beige',
+            'is_idempotent': false,
+            'created_at': '2026-07-22T12:00:00Z',
+          },
+          requestedBundleId: 'pack_beige_rutio',
+          requestId: 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+        ),
+        throwsFormatException,
+      );
+
+      expect(
+        () => RemoteShopBundlePurchaseResultDto.fromRpcResponse(
+          <String, dynamic>{
+            'request_id': 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+            'bundle_id': 'pack_other',
+            'user_id': 'd1b5d4d7-6b8e-4f28-9c33-8e0d0c1cb002',
+            'coins_delta': -325,
+            'wallet_coins_after': 675,
+            'wallpaper_item_id': 'wallpaper_rutio_beige',
+            'habit_card_item_id': 'habit_card_warm_beige',
+            'user_card_item_id': 'user_card_warm_beige',
+            'is_idempotent': false,
+            'created_at': '2026-07-22T12:00:00Z',
+          },
+          requestedBundleId: 'pack_beige_rutio',
+          requestId: 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+        ),
+        throwsFormatException,
+      );
+    });
+  });
 }

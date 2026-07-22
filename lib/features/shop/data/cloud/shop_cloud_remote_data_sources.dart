@@ -14,6 +14,8 @@ abstract class ShopUserStateRemoteDataSource {
   Future<List<Map<String, dynamic>>> fetchInventoryRows();
 
   Future<List<Map<String, dynamic>>> fetchEquippedCosmeticsRows();
+
+  Future<List<Map<String, dynamic>>> fetchOwnedBundleRows();
 }
 
 class SupabaseShopCatalogRemoteDataSource
@@ -178,6 +180,43 @@ class SupabaseShopUserStateRemoteDataSource
       throw ShopCloudReadException(
         code: ShopCloudErrorCode.unknown,
         message: 'Could not fetch equipped cosmetics.',
+        cause: error,
+      );
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchOwnedBundleRows() async {
+    final userId = _currentUserId();
+    if (userId == null) {
+      throw const ShopCloudReadException(
+        code: ShopCloudErrorCode.unauthenticated,
+        message: 'No authenticated user session is available.',
+      );
+    }
+
+    try {
+      final rows = await _clientOrInstance
+          .from('user_owned_bundles')
+          .select()
+          .eq('user_id', userId)
+          .order('acquired_at', ascending: false)
+          .order('updated_at', ascending: false);
+      return _castRows(rows);
+    } on PostgrestException catch (error) {
+      throw _mapPostgrestError(
+        error,
+        fallbackMessage: 'Could not fetch owned bundles.',
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[shop_cloud_read] unexpected owned bundles fetch error: $error',
+        );
+      }
+      throw ShopCloudReadException(
+        code: ShopCloudErrorCode.unknown,
+        message: 'Could not fetch owned bundles.',
         cause: error,
       );
     }

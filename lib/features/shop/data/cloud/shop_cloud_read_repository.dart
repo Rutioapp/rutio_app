@@ -349,6 +349,80 @@ class ShopCloudReadRepository {
     }
   }
 
+  Future<ShopCloudReadResult<List<RemoteOwnedBundleDto>>>
+      fetchOwnedBundles() async {
+    if (!_readEnabled) {
+      return const ShopCloudReadResult<List<RemoteOwnedBundleDto>>.failure(
+        error: ShopCloudReadError(
+          code: ShopCloudErrorCode.featureDisabled,
+          message: 'Shop cloud read is disabled.',
+        ),
+      );
+    }
+
+    final userId = _requireAuthenticatedUserId();
+    if (userId == null) {
+      return const ShopCloudReadResult<List<RemoteOwnedBundleDto>>.failure(
+        error: ShopCloudReadError(
+          code: ShopCloudErrorCode.unauthenticated,
+          message: 'No authenticated user session is available.',
+        ),
+      );
+    }
+
+    try {
+      final rows = await _userStateRemoteDataSource.fetchOwnedBundleRows();
+      if (!_isCurrentSession(userId)) {
+        return const ShopCloudReadResult<List<RemoteOwnedBundleDto>>.failure(
+          error: ShopCloudReadError(
+            code: ShopCloudErrorCode.sessionChanged,
+            message: 'Authentication session changed during shop fetch.',
+          ),
+        );
+      }
+
+      final parsed = <RemoteOwnedBundleDto>[];
+      final warnings = <ShopCloudWarning>[];
+      for (final row in rows) {
+        final dto = _parseOwnedBundleRow(row, expectedUserId: userId);
+        if (dto == null) {
+          warnings.add(
+            const ShopCloudWarning(
+              code: ShopCloudWarningCode.invalidRemoteItem,
+              message: 'Remote owned bundle row could not be parsed.',
+            ),
+          );
+          continue;
+        }
+        parsed.add(dto);
+      }
+
+      return ShopCloudReadResult<List<RemoteOwnedBundleDto>>.success(
+        data: List<RemoteOwnedBundleDto>.unmodifiable(parsed),
+        warnings: List<ShopCloudWarning>.unmodifiable(warnings),
+      );
+    } on ShopCloudReadException catch (error) {
+      return ShopCloudReadResult<List<RemoteOwnedBundleDto>>.failure(
+        error: ShopCloudReadError(
+          code: error.code,
+          message: error.message,
+          cause: error.cause,
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[shop_cloud_read] unexpected owned bundle read error: $error');
+      }
+      return ShopCloudReadResult<List<RemoteOwnedBundleDto>>.failure(
+        error: ShopCloudReadError(
+          code: ShopCloudErrorCode.unknown,
+          message: 'Could not fetch owned bundles.',
+          cause: error,
+        ),
+      );
+    }
+  }
+
   Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
     if (!_readEnabled) {
       return const ShopCloudReadResult<ShopCloudSnapshot>.failure(
@@ -418,6 +492,15 @@ class ShopCloudReadRepository {
       }
       warnings.addAll(equippedResult.warnings);
 
+      final ownedBundlesResult = await fetchOwnedBundles();
+      if (!ownedBundlesResult.isSuccess) {
+        return ShopCloudReadResult<ShopCloudSnapshot>.failure(
+          error: ownedBundlesResult.error!,
+          warnings: ownedBundlesResult.warnings,
+        );
+      }
+      warnings.addAll(ownedBundlesResult.warnings);
+
       final catalogItems = catalogResult.data ?? const <RemoteShopItemDto>[];
       final snapshotWarnings = List<ShopCloudWarning>.unmodifiable(warnings);
       final snapshot = ShopCloudSnapshot(
@@ -427,6 +510,7 @@ class ShopCloudReadRepository {
         inventory: inventoryResult.data ?? const <RemoteInventoryItemDto>[],
         equippedCosmetics:
             equippedResult.data ?? const <RemoteEquippedCosmeticDto>[],
+        ownedBundles: ownedBundlesResult.data ?? const <RemoteOwnedBundleDto>[],
         fetchedAt: _nowProvider().toUtc(),
         catalogVersion: _resolveCatalogVersion(catalogItems),
         warnings: snapshotWarnings,
@@ -594,6 +678,25 @@ class ShopCloudReadRepository {
       if (kDebugMode) {
         debugPrint(
           '[shop_cloud_read] equipped cosmetic row rejected: ${error.message}',
+        );
+      }
+      return null;
+    }
+  }
+
+  RemoteOwnedBundleDto? _parseOwnedBundleRow(
+    Map<String, dynamic> row, {
+    required String expectedUserId,
+  }) {
+    try {
+      return RemoteOwnedBundleDto.fromJson(
+        row,
+        expectedUserId: expectedUserId,
+      );
+    } on FormatException catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[shop_cloud_read] owned bundle row rejected: ${error.message}',
         );
       }
       return null;
