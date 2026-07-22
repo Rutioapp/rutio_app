@@ -154,6 +154,7 @@ class UserStateStore extends ChangeNotifier {
     HabitLogRepository? habitLogRepository,
     ActiveUtilityEffectsRepository? activeUtilityEffectsRepository,
     UtilityConsumptionRepository? utilityConsumptionRepository,
+    bool? utilityConsumptionEnabledOverride,
     bool? cloudHabitRewardsEnabledOverride,
     HabitRewardTransactionRepository? habitRewardTransactionRepository,
     UserProgressRepository? userProgressRepository,
@@ -196,11 +197,13 @@ class UserStateStore extends ChangeNotifier {
         _habitRepository = habitRepository,
         _habitLogRepository = habitLogRepository,
         _utilityConsumptionRepository = utilityConsumptionRepository ??
-            (UtilityConsumptionConfig.resolveEnabled()
+            (UtilityConsumptionConfig.resolveEnabled(
+                    override: utilityConsumptionEnabledOverride)
                 ? SupabaseUtilityConsumptionRepository()
                 : null),
         _activeUtilityEffectsRepository = activeUtilityEffectsRepository ??
-            (UtilityConsumptionConfig.resolveEnabled()
+            (UtilityConsumptionConfig.resolveEnabled(
+                    override: utilityConsumptionEnabledOverride)
                 ? ((utilityConsumptionRepository ??
                         SupabaseUtilityConsumptionRepository())
                     as ActiveUtilityEffectsRepository)
