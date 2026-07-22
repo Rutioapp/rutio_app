@@ -67,3 +67,4 @@ upload-keystore.jks
 !.env/dev.example.json
 
 dart_defines/dev.json
+dart_defines/release.json

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -17,6 +18,7 @@ import 'data/repositories/user_state_repository.dart';
 import 'data/local/user_state_storage.dart';
 import 'data/local/asset_json_loader.dart';
 import 'features/shop/application/shop_cosmetics_controller.dart';
+import 'features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'features/global_wallet/application/global_wallet_controller.dart';
 import 'features/achievements/presentation/screens/achievements_screen.dart';
 import 'features/achievements/presentation/widgets/achievement_unlock_overlay_host.dart';
@@ -43,6 +45,15 @@ import 'screens/auth/sign_up_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final shopCloudConfig = ShopCloudRuntimeConfig.compiled();
+  debugPrint(
+    '[shop_cloud_config] '
+    'fully_cloud=${shopCloudConfig.isFullyCloud} '
+    'fully_legacy=${shopCloudConfig.isFullyLegacy} '
+    'invalid_mixed=${shopCloudConfig.isMixed} '
+    'flags=${shopCloudConfig.flags}',
+  );
+  shopCloudConfig.validateForStartup(isRelease: kReleaseMode);
   await RutioSupabaseClient.initialize();
 
   final userStateStorage = UserStateStorage();
