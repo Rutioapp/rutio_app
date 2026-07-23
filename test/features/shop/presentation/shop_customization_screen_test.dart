@@ -101,12 +101,15 @@ void main() {
       expect(find.text('Habit Cards'), findsWidgets);
     });
 
-    testWidgets('packs filter shows only explicit owned bundles',
+    testWidgets('packs filter shows explicit and completed bundles',
         (WidgetTester tester) async {
       final controller = await _createCosmeticsController(
         walletCoins: 640,
         cosmeticsState: ShopCosmeticsState(
           ownedAssetIds: const <String>[
+            'wallpaper_rutio_beige',
+            'habit_card_warm_beige',
+            'user_card_warm_beige',
             'wallpaper_mellow_camel',
             'habit_card_soft_camel',
             'user_card_soft_camel',
@@ -137,20 +140,20 @@ void main() {
       );
       expect(
         find.byKey(const Key('shopOwnedBundle-pack_camel_suave')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('shopCustomizationBundleEmptyState')),
         findsNothing,
       );
     });
 
-    testWidgets('packs filter shows empty state without explicit bundle ids',
+    testWidgets('packs filter hides partially completed bundles',
         (WidgetTester tester) async {
       final controller = await _createCosmeticsController(
         walletCoins: 640,
         cosmeticsState: ShopCosmeticsState(
-          ownedAssetIds: const <String>[
-            'wallpaper_mellow_camel',
-            'habit_card_soft_camel',
-            'user_card_soft_camel',
-          ],
+          ownedAssetIds: const <String>['wallpaper_rutio_beige'],
           ownedBundleIds: const <String>[],
         ),
       );

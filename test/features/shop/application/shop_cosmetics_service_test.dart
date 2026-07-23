@@ -3,6 +3,7 @@ import 'package:rutio/features/shop/application/shop_cosmetics_service.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 
 void main() {
@@ -80,7 +81,14 @@ void main() {
       expect(result.status, ShopCosmeticsOperationStatus.success);
       expect(result.walletCoins, 1000 - bundlePrice);
       expect(result.state.ownedBundleIds, contains('pack_beige_rutio'));
-      expect(result.state.ownedAssetIds, isEmpty);
+      expect(
+        result.state.ownedAssetIds,
+        containsAll(<String>[
+          'wallpaper_rutio_beige',
+          'habit_card_warm_beige',
+          'user_card_warm_beige',
+        ]),
+      );
     });
 
     test('purchaseBundle fails when balance is insufficient', () {
@@ -111,7 +119,8 @@ void main() {
       expect(result.walletCoins, 1000);
     });
 
-    test('purchaseBundle fails when the bundle overlaps owned assets', () {
+    test('purchaseBundle completes a partially owned bundle with a discount',
+        () {
       final service = ShopCosmeticsService(
         state: ShopCosmeticsState(
           ownedAssetIds: <String>['wallpaper_rutio_beige'],
@@ -119,15 +128,76 @@ void main() {
         ),
         walletCoins: 1000,
       );
+      final bundle = ShopAssetsCatalog.getBundleById('pack_beige_rutio')!;
+      final quote = ShopBundleCompletionQuote.tryCreate(
+        bundle: bundle,
+        state: service.state,
+      )!;
+      final result = service.purchaseBundle('pack_beige_rutio');
+
+      expect(service.canPurchaseBundle('pack_beige_rutio'), isTrue);
+      expect(result.status, ShopCosmeticsOperationStatus.success);
+      expect(
+        result.state.ownedAssetIds,
+        containsAll(<String>[
+          'wallpaper_rutio_beige',
+          'habit_card_warm_beige',
+          'user_card_warm_beige',
+        ]),
+      );
+      expect(result.state.ownedAssetIds.length, 3);
+      expect(result.state.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(result.walletCoins, 1000 - quote.effectivePriceAmber);
+    });
+
+    test('purchaseBundle completes a two-owned bundle with the remaining item',
+        () {
+      final service = ShopCosmeticsService(
+        state: ShopCosmeticsState(
+          ownedAssetIds: <String>[
+            'wallpaper_rutio_beige',
+            'habit_card_warm_beige',
+          ],
+          ownedBundleIds: <String>[],
+        ),
+        walletCoins: 1000,
+      );
+      final quote = ShopBundleCompletionQuote.tryCreate(
+        bundle: ShopAssetsCatalog.getBundleById('pack_beige_rutio')!,
+        state: service.state,
+      )!;
 
       final result = service.purchaseBundle('pack_beige_rutio');
 
-      expect(
-        result.status,
-        ShopCosmeticsOperationStatus.bundleContainsOwnedAssets,
+      expect(result.status, ShopCosmeticsOperationStatus.success);
+      expect(result.state.ownedAssetIds, containsAll(<String>[
+        'wallpaper_rutio_beige',
+        'habit_card_warm_beige',
+        'user_card_warm_beige',
+      ]));
+      expect(result.state.ownedAssetIds.length, 3);
+      expect(result.walletCoins, 1000 - quote.effectivePriceAmber);
+    });
+
+    test('purchaseBundle records a completed pack for zero coins', () {
+      final service = ShopCosmeticsService(
+        state: ShopCosmeticsState(
+          ownedAssetIds: <String>[
+            'wallpaper_rutio_beige',
+            'habit_card_warm_beige',
+            'user_card_warm_beige',
+          ],
+          ownedBundleIds: <String>[],
+        ),
+        walletCoins: 0,
       );
-      expect(result.walletCoins, 1000);
-      expect(result.state.ownedBundleIds, isEmpty);
+
+      final result = service.purchaseBundle('pack_beige_rutio');
+
+      expect(result.status, ShopCosmeticsOperationStatus.success);
+      expect(result.walletCoins, 0);
+      expect(result.state.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(result.state.ownedAssetIds, hasLength(3));
     });
 
     test('purchaseBundle fails when bundle does not exist', () {

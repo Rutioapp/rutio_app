@@ -1,7 +1,7 @@
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
-import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_operation_result.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
@@ -27,9 +27,14 @@ class ShopCosmeticsService {
   bool canPurchaseBundle(String bundleId) {
     final bundle = ShopAssetsCatalog.getBundleById(bundleId);
     if (bundle == null) return false;
-    if (state.isBundleOwned(bundleId)) return false;
-    if (_bundleContainsOwnedAssets(bundle)) return false;
-    return walletCoins >= bundle.priceAmber;
+    final quote = ShopBundleCompletionQuote.tryCreate(
+      bundle: bundle,
+      state: state,
+    );
+    if (quote == null) return false;
+    if (quote.isExplicitlyOwned) return false;
+    if (quote.missingItemCount == 0) return false;
+    return walletCoins >= quote.effectivePriceAmber;
   }
 
   bool isAssetOwned(String assetId) {
@@ -43,8 +48,11 @@ class ShopCosmeticsService {
   bool isBundlePartiallyOwned(String bundleId) {
     final bundle = ShopAssetsCatalog.getBundleById(bundleId);
     if (bundle == null) return false;
-    if (state.isBundleOwned(bundleId)) return false;
-    return _bundleContainsOwnedAssets(bundle);
+    final quote = ShopBundleCompletionQuote.tryCreate(
+      bundle: bundle,
+      state: state,
+    );
+    return quote?.isPartiallyOwned ?? false;
   }
 
   ShopAsset? getEquippedAssetForCategory(ShopAssetCategory category) {
@@ -94,41 +102,41 @@ class ShopCosmeticsService {
     if (bundle == null) {
       return _result(ShopCosmeticsOperationStatus.bundleNotFound);
     }
-    if (state.isBundleOwned(bundleId)) {
+    final quote = ShopBundleCompletionQuote.tryCreate(
+      bundle: bundle,
+      state: state,
+    );
+    if (quote == null) {
+      return _result(ShopCosmeticsOperationStatus.bundleNotFound);
+    }
+    if (quote.isExplicitlyOwned) {
       return _result(ShopCosmeticsOperationStatus.alreadyOwned,
           bundleId: bundleId);
     }
-    if (_bundleContainsOwnedAssets(bundle)) {
-      return _result(
-        ShopCosmeticsOperationStatus.bundleContainsOwnedAssets,
-        bundleId: bundleId,
-      );
-    }
-    if (walletCoins < bundle.priceAmber) {
+    if (quote.missingItemCount > 0 &&
+        walletCoins < quote.effectivePriceAmber) {
       return _result(
         ShopCosmeticsOperationStatus.insufficientCoins,
         bundleId: bundleId,
       );
     }
 
+    final nextOwnedAssets = <String>[...state.ownedAssetIds];
+    for (final asset in quote.missingAssets) {
+      if (!nextOwnedAssets.contains(asset.id)) {
+        nextOwnedAssets.add(asset.id);
+      }
+    }
     final nextState = state.copyWith(
+      ownedAssetIds: nextOwnedAssets,
       ownedBundleIds: <String>[...state.ownedBundleIds, bundleId],
     );
     return _result(
       ShopCosmeticsOperationStatus.success,
       state: nextState,
-      walletCoins: walletCoins - bundle.priceAmber,
+      walletCoins: walletCoins - quote.effectivePriceAmber,
       bundleId: bundleId,
     );
-  }
-
-  bool _bundleContainsOwnedAssets(ShopBundle bundle) {
-    for (final assetId in bundle.assetIds) {
-      if (state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   ShopCosmeticsOperationResult equipAsset(String assetId) {
@@ -156,7 +164,14 @@ class ShopCosmeticsService {
     if (bundle == null) {
       return _result(ShopCosmeticsOperationStatus.bundleNotFound);
     }
-    if (!isBundleOwned(bundleId)) {
+    final quote = ShopBundleCompletionQuote.tryCreate(
+      bundle: bundle,
+      state: state,
+    );
+    if (quote == null) {
+      return _result(ShopCosmeticsOperationStatus.bundleNotFound);
+    }
+    if (!quote.canEquip) {
       return _result(
         ShopCosmeticsOperationStatus.assetNotOwned,
         bundleId: bundleId,

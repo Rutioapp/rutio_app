@@ -7,6 +7,7 @@ import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -69,7 +70,14 @@ void main() {
       expect(result.isSuccess, isTrue);
       expect(await controller.getWalletCoins(), 1000 - bundlePrice);
       expect(persisted.ownedBundleIds, contains('pack_beige_rutio'));
-      expect(persisted.ownedAssetIds, isEmpty);
+      expect(
+        persisted.ownedAssetIds,
+        containsAll(<String>[
+          'wallpaper_rutio_beige',
+          'habit_card_warm_beige',
+          'user_card_warm_beige',
+        ]),
+      );
       expect(
           await controller.isBundlePartiallyOwned('pack_beige_rutio'), isFalse);
     });
@@ -128,7 +136,7 @@ void main() {
       expect(notificationCount, greaterThan(0));
     });
 
-    test('bundle purchase is blocked when the user already owns part of it',
+    test('bundle purchase completes a partially owned bundle',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final repository = ShopCosmeticsRepository();
@@ -140,6 +148,13 @@ void main() {
       );
 
       final controller = await _createController(walletCoins: 1000);
+      final quote = ShopBundleCompletionQuote.tryCreate(
+        bundle: ShopAssetsCatalog.getBundleById('pack_beige_rutio')!,
+        state: ShopCosmeticsState(
+          ownedAssetIds: <String>['wallpaper_rutio_beige'],
+          ownedBundleIds: <String>[],
+        ),
+      )!;
 
       expect(
           await controller.isBundlePartiallyOwned('pack_beige_rutio'), isTrue);
@@ -147,10 +162,46 @@ void main() {
       final result = await controller.purchaseBundle('pack_beige_rutio');
       final persisted = await ShopCosmeticsRepository().load();
 
-      expect(result.status,
-          ShopCosmeticsOperationStatus.bundleContainsOwnedAssets);
-      expect(persisted.ownedBundleIds, isEmpty);
-      expect(await controller.getWalletCoins(), 1000);
+      expect(result.status, ShopCosmeticsOperationStatus.success);
+      expect(result.walletCoins, 1000 - quote.effectivePriceAmber);
+      expect(result.state.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(
+        result.state.ownedAssetIds,
+        containsAll(<String>[
+          'wallpaper_rutio_beige',
+          'habit_card_warm_beige',
+          'user_card_warm_beige',
+        ]),
+      );
+      expect(persisted.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(await controller.getWalletCoins(), 1000 - quote.effectivePriceAmber);
+    });
+
+    test('bundle purchase completes a fully owned bundle for zero coins',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repository = ShopCosmeticsRepository();
+      await repository.save(
+        ShopCosmeticsState(
+          ownedAssetIds: <String>[
+            'wallpaper_rutio_beige',
+            'habit_card_warm_beige',
+            'user_card_warm_beige',
+          ],
+          ownedBundleIds: <String>[],
+        ),
+      );
+
+      final controller = await _createController(walletCoins: 0);
+
+      final result = await controller.purchaseBundle('pack_beige_rutio');
+      final persisted = await ShopCosmeticsRepository().load();
+
+      expect(result.status, ShopCosmeticsOperationStatus.success);
+      expect(result.walletCoins, 0);
+      expect(result.state.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(result.state.ownedAssetIds, hasLength(3));
+      expect(persisted.ownedBundleIds, contains('pack_beige_rutio'));
     });
 
     test('restores owned and equipped state from persistence', () async {

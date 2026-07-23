@@ -6,6 +6,7 @@ import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_operation_result.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
@@ -217,24 +218,22 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                     _BundleEntry(
                       :final bundle,
                       :final assets,
-                      :final isOwned,
-                      :final isPartiallyOwned,
+                      :final quote,
                     ) =>
                       ShopCosmeticsProductCard.bundle(
                         bundle: bundle,
                         bundleAssets: assets,
-                        isBundleOwned: isOwned,
-                        isBundlePartiallyOwned: isPartiallyOwned,
-                        hasEnoughCoins: _walletCoins >= bundle.priceAmber,
+                        completionQuote: quote,
+                        hasEnoughCoins:
+                            _walletCoins >= quote.effectivePriceAmber,
                         busy: _busyId == bundle.id,
                         onPressed: () => _openBundleDetail(
                           bundle,
                           assets,
-                          isOwned,
-                          isPartiallyOwned,
+                          quote,
                         ),
                         onPrimaryActionPressed: () =>
-                            _onBundlePrimaryActionPressed(bundle, assets),
+                            _onBundlePrimaryActionPressed(bundle, quote, assets),
                       ),
                   };
                 },
@@ -257,18 +256,29 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
           ),
         ),
       ),
-      ...ShopAssetsCatalog.allBundles.map(
-        (ShopBundle bundle) => _BundleEntry(
+    ];
+
+    for (final bundle in ShopAssetsCatalog.allBundles) {
+      final quote = ShopBundleCompletionQuote.tryCreate(
+        bundle: bundle,
+        state: state,
+      );
+      if (quote == null) {
+        continue;
+      }
+      allEntries.add(
+        _BundleEntry(
           bundle: bundle,
           assets: bundle.assetIds
               .map(ShopAssetsCatalog.getAssetById)
               .whereType<ShopAsset>()
               .toList(growable: false),
-          isOwned: state.isBundleOwned(bundle.id),
-          isPartiallyOwned: _bundleContainsOwnedAssets(state, bundle),
+          quote: quote,
         ),
-      ),
-    ]..sort(_compareEntries);
+      );
+    }
+
+    allEntries.sort(_compareEntries);
 
     return switch (_selectedFilter) {
       ShopCosmeticsFilter.all => allEntries,
@@ -387,6 +397,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
 
   Future<void> _onBundlePrimaryActionPressed(
     ShopBundle bundle,
+    ShopBundleCompletionQuote quote,
     List<ShopAsset> assets,
   ) async {
     await _confirmBundlePurchase(bundle, assets);
@@ -422,8 +433,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   void _openBundleDetail(
     ShopBundle bundle,
     List<ShopAsset> assets,
-    bool isOwned,
-    bool isPartiallyOwned,
+    ShopBundleCompletionQuote quote,
   ) {
     showModalBottomSheet<void>(
       context: context,
@@ -433,8 +443,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         return ShopCosmeticsDetailSheet.bundle(
           bundle: bundle,
           bundleAssets: assets,
-          isBundleOwned: isOwned,
-          isBundlePartiallyOwned: isPartiallyOwned,
+          completionQuote: quote,
           walletCoins: _walletCoins,
           busy: _busyId == bundle.id,
           onPrimaryActionPressed: () async {
@@ -481,6 +490,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         return ShopCosmeticsPurchaseConfirmationSheet.bundle(
           bundle: bundle,
           bundleAssets: assets,
+          completionQuote: _bundleCompletionQuote(bundle),
           walletCoins: _walletCoins,
           onCancel: () => Navigator.of(context).pop(false),
           onConfirm: () => Navigator.of(context).pop(true),
@@ -502,17 +512,10 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     );
   }
 
-  bool _bundleContainsOwnedAssets(
-    ShopCosmeticsState state,
-    ShopBundle bundle,
-  ) {
-    if (state.isBundleOwned(bundle.id)) return false;
-    for (final assetId in bundle.assetIds) {
-      if (state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles)) {
-        return true;
-      }
-    }
-    return false;
+  ShopBundleCompletionQuote? _bundleCompletionQuote(ShopBundle bundle) {
+    final state = _state;
+    if (state == null) return null;
+    return ShopBundleCompletionQuote.tryCreate(bundle: bundle, state: state);
   }
 
   String _assetFeedback(
@@ -546,7 +549,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
       case ShopCosmeticsOperationStatus.alreadyOwned:
         return 'Ese pack ya esta comprado';
       case ShopCosmeticsOperationStatus.bundleContainsOwnedAssets:
-        return 'Ya tienes parte de este pack';
+        return 'Completar pack';
       case ShopCosmeticsOperationStatus.assetNotFound:
       case ShopCosmeticsOperationStatus.bundleNotFound:
         return 'No hemos encontrado este pack';
@@ -666,14 +669,12 @@ class _BundleEntry extends _ShopEntry {
   const _BundleEntry({
     required this.bundle,
     required this.assets,
-    required this.isOwned,
-    required this.isPartiallyOwned,
+    required this.quote,
   });
 
   final ShopBundle bundle;
   final List<ShopAsset> assets;
-  final bool isOwned;
-  final bool isPartiallyOwned;
+  final ShopBundleCompletionQuote quote;
 
   @override
   ShopAssetRarity get rarity => bundle.rarity;
@@ -686,8 +687,8 @@ class _BundleEntry extends _ShopEntry {
 
   @override
   int get ownershipRank {
-    if (isOwned) return 0;
-    if (isPartiallyOwned) return 1;
+    if (quote.isExplicitlyOwned || quote.isCompleteFromItems) return 0;
+    if (quote.isPartiallyOwned) return 1;
     return 2;
   }
 }

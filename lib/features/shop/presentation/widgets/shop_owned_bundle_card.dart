@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_product_card.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
@@ -11,6 +12,7 @@ class ShopOwnedBundleCard extends StatelessWidget {
     super.key,
     required this.bundle,
     required this.bundleAssets,
+    required this.completionQuote,
     required this.isEquipped,
     this.busy = false,
     required this.onEquipPressed,
@@ -18,6 +20,7 @@ class ShopOwnedBundleCard extends StatelessWidget {
 
   final ShopBundle bundle;
   final List<ShopAsset> bundleAssets;
+  final ShopBundleCompletionQuote? completionQuote;
   final bool isEquipped;
   final bool busy;
   final Future<void> Function(String bundleId) onEquipPressed;
@@ -25,6 +28,7 @@ class ShopOwnedBundleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool highlighted = isEquipped;
+    final bool isCompleteFromItems = completionQuote?.isCompleteFromItems ?? false;
     final String buttonLabel = busy
         ? 'Equipando...'
         : isEquipped
@@ -34,6 +38,8 @@ class ShopOwnedBundleCard extends StatelessWidget {
         ? 'Equipando...'
         : isEquipped
             ? 'Pack equipado'
+            : isCompleteFromItems
+                ? 'Pack completado'
             : 'Disponible';
 
     return Material(
@@ -82,12 +88,17 @@ class ShopOwnedBundleCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    statusLabel,
-                    style: ShopUiTextStyles.labelSmall.copyWith(
-                      color: highlighted
-                          ? ShopUiTokens.success
-                          : ShopUiTokens.textSecondary,
+                  Flexible(
+                    child: Text(
+                      statusLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: ShopUiTextStyles.labelSmall.copyWith(
+                        color: highlighted
+                            ? ShopUiTokens.success
+                            : ShopUiTokens.textSecondary,
+                      ),
                     ),
                   ),
                 ],

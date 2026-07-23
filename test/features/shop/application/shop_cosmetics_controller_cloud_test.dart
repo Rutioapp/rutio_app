@@ -18,6 +18,7 @@ import 'package:rutio/features/shop/data/cloud/shop_cosmetics_cloud_repository.d
 import 'package:rutio/features/shop/data/cloud/shop_cloud_equip_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_dtos.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_repository.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
@@ -289,6 +290,180 @@ void main() {
       expect(walletController.state.status, GlobalWalletStatus.ready);
       expect(walletController.state.coins, 175);
       expect(walletRepo.calls, 1);
+    });
+
+    test('bundle purchase accepts a partially owned bundle and keeps assets',
+        () async {
+      final walletRepo = _FakeCloudWalletRepository()
+        ..enqueueSuccess(
+          _walletSnapshot(
+            userId: 'shop-cloud-user',
+            coins: 320,
+            version: 2,
+            updatedAt: DateTime.utc(2026, 7, 19, 15, 30),
+          ),
+        );
+      final walletController = GlobalWalletController(
+        repository: walletRepo,
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'shop-cloud-user',
+        enabled: true,
+      );
+      await walletController.applyConfirmedBalance(
+        userId: 'shop-cloud-user',
+        coins: 500,
+        version: 1,
+        updatedAt: DateTime.utc(2026, 7, 19, 13),
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_rutio_beige'],
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_rutio_beige'],
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>[
+                    'wallpaper_rutio_beige',
+                    'habit_card_warm_beige',
+                    'user_card_warm_beige',
+                  ],
+                  ownedBundleIds: <String>['pack_beige_rutio'],
+                ),
+              ),
+        ],
+      );
+      repo.bundleOutcomes.add(
+        RemoteShopBundlePurchaseResultDto(
+          requestId: 'req-partial',
+          bundleId: 'pack_beige_rutio',
+          userId: 'shop-cloud-user',
+          coinsDelta: -120,
+          walletCoinsAfter: 320,
+          wallpaperItemId: 'wallpaper_rutio_beige',
+          habitCardItemId: 'habit_card_warm_beige',
+          userCardItemId: 'user_card_warm_beige',
+          isIdempotent: false,
+          createdAt: DateTime.utc(2026, 7, 19, 15, 30),
+        ),
+      );
+      final env = await _createController(
+        cloudRepository: repo,
+        globalWalletController: walletController,
+      );
+      await env.controller.getState();
+
+      final result = await env.controller.purchaseBundle('pack_beige_rutio');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(result.status, ShopCosmeticsOperationStatus.success);
+      expect(result.walletCoins, 320);
+      expect(env.controller.state?.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(
+        env.controller.state?.ownedAssetIds,
+        containsAll(<String>[
+          'wallpaper_rutio_beige',
+          'habit_card_warm_beige',
+          'user_card_warm_beige',
+        ]),
+      );
+      expect(walletController.state.coins, 320);
+      expect(repo.purchaseCalls, contains('pack_beige_rutio'));
+    });
+
+    test('bundle purchase accepts a zero-cost completed bundle', () async {
+      final walletRepo = _FakeCloudWalletRepository()
+        ..enqueueSuccess(
+          _walletSnapshot(
+            userId: 'shop-cloud-user',
+            coins: 500,
+            version: 2,
+            updatedAt: DateTime.utc(2026, 7, 19, 15, 30),
+          ),
+        );
+      final walletController = GlobalWalletController(
+        repository: walletRepo,
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'shop-cloud-user',
+        enabled: true,
+      );
+      await walletController.applyConfirmedBalance(
+        userId: 'shop-cloud-user',
+        coins: 500,
+        version: 1,
+        updatedAt: DateTime.utc(2026, 7, 19, 13),
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>[
+                    'wallpaper_rutio_beige',
+                    'habit_card_warm_beige',
+                    'user_card_warm_beige',
+                  ],
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>[
+                    'wallpaper_rutio_beige',
+                    'habit_card_warm_beige',
+                    'user_card_warm_beige',
+                  ],
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>[
+                    'wallpaper_rutio_beige',
+                    'habit_card_warm_beige',
+                    'user_card_warm_beige',
+                  ],
+                  ownedBundleIds: <String>['pack_beige_rutio'],
+                ),
+              ),
+        ],
+      );
+      repo.bundleOutcomes.add(
+        RemoteShopBundlePurchaseResultDto(
+          requestId: 'req-zero',
+          bundleId: 'pack_beige_rutio',
+          userId: 'shop-cloud-user',
+          coinsDelta: 0,
+          walletCoinsAfter: 500,
+          wallpaperItemId: 'wallpaper_rutio_beige',
+          habitCardItemId: 'habit_card_warm_beige',
+          userCardItemId: 'user_card_warm_beige',
+          isIdempotent: false,
+          createdAt: DateTime.utc(2026, 7, 19, 15, 31),
+        ),
+      );
+      final env = await _createController(
+        cloudRepository: repo,
+        globalWalletController: walletController,
+      );
+      await env.controller.getState();
+
+      final result = await env.controller.purchaseBundle('pack_beige_rutio');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(result.status, ShopCosmeticsOperationStatus.success);
+      expect(result.walletCoins, 500);
+      expect(env.controller.state?.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(walletController.state.coins, 500);
     });
 
     test('cloud equip switches the correct slot and survives reload', () async {
@@ -933,6 +1108,7 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
   final List<_FetchResponseFactory> _fetchResponses;
   final List<String> purchaseCalls = <String>[];
   final List<_EquipCall> equipCalls = <_EquipCall>[];
+  final List<Object?> bundleOutcomes = <Object?>[];
   final List<Object?> equipOutcomes = <Object?>[];
   final ShopCloudEquipException? equipError;
 
@@ -1006,6 +1182,15 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
   }) async {
     purchaseCalls.add(bundleId);
     final bundle = ShopAssetsCatalog.getBundleById(bundleId)!;
+    if (bundleOutcomes.isNotEmpty) {
+      final outcome = bundleOutcomes.removeAt(0);
+      if (outcome is ShopCloudPurchaseException) {
+        throw outcome;
+      }
+      if (outcome is RemoteShopBundlePurchaseResultDto) {
+        return outcome;
+      }
+    }
     return RemoteShopBundlePurchaseResultDto(
       requestId: requestId,
       bundleId: bundleId,

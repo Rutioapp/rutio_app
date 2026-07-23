@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_rarity_badge.dart';
@@ -15,12 +16,14 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
     required this.onCancel,
     required this.onConfirm,
   })  : bundle = null,
-        bundleAssets = const <ShopAsset>[];
+        bundleAssets = const <ShopAsset>[],
+        completionQuote = null;
 
   const ShopCosmeticsPurchaseConfirmationSheet.bundle({
     super.key,
     required this.bundle,
     required this.bundleAssets,
+    required this.completionQuote,
     required this.walletCoins,
     required this.onCancel,
     required this.onConfirm,
@@ -29,19 +32,29 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
   final ShopAsset? asset;
   final ShopBundle? bundle;
   final List<ShopAsset> bundleAssets;
+  final ShopBundleCompletionQuote? completionQuote;
   final int walletCoins;
   final VoidCallback onCancel;
   final VoidCallback onConfirm;
 
   bool get _isBundle => bundle != null;
 
-  int get _price => _isBundle ? bundle!.priceAmber : asset!.priceAmber;
+  int get _price => _isBundle
+      ? completionQuote?.effectivePriceAmber ?? bundle!.priceAmber
+      : asset!.priceAmber;
 
-  bool get _hasEnoughCoins => walletCoins >= _price;
+  bool get _purchaseIsAvailable {
+    final quote = completionQuote;
+    if (!_isBundle || quote == null) return true;
+    return !quote.isExplicitlyOwned && !quote.isCompleteFromItems;
+  }
+
+  bool get _hasEnoughCoins => _purchaseIsAvailable && walletCoins >= _price;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final bundleActionLabel = _bundleActionLabel();
 
     return SafeArea(
       top: false,
@@ -87,7 +100,10 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                             children: <Widget>[
                               Expanded(
                                 child: Text(
-                                  _isBundle ? bundle!.nameEs : asset!.nameEs,
+                                  _isBundle
+                                      ? completionQuote?.bundle.nameEs ??
+                                          bundle!.nameEs
+                                      : asset!.nameEs,
                                   style: ShopUiTextStyles.label.copyWith(
                                     fontSize: 15,
                                   ),
@@ -95,8 +111,10 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                               ),
                               const SizedBox(width: 12),
                               ShopCosmeticsRarityBadge(
-                                rarity:
-                                    _isBundle ? bundle!.rarity : asset!.rarity,
+                                rarity: _isBundle
+                                    ? completionQuote?.bundle.rarity ??
+                                        bundle!.rarity
+                                    : asset!.rarity,
                                 compact: true,
                               ),
                             ],
@@ -113,31 +131,24 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                           ],
                           if (_isBundle) ...<Widget>[
                             _InfoRow(
-                              label: l10n.shopOriginalPriceLabel,
-                              value: l10n.shopPriceAmber(
-                                bundle!.originalPriceAmber,
+                              label: _bundlePriceLabel(),
+                              value: l10n.shopPriceAmber(_price),
+                            ),
+                            const SizedBox(height: 10),
+                            if (completionQuote?.isPartiallyOwned ?? false) ...<Widget>[
+                              _InfoRow(
+                                label: 'Te faltan',
+                                value: _missingAssetsLabel(),
                               ),
-                            ),
-                            const SizedBox(height: 10),
+                              const SizedBox(height: 10),
+                            ],
                             _InfoRow(
-                              label: l10n.shopSavingsLabel,
-                              value: l10n.shopPriceAmber(bundle!.savingsAmber),
+                              label: l10n.shopCurrentBalanceLabel,
+                              value: l10n.shopPriceAmber(walletCoins),
                             ),
-                            const SizedBox(height: 10),
-                          ],
-                          _InfoRow(
-                            label: l10n.shopPriceLabel,
-                            value: l10n.shopPriceAmber(_price),
-                          ),
-                          const SizedBox(height: 10),
-                          _InfoRow(
-                            label: l10n.shopCurrentBalanceLabel,
-                            value: l10n.shopPriceAmber(walletCoins),
-                          ),
-                          if (_isBundle) ...<Widget>[
                             const SizedBox(height: 14),
                             Text(
-                              l10n.shopIncludesLabel,
+                              bundleActionLabel,
                               style: ShopUiTextStyles.label,
                             ),
                             const SizedBox(height: 8),
@@ -151,6 +162,16 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                                   value: includedAsset.nameEs,
                                 ),
                               ),
+                            ),
+                          ] else ...<Widget>[
+                            _InfoRow(
+                              label: l10n.shopPriceLabel,
+                              value: l10n.shopPriceAmber(_price),
+                            ),
+                            const SizedBox(height: 10),
+                            _InfoRow(
+                              label: l10n.shopCurrentBalanceLabel,
+                              value: l10n.shopPriceAmber(walletCoins),
                             ),
                           ],
                           const SizedBox(height: 14),
@@ -198,9 +219,7 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                                 ? 'shopCosmeticsPurchaseConfirmationConfirm-${bundle!.id}'
                                 : 'shopCosmeticsPurchaseConfirmationConfirm-${asset!.id}',
                           ),
-                          label: _isBundle
-                              ? l10n.shopActionBuyPack
-                              : l10n.shopActionBuy,
+                          label: _isBundle ? bundleActionLabel : l10n.shopActionBuy,
                           onPressed: _hasEnoughCoins ? onConfirm : null,
                           expanded: true,
                           icon: _hasEnoughCoins
@@ -217,6 +236,33 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _bundleActionLabel() {
+    final quote = completionQuote;
+    if (quote?.isExplicitlyOwned == true) {
+      return 'Comprado';
+    }
+    if (quote?.isCompleteFromItems == true) {
+      return 'Pack completado';
+    }
+    if (quote?.isPartiallyOwned ?? false) {
+      return 'Completar pack';
+    }
+    return 'Comprar pack';
+  }
+
+  String _bundlePriceLabel() {
+    final quote = completionQuote;
+    if (quote?.isPartiallyOwned ?? false) {
+      return 'Precio para completar';
+    }
+    return 'Precio';
+  }
+
+  String _missingAssetsLabel() {
+    final missing = completionQuote?.missingAssets ?? const <ShopAsset>[];
+    return missing.map((ShopAsset asset) => asset.nameEs).join(', ');
   }
 }
 
