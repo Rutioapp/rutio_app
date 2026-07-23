@@ -221,6 +221,9 @@ class ShopCosmeticsController extends ChangeNotifier {
 
     late final Future<ShopCosmeticsState> future;
     future = _repository.load().then((state) {
+      if (_currentScope() != scopeKey) {
+        return state;
+      }
       _setCachedState(
         state,
         scopeKey: scopeKey,
@@ -637,23 +640,33 @@ class ShopCosmeticsController extends ChangeNotifier {
   }
 
   void _handleUserStateStoreChanged() {
-    if (!_cloudEnabled) return;
-
     final currentScope = _currentScope();
     if (currentScope == null) {
-      _cloudState = ShopCosmeticsCloudState.unauthenticated();
       _cachedState = null;
       _cachedScopeKey = null;
+      _pendingStateLoad = null;
+      if (_cloudEnabled) {
+        _cloudState = ShopCosmeticsCloudState.unauthenticated();
+      }
       notifyListeners();
       return;
     }
 
-    if (_cachedScopeKey != currentScope) {
-      _cachedState = null;
-      _cachedScopeKey = currentScope;
-      _setCloudState(ShopCosmeticsCloudState.loading(userId: currentScope));
-      unawaited(_syncFromCurrentScope(force: true));
+    if (_cachedScopeKey == currentScope) {
+      return;
     }
+
+    _cachedState = null;
+    _cachedScopeKey = currentScope;
+
+    if (!_cloudEnabled) {
+      _pendingStateLoad = null;
+      notifyListeners();
+      return;
+    }
+
+    _cloudState = ShopCosmeticsCloudState.loading(userId: currentScope);
+    unawaited(_syncFromCurrentScope(force: true));
   }
 
   void _setCloudState(ShopCosmeticsCloudState state) {
