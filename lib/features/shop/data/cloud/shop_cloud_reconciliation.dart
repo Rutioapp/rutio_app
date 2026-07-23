@@ -126,6 +126,8 @@ class ShopCloudCatalogReconciler {
     final expectedIsStackable = expected['isStackable'] as bool;
     final expectedMaxQuantity = expected['maxQuantity'] as int?;
     final expectedEquipSlot = expected['equipSlot'] as String?;
+    final expectedAssetKey = local.assetRef;
+    final expectedIsActive = local.isEnabled;
 
     final configMismatch = remoteCategoryKey != expectedCategoryKey ||
         remote.subtype != expectedSubtype ||
@@ -133,7 +135,9 @@ class ShopCloudCatalogReconciler {
         remote.isConsumable != expectedIsConsumable ||
         remote.isStackable != expectedIsStackable ||
         remote.maxQuantity != expectedMaxQuantity ||
-        remote.equipSlot?.dbKey != expectedEquipSlot;
+        remote.equipSlot?.dbKey != expectedEquipSlot ||
+        remote.assetKey != expectedAssetKey ||
+        remote.isActive != expectedIsActive;
 
     if (configMismatch) {
       configurationMismatchItemIds.add(remote.id);
@@ -157,6 +161,10 @@ class ShopCloudCatalogReconciler {
             'remoteMaxQuantity': remote.maxQuantity,
             'localEquipSlot': expectedEquipSlot,
             'remoteEquipSlot': remote.equipSlot?.dbKey,
+            'localAssetKey': expectedAssetKey,
+            'remoteAssetKey': remote.assetKey,
+            'localIsActive': expectedIsActive,
+            'remoteIsActive': remote.isActive,
           },
         ),
       );

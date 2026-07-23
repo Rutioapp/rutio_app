@@ -216,8 +216,10 @@ Por que lo considero P1:
 
 Impacto:
 
-- El catalogo local contiene utilities, cosmeticos y bundles, pero el seed remoto de `shop_items` sigue siendo conservador y solo carga utilities.
-- Los bundles ya tienen tablas remotas propias, pero parte del metadata y de los assets sigue viviendo en catalogo Dart.
+- El catalogo local contiene utilities, cosmeticos y bundles, y el remoto ya tiene seeds para `shop_items`, `shop_bundles` y `shop_bundle_items`.
+- Se confirmo drift real solo en dos bundles: `pack_lila_profunda` y `pack_coral_atardecer`.
+- El desfase estaba en `price_coins`, `original_price_coins` y `catalog_version` de esos dos registros.
+- Se corrigio con una migracion nueva sin tocar las ya aplicadas.
 
 Evidencia:
 
@@ -225,8 +227,16 @@ Evidencia:
 - `D:/dev/alpha/rutio_app/supabase/migrations/20260718101000_seed_shop_catalog_v1.sql:5`
 - `D:/dev/alpha/rutio_app/supabase/migrations/20260722120000_create_shop_bundle_catalog_and_purchase_rpc.sql:8`
 - `D:/dev/alpha/rutio_app/supabase/migrations/20260722120000_create_shop_bundle_catalog_and_purchase_rpc.sql:141`
+- `D:/dev/alpha/rutio_app/supabase/migrations/20260723220000_sync_shop_catalog_contract.sql`
 - `D:/dev/alpha/rutio_app/lib/features/shop/data/shop_catalog.dart`
 - `D:/dev/alpha/rutio_app/lib/features/shop/data/shop_assets_catalog.dart`
+- `D:/dev/alpha/rutio_app/test/features/shop/data/shop_catalog_remote_contract_test.dart`
+
+Estado:
+
+- Corregido en `fix/shop-catalog-contract-drift`.
+- Se añadio un test automatico de paridad para impedir drift futuro.
+- El contrato futuro debera actualizar Dart y una migracion SQL nueva al mismo tiempo.
 
 Lectura:
 
@@ -315,6 +325,65 @@ Resultado:
 Resultado:
 
 - Limpio antes de crear este informe.
+
+## Proceso para modificar el catalogo
+
+1. Modificar el catalogo Dart.
+2. AÃ±adir una nueva migracion SQL.
+3. Ejecutar el test de paridad.
+4. Comprobar el remoto.
+5. Aplicar `supabase db push --dry-run`.
+6. Aplicar la migracion.
+7. Validar una compra real.
+8. Hacer commit.
+
+No se deben editar migraciones ya aplicadas.
+
+## Verificacion del remoto real
+
+Usar estas consultas en el SQL Editor de Supabase para revisar el estado real:
+
+```sql
+select
+  id,
+  category,
+  subtype,
+  rarity,
+  price_coins,
+  is_consumable,
+  is_stackable,
+  max_quantity,
+  equip_slot,
+  asset_key,
+  localization_key,
+  is_active,
+  catalog_version
+from public.shop_items
+order by id;
+```
+
+```sql
+select
+  id,
+  family_id,
+  rarity,
+  price_coins,
+  original_price_coins,
+  is_active,
+  sort_order,
+  catalog_version
+from public.shop_bundles
+order by id;
+```
+
+```sql
+select
+  bundle_id,
+  slot,
+  item_id
+from public.shop_bundle_items
+order by bundle_id, slot;
+```
 
 ## Plan de Correccion Recomendado
 

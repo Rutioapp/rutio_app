@@ -28,7 +28,14 @@ void main() {
     test('detects price and configuration mismatches without mutating input',
         () {
       final remoteItems = <RemoteShopItemDto>[
-        _utility('utility_xp_boost_1d', 999, 'xpBoost', isStackable: false),
+        _utility(
+          'utility_xp_boost_1d',
+          999,
+          'xpBoost',
+          isStackable: false,
+          assetKey: 'assets/shop/utilities/incorrect.png',
+          isActive: false,
+        ),
       ];
       final original = List<RemoteShopItemDto>.from(remoteItems);
 
@@ -42,6 +49,14 @@ void main() {
         reconciliation.configurationMismatchItemIds,
         contains('utility_xp_boost_1d'),
       );
+      final warning = reconciliation.warnings.firstWhere(
+        (warning) =>
+            warning.code == ShopCloudWarningCode.configMismatch &&
+            warning.itemId == 'utility_xp_boost_1d',
+      );
+      expect(warning.details['remoteAssetKey'],
+          'assets/shop/utilities/incorrect.png');
+      expect(warning.details['remoteIsActive'], isFalse);
       expect(remoteItems, equals(original));
     });
 
@@ -70,6 +85,8 @@ RemoteShopItemDto _utility(
   int priceCoins,
   String subtype, {
   bool isStackable = true,
+  String? assetKey,
+  bool isActive = true,
 }) {
   return RemoteShopItemDto.fromJson(<String, dynamic>{
     'id': id,
@@ -81,9 +98,9 @@ RemoteShopItemDto _utility(
     'isStackable': isStackable,
     'maxQuantity': null,
     'equipSlot': null,
-    'assetKey': 'assets/shop/utilities/$id.png',
+    'assetKey': assetKey ?? 'assets/shop/utilities/$id.png',
     'localizationKey': 'key_$id',
-    'isActive': true,
+    'isActive': isActive,
     'sortOrder': 0,
     'catalogVersion': 1,
     'createdAt': '2026-07-17T00:00:00Z',
