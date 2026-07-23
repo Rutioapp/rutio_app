@@ -33,7 +33,7 @@ Restriccion respetada: no se cambio logica, migraciones ni codigo de negocio. El
 Estado general:
 
 - No se detecto un P0.
-- Hay un riesgo P1 de fuga entre cuentas por persistencia local legacy compartida.
+- El riesgo P1 de fuga entre cuentas por persistencia local legacy compartida fue corregido en `fix/shop-account-isolation`.
 - Hay un P1 adicional porque el camino cloud de `recoverStreakBreak` esta rojo en pruebas.
 - Hay un P2 de drift / cobertura incompleta entre el catalogo local y el contrato remoto.
 - Hay un P3 menor por un helper sin uso que ya aparece en `flutter analyze`.
@@ -141,6 +141,18 @@ Observacion:
 ## Hallazgos
 
 ### P1 - Riesgo de fuga entre cuentas por persistencia legacy global compartida
+
+Estado:
+
+- Corregido en `fix/shop-account-isolation` el 2026-07-23.
+
+Nueva politica aplicada:
+
+- claves scopeadas por usuario como unica fuente de verdad local;
+- clave guest explicita para sesiones no autenticadas;
+- migracion legacy solo con `legacyOwner == scope` exacto;
+- descarte seguro de legacy ambiguo o de otra cuenta;
+- tests añadidos para aislamiento, migracion, guest y cambio de cuenta.
 
 Impacto:
 

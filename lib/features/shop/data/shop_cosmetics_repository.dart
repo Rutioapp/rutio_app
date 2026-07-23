@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -16,126 +17,151 @@ class ShopCosmeticsRepository {
 
   static const String legacyStorageKey = 'rutio_shop_cosmetics_v1';
   static const String legacyScopeOwnerKey = 'rutio_shop_cosmetics_v1_owner';
+  static const String guestStorageKey = 'rutio_shop_cosmetics_v1_guest';
+
+  static Future<void> _operationQueue = Future<void>.value();
 
   final Future<SharedPreferences> Function() _sharedPreferencesProvider;
   final String? Function()? _scopeResolver;
 
-  Future<ShopCosmeticsState> load() async {
-    try {
-      final prefs = await _sharedPreferencesProvider();
-      final scope = _resolvedScope();
-      final scopedStorageKey = _storageKeyForScope(scope);
-      final rawScoped =
-          scopedStorageKey == null ? null : prefs.getString(scopedStorageKey);
-      final rawLegacy = prefs.getString(legacyStorageKey);
-      final legacyScopeOwner = prefs.getString(legacyScopeOwnerKey)?.trim();
-      final canUseLegacyForScope = scope == null ||
-          legacyScopeOwner == null ||
-          legacyScopeOwner.isEmpty ||
-          legacyScopeOwner == scope;
+  Future<ShopCosmeticsState> load() {
+    return _runExclusive(() async {
+      try {
+        final prefs = await _sharedPreferencesProvider();
+        final scope = _resolvedScope();
+        if (scope == null) {
+          final rawGuest = prefs.getString(guestStorageKey);
+          final guestState = _stateFromRaw(rawGuest);
+          if (guestState == null) {
+            _log('loadState scope=guest source=empty');
+            return const ShopCosmeticsState.initial();
+          }
 
-      final resolvedRaw = (rawScoped != null && rawScoped.trim().isNotEmpty)
-          ? rawScoped
-          : canUseLegacyForScope
-              ? rawLegacy
-              : null;
-      final sourceKey = (rawScoped != null && rawScoped.trim().isNotEmpty)
-          ? scopedStorageKey
-          : canUseLegacyForScope
-              ? legacyStorageKey
-              : scopedStorageKey;
+          final sanitized = _sanitizeState(guestState);
+          _log('loadState scope=guest source=guest');
+          if (sanitized != guestState) {
+            await _writeState(
+              prefs,
+              storageKey: guestStorageKey,
+              state: sanitized,
+            );
+          }
+          return sanitized;
+        }
 
-      if (resolvedRaw == null || resolvedRaw.trim().isEmpty) {
-        const initial = ShopCosmeticsState.initial();
-        _log(
-          'loadState scope=${scope ?? 'guest'} storageKey=${scopedStorageKey ?? legacyStorageKey} source=empty '
-          'ownedAssetIds=${initial.ownedAssetIds} ownedBundleIds=${initial.ownedBundleIds} '
-          'equippedWallpaperId=${initial.equippedWallpaperId} '
-          'equippedHabitCardSkinId=${initial.equippedHabitCardSkinId} '
-          'equippedUserCardSkinId=${initial.equippedUserCardSkinId}',
+        final scopedStorageKey = _storageKeyForScope(scope)!;
+        final rawScoped = prefs.getString(scopedStorageKey);
+        final scopedState = _stateFromRaw(rawScoped);
+        if (scopedState != null) {
+          await _cleanupLegacyStateIfNeeded(
+            prefs,
+            scope: scope,
+            rawLegacy: prefs.getString(legacyStorageKey),
+            legacyOwner: prefs.getString(legacyScopeOwnerKey),
+          );
+          final sanitized = _sanitizeState(scopedState);
+          _log('loadState scope=$scope source=scoped');
+          if (sanitized != scopedState) {
+            await _writeState(
+              prefs,
+              storageKey: scopedStorageKey,
+              state: sanitized,
+            );
+          }
+          return sanitized;
+        }
+
+        final rawLegacy = prefs.getString(legacyStorageKey);
+        final legacyOwner = prefs.getString(legacyScopeOwnerKey)?.trim();
+        if (rawLegacy == null || rawLegacy.trim().isEmpty) {
+          _log('loadState scope=$scope source=empty');
+          return const ShopCosmeticsState.initial();
+        }
+
+        if (legacyOwner == null || legacyOwner.isEmpty) {
+          await _discardUnsafeLegacyState(
+            prefs,
+            reason: 'missing_owner',
+          );
+          return const ShopCosmeticsState.initial();
+        }
+
+        if (legacyOwner != scope) {
+          await _discardUnsafeLegacyState(
+            prefs,
+            reason: 'owner_mismatch',
+          );
+          return const ShopCosmeticsState.initial();
+        }
+
+        ShopCosmeticsState? legacyState;
+        try {
+          legacyState = _stateFromRaw(rawLegacy);
+        } catch (_) {
+          await _discardUnsafeLegacyState(
+            prefs,
+            reason: 'invalid_json',
+          );
+          return const ShopCosmeticsState.initial();
+        }
+
+        if (legacyState == null) {
+          await _discardUnsafeLegacyState(
+            prefs,
+            reason: 'invalid_json',
+          );
+          return const ShopCosmeticsState.initial();
+        }
+
+        final sanitized = _sanitizeState(legacyState);
+        await _writeState(
+          prefs,
+          storageKey: scopedStorageKey,
+          state: sanitized,
         );
-        return initial;
-      }
-
-      final decoded = jsonDecode(resolvedRaw);
-      if (decoded is! Map) {
-        _log(
-          'loadState scope=${scope ?? 'guest'} storageKey=$sourceKey source=invalid-json-map',
-        );
+        await _removeLegacyState(prefs);
+        _log('migrateLegacyState scope=$scope result=success');
+        return sanitized;
+      } catch (_) {
+        _log('loadState failed, returning initial state');
         return const ShopCosmeticsState.initial();
       }
-
-      final rawState =
-          ShopCosmeticsState.fromJson(Map<String, dynamic>.from(decoded));
-      final state = _sanitizeState(rawState);
-      _log(
-        'loadState scope=${scope ?? 'guest'} storageKey=$sourceKey '
-        'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds} '
-        'equippedWallpaperId=${state.equippedWallpaperId} '
-        'equippedHabitCardSkinId=${state.equippedHabitCardSkinId} '
-        'equippedUserCardSkinId=${state.equippedUserCardSkinId}',
-      );
-
-      if ((rawScoped == null || rawScoped.trim().isEmpty) &&
-          scopedStorageKey != null &&
-          rawLegacy != null &&
-          rawLegacy.trim().isNotEmpty &&
-          canUseLegacyForScope) {
-        await prefs.setString(scopedStorageKey, resolvedRaw);
-        await prefs.setString(legacyScopeOwnerKey, scope!);
-        _log(
-          'migrateLegacyState scope=$scope from=$legacyStorageKey to=$scopedStorageKey',
-        );
-      }
-
-      if (state != rawState) {
-        await save(state);
-        _log(
-          'sanitizeState scope=${scope ?? 'guest'} storageKey=$sourceKey '
-          'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds} '
-          'equippedWallpaperId=${state.equippedWallpaperId}',
-        );
-      }
-
-      return state;
-    } catch (_) {
-      _log('loadState failed, returning initial state');
-      return const ShopCosmeticsState.initial();
-    }
+    });
   }
 
-  Future<void> save(ShopCosmeticsState state) async {
-    final prefs = await _sharedPreferencesProvider();
-    final encoded = jsonEncode(state.toJson());
-    final scope = _resolvedScope();
-    final scopedStorageKey = _storageKeyForScope(scope);
+  Future<void> save(ShopCosmeticsState state) {
+    return _runExclusive(() async {
+      final prefs = await _sharedPreferencesProvider();
+      final encoded = jsonEncode(_sanitizeState(state).toJson());
+      final scope = _resolvedScope();
+      final scopedStorageKey = _storageKeyForScope(scope);
 
-    if (scopedStorageKey != null) {
+      if (scopedStorageKey == null) {
+        await prefs.setString(guestStorageKey, encoded);
+        _log('saveState scope=guest destination=guest');
+        return;
+      }
+
       await prefs.setString(scopedStorageKey, encoded);
-      await prefs.setString(legacyScopeOwnerKey, scope!);
-    }
-    await prefs.setString(legacyStorageKey, encoded);
-    _log(
-      'saveState scope=${scope ?? 'guest'} storageKey=${scopedStorageKey ?? legacyStorageKey} '
-      'ownedAssetIds=${state.ownedAssetIds} ownedBundleIds=${state.ownedBundleIds} '
-      'equippedWallpaperId=${state.equippedWallpaperId} '
-      'equippedHabitCardSkinId=${state.equippedHabitCardSkinId} '
-      'equippedUserCardSkinId=${state.equippedUserCardSkinId}',
-    );
+      _log('saveState scope=$scope destination=scoped');
+    });
   }
 
-  Future<void> clear() async {
-    final prefs = await _sharedPreferencesProvider();
-    final scope = _resolvedScope();
-    final scopedStorageKey = _storageKeyForScope(scope);
-    if (scopedStorageKey != null) {
+  Future<void> clear() {
+    return _runExclusive(() async {
+      final prefs = await _sharedPreferencesProvider();
+      final scope = _resolvedScope();
+      if (scope == null) {
+        await prefs.remove(guestStorageKey);
+        _log('clearState scope=guest destination=guest');
+        return;
+      }
+
+      final scopedStorageKey = _storageKeyForScope(scope)!;
       await prefs.remove(scopedStorageKey);
-    }
-    await prefs.remove(legacyStorageKey);
-    await prefs.remove(legacyScopeOwnerKey);
-    _log(
-      'clearState scope=${scope ?? 'guest'} storageKey=${scopedStorageKey ?? legacyStorageKey}',
-    );
+      await _removeLegacyStateIfOwnedBy(prefs, scope: scope);
+      _log('clearState scope=$scope destination=scoped');
+    });
   }
 
   String? _resolvedScope() {
@@ -147,6 +173,78 @@ class ShopCosmeticsRepository {
   String? _storageKeyForScope(String? scope) {
     if (scope == null || scope.isEmpty) return null;
     return '${legacyStorageKey}_$scope';
+  }
+
+  Future<T> _runExclusive<T>(Future<T> Function() action) {
+    final completer = Completer<T>();
+    final previous = _operationQueue;
+    final next = previous.then((_) async {
+      try {
+        completer.complete(await action());
+      } catch (error, stackTrace) {
+        if (!completer.isCompleted) {
+          completer.completeError(error, stackTrace);
+        }
+      }
+    });
+    _operationQueue = next.catchError((_) {});
+    return completer.future;
+  }
+
+  Future<void> _cleanupLegacyStateIfNeeded(
+    SharedPreferences prefs, {
+    required String scope,
+    required String? rawLegacy,
+    required String? legacyOwner,
+  }) async {
+    if (rawLegacy == null || rawLegacy.trim().isEmpty) return;
+    if (legacyOwner == null || legacyOwner.isEmpty) {
+      await _discardUnsafeLegacyState(prefs, reason: 'missing_owner');
+      return;
+    }
+    if (legacyOwner != scope) {
+      await _discardUnsafeLegacyState(prefs, reason: 'owner_mismatch');
+      return;
+    }
+
+    await _removeLegacyState(prefs);
+  }
+
+  Future<void> _discardUnsafeLegacyState(
+    SharedPreferences prefs, {
+    required String reason,
+  }) async {
+    await _removeLegacyState(prefs);
+    _log('discardUnsafeLegacyState reason=$reason');
+  }
+
+  Future<void> _removeLegacyState(SharedPreferences prefs) async {
+    await prefs.remove(legacyStorageKey);
+    await prefs.remove(legacyScopeOwnerKey);
+  }
+
+  Future<void> _removeLegacyStateIfOwnedBy(
+    SharedPreferences prefs, {
+    required String scope,
+  }) async {
+    final legacyOwner = prefs.getString(legacyScopeOwnerKey)?.trim();
+    if (legacyOwner != scope) return;
+    await _removeLegacyState(prefs);
+  }
+
+  Future<void> _writeState(
+    SharedPreferences prefs, {
+    required String storageKey,
+    required ShopCosmeticsState state,
+  }) async {
+    await prefs.setString(storageKey, jsonEncode(state.toJson()));
+  }
+
+  ShopCosmeticsState? _stateFromRaw(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) return null;
+    return ShopCosmeticsState.fromJson(Map<String, dynamic>.from(decoded));
   }
 
   void _log(String message) {
