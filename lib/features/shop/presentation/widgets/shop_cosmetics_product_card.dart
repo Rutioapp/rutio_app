@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
@@ -20,15 +21,13 @@ class ShopCosmeticsProductCard extends StatelessWidget {
     this.busy = false,
   })  : bundle = null,
         bundleAssets = const <ShopAsset>[],
-        isBundleOwned = false,
-        isBundlePartiallyOwned = false;
+        completionQuote = null;
 
   const ShopCosmeticsProductCard.bundle({
     super.key,
     required this.bundle,
     required this.bundleAssets,
-    required this.isBundleOwned,
-    required this.isBundlePartiallyOwned,
+    required this.completionQuote,
     required this.hasEnoughCoins,
     required this.onPressed,
     required this.onPrimaryActionPressed,
@@ -40,8 +39,7 @@ class ShopCosmeticsProductCard extends StatelessWidget {
   final ShopAssetOwnershipState ownershipState;
   final ShopBundle? bundle;
   final List<ShopAsset> bundleAssets;
-  final bool isBundleOwned;
-  final bool isBundlePartiallyOwned;
+  final ShopBundleCompletionQuote? completionQuote;
   final bool hasEnoughCoins;
   final VoidCallback onPressed;
   final VoidCallback onPrimaryActionPressed;
@@ -51,9 +49,14 @@ class ShopCosmeticsProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String title = _isBundle ? bundle!.nameEs : asset!.nameEs;
-    final ShopAssetRarity rarity = _isBundle ? bundle!.rarity : asset!.rarity;
-    final int price = _isBundle ? bundle!.priceAmber : asset!.priceAmber;
+    final String title = _isBundle
+        ? completionQuote?.bundle.nameEs ?? bundle!.nameEs
+        : asset!.nameEs;
+    final ShopAssetRarity rarity =
+        _isBundle ? completionQuote?.bundle.rarity ?? bundle!.rarity : asset!.rarity;
+    final int price = _isBundle
+        ? completionQuote?.effectivePriceAmber ?? bundle!.priceAmber
+        : asset!.priceAmber;
     final _ProductActionState action = _resolveAction();
 
     return Material(
@@ -112,12 +115,20 @@ class ShopCosmeticsProductCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _PriceBadge(
-                    price: price,
-                    originalPrice:
-                        _isBundle ? bundle!.originalPriceAmber : price,
-                    savings: _isBundle ? bundle!.savingsAmber : 0,
-                  ),
+                  if (!_isBundle || action.showPrimaryButton)
+                    _PriceBadge(
+                      price: price,
+                      originalPrice: _isBundle
+                          ? completionQuote?.bundle.originalPriceAmber ??
+                              bundle!.originalPriceAmber
+                          : price,
+                      savings: _isBundle
+                          ? (completionQuote == null
+                              ? bundle!.savingsAmber
+                              : (completionQuote!.bundle.originalPriceAmber -
+                                  completionQuote!.effectivePriceAmber))
+                          : 0,
+                    ),
                 ],
               ),
               const Spacer(),
@@ -147,7 +158,17 @@ class ShopCosmeticsProductCard extends StatelessWidget {
 
   _ProductActionState _resolveAction() {
     if (_isBundle) {
-      if (isBundleOwned) {
+      final quote = completionQuote;
+      if (quote == null) {
+        return const _ProductActionState(
+          label: 'Bloqueado',
+          statusLabel: 'No disponible',
+          icon: Icons.lock_outline_rounded,
+          enabled: false,
+          showPrimaryButton: false,
+        );
+      }
+      if (quote.isExplicitlyOwned) {
         return const _ProductActionState(
           label: 'Comprado',
           statusLabel: 'Comprado',
@@ -157,13 +178,22 @@ class ShopCosmeticsProductCard extends StatelessWidget {
           showPrimaryButton: false,
         );
       }
-      if (isBundlePartiallyOwned) {
+      if (quote.isCompleteFromItems) {
         return const _ProductActionState(
-          label: 'Ya tienes parte del pack',
-          statusLabel: 'Ya tienes parte de este pack',
-          icon: Icons.block_outlined,
+          label: 'Pack completado',
+          statusLabel: 'Pack completado',
+          icon: Icons.check_circle_outline_rounded,
           enabled: false,
+          highlight: true,
           showPrimaryButton: false,
+        );
+      }
+      if (quote.isPartiallyOwned) {
+        return _ProductActionState(
+          label: hasEnoughCoins ? 'Completar pack' : 'Saldo insuficiente',
+          statusLabel: 'Tienes ${quote.ownedItemCount} de 3',
+          icon: Icons.auto_fix_high_rounded,
+          enabled: hasEnoughCoins,
         );
       }
       if (!hasEnoughCoins) {

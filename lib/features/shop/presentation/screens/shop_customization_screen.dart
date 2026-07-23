@@ -6,6 +6,7 @@ import 'package:rutio/features/shop/domain/models/equipped_cosmetics.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
@@ -139,6 +140,7 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
                 equippedCosmetics: data.equippedCosmetics,
                 ownedCosmeticItems: data.ownedCosmeticItems,
                 ownedBundles: data.ownedBundles,
+                cosmeticsState: data.cosmeticsState,
               );
             },
           );
@@ -151,6 +153,7 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
       equippedCosmetics: widget.equippedCosmetics,
       ownedCosmeticItems: widget.ownedCosmeticItems,
       ownedBundles: widget.ownedBundles,
+      cosmeticsState: _buildStateFromProps(),
     );
   }
 
@@ -176,12 +179,13 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
     required EquippedCosmetics equippedCosmetics,
     required List<ShopItem> ownedCosmeticItems,
     required List<ShopBundle> ownedBundles,
+    required ShopCosmeticsState cosmeticsState,
   }) {
     final List<ShopItem> filteredItems = _selectedFilter.isBundleFilter
         ? const <ShopItem>[]
         : _itemsForFilter(ownedCosmeticItems, _selectedFilter);
     final List<ShopBundle> filteredBundles = _selectedFilter.isBundleFilter
-        ? _bundlesForFilter(ownedBundles)
+        ? _bundlesForFilter(cosmeticsState)
         : const <ShopBundle>[];
 
     return ShopPageShell(
@@ -236,6 +240,7 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
                 key: const Key('shopCustomizationBundleSection'),
                 bundles: filteredBundles,
                 equippedCosmetics: equippedCosmetics,
+                cosmeticsState: cosmeticsState,
                 busyEquipBundleId: _busyEquipBundleId,
                 onEquipPressed: _handleEquipBundlePressed,
               )
@@ -307,10 +312,21 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
         .toList(growable: false);
   }
 
-  List<ShopBundle> _bundlesForFilter(List<ShopBundle> ownedBundles) {
-    final List<ShopBundle> resolved = ownedBundles.toList(growable: false);
-    resolved.sort((ShopBundle a, ShopBundle b) => a.sortOrder.compareTo(b.sortOrder));
-    return resolved;
+  List<ShopBundle> _bundlesForFilter(ShopCosmeticsState state) {
+    final Map<String, ShopBundle> resolved = <String, ShopBundle>{};
+    for (final ShopBundle bundle in ShopAssetsCatalog.allBundles) {
+      final quote = ShopBundleCompletionQuote.tryCreate(
+        bundle: bundle,
+        state: state,
+      );
+      if (quote == null) continue;
+      if (!quote.isExplicitlyOwned && !quote.isCompleteFromItems) continue;
+      resolved[bundle.id] = bundle;
+    }
+
+    final List<ShopBundle> sorted = resolved.values.toList(growable: false);
+    sorted.sort((ShopBundle a, ShopBundle b) => a.sortOrder.compareTo(b.sortOrder));
+    return sorted;
   }
 
   ShopItem? _equippedItem(
@@ -386,6 +402,17 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
       ),
       ownedCosmeticItems: resolvedItems,
       ownedBundles: resolvedBundles,
+      cosmeticsState: state,
+    );
+  }
+
+  ShopCosmeticsState _buildStateFromProps() {
+    return ShopCosmeticsState(
+      ownedAssetIds: widget.ownedCosmeticItems.map((item) => item.id).toList(),
+      ownedBundleIds: widget.ownedBundles.map((bundle) => bundle.id).toList(),
+      equippedWallpaperId: widget.equippedCosmetics.backgroundItemId,
+      equippedHabitCardSkinId: widget.equippedCosmetics.habitCardItemId,
+      equippedUserCardSkinId: widget.equippedCosmetics.userCardItemId,
     );
   }
 
@@ -557,12 +584,14 @@ class _OwnedBundlesSection extends StatelessWidget {
     super.key,
     required this.bundles,
     required this.equippedCosmetics,
+    required this.cosmeticsState,
     required this.busyEquipBundleId,
     required this.onEquipPressed,
   });
 
   final List<ShopBundle> bundles;
   final EquippedCosmetics equippedCosmetics;
+  final ShopCosmeticsState cosmeticsState;
   final String? busyEquipBundleId;
   final Future<void> Function(String bundleId) onEquipPressed;
 
@@ -595,10 +624,15 @@ class _OwnedBundlesSection extends StatelessWidget {
               ),
               itemBuilder: (BuildContext context, int index) {
                 final ShopBundle bundle = bundles[index];
+                final quote = ShopBundleCompletionQuote.tryCreate(
+                  bundle: bundle,
+                  state: cosmeticsState,
+                );
                 return ShopOwnedBundleCard(
                   key: Key('shopOwnedBundle-${bundle.id}'),
                   bundle: bundle,
                   bundleAssets: _bundleAssetsFor(bundle),
+                  completionQuote: quote,
                   isEquipped: _isBundleEquipped(bundle, equippedCosmetics),
                   busy: busyEquipBundleId == bundle.id,
                   onEquipPressed: onEquipPressed,
@@ -676,10 +710,12 @@ class _CustomizationViewData {
     required this.equippedCosmetics,
     required this.ownedCosmeticItems,
     required this.ownedBundles,
+    required this.cosmeticsState,
   });
 
   final int walletCoins;
   final EquippedCosmetics equippedCosmetics;
   final List<ShopItem> ownedCosmeticItems;
   final List<ShopBundle> ownedBundles;
+  final ShopCosmeticsState cosmeticsState;
 }

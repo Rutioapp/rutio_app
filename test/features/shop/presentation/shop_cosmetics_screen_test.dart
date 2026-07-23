@@ -6,7 +6,6 @@ import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
-import 'package:rutio/features/global_wallet/application/global_wallet_state.dart';
 import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_errors.dart';
 import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_repository.dart';
 import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
@@ -342,7 +341,7 @@ void main() {
       expect(find.text('Nada por mostrar'), findsNothing);
     });
 
-    testWidgets('partially owned packs show the blocked state',
+    testWidgets('partially owned packs show the completion CTA',
         (WidgetTester tester) async {
       final controller = await _createController(
         walletCoins: 600,
@@ -359,10 +358,10 @@ void main() {
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-packs')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Ya tienes parte de este pack'), findsOneWidget);
+      expect(find.text('Completar pack'), findsOneWidget);
       expect(
         find.byKey(const Key('shopCosmeticsAction-pack_beige_rutio')),
-        findsNothing,
+        findsOneWidget,
       );
     });
 

@@ -18,6 +18,7 @@ import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_operation_result.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
@@ -314,6 +315,20 @@ class ShopCosmeticsController extends ChangeNotifier {
   }
 
   Future<bool> canPurchaseBundle(String bundleId) async {
+    if (_cloudEnabled) {
+      final state = await _combinedCloudState();
+      final bundle = ShopAssetsCatalog.getBundleById(bundleId);
+      if (bundle == null) return false;
+      final quote = ShopBundleCompletionQuote.tryCreate(
+        bundle: bundle,
+        state: state,
+      );
+      if (quote == null) return false;
+      if (quote.isExplicitlyOwned || quote.missingItemCount == 0) return false;
+      final walletCoins = await _walletCoins();
+      return walletCoins >= quote.effectivePriceAmber;
+    }
+
     final service = await _service();
     return service.canPurchaseBundle(bundleId);
   }
@@ -329,11 +344,27 @@ class ShopCosmeticsController extends ChangeNotifier {
   }
 
   Future<bool> isBundleOwned(String bundleId) async {
+    if (_cloudEnabled) {
+      final state = await _combinedCloudState();
+      return state.isBundleOwned(bundleId);
+    }
+
     final service = await _service();
     return service.isBundleOwned(bundleId);
   }
 
   Future<bool> isBundlePartiallyOwned(String bundleId) async {
+    if (_cloudEnabled) {
+      final state = await _combinedCloudState();
+      final bundle = ShopAssetsCatalog.getBundleById(bundleId);
+      if (bundle == null) return false;
+      final quote = ShopBundleCompletionQuote.tryCreate(
+        bundle: bundle,
+        state: state,
+      );
+      return quote?.isPartiallyOwned ?? false;
+    }
+
     final service = await _service();
     return service.isBundlePartiallyOwned(bundleId);
   }
@@ -737,16 +768,20 @@ class ShopCosmeticsController extends ChangeNotifier {
     }
 
     final state = await _combinedCloudState();
-    if (state.isBundleOwned(bundleId)) {
+    final quote = ShopBundleCompletionQuote.tryCreate(
+      bundle: bundle,
+      state: state,
+    );
+    if (quote == null) {
       return _cloudFailureResult(
-        status: ShopCosmeticsOperationStatus.alreadyOwned,
+        status: ShopCosmeticsOperationStatus.bundleNotFound,
         state: state,
         bundleId: bundleId,
       );
     }
-    if (_bundleContainsOwnedAssets(state, bundle)) {
+    if (quote.isExplicitlyOwned) {
       return _cloudFailureResult(
-        status: ShopCosmeticsOperationStatus.bundleContainsOwnedAssets,
+        status: ShopCosmeticsOperationStatus.alreadyOwned,
         state: state,
         bundleId: bundleId,
       );
@@ -799,10 +834,7 @@ class ShopCosmeticsController extends ChangeNotifier {
       }
 
       final nextState = state.copyWith(
-        ownedAssetIds: _appendUniqueIds(
-          state.ownedAssetIds,
-          localItemIds,
-        ),
+        ownedAssetIds: _appendUniqueIds(state.ownedAssetIds, localItemIds),
         ownedBundleIds: _appendUniqueId(state.ownedBundleIds, bundleId),
       );
       _markCloudMutation();
@@ -944,7 +976,19 @@ class ShopCosmeticsController extends ChangeNotifier {
         walletCoins: await _walletCoins(),
       );
     }
-    if (!state.isBundleOwned(bundleId)) {
+    final quote = ShopBundleCompletionQuote.tryCreate(
+      bundle: bundle,
+      state: state,
+    );
+    if (quote == null) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.bundleNotFound,
+        state: state,
+        bundleId: bundleId,
+        walletCoins: await _walletCoins(),
+      );
+    }
+    if (!quote.canEquip) {
       return _cloudFailureResult(
         status: ShopCosmeticsOperationStatus.assetNotOwned,
         state: state,
@@ -1227,18 +1271,6 @@ class ShopCosmeticsController extends ChangeNotifier {
       walletCoins: await _walletCoins(),
       bundleId: bundleId,
     );
-  }
-
-  bool _bundleContainsOwnedAssets(
-    ShopCosmeticsState state,
-    ShopBundle bundle,
-  ) {
-    for (final assetId in bundle.assetIds) {
-      if (state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   List<ShopAsset>? _resolveOwnedBundleAssets(ShopBundle bundle) {
