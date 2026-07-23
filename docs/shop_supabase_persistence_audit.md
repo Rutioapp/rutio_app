@@ -36,7 +36,7 @@ Estado general:
 - El riesgo P1 de fuga entre cuentas por persistencia local legacy compartida fue corregido en `fix/shop-account-isolation`.
 - Hay un P1 adicional sobre `recoverStreakBreak`, ya corregido en `fix/shop-cloud-streak-recovery`.
 - Hay un P2 de drift / cobertura incompleta entre el catalogo local y el contrato remoto.
-- Hay un P3 menor por un helper sin uso que ya aparece en `flutter analyze`.
+- Hay un P3 menor ya corregido: se elimino el helper sin uso que aparecia en `flutter analyze`.
 
 Lectura rapida:
 
@@ -245,6 +245,10 @@ Lectura:
 
 ### P3 - Warning de analisis por helper sin usar
 
+Estado:
+
+- Corregido en `chore/shop-cloud-dto-cleanup` el 2026-07-23.
+
 Impacto:
 
 - `flutter analyze` reporta un warning de elemento no referenciado.
@@ -255,7 +259,8 @@ Evidencia:
 
 Resultado observado:
 
-- `flutter analyze lib/features/shop` devolvio `1 issue found` por `_nullableBool` no usado.
+- `flutter analyze lib/features/shop` ya no reporta el warning de `_nullableBool` en `shop_cloud_dtos.dart`.
+- Se elimino exclusivamente el helper sin referencias de `shop_cloud_dtos.dart`.
 
 ## Estado de Persistencia Local
 

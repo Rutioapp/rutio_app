@@ -495,20 +495,6 @@ bool _bool(Object? value) {
   return normalized == 'true' || normalized == '1' || normalized == 'yes';
 }
 
-bool? _nullableBool(Object? value) {
-  if (value == null) return null;
-  if (value is bool) return value;
-  final normalized = value.toString().trim().toLowerCase();
-  if (normalized.isEmpty) return null;
-  if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
-    return true;
-  }
-  if (normalized == 'false' || normalized == '0' || normalized == 'no') {
-    return false;
-  }
-  return null;
-}
-
 int? _int(Object? value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
