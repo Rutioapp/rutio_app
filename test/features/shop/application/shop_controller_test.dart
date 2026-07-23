@@ -29,6 +29,10 @@ import 'package:rutio/features/habits/domain/models/streak_shield_operation_resu
 
 import '../../../support/fixed_random_source.dart';
 
+const _recentRecoverableBreakMillis = 1784592000000;
+// 2026-07-21T00:00:00.000Z
+const _expiredRecoverableBreakMillis = 1;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -721,7 +725,7 @@ void main() {
             'id': 'break-1',
             'userId': 'shop-controller-user',
             'habitId': 'habit-1',
-            'brokenAtMillis': 1,
+            'brokenAtMillis': _recentRecoverableBreakMillis,
             'missedOccurrenceDateKey': '2026-07-21',
             'previousStreak': 5,
             'currentStreakAfterBreak': 0,
@@ -772,7 +776,7 @@ void main() {
             'id': 'break-1',
             'userId': 'shop-controller-user',
             'habitId': 'habit-1',
-            'brokenAtMillis': 1,
+            'brokenAtMillis': _expiredRecoverableBreakMillis,
             'missedOccurrenceDateKey': '2026-07-18',
             'previousStreak': 5,
             'currentStreakAfterBreak': 0,
@@ -816,7 +820,7 @@ void main() {
             'id': 'break-1',
             'userId': 'shop-controller-user',
             'habitId': 'habit-1',
-            'brokenAtMillis': 1,
+            'brokenAtMillis': _recentRecoverableBreakMillis,
             'missedOccurrenceDateKey': '2026-07-21',
             'previousStreak': 5,
             'currentStreakAfterBreak': 0,
@@ -882,7 +886,7 @@ void main() {
             'id': 'break-1',
             'userId': 'shop-controller-user',
             'habitId': 'habit-1',
-            'brokenAtMillis': 1,
+            'brokenAtMillis': _expiredRecoverableBreakMillis,
             'missedOccurrenceDateKey': '2026-07-18',
             'previousStreak': 5,
             'currentStreakAfterBreak': 0,
@@ -938,7 +942,7 @@ void main() {
             'id': 'break-1',
             'userId': 'shop-controller-user',
             'habitId': 'habit-1',
-            'brokenAtMillis': 1,
+            'brokenAtMillis': _recentRecoverableBreakMillis,
             'missedOccurrenceDateKey': '2026-07-21',
             'previousStreak': 5,
             'currentStreakAfterBreak': 0,
@@ -965,7 +969,9 @@ void main() {
         breakId: 'break-1',
         operationId: 'recover-op-pending',
       );
-      await utilityRepo.waitForApplyStarted;
+      await utilityRepo.waitForApplyStarted.timeout(
+        const Duration(seconds: 2),
+      );
       final second = await controller.recoverStreakBreak(
         breakId: 'break-1',
         operationId: 'recover-op-pending',
@@ -1086,6 +1092,7 @@ Future<ShopController> _createController({
     journalEntrySyncService: JournalEntrySyncService(),
     utilityConsumptionRepository: utilityConsumptionRepository,
     utilityConsumptionEnabledOverride: utilityConsumptionEnabled,
+    nowProvider: nowProvider,
   );
   await store.save(
     _baseState(

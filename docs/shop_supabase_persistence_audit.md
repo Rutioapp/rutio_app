@@ -34,7 +34,7 @@ Estado general:
 
 - No se detecto un P0.
 - El riesgo P1 de fuga entre cuentas por persistencia local legacy compartida fue corregido en `fix/shop-account-isolation`.
-- Hay un P1 adicional porque el camino cloud de `recoverStreakBreak` esta rojo en pruebas.
+- Hay un P1 adicional sobre `recoverStreakBreak`, ya corregido en `fix/shop-cloud-streak-recovery`.
 - Hay un P2 de drift / cobertura incompleta entre el catalogo local y el contrato remoto.
 - Hay un P3 menor por un helper sin uso que ya aparece en `flutter analyze`.
 
@@ -181,8 +181,9 @@ Por que lo considero P1:
 
 Impacto:
 
-- La suite de `test/features/shop` falla en la zona de streak recovery cloud.
-- Esto bloquea confianza en la idempotencia, en la cantidad consumida y en la continuidad entre reintentos.
+- Corregido en `fix/shop-cloud-streak-recovery`.
+- La suite de `test/features/shop` ya no falla en la zona de streak recovery cloud por este motivo.
+- Se recupero la confianza en la idempotencia, en la cantidad consumida y en la continuidad entre reintentos.
 
 Evidencia:
 
@@ -192,14 +193,24 @@ Evidencia:
 - `D:/dev/alpha/rutio_app/test/features/shop/application/shop_controller_test.dart:795`
 - `D:/dev/alpha/rutio_app/test/features/shop/application/shop_controller_test.dart:920`
 
+Causa corregida:
+
+- El problema no era un fallo confirmado del RPC ni de Supabase.
+- Los fixtures de test eran invalidos:
+  - `brokenAtMillis: 1` representaba `1970-01-01T00:00:00.001Z`.
+  - el helper `_createController` recibia `nowProvider`, pero no lo pasaba al `ShopController` ni al `UserStateStore`.
+- Se añadieron timestamps explicitos para casos recientes y expirados.
+- El test concurrente ahora tiene un timeout explicito de 2 segundos en `waitForApplyStarted`.
+
 Resultado observado:
 
-- `flutter test test/features/shop` termino con al menos tres tests fallando en `recoverStreakBreak` y con un timeout en el mismo bloque.
+- `recoverStreakBreak` paso en local, cloud y concurrencia con reloj fijo.
+- `flutter analyze lib/features/shop/application/shop_controller.dart test/features/shop/application/shop_controller_test.dart` quedo limpio.
 
 Por que lo considero P1:
 
 - La feature ya esta expuesta al usuario final en cloud mode.
-- El fallo afecta a una accion monetizable / de inventario y toca el camino que debe ser mas determinista.
+- El fallo afectaba a una accion monetizable / de inventario y tocaba el camino que debe ser mas determinista.
 
 ### P2 - Drift / cobertura incompleta entre catalogo local y contrato remoto
 
@@ -278,21 +289,20 @@ Lectura de contrato:
 
 Resultado:
 
-- Exit code distinto de 0.
-- 1 warning:
-  - `_nullableBool` no esta referenciado en `D:/dev/alpha/rutio_app/lib/features/shop/data/cloud/shop_cloud_dtos.dart:498`.
+- Exit code 0.
+- No issues found.
 
 ### `flutter test test/features/shop`
 
 Resultado:
 
-- Exit code distinto de 0.
-- Se reportaron fallos en `recoverStreakBreak`.
-- El bloque cloud de recovery incluyo al menos un timeout de 30s.
-- Tests fallidos observados:
-  - `recoverStreakBreak restores the break and consumes the item`
-  - `recoverStreakBreak cloud calls the RPC and clears one unit`
-  - `recoverStreakBreak cloud blocks a second pending recovery`
+- `recoverStreakBreak` paso correctamente en:
+  - recuperacion local;
+  - recuperacion expirada;
+  - recuperacion cloud;
+  - expiracion cloud;
+  - bloqueo concurrente con una sola llamada al repositorio.
+- El test concurrente usa un timeout explicito de 2 segundos.
 
 ### `git diff --check`
 
