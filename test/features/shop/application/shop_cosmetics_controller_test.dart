@@ -12,6 +12,8 @@ import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const testUserId = 'shop-cosmetics-user';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -21,7 +23,7 @@ void main() {
       final controller = await _createController(walletCoins: 500);
 
       final result = await controller.purchaseAsset('wallpaper_mist_blue');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(result.isSuccess, isTrue);
       expect(await controller.getWalletCoins(), 380);
@@ -48,7 +50,7 @@ void main() {
           await controller.purchaseAsset('wallpaper_jungle_sunrise');
       final equipResult =
           await controller.equipAsset('wallpaper_jungle_sunrise');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(purchaseResult.isSuccess, isTrue);
       expect(equipResult.isSuccess, isTrue);
@@ -65,7 +67,7 @@ void main() {
       final controller = await _createController(walletCoins: 1000);
 
       final result = await controller.purchaseBundle('pack_beige_rutio');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(result.isSuccess, isTrue);
       expect(await controller.getWalletCoins(), 1000 - bundlePrice);
@@ -104,7 +106,7 @@ void main() {
     test('equipBundle equips all three cosmetics and keeps the wallet',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: const <String>[],
@@ -123,7 +125,7 @@ void main() {
       });
 
       final result = await controller.equipBundle('pack_beige_rutio');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(result.isSuccess, isTrue);
       expect(result.walletCoins, 1000);
@@ -139,7 +141,7 @@ void main() {
     test('bundle purchase completes a partially owned bundle',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>['wallpaper_rutio_beige'],
@@ -147,7 +149,10 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 1000);
+      final controller = await _createController(
+        walletCoins: 1000,
+        repository: repository,
+      );
       final quote = ShopBundleCompletionQuote.tryCreate(
         bundle: ShopAssetsCatalog.getBundleById('pack_beige_rutio')!,
         state: ShopCosmeticsState(
@@ -160,7 +165,7 @@ void main() {
           await controller.isBundlePartiallyOwned('pack_beige_rutio'), isTrue);
 
       final result = await controller.purchaseBundle('pack_beige_rutio');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(result.status, ShopCosmeticsOperationStatus.success);
       expect(result.walletCoins, 1000 - quote.effectivePriceAmber);
@@ -180,7 +185,7 @@ void main() {
     test('bundle purchase completes a fully owned bundle for zero coins',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[
@@ -192,10 +197,13 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       final result = await controller.purchaseBundle('pack_beige_rutio');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(result.status, ShopCosmeticsOperationStatus.success);
       expect(result.walletCoins, 0);
@@ -206,7 +214,7 @@ void main() {
 
     test('restores owned and equipped state from persistence', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[
@@ -219,7 +227,10 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
       final state = await controller.getState();
 
       expect(state.ownedBundleIds, isEmpty);
@@ -237,7 +248,7 @@ void main() {
 
     test('equipped wallpaper helper returns null for invalid id', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
@@ -246,14 +257,17 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
     });
 
     test('equipped wallpaper helper ignores wrong category ids', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
@@ -262,7 +276,10 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
     });
@@ -271,7 +288,7 @@ void main() {
         'equipped wallpaper helper returns null when equipped asset is not owned',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
@@ -280,7 +297,10 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
     });
@@ -288,7 +308,7 @@ void main() {
     test('equipped wallpaper helper returns null for empty equipped id',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
@@ -297,14 +317,17 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       expect(await controller.getEquippedWallpaperAssetOrNull(), isNull);
     });
 
     test('equipped wallpaper helper resolves valid asset', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>['wallpaper_mist_blue'],
@@ -313,7 +336,10 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
       final asset = await controller.getEquippedWallpaperAssetOrNull();
 
       expect(asset?.id, 'wallpaper_mist_blue');
@@ -322,7 +348,7 @@ void main() {
 
     test('sync wallpaper helper resolves hydrated asset from memory', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>['wallpaper_mist_blue'],
@@ -331,7 +357,10 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
       await controller.hydrate();
 
       expect(
@@ -343,7 +372,7 @@ void main() {
 
     test('equipped habit card helper resolves valid asset', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>['habit_card_warm_beige'],
@@ -352,7 +381,10 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
       final asset = await controller.getEquippedHabitCardAssetOrNull();
 
       expect(asset?.id, 'habit_card_warm_beige');
@@ -361,7 +393,7 @@ void main() {
 
     test('equipped habit card helper returns null for invalid id', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
@@ -370,14 +402,17 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       expect(await controller.getEquippedHabitCardAssetOrNull(), isNull);
     });
 
     test('equipped habit card helper ignores wrong category ids', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
@@ -386,14 +421,17 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       expect(await controller.getEquippedHabitCardAssetOrNull(), isNull);
     });
 
     test('equipped user card helper resolves valid asset', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>['user_card_warm_beige'],
@@ -402,7 +440,10 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       final asset = await controller.getEquippedUserCardAssetOrNull();
 
@@ -412,7 +453,7 @@ void main() {
 
     test('equipped user card helper returns null for invalid id', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
@@ -421,14 +462,17 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       expect(await controller.getEquippedUserCardAssetOrNull(), isNull);
     });
 
     test('equipped user card helper ignores wrong category ids', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final repository = ShopCosmeticsRepository();
+      final repository = await _shopRepository();
       await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>[],
@@ -437,7 +481,10 @@ void main() {
         ),
       );
 
-      final controller = await _createController(walletCoins: 0);
+      final controller = await _createController(
+        walletCoins: 0,
+        repository: repository,
+      );
 
       expect(await controller.getEquippedUserCardAssetOrNull(), isNull);
     });
@@ -491,7 +538,7 @@ void main() {
       final purchaseResult =
           await controller.purchaseAsset('habit_card_ocean_depth');
       final equipResult = await controller.equipAsset('habit_card_ocean_depth');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(purchaseResult.isSuccess, isTrue);
       expect(equipResult.isSuccess, isTrue);
@@ -511,7 +558,7 @@ void main() {
       final purchaseResult =
           await controller.purchaseAsset('user_card_full_moon');
       final equipResult = await controller.equipAsset('user_card_full_moon');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(purchaseResult.isSuccess, isTrue);
       expect(equipResult.isSuccess, isTrue);
@@ -539,7 +586,7 @@ void main() {
           await controller.equipAsset('habit_card_warm_beige');
       final userCardResult =
           await controller.equipAsset('user_card_warm_beige');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(wallpaperResult.isSuccess, isTrue);
       expect(habitCardResult.isSuccess, isTrue);
@@ -579,7 +626,7 @@ void main() {
       });
 
       final result = await controller.equipAsset('habit_card_lilac_dawn');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(result.isSuccess, isTrue);
       expect(notificationCount, greaterThan(0));
@@ -598,7 +645,9 @@ void main() {
 
       expect(result.status, ShopCosmeticsOperationStatus.assetNotOwned);
       expect(
-          (await ShopCosmeticsRepository().load()).equippedWallpaperId, isNull);
+        (await (await _shopRepository()).load()).equippedWallpaperId,
+        isNull,
+      );
     });
 
     test('equipAsset fails for missing asset id', () async {
@@ -645,27 +694,48 @@ void main() {
 
 Future<ShopCosmeticsController> _createController({
   required int walletCoins,
+  String userId = testUserId,
   ShopCosmeticsRepository? repository,
 }) async {
   final repo = UserStateRepository(storage: UserStateStorage())
-    ..setActiveUserScope('shop-cosmetics-user');
+    ..setActiveUserScope(userId);
+  final preferences = await SharedPreferences.getInstance();
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
   );
-  await store.save(_baseState(walletCoins: walletCoins));
+  await store.save(_baseState(userId: userId, walletCoins: walletCoins));
   return ShopCosmeticsController(
     userStateStore: store,
-    repository: repository,
+    repository:
+        repository ?? await _shopRepositoryFor(preferences, userId: userId),
   );
 }
 
+Future<ShopCosmeticsRepository> _shopRepositoryFor(
+  SharedPreferences preferences, {
+  String userId = testUserId,
+}) async {
+  return ShopCosmeticsRepository(
+    sharedPreferencesProvider: () async => preferences,
+    scopeResolver: () => userId,
+  );
+}
+
+Future<ShopCosmeticsRepository> _shopRepository({
+  String userId = testUserId,
+}) async {
+  final preferences = await SharedPreferences.getInstance();
+  return _shopRepositoryFor(preferences, userId: userId);
+}
+
 Map<String, dynamic> _baseState({
+  required String userId,
   required int walletCoins,
 }) {
   return <String, dynamic>{
     'userState': <String, dynamic>{
-      'userId': 'shop-cosmetics-user',
+      'userId': userId,
       'meta': <String, dynamic>{
         'schemaVersion': 1,
         'lastSavedAt': DateTime.now().toUtc().toIso8601String(),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -14,13 +15,13 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    Future<SharedPreferences> _prefs() async {
+    Future<SharedPreferences> prefsProvider() async {
       return prefs;
     }
 
-    ShopCosmeticsRepository _repositoryFor(String? scope) {
+    ShopCosmeticsRepository repositoryFor(String? scope) {
       return ShopCosmeticsRepository(
-        sharedPreferencesProvider: _prefs,
+        sharedPreferencesProvider: prefsProvider,
         scopeResolver: () => scope,
       );
     }
@@ -46,8 +47,8 @@ void main() {
     );
 
     test('persists and restores state per authenticated scope', () async {
-      final repoA = _repositoryFor('user-a');
-      final repoB = _repositoryFor('user-b');
+      final repoA = repositoryFor('user-a');
+      final repoB = repositoryFor('user-b');
 
       await repoA.save(stateA);
       await repoB.save(stateB);
@@ -61,8 +62,8 @@ void main() {
     });
 
     test('authenticated save writes only the scoped key', () async {
-      final repository = _repositoryFor('user-a');
-      final initialPrefs = await _prefs();
+      final repository = repositoryFor('user-a');
+      final initialPrefs = await prefsProvider();
       await initialPrefs.setString(
         ShopCosmeticsRepository.legacyStorageKey,
         'legacy',
@@ -87,7 +88,7 @@ void main() {
     });
 
     test('guest save writes only the guest key', () async {
-      final repository = _repositoryFor(null);
+      final repository = repositoryFor(null);
 
       await repository.save(stateA);
 
@@ -102,7 +103,7 @@ void main() {
 
     test('exact-owner legacy migration preserves all fields and clears legacy',
         () async {
-      final repository = _repositoryFor('user-a');
+      final repository = repositoryFor('user-a');
 
       await prefs.setString(
         ShopCosmeticsRepository.legacyStorageKey,
@@ -126,7 +127,7 @@ void main() {
     });
 
     test('owner mismatch is discarded and not imported', () async {
-      final repository = _repositoryFor('user-b');
+      final repository = repositoryFor('user-b');
 
       await prefs.setString(
         ShopCosmeticsRepository.legacyStorageKey,
@@ -145,7 +146,7 @@ void main() {
     });
 
     test('missing legacy owner is discarded and not imported', () async {
-      final repository = _repositoryFor('user-a');
+      final repository = repositoryFor('user-a');
 
       await prefs.setString(
         ShopCosmeticsRepository.legacyStorageKey,
@@ -161,7 +162,7 @@ void main() {
     });
 
     test('invalid legacy json is discarded safely', () async {
-      final repository = _repositoryFor('user-a');
+      final repository = repositoryFor('user-a');
 
       await prefs.setString(
         ShopCosmeticsRepository.legacyStorageKey,
@@ -179,7 +180,7 @@ void main() {
     });
 
     test('guest never imports legacy data', () async {
-      final repository = _repositoryFor(null);
+      final repository = repositoryFor(null);
 
       await prefs.setString(
         ShopCosmeticsRepository.legacyStorageKey,
@@ -197,7 +198,7 @@ void main() {
 
     test('clear removes the active scope and matching legacy owner only',
         () async {
-      final repository = _repositoryFor('user-a');
+      final repository = repositoryFor('user-a');
       await prefs.setString(
         'rutio_shop_cosmetics_v1_user-a',
         jsonEncode(stateA.toJson()),
@@ -225,7 +226,7 @@ void main() {
     });
 
     test('guest clear removes only the guest key', () async {
-      final repository = _repositoryFor(null);
+      final repository = repositoryFor(null);
       await prefs.setString(
         ShopCosmeticsRepository.guestStorageKey,
         jsonEncode(stateA.toJson()),
@@ -240,5 +241,160 @@ void main() {
       expect(prefs.getString(ShopCosmeticsRepository.guestStorageKey), isNull);
       expect(prefs.getString('rutio_shop_cosmetics_v1_user-a'), isNotNull);
     });
+
+    test('serializes operations on the same instance', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repository = ShopCosmeticsRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final first = repository.save(stateA);
+      await _waitForCalls(harness, 1);
+
+      final second = repository.save(stateB);
+      await _waitForCalls(harness, 1);
+
+      harness.completeNext();
+      await first;
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      await second;
+    });
+
+    test('different instances on the same scope keep the last write', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repoA = ShopCosmeticsRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+      final repoB = ShopCosmeticsRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final first = repoA.save(stateA);
+      await _waitForCalls(harness, 1);
+
+      final second = repoB.save(stateB);
+      await _waitForCalls(harness, 1);
+
+      harness.completeNext();
+      await first;
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      await second;
+
+      final loaded = await repositoryFor('user-a').load();
+      expect(loaded, stateB);
+    });
+
+    test('different users do not block each other', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repoA = ShopCosmeticsRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+      final repoB = ShopCosmeticsRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-b',
+      );
+
+      final first = repoA.save(stateA);
+      await _waitForCalls(harness, 1);
+
+      final second = repoB.save(stateB);
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      harness.completeNext();
+      await first;
+      await second;
+    });
+
+    test('guest and authenticated users do not share the queue', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final guestRepo = ShopCosmeticsRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => null,
+      );
+      final authRepo = ShopCosmeticsRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final guestSave = guestRepo.save(stateA);
+      await _waitForCalls(harness, 1);
+
+      final authSave = authRepo.save(stateB);
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      harness.completeNext();
+      await guestSave;
+      await authSave;
+    });
+
+    test('a failed operation does not block later operations', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repository = ShopCosmeticsRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final first = repository.save(stateA);
+      await _waitForCalls(harness, 1);
+
+      harness.failNext(StateError('boom'));
+      await expectLater(first, throwsA(isA<StateError>()));
+
+      final second = repository.save(stateB);
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      await second;
+    });
   });
+}
+
+Future<void> _waitForCalls(_QueuedPrefsProvider harness, int expected) async {
+  for (var attempt = 0; attempt < 10 && harness.calls < expected; attempt++) {
+    await Future<void>.delayed(Duration.zero);
+  }
+  expect(harness.calls, expected);
+}
+
+class _QueuedPrefsProvider {
+  _QueuedPrefsProvider(this.prefs);
+
+  final SharedPreferences prefs;
+  final List<Completer<SharedPreferences>> _pending =
+      <Completer<SharedPreferences>>[];
+  int _started = 0;
+
+  int get calls => _started;
+  int get pending => _pending.length;
+
+  Future<SharedPreferences> call() {
+    _started += 1;
+    final completer = Completer<SharedPreferences>();
+    _pending.add(completer);
+    return completer.future;
+  }
+
+  void completeNext() {
+    if (_pending.isEmpty) {
+      throw StateError('No pending preferences call.');
+    }
+    _pending.removeAt(0).complete(prefs);
+  }
+
+  void failNext(Object error) {
+    if (_pending.isEmpty) {
+      throw StateError('No pending preferences call.');
+    }
+    _pending.removeAt(0).completeError(error);
+  }
 }

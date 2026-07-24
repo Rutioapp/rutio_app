@@ -8,6 +8,9 @@ import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ShopCosmeticsRepository {
+  static final Map<String, Future<void>> _operationQueuesByStorageKey =
+      <String, Future<void>>{};
+
   ShopCosmeticsRepository({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     String? Function()? scopeResolver,
@@ -18,8 +21,6 @@ class ShopCosmeticsRepository {
   static const String legacyStorageKey = 'rutio_shop_cosmetics_v1';
   static const String legacyScopeOwnerKey = 'rutio_shop_cosmetics_v1_owner';
   static const String guestStorageKey = 'rutio_shop_cosmetics_v1_guest';
-
-  static Future<void> _operationQueue = Future<void>.value();
 
   final Future<SharedPreferences> Function() _sharedPreferencesProvider;
   final String? Function()? _scopeResolver;
@@ -177,17 +178,30 @@ class ShopCosmeticsRepository {
 
   Future<T> _runExclusive<T>(Future<T> Function() action) {
     final completer = Completer<T>();
-    final previous = _operationQueue;
+    final storageKey =
+        _storageKeyForScope(_resolvedScope()) ?? guestStorageKey;
+    final previous = _operationQueuesByStorageKey[storageKey] ??
+        Future<void>.value();
+
     final next = previous.then((_) async {
       try {
-        completer.complete(await action());
+        final result = await action();
+        completer.complete(result);
       } catch (error, stackTrace) {
         if (!completer.isCompleted) {
           completer.completeError(error, stackTrace);
         }
       }
     });
-    _operationQueue = next.catchError((_) {});
+    late final Future<void> trackedQueue;
+    trackedQueue = next.whenComplete(() {
+      // Drop completed queue entries so later test zones do not inherit a
+      // stale Future, while preserving serialization for in-flight work.
+      if (identical(_operationQueuesByStorageKey[storageKey], trackedQueue)) {
+        _operationQueuesByStorageKey.remove(storageKey);
+      }
+    }).catchError((_) {});
+    _operationQueuesByStorageKey[storageKey] = trackedQueue;
     return completer.future;
   }
 

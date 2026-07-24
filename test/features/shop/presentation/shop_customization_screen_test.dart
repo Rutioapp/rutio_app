@@ -21,6 +21,8 @@ import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/utils/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const testUserId = 'shop-customization-screen-user';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -778,10 +780,11 @@ Future<ShopCosmeticsController> _createCosmeticsController({
   ShopCosmeticsState cosmeticsState = const ShopCosmeticsState.initial(),
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
-  await ShopCosmeticsRepository().save(cosmeticsState);
+  final repository = await _shopRepository();
+  await repository.save(cosmeticsState);
 
   final repo = UserStateRepository(storage: UserStateStorage())
-    ..setActiveUserScope('shop-customization-screen-user');
+    ..setActiveUserScope(testUserId);
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
@@ -789,11 +792,19 @@ Future<ShopCosmeticsController> _createCosmeticsController({
   await store.save(
     <String, dynamic>{
       'userState': <String, dynamic>{
-        'userId': 'shop-customization-screen-user',
+        'userId': testUserId,
         'wallet': <String, dynamic>{'coins': walletCoins},
       },
     },
   );
 
   return ShopCosmeticsController(userStateStore: store);
+}
+
+Future<ShopCosmeticsRepository> _shopRepository() async {
+  final preferences = await SharedPreferences.getInstance();
+  return ShopCosmeticsRepository(
+    sharedPreferencesProvider: () async => preferences,
+    scopeResolver: () => testUserId,
+  );
 }
