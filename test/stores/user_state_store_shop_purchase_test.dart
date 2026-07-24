@@ -18,13 +18,14 @@ void main() {
 
       final item = ShopCatalog.getItemById('wallpaper_mellow_camel')!;
       final store = await _seedStore(walletCoins: 200);
+      final shopRepository = _shopRepositoryForTest();
 
       final success = await store.buyItem(
         itemId: item.id,
         price: item.priceCoins,
       );
 
-      final shopState = await ShopLocalRepository().load();
+      final shopState = await shopRepository.load();
       expect(success, isTrue);
       expect(_walletCoins(store), 200 - item.priceCoins);
       expect(
@@ -38,13 +39,14 @@ void main() {
 
       final item = ShopCatalog.getItemById('utility_xp_boost_1d')!;
       final store = await _seedStore(walletCoins: 200);
+      final shopRepository = _shopRepositoryForTest();
 
       final success = await store.buyItem(
         itemId: item.id,
         price: item.priceCoins,
       );
 
-      final shopState = await ShopLocalRepository().load();
+      final shopState = await shopRepository.load();
       expect(success, isTrue);
       expect(_walletCoins(store), 125);
       expect(shopState.inventory, isEmpty);
@@ -60,6 +62,7 @@ void main() {
 
       final item = ShopCatalog.getItemById('utility_xp_boost_1d')!;
       final store = await _seedStore(walletCoins: 300);
+      final shopRepository = _shopRepositoryForTest();
 
       final first = await store.buyItem(
         itemId: item.id,
@@ -74,7 +77,7 @@ void main() {
         price: item.priceCoins,
       );
 
-      final shopState = await ShopLocalRepository().load();
+      final shopState = await shopRepository.load();
       expect(first, isTrue);
       expect(second, isTrue);
       expect(third, isTrue);
@@ -84,7 +87,7 @@ void main() {
       expect(shopState.backpackItems.first.itemId, 'utility_xp_boost_1d');
       expect(shopState.backpackItems.first.quantity, 3);
 
-      final reloaded = await ShopLocalRepository().load();
+      final reloaded = await shopRepository.load();
       expect(reloaded.backpackItems, hasLength(1));
       expect(reloaded.backpackItems.first.itemId, 'utility_xp_boost_1d');
       expect(reloaded.backpackItems.first.quantity, 3);
@@ -130,8 +133,9 @@ void main() {
 }
 
 Future<UserStateStore> _seedStore({required int walletCoins}) async {
+  const testUserId = 'shop-user';
   final repo = UserStateRepository(storage: UserStateStorage())
-    ..setActiveUserScope('shop-user');
+    ..setActiveUserScope(testUserId);
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
@@ -139,7 +143,7 @@ Future<UserStateStore> _seedStore({required int walletCoins}) async {
   await store.save(
     <String, dynamic>{
       'userState': <String, dynamic>{
-        'userId': 'shop-user',
+        'userId': testUserId,
         'meta': <String, dynamic>{
           'schemaVersion': 1,
           'lastSavedAt': DateTime.now().toUtc().toIso8601String(),
@@ -189,6 +193,13 @@ Future<UserStateStore> _seedStore({required int walletCoins}) async {
     },
   );
   return store;
+}
+
+ShopLocalRepository _shopRepositoryForTest() {
+  const testUserId = 'shop-user';
+  return ShopLocalRepository(
+    scopeResolver: () => testUserId,
+  );
 }
 
 int _walletCoins(UserStateStore store) {

@@ -11,14 +11,17 @@ class LocalActiveUtilityEffectsRepository
   LocalActiveUtilityEffectsRepository({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     String? Function()? scopeResolver,
+    DateTime Function()? nowProvider,
   })  : _sharedPreferencesProvider =
             sharedPreferencesProvider ?? SharedPreferences.getInstance,
-        _scopeResolver = scopeResolver;
+        _scopeResolver = scopeResolver,
+        _nowProvider = nowProvider ?? DateTime.now;
 
   static const String storageKey = 'rutio_active_utility_effects_v1';
 
   final Future<SharedPreferences> Function() _sharedPreferencesProvider;
   final String? Function()? _scopeResolver;
+  final DateTime Function() _nowProvider;
 
   @override
   Future<List<ActiveUtilityEffect>> loadEffects(String userScope) async {
@@ -38,6 +41,7 @@ class LocalActiveUtilityEffectsRepository
               ActiveUtilityEffect.fromJson(entry.cast<String, dynamic>()))
           .map(_sanitizeEffect)
           .whereType<ActiveUtilityEffect>()
+          .where(_isEffectActiveForCurrentLocalDate)
           .toList(growable: false);
       return _dedupeAndSort(parsed);
     } catch (_) {
@@ -106,6 +110,16 @@ class LocalActiveUtilityEffectsRepository
           totalUses <= 0 ? activeUtilityEffectDefaultTotalUses : totalUses,
       remainingUses: remainingUses,
     );
+  }
+
+  bool _isEffectActiveForCurrentLocalDate(ActiveUtilityEffect effect) {
+    if (effect.type != ActiveUtilityEffectType.streakShield) return true;
+    final activatedAt =
+        DateTime.fromMillisecondsSinceEpoch(effect.activatedAtMillis).toLocal();
+    final now = _nowProvider().toLocal();
+    return activatedAt.year == now.year &&
+        activatedAt.month == now.month &&
+        activatedAt.day == now.day;
   }
 
   List<ActiveUtilityEffect> _dedupeAndSort(List<ActiveUtilityEffect> effects) {

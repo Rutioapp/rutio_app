@@ -11,6 +11,7 @@ import 'package:rutio/stores/user_state_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  final fixedNow = DateTime.utc(2026, 7, 22, 12);
 
   group('UserStateStore streak recover cloud', () {
     test('valid recovery calls the RPC and marks the break recovered',
@@ -18,6 +19,7 @@ void main() {
       final utilityRepo = _RecordingUtilityConsumptionRepository();
       final store = await _createStore(
         utilityConsumptionRepository: utilityRepo,
+        nowProvider: () => fixedNow,
         recoverableBreaks: const <String, dynamic>{
           'break-1': <String, dynamic>{
             'id': 'break-1',
@@ -53,6 +55,7 @@ void main() {
       final utilityRepo = _RecordingUtilityConsumptionRepository();
       final store = await _createStore(
         utilityConsumptionRepository: utilityRepo,
+        nowProvider: () => fixedNow,
         recoverableBreaks: const <String, dynamic>{
           'break-1': <String, dynamic>{
             'id': 'break-1',
@@ -83,6 +86,7 @@ void main() {
       final utilityRepo = _RecordingUtilityConsumptionRepository();
       final store = await _createStore(
         utilityConsumptionRepository: utilityRepo,
+        nowProvider: () => fixedNow,
         recoverableBreaks: const <String, dynamic>{
           'break-1': <String, dynamic>{
             'id': 'break-1',
@@ -116,6 +120,7 @@ void main() {
       final utilityRepo = _RecordingUtilityConsumptionRepository();
       final store = await _createStore(
         utilityConsumptionRepository: utilityRepo,
+        nowProvider: () => fixedNow,
         recoverableBreaks: const <String, dynamic>{
           'break-1': <String, dynamic>{
             'id': 'break-1',
@@ -152,8 +157,10 @@ void main() {
 Future<UserStateStore> _createStore({
   required _RecordingUtilityConsumptionRepository utilityConsumptionRepository,
   required Map<String, dynamic> recoverableBreaks,
+  DateTime Function()? nowProvider,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
+  final currentNowProvider = nowProvider ?? (() => DateTime.utc(2026, 7, 22, 12));
   final mutableRecoverableBreaks = recoverableBreaks.map(
     (key, value) => MapEntry(
       key,
@@ -168,6 +175,7 @@ Future<UserStateStore> _createStore({
     journalEntrySyncService: JournalEntrySyncService(),
     utilityConsumptionRepository: utilityConsumptionRepository,
     utilityConsumptionEnabledOverride: true,
+    nowProvider: currentNowProvider,
   );
   await store.save(
     <String, dynamic>{
@@ -175,7 +183,7 @@ Future<UserStateStore> _createStore({
         'userId': 'cloud-user',
         'meta': <String, dynamic>{
           'schemaVersion': 1,
-          'lastSavedAt': '2026-07-21T12:00:00.000Z',
+          'lastSavedAt': currentNowProvider().toUtc().toIso8601String(),
           'diaryRewardAppliedDateKeys': <dynamic>[],
         },
         'progression': <String, dynamic>{
@@ -201,7 +209,7 @@ Future<UserStateStore> _createStore({
           'prestigeClaimed': <dynamic>[],
         },
         'daily': <String, dynamic>{
-          'lastResetDate': '2026-07-21',
+          'lastResetDate': '2026-07-22',
           'xpEarnedToday': 0,
           'coinsEarnedToday': 0,
           'habitsCompletedToday': <String, dynamic>{},
