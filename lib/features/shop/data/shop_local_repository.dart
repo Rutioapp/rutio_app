@@ -11,6 +11,9 @@ import 'package:rutio/features/shop/domain/shop_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ShopLocalRepository {
+  static final Map<String, Future<void>> _operationQueuesByStorageKey =
+      <String, Future<void>>{};
+
   ShopLocalRepository({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     String? Function()? scopeResolver,
@@ -21,8 +24,6 @@ class ShopLocalRepository {
   static const String storageKey = 'rutio_shop_state_v1';
   static const String legacyScopeOwnerKey = 'rutio_shop_state_v1_owner';
   static const String guestStorageKey = 'rutio_shop_state_v1_guest';
-
-  static Future<void> _operationQueue = Future<void>.value();
 
   final Future<SharedPreferences> Function() _sharedPreferencesProvider;
   final String? Function()? _scopeResolver;
@@ -170,7 +171,9 @@ class ShopLocalRepository {
 
   Future<T> _runExclusive<T>(Future<T> Function() action) {
     final completer = Completer<T>();
-    final previous = _operationQueue;
+    final storageKey = _resolvedStorageKey();
+    final previous = _operationQueuesByStorageKey[storageKey] ??
+        Future<void>.value();
     final next = previous.then((_) async {
       try {
         completer.complete(await action());
@@ -180,8 +183,20 @@ class ShopLocalRepository {
         }
       }
     });
-    _operationQueue = next.catchError((_) {});
+    late final Future<void> trackedQueue;
+    trackedQueue = next.whenComplete(() {
+      if (identical(_operationQueuesByStorageKey[storageKey], trackedQueue)) {
+        _operationQueuesByStorageKey.remove(storageKey);
+      }
+    }).catchError((_) {});
+    _operationQueuesByStorageKey[storageKey] = trackedQueue;
     return completer.future;
+  }
+
+  String _resolvedStorageKey() {
+    final scope = _resolvedScope();
+    if (scope == null) return guestStorageKey;
+    return _storageKeyForScope(scope)!;
   }
 
   Future<void> _cleanupLegacyStateIfNeeded(

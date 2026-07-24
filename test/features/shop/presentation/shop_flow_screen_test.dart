@@ -47,6 +47,7 @@ void main() {
         cache: _MemoryWalletCache(),
         enabled: true,
       );
+      addTearDown(walletController.dispose);
       await walletController.applyConfirmedBalance(
         userId: 'shop-flow-user',
         coins: 320,
@@ -858,36 +859,53 @@ Future<_Env> _createEnv({
   String? Function()? currentSupabaseUserIdProvider,
   GlobalWalletController? walletController,
 }) async {
+  const String shopFlowUserId = 'shop-flow-user';
   SharedPreferences.setMockInitialValues(<String, Object>{});
 
   final repo = UserStateRepository(storage: UserStateStorage())
-    ..setActiveUserScope('shop-flow-user');
+    ..setActiveUserScope(shopFlowUserId);
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
   );
   await store.save(_baseState(walletCoins: walletCoins));
 
-  final shopRepository = ShopLocalRepository();
+  final shopRepository = ShopLocalRepository(
+    scopeResolver: () => shopFlowUserId,
+  );
   await shopRepository.save(shopState);
-  await ShopCosmeticsRepository().save(cosmeticsState);
+  final cosmeticsRepository = ShopCosmeticsRepository(
+    scopeResolver: () => shopFlowUserId,
+  );
+  await cosmeticsRepository.save(cosmeticsState);
+  final ownsWalletController = walletController == null;
   final effectiveWalletController =
       walletController ?? GlobalWalletController(enabled: false);
 
+  final controller = ShopController(
+    userStateStore: store,
+    globalWalletController: effectiveWalletController,
+    shopRepository: shopRepository,
+    cloudReadEnabled: cloudReadEnabled,
+    cloudPurchaseEnabled: cloudPurchaseEnabled,
+    shopCloudReadRepository: shopCloudReadRepository,
+    currentSupabaseUserIdProvider: currentSupabaseUserIdProvider,
+  );
+  final cosmeticsController = ShopCosmeticsController(
+    userStateStore: store,
+    globalWalletController: effectiveWalletController,
+  );
+  await cosmeticsController.getState();
+  addTearDown(store.dispose);
+  if (ownsWalletController) {
+    addTearDown(effectiveWalletController.dispose);
+  }
+  addTearDown(controller.dispose);
+  addTearDown(cosmeticsController.dispose);
+
   return _Env(
-    controller: ShopController(
-      userStateStore: store,
-      globalWalletController: effectiveWalletController,
-      shopRepository: shopRepository,
-      cloudReadEnabled: cloudReadEnabled,
-      cloudPurchaseEnabled: cloudPurchaseEnabled,
-      shopCloudReadRepository: shopCloudReadRepository,
-      currentSupabaseUserIdProvider: currentSupabaseUserIdProvider,
-    ),
-    cosmeticsController: ShopCosmeticsController(
-      userStateStore: store,
-      globalWalletController: effectiveWalletController,
-    ),
+    controller: controller,
+    cosmeticsController: cosmeticsController,
     walletController: effectiveWalletController,
     shopRepository: shopRepository,
   );
@@ -1093,14 +1111,30 @@ ShopCloudSnapshot _cloudSnapshot({
 }
 
 Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
-  final Finder scrollable = find.byType(Scrollable).last;
   if (finder.evaluate().isEmpty) {
+    final Finder scrollable = _scrollableForFinder(finder);
     await tester.scrollUntilVisible(finder, 600, scrollable: scrollable);
     await tester.pump();
   }
   await tester.ensureVisible(finder);
   await tester.tap(finder);
   await tester.pump(const Duration(milliseconds: 16));
+}
+
+Finder _scrollableForFinder(Finder finder) {
+  final String description = finder.toString();
+  if (description.contains('shopCosmeticsAssetCard-') ||
+      description.contains('shopCosmeticsBundleCard-')) {
+    final Finder grid = find.byKey(const Key('shopCosmeticsGrid'));
+    if (grid.evaluate().isNotEmpty) {
+      return find.descendant(
+        of: grid,
+        matching: find.byType(Scrollable),
+      ).first;
+    }
+  }
+
+  return find.byType(Scrollable).first;
 }
 
 Future<void> _pressButton(WidgetTester tester, Finder finder) async {

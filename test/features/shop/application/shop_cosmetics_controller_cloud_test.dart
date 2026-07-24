@@ -27,6 +27,8 @@ import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const testUserId = 'shop-cloud-user';
+
 typedef _FetchResponseFactory
     = FutureOr<ShopCloudReadResult<CloudCosmeticsSnapshot>> Function();
 
@@ -111,7 +113,8 @@ void main() {
     test('cloud state ignores legacy bundles when resolving wallpaper',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      await ShopCosmeticsRepository().save(
+      final repository = await _shopRepository();
+      await repository.save(
         ShopCosmeticsState(
           ownedAssetIds: <String>['wallpaper_mist_blue'],
           ownedBundleIds: <String>['pack_blanco_roto'],
@@ -167,7 +170,7 @@ void main() {
           (await _createController(cloudRepository: repo)).controller;
 
       await controller.purchaseAsset('wallpaper_mist_blue');
-      final legacyState = await ShopCosmeticsRepository().load();
+      final legacyState = await (await _shopRepository()).load();
 
       expect(legacyState.ownedAssetIds, isNot(contains('wallpaper_mist_blue')));
     });
@@ -918,7 +921,7 @@ void main() {
       expect(controller.isCloudEnabled, isFalse);
 
       final result = await controller.purchaseAsset('wallpaper_mist_blue');
-      final persisted = await ShopCosmeticsRepository().load();
+      final persisted = await (await _shopRepository()).load();
 
       expect(result.isSuccess, isTrue);
       expect(persisted.ownedAssetIds, contains('wallpaper_mist_blue'));
@@ -931,15 +934,16 @@ Future<_ControllerEnv> _createController({
   CloudCosmeticsCache? cloudCache,
   bool? cloudEnabled = true,
   GlobalWalletController? globalWalletController,
+  String userId = testUserId,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final repo = UserStateRepository(storage: UserStateStorage())
-    ..setActiveUserScope('shop-cloud-user');
+    ..setActiveUserScope(userId);
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
   );
-  await store.save(_baseState(walletCoins: 500));
+  await store.save(_baseState(userId: userId, walletCoins: 500));
   await store.load();
   return (
     controller: ShopCosmeticsController(
@@ -950,6 +954,16 @@ Future<_ControllerEnv> _createController({
       cloudEnabled: cloudEnabled,
     ),
     store: store,
+  );
+}
+
+Future<ShopCosmeticsRepository> _shopRepository({
+  String userId = testUserId,
+}) async {
+  final preferences = await SharedPreferences.getInstance();
+  return ShopCosmeticsRepository(
+    sharedPreferencesProvider: () async => preferences,
+    scopeResolver: () => userId,
   );
 }
 
@@ -1002,11 +1016,12 @@ CloudCosmeticsSnapshot _snapshot({
 }
 
 Map<String, dynamic> _baseState({
+  required String userId,
   required int walletCoins,
 }) {
   return <String, dynamic>{
     'userState': <String, dynamic>{
-      'userId': 'shop-cloud-user',
+      'userId': userId,
       'meta': <String, dynamic>{
         'schemaVersion': 1,
         'lastSavedAt': DateTime.now().toUtc().toIso8601String(),

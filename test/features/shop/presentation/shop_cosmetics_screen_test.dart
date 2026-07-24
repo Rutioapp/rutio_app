@@ -24,6 +24,8 @@ import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/utils/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const testUserId = 'shop-cosmetics-screen-user';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -31,7 +33,6 @@ void main() {
     testWidgets('renders cached state on the first frame',
         (WidgetTester tester) async {
       final controller = await _createController(walletCoins: 600);
-      await controller.getState();
 
       await tester
           .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
@@ -42,6 +43,8 @@ void main() {
         findsOneWidget,
       );
 
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.pumpAndSettle();
     });
 
@@ -63,6 +66,7 @@ void main() {
         currentUserIdProvider: () => 'shop-cosmetics-screen-user',
         enabled: true,
       );
+      addTearDown(walletController.dispose);
       await walletController.applyConfirmedBalance(
         userId: 'shop-cosmetics-screen-user',
         coins: 600,
@@ -76,7 +80,8 @@ void main() {
 
       await tester
           .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('600'), findsWidgets);
 
@@ -87,12 +92,13 @@ void main() {
         updatedAt: DateTime.utc(2026, 7, 19, 16),
       );
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('777'), findsWidgets);
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-packs')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('777'), findsWidgets);
     });
@@ -893,20 +899,28 @@ Future<ShopCosmeticsController> _createController({
   GlobalWalletController? globalWalletController,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
-  await ShopCosmeticsRepository().save(cosmeticsState);
+  final repository = await _shopRepository();
+  await repository.save(cosmeticsState);
 
   final repo = UserStateRepository(storage: UserStateStorage())
-    ..setActiveUserScope('shop-cosmetics-screen-user');
+    ..setActiveUserScope(testUserId);
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
   );
   await store.save(_baseState(walletCoins: walletCoins));
 
-  return ShopCosmeticsController(
+  final controller = ShopCosmeticsController(
     userStateStore: store,
     globalWalletController: globalWalletController,
+    cloudEnabled: false,
   );
+  await controller.getState();
+  addTearDown(() {
+    controller.dispose();
+    store.dispose();
+  });
+  return controller;
 }
 
 Future<_RefreshableShopCosmeticsController> _createRefreshableController({
@@ -916,23 +930,29 @@ Future<_RefreshableShopCosmeticsController> _createRefreshableController({
   required int refreshedWalletCoins,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
-  await ShopCosmeticsRepository().save(initialCosmeticsState);
+  final repository = await _shopRepository();
+  await repository.save(initialCosmeticsState);
 
   final repo = UserStateRepository(storage: UserStateStorage())
-    ..setActiveUserScope('shop-cosmetics-screen-user');
+    ..setActiveUserScope(testUserId);
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
   );
   await store.save(_baseState(walletCoins: walletCoins));
 
-  return _RefreshableShopCosmeticsController(
+  final controller = _RefreshableShopCosmeticsController(
     userStateStore: store,
     initialState: initialCosmeticsState,
     initialWalletCoins: walletCoins,
     refreshedState: refreshedCosmeticsState,
     refreshedWalletCoins: refreshedWalletCoins,
   );
+  addTearDown(() {
+    controller.dispose();
+    store.dispose();
+  });
+  return controller;
 }
 
 Map<String, dynamic> _baseState({
@@ -940,7 +960,7 @@ Map<String, dynamic> _baseState({
 }) {
   return <String, dynamic>{
     'userState': <String, dynamic>{
-      'userId': 'shop-cosmetics-screen-user',
+      'userId': testUserId,
       'meta': <String, dynamic>{
         'schemaVersion': 1,
         'lastSavedAt': DateTime.now().toUtc().toIso8601String(),
@@ -992,6 +1012,14 @@ Map<String, dynamic> _baseState({
       'activeHabits': <dynamic>[],
     },
   };
+}
+
+Future<ShopCosmeticsRepository> _shopRepository() async {
+  final preferences = await SharedPreferences.getInstance();
+  return ShopCosmeticsRepository(
+    sharedPreferencesProvider: () async => preferences,
+    scopeResolver: () => testUserId,
+  );
 }
 
 class _RefreshableShopCosmeticsController extends ShopCosmeticsController {

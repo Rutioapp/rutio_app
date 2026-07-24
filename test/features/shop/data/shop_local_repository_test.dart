@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -17,19 +18,19 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    Future<SharedPreferences> _prefs() async {
+    Future<SharedPreferences> prefsProvider() async {
       return prefs;
     }
 
-    ShopLocalRepository _repositoryFor(String? scope) {
+    ShopLocalRepository repositoryFor(String? scope) {
       return ShopLocalRepository(
-        sharedPreferencesProvider: _prefs,
+        sharedPreferencesProvider: prefsProvider,
         scopeResolver: () => scope,
       );
     }
 
     test('load returns initial state when guest storage is empty', () async {
-      final repository = _repositoryFor(null);
+      final repository = repositoryFor(null);
 
       final state = await repository.load();
 
@@ -37,8 +38,8 @@ void main() {
     });
 
     test('persists and restores state per authenticated scope', () async {
-      final repoA = _repositoryFor('user-a');
-      final repoB = _repositoryFor('user-b');
+      final repoA = repositoryFor('user-a');
+      final repoB = repositoryFor('user-b');
 
       await repoA.save(
         const ShopState(
@@ -72,8 +73,8 @@ void main() {
     });
 
     test('authenticated save writes only the scoped key', () async {
-      final repository = _repositoryFor('user-a');
-      final initialPrefs = await _prefs();
+      final repository = repositoryFor('user-a');
+      final initialPrefs = await prefsProvider();
       await initialPrefs.setString(ShopLocalRepository.storageKey, 'legacy');
       await initialPrefs.setString(
         ShopLocalRepository.legacyScopeOwnerKey,
@@ -94,7 +95,7 @@ void main() {
     });
 
     test('guest save writes only the guest key', () async {
-      final repository = _repositoryFor(null);
+      final repository = repositoryFor(null);
 
       await repository.save(const ShopState(coins: 33));
 
@@ -107,7 +108,7 @@ void main() {
     });
 
     test('authenticated load migrates exact-owner legacy data once', () async {
-      final repository = _repositoryFor('user-a');
+      final repository = repositoryFor('user-a');
       final legacyState = const ShopState(
         coins: 120,
         inventory: <OwnedShopItem>[
@@ -148,7 +149,7 @@ void main() {
     });
 
     test('legacy owner mismatch is discarded and not imported', () async {
-      final repository = _repositoryFor('user-b');
+      final repository = repositoryFor('user-b');
       await prefs.setString(
         ShopLocalRepository.storageKey,
         '{"coins":999,"inventory":[],"backpackItems":[],"equippedCosmetics":{"backgroundItemId":null,"habitCardItemId":null,"userCardItemId":null}}',
@@ -164,7 +165,7 @@ void main() {
     });
 
     test('missing legacy owner is discarded and not imported', () async {
-      final repository = _repositoryFor('user-a');
+      final repository = repositoryFor('user-a');
       await prefs.setString(
         ShopLocalRepository.storageKey,
         '{"coins":111,"inventory":[],"backpackItems":[],"equippedCosmetics":{"backgroundItemId":null,"habitCardItemId":null,"userCardItemId":null}}',
@@ -178,7 +179,7 @@ void main() {
     });
 
     test('invalid legacy json is discarded safely', () async {
-      final repository = _repositoryFor('user-a');
+      final repository = repositoryFor('user-a');
       await prefs.setString(ShopLocalRepository.storageKey, '{invalid-json');
       await prefs.setString(ShopLocalRepository.legacyScopeOwnerKey, 'user-a');
 
@@ -190,7 +191,7 @@ void main() {
     });
 
     test('guest never imports legacy data', () async {
-      final repository = _repositoryFor(null);
+      final repository = repositoryFor(null);
       await prefs.setString(
         ShopLocalRepository.storageKey,
         '{"coins":250,"inventory":[],"backpackItems":[],"equippedCosmetics":{"backgroundItemId":null,"habitCardItemId":null,"userCardItemId":null}}',
@@ -208,7 +209,7 @@ void main() {
 
     test('clear removes the active scope and matching legacy owner only',
         () async {
-      final repository = _repositoryFor('user-a');
+      final repository = repositoryFor('user-a');
       await prefs.setString(
         'rutio_shop_state_v1_user-a',
         '{"coins":100,"inventory":[],"backpackItems":[],"equippedCosmetics":{"backgroundItemId":null,"habitCardItemId":null,"userCardItemId":null}}',
@@ -232,7 +233,7 @@ void main() {
     });
 
     test('guest clear removes only the guest key', () async {
-      final repository = _repositoryFor(null);
+      final repository = repositoryFor(null);
       await prefs.setString(
         ShopLocalRepository.guestStorageKey,
         '{"coins":44,"inventory":[],"backpackItems":[],"equippedCosmetics":{"backgroundItemId":null,"habitCardItemId":null,"userCardItemId":null}}',
@@ -247,5 +248,217 @@ void main() {
       expect(prefs.getString(ShopLocalRepository.guestStorageKey), isNull);
       expect(prefs.getString('rutio_shop_state_v1_user-a'), isNotNull);
     });
+
+    test('serializes operations on the same instance', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repository = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final first = repository.save(const ShopState(coins: 10));
+      await _waitForCalls(harness, 1);
+
+      final second = repository.save(const ShopState(coins: 20));
+      await Future<void>.delayed(Duration.zero);
+      expect(harness.calls, 1);
+
+      harness.completeNext();
+      await first;
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      await second;
+    });
+
+    test('different instances on the same scope still serialize', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repoA = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+      final repoB = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final first = repoA.save(const ShopState(coins: 10));
+      await _waitForCalls(harness, 1);
+
+      final second = repoB.save(const ShopState(coins: 20));
+      await Future<void>.delayed(Duration.zero);
+      expect(harness.calls, 1);
+
+      harness.completeNext();
+      await first;
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      await second;
+    });
+
+    test('different scopes do not block each other', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repoA = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+      final repoB = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-b',
+      );
+
+      final first = repoA.save(const ShopState(coins: 10));
+      await _waitForCalls(harness, 1);
+
+      final second = repoB.save(const ShopState(coins: 20));
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      harness.completeNext();
+      await first;
+      await second;
+    });
+
+    test('guest and authenticated scopes do not block each other', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final guestRepo = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => null,
+      );
+      final authRepo = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final guestSave = guestRepo.save(const ShopState(coins: 10));
+      await _waitForCalls(harness, 1);
+
+      final authSave = authRepo.save(const ShopState(coins: 20));
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      harness.completeNext();
+      await guestSave;
+      await authSave;
+    });
+
+    test('a failed operation does not block later operations', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repository = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final first = repository.save(const ShopState(coins: 10));
+      await _waitForCalls(harness, 1);
+
+      harness.failNext(StateError('boom'));
+      await expectLater(first, throwsA(isA<StateError>()));
+
+      final second = repository.save(const ShopState(coins: 20));
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      await second;
+    });
+
+    test('an older completion does not clear a newer queued operation',
+        () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repoA = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+      final repoB = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+      final repoC = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final first = repoA.save(const ShopState(coins: 10));
+      await _waitForCalls(harness, 1);
+
+      final second = repoB.save(const ShopState(coins: 20));
+      await Future<void>.delayed(Duration.zero);
+      expect(harness.calls, 1);
+
+      harness.completeNext();
+      await first;
+      await _waitForCalls(harness, 2);
+
+      final third = repoC.save(const ShopState(coins: 30));
+      await Future<void>.delayed(Duration.zero);
+      expect(harness.calls, 2);
+
+      harness.completeNext();
+      await second;
+      await _waitForCalls(harness, 3);
+
+      harness.completeNext();
+      await third;
+    });
+
+    test('a completed queue is cleaned up for later operations', () async {
+      final harness = _QueuedPrefsProvider(prefs);
+      final repository = ShopLocalRepository(
+        sharedPreferencesProvider: harness.call,
+        scopeResolver: () => 'user-a',
+      );
+
+      final first = repository.save(const ShopState(coins: 10));
+      await _waitForCalls(harness, 1);
+
+      harness.completeNext();
+      await first;
+
+      final second = repository.save(const ShopState(coins: 20));
+      await _waitForCalls(harness, 2);
+
+      harness.completeNext();
+      await second;
+    });
   });
+}
+
+Future<void> _waitForCalls(_QueuedPrefsProvider harness, int expected) async {
+  for (var attempt = 0; attempt < 10 && harness.calls < expected; attempt++) {
+    await Future<void>.delayed(Duration.zero);
+  }
+  expect(harness.calls, expected);
+}
+
+class _QueuedPrefsProvider {
+  _QueuedPrefsProvider(this.prefs);
+
+  final SharedPreferences prefs;
+  final List<Completer<SharedPreferences>> _pending =
+      <Completer<SharedPreferences>>[];
+  int _started = 0;
+
+  int get calls => _started;
+
+  Future<SharedPreferences> call() {
+    _started += 1;
+    final completer = Completer<SharedPreferences>();
+    _pending.add(completer);
+    return completer.future;
+  }
+
+  void completeNext() {
+    if (_pending.isEmpty) {
+      throw StateError('No pending preferences call.');
+    }
+    _pending.removeAt(0).complete(prefs);
+  }
+
+  void failNext(Object error) {
+    if (_pending.isEmpty) {
+      throw StateError('No pending preferences call.');
+    }
+    _pending.removeAt(0).completeError(error);
+  }
 }

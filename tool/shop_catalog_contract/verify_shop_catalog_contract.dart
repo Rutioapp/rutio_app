@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 
@@ -17,7 +19,7 @@ void main() {
     sqlSnapshot: sqlSnapshot,
   );
 
-  print(
+  stdout.writeln(
     comparison.renderMarkdownReport(
       remoteParityConfirmed: false,
     ),
@@ -27,8 +29,8 @@ void main() {
     throw StateError('Shop catalog contract parity failed.');
   }
 
-  print('\nNo drift detected in Dart ↔ migration contract.');
-  print('Local items: ${ShopCatalog.allItems.length}');
-  print('Local assets: ${ShopAssetsCatalog.allAssets.length}');
-  print('Local bundles: ${ShopAssetsCatalog.allBundles.length}');
+  stdout.writeln('\nNo drift detected in Dart ↔ migration contract.');
+  stdout.writeln('Local items: ${ShopCatalog.allItems.length}');
+  stdout.writeln('Local assets: ${ShopAssetsCatalog.allAssets.length}');
+  stdout.writeln('Local bundles: ${ShopAssetsCatalog.allBundles.length}');
 }
