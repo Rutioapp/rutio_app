@@ -225,6 +225,14 @@ ShopCloudPurchaseException _mapPostgrestException(PostgrestException error) {
       retryable: true,
     );
   }
+  if (normalizedCode == '42702') {
+    return const ShopCloudPurchaseException(
+      code: ShopPurchaseFailureCode.databaseQueryFailed,
+      message: 'Database query failed while purchasing shop item.',
+      retryable: true,
+      definitive: true,
+    );
+  }
   if (normalizedMessage.contains('network') ||
       normalizedMessage.contains('socket') ||
       normalizedMessage.contains('connection')) {
@@ -337,6 +345,14 @@ ShopCloudPurchaseException _mapBundlePostgrestException(
       code: ShopPurchaseFailureCode.timeout,
       message: 'Shop bundle purchase timed out.',
       retryable: true,
+    );
+  }
+  if (normalizedCode == '42702') {
+    return const ShopCloudPurchaseException(
+      code: ShopPurchaseFailureCode.databaseQueryFailed,
+      message: 'Database query failed while purchasing shop bundle.',
+      retryable: true,
+      definitive: true,
     );
   }
   if (normalizedMessage.contains('network') ||

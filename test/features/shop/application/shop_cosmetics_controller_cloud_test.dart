@@ -24,6 +24,7 @@ import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
+import 'package:rutio/features/shop/domain/shop_purchase_failure.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -370,7 +371,8 @@ void main() {
 
       expect(result.status, ShopCosmeticsOperationStatus.success);
       expect(result.walletCoins, 320);
-      expect(env.controller.state?.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(
+          env.controller.state?.ownedBundleIds, contains('pack_beige_rutio'));
       expect(
         env.controller.state?.ownedAssetIds,
         containsAll(<String>[
@@ -465,8 +467,76 @@ void main() {
 
       expect(result.status, ShopCosmeticsOperationStatus.success);
       expect(result.walletCoins, 500);
-      expect(env.controller.state?.ownedBundleIds, contains('pack_beige_rutio'));
+      expect(
+          env.controller.state?.ownedBundleIds, contains('pack_beige_rutio'));
       expect(walletController.state.coins, 500);
+    });
+
+    test('bundle purchase keeps the snapshot unchanged on SQL ambiguity',
+        () async {
+      final walletRepo = _FakeCloudWalletRepository()
+        ..enqueueSuccess(
+          _walletSnapshot(
+            userId: 'shop-cloud-user',
+            coins: 500,
+            version: 2,
+            updatedAt: DateTime.utc(2026, 7, 19, 15, 30),
+          ),
+        );
+      final walletController = GlobalWalletController(
+        repository: walletRepo,
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'shop-cloud-user',
+        enabled: true,
+      );
+      await walletController.applyConfirmedBalance(
+        userId: 'shop-cloud-user',
+        coins: 500,
+        version: 1,
+        updatedAt: DateTime.utc(2026, 7, 19, 13),
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_rutio_beige'],
+                ),
+              ),
+        ],
+      );
+      repo.bundleOutcomes.add(
+        const ShopCloudPurchaseException(
+          code: ShopPurchaseFailureCode.databaseQueryFailed,
+          message: 'column reference "user_id" is ambiguous',
+          retryable: true,
+          definitive: true,
+        ),
+      );
+
+      final env = await _createController(
+        cloudRepository: repo,
+        globalWalletController: walletController,
+      );
+      final initialState = await env.controller.getState();
+      final initialRevision = env.controller.cloudSnapshotRevision;
+
+      final result = await env.controller.purchaseBundle('pack_beige_rutio');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(result.isSuccess, isFalse);
+      expect(result.status, ShopCosmeticsOperationStatus.bundleNotFound);
+      expect(env.controller.cloudSnapshotRevision, initialRevision);
+      expect(env.controller.state?.ownedAssetIds, initialState.ownedAssetIds);
+      expect(env.controller.state?.ownedBundleIds, initialState.ownedBundleIds);
+      expect(env.controller.state?.equippedWallpaperId,
+          initialState.equippedWallpaperId);
+      expect(env.controller.state?.equippedHabitCardSkinId,
+          initialState.equippedHabitCardSkinId);
+      expect(env.controller.state?.equippedUserCardSkinId,
+          initialState.equippedUserCardSkinId);
+      expect(walletController.state.coins, 500);
+      expect(repo.purchaseCalls, contains('pack_beige_rutio'));
     });
 
     test('cloud equip switches the correct slot and survives reload', () async {
@@ -570,7 +640,7 @@ void main() {
         fetchResponses: <_FetchResponseFactory>[
           () async => _success(snapshot),
           () async => _success(
-              _snapshot(
+                _snapshot(
                   userId: 'shop-cloud-user',
                   ownedAssetIds: <String>[
                     'wallpaper_rutio_beige',

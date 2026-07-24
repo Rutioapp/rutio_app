@@ -188,6 +188,32 @@ void main() {
         ),
       );
     });
+
+    test('maps SQL ambiguity errors to a controlled database failure',
+        () async {
+      final repository = ShopCloudPurchaseRepository(
+        dataSource: _FakePurchaseDataSource(
+          error: const PostgrestException(
+            message: 'column reference "user_id" is ambiguous',
+            code: '42702',
+          ),
+        ),
+      );
+
+      await expectLater(
+        repository.purchaseShopBundle(
+          bundleId: 'pack_beige_rutio',
+          requestId: 'd2b5d4d7-6b8e-4f28-9c33-8e0d0c1cb001',
+        ),
+        throwsA(
+          isA<ShopCloudPurchaseException>().having(
+            (error) => error.code,
+            'code',
+            ShopPurchaseFailureCode.databaseQueryFailed,
+          ),
+        ),
+      );
+    });
   });
 }
 

@@ -22,6 +22,7 @@ enum ShopPurchaseFailureCode {
   networkUnavailable,
   timeout,
   malformedResponse,
+  databaseQueryFailed,
   sessionChanged,
   operationPending,
   unknown,
