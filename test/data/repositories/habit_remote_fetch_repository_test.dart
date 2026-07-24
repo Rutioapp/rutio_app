@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:rutio/data/models/remote/remote_habit.dart';
 import 'package:rutio/data/repositories/habit_log_repository.dart';
 import 'package:rutio/data/repositories/habit_repository.dart';
 import 'package:rutio/data/repositories/repository_result.dart';
@@ -47,6 +48,10 @@ void main() {
               'color_id': 'blue',
               'reminder_enabled': true,
               'reminder_time': '08:30:00',
+              'schedule': <String, dynamic>{
+                'type': 'weekly',
+                'weekdays': <int>[1, 3, 5],
+              },
               'is_archived': true,
               'sort_order': 2,
               'created_at': '2026-06-20T08:00:00.000Z',
@@ -102,6 +107,10 @@ void main() {
       expect(archivedHabit.habitType, 'check');
       expect(archivedHabit.isArchived, isTrue);
       expect(archivedHabit.reminderTime, '08:30:00');
+      expect(archivedHabit.schedule, {
+        'type': 'weekly',
+        'weekdays': <int>[1, 3, 5],
+      });
 
       final countHabit = result.data![1];
       expect(countHabit.id, '550e8400-e29b-41d4-a716-446655440001');
@@ -131,6 +140,119 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.data, isEmpty);
+    });
+
+    test('upsertHabitForCurrentUser sends canonical schedule to Supabase',
+        () async {
+      final client = _QueueingHttpClient()
+        ..enqueueJson(
+          statusCode: 200,
+          body: <String, dynamic>{
+            'id': '550e8400-e29b-41d4-a716-446655440000',
+            'user_id': 'user-123',
+            'name': 'Read',
+            'habit_type': 'check',
+            'reminder_enabled': false,
+            'schedule': <String, dynamic>{
+              'type': 'timesPerWeek',
+              'timesPerWeek': 3,
+              'weekStartsOn': 1,
+            },
+            'is_archived': false,
+            'sort_order': 0,
+          },
+        );
+      final repository = HabitRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.upsertHabitForCurrentUser(
+        const RemoteHabit(
+          userId: 'user-123',
+          name: 'Read',
+          habitType: 'check',
+          reminderEnabled: false,
+          schedule: <String, dynamic>{
+            'type': 'timesPerWeek',
+            'timesPerWeekTarget': 3,
+            'weekStartsOn': 1,
+          },
+          isArchived: false,
+          sortOrder: 0,
+        ),
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(client.lastMethod, 'POST');
+      final body = jsonDecode(client.lastBody!) as Map<String, dynamic>;
+      expect(body['schedule'], {
+        'type': 'timesPerWeek',
+        'timesPerWeek': 3,
+        'weekStartsOn': 1,
+      });
+    });
+
+    test(
+        'upsertHabitForCurrentUser backfills schedule when editing existing habit',
+        () async {
+      const remoteHabitId = '550e8400-e29b-41d4-a716-446655440000';
+      final client = _QueueingHttpClient()
+        ..enqueueJson(
+          statusCode: 200,
+          body: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': remoteHabitId,
+              'user_id': 'user-123',
+              'name': 'Read',
+              'habit_type': 'check',
+              'reminder_enabled': false,
+              'schedule': <String, dynamic>{
+                'type': 'weekly',
+                'weekdays': <int>[1, 3, 5],
+              },
+              'is_archived': false,
+              'sort_order': 0,
+            },
+          ],
+        );
+      final repository = HabitRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.upsertHabitForCurrentUser(
+        const RemoteHabit(
+          id: remoteHabitId,
+          userId: 'user-123',
+          name: 'Read',
+          habitType: 'check',
+          reminderEnabled: false,
+          schedule: <String, dynamic>{
+            'type': 'weekly',
+            'weekdays': <int>[5, 1, 3],
+          },
+          isArchived: false,
+          sortOrder: 0,
+        ),
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(client.lastMethod, 'PATCH');
+      expect(client.lastUri?.queryParameters['id'], 'eq.$remoteHabitId');
+      final body = jsonDecode(client.lastBody!) as Map<String, dynamic>;
+      expect(body['schedule'], {
+        'type': 'weekly',
+        'weekdays': <int>[1, 3, 5],
+      });
     });
 
     test('fetchHabitsForCurrentUser maps permission errors consistently',
@@ -458,6 +580,7 @@ class _QueueingHttpClient extends http.BaseClient {
 
   Uri? lastUri;
   String? lastMethod;
+  String? lastBody;
   int callCount = 0;
 
   void enqueueJson({
@@ -495,6 +618,7 @@ class _QueueingHttpClient extends http.BaseClient {
     callCount += 1;
     lastUri = request.url;
     lastMethod = request.method;
+    lastBody = await request.finalize().bytesToString();
 
     if (_responses.isEmpty) {
       throw StateError(

@@ -81,6 +81,135 @@ void main() {
       expect(store.activeHabits.first['name'], 'Hydrate Better');
     });
 
+    test('newer remote habit updates local schedule', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitRepository = _FakeHabitRepository(
+        fetchedHabits: <RemoteHabit>[
+          _remoteCheckHabit(
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Hydrate Better',
+            updatedAt: DateTime.utc(2026, 6, 22, 10),
+            schedule: const <String, dynamic>{
+              'type': 'weekly',
+              'weekdays': <int>[5, 1, 3],
+            },
+            hasExplicitSchedule: true,
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'habit-1',
+            remoteId: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Drink Water',
+            updatedAt: '2026-06-20T09:00:00.000Z',
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.first['schedule'], {
+        'type': 'weekly',
+        'weekdays': <int>[1, 3, 5],
+      });
+    });
+
+    test(
+        'old remote response without schedule does not clear valid local schedule',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitRepository = _FakeHabitRepository(
+        fetchedHabits: <RemoteHabit>[
+          _remoteCheckHabit(
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Hydrate Better',
+            updatedAt: DateTime.utc(2026, 6, 22, 10),
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'habit-1',
+            remoteId: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Drink Water',
+            updatedAt: '2026-06-20T09:00:00.000Z',
+            schedule: const <String, dynamic>{
+              'type': 'once',
+              'date': '2026-07-25',
+            },
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.first['name'], 'Hydrate Better');
+      expect(store.activeHabits.first['schedule'], {
+        'type': 'once',
+        'date': '2026-07-25',
+      });
+    });
+
+    test('remote null schedule does not clear valid local weekly schedule',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitRepository = _FakeHabitRepository(
+        fetchedHabits: <RemoteHabit>[
+          RemoteHabit.fromMap(
+            <String, dynamic>{
+              'id': '550e8400-e29b-41d4-a716-446655440000',
+              'user_id': 'user-1',
+              'name': 'Hydrate Better',
+              'habit_type': 'check',
+              'reminder_enabled': false,
+              'schedule': null,
+              'is_archived': false,
+              'sort_order': 0,
+              'created_at': '2026-06-20T08:00:00.000Z',
+              'updated_at': '2026-06-22T10:00:00.000Z',
+            },
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'habit-1',
+            remoteId: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Drink Water',
+            updatedAt: '2026-06-20T09:00:00.000Z',
+            schedule: const <String, dynamic>{
+              'type': 'weekly',
+              'weekdays': <int>[1, 3, 5],
+            },
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.first['name'], 'Hydrate Better');
+      expect(store.activeHabits.first['schedule'], {
+        'type': 'weekly',
+        'weekdays': <int>[1, 3, 5],
+      });
+    });
+
     test('local habit is kept when remote is missing', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -129,7 +258,8 @@ void main() {
       expect(store.activeHabits.first['name'], 'Local Only');
     });
 
-    test('1 local habit and 43 foreign remote habits keeps only the local habit',
+    test(
+        '1 local habit and 43 foreign remote habits keeps only the local habit',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -159,7 +289,8 @@ void main() {
       expect(store.activeHabits.single['name'], 'Local Only');
     });
 
-    test('mixed-user remote habits abort pull and local state remains unchanged',
+    test(
+        'mixed-user remote habits abort pull and local state remains unchanged',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -193,7 +324,8 @@ void main() {
       expect(store.activeHabits.single['name'], 'Local Only');
     });
 
-    test('missing remote habit user id aborts pull and keeps local state unchanged',
+    test(
+        'missing remote habit user id aborts pull and keeps local state unchanged',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -463,7 +595,8 @@ void main() {
           isFalse);
     });
 
-    test('missing remote log user id aborts merge and keeps local progress unchanged',
+    test(
+        'missing remote log user id aborts merge and keeps local progress unchanged',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -1023,6 +1156,7 @@ Map<String, dynamic> _localCheckHabit({
   String? remoteId,
   String? remoteUserId,
   String? updatedAt,
+  Map<String, dynamic> schedule = const <String, dynamic>{'type': 'daily'},
   bool archived = false,
 }) {
   return <String, dynamic>{
@@ -1034,7 +1168,7 @@ Map<String, dynamic> _localCheckHabit({
     'progress': 0,
     'doneToday': false,
     'skippedToday': false,
-    'schedule': const <String, dynamic>{'type': 'daily'},
+    'schedule': schedule,
     'createdAt': '2026-06-20',
     if (updatedAt != null) 'updatedAt': updatedAt,
     if (remoteId != null) 'remoteId': remoteId,
@@ -1071,6 +1205,8 @@ RemoteHabit _remoteCheckHabit({
   required String name,
   bool isArchived = false,
   DateTime? updatedAt,
+  Map<String, dynamic> schedule = const <String, dynamic>{'type': 'daily'},
+  bool hasExplicitSchedule = false,
 }) {
   return RemoteHabit(
     id: id,
@@ -1080,6 +1216,8 @@ RemoteHabit _remoteCheckHabit({
     reminderEnabled: false,
     isArchived: isArchived,
     sortOrder: 0,
+    schedule: schedule,
+    hasExplicitSchedule: hasExplicitSchedule,
     createdAt: DateTime.utc(2026, 6, 20, 8),
     updatedAt: updatedAt,
   );

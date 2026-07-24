@@ -1,4 +1,5 @@
 import '../models/remote/remote_habit.dart';
+import 'habit_schedule_normalizer.dart';
 
 class HabitRemoteMapper {
   const HabitRemoteMapper._();
@@ -48,6 +49,8 @@ class HabitRemoteMapper {
       reminderTime: reminderEnabled
           ? _normalizeReminderTime(localHabit['reminderTime'])
           : null,
+      schedule: HabitScheduleNormalizer.normalize(localHabit['schedule']),
+      hasExplicitSchedule: localHabit['schedule'] is Map,
       isArchived: localHabit['archived'] == true ||
           localHabit['isArchived'] == true ||
           localHabit['is_archived'] == true,
@@ -103,7 +106,9 @@ class HabitRemoteMapper {
 
   static String _normalizeHabitType(dynamic value) {
     final normalized = (value ?? '').toString().trim().toLowerCase();
-    return normalized == 'count' || normalized == 'counter' || normalized == 'number'
+    return normalized == 'count' ||
+            normalized == 'counter' ||
+            normalized == 'number'
         ? 'count'
         : 'check';
   }

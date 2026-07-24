@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../mappers/habit_schedule_normalizer.dart';
+
 @immutable
 class RemoteHabit {
   const RemoteHabit({
@@ -14,6 +16,8 @@ class RemoteHabit {
     this.colorId,
     required this.reminderEnabled,
     this.reminderTime,
+    this.schedule = HabitScheduleNormalizer.daily,
+    this.hasExplicitSchedule = false,
     required this.isArchived,
     required this.sortOrder,
     this.createdAt,
@@ -32,6 +36,8 @@ class RemoteHabit {
   final String? colorId;
   final bool reminderEnabled;
   final String? reminderTime;
+  final Map<String, dynamic> schedule;
+  final bool hasExplicitSchedule;
   final bool isArchived;
   final int sortOrder;
   final DateTime? createdAt;
@@ -40,6 +46,9 @@ class RemoteHabit {
 
   factory RemoteHabit.fromMap(Map<String, dynamic> map) {
     final normalizedHabitType = _normalizeHabitType(map['habit_type']);
+    final explicitSchedule = HabitScheduleNormalizer.normalizeOrNull(
+      map['schedule'],
+    );
 
     return RemoteHabit(
       id: _nullableTrim(map['id']),
@@ -52,8 +61,9 @@ class RemoteHabit {
       unit: _nullableTrim(map['unit']),
       colorId: _nullableTrim(map['color_id'] ?? map['colorId']),
       reminderEnabled: map['reminder_enabled'] == true,
-      reminderTime:
-          _nullableTrim(map['reminder_time'] ?? map['reminderTime']),
+      reminderTime: _nullableTrim(map['reminder_time'] ?? map['reminderTime']),
+      schedule: explicitSchedule ?? HabitScheduleNormalizer.normalize(null),
+      hasExplicitSchedule: explicitSchedule != null,
       isArchived: map['is_archived'] == true,
       sortOrder: _safeInt(map['sort_order'], fallback: 0),
       createdAt: _nullableDateTime(map['created_at']),
@@ -73,6 +83,7 @@ class RemoteHabit {
       'color_id': colorId,
       'reminder_enabled': reminderEnabled,
       'reminder_time': reminderTime,
+      'schedule': HabitScheduleNormalizer.normalize(schedule),
       'is_archived': isArchived,
       'sort_order': sortOrder,
       'family_id': familyId,
@@ -120,6 +131,8 @@ class RemoteHabit {
       reminderEnabled:
           local['reminderEnabled'] == true || local['remindersEnabled'] == true,
       reminderTime: _nullableTrim(local['reminderTime']),
+      schedule: HabitScheduleNormalizer.normalize(local['schedule']),
+      hasExplicitSchedule: local['schedule'] is Map,
       isArchived: local['is_archived'] == true ||
           local['isArchived'] == true ||
           local['archived'] == true,

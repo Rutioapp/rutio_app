@@ -809,6 +809,14 @@ Map<String, dynamic> _mergeRemoteHabitIntoExistingLocal({
   merged['reminderEnabled'] = remoteHabit.reminderEnabled;
   merged['reminderTime'] = remoteHabit.reminderTime;
   merged['colorId'] = remoteHabit.colorId;
+  if (remoteHabit.hasExplicitSchedule) {
+    merged['schedule'] =
+        HabitScheduleNormalizer.normalize(remoteHabit.schedule);
+  } else if (merged['schedule'] is! Map) {
+    merged['schedule'] = Map<String, dynamic>.from(
+      HabitScheduleNormalizer.daily,
+    );
+  }
   merged['updatedAt'] = remoteHabit.updatedAt?.toUtc().toIso8601String();
   merged['createdAt'] =
       merged['createdAt'] ?? remoteHabit.createdAt?.toUtc().toIso8601String();
@@ -850,7 +858,7 @@ Map<String, dynamic> _localHabitFromRemote(RemoteHabit remoteHabit) {
     'progress': 0,
     'doneToday': false,
     'skippedToday': false,
-    'schedule': const <String, dynamic>{'type': 'daily'},
+    'schedule': HabitScheduleNormalizer.normalize(remoteHabit.schedule),
     'reminderEnabled': remoteHabit.reminderEnabled,
     'reminderTime': remoteHabit.reminderTime,
     'colorId': remoteHabit.colorId,
@@ -1679,12 +1687,7 @@ bool _isCountHabit(Map<String, dynamic> habit) =>
     _normalizedHabitType(habit['type']) == 'count';
 
 List<int> _normalizedWeekdays(dynamic rawWeekdays) {
-  if (rawWeekdays is! List) return const <int>[];
-  return rawWeekdays
-      .whereType<num>()
-      .map((day) => day.toInt())
-      .where((day) => day >= 1 && day <= 7)
-      .toList(growable: false);
+  return HabitScheduleNormalizer.normalizeWeekdays(rawWeekdays);
 }
 
 bool _isTimesPerWeekFrequencyMode(dynamic rawMode) =>
@@ -1710,11 +1713,11 @@ Map<String, dynamic> _resolvedScheduleForHabitSave({
   required Map<String, dynamic> source,
   Map<String, dynamic>? fallbackSchedule,
 }) {
-  final fallback = _normalizeSchedule(fallbackSchedule);
+  final fallback = HabitScheduleNormalizer.normalize(fallbackSchedule);
   final rawSchedule = _map(source['schedule']);
   final normalizedSchedule = rawSchedule.isEmpty
       ? <String, dynamic>{}
-      : _normalizeSchedule(rawSchedule);
+      : HabitScheduleNormalizer.normalize(rawSchedule);
   final normalizedType = (normalizedSchedule['type'] ?? '').toString();
 
   if (habitType == 'count') {
@@ -1734,7 +1737,7 @@ Map<String, dynamic> _resolvedScheduleForHabitSave({
         _safeInt(normalizedSchedule['weekStartsOn'], fallback: 1);
     final weekStartsOn =
         rawWeekStartsOn >= 1 && rawWeekStartsOn <= 7 ? rawWeekStartsOn : 1;
-    return _normalizeSchedule({
+    return HabitScheduleNormalizer.normalize({
       'type': 'timesPerWeek',
       'timesPerWeek': target,
       'weekStartsOn': weekStartsOn,
@@ -1748,7 +1751,7 @@ Map<String, dynamic> _resolvedScheduleForHabitSave({
   if (indicatesTimesPerWeek &&
       legacyTarget != null &&
       (normalizedSchedule.isEmpty || normalizedType == 'daily')) {
-    return _normalizeSchedule({
+    return HabitScheduleNormalizer.normalize({
       'type': 'timesPerWeek',
       'timesPerWeek': legacyTarget,
       'weekStartsOn': 1,
@@ -1769,28 +1772,28 @@ Map<String, dynamic> _habitSchedule({
   int? weekStartsOn,
 }) {
   if (scheduleType == 'once') {
-    return _normalizeSchedule({
+    return HabitScheduleNormalizer.normalize({
       'type': 'once',
       'date': (scheduledDate ?? '').toString(),
     });
   }
 
   if (scheduleType == 'weekly') {
-    return _normalizeSchedule({
+    return HabitScheduleNormalizer.normalize({
       'type': 'weekly',
       'weekdays': weekdays ?? const <int>[],
     });
   }
 
   if (scheduleType == 'timesPerWeek') {
-    return _normalizeSchedule({
+    return HabitScheduleNormalizer.normalize({
       'type': 'timesPerWeek',
       'timesPerWeek': _safePositiveNum(timesPerWeek, fallback: 1).toInt(),
       'weekStartsOn': _safeInt(weekStartsOn, fallback: 1),
     });
   }
 
-  return _normalizeSchedule({'type': 'daily'});
+  return HabitScheduleNormalizer.normalize({'type': 'daily'});
 }
 
 void _removeHabitFromHistory(
@@ -4286,7 +4289,8 @@ List<ActiveStreakShield> _activeStreakShields(UserStateStore store) {
   final expired = _expireStreakShieldsForLocalDate(userState, now);
   final active = _habitStreakShieldsRoot(userState)
       .entries
-      .where((entry) => _activeStreakShieldRecordForHabit(
+      .where((entry) =>
+          _activeStreakShieldRecordForHabit(
             userState,
             entry.key.toString(),
           ) !=
