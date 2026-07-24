@@ -12,6 +12,7 @@ import '../data/services/habit_log_sync_service.dart';
 import '../data/services/habit_sync_service.dart';
 import '../data/services/journal_entry_sync_service.dart';
 import '../data/mappers/habit_remote_mapper.dart';
+import '../data/mappers/habit_schedule_normalizer.dart';
 import '../data/models/remote/remote_habit.dart';
 import '../data/models/remote/remote_habit_log.dart';
 import '../data/models/remote/remote_user_progress.dart';
@@ -207,10 +208,9 @@ class UserStateStore extends ChangeNotifier {
             (UtilityConsumptionConfig.resolveEnabled(
                     override: utilityConsumptionEnabledOverride)
                 ? ((utilityConsumptionRepository ??
-                        SupabaseUtilityConsumptionRepository(
-                          nowProvider: nowProvider,
-                        ))
-                    as ActiveUtilityEffectsRepository)
+                    SupabaseUtilityConsumptionRepository(
+                      nowProvider: nowProvider,
+                    )) as ActiveUtilityEffectsRepository)
                 : null),
         _habitRewardTransactionRepository = habitRewardTransactionRepository,
         _cloudHabitRewardsEnabledOverride = cloudHabitRewardsEnabledOverride,

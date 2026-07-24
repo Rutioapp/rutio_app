@@ -360,52 +360,7 @@ void _hydrateActiveHabitsForDate(
 }
 
 Map<String, dynamic> _normalizeSchedule(Map<String, dynamic>? schedule) {
-  final normalized = _map(schedule);
-  final type = (normalized['type'] ?? 'daily').toString();
-
-  if (type == 'once') {
-    return {
-      'type': 'once',
-      'date': (normalized['date'] ?? '').toString(),
-    };
-  }
-
-  if (type == 'weekly') {
-    final rawWeekdays = normalized['weekdays'];
-    final weekdays = rawWeekdays is List
-        ? rawWeekdays
-            .whereType<num>()
-            .map((day) => day.toInt())
-            .where((day) => day >= 1 && day <= 7)
-            .toList()
-        : <int>[];
-
-    return {
-      'type': 'weekly',
-      'weekdays': weekdays,
-    };
-  }
-
-  if (type == 'timesPerWeek') {
-    final timesPerWeek = _safePositiveNum(
-      normalized['timesPerWeek'] ??
-          normalized['timesPerWeekTarget'] ??
-          normalized['goal'] ??
-          normalized['times'],
-      fallback: 1,
-    ).toInt();
-    final rawWeekStartsOn = _safeInt(normalized['weekStartsOn'], fallback: 1);
-    final weekStartsOn =
-        rawWeekStartsOn >= 1 && rawWeekStartsOn <= 7 ? rawWeekStartsOn : 1;
-
-    return {
-      'type': 'timesPerWeek',
-      'timesPerWeek': timesPerWeek < 1 ? 1 : timesPerWeek,
-      'weekStartsOn': weekStartsOn,
-    };
-  }
-
-  return {'type': 'daily'};
+  return HabitScheduleNormalizer.normalize(schedule);
 }
 
 bool _isScheduledForDate(Map<String, dynamic> habit, DateTime date) {
