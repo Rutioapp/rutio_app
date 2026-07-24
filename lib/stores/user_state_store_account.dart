@@ -536,7 +536,7 @@ Future<bool> _buyItem(
   if (item == null || item.priceCoins != price) return false;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState);
+    _ensureDailyReset(userState, nowProvider: store._nowProvider);
 
   final wallet = _map(userState['wallet']);
   final coins = ((wallet['coins'] as num?) ?? 0).toInt();
@@ -575,7 +575,7 @@ Future<void> _equip(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState);
+  _ensureDailyReset(userState, nowProvider: store._nowProvider);
 
   final profile = _map(userState['profile']);
   final equipped = _map(profile['equipped']);

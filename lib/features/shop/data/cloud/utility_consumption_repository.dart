@@ -50,17 +50,20 @@ class SupabaseUtilityConsumptionRepository
     UtilityConsumptionRemoteDataSource? remoteDataSource,
     bool? enabled,
     String? Function()? currentUserIdProvider,
+    DateTime Function()? nowProvider,
     Duration timeout = const Duration(seconds: 12),
   })  : _remoteDataSource =
             remoteDataSource ?? SupabaseUtilityConsumptionRemoteDataSource(),
         _enabled = UtilityConsumptionConfig.resolveEnabled(override: enabled),
         _currentUserIdProvider =
             currentUserIdProvider ?? _defaultCurrentUserIdProvider,
+        _nowProvider = nowProvider ?? DateTime.now,
         _timeout = timeout;
 
   final UtilityConsumptionRemoteDataSource _remoteDataSource;
   final bool _enabled;
   final String? Function() _currentUserIdProvider;
+  final DateTime Function() _nowProvider;
   final Duration _timeout;
 
   @override
@@ -77,6 +80,7 @@ class SupabaseUtilityConsumptionRepository
           .whereType<ActiveUtilityEffectRow>()
           .map(_toEffect)
           .whereType<ActiveUtilityEffect>()
+          .where(_isEffectActiveForCurrentLocalDate)
           .toList(growable: false);
       return _dedupeAndSort(parsed);
     } catch (error) {
@@ -349,6 +353,16 @@ class SupabaseUtilityConsumptionRepository
       totalUses: row.totalUses,
       habitId: row.habitId,
     );
+  }
+
+  bool _isEffectActiveForCurrentLocalDate(ActiveUtilityEffect effect) {
+    if (effect.type != ActiveUtilityEffectType.streakShield) return true;
+    final activatedAt =
+        DateTime.fromMillisecondsSinceEpoch(effect.activatedAtMillis).toLocal();
+    final now = _nowProvider().toLocal();
+    return activatedAt.year == now.year &&
+        activatedAt.month == now.month &&
+        activatedAt.day == now.day;
   }
 
   List<ActiveUtilityEffect> _dedupeAndSort(List<ActiveUtilityEffect> effects) {

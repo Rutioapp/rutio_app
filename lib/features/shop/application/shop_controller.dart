@@ -166,7 +166,9 @@ class ShopController extends ChangeNotifier {
             ? (utilityConsumptionRepository ??
                 (activeUtilityEffectsRepository is UtilityConsumptionRepository
                     ? activeUtilityEffectsRepository
-                    : SupabaseUtilityConsumptionRepository()))
+                    : SupabaseUtilityConsumptionRepository(
+                        nowProvider: nowProvider,
+                      )))
             : null,
         _activeUtilityEffectsRepository =
             UtilityConsumptionConfig.resolveEnabled(
@@ -176,12 +178,15 @@ class ShopController extends ChangeNotifier {
                     (activeUtilityEffectsRepository
                             is UtilityConsumptionRepository
                         ? activeUtilityEffectsRepository
-                        : SupabaseUtilityConsumptionRepository()))
+                        : SupabaseUtilityConsumptionRepository(
+                            nowProvider: nowProvider,
+                          )))
                 : activeUtilityEffectsRepository ??
                     LocalActiveUtilityEffectsRepository(
                       scopeResolver: () =>
                           userStateStore.activeLocalScopeUserId ??
                           userStateStore.userId,
+                      nowProvider: nowProvider,
                     ),
         _mysteryBoxOpeningRepository = mysteryBoxOpeningRepository ??
             LocalMysteryBoxOpeningRepository(

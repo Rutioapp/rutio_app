@@ -705,6 +705,50 @@ void main() {
       expect(utilityRepo.calls, 1);
     });
 
+    test(
+        'streak shield expires the next day without restoring inventory',
+        () async {
+      var now = DateTime(2026, 7, 24, 10);
+      final controller = await _createController(
+        walletCoins: 500,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_streak_shield_1', quantity: 1),
+          ],
+        ),
+        activeHabits: const <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'habit-1',
+            'title': 'Leer',
+          },
+        ],
+        nowProvider: () => now,
+      );
+
+      final activation = await controller.activateStreakShield(
+        habitId: 'habit-1',
+        operationId: 'shield-op-expire-1',
+      );
+
+      expect(activation.status, StreakShieldOperationStatus.success);
+      expect(
+        (await controller.getItemState('utility_streak_shield_1'))
+            ?.backpackQuantity,
+        0,
+      );
+
+      now = DateTime(2026, 7, 25, 0, 1);
+      final activeEffects = await controller.getActiveUtilityEffects();
+
+      expect(activeEffects, isEmpty);
+      expect(controller.getActiveStreakShieldForHabit('habit-1'), isNull);
+      expect(
+        (await controller.getItemState('utility_streak_shield_1'))
+            ?.backpackQuantity,
+        0,
+      );
+    });
+
     test('recoverStreakBreak restores the break and consumes the item',
         () async {
       final controller = await _createController(

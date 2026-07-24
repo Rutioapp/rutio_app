@@ -149,6 +149,9 @@ String _dateKey(DateTime date) {
 
 String _today() => _dateKey(DateTime.now());
 
+String _todayFrom(DateTime Function() nowProvider) =>
+    _dateKey(nowProvider().toLocal());
+
 bool _isSameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
@@ -265,11 +268,14 @@ void _normalizeUserIdForActiveScope(
   }
 }
 
-String _activeViewDateKey(Map<String, dynamic> userState) {
+String _activeViewDateKey(
+  Map<String, dynamic> userState, {
+  required DateTime Function() nowProvider,
+}) {
   final meta = _map(userState['meta']);
   final key = (meta['activeViewDateKey'] ?? '').toString();
   if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(key)) return key;
-  return _today();
+  return _todayFrom(nowProvider);
 }
 
 DateTime _dateFromKey(String key) {
@@ -581,10 +587,13 @@ bool _ensureActiveHabitIds(Map<String, dynamic> userState) {
   return changed;
 }
 
-void _ensureDailyReset(Map<String, dynamic> userState) {
+void _ensureDailyReset(
+  Map<String, dynamic> userState, {
+  required DateTime Function() nowProvider,
+}) {
   final daily = _map(userState['daily']);
   final lastResetDate = (daily['lastResetDate'] ?? '').toString();
-  final today = _today();
+  final today = _todayFrom(nowProvider);
 
   if (lastResetDate == today) {
     userState['daily'] = daily;
@@ -601,6 +610,7 @@ void _ensureDailyReset(Map<String, dynamic> userState) {
       userState,
       dayKey: previousDayKey,
       activeHabits: activeHabits,
+      nowProvider: nowProvider,
     );
   }
 
@@ -630,6 +640,7 @@ void _finalizeHabitDayRollover(
   Map<String, dynamic> userState, {
   required String dayKey,
   required List<Map<String, dynamic>> activeHabits,
+  required DateTime Function() nowProvider,
 }) {
   final history = _ensureHistoryRoot(userState);
   final habitCompletions = _map(history['habitCompletions']);
@@ -670,15 +681,22 @@ void _finalizeHabitDayRollover(
     }
 
     final activeShield = _map(shields[habitId]);
-    final hasShield = activeShield.isNotEmpty &&
-        (activeShield['status'] ?? '').toString().trim() == 'armed';
+    final shieldModel = activeShield.isNotEmpty
+        ? ActiveStreakShield.fromJson(activeShield)
+        : null;
+    final protectedOccurrenceDateKey =
+        shieldModel?.protectedOccurrenceDateKey?.trim() ?? '';
+    final hasShield = shieldModel != null &&
+        (shieldModel.isActive ||
+            (protectedOccurrenceDateKey.isNotEmpty &&
+                protectedOccurrenceDateKey == dayKey));
     if (hasShield) {
       previousDone[habitId] = false;
       previousStatuses[habitId] = _habitStreakTypeProtected;
       shields[habitId] = {
         ...activeShield,
         'status': 'consumed',
-        'consumedAtMillis': DateTime.now().millisecondsSinceEpoch,
+        'consumedAtMillis': nowProvider().millisecondsSinceEpoch,
         'protectedOccurrenceDateKey': dayKey,
       };
       continue;
@@ -706,7 +724,7 @@ void _finalizeHabitDayRollover(
       id: breakId,
       userId: (userState['userId'] ?? userState['id'] ?? '').toString().trim(),
       habitId: habitId,
-      brokenAtMillis: DateTime.now().millisecondsSinceEpoch,
+      brokenAtMillis: nowProvider().millisecondsSinceEpoch,
       missedOccurrenceDateKey: dayKey,
       previousStreak: previousStreak,
       currentStreakAfterBreak: 0,
@@ -782,7 +800,8 @@ Future<void> _loadStore(
     if (store._state != null) {
       final userState = _ensureUserStateRoot(store._state!);
       _normalizeUserIdForActiveScope(store, userState);
-      _ensureDailyReset(userState);
+      _ensureDailyReset(userState, nowProvider: store._nowProvider);
+      _expireStreakShieldsForLocalDate(userState, store._nowProvider());
       _ensureActiveHabitIds(userState);
       _ensureDiaryEntriesRoot(userState);
       _ensureDailyMoodsRoot(userState);
@@ -805,8 +824,11 @@ Future<void> _loadStore(
         XpMutationOrigin.hydration,
       );
 
-      final viewKey = _activeViewDateKey(userState);
-      if (viewKey != _today()) {
+      final viewKey = _activeViewDateKey(
+        userState,
+        nowProvider: store._nowProvider,
+      );
+      if (viewKey != _todayFrom(store._nowProvider)) {
         _hydrateActiveHabitsForDate(userState, _dateFromKey(viewKey));
       }
 
@@ -843,7 +865,8 @@ Future<void> _saveStore(
 
   final userState = _ensureUserStateRoot(store._state!);
   _normalizeUserIdForActiveScope(store, userState);
-  _ensureDailyReset(userState);
+  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _expireStreakShieldsForLocalDate(userState, store._nowProvider());
   _ensureActiveHabitIds(userState);
   _ensureDiaryEntriesRoot(userState);
   _ensureDailyMoodsRoot(userState);
@@ -852,8 +875,11 @@ Future<void> _saveStore(
   _ensureAchievementsRoot(userState);
   _sanitizeFeaturedAchievements(userState);
 
-  final viewKey = _activeViewDateKey(userState);
-  if (viewKey != _today()) {
+  final viewKey = _activeViewDateKey(
+    userState,
+    nowProvider: store._nowProvider,
+  );
+  if (viewKey != _todayFrom(store._nowProvider)) {
     _hydrateActiveHabitsForDate(userState, _dateFromKey(viewKey));
   }
 

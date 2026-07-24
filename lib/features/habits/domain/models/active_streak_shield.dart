@@ -2,6 +2,7 @@ enum ActiveStreakShieldStatus {
   armed,
   consumed,
   cancelled,
+  expired,
 }
 
 extension ActiveStreakShieldStatusX on ActiveStreakShieldStatus {
@@ -13,6 +14,8 @@ extension ActiveStreakShieldStatusX on ActiveStreakShieldStatus {
         return 'consumed';
       case ActiveStreakShieldStatus.cancelled:
         return 'cancelled';
+      case ActiveStreakShieldStatus.expired:
+        return 'expired';
     }
   }
 
@@ -24,6 +27,8 @@ extension ActiveStreakShieldStatusX on ActiveStreakShieldStatus {
         return ActiveStreakShieldStatus.consumed;
       case 'cancelled':
         return ActiveStreakShieldStatus.cancelled;
+      case 'expired':
+        return ActiveStreakShieldStatus.expired;
       default:
         return null;
     }
@@ -55,6 +60,17 @@ class ActiveStreakShield {
 
   bool get isActive => status == ActiveStreakShieldStatus.armed;
   bool get isConsumed => status == ActiveStreakShieldStatus.consumed;
+  bool get isExpired => status == ActiveStreakShieldStatus.expired;
+
+  bool isActiveForLocalDate(DateTime now) {
+    if (!isActive) return false;
+    final activatedAt =
+        DateTime.fromMillisecondsSinceEpoch(activatedAtMillis).toLocal();
+    final localNow = now.toLocal();
+    return activatedAt.year == localNow.year &&
+        activatedAt.month == localNow.month &&
+        activatedAt.day == localNow.day;
+  }
 
   ActiveStreakShield copyWith({
     String? id,

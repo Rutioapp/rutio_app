@@ -35,6 +35,46 @@ void main() {
       expect(effects.first.remainingUses, 9);
     });
 
+    test('drops stale streak shields from a previous local day', () async {
+      final remote = _FakeUtilityConsumptionRemoteDataSource();
+      remote.activeRows = <Map<String, dynamic>>[
+        <String, dynamic>{
+          'id': 'shield-old',
+          'user_id': 'user-1',
+          'utility_id': 'utility_streak_shield_1',
+          'utility_type': 'streakShield',
+          'activated_at_millis':
+              DateTime(2026, 7, 23, 10).millisecondsSinceEpoch,
+          'remaining_uses': 1,
+          'total_uses': 1,
+          'status': 'active',
+          'habit_id': 'habit-1',
+        },
+        <String, dynamic>{
+          'id': 'effect-keep',
+          'user_id': 'user-1',
+          'utility_id': 'utility_xp_boost_1d',
+          'utility_type': 'xpBoost',
+          'activated_at_millis': 1000,
+          'remaining_uses': 9,
+          'total_uses': 10,
+          'status': 'active',
+          'habit_id': '',
+        },
+      ];
+      final repo = SupabaseUtilityConsumptionRepository(
+        remoteDataSource: remote,
+        enabled: true,
+        currentUserIdProvider: () => 'user-1',
+        nowProvider: () => DateTime(2026, 7, 24, 10),
+      );
+
+      final effects = await repo.loadEffects('user-1');
+
+      expect(effects, hasLength(1));
+      expect(effects.single.id, 'effect-keep');
+    });
+
     test('saveEffects activates a missing effect once', () async {
       final remote = _FakeUtilityConsumptionRemoteDataSource();
       final repo = SupabaseUtilityConsumptionRepository(
