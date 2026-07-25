@@ -1647,6 +1647,7 @@ ShopCloudSnapshot _cloudSnapshot({
   return ShopCloudSnapshot(
     authenticatedUserId: 'shop-controller-user',
     catalogItems: <RemoteShopItemDto>[],
+    catalogBundles: const <RemoteShopBundleDto>[],
     wallet: walletCoins == null
         ? null
         : RemoteWalletDto(

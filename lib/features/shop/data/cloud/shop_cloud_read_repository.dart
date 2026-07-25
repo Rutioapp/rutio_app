@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/supabase/rutio_supabase_client.dart';
+import '../shop_assets_catalog.dart';
 import '../../data/shop_catalog.dart';
 import 'shop_cloud_config.dart';
 import 'shop_cloud_dtos.dart';
@@ -118,6 +119,137 @@ class ShopCloudReadRepository {
         error: ShopCloudReadError(
           code: ShopCloudErrorCode.unknown,
           message: 'Could not fetch shop catalog.',
+          cause: error,
+        ),
+      );
+    }
+  }
+
+  Future<ShopCloudReadResult<List<RemoteShopBundleDto>>>
+      fetchActiveBundleCatalog() async {
+    if (!_readEnabled) {
+      return const ShopCloudReadResult<List<RemoteShopBundleDto>>.failure(
+        error: ShopCloudReadError(
+          code: ShopCloudErrorCode.featureDisabled,
+          message: 'Shop cloud read is disabled.',
+        ),
+      );
+    }
+
+    final userId = _requireAuthenticatedUserId();
+    if (userId == null) {
+      return const ShopCloudReadResult<List<RemoteShopBundleDto>>.failure(
+        error: ShopCloudReadError(
+          code: ShopCloudErrorCode.unauthenticated,
+          message: 'No authenticated user session is available.',
+        ),
+      );
+    }
+
+    try {
+      final bundleRows = await _catalogRemoteDataSource.fetchActiveBundleRows();
+      if (!_isCurrentSession(userId)) {
+        return const ShopCloudReadResult<List<RemoteShopBundleDto>>.failure(
+          error: ShopCloudReadError(
+            code: ShopCloudErrorCode.sessionChanged,
+            message: 'Authentication session changed during shop fetch.',
+          ),
+        );
+      }
+
+      final bundleItemRows =
+          await _catalogRemoteDataSource.fetchBundleItemRows();
+      if (!_isCurrentSession(userId)) {
+        return const ShopCloudReadResult<List<RemoteShopBundleDto>>.failure(
+          error: ShopCloudReadError(
+            code: ShopCloudErrorCode.sessionChanged,
+            message: 'Authentication session changed during shop fetch.',
+          ),
+        );
+      }
+
+      final parsedBundles = <RemoteShopBundleDto>[];
+      final warnings = <ShopCloudWarning>[];
+      for (final row in bundleRows) {
+        final dto = _parseBundleRow(row);
+        if (dto == null) {
+          warnings.add(
+            ShopCloudWarning(
+              code: ShopCloudWarningCode.invalidRemoteItem,
+              itemId: _trim(row['id']),
+              message: _bundleHasUnknownRarity(row)
+                  ? 'Remote bundle has an unknown rarity.'
+                  : 'Remote shop bundle row could not be parsed.',
+            ),
+          );
+          continue;
+        }
+        parsedBundles.add(dto);
+      }
+
+      final bundleItemsByBundleId = <String, List<RemoteShopBundleItemDto>>{};
+      for (final row in bundleItemRows) {
+        final dto = _parseBundleItemRow(row);
+        if (dto == null) {
+          warnings.add(
+            ShopCloudWarning(
+              code: ShopCloudWarningCode.invalidRemoteItem,
+              itemId: _trim(row['bundleId'] ?? row['bundle_id']),
+              message: 'Remote shop bundle item row could not be parsed.',
+            ),
+          );
+          continue;
+        }
+        bundleItemsByBundleId
+            .putIfAbsent(dto.bundleId, () => <RemoteShopBundleItemDto>[])
+            .add(dto);
+      }
+
+      final validBundles = <RemoteShopBundleDto>[];
+      final validBundleItemsByBundleId =
+          <String, List<RemoteShopBundleItemDto>>{};
+      for (final bundle in parsedBundles) {
+        final composition = bundleItemsByBundleId[bundle.id] ?? const [];
+        final resolvedComposition = _resolveBundleComposition(
+          bundleId: bundle.id,
+          items: composition,
+          warnings: warnings,
+        );
+        if (resolvedComposition == null) {
+          continue;
+        }
+        validBundles.add(bundle);
+        validBundleItemsByBundleId[bundle.id] = resolvedComposition;
+      }
+
+      final reconciliation = ShopCloudBundleCatalogReconciler.reconcile(
+        remoteBundles: validBundles,
+        remoteCompositionByBundleId: validBundleItemsByBundleId,
+        localBundles: ShopAssetsCatalog.allBundles,
+      );
+      warnings.addAll(reconciliation.warnings);
+
+      return ShopCloudReadResult<List<RemoteShopBundleDto>>.success(
+        data: List<RemoteShopBundleDto>.unmodifiable(validBundles),
+        warnings: List<ShopCloudWarning>.unmodifiable(warnings),
+      );
+    } on ShopCloudReadException catch (error) {
+      return ShopCloudReadResult<List<RemoteShopBundleDto>>.failure(
+        error: ShopCloudReadError(
+          code: error.code,
+          message: error.message,
+          cause: error.cause,
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+            '[shop_cloud_read] unexpected bundle catalog read error: $error');
+      }
+      return ShopCloudReadResult<List<RemoteShopBundleDto>>.failure(
+        error: ShopCloudReadError(
+          code: ShopCloudErrorCode.unknown,
+          message: 'Could not fetch shop bundle catalog.',
           cause: error,
         ),
       );
@@ -411,7 +543,8 @@ class ShopCloudReadRepository {
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[shop_cloud_read] unexpected owned bundle read error: $error');
+        debugPrint(
+            '[shop_cloud_read] unexpected owned bundle read error: $error');
       }
       return ShopCloudReadResult<List<RemoteOwnedBundleDto>>.failure(
         error: ShopCloudReadError(
@@ -454,6 +587,15 @@ class ShopCloudReadRepository {
         );
       }
       warnings.addAll(catalogResult.warnings);
+
+      final bundleCatalogResult = await fetchActiveBundleCatalog();
+      if (!bundleCatalogResult.isSuccess) {
+        return ShopCloudReadResult<ShopCloudSnapshot>.failure(
+          error: bundleCatalogResult.error!,
+          warnings: bundleCatalogResult.warnings,
+        );
+      }
+      warnings.addAll(bundleCatalogResult.warnings);
 
       final walletResult = await fetchWallet();
       warnings.addAll(walletResult.warnings);
@@ -502,17 +644,20 @@ class ShopCloudReadRepository {
       warnings.addAll(ownedBundlesResult.warnings);
 
       final catalogItems = catalogResult.data ?? const <RemoteShopItemDto>[];
+      final catalogBundles =
+          bundleCatalogResult.data ?? const <RemoteShopBundleDto>[];
       final snapshotWarnings = List<ShopCloudWarning>.unmodifiable(warnings);
       final snapshot = ShopCloudSnapshot(
         authenticatedUserId: userId,
         catalogItems: catalogItems,
+        catalogBundles: catalogBundles,
         wallet: wallet,
         inventory: inventoryResult.data ?? const <RemoteInventoryItemDto>[],
         equippedCosmetics:
             equippedResult.data ?? const <RemoteEquippedCosmeticDto>[],
         ownedBundles: ownedBundlesResult.data ?? const <RemoteOwnedBundleDto>[],
         fetchedAt: _nowProvider().toUtc(),
-        catalogVersion: _resolveCatalogVersion(catalogItems),
+        catalogVersion: _resolveCatalogVersion(catalogItems, catalogBundles),
         warnings: snapshotWarnings,
       );
 
@@ -703,14 +848,107 @@ class ShopCloudReadRepository {
     }
   }
 
-  int? _resolveCatalogVersion(List<RemoteShopItemDto> catalogItems) {
-    if (catalogItems.isEmpty) return null;
-    var maxVersion = catalogItems.first.catalogVersion;
-    for (final item in catalogItems.skip(1)) {
+  RemoteShopBundleDto? _parseBundleRow(Map<String, dynamic> row) {
+    try {
+      return RemoteShopBundleDto.fromJson(row);
+    } on FormatException catch (error) {
+      if (kDebugMode) {
+        debugPrint('[shop_cloud_read] bundle row rejected: ${error.message}');
+      }
+      return null;
+    }
+  }
+
+  RemoteShopBundleItemDto? _parseBundleItemRow(Map<String, dynamic> row) {
+    try {
+      return RemoteShopBundleItemDto.fromJson(row);
+    } on FormatException catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[shop_cloud_read] bundle item row rejected: ${error.message}',
+        );
+      }
+      return null;
+    }
+  }
+
+  List<RemoteShopBundleItemDto>? _resolveBundleComposition({
+    required String bundleId,
+    required List<RemoteShopBundleItemDto> items,
+    required List<ShopCloudWarning> warnings,
+  }) {
+    final bySlot = <RemoteShopEquipSlot, RemoteShopBundleItemDto>{};
+    for (final item in items) {
+      if (bySlot.containsKey(item.slot)) {
+        warnings.add(
+          ShopCloudWarning(
+            code: ShopCloudWarningCode.invalidRemoteItem,
+            itemId: bundleId,
+            message: 'Remote bundle composition has duplicate slots.',
+          ),
+        );
+        return null;
+      }
+      bySlot[item.slot] = item;
+    }
+
+    const requiredSlots = <RemoteShopEquipSlot>[
+      RemoteShopEquipSlot.screenBackground,
+      RemoteShopEquipSlot.habitCardBackground,
+      RemoteShopEquipSlot.userCardBackground,
+    ];
+    if (requiredSlots.any((slot) => !bySlot.containsKey(slot)) ||
+        bySlot.length != requiredSlots.length) {
+      warnings.add(
+        ShopCloudWarning(
+          code: ShopCloudWarningCode.invalidRemoteItem,
+          itemId: bundleId,
+          message: 'Remote bundle composition is incomplete.',
+        ),
+      );
+      return null;
+    }
+
+    return <RemoteShopBundleItemDto>[
+      bySlot[RemoteShopEquipSlot.screenBackground]!,
+      bySlot[RemoteShopEquipSlot.habitCardBackground]!,
+      bySlot[RemoteShopEquipSlot.userCardBackground]!,
+    ];
+  }
+
+  bool _bundleHasUnknownRarity(Map<String, dynamic> row) {
+    final rarity = (row['rarity'] ?? '').toString().trim();
+    if (rarity.isEmpty) return false;
+    return RemoteShopItemRarityX.fromKey(rarity) ==
+        RemoteShopItemRarity.unknown;
+  }
+
+  int? _resolveCatalogVersion(
+    List<RemoteShopItemDto> catalogItems,
+    List<RemoteShopBundleDto> catalogBundles,
+  ) {
+    var hasVersion = false;
+    var maxVersion = 0;
+
+    for (final item in catalogItems) {
+      hasVersion = true;
       if (item.catalogVersion > maxVersion) {
         maxVersion = item.catalogVersion;
       }
     }
-    return maxVersion;
+
+    for (final bundle in catalogBundles) {
+      hasVersion = true;
+      if (bundle.catalogVersion > maxVersion) {
+        maxVersion = bundle.catalogVersion;
+      }
+    }
+
+    return hasVersion ? maxVersion : null;
   }
+}
+
+String? _trim(Object? value) {
+  final normalized = (value ?? '').toString().trim();
+  return normalized.isEmpty ? null : normalized;
 }

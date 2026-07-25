@@ -6,8 +6,7 @@ import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 
 void main() {
-  test(
-      'cloud cosmetics snapshot updatedAt follows remote row timestamps only',
+  test('cloud cosmetics snapshot updatedAt follows remote row timestamps only',
       () {
     final fetchedAt = DateTime.utc(2026, 7, 20, 12);
     final equippedAt = DateTime.utc(2026, 7, 20, 11);
@@ -15,6 +14,20 @@ void main() {
     final snapshot = ShopCloudSnapshot(
       authenticatedUserId: 'cloud-user',
       catalogItems: const <RemoteShopItemDto>[],
+      catalogBundles: <RemoteShopBundleDto>[
+        RemoteShopBundleDto(
+          id: 'pack_beige_rutio',
+          familyId: 'pack_beige_rutio',
+          rarity: RemoteShopItemRarity.common,
+          priceCoins: 300,
+          originalPriceCoins: 330,
+          isActive: true,
+          sortOrder: 0,
+          catalogVersion: 8,
+          createdAt: DateTime.utc(2026, 7, 20, 8),
+          updatedAt: DateTime.utc(2026, 7, 20, 8),
+        ),
+      ],
       wallet: null,
       inventory: <RemoteInventoryItemDto>[
         RemoteInventoryItemDto(
@@ -59,6 +72,8 @@ void main() {
       cloudSnapshot.ownedAssetIds,
       contains('wallpaper_dusty_lilac'),
     );
+    expect(cloudSnapshot.catalogBundles, hasLength(1));
+    expect(cloudSnapshot.catalogBundles.single.id, 'pack_beige_rutio');
     expect(
       ShopAssetsCatalog.getAssetById(cloudSnapshot.equippedWallpaperId!),
       isNotNull,
@@ -73,6 +88,7 @@ void main() {
         'wallpaper_dusty_lilac',
       ],
       ownedBundleIds: const <String>['pack_beige_rutio'],
+      catalogBundles: const <RemoteShopBundleDto>[],
       equippedWallpaperId: 'wallpaper_dusty_lilac',
       equippedHabitCardSkinId: null,
       equippedUserCardSkinId: null,
@@ -87,6 +103,7 @@ void main() {
         'wallpaper_dusty_lilac',
       ],
       ownedBundleIds: const <String>['pack_beige_rutio'],
+      catalogBundles: const <RemoteShopBundleDto>[],
       equippedWallpaperId: 'wallpaper_mist_blue',
       equippedHabitCardSkinId: null,
       equippedUserCardSkinId: null,

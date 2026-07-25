@@ -11,6 +11,7 @@ import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_repository.
 import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
 import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_cache.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_snapshot.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_equip_repository.dart';
@@ -1160,6 +1161,7 @@ CloudCosmeticsSnapshot _snapshot({
     userId: userId,
     ownedAssetIds: ownedAssetIds,
     ownedBundleIds: ownedBundleIds,
+    catalogBundles: const <RemoteShopBundleDto>[],
     equippedWallpaperId: wallpaperId,
     equippedHabitCardSkinId: habitCardId,
     equippedUserCardSkinId: userCardId,

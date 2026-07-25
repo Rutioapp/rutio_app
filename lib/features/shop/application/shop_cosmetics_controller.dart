@@ -8,6 +8,7 @@ import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_cache.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_config.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_request_id.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_snapshot.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_equip_repository.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_repository.dart';
@@ -1689,6 +1690,8 @@ class ShopCosmeticsController extends ChangeNotifier {
       userId: scopeKey,
       ownedAssetIds: state.ownedAssetIds,
       ownedBundleIds: state.ownedBundleIds,
+      catalogBundles:
+          _cloudState.snapshot?.catalogBundles ?? const <RemoteShopBundleDto>[],
       equippedWallpaperId: state.equippedWallpaperId,
       equippedHabitCardSkinId: state.equippedHabitCardSkinId,
       equippedUserCardSkinId: state.equippedUserCardSkinId,

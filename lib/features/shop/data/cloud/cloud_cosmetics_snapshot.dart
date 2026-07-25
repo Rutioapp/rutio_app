@@ -12,6 +12,7 @@ class CloudCosmeticsSnapshot {
     required this.userId,
     required this.ownedAssetIds,
     required this.ownedBundleIds,
+    required this.catalogBundles,
     required this.equippedWallpaperId,
     required this.equippedHabitCardSkinId,
     required this.equippedUserCardSkinId,
@@ -23,6 +24,7 @@ class CloudCosmeticsSnapshot {
   final String userId;
   final List<String> ownedAssetIds;
   final List<String> ownedBundleIds;
+  final List<RemoteShopBundleDto> catalogBundles;
   final String? equippedWallpaperId;
   final String? equippedHabitCardSkinId;
   final String? equippedUserCardSkinId;
@@ -35,6 +37,8 @@ class CloudCosmeticsSnapshot {
   ) {
     final ownedAssetIds = _resolveOwnedAssetIds(snapshot.inventory);
     final ownedBundleIds = _resolveOwnedBundleIds(snapshot.ownedBundles);
+    final catalogBundles =
+        List<RemoteShopBundleDto>.unmodifiable(snapshot.catalogBundles);
     final equipped = _resolveEquippedCosmetics(
       snapshot.equippedCosmetics,
       ownedAssetIds,
@@ -42,8 +46,9 @@ class CloudCosmeticsSnapshot {
 
     return CloudCosmeticsSnapshot(
       userId: snapshot.authenticatedUserId,
-      ownedAssetIds: ownedAssetIds,
-      ownedBundleIds: ownedBundleIds,
+      ownedAssetIds: List<String>.unmodifiable(ownedAssetIds),
+      ownedBundleIds: List<String>.unmodifiable(ownedBundleIds),
+      catalogBundles: catalogBundles,
       equippedWallpaperId: equipped.wallpaper,
       equippedHabitCardSkinId: equipped.habitCard,
       equippedUserCardSkinId: equipped.userCard,
@@ -78,6 +83,7 @@ class CloudCosmeticsSnapshot {
   CloudCosmeticsSnapshot copyWith({
     List<String>? ownedAssetIds,
     List<String>? ownedBundleIds,
+    List<RemoteShopBundleDto>? catalogBundles,
     Object? equippedWallpaperId = _cloudCosmeticsUnset,
     Object? equippedHabitCardSkinId = _cloudCosmeticsUnset,
     Object? equippedUserCardSkinId = _cloudCosmeticsUnset,
@@ -87,8 +93,13 @@ class CloudCosmeticsSnapshot {
   }) {
     return CloudCosmeticsSnapshot(
       userId: userId,
-      ownedAssetIds: ownedAssetIds ?? this.ownedAssetIds,
-      ownedBundleIds: ownedBundleIds ?? this.ownedBundleIds,
+      ownedAssetIds:
+          List<String>.unmodifiable(ownedAssetIds ?? this.ownedAssetIds),
+      ownedBundleIds:
+          List<String>.unmodifiable(ownedBundleIds ?? this.ownedBundleIds),
+      catalogBundles: List<RemoteShopBundleDto>.unmodifiable(
+        catalogBundles ?? this.catalogBundles,
+      ),
       equippedWallpaperId: identical(equippedWallpaperId, _cloudCosmeticsUnset)
           ? this.equippedWallpaperId
           : equippedWallpaperId as String?,
@@ -111,6 +122,9 @@ class CloudCosmeticsSnapshot {
       'userId': userId,
       'ownedAssetIds': ownedAssetIds,
       'ownedBundleIds': ownedBundleIds,
+      'catalogBundles': catalogBundles.map((bundle) => bundle.toJson()).toList(
+            growable: false,
+          ),
       'equippedWallpaperId': equippedWallpaperId,
       'equippedHabitCardSkinId': equippedHabitCardSkinId,
       'equippedUserCardSkinId': equippedUserCardSkinId,
@@ -130,13 +144,23 @@ class CloudCosmeticsSnapshot {
 
     return CloudCosmeticsSnapshot(
       userId: userId,
-      ownedAssetIds: _normalizeOwnedAssetIds(
+      ownedAssetIds: List<String>.unmodifiable(_normalizeOwnedAssetIds(
         (json['ownedAssetIds'] as List?)?.map((value) => value.toString()) ??
             const <String>[],
-      ),
-      ownedBundleIds: _normalizeOwnedBundleIds(
+      )),
+      ownedBundleIds: List<String>.unmodifiable(_normalizeOwnedBundleIds(
         (json['ownedBundleIds'] as List?)?.map((value) => value.toString()) ??
             const <String>[],
+      )),
+      catalogBundles: List<RemoteShopBundleDto>.unmodifiable(
+        ((json['catalogBundles'] as List?) ?? const <dynamic>[])
+            .whereType<Map>()
+            .map(
+              (value) => RemoteShopBundleDto.fromJson(
+                Map<String, dynamic>.from(value.cast<String, dynamic>()),
+              ),
+            )
+            .toList(growable: false),
       ),
       equippedWallpaperId: _normalizeEquippedId(
         json['equippedWallpaperId']?.toString(),
