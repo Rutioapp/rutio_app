@@ -482,6 +482,131 @@ class RemoteOwnedBundleDto {
   }
 }
 
+class RemoteShopBundleDto {
+  const RemoteShopBundleDto({
+    required this.id,
+    required this.familyId,
+    required this.rarity,
+    required this.priceCoins,
+    required this.originalPriceCoins,
+    required this.isActive,
+    required this.sortOrder,
+    required this.catalogVersion,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final String familyId;
+  final RemoteShopItemRarity rarity;
+  final int priceCoins;
+  final int originalPriceCoins;
+  final bool isActive;
+  final int sortOrder;
+  final int catalogVersion;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  factory RemoteShopBundleDto.fromJson(Map<String, dynamic> json) {
+    final id = _trim(json['id']);
+    final familyId = _trim(json['familyId'] ?? json['family_id']);
+    final priceCoins = _int(json['priceCoins'] ?? json['price_coins']);
+    final originalPriceCoins =
+        _int(json['originalPriceCoins'] ?? json['original_price_coins']);
+    final sortOrder = _int(json['sortOrder'] ?? json['sort_order']);
+    final catalogVersion =
+        _int(json['catalogVersion'] ?? json['catalog_version']);
+    final createdAt = _dateTime(json['createdAt'] ?? json['created_at']);
+    final updatedAt = _dateTime(json['updatedAt'] ?? json['updated_at']);
+    final rarity = _requiredBundleRarity(json['rarity']);
+
+    if (id == null ||
+        id.isEmpty ||
+        familyId == null ||
+        familyId.isEmpty ||
+        priceCoins == null ||
+        priceCoins < 0 ||
+        originalPriceCoins == null ||
+        originalPriceCoins < priceCoins ||
+        sortOrder == null ||
+        sortOrder < 0 ||
+        catalogVersion == null ||
+        catalogVersion < 1 ||
+        createdAt == null ||
+        updatedAt == null) {
+      throw const FormatException('Invalid remote shop bundle row.');
+    }
+
+    return RemoteShopBundleDto(
+      id: id,
+      familyId: familyId,
+      rarity: rarity,
+      priceCoins: priceCoins,
+      originalPriceCoins: originalPriceCoins,
+      isActive: _bool(json['isActive'] ?? json['is_active']),
+      sortOrder: sortOrder,
+      catalogVersion: catalogVersion,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'familyId': familyId,
+      'rarity': rarity.dbKey,
+      'priceCoins': priceCoins,
+      'originalPriceCoins': originalPriceCoins,
+      'isActive': isActive,
+      'sortOrder': sortOrder,
+      'catalogVersion': catalogVersion,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+}
+
+class RemoteShopBundleItemDto {
+  const RemoteShopBundleItemDto({
+    required this.bundleId,
+    required this.itemId,
+    required this.slot,
+  });
+
+  final String bundleId;
+  final String itemId;
+  final RemoteShopEquipSlot slot;
+
+  factory RemoteShopBundleItemDto.fromJson(Map<String, dynamic> json) {
+    final bundleId = _trim(json['bundleId'] ?? json['bundle_id']);
+    final itemId = _trim(json['itemId'] ?? json['item_id']);
+    final slot = RemoteShopEquipSlotX.fromKey(json['slot']);
+
+    if (bundleId == null ||
+        bundleId.isEmpty ||
+        itemId == null ||
+        itemId.isEmpty ||
+        slot == RemoteShopEquipSlot.unknown) {
+      throw const FormatException('Invalid remote shop bundle item row.');
+    }
+
+    return RemoteShopBundleItemDto(
+      bundleId: bundleId,
+      itemId: itemId,
+      slot: slot,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'bundleId': bundleId,
+      'itemId': itemId,
+      'slot': slot.dbKey,
+    };
+  }
+}
+
 String? _trim(Object? value) {
   final normalized = (value ?? '').toString().trim();
   return normalized.isEmpty ? null : normalized;
@@ -515,6 +640,14 @@ RemoteShopItemRarity? _nullableRarity(Object? value) {
   final normalized = (value ?? '').toString().trim();
   if (normalized.isEmpty) return null;
   return RemoteShopItemRarityX.fromKey(normalized);
+}
+
+RemoteShopItemRarity _requiredBundleRarity(Object? value) {
+  final rarity = _nullableRarity(value);
+  if (rarity == null || rarity == RemoteShopItemRarity.unknown) {
+    throw const FormatException('Invalid remote shop bundle row.');
+  }
+  return rarity;
 }
 
 RemoteShopEquipSlot? _nullableEquipSlot(Object? value) {

@@ -6,6 +6,10 @@ import 'shop_cloud_errors.dart';
 
 abstract class ShopCatalogRemoteDataSource {
   Future<List<Map<String, dynamic>>> fetchActiveCatalogRows();
+
+  Future<List<Map<String, dynamic>>> fetchActiveBundleRows();
+
+  Future<List<Map<String, dynamic>>> fetchBundleItemRows();
 }
 
 abstract class ShopUserStateRemoteDataSource {
@@ -52,6 +56,67 @@ class SupabaseShopCatalogRemoteDataSource
       throw ShopCloudReadException(
         code: ShopCloudErrorCode.unknown,
         message: 'Could not fetch shop catalog.',
+        cause: error,
+      );
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchActiveBundleRows() async {
+    _ensureAuthenticatedUser();
+    try {
+      final client = _clientOrInstance;
+      final rows = await client
+          .from('shop_bundles')
+          .select()
+          .eq('is_active', true)
+          .order('sort_order', ascending: true)
+          .order('id', ascending: true);
+      return _castRows(rows);
+    } on PostgrestException catch (error) {
+      throw _mapPostgrestError(
+        error,
+        fallbackMessage: 'Could not fetch shop bundle catalog.',
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+            '[shop_cloud_read] unexpected bundle catalog fetch error: $error');
+      }
+      throw ShopCloudReadException(
+        code: ShopCloudErrorCode.unknown,
+        message: 'Could not fetch shop bundle catalog.',
+        cause: error,
+      );
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchBundleItemRows() async {
+    _ensureAuthenticatedUser();
+    try {
+      final client = _clientOrInstance;
+      final rows = await client
+          .from('shop_bundle_items')
+          .select('bundle_id, item_id, slot')
+          .order('bundle_id', ascending: true)
+          .order('slot', ascending: true)
+          .order('item_id', ascending: true);
+      return _castRows(rows);
+    } on PostgrestException catch (error) {
+      throw _mapPostgrestError(
+        error,
+        fallbackMessage: 'Could not fetch shop bundle items.',
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[shop_cloud_read] unexpected bundle items fetch error: $error',
+        );
+      }
+      throw ShopCloudReadException(
+        code: ShopCloudErrorCode.unknown,
+        message: 'Could not fetch shop bundle items.',
         cause: error,
       );
     }

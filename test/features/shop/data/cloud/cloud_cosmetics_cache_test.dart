@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_cache.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_snapshot.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -15,6 +16,7 @@ void main() {
       userId: 'user-a',
       ownedAssetIds: const <String>['wallpaper_mist_blue'],
       ownedBundleIds: const <String>['pack_beige_rutio'],
+      catalogBundles: const <RemoteShopBundleDto>[],
       equippedWallpaperId: 'wallpaper_mist_blue',
       equippedHabitCardSkinId: null,
       equippedUserCardSkinId: null,
@@ -26,6 +28,7 @@ void main() {
       userId: 'user-b',
       ownedAssetIds: const <String>['user_card_full_moon'],
       ownedBundleIds: const <String>[],
+      catalogBundles: const <RemoteShopBundleDto>[],
       equippedWallpaperId: null,
       equippedHabitCardSkinId: null,
       equippedUserCardSkinId: 'user_card_full_moon',
@@ -52,11 +55,26 @@ void main() {
     expect(missingEntry, isNull);
   });
 
-  test('cloud cosmetics cache reads snapshots without ownedBundleIds', () async {
+  test('cloud cosmetics cache reads snapshots without ownedBundleIds',
+      () async {
     final snapshot = CloudCosmeticsSnapshot.fromJson(
       <String, dynamic>{
         'userId': 'user-a',
         'ownedAssetIds': <String>['wallpaper_mist_blue'],
+        'catalogBundles': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'pack_beige_rutio',
+            'familyId': 'pack_beige_rutio',
+            'rarity': 'common',
+            'priceCoins': 300,
+            'originalPriceCoins': 330,
+            'isActive': true,
+            'sortOrder': 0,
+            'catalogVersion': 1,
+            'createdAt': '2026-07-19T12:00:00Z',
+            'updatedAt': '2026-07-19T12:00:00Z',
+          },
+        ],
         'equippedWallpaperId': 'wallpaper_mist_blue',
         'equippedHabitCardSkinId': null,
         'equippedUserCardSkinId': null,
@@ -67,5 +85,6 @@ void main() {
     );
 
     expect(snapshot.ownedBundleIds, isEmpty);
+    expect(snapshot.catalogBundles, hasLength(1));
   });
 }

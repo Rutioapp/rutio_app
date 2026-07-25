@@ -1050,8 +1050,7 @@ class _DelayedFailingShopCloudReadRepository extends ShopCloudReadRepository {
 }
 
 class _MemoryWalletCache implements WalletCache {
-  final Map<String, WalletCacheEntry> _entries =
-      <String, WalletCacheEntry>{};
+  final Map<String, WalletCacheEntry> _entries = <String, WalletCacheEntry>{};
 
   @override
   Future<WalletCacheEntry?> read(String userId) async => _entries[userId];
@@ -1080,6 +1079,7 @@ ShopCloudSnapshot _cloudSnapshot({
   return ShopCloudSnapshot(
     authenticatedUserId: 'shop-flow-user',
     catalogItems: const <RemoteShopItemDto>[],
+    catalogBundles: const <RemoteShopBundleDto>[],
     wallet: walletCoins == null
         ? null
         : RemoteWalletDto(
@@ -1127,10 +1127,12 @@ Finder _scrollableForFinder(Finder finder) {
       description.contains('shopCosmeticsBundleCard-')) {
     final Finder grid = find.byKey(const Key('shopCosmeticsGrid'));
     if (grid.evaluate().isNotEmpty) {
-      return find.descendant(
-        of: grid,
-        matching: find.byType(Scrollable),
-      ).first;
+      return find
+          .descendant(
+            of: grid,
+            matching: find.byType(Scrollable),
+          )
+          .first;
     }
   }
 

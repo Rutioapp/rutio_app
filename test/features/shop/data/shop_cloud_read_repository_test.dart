@@ -145,6 +145,34 @@ void main() {
           _utilityRow('utility_streak_recover_1', 250, 'streakRecover'),
           _utilityRow('utility_streak_shield_1', 300, 'streakShield'),
           _utilityRow('utility_mystery_box_basic', 100, 'mysteryBox'),
+        ]
+        ..bundleRows = <Map<String, dynamic>>[
+          _bundleRow(
+            'pack_beige_rutio',
+            familyId: 'pack_beige_rutio',
+            rarity: 'common',
+            priceCoins: 300,
+            originalPriceCoins: 330,
+            sortOrder: 0,
+            catalogVersion: 3,
+          ),
+        ]
+        ..bundleItemRows = <Map<String, dynamic>>[
+          _bundleItemRow(
+            'pack_beige_rutio',
+            'wallpaper_rutio_beige',
+            'screen_background',
+          ),
+          _bundleItemRow(
+            'pack_beige_rutio',
+            'habit_card_warm_beige',
+            'habit_card_background',
+          ),
+          _bundleItemRow(
+            'pack_beige_rutio',
+            'user_card_warm_beige',
+            'user_card_background',
+          ),
         ];
       final userState = _FakeUserStateDataSource()
         ..walletRow = <String, dynamic>{
@@ -200,7 +228,8 @@ void main() {
       expect(result.data!.inventory, hasLength(1));
       expect(result.data!.equippedCosmetics, hasLength(1));
       expect(result.data!.ownedBundles, hasLength(1));
-      expect(result.data!.catalogVersion, 1);
+      expect(result.data!.catalogBundles, hasLength(1));
+      expect(result.data!.catalogVersion, 3);
       expect(result.data!.fetchedAt, DateTime.utc(2026, 7, 18));
       expect(catalog.calls, 1);
       expect(userState.walletCalls, 1);
@@ -228,17 +257,150 @@ void main() {
       expect(result.error?.code, ShopCloudErrorCode.sessionChanged);
       expect(userState.walletCalls, 0);
     });
+
+    test('fetchActiveBundleCatalog groups slots and rejects duplicates',
+        () async {
+      final catalog = _FakeCatalogDataSource()
+        ..bundleRows = <Map<String, dynamic>>[
+          _bundleRow(
+            'pack_beige_rutio',
+            familyId: 'pack_beige_rutio',
+            rarity: 'common',
+            priceCoins: 300,
+            originalPriceCoins: 330,
+            sortOrder: 0,
+            catalogVersion: 2,
+          ),
+        ]
+        ..bundleItemRows = <Map<String, dynamic>>[
+          _bundleItemRow(
+            'pack_beige_rutio',
+            'wallpaper_rutio_beige',
+            'screen_background',
+          ),
+          _bundleItemRow(
+            'pack_beige_rutio',
+            'habit_card_warm_beige',
+            'habit_card_background',
+          ),
+          _bundleItemRow(
+            'pack_beige_rutio',
+            'user_card_warm_beige',
+            'user_card_background',
+          ),
+          _bundleItemRow(
+            'pack_beige_rutio',
+            'user_card_soft_camel',
+            'user_card_background',
+          ),
+        ];
+      final repository = ShopCloudReadRepository(
+        catalogRemoteDataSource: catalog,
+        userStateRemoteDataSource: _FakeUserStateDataSource(),
+        readEnabled: true,
+        currentUserIdProvider: () => 'user-1',
+      );
+
+      final result = await repository.fetchActiveBundleCatalog();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.data, isEmpty);
+      expect(
+        result.warnings.any(
+          (warning) => warning.message.contains('duplicate slots'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('fetchActiveBundleCatalog warns on incomplete composition', () async {
+      final catalog = _FakeCatalogDataSource()
+        ..bundleRows = <Map<String, dynamic>>[
+          _bundleRow(
+            'pack_beige_rutio',
+            familyId: 'pack_beige_rutio',
+            rarity: 'common',
+            priceCoins: 300,
+            originalPriceCoins: 330,
+            sortOrder: 0,
+            catalogVersion: 2,
+          ),
+        ]
+        ..bundleItemRows = <Map<String, dynamic>>[
+          _bundleItemRow(
+            'pack_beige_rutio',
+            'wallpaper_rutio_beige',
+            'screen_background',
+          ),
+          _bundleItemRow(
+            'pack_beige_rutio',
+            'habit_card_warm_beige',
+            'habit_card_background',
+          ),
+        ];
+      final repository = ShopCloudReadRepository(
+        catalogRemoteDataSource: catalog,
+        userStateRemoteDataSource: _FakeUserStateDataSource(),
+        readEnabled: true,
+        currentUserIdProvider: () => 'user-1',
+      );
+
+      final result = await repository.fetchActiveBundleCatalog();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.data, isEmpty);
+      expect(
+        result.warnings.any(
+          (warning) => warning.message.contains('incomplete'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('fetchActiveBundleCatalog stops when the session changes mid-read',
+        () async {
+      late String? userId;
+      final catalog = _SwitchingBundleCatalogDataSource(
+        onBeforeComplete: () {
+          userId = 'user-2';
+        },
+      );
+      final repository = ShopCloudReadRepository(
+        catalogRemoteDataSource: catalog,
+        userStateRemoteDataSource: _FakeUserStateDataSource(),
+        readEnabled: true,
+        currentUserIdProvider: () => userId,
+      );
+
+      userId = 'user-1';
+      final result = await repository.fetchActiveBundleCatalog();
+
+      expect(result.isSuccess, isFalse);
+      expect(result.error?.code, ShopCloudErrorCode.sessionChanged);
+    });
   });
 }
 
 class _FakeCatalogDataSource implements ShopCatalogRemoteDataSource {
   int calls = 0;
   List<Map<String, dynamic>> rows = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> bundleRows = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> bundleItemRows = <Map<String, dynamic>>[];
 
   @override
   Future<List<Map<String, dynamic>>> fetchActiveCatalogRows() async {
     calls += 1;
     return rows;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchActiveBundleRows() async {
+    return bundleRows;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchBundleItemRows() async {
+    return bundleItemRows;
   }
 }
 
@@ -289,6 +451,91 @@ class _SwitchingCatalogDataSource implements ShopCatalogRemoteDataSource {
       _utilityRow('utility_xp_boost_1d', 75, 'xpBoost'),
     ];
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchActiveBundleRows() async {
+    onBeforeComplete();
+    return <Map<String, dynamic>>[
+      _bundleRow(
+        'pack_beige_rutio',
+        familyId: 'pack_beige_rutio',
+        rarity: 'common',
+        priceCoins: 300,
+        originalPriceCoins: 330,
+        sortOrder: 0,
+        catalogVersion: 2,
+      ),
+    ];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchBundleItemRows() async {
+    return <Map<String, dynamic>>[
+      _bundleItemRow(
+        'pack_beige_rutio',
+        'wallpaper_rutio_beige',
+        'screen_background',
+      ),
+      _bundleItemRow(
+        'pack_beige_rutio',
+        'habit_card_warm_beige',
+        'habit_card_background',
+      ),
+      _bundleItemRow(
+        'pack_beige_rutio',
+        'user_card_warm_beige',
+        'user_card_background',
+      ),
+    ];
+  }
+}
+
+class _SwitchingBundleCatalogDataSource implements ShopCatalogRemoteDataSource {
+  _SwitchingBundleCatalogDataSource({required this.onBeforeComplete});
+
+  final VoidCallback onBeforeComplete;
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchActiveCatalogRows() async {
+    return const <Map<String, dynamic>>[];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchActiveBundleRows() async {
+    onBeforeComplete();
+    return <Map<String, dynamic>>[
+      _bundleRow(
+        'pack_beige_rutio',
+        familyId: 'pack_beige_rutio',
+        rarity: 'common',
+        priceCoins: 300,
+        originalPriceCoins: 330,
+        sortOrder: 0,
+        catalogVersion: 2,
+      ),
+    ];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchBundleItemRows() async {
+    return <Map<String, dynamic>>[
+      _bundleItemRow(
+        'pack_beige_rutio',
+        'wallpaper_rutio_beige',
+        'screen_background',
+      ),
+      _bundleItemRow(
+        'pack_beige_rutio',
+        'habit_card_warm_beige',
+        'habit_card_background',
+      ),
+      _bundleItemRow(
+        'pack_beige_rutio',
+        'user_card_warm_beige',
+        'user_card_background',
+      ),
+    ];
+  }
 }
 
 Map<String, dynamic> _utilityRow(String id, int priceCoins, String subtype) {
@@ -309,5 +556,40 @@ Map<String, dynamic> _utilityRow(String id, int priceCoins, String subtype) {
     'catalogVersion': 1,
     'createdAt': '2026-07-17T00:00:00Z',
     'updatedAt': '2026-07-17T00:00:00Z',
+  };
+}
+
+Map<String, dynamic> _bundleRow(
+  String id, {
+  required String familyId,
+  required String rarity,
+  required int priceCoins,
+  required int originalPriceCoins,
+  required int sortOrder,
+  required int catalogVersion,
+}) {
+  return <String, dynamic>{
+    'id': id,
+    'family_id': familyId,
+    'rarity': rarity,
+    'price_coins': priceCoins,
+    'original_price_coins': originalPriceCoins,
+    'is_active': true,
+    'sort_order': sortOrder,
+    'catalog_version': catalogVersion,
+    'created_at': '2026-07-17T00:00:00Z',
+    'updated_at': '2026-07-17T00:00:00Z',
+  };
+}
+
+Map<String, dynamic> _bundleItemRow(
+  String bundleId,
+  String itemId,
+  String slot,
+) {
+  return <String, dynamic>{
+    'bundle_id': bundleId,
+    'item_id': itemId,
+    'slot': slot,
   };
 }

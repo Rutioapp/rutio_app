@@ -376,6 +376,7 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
             'updatedAt': '2026-07-18T00:00:00Z',
           }),
         ],
+        catalogBundles: const <RemoteShopBundleDto>[],
         wallet: RemoteWalletDto(
           userId: 'shop-controller-user',
           coins: _walletCoins,

@@ -8,6 +8,7 @@ import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_errors.dart
 import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_repository.dart';
 import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_cache.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_snapshot.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_equip_dtos.dart';
@@ -105,7 +106,10 @@ void main() {
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final store = _FakeHomeStore();
-    await ShopCosmeticsRepository().save(
+    final repository = ShopCosmeticsRepository(
+      scopeResolver: () => store.activeLocalScopeUserId ?? store.userId,
+    );
+    await repository.save(
       ShopCosmeticsState(
         ownedAssetIds: <String>[
           'habit_card_warm_beige',
@@ -115,7 +119,10 @@ void main() {
         equippedHabitCardSkinId: 'habit_card_warm_beige',
       ),
     );
-    final controller = ShopCosmeticsController(userStateStore: store);
+    final controller = ShopCosmeticsController(
+      userStateStore: store,
+      repository: repository,
+    );
     await controller.hydrate();
 
     await tester.pumpWidget(_app(store: store, controller: controller));
@@ -183,7 +190,8 @@ void main() {
     expect(controller.cloudSnapshotRevision, greaterThan(initialRevision));
   });
 
-  testWidgets('home updates cloud wallpaper while kept alive in an IndexedStack',
+  testWidgets(
+      'home updates cloud wallpaper while kept alive in an IndexedStack',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final store = _FakeHomeStore();
@@ -434,6 +442,7 @@ CloudCosmeticsSnapshot _cloudSnapshot({
     userId: userId,
     ownedAssetIds: ownedAssetIds,
     ownedBundleIds: const <String>[],
+    catalogBundles: const <RemoteShopBundleDto>[],
     equippedWallpaperId: wallpaperId,
     equippedHabitCardSkinId: null,
     equippedUserCardSkinId: null,

@@ -192,4 +192,108 @@ void main() {
       );
     });
   });
+
+  group('RemoteShopBundleDto', () {
+    test('parses a valid bundle row', () {
+      final dto = RemoteShopBundleDto.fromJson(<String, dynamic>{
+        'id': 'pack_beige_rutio',
+        'family_id': 'pack_beige_rutio',
+        'rarity': 'common',
+        'price_coins': 300,
+        'original_price_coins': 330,
+        'is_active': true,
+        'sort_order': 0,
+        'catalog_version': 2,
+        'created_at': '2026-07-17T00:00:00Z',
+        'updated_at': '2026-07-17T00:00:00Z',
+      });
+
+      expect(dto.id, 'pack_beige_rutio');
+      expect(dto.familyId, 'pack_beige_rutio');
+      expect(dto.rarity, RemoteShopItemRarity.common);
+      expect(dto.priceCoins, 300);
+      expect(dto.originalPriceCoins, 330);
+      expect(dto.isActive, isTrue);
+      expect(dto.catalogVersion, 2);
+    });
+
+    test('rejects a negative price', () {
+      expect(
+        () => RemoteShopBundleDto.fromJson(<String, dynamic>{
+          'id': 'pack_beige_rutio',
+          'family_id': 'pack_beige_rutio',
+          'rarity': 'common',
+          'price_coins': -1,
+          'original_price_coins': 330,
+          'is_active': true,
+          'sort_order': 0,
+          'catalog_version': 2,
+          'created_at': '2026-07-17T00:00:00Z',
+          'updated_at': '2026-07-17T00:00:00Z',
+        }),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects when original price is below the final price', () {
+      expect(
+        () => RemoteShopBundleDto.fromJson(<String, dynamic>{
+          'id': 'pack_beige_rutio',
+          'family_id': 'pack_beige_rutio',
+          'rarity': 'common',
+          'price_coins': 330,
+          'original_price_coins': 300,
+          'is_active': true,
+          'sort_order': 0,
+          'catalog_version': 2,
+          'created_at': '2026-07-17T00:00:00Z',
+          'updated_at': '2026-07-17T00:00:00Z',
+        }),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects an unknown rarity', () {
+      expect(
+        () => RemoteShopBundleDto.fromJson(<String, dynamic>{
+          'id': 'pack_beige_rutio',
+          'family_id': 'pack_beige_rutio',
+          'rarity': 'future_rarity',
+          'price_coins': 300,
+          'original_price_coins': 330,
+          'is_active': true,
+          'sort_order': 0,
+          'catalog_version': 2,
+          'created_at': '2026-07-17T00:00:00Z',
+          'updated_at': '2026-07-17T00:00:00Z',
+        }),
+        throwsFormatException,
+      );
+    });
+  });
+
+  group('RemoteShopBundleItemDto', () {
+    test('parses a valid bundle item row', () {
+      final dto = RemoteShopBundleItemDto.fromJson(<String, dynamic>{
+        'bundle_id': 'pack_beige_rutio',
+        'item_id': 'wallpaper_rutio_beige',
+        'slot': 'screen_background',
+      });
+
+      expect(dto.bundleId, 'pack_beige_rutio');
+      expect(dto.itemId, 'wallpaper_rutio_beige');
+      expect(dto.slot, RemoteShopEquipSlot.screenBackground);
+    });
+
+    test('rejects an invalid slot', () {
+      expect(
+        () => RemoteShopBundleItemDto.fromJson(<String, dynamic>{
+          'bundle_id': 'pack_beige_rutio',
+          'item_id': 'wallpaper_rutio_beige',
+          'slot': 'future_slot',
+        }),
+        throwsFormatException,
+      );
+    });
+  });
 }

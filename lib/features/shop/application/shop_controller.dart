@@ -1533,6 +1533,7 @@ class ShopController extends ChangeNotifier {
             updatedAt: _nowProvider().toUtc(),
           ),
         ],
+        catalogBundles: const <RemoteShopBundleDto>[],
         ownedBundles: const <RemoteOwnedBundleDto>[],
         equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
         fetchedAt: _nowProvider().toUtc(),
