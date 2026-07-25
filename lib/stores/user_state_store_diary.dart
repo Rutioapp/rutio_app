@@ -171,7 +171,7 @@ Future<void> _addDiaryEntry(UserStateStore store, DiaryEntry entry) async {
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   final rawEntries = _ensureDiaryEntriesRoot(userState);
   _ensureDiaryRewardAppliedDateKeys(userState);
 
@@ -225,7 +225,7 @@ Future<void> _updateDiaryEntry(UserStateStore store, DiaryEntry entry) async {
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   final rawEntries = _ensureDiaryEntriesRoot(userState);
   _ensureDiaryRewardAppliedDateKeys(userState);
   final index = rawEntries.indexWhere(
@@ -326,7 +326,7 @@ Future<void> _deleteDiaryEntry(UserStateStore store, String id) async {
   if (localEntryId.isEmpty) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   final rawEntries = _ensureDiaryEntriesRoot(userState);
   _ensureDiaryRewardAppliedDateKeys(userState);
 
@@ -374,7 +374,7 @@ Future<void> _setDailyMood(UserStateStore store, DailyMood dailyMood) async {
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   final rawMoods = _ensureDailyMoodsRoot(userState);
   final key = _dateKey(dailyMood.date);
   final existing = _dailyMoodForDate(store, dailyMood.date);
@@ -617,7 +617,7 @@ Future<void> _runDiaryV2RemotePull(
     }
 
     final userState = _ensureUserStateRoot(root);
-    _ensureDailyReset(userState, nowProvider: store._nowProvider);
+    _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
     final localEntries = _ensureDiaryEntriesRoot(userState);
     final localMoods = _ensureDailyMoodsRoot(userState);
 
@@ -838,7 +838,7 @@ Future<void> _persistDiaryEntryRemoteId(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   final rawEntries = _ensureDiaryEntriesRoot(userState);
 
   final index = rawEntries.indexWhere(
