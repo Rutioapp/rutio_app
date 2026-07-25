@@ -105,6 +105,40 @@ void main() {
       expect(controller.visibleCoinBalance, isNull);
     });
 
+    test('cloud inventory hydrates even when wallet is missing', () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: null,
+            inventoryRows: <RemoteInventoryItemDto>[
+              RemoteInventoryItemDto(
+                id: 'inv-1',
+                userId: 'shop-controller-user',
+                itemId: 'utility_streak_shield_1',
+                quantity: 2,
+                acquisitionSource: 'admin',
+                acquiredAt: DateTime.utc(2026, 7, 18),
+                updatedAt: DateTime.utc(2026, 7, 18),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+      final visibleShopState = await controller.getVisibleShopState();
+
+      expect(controller.economyStatus, ShopCloudEconomyStatus.walletMissing);
+      expect(visibleShopState.backpackItems, hasLength(1));
+      expect(visibleShopState.backpackItems.single.itemId,
+          'utility_streak_shield_1');
+      expect(visibleShopState.backpackItems.single.quantity, 2);
+    });
+
     test(
         'cloud inventory removes stale local quantity when remote row is missing',
         () async {
@@ -196,6 +230,98 @@ void main() {
       expect(cloudEntries.single.quantity, 1);
     });
 
+    test(
+        'cloud inventory aggregates duplicate rows for the same utility and ignores acquisition source',
+        () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            inventoryRows: <RemoteInventoryItemDto>[
+              RemoteInventoryItemDto(
+                id: 'inv-1',
+                userId: 'shop-controller-user',
+                itemId: 'utility_streak_recover_1',
+                quantity: 2,
+                acquisitionSource: 'admin',
+                acquiredAt: DateTime.utc(2026, 7, 18),
+                updatedAt: DateTime.utc(2026, 7, 18),
+              ),
+              RemoteInventoryItemDto(
+                id: 'inv-2',
+                userId: 'shop-controller-user',
+                itemId: 'utility_streak_recover_1',
+                quantity: 2,
+                acquisitionSource: 'reward',
+                acquiredAt: DateTime.utc(2026, 7, 18),
+                updatedAt: DateTime.utc(2026, 7, 18),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+      final visibleShopState = await controller.getVisibleShopState();
+
+      expect(visibleShopState.backpackItems, hasLength(1));
+      expect(
+        visibleShopState.backpackItems
+            .singleWhere((entry) => entry.itemId == 'utility_streak_recover_1')
+            .quantity,
+        4,
+      );
+    });
+
+    test('cloud inventory ignores cosmetic rows when building the backpack',
+        () async {
+      final controller = await _createController(
+        walletCoins: 500,
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FakeShopCloudReadRepository(
+          snapshotFactory: () => _cloudSnapshot(
+            walletCoins: 10000,
+            inventoryRows: <RemoteInventoryItemDto>[
+              RemoteInventoryItemDto(
+                id: 'inv-1',
+                userId: 'shop-controller-user',
+                itemId: 'utility_streak_shield_1',
+                quantity: 2,
+                acquisitionSource: 'admin',
+                acquiredAt: DateTime.utc(2026, 7, 18),
+                updatedAt: DateTime.utc(2026, 7, 18),
+              ),
+              RemoteInventoryItemDto(
+                id: 'inv-2',
+                userId: 'shop-controller-user',
+                itemId: 'wallpaper_mist_blue',
+                quantity: 1,
+                acquisitionSource: 'reward',
+                acquiredAt: DateTime.utc(2026, 7, 18),
+                updatedAt: DateTime.utc(2026, 7, 18),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await controller.hydrateVisibleEconomy();
+      final visibleShopState = await controller.getVisibleShopState();
+
+      expect(visibleShopState.backpackItems, hasLength(1));
+      expect(
+        visibleShopState.backpackItems.single.itemId,
+        'utility_streak_shield_1',
+      );
+      expect(visibleShopState.backpackItems.single.quantity, 2);
+    });
+
     test('non-cloud backpack items keep their local state', () async {
       final shopRepository = _InMemoryShopRepository();
       const shopState = ShopState(
@@ -207,13 +333,8 @@ void main() {
         walletCoins: 500,
         shopState: shopState,
         shopRepository: shopRepository,
-        cloudReadEnabled: true,
-        cloudPurchaseEnabled: true,
-        currentSupabaseUserIdProvider: () => 'shop-controller-user',
-        shopCloudReadRepository: _FakeShopCloudReadRepository(
-          snapshotFactory: () =>
-              _cloudSnapshot(walletCoins: 10000, quantity: 0),
-        ),
+        cloudReadEnabled: false,
+        cloudPurchaseEnabled: false,
       );
 
       await controller.hydrateVisibleEconomy();
@@ -223,6 +344,31 @@ void main() {
       expect(visibleShopState.backpackItems.single.itemId,
           'utility_custom_local_only');
       expect(visibleShopState.backpackItems.single.quantity, 3);
+    });
+
+    test('concurrent hydration shares a single in-flight fetch', () async {
+      final repository = _BlockingShopCloudReadRepository(
+        snapshotFactory: () => _cloudSnapshot(
+          walletCoins: 10000,
+          itemId: 'utility_xp_boost_1d',
+          quantity: 1,
+        ),
+      );
+      final controller = await _createController(
+        walletCoins: 500,
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: repository,
+      );
+
+      final first = controller.hydrateVisibleEconomy();
+      await repository.waitForFetchStarted;
+      final second = controller.hydrateVisibleEconomy();
+      expect(repository.fetchCount, 1);
+      repository.release();
+      await Future.wait(<Future<void>>[first, second]);
+      expect(repository.fetchCount, 1);
     });
 
     test('purchaseItem with missing item fails in a controlled way', () async {
@@ -705,8 +851,7 @@ void main() {
       expect(utilityRepo.calls, 1);
     });
 
-    test(
-        'streak shield expires the next day without restoring inventory',
+    test('streak shield expires the next day without restoring inventory',
         () async {
       var now = DateTime(2026, 7, 24, 10);
       final controller = await _createController(
@@ -1315,6 +1460,43 @@ class _CountingShopCloudReadRepository extends _FakeShopCloudReadRepository {
   }
 }
 
+class _BlockingShopCloudReadRepository extends ShopCloudReadRepository {
+  _BlockingShopCloudReadRepository({
+    required this.snapshotFactory,
+  }) : super(
+          readEnabled: true,
+          currentUserIdProvider: () => 'shop-controller-user',
+        );
+
+  final ShopCloudSnapshot Function() snapshotFactory;
+  final Completer<void> _started = Completer<void>();
+  final Completer<ShopCloudReadResult<ShopCloudSnapshot>> _release =
+      Completer<ShopCloudReadResult<ShopCloudSnapshot>>();
+
+  int fetchCount = 0;
+
+  Future<void> get waitForFetchStarted => _started.future;
+
+  void release() {
+    if (!_release.isCompleted) {
+      _release.complete(
+        ShopCloudReadResult<ShopCloudSnapshot>.success(
+          data: snapshotFactory(),
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
+    fetchCount += 1;
+    if (!_started.isCompleted) {
+      _started.complete();
+    }
+    return _release.future;
+  }
+}
+
 class _RecordingUtilityConsumptionRepository
     implements UtilityConsumptionRepository {
   int calls = 0;
@@ -1460,6 +1642,7 @@ ShopCloudSnapshot _cloudSnapshot({
   int? walletCoins = 10000,
   String itemId = 'utility_xp_boost_1d',
   int quantity = 0,
+  List<RemoteInventoryItemDto>? inventoryRows,
 }) {
   return ShopCloudSnapshot(
     authenticatedUserId: 'shop-controller-user',
@@ -1473,19 +1656,20 @@ ShopCloudSnapshot _cloudSnapshot({
             createdAt: DateTime.utc(2026, 7, 18),
             updatedAt: DateTime.utc(2026, 7, 18),
           ),
-    inventory: quantity > 0
-        ? <RemoteInventoryItemDto>[
-            RemoteInventoryItemDto(
-              id: 'inv-1',
-              userId: 'shop-controller-user',
-              itemId: itemId,
-              quantity: quantity,
-              acquisitionSource: 'purchase',
-              acquiredAt: DateTime.utc(2026, 7, 18),
-              updatedAt: DateTime.utc(2026, 7, 18),
-            ),
-          ]
-        : const <RemoteInventoryItemDto>[],
+    inventory: inventoryRows ??
+        (quantity > 0
+            ? <RemoteInventoryItemDto>[
+                RemoteInventoryItemDto(
+                  id: 'inv-1',
+                  userId: 'shop-controller-user',
+                  itemId: itemId,
+                  quantity: quantity,
+                  acquisitionSource: 'purchase',
+                  acquiredAt: DateTime.utc(2026, 7, 18),
+                  updatedAt: DateTime.utc(2026, 7, 18),
+                ),
+              ]
+            : const <RemoteInventoryItemDto>[]),
     ownedBundles: const <RemoteOwnedBundleDto>[],
     equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
     fetchedAt: DateTime.utc(2026, 7, 18),

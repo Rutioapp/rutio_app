@@ -109,6 +109,34 @@ void main() {
       );
     });
 
+    test('fetchInventory keeps admin acquisition_source rows', () async {
+      final userState = _FakeUserStateDataSource()
+        ..inventoryRows = <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'inv-1',
+            'user_id': 'user-1',
+            'item_id': 'utility_streak_shield_1',
+            'quantity': 2,
+            'acquisition_source': 'admin',
+            'acquired_at': '2026-07-17T00:00:00Z',
+            'updated_at': '2026-07-17T00:00:00Z',
+          },
+        ];
+      final repository = ShopCloudReadRepository(
+        catalogRemoteDataSource: _FakeCatalogDataSource(),
+        userStateRemoteDataSource: userState,
+        readEnabled: true,
+        currentUserIdProvider: () => 'user-1',
+      );
+
+      final result = await repository.fetchInventory();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.data, hasLength(1));
+      expect(result.data!.single.itemId, 'utility_streak_shield_1');
+      expect(result.data!.single.acquisitionSource, 'admin');
+    });
+
     test('fetchShopSnapshot succeeds with valid diagnostic data', () async {
       final catalog = _FakeCatalogDataSource()
         ..rows = <Map<String, dynamic>>[

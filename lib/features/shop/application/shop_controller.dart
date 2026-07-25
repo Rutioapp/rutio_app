@@ -226,6 +226,7 @@ class ShopController extends ChangeNotifier {
               nowProvider: nowProvider,
             ) {
     _globalWalletController?.addListener(_handleGlobalWalletChanged);
+    _userStateStore.addListener(_handleUserStateChanged);
   }
 
   final UserStateStore _userStateStore;
@@ -249,6 +250,7 @@ class ShopController extends ChangeNotifier {
       <String, ShopCloudSnapshot>{};
   final Map<String, Future<void>> _cloudHydrationFutureByUserId =
       <String, Future<void>>{};
+  final Map<String, int> _cloudHydrationGenerationByUserId = <String, int>{};
   final Set<String> _pendingUtilityActivations = <String>{};
   final Set<String> _pendingMysteryBoxScopes = <String>{};
   final Map<String, Future<ShopControllerResult>> _activeCloudPurchaseByItemId =
@@ -286,12 +288,18 @@ class ShopController extends ChangeNotifier {
   @override
   void dispose() {
     _globalWalletController?.removeListener(_handleGlobalWalletChanged);
+    _userStateStore.removeListener(_handleUserStateChanged);
     super.dispose();
   }
 
   void _handleGlobalWalletChanged() {
     if (_globalWalletController == null) return;
     notifyListeners();
+  }
+
+  void _handleUserStateChanged() {
+    if (!isCloudEconomyEnabled) return;
+    unawaited(hydrateVisibleEconomy());
   }
 
   bool get isCloudPurchaseEnabled => _cloudPurchaseEnabled;
@@ -316,8 +324,7 @@ class ShopController extends ChangeNotifier {
     final cachedSnapshot = _cloudSnapshotByUserId[currentUserId];
     if (!force &&
         _cloudEconomyUserId == currentUserId &&
-        cachedSnapshot != null &&
-        isCloudEconomyReady) {
+        cachedSnapshot != null) {
       return;
     }
 
@@ -327,7 +334,13 @@ class ShopController extends ChangeNotifier {
       return;
     }
 
-    final future = _hydrateVisibleEconomy(currentUserId);
+    final generation =
+        (_cloudHydrationGenerationByUserId[currentUserId] ?? 0) + 1;
+    _cloudHydrationGenerationByUserId[currentUserId] = generation;
+    final future = _hydrateVisibleEconomy(
+      currentUserId,
+      generation: generation,
+    );
     _cloudHydrationFutureByUserId[currentUserId] = future;
     try {
       await future;
@@ -362,7 +375,11 @@ class ShopController extends ChangeNotifier {
     }
 
     await hydrateVisibleEconomy();
-    if (!isCloudEconomyReady) {
+    final currentUserId = _currentSupabaseUserId();
+    if (currentUserId == null) {
+      return shopState;
+    }
+    if (!_cloudSnapshotByUserId.containsKey(currentUserId)) {
       return shopState;
     }
     return _adjustShopStateForCloudPurchase(null, shopState);
@@ -1231,7 +1248,13 @@ class ShopController extends ChangeNotifier {
     }
   }
 
-  Future<void> _hydrateVisibleEconomy(String currentUserId) async {
+  Future<void> _hydrateVisibleEconomy(
+    String currentUserId, {
+    required int generation,
+  }) async {
+    _logCloudInventory(
+      'refresh_started scope=$currentUserId generation=$generation',
+    );
     _setEconomyState(
       source: ShopEconomySource.cloud,
       status: ShopCloudEconomyStatus.loading,
@@ -1240,12 +1263,23 @@ class ShopController extends ChangeNotifier {
 
     final snapshotResult = await _shopCloudReadRepository.fetchShopSnapshot();
     final activeUserId = _currentSupabaseUserId();
-    if (activeUserId == null || activeUserId != currentUserId) {
+    if (activeUserId == null) {
       _clearCloudEconomyForSessionChange();
+      return;
+    }
+    if (activeUserId != currentUserId) {
+      _logCloudInventory(
+        'stale_result_discarded scope=$currentUserId generation=$generation '
+        'currentScope=$activeUserId',
+      );
       return;
     }
 
     if (!snapshotResult.isSuccess || snapshotResult.data == null) {
+      _logCloudInventory(
+        'refresh_failed scope=$currentUserId generation=$generation '
+        'code=${snapshotResult.error?.code.name ?? 'unknown'}',
+      );
       _handleHydrationFailure(
         currentUserId: currentUserId,
         errorCode: snapshotResult.error?.code,
@@ -1255,20 +1289,42 @@ class ShopController extends ChangeNotifier {
 
     final snapshot = snapshotResult.data!;
     if (snapshot.authenticatedUserId.trim() != currentUserId) {
-      _clearCloudEconomyForSessionChange();
+      _logCloudInventory(
+        'stale_result_discarded scope=$currentUserId generation=$generation '
+        'snapshotUser=${snapshot.authenticatedUserId}',
+      );
       return;
     }
+
+    final nextInventoryQuantities =
+        _cloudInventoryQuantitiesFromSnapshot(snapshot.inventory);
+    final previousInventoryQuantities =
+        Map<String, int>.from(_cloudPurchaseInventoryQuantityByItemId);
+    final inventoryChanged = !_sameCloudInventoryQuantities(
+      previousInventoryQuantities,
+      nextInventoryQuantities,
+    );
 
     if (snapshot.wallet == null) {
       _cloudSnapshotByUserId[currentUserId] = snapshot;
       _cloudEconomyUserId = currentUserId;
       _cloudPurchaseWalletCoins = null;
-      _cloudPurchaseInventoryQuantityByItemId.clear();
-      _setEconomyState(
+      _cloudPurchaseInventoryQuantityByItemId
+        ..clear()
+        ..addAll(nextInventoryQuantities);
+      final stateChanged = _setEconomyState(
         source: ShopEconomySource.cloud,
         status: ShopCloudEconomyStatus.walletMissing,
         userId: currentUserId,
         snapshot: snapshot,
+      );
+      if (!stateChanged && inventoryChanged) {
+        notifyListeners();
+      }
+      _logCloudInventory(
+        'applied scope=$currentUserId generation=$generation '
+        'items=${nextInventoryQuantities.length} '
+        'totalQuantity=${_cloudInventoryTotalQuantity(nextInventoryQuantities)}',
       );
       return;
     }
@@ -1278,16 +1334,24 @@ class ShopController extends ChangeNotifier {
     _cloudPurchaseWalletCoins = snapshot.wallet?.coins;
     _cloudPurchaseInventoryQuantityByItemId
       ..clear()
-      ..addEntries(
-        snapshot.inventory
-            .where((row) => _supportedCloudUtilityIds.contains(row.itemId))
-            .map((row) => MapEntry(row.itemId, row.quantity)),
-      );
-    _setEconomyState(
+      ..addAll(nextInventoryQuantities);
+    final stateChanged = _setEconomyState(
       source: ShopEconomySource.cloud,
       status: ShopCloudEconomyStatus.ready,
       userId: currentUserId,
       snapshot: snapshot,
+    );
+    if (!stateChanged && inventoryChanged) {
+      notifyListeners();
+    }
+    _logCloudInventory(
+      'remote_fetched rows=${snapshot.inventory.length} '
+      'scope=$currentUserId generation=$generation',
+    );
+    _logCloudInventory(
+      'applied scope=$currentUserId generation=$generation '
+      'items=${nextInventoryQuantities.length} '
+      'totalQuantity=${_cloudInventoryTotalQuantity(nextInventoryQuantities)}',
     );
   }
 
@@ -1345,7 +1409,7 @@ class ShopController extends ChangeNotifier {
     _clearCloudEconomyForSessionChange();
   }
 
-  void _setEconomyState({
+  bool _setEconomyState({
     required ShopEconomySource source,
     required ShopCloudEconomyStatus status,
     String? userId,
@@ -1365,6 +1429,7 @@ class ShopController extends ChangeNotifier {
     if (changed) {
       notifyListeners();
     }
+    return changed;
   }
 
   Future<ShopControllerResult> _purchaseCloudUtility(ShopItem item) async {
@@ -1429,12 +1494,14 @@ class ShopController extends ChangeNotifier {
       return false;
     }
 
-    if (!force && isCloudEconomyReady && _cloudEconomyUserId == currentUserId) {
+    if (!force &&
+        _cloudEconomyUserId == currentUserId &&
+        _cloudSnapshotByUserId[currentUserId] != null) {
       return false;
     }
 
     await hydrateVisibleEconomy(force: force);
-    return _economyStatus != ShopCloudEconomyStatus.ready;
+    return _cloudSnapshotByUserId[currentUserId] == null;
   }
 
   Future<void> _applyCloudPurchaseResult(
@@ -1510,18 +1577,18 @@ class ShopController extends ChangeNotifier {
       return shopState;
     }
 
+    final cloudSnapshot = _cloudEconomyUserId == null
+        ? null
+        : _cloudSnapshotByUserId[_cloudEconomyUserId!];
+    final updatedAtMillis = cloudSnapshot?.fetchedAt.millisecondsSinceEpoch ??
+        _nowProvider().millisecondsSinceEpoch;
     final updatedBackpackItems = <BackpackItem>[
-      ...shopState.backpackItems
-          .where(
-            (entry) => !_supportedCloudUtilityIds.contains(entry.itemId),
-          )
-          .map((entry) => entry.copyWith()),
-      for (final utilityId in _supportedCloudUtilityIds)
-        if ((_cloudPurchaseInventoryQuantityByItemId[utilityId] ?? 0) > 0)
+      for (final entry in _cloudPurchaseInventoryQuantityByItemId.entries)
+        if (entry.value > 0)
           BackpackItem(
-            itemId: utilityId,
-            quantity: _cloudPurchaseInventoryQuantityByItemId[utilityId]!,
-            updatedAtMillis: _nowProvider().millisecondsSinceEpoch,
+            itemId: entry.key,
+            quantity: entry.value,
+            updatedAtMillis: updatedAtMillis,
           ),
     ];
 
@@ -1626,7 +1693,7 @@ class ShopController extends ChangeNotifier {
   }
 
   Future<void> refreshCloudPurchaseSnapshot() async {
-    await _refreshCloudPurchaseSnapshot();
+    await _refreshCloudPurchaseSnapshot(force: true);
   }
 
   Future<List<ShopPurchaseResult>> resolvePendingPurchasesForCurrentUser({
@@ -1688,6 +1755,45 @@ class ShopController extends ChangeNotifier {
 
   String _activationKey(String utilityId) {
     return '${_currentScopeUserId() ?? ''}|${utilityId.trim()}';
+  }
+
+  Map<String, int> _cloudInventoryQuantitiesFromSnapshot(
+    List<RemoteInventoryItemDto> inventory,
+  ) {
+    final quantitiesByItemId = <String, int>{};
+    for (final row in inventory) {
+      if (row.quantity <= 0) continue;
+      if (!_supportedCloudUtilityIds.contains(row.itemId)) continue;
+      quantitiesByItemId[row.itemId] =
+          (quantitiesByItemId[row.itemId] ?? 0) + row.quantity;
+    }
+    return quantitiesByItemId;
+  }
+
+  int _cloudInventoryTotalQuantity(Map<String, int> quantitiesByItemId) {
+    var total = 0;
+    for (final quantity in quantitiesByItemId.values) {
+      total += quantity;
+    }
+    return total;
+  }
+
+  bool _sameCloudInventoryQuantities(
+    Map<String, int> left,
+    Map<String, int> right,
+  ) {
+    if (left.length != right.length) return false;
+    for (final entry in left.entries) {
+      if (right[entry.key] != entry.value) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _logCloudInventory(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[ShopInventory] $message');
   }
 
   Future<List<MysteryBoxOpeningTransaction>>
