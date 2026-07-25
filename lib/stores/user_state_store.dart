@@ -41,7 +41,11 @@ import '../features/habits/domain/models/habit_occurrence_status.dart';
 import '../features/habits/application/habit_currency_reward_coordinator.dart';
 import '../features/habits/data/cloud/habit_currency_reward_repository.dart';
 import '../features/habits/data/cloud/habit_currency_rewards_config.dart';
+import '../features/habits/data/cloud/device_time_zone_provider.dart';
+import '../features/habits/data/cloud/streak_protection_pending_operation_store.dart';
 import '../features/habits/data/cloud/shared_preferences_pending_currency_operation_store.dart';
+import '../features/habits/data/cloud/streak_protection_remote_models.dart';
+import '../features/habits/data/cloud/streak_protection_repository.dart';
 import '../models/daily_mood.dart';
 import '../features/global_wallet/application/global_wallet_controller.dart';
 import '../features/shop/application/shop_service.dart';
@@ -73,6 +77,7 @@ part 'user_state_store_achievements.dart';
 part 'user_state_store_core.dart';
 part 'user_state_store_diary.dart';
 part 'user_state_store_habits.dart';
+part 'user_state_store_streak_protection.dart';
 part 'user_state_store_habit_progress.dart';
 part 'user_state_store_todos.dart';
 
@@ -137,6 +142,9 @@ class UserStateStore extends ChangeNotifier {
   HabitRewardTransactionRepository? _habitRewardTransactionRepository;
   final UserProgressRepository? _userProgressRepository;
   final ProfileRepository? _profileRepository;
+  StreakProtectionRepository? _streakProtectionRepository;
+  StreakProtectionPendingOperationStore? _streakProtectionPendingOperationStore;
+  final DeviceTimeZoneProvider _deviceTimeZoneProvider;
   final GlobalWalletController? _globalWalletController;
   final LevelUpCelebrationController _levelUpCelebrationController;
   final CurrentUserIdProvider _currentSupabaseUserIdProvider;
@@ -160,6 +168,10 @@ class UserStateStore extends ChangeNotifier {
     HabitRewardTransactionRepository? habitRewardTransactionRepository,
     UserProgressRepository? userProgressRepository,
     ProfileRepository? profileRepository,
+    StreakProtectionRepository? streakProtectionRepository,
+    StreakProtectionPendingOperationStore?
+        streakProtectionPendingOperationStore,
+    DeviceTimeZoneProvider? deviceTimeZoneProvider,
     GlobalWalletController? globalWalletController,
     AchievementLevelRewardCoordinator? achievementLevelRewardCoordinator,
     CurrentUserIdProvider? currentSupabaseUserIdProvider,
@@ -216,6 +228,12 @@ class UserStateStore extends ChangeNotifier {
         _cloudHabitRewardsEnabledOverride = cloudHabitRewardsEnabledOverride,
         _userProgressRepository = userProgressRepository,
         _profileRepository = profileRepository,
+        _streakProtectionRepository = streakProtectionRepository,
+        _streakProtectionPendingOperationStore =
+            streakProtectionPendingOperationStore ??
+                SharedPreferencesStreakProtectionPendingOperationStore(),
+        _deviceTimeZoneProvider =
+            deviceTimeZoneProvider ?? const FlutterDeviceTimeZoneProvider(),
         _globalWalletController = globalWalletController,
         _levelUpCelebrationController = const LevelUpCelebrationController(),
         _currentSupabaseUserIdProvider =
@@ -236,6 +254,8 @@ class UserStateStore extends ChangeNotifier {
   bool _isSupabaseJournalEntriesBackfillRunning = false;
   bool _isDiaryV2RemotePullRunning = false;
   bool _isHabitsRemotePullRunning = false;
+  Future<_StreakProtectionRemoteSnapshot?>? _streakProtectionRemoteSyncFuture;
+  Future<bool>? _streakProtectionRemoteCloseFuture;
   DateTime? _lastDiaryV2RemotePullAttemptAt;
   DateTime? _lastDiaryV2RemotePullSuccessAt;
   DateTime? _lastHabitsRemotePullAttemptAt;
@@ -281,6 +301,8 @@ class UserStateStore extends ChangeNotifier {
       _isSupabaseJournalEntriesBackfillRunning;
   bool get isDiaryV2RemotePullRunning => _isDiaryV2RemotePullRunning;
   bool get isHabitsRemotePullRunning => _isHabitsRemotePullRunning;
+  bool get isStreakProtectionRemoteSyncRunning =>
+      _streakProtectionRemoteSyncFuture != null;
   DateTime? get lastDiaryV2RemotePullAttemptAt =>
       _lastDiaryV2RemotePullAttemptAt;
   DateTime? get lastDiaryV2RemotePullSuccessAt =>
@@ -544,6 +566,9 @@ class UserStateStore extends ChangeNotifier {
 
   Future<void> syncHabitsFromRemoteBestEffort() =>
       _syncHabitsFromRemoteBestEffort(this);
+
+  Future<void> syncStreakProtectionFromRemoteBestEffort() =>
+      _syncStreakProtectionFromRemoteBestEffort(this);
 
   Future<void> maybeSyncHabitsFromRemoteBestEffort({
     bool ignoreCooldown = false,

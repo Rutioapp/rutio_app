@@ -543,6 +543,7 @@ bool _ensureActiveHabitIds(Map<String, dynamic> userState) {
 }
 
 void _ensureDailyReset(
+  UserStateStore store,
   Map<String, dynamic> userState, {
   required DateTime Function() nowProvider,
 }) {
@@ -562,6 +563,7 @@ void _ensureDailyReset(
         .map((entry) => entry.cast<String, dynamic>())
         .toList();
     _finalizeHabitDayRollover(
+      store,
       userState,
       dayKey: previousDayKey,
       activeHabits: activeHabits,
@@ -592,11 +594,14 @@ void _ensureDailyReset(
 }
 
 void _finalizeHabitDayRollover(
+  UserStateStore store,
   Map<String, dynamic> userState, {
   required String dayKey,
   required List<Map<String, dynamic>> activeHabits,
   required DateTime Function() nowProvider,
 }) {
+  final authenticatedUserId =
+      (store._currentSupabaseUserIdProvider() ?? '').trim();
   final history = _ensureHistoryRoot(userState);
   final habitCompletions = _map(history['habitCompletions']);
   final habitCountValues = _map(history['habitCountValues']);
@@ -613,6 +618,9 @@ void _finalizeHabitDayRollover(
   for (final habit in activeHabits) {
     final habitId = (habit['id'] ?? '').toString().trim();
     if (habitId.isEmpty) continue;
+    final remoteHabitId = _habitRemoteIdValue(habit);
+    final authenticatedRemoteHabit =
+        authenticatedUserId.isNotEmpty && remoteHabitId != null;
     if (!_isHabitExpectedForDate(habit, _dateFromKey(dayKey))) {
       previousStatuses[habitId] = HabitOccurrenceStatus.notScheduled.key;
       continue;
@@ -632,6 +640,12 @@ void _finalizeHabitDayRollover(
         previousCounts[habitId] = _safeNum(habit['progress'], fallback: 0);
       }
       previousStatuses[habitId] = HabitOccurrenceStatus.completed.key;
+      continue;
+    }
+
+    if (authenticatedRemoteHabit) {
+      previousDone[habitId] = false;
+      previousStatuses[habitId] = HabitOccurrenceStatus.missed.key;
       continue;
     }
 
@@ -755,7 +769,7 @@ Future<void> _loadStore(
     if (store._state != null) {
       final userState = _ensureUserStateRoot(store._state!);
       _normalizeUserIdForActiveScope(store, userState);
-      _ensureDailyReset(userState, nowProvider: store._nowProvider);
+      _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
       _expireStreakShieldsForLocalDate(userState, store._nowProvider());
       _ensureActiveHabitIds(userState);
       _ensureDiaryEntriesRoot(userState);
@@ -820,7 +834,7 @@ Future<void> _saveStore(
 
   final userState = _ensureUserStateRoot(store._state!);
   _normalizeUserIdForActiveScope(store, userState);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   _expireStreakShieldsForLocalDate(userState, store._nowProvider());
   _ensureActiveHabitIds(userState);
   _ensureDiaryEntriesRoot(userState);

@@ -145,7 +145,7 @@ Future<void> _persistHabitRemoteId(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   _ensureActiveHabitIds(userState);
 
   final activeHabits = _mutableActiveHabits(userState);
@@ -308,7 +308,7 @@ Future<void> _runHabitsRemotePull(
     }
 
     final userState = _ensureUserStateRoot(root);
-    _ensureDailyReset(userState, nowProvider: store._nowProvider);
+    _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
     final streakShieldExpired = _expireStreakShieldsForLocalDate(
       userState,
       store._nowProvider(),
@@ -326,8 +326,13 @@ Future<void> _runHabitsRemotePull(
       remoteLogs: remoteLogs,
       authenticatedUserId: authenticatedUserId,
     );
+    final streakProtectionChanged =
+        await _syncStreakProtectionIntoUserState(store, userState: userState);
 
-    if (!mergedHabits.changed && !mergedLogs.changed && !streakShieldExpired) {
+    if (!mergedHabits.changed &&
+        !mergedLogs.changed &&
+        !streakShieldExpired &&
+        !streakProtectionChanged) {
       store._lastHabitsRemotePullSuccessAt = store._nowProvider();
       _debugHabitPull('$source pull completed: no local habit changes applied');
       return;
@@ -1830,7 +1835,7 @@ Future<void> _deleteHabitById(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   _ensureActiveHabitIds(userState);
 
   final activeHabits = _mutableActiveHabits(userState);
@@ -1872,7 +1877,7 @@ Future<void> _addHabitFromCatalog(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final activeHabits = _mutableActiveHabits(userState);
 
@@ -1967,7 +1972,7 @@ Future<void> _addCustomHabit(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final activeHabits = _mutableActiveHabits(userState);
 
@@ -2062,7 +2067,7 @@ Future<void> _reorderVisibleHabits(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final activeHabits = _mutableActiveHabits(userState);
 
@@ -2123,7 +2128,7 @@ Future<void> _updateHabitPlan(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final activeHabits = _mutableActiveHabits(userState);
 
@@ -2198,7 +2203,7 @@ Future<void> _updateHabitDetailsFromEdit(
   if (id == null || id.isEmpty) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final activeHabits = _mutableActiveHabits(userState);
   final index = _activeHabitIndex(activeHabits, id);
@@ -2375,7 +2380,7 @@ Future<void> _setCountHabitValue(
   final now = store._nowProvider();
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final activeHabits = _mutableActiveHabits(userState);
 
@@ -2621,7 +2626,7 @@ Future<void> _completeHabit(
   final now = store._nowProvider();
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final activeHabits = _mutableActiveHabits(userState);
 
@@ -2833,7 +2838,7 @@ Future<void> _toggleHabitDoneForDate(
     return;
   }
 
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final activeHabits = _mutableActiveHabits(userState);
 
@@ -2883,7 +2888,7 @@ Future<void> _setHabitCompletionForKey(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final date = _dateFromKey(dateKey);
   final originalRoot = _cloneMap(root);
@@ -2996,7 +3001,7 @@ Future<void> _setHabitSkipForKey(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final date = _dateFromKey(dateKey);
   final originalRoot = _cloneMap(root);
@@ -3133,7 +3138,7 @@ Future<void> _setCountHabitValueForDate(
     return;
   }
 
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
 
   final activeHabits = _mutableActiveHabits(userState);
 
@@ -4370,7 +4375,7 @@ Future<StreakShieldOperationResult> _activateStreakShield(
   }
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   final now = store._nowProvider();
   _expireStreakShieldsForLocalDate(userState, now);
   final habit = _habitByIdFromState(userState, normalizedHabitId);
@@ -4394,6 +4399,11 @@ Future<StreakShieldOperationResult> _activateStreakShield(
     final currentOperationId =
         (currentShield['operationId'] ?? '').toString().trim();
     if (currentOperationId == normalizedOperationId) {
+      await _streakProtectionPendingOperationStoreForStore(store)
+          .clearShieldOperation(
+        (userState['userId'] ?? userState['id'] ?? '').toString(),
+        normalizedOperationId,
+      );
       return StreakShieldOperationResult(
         status: StreakShieldOperationStatus.success,
         shield: currentShieldModel,
@@ -4406,7 +4416,82 @@ Future<StreakShieldOperationResult> _activateStreakShield(
     }
   }
 
-  if (store._utilityConsumptionRepository != null) {
+  final isAuthenticated =
+      _isAuthenticatedStreakProtectionUser(store, userState);
+  final cloudRewardHabitId = _cloudRewardHabitId(habit);
+  if (isAuthenticated && cloudRewardHabitId != null) {
+    final pending = await _pendingStreakShieldOperationForMutation(
+      store,
+      remoteHabitId: cloudRewardHabitId,
+      operationId: normalizedOperationId,
+      protectedOccurrenceDate: _dateKey(now),
+      utilityId: normalizedUtilityId,
+    );
+    _logStreakShieldCloud(
+      'start habitId=$normalizedHabitId remoteHabitId=$cloudRewardHabitId '
+      'operationId=$normalizedOperationId requestId=${pending.requestId}',
+    );
+    await _syncHabitTimeZoneForMutationBestEffort(store, userState);
+    final result =
+        await _streakProtectionRepositoryForStore(store).activateStreakShield(
+      requestId: pending.requestId,
+      habitId: cloudRewardHabitId,
+      protectedOccurrenceDate: pending.protectedOccurrenceDate,
+      operationId: normalizedOperationId,
+      utilityId: normalizedUtilityId,
+    );
+    if (!result.isSuccess || result.data == null) {
+      _logStreakShieldCloud(
+        'error habitId=$normalizedHabitId remoteHabitId=$cloudRewardHabitId '
+        'operationId=$normalizedOperationId error=${result.error?.message}',
+      );
+      return StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.persistenceFailure,
+        errorMessage: result.error?.message ?? 'Could not activate shield.',
+      );
+    }
+
+    final nextRoot = _cloneMap(root);
+    final nextUserState = _ensureUserStateRoot(nextRoot);
+    var changed = _upsertRemoteStreakShieldInCache(
+      nextUserState,
+      result.data!.shield,
+    );
+    changed = await _confirmStreakProtectionSnapshotAfterMutation(
+          store,
+          nextUserState,
+        ) ||
+        changed;
+    await _streakProtectionPendingOperationStoreForStore(store)
+        .clearShieldOperation(
+      (nextUserState['userId'] ?? nextUserState['id'] ?? '').toString(),
+      normalizedOperationId,
+    );
+    if (changed) {
+      _touchLastSavedAt(nextUserState);
+      nextRoot['userState'] = nextUserState;
+      store._state = nextRoot;
+      await store._repo.save(nextRoot);
+      store._emitChanged();
+    }
+    final cachedShield = _activeStreakShieldRecordForHabit(
+      nextUserState,
+      normalizedHabitId,
+    );
+    return StreakShieldOperationResult(
+      status: StreakShieldOperationStatus.success,
+      shield: cachedShield == null
+          ? _localShieldFromRemoteFallback(
+              result.data!.shield,
+              localHabitId: normalizedHabitId,
+              userId: (nextUserState['userId'] ?? nextUserState['id'] ?? '')
+                  .toString(),
+            )
+          : ActiveStreakShield.fromJson(cachedShield),
+    );
+  }
+
+  if (store._utilityConsumptionRepository != null && !isAuthenticated) {
     final cloudRewardHabitId = _cloudRewardHabitId(habit);
     final requestId =
         'utility_activate:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedOperationId';
@@ -4487,6 +4572,20 @@ Future<StreakShieldOperationResult> _activateStreakShield(
   );
 }
 
+ActiveStreakShield _localShieldFromRemoteFallback(
+  HabitStreakShieldRemote remote, {
+  required String localHabitId,
+  required String userId,
+}) {
+  return ActiveStreakShield.fromJson(
+    _localShieldJsonFromRemote(
+      remote,
+      localHabitId: localHabitId,
+      userId: userId,
+    ),
+  );
+}
+
 Future<StreakRecoverOperationResult> _recoverStreakBreak(
   UserStateStore store, {
   required String breakId,
@@ -4508,7 +4607,7 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
   }
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
   final breaks = _habitStreakBreaksRoot(userState);
   final rawBreak = _map(breaks[normalizedBreakId]);
   if (rawBreak.isEmpty) {
@@ -4521,6 +4620,11 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
   if (breakRecord.isRecovered) {
     if ((rawBreak['recoveryOperationId'] ?? '').toString().trim() ==
         normalizedOperationId) {
+      await _streakProtectionPendingOperationStoreForStore(store)
+          .clearRecoverOperation(
+        (userState['userId'] ?? userState['id'] ?? '').toString(),
+        normalizedOperationId,
+      );
       return StreakRecoverOperationResult(
         status: StreakRecoverOperationStatus.success,
         recoveredBreak: breakRecord,
@@ -4532,7 +4636,17 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
   }
 
   final now = store._nowProvider();
-  if (!_isWithinRecoveryWindow(now, breakRecord.missedOccurrenceDateKey)) {
+  final isAuthenticated =
+      _isAuthenticatedStreakProtectionUser(store, userState);
+  final remoteBreakId =
+      ((rawBreak['remoteId'] ?? '').toString().trim().isNotEmpty ||
+              (rawBreak['remoteHabitId'] ?? '').toString().trim().isNotEmpty ||
+              (rawBreak['logicalTimeZone'] ?? '').toString().trim().isNotEmpty)
+          ? breakRecord.id.trim()
+          : '';
+  if (!isAuthenticated &&
+      remoteBreakId.isEmpty &&
+      !_isWithinRecoveryWindow(now, breakRecord.missedOccurrenceDateKey)) {
     final expired = breakRecord.copyWith(
       status: RecoverableStreakBreakStatus.expired,
     );
@@ -4548,7 +4662,82 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
     );
   }
 
-  if (store._utilityConsumptionRepository != null) {
+  if (isAuthenticated && remoteBreakId.isNotEmpty) {
+    final pending = await _pendingStreakRecoverOperationForMutation(
+      store,
+      breakId: remoteBreakId,
+      operationId: normalizedOperationId,
+      utilityId: 'utility_streak_recover_1',
+    );
+    _logStreakRecoverCloud(
+      'start breakId=$remoteBreakId operationId=$normalizedOperationId requestId=${pending.requestId}',
+    );
+    final result =
+        await _streakProtectionRepositoryForStore(store).recoverStreakBreak(
+      requestId: pending.requestId,
+      breakId: pending.breakId,
+      utilityId: 'utility_streak_recover_1',
+    );
+    if (!result.isSuccess || result.data == null) {
+      _logStreakRecoverCloud(
+        'error breakId=$remoteBreakId operationId=$normalizedOperationId '
+        'requestId=${pending.requestId} error=${result.error?.message}',
+      );
+      return StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.persistenceFailure,
+        errorMessage: result.error?.message ?? 'Could not recover streak.',
+      );
+    }
+
+    final nextRoot = _cloneMap(root);
+    final nextUserState = _ensureUserStateRoot(nextRoot);
+    var changed = _upsertRemoteStreakBreakInCache(
+      nextUserState,
+      result.data!.breakRecord,
+    );
+    changed = await _confirmStreakProtectionSnapshotAfterMutation(
+          store,
+          nextUserState,
+        ) ||
+        changed;
+    await _streakProtectionPendingOperationStoreForStore(store)
+        .clearRecoverOperation(
+      (nextUserState['userId'] ?? nextUserState['id'] ?? '').toString(),
+      normalizedOperationId,
+    );
+    if (changed) {
+      final cachedBreaks = _habitStreakBreaksRoot(nextUserState);
+      final cached = _map(cachedBreaks[result.data!.breakRecord.breakId]);
+      if (cached.isNotEmpty) {
+        cached['recoveryOperationId'] = normalizedOperationId;
+        cachedBreaks[result.data!.breakRecord.breakId] = cached;
+      }
+      _touchLastSavedAt(nextUserState);
+      nextRoot['userState'] = nextUserState;
+      store._state = nextRoot;
+      await store._repo.save(nextRoot);
+      store._emitChanged();
+    }
+    final cached = _map(
+      _habitStreakBreaksRoot(nextUserState)[result.data!.breakRecord.breakId],
+    );
+    final recoveredBreak = cached.isEmpty
+        ? _localBreakFromRemoteFallback(
+            result.data!.breakRecord,
+            localHabitId: breakRecord.habitId,
+            userId: (nextUserState['userId'] ?? nextUserState['id'] ?? '')
+                .toString(),
+          )
+        : RecoverableStreakBreak.fromJson(cached);
+    return StreakRecoverOperationResult(
+      status: result.data!.isExpired
+          ? StreakRecoverOperationStatus.recoveryExpired
+          : StreakRecoverOperationStatus.success,
+      recoveredBreak: recoveredBreak,
+    );
+  }
+
+  if (store._utilityConsumptionRepository != null && !isAuthenticated) {
     final requestId =
         'utility_recover:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedBreakId:$normalizedOperationId';
     _logStreakRecoverCloud(
@@ -4600,6 +4789,20 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
   return StreakRecoverOperationResult(
     status: StreakRecoverOperationStatus.success,
     recoveredBreak: updated,
+  );
+}
+
+RecoverableStreakBreak _localBreakFromRemoteFallback(
+  HabitStreakBreakRemote remote, {
+  required String localHabitId,
+  required String userId,
+}) {
+  return RecoverableStreakBreak.fromJson(
+    _localBreakJsonFromRemote(
+      remote,
+      localHabitId: localHabitId,
+      userId: userId,
+    ),
   );
 }
 
