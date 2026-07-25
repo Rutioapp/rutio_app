@@ -1357,7 +1357,6 @@ class ShopCosmeticsController extends ChangeNotifier {
       _cloudState = ShopCosmeticsCloudState.unauthenticated();
       _cachedState = null;
       _cachedScopeKey = null;
-      notifyListeners();
       return const ShopCosmeticsState.initial();
     }
 
