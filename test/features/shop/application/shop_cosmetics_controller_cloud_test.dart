@@ -946,41 +946,101 @@ void main() {
       final firstLoad = controller.getState();
       await Future<void>.delayed(Duration.zero);
 
+      var notifications = 0;
+      controller.addListener(() {
+        notifications += 1;
+      });
+
+      notifications = 0;
       await _switchScope(env.store, userId: 'shop-cosmetics-user-b');
       fetchGate.complete();
       await firstLoad;
       await Future<void>.delayed(Duration.zero);
 
+      expect(notifications, greaterThan(0));
       expect(controller.cloudState.userId, 'shop-cosmetics-user-b');
       expect(controller.state?.ownedAssetIds,
           isNot(contains('wallpaper_mist_blue')));
     });
 
-    test('logout clears the in-memory cloud state', () async {
+    test('guest getState returns initial state without synchronous notify',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      final fetchGate = Completer<void>();
+      final snapshot = _snapshot(
+        userId: testUserId,
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+        wallpaperId: 'wallpaper_mist_blue',
+      );
       final repo = _FakeCloudCosmeticsRepository(
         fetchResponses: <_FetchResponseFactory>[
-          () async {
-            await fetchGate.future;
-            return _success(
-              _snapshot(
-                userId: 'shop-cloud-user',
-                ownedAssetIds: <String>['wallpaper_mist_blue'],
-              ),
-            );
-          },
+          () async => _success(snapshot),
         ],
       );
-      final env = await _createController(cloudRepository: repo);
-      final controller = env.controller;
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+        cloudEnabled: true,
+      );
 
-      final loadFuture = controller.getState();
-      await Future<void>.delayed(Duration.zero);
-      await _switchScope(env.store, userId: null);
-      fetchGate.complete();
-      await loadFuture;
-      await Future<void>.delayed(Duration.zero);
+      await controller.getState();
+      expect(controller.state, isNotNull);
+      expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
+          'wallpaper_mist_blue');
+
+      var notifications = 0;
+      controller.addListener(() {
+        notifications += 1;
+      });
+
+      store.setTestScope(null);
+      notifications = 0;
+
+      final stateFuture = controller.getState();
+      expect(notifications, 0);
+      final state = await stateFuture;
+
+      expect(state, const ShopCosmeticsState.initial());
+      expect(controller.state, isNull);
+      expect(controller.hasStateForCurrentScope, isFalse);
+      expect(controller.cloudState.status,
+          ShopCosmeticsCloudStatus.unauthenticated);
+      expect(notifications, 0);
+    });
+
+    test('logout clears the in-memory cloud state', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: testUserId,
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+      );
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+        cloudEnabled: true,
+      );
+
+      await controller.getState();
+      expect(controller.state, isNotNull);
+
+      var notifications = 0;
+      controller.addListener(() {
+        notifications += 1;
+      });
+      notifications = 0;
+      store.setTestScope(null, notify: true);
+      expect(notifications, greaterThan(0));
+      expect(controller.state, isNull);
+      expect(controller.cloudState.status,
+          ShopCosmeticsCloudStatus.unauthenticated);
     });
 
     test('cloud flag disabled keeps the legacy flow', () async {
@@ -1046,6 +1106,30 @@ Future<void> _switchScope(
   required String? userId,
 }) async {
   await store.switchLocalScope(userId: userId, forceReload: false);
+}
+
+class _MutableScopeUserStateStore extends UserStateStore {
+  _MutableScopeUserStateStore({required String? initialScope})
+      : _scope = initialScope,
+        super(
+          UserStateRepository(storage: UserStateStorage()),
+          journalEntrySyncService: JournalEntrySyncService(),
+        );
+
+  String? _scope;
+
+  void setTestScope(String? userId, {bool notify = false}) {
+    _scope = userId;
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  @override
+  String? get activeLocalScopeUserId => _scope;
+
+  @override
+  String? get userId => _scope;
 }
 
 ShopCloudReadResult<CloudCosmeticsSnapshot> _success(
