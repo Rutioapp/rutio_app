@@ -39,7 +39,7 @@ Future<void> _upsertTodoItem(UserStateStore store, TodoItem item) async {
     rawTodos.insert(0, item.toJson());
   }
 
-  _touchLastSavedAt(userState);
+  _touchLastSavedAt(userState, nowProvider: store._nowProvider);
   root['userState'] = userState;
   store._state = root;
 
@@ -55,7 +55,7 @@ Future<void> _deleteTodoItem(UserStateStore store, String id) async {
   final rawTodos = _ensureTodosRoot(userState);
   rawTodos.removeWhere((entry) => (entry['id'] ?? '').toString() == id);
 
-  _touchLastSavedAt(userState);
+  _touchLastSavedAt(userState, nowProvider: store._nowProvider);
   root['userState'] = userState;
   store._state = root;
 
@@ -82,7 +82,7 @@ Future<void> _setTodoCompleted(
   final current = TodoItem.fromJson(rawTodos[index]);
   rawTodos[index] = current.copyWith(isCompleted: isCompleted).toJson();
 
-  _touchLastSavedAt(userState);
+  _touchLastSavedAt(userState, nowProvider: store._nowProvider);
   root['userState'] = userState;
   store._state = root;
 

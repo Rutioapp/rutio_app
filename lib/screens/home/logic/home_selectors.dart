@@ -2,7 +2,11 @@ part of 'package:rutio/screens/home/home_screen.dart';
 
 /// Construye todo lo que Home necesita para pintar, a partir del estado raw.
 /// Mantener esta función pura (sin setState, sin navegar, sin toasts).
-HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
+HomeViewData buildHomeViewData(
+  dynamic root,
+  DateTime selectedDay,
+  DateTime calendarNow,
+) {
   final rootMap = _map(root);
 
   final userState = _map(rootMap['userState']);
@@ -23,7 +27,7 @@ HomeViewData buildHomeViewData(dynamic root, DateTime selectedDay) {
   // 📅 VIAJE POR DÍAS: snapshot del día seleccionado
   // =========================
   final selectedKey = _dateKey(selectedDay);
-  final todayKey = _dateKey(_onlyDate(DateTime.now()));
+  final todayKey = _dateKey(_onlyDate(calendarNow));
 
   final history = _map(userState['history']);
   final habitCompletions = _map(history['habitCompletions']);

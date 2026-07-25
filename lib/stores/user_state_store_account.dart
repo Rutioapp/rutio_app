@@ -152,7 +152,7 @@ Future<void> _applySupabaseIdentity(
 
   userState['meta'] = meta;
   userState['profile'] = profile;
-  _touchLastSavedAt(userState);
+  _touchLastSavedAt(userState, nowProvider: store._nowProvider);
 
   root['userState'] = userState;
   store._state = root;
@@ -388,7 +388,7 @@ Future<void> _updateProfileFields(
   }
 
   userState['profile'] = profile;
-  _touchLastSavedAt(userState);
+  _touchLastSavedAt(userState, nowProvider: store._nowProvider);
 
   root['userState'] = userState;
   store._state = root;
@@ -536,7 +536,12 @@ Future<bool> _buyItem(
   if (item == null || item.priceCoins != price) return false;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(
+    store,
+    userState,
+    calendarNowProvider: store._calendarNowProvider,
+    technicalNowProvider: store._nowProvider,
+  );
 
   final wallet = _map(userState['wallet']);
   final coins = ((wallet['coins'] as num?) ?? 0).toInt();
@@ -575,7 +580,12 @@ Future<void> _equip(
   if (root == null) return;
 
   final userState = _ensureUserStateRoot(root);
-  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
+  _ensureDailyReset(
+    store,
+    userState,
+    calendarNowProvider: store._calendarNowProvider,
+    technicalNowProvider: store._nowProvider,
+  );
 
   final profile = _map(userState['profile']);
   final equipped = _map(profile['equipped']);

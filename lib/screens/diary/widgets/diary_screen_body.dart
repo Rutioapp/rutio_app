@@ -76,6 +76,7 @@ class DiaryScreenBody extends StatelessWidget {
             todayEntriesCount: viewData.todayEntriesCount,
             dailyXp: viewData.dailyXp,
             entries: allEntries,
+            calendarNow: store.calendarNow,
             searchOpen: searchOpen,
             searchController: searchController,
             searchScope: searchScope,

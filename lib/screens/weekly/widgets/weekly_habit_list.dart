@@ -14,6 +14,7 @@ import 'weekly_habit_list_view.dart';
 class WeeklyHabitList extends StatefulWidget {
   final List<Map<String, dynamic>> habits;
   final List<DateTime> days;
+  final DateTime? today;
   final Map<String, dynamic> habitCompletions;
   final Map<String, dynamic> habitSkips;
   final Map<String, dynamic> habitCountValues;
@@ -25,6 +26,7 @@ class WeeklyHabitList extends StatefulWidget {
     super.key,
     required this.habits,
     required this.days,
+    this.today,
     required this.habitCompletions,
     required this.habitSkips,
     required this.habitCountValues,
@@ -194,7 +196,7 @@ class _WeeklyHabitListState extends State<WeeklyHabitList> {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
+    final today = widget.today ?? DateTime.now();
     final dayStateResolver = WeeklyHabitDayStateResolver(
       habitCompletions: widget.habitCompletions,
       habitSkips: widget.habitSkips,

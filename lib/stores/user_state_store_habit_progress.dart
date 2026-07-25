@@ -180,7 +180,7 @@ Future<SupabaseUserProgressRestoreResult>
     userState,
     XpMutationOrigin.remoteSync,
   );
-  _touchLastSavedAt(userState);
+  _touchLastSavedAt(userState, nowProvider: store._nowProvider);
 
   final celebrationQueueChanged = store._pendingLevelCelebrations.isNotEmpty ||
       store._pendingAchievementUnlocks.isNotEmpty;

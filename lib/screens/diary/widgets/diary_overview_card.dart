@@ -10,11 +10,13 @@ class DiaryOverviewCard extends StatelessWidget {
     required this.entriesCount,
     required this.emotionalXp,
     required this.entries,
+    this.today,
   });
 
   final int entriesCount;
   final int emotionalXp;
   final List<DiaryEntry> entries;
+  final DateTime? today;
 
   Color _resolveSummaryBackground(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -97,7 +99,7 @@ class DiaryOverviewCard extends StatelessWidget {
     final l10n = context.l10n;
     final backgroundColor = _resolveSummaryBackground(context);
     final borderColor = _resolveBorderColor(context);
-    final now = DateTime.now();
+    final now = today ?? DateTime.now();
     final completedDays = _entryDaysThisWeek(now);
     final streak = _currentStreak(now, completedDays);
     final weekDays = _weekDays(context, now, completedDays);

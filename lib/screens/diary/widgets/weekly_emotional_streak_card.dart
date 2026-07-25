@@ -7,9 +7,11 @@ class WeeklyEmotionalStreakCard extends StatelessWidget {
   const WeeklyEmotionalStreakCard({
     super.key,
     required this.entries,
+    this.today,
   });
 
   final List<DiaryEntry> entries;
+  final DateTime? today;
 
   DateTime _startOfWeek(DateTime date) {
     final normalized = DateTime(date.year, date.month, date.day);
@@ -63,7 +65,7 @@ class WeeklyEmotionalStreakCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final now = DateTime.now();
+    final now = today ?? DateTime.now();
     final completedDays = _entryDaysThisWeek(now);
     final streak = _currentStreak(now, completedDays);
     final weekDays = _weekDays(context, now, completedDays);

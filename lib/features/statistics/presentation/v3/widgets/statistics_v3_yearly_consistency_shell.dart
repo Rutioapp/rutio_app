@@ -10,11 +10,13 @@ class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.months,
+    this.now,
   });
 
   final String title;
   final String subtitle;
   final List<StatisticsV3YearlyConsistencyMonth> months;
+  final DateTime? now;
 
   static const _border = Color(0xFFE9E3D9);
   static const _cream = Color(0xFFFDFBF7);
@@ -39,7 +41,8 @@ class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
           const rowSpacing = 10.0;
           final columns = constraints.maxWidth < 295 ? 2 : 3;
           final monthWidth =
-              (constraints.maxWidth - (columnSpacing * (columns - 1))) / columns;
+              (constraints.maxWidth - (columnSpacing * (columns - 1))) /
+                  columns;
           final dayGap = monthWidth < 96 ? 1.5 : 2.0;
           final daySize =
               ((monthWidth - (dayGap * 6)) / 7).clamp(4.0, 9.0).toDouble();
@@ -86,7 +89,7 @@ class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
   }
 
   List<StatisticsV3YearlyConsistencyMonth> _fallbackMonths() {
-    final now = DateTime.now();
+    final now = this.now ?? DateTime.now();
     return List<StatisticsV3YearlyConsistencyMonth>.generate(12, (index) {
       final month = index + 1;
       final monthStart = DateTime(now.year, month, 1);
@@ -233,7 +236,8 @@ class _MonthMiniCalendar extends StatelessWidget {
                 fontSize: 13,
                 height: 1,
                 fontWeight: FontWeight.w700,
-                color: StatisticsV3ConsistencyPalette.text.withValues(alpha: 0.9),
+                color:
+                    StatisticsV3ConsistencyPalette.text.withValues(alpha: 0.9),
               ),
         ),
         const SizedBox(height: 6),

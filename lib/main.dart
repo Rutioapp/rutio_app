@@ -10,6 +10,7 @@ import 'services/notification_runtime.dart';
 import 'services/notification_service.dart';
 import 'devtools/demo_seed/demo_seed_models.dart';
 import 'devtools/demo_seed/demo_seed_runner.dart';
+import 'devtools/rutio_calendar_clock.dart';
 import 'devtools/rutio_runtime_profile.dart';
 
 import 'data/repositories/auth_repository.dart';
@@ -110,6 +111,7 @@ class MyApp extends StatelessWidget {
               userStateRepository,
               globalWalletController: context.read<GlobalWalletController>(),
               profileRepository: context.read<ProfileRepository>(),
+              calendarNowProvider: RutioCalendarClock.resolve(),
             )..load();
           },
         ),

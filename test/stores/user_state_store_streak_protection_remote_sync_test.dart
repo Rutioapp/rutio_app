@@ -35,6 +35,24 @@ void main() {
       expect(repository.timeZoneCalls, <String>['Europe/Madrid']);
     });
 
+    test('simulated calendar skips remote close mutations', () async {
+      final repository = _FakeStreakProtectionRepository();
+      final provider = _FakeDeviceTimeZoneProvider('Europe/Madrid');
+      final fixture = await _createFixture(
+        repository: repository,
+        provider: provider,
+        calendarNowProvider: () => DateTime(2026, 7, 26, 10),
+        nowProvider: () => DateTime(2026, 7, 25, 10),
+        occurrenceStatuses: <String, dynamic>{
+          '2026-07-24': <String, dynamic>{'habit-1': 'missed'},
+        },
+      );
+
+      await fixture.store.syncStreakProtectionFromRemoteBestEffort();
+
+      expect(repository.closeCalls, isEmpty);
+    });
+
     test('updates the timezone when the device zone changes', () async {
       final repository = _FakeStreakProtectionRepository();
       final provider = _FakeDeviceTimeZoneProvider('Europe/Madrid');
@@ -466,6 +484,8 @@ Future<_StoreFixture> _createFixture({
   HabitRepository? habitRepository,
   HabitLogRepository? habitLogRepository,
   DateTime Function()? nowProvider,
+  DateTime Function()? calendarNowProvider,
+  Map<String, dynamic>? occurrenceStatuses,
   String? localShieldStatus,
   String? localBreakStatus,
   String? initialLastSyncedTimeZone,
@@ -485,6 +505,7 @@ Future<_StoreFixture> _createFixture({
     deviceTimeZoneProvider: provider,
     currentSupabaseUserIdProvider: () => 'cloud-user',
     nowProvider: nowProvider ?? () => DateTime(2026, 7, 25, 12),
+    calendarNowProvider: calendarNowProvider,
   );
 
   await store.save(<String, dynamic>{
@@ -525,7 +546,8 @@ Future<_StoreFixture> _createFixture({
         'habitCountValues': <String, dynamic>{},
         'habitSkips': <String, dynamic>{},
         'habitCompletionTimes': <String, dynamic>{},
-        'habitOccurrenceStatuses': <String, dynamic>{},
+        'habitOccurrenceStatuses': Map<String, dynamic>.from(
+            occurrenceStatuses ?? const <String, dynamic>{}),
         'habitStreakShields': initialShieldCache ??
             (localShieldStatus == null
                 ? <String, dynamic>{}
@@ -780,6 +802,7 @@ class _FakeStreakProtectionRepository implements StreakProtectionRepository {
   final Future<void>? shieldsGate;
   final Future<void>? breaksGate;
   final List<String> timeZoneCalls = <String>[];
+  final List<Map<String, String>> closeCalls = <Map<String, String>>[];
   int shieldFetchCalls = 0;
   int breakFetchCalls = 0;
 
@@ -814,6 +837,12 @@ class _FakeStreakProtectionRepository implements StreakProtectionRepository {
     required String logicalDate,
     required String breakId,
   }) async {
+    closeCalls.add(<String, String>{
+      'requestId': requestId,
+      'habitId': habitId,
+      'logicalDate': logicalDate,
+      'breakId': breakId,
+    });
     return const RepositoryResult<
         CloseMissedHabitOccurrenceRemoteResult>.failure(
       RepositoryError(

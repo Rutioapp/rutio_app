@@ -30,13 +30,15 @@ class HabitWeeklyScreen extends StatefulWidget {
 
 class _HabitWeeklyScreenState extends State<HabitWeeklyScreen>
     with SingleTickerProviderStateMixin {
-  DateTime _weekStart = AppDateUtils.startOfWeek(DateTime.now());
+  late DateTime _weekStart;
   late final AnimationController _navigationController;
   static const _emptyRoot = <String, dynamic>{};
 
   @override
   void initState() {
     super.initState();
+    final store = context.read<UserStateStore>();
+    _weekStart = AppDateUtils.startOfWeek(store.calendarNow);
     _navigationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -193,6 +195,7 @@ class _HabitWeeklyScreenState extends State<HabitWeeklyScreen>
                   child: WeeklyHabitList(
                     habits: activeHabits,
                     days: daysOfWeek,
+                    today: store.calendarNow,
                     habitCompletions: habitCompletions,
                     habitSkips: habitSkips,
                     habitCountValues: habitCountValues,

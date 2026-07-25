@@ -13,6 +13,7 @@ class DiarySummarySection extends StatelessWidget {
     required this.todayEntriesCount,
     required this.dailyXp,
     required this.entries,
+    required this.calendarNow,
     required this.searchOpen,
     required this.searchController,
     required this.searchScope,
@@ -27,6 +28,7 @@ class DiarySummarySection extends StatelessWidget {
   final int todayEntriesCount;
   final int dailyXp;
   final List<DiaryEntry> entries;
+  final DateTime calendarNow;
   final bool searchOpen;
   final TextEditingController searchController;
   final SearchScope? searchScope;
@@ -53,6 +55,7 @@ class DiarySummarySection extends StatelessWidget {
             entriesCount: todayEntriesCount,
             emotionalXp: dailyXp,
             entries: entries,
+            today: calendarNow,
           ),
         ),
         if (searchOpen)

@@ -66,6 +66,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       store: store,
       period: _period,
       l10n: l10n,
+      now: store.calendarNow,
     );
     final habitListItems = buildStatisticsV3HabitListData(
       store: store,
@@ -82,20 +83,20 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
         Scaffold(
           backgroundColor: Colors.transparent,
           drawer: AppViewDrawer(
-              selected: 'stats',
-              onGoDaily: () => _navReplace(context, const HomeScreen()),
-              onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
-              onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
-              onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-              onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
-              onGoDiaryV2: () =>
-                  Navigator.of(context).pushReplacementNamed('/diary'),
-              onGoArchived: () =>
-                  _navReplace(context, const ArchivedHabitsScreen()),
-              onGoStats: () {},
-              onGoShop: () => Navigator.pushNamed(context, '/shop'),
-              onGoProfile: () => _navReplace(context, const ProfileScreen()),
-            ),
+            selected: 'stats',
+            onGoDaily: () => _navReplace(context, const HomeScreen()),
+            onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
+            onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
+            onGoTodo: () => Navigator.pushNamed(context, '/todo'),
+            onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
+            onGoDiaryV2: () =>
+                Navigator.of(context).pushReplacementNamed('/diary'),
+            onGoArchived: () =>
+                _navReplace(context, const ArchivedHabitsScreen()),
+            onGoStats: () {},
+            onGoShop: () => Navigator.pushNamed(context, '/shop'),
+            onGoProfile: () => _navReplace(context, const ProfileScreen()),
+          ),
           body: SafeArea(
             bottom: false,
             child: ListView(
@@ -217,6 +218,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       title: l10n.statisticsV3MonthlyCalendarTitle,
                       subtitle: l10n.statisticsV3MonthlyCalendarSubtitle,
                       days: viewData.monthlyCalendarDays,
+                      now: store.calendarNow,
                     ),
                   ] else if (_period == StatisticsV3Period.year) ...[
                     const SizedBox(height: 12),
@@ -224,6 +226,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       title: l10n.habitStatsYearMetricConsistencySubtitle,
                       subtitle: _yearlyConsistencySubtitle(context),
                       months: viewData.yearlyConsistencyMonths,
+                      now: store.calendarNow,
                     ),
                   ],
                   const SizedBox(height: 12),

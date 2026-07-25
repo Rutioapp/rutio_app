@@ -149,6 +149,7 @@ class UserStateStore extends ChangeNotifier {
   final LevelUpCelebrationController _levelUpCelebrationController;
   final CurrentUserIdProvider _currentSupabaseUserIdProvider;
   final DateTime Function() _nowProvider;
+  final DateTime Function() _calendarNowProvider;
 
   UserStateStore(
     this._repo, {
@@ -176,6 +177,7 @@ class UserStateStore extends ChangeNotifier {
     AchievementLevelRewardCoordinator? achievementLevelRewardCoordinator,
     CurrentUserIdProvider? currentSupabaseUserIdProvider,
     DateTime Function()? nowProvider,
+    DateTime Function()? calendarNowProvider,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
         _habitSyncService = habitSyncService ?? HabitSyncService(),
@@ -238,7 +240,9 @@ class UserStateStore extends ChangeNotifier {
         _levelUpCelebrationController = const LevelUpCelebrationController(),
         _currentSupabaseUserIdProvider =
             currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId,
-        _nowProvider = nowProvider ?? DateTime.now;
+        _nowProvider = nowProvider ?? DateTime.now,
+        _calendarNowProvider =
+            calendarNowProvider ?? nowProvider ?? DateTime.now;
 
   Map<String, dynamic>? _state;
   bool _loading = false;
@@ -278,6 +282,15 @@ class UserStateStore extends ChangeNotifier {
   Map<String, dynamic>? get state => _state;
   bool get isLoading => _loading;
   Object? get error => _error;
+  DateTime get calendarNow => _calendarNowProvider();
+  bool get isCalendarSimulated {
+    final calendar = _calendarNowProvider().toLocal();
+    final technical = _nowProvider().toLocal();
+    return calendar.year != technical.year ||
+        calendar.month != technical.month ||
+        calendar.day != technical.day;
+  }
+
   bool get isDeletingAccount => _isDeletingAccount;
   bool get isLoggingOut => _isLoggingOut;
   bool get isResettingUserState => _isResettingUserState;

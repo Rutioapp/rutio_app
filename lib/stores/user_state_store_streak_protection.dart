@@ -46,7 +46,7 @@ Future<void> _syncStreakProtectionFromRemoteBestEffort(
 
     final nextRoot = _cloneMap(root);
     nextRoot['userState'] = userState;
-    _touchLastSavedAt(userState);
+    _touchLastSavedAt(userState, nowProvider: store._nowProvider);
     store._state = nextRoot;
     await store._repo.save(nextRoot);
     store._emitChanged();
@@ -375,7 +375,15 @@ Future<bool> _runCloseRemoteMissedHabitOccurrencesBestEffort(
   Map<String, dynamic> userState,
 ) async {
   if (!_isAuthenticatedStreakProtectionUser(store, userState)) return false;
-  final todayKey = _todayFrom(store._nowProvider);
+  if (store.isCalendarSimulated) {
+    if (kDebugMode) {
+      debugPrint(
+        '[calendar-clock] skipped remote date mutation because simulated calendar is active operation=close_missed_occurrence',
+      );
+    }
+    return false;
+  }
+  final todayKey = _todayFrom(store._calendarNowProvider);
   final history = _ensureHistoryRoot(userState);
   final occurrenceStatuses = _map(history[_habitOccurrenceStatusesKey]);
   final habitsById = <String, Map<String, dynamic>>{};

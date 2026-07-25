@@ -55,7 +55,7 @@ extension _HomeScreenBuild on _HomeScreenState {
       });
     }
 
-    final homeData = buildHomeViewData(root, _selectedDay);
+    final homeData = buildHomeViewData(root, _selectedDay, store.calendarNow);
 
     final args = ModalRoute.of(context)?.settings.arguments;
     final argsMap = (args is Map) ? args : const <String, dynamic>{};

@@ -15,6 +15,7 @@ enum MonthlyDayStatus {
 
 class MonthlyCalendarGrid extends StatelessWidget {
   final DateTime monthCursor;
+  final DateTime? today;
   final Map<String, dynamic> habit;
   final Color accentColor;
   final Map<String, dynamic> habitCompletions;
@@ -26,6 +27,7 @@ class MonthlyCalendarGrid extends StatelessWidget {
   const MonthlyCalendarGrid({
     super.key,
     required this.monthCursor,
+    this.today,
     required this.habit,
     required this.accentColor,
     required this.habitCompletions,
@@ -45,8 +47,12 @@ class MonthlyCalendarGrid extends StatelessWidget {
     final habitType = (habit['type'] ?? 'check').toString();
     final target = ((habit['target'] as num?) ?? 1).toInt();
 
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final calendarToday = today ?? DateTime.now();
+    final currentDay = DateTime(
+      calendarToday.year,
+      calendarToday.month,
+      calendarToday.day,
+    );
 
     return GridView.builder(
       itemCount: totalCells,
@@ -86,10 +92,10 @@ class MonthlyCalendarGrid extends StatelessWidget {
           done = !skipped && (doneMap[habitId] == true);
         }
 
-        final isToday = date.year == today.year &&
-            date.month == today.month &&
-            date.day == today.day;
-        final isFuture = date.isAfter(today);
+        final isToday = date.year == currentDay.year &&
+            date.month == currentDay.month &&
+            date.day == currentDay.day;
+        final isFuture = date.isAfter(currentDay);
 
         MonthlyDayStatus status;
         if (!scheduled) {

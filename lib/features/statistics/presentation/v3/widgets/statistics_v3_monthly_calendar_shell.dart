@@ -12,11 +12,13 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.days,
+    this.now,
   });
 
   final String title;
   final String subtitle;
   final List<StatisticsV3MonthlyCalendarDay> days;
+  final DateTime? now;
 
   static const _border = Color(0xFFE9E3D9);
   static const _cream = Color(0xFFFDFBF7);
@@ -67,7 +69,8 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
                   childAspectRatio: rawCellWidth / cellHeight,
                 ),
                 itemBuilder: (context, index) {
-                  if (index < leadingDays || index >= leadingDays + daysInMonth) {
+                  if (index < leadingDays ||
+                      index >= leadingDays + daysInMonth) {
                     return const SizedBox.shrink();
                   }
 
@@ -98,7 +101,7 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
   }
 
   List<StatisticsV3MonthlyCalendarDay> _fallbackDays() {
-    final now = DateTime.now();
+    final now = this.now ?? DateTime.now();
     final firstDay = DateTime(now.year, now.month, 1);
     final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
 

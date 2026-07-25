@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class WeekStripWidget extends StatelessWidget {
   final DateTime selectedDay;
   final ValueChanged<DateTime> onSelectedDay;
+  final DateTime? today;
 
   // Accent color (family color).
   //
@@ -14,6 +15,7 @@ class WeekStripWidget extends StatelessWidget {
     super.key,
     required this.selectedDay,
     required this.onSelectedDay,
+    this.today,
     Color? accentColor,
     Color? primaryDark,
   })  : accentColor = (accentColor ?? primaryDark ?? const Color(0xFF6D4CFF)),
@@ -41,7 +43,7 @@ class WeekStripWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final days = _daysForStrip(selectedDay);
-    final today = _onlyDate(DateTime.now());
+    final today = _onlyDate(this.today ?? DateTime.now());
 
     return GestureDetector(
       onHorizontalDragEnd: (details) {

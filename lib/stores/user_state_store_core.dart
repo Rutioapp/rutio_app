@@ -147,10 +147,11 @@ String _dateKey(DateTime date) {
   return '${date.year}-$month-$day';
 }
 
-String _today() => _dateKey(DateTime.now());
+String _today([DateTime Function()? nowProvider]) =>
+    _dateKey((nowProvider ?? DateTime.now)().toLocal());
 
-String _todayFrom(DateTime Function() nowProvider) =>
-    _dateKey(nowProvider().toLocal());
+String _todayFrom(DateTime Function() calendarNowProvider) =>
+    _dateKey(calendarNowProvider().toLocal());
 
 bool _isSameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
@@ -270,12 +271,15 @@ void _normalizeUserIdForActiveScope(
 
 String _activeViewDateKey(
   Map<String, dynamic> userState, {
-  required DateTime Function() nowProvider,
+  DateTime Function()? nowProvider,
+  DateTime Function()? calendarNowProvider,
 }) {
   final meta = _map(userState['meta']);
   final key = (meta['activeViewDateKey'] ?? '').toString();
   if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(key)) return key;
-  return _todayFrom(nowProvider);
+  final effectiveCalendarNowProvider =
+      calendarNowProvider ?? nowProvider ?? DateTime.now;
+  return _todayFrom(effectiveCalendarNowProvider);
 }
 
 DateTime _dateFromKey(String key) {
@@ -300,7 +304,7 @@ Future<void> _setActiveViewDate(UserStateStore store, DateTime date) async {
   userState['meta'] = meta;
 
   _hydrateActiveHabitsForDate(userState, date);
-  _touchLastSavedAt(userState);
+  _touchLastSavedAt(userState, nowProvider: store._nowProvider);
 
   root['userState'] = userState;
   store._state = root;
@@ -434,9 +438,13 @@ DateTime? _parseHabitDate(dynamic value) {
   );
 }
 
-void _touchLastSavedAt(Map<String, dynamic> userState) {
+void _touchLastSavedAt(
+  Map<String, dynamic> userState, {
+  DateTime Function()? nowProvider,
+}) {
   final meta = _map(userState['meta']);
-  meta['lastSavedAt'] = DateTime.now().toUtc().toIso8601String();
+  meta['lastSavedAt'] =
+      (nowProvider ?? DateTime.now)().toUtc().toIso8601String();
   userState['meta'] = meta;
 }
 
@@ -499,7 +507,10 @@ Map<String, dynamic> _ensureDailyMoodsRoot(Map<String, dynamic> userState) {
   return moods;
 }
 
-bool _ensureActiveHabitIds(Map<String, dynamic> userState) {
+bool _ensureActiveHabitIds(
+  Map<String, dynamic> userState, {
+  DateTime Function()? calendarNowProvider,
+}) {
   final activeHabits = _list(userState['activeHabits'])
       .whereType<Map>()
       .map((entry) => entry.cast<String, dynamic>())
@@ -518,7 +529,9 @@ bool _ensureActiveHabitIds(Map<String, dynamic> userState) {
     }
 
     if (id.isEmpty) {
-      final createdAt = (habit['createdAt'] ?? _today()).toString();
+      final createdAt =
+          (habit['createdAt'] ?? _today(calendarNowProvider ?? DateTime.now))
+              .toString();
       final name = (habit['name'] ?? habit['title'] ?? 'habit').toString();
       id = 'auto_${createdAt}_${index}_${name.hashCode.abs()}';
     }
@@ -545,11 +558,17 @@ bool _ensureActiveHabitIds(Map<String, dynamic> userState) {
 void _ensureDailyReset(
   UserStateStore store,
   Map<String, dynamic> userState, {
-  required DateTime Function() nowProvider,
+  DateTime Function()? nowProvider,
+  DateTime Function()? calendarNowProvider,
+  DateTime Function()? technicalNowProvider,
 }) {
   final daily = _map(userState['daily']);
   final lastResetDate = (daily['lastResetDate'] ?? '').toString();
-  final today = _todayFrom(nowProvider);
+  final effectiveCalendarNowProvider =
+      calendarNowProvider ?? store._calendarNowProvider;
+  final effectiveTechnicalNowProvider =
+      technicalNowProvider ?? store._nowProvider;
+  final today = _todayFrom(effectiveCalendarNowProvider);
 
   if (lastResetDate == today) {
     userState['daily'] = daily;
@@ -567,7 +586,7 @@ void _ensureDailyReset(
       userState,
       dayKey: previousDayKey,
       activeHabits: activeHabits,
-      nowProvider: nowProvider,
+      nowProvider: effectiveTechnicalNowProvider,
     );
   }
 
@@ -769,9 +788,20 @@ Future<void> _loadStore(
     if (store._state != null) {
       final userState = _ensureUserStateRoot(store._state!);
       _normalizeUserIdForActiveScope(store, userState);
-      _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
-      _expireStreakShieldsForLocalDate(userState, store._nowProvider());
-      _ensureActiveHabitIds(userState);
+      _ensureDailyReset(
+        store,
+        userState,
+        calendarNowProvider: store._calendarNowProvider,
+        technicalNowProvider: store._nowProvider,
+      );
+      _expireStreakShieldsForLocalDate(
+        userState,
+        store._calendarNowProvider(),
+      );
+      _ensureActiveHabitIds(
+        userState,
+        calendarNowProvider: store._calendarNowProvider,
+      );
       _ensureDiaryEntriesRoot(userState);
       _ensureDailyMoodsRoot(userState);
       _ensureDiaryRewardAppliedDateKeys(userState);
@@ -795,13 +825,13 @@ Future<void> _loadStore(
 
       final viewKey = _activeViewDateKey(
         userState,
-        nowProvider: store._nowProvider,
+        calendarNowProvider: store._calendarNowProvider,
       );
-      if (viewKey != _todayFrom(store._nowProvider)) {
+      if (viewKey != _todayFrom(store._calendarNowProvider)) {
         _hydrateActiveHabitsForDate(userState, _dateFromKey(viewKey));
       }
 
-      _touchLastSavedAt(userState);
+      _touchLastSavedAt(userState, nowProvider: store._nowProvider);
       if (epochAtStart != store._scopeEpoch ||
           scopeAtStart !=
               _normalizedScopeUserId(store._activeLocalScopeUserId)) {
@@ -834,9 +864,17 @@ Future<void> _saveStore(
 
   final userState = _ensureUserStateRoot(store._state!);
   _normalizeUserIdForActiveScope(store, userState);
-  _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
-  _expireStreakShieldsForLocalDate(userState, store._nowProvider());
-  _ensureActiveHabitIds(userState);
+  _ensureDailyReset(
+    store,
+    userState,
+    calendarNowProvider: store._calendarNowProvider,
+    technicalNowProvider: store._nowProvider,
+  );
+  _expireStreakShieldsForLocalDate(userState, store._calendarNowProvider());
+  _ensureActiveHabitIds(
+    userState,
+    calendarNowProvider: store._calendarNowProvider,
+  );
   _ensureDiaryEntriesRoot(userState);
   _ensureDailyMoodsRoot(userState);
   _ensureDiaryRewardAppliedDateKeys(userState);
@@ -846,13 +884,13 @@ Future<void> _saveStore(
 
   final viewKey = _activeViewDateKey(
     userState,
-    nowProvider: store._nowProvider,
+    calendarNowProvider: store._calendarNowProvider,
   );
-  if (viewKey != _todayFrom(store._nowProvider)) {
+  if (viewKey != _todayFrom(store._calendarNowProvider)) {
     _hydrateActiveHabitsForDate(userState, _dateFromKey(viewKey));
   }
 
-  _touchLastSavedAt(userState);
+  _touchLastSavedAt(userState, nowProvider: store._nowProvider);
 
   store._emitChanged();
   await store._repo.save(store._state!);

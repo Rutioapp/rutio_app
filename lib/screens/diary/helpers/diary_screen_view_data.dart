@@ -25,8 +25,10 @@ DiaryScreenViewData buildDiaryScreenViewData({
   required String searchQuery,
   required SearchScope? searchScope,
   required UserStateStore store,
+  DateTime? now,
 }) {
-  final filteredEntries = _filterByPeriod(entries, period);
+  final calendarNow = (now ?? DateTime.now()).toLocal();
+  final filteredEntries = _filterByPeriod(entries, period, calendarNow);
   final uiEntries = filteredEntries
       .map(_toUi)
       .where((entry) => _matchesSearch(entry, store, searchQuery, searchScope))
@@ -34,7 +36,7 @@ DiaryScreenViewData buildDiaryScreenViewData({
   final groupedEntries = _groupFromUi(uiEntries);
   final sortedDays = groupedEntries.keys.toList()
     ..sort((a, b) => b.compareTo(a));
-  final todayEntriesCount = _todayEntriesCount(entries);
+  final todayEntriesCount = _todayEntriesCount(entries, calendarNow);
 
   return DiaryScreenViewData(
     groupedEntries: groupedEntries,
@@ -101,9 +103,11 @@ Map<DateTime, List<DiaryEntryUi>> _groupFromUi(List<DiaryEntryUi> entries) {
   return groupedEntries;
 }
 
-List<DiaryEntry> _filterByPeriod(List<DiaryEntry> entries, DiaryPeriod period) {
-  final now = DateTime.now();
-
+List<DiaryEntry> _filterByPeriod(
+  List<DiaryEntry> entries,
+  DiaryPeriod period,
+  DateTime now,
+) {
   switch (period) {
     case DiaryPeriod.today:
       final start = DateTime(now.year, now.month, now.day);
@@ -171,8 +175,7 @@ bool _matchesSearch(
   return haystack.contains(query);
 }
 
-int _todayEntriesCount(List<DiaryEntry> entries) {
-  final now = DateTime.now();
+int _todayEntriesCount(List<DiaryEntry> entries, DateTime now) {
   final start = DateTime(now.year, now.month, now.day);
 
   return entries

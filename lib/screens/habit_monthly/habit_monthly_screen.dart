@@ -62,14 +62,16 @@ class HabitMonthlyScreen extends StatefulWidget {
 }
 
 class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
-  DateTime _monthCursor =
-      DateTime(DateTime.now().year, DateTime.now().month, 1);
+  late DateTime _monthCursor;
 
   String? _selectedHabitId;
 
   @override
   void initState() {
     super.initState();
+    final store = context.read<UserStateStore>();
+    final calendarNow = store.calendarNow;
+    _monthCursor = DateTime(calendarNow.year, calendarNow.month, 1);
     _selectedHabitId = widget.habitId ?? widget.initialHabitId;
   }
 
@@ -137,6 +139,7 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
         : _computeMonthStats(
             selectedHabit,
             _monthCursor,
+            store.calendarNow,
             habitCompletions,
             habitCountValues,
             habitSkips,
@@ -146,6 +149,7 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
         ? const _HabitAllStats.empty()
         : _computeAllTimeStats(
             selectedHabit,
+            store.calendarNow,
             habitCompletions,
             habitCountValues,
           );
@@ -155,7 +159,8 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
         : _habitColor(selectedHabit);
 
     final monthTitle = MonthUtils.monthLabel(context, _monthCursor);
-    final monthSubtitle = _monthSubtitle(context, _monthCursor);
+    final monthSubtitle =
+        _monthSubtitle(context, _monthCursor, store.calendarNow);
 
     return Stack(
       children: [
@@ -265,6 +270,7 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
                       else
                         MonthlyCalendarCard(
                           monthCursor: _monthCursor,
+                          today: store.calendarNow,
                           habit: selectedHabit,
                           accentColor: selectedAccent,
                           habitCompletions: habitCompletions,
@@ -308,6 +314,7 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
   _MonthStats _computeMonthStats(
     Map<String, dynamic> habit,
     DateTime month,
+    DateTime today,
     Map<String, dynamic> habitCompletions,
     Map<String, dynamic> habitCountValues,
     Map<String, dynamic> habitSkips,
@@ -316,8 +323,6 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
     final habitType = (habit['type'] ?? 'check').toString();
     final target = ((habit['target'] as num?) ?? 1).toInt();
 
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
     final daysInMonth = MonthUtils.daysInMonth(month);
 
     final lastEvaluatedDay =
@@ -368,6 +373,7 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
 
   _HabitAllStats _computeAllTimeStats(
     Map<String, dynamic> habit,
+    DateTime today,
     Map<String, dynamic> habitCompletions,
     Map<String, dynamic> habitCountValues,
   ) {
@@ -425,8 +431,7 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
     }
 
     int currentStreak = 0;
-    var cursor = DateTime.now();
-    cursor = DateTime(cursor.year, cursor.month, cursor.day);
+    var cursor = DateTime(today.year, today.month, today.day);
     final doneSet = doneDays;
 
     while (doneSet.contains(cursor)) {
@@ -437,8 +442,7 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
     return _HabitAllStats(currentStreak: currentStreak, bestStreak: best);
   }
 
-  String _monthSubtitle(BuildContext context, DateTime month) {
-    final now = DateTime.now();
+  String _monthSubtitle(BuildContext context, DateTime month, DateTime now) {
     final isCurrentMonth = month.year == now.year && month.month == now.month;
     final elapsed = isCurrentMonth ? now.day : MonthUtils.daysInMonth(month);
     final anchorDay = DateTime(month.year, month.month, elapsed);

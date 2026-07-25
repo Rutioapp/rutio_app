@@ -146,7 +146,10 @@ Future<void> _persistHabitRemoteId(
 
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
-  _ensureActiveHabitIds(userState);
+  _ensureActiveHabitIds(
+    userState,
+    calendarNowProvider: store._calendarNowProvider,
+  );
 
   final activeHabits = _mutableActiveHabits(userState);
   final index = _activeHabitIndex(activeHabits, normalizedLocalId);
@@ -191,7 +194,7 @@ Future<void> _maybeSyncHabitsFromRemoteBestEffort(
     return;
   }
 
-  final now = store._nowProvider();
+  final now = store._calendarNowProvider();
   final lastAttemptAt = store._lastHabitsRemotePullAttemptAt;
   if (!ignoreCooldown &&
       lastAttemptAt != null &&
@@ -311,13 +314,17 @@ Future<void> _runHabitsRemotePull(
     _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
     final streakShieldExpired = _expireStreakShieldsForLocalDate(
       userState,
-      store._nowProvider(),
+      store._calendarNowProvider(),
     );
-    _ensureActiveHabitIds(userState);
+    _ensureActiveHabitIds(
+      userState,
+      calendarNowProvider: store._calendarNowProvider,
+    );
 
     final mergedHabits = _mergeRemoteHabitsIntoLocalState(
       localHabits: _mutableActiveHabits(userState),
       remoteHabits: remoteHabits,
+      calendarNowProvider: store._calendarNowProvider,
       authenticatedUserId: authenticatedUserId,
     );
     final mergedLogs = _mergeRemoteHabitLogsIntoLocalState(
@@ -342,7 +349,10 @@ Future<void> _runHabitsRemotePull(
     _hydrateActiveHabitsForDate(
         userState,
         _dateFromKey(
-          _activeViewDateKey(userState, nowProvider: store._nowProvider),
+          _activeViewDateKey(
+            userState,
+            calendarNowProvider: store._calendarNowProvider,
+          ),
         ));
     root['userState'] = userState;
     await store.save(root);
@@ -447,6 +457,7 @@ class _HabitLogRemoteMergeResult {
 _HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
   required List<Map<String, dynamic>> localHabits,
   required List<RemoteHabit> remoteHabits,
+  DateTime Function()? calendarNowProvider,
   required String authenticatedUserId,
 }) {
   if (authenticatedUserId.trim().isEmpty) {
@@ -514,7 +525,10 @@ _HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
       continue;
     }
 
-    final newLocalHabit = _localHabitFromRemote(remoteHabit);
+    final newLocalHabit = _localHabitFromRemote(
+      remoteHabit,
+      calendarNowProvider: calendarNowProvider,
+    );
     mergedHabits.add(newLocalHabit);
     localIndexesByRemoteId[remoteHabitId] = mergedHabits.length - 1;
     changed = true;
@@ -840,7 +854,10 @@ Map<String, dynamic> _mergeRemoteHabitIntoExistingLocal({
   return merged;
 }
 
-Map<String, dynamic> _localHabitFromRemote(RemoteHabit remoteHabit) {
+Map<String, dynamic> _localHabitFromRemote(
+  RemoteHabit remoteHabit, {
+  DateTime Function()? calendarNowProvider,
+}) {
   final remoteHabitId = (remoteHabit.id ?? '').trim().toLowerCase();
   final localHabitId = 'remote_$remoteHabitId';
 
@@ -849,7 +866,8 @@ Map<String, dynamic> _localHabitFromRemote(RemoteHabit remoteHabit) {
     'habitId': localHabitId,
     'remoteId': remoteHabitId,
     'remoteUserId': remoteHabit.userId,
-    'createdAt': remoteHabit.createdAt?.toUtc().toIso8601String() ?? _today(),
+    'createdAt': remoteHabit.createdAt?.toUtc().toIso8601String() ??
+        _today(calendarNowProvider),
     'updatedAt': remoteHabit.updatedAt?.toUtc().toIso8601String(),
     'name': remoteHabit.name,
     'title': remoteHabit.name,
@@ -1836,7 +1854,10 @@ Future<void> _deleteHabitById(
 
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
-  _ensureActiveHabitIds(userState);
+  _ensureActiveHabitIds(
+    userState,
+    calendarNowProvider: store._calendarNowProvider,
+  );
 
   final activeHabits = _mutableActiveHabits(userState);
   final normalizedId = id.trim();
@@ -1925,7 +1946,7 @@ Future<void> _addHabitFromCatalog(
 
   activeHabits.add(<String, dynamic>{
     'id': id,
-    'createdAt': _today(),
+    'createdAt': _today(store._calendarNowProvider),
     'name': _formatHabitName(habitDef: habitDef, target: resolvedTarget),
     'emoji': (habitDef['emoji'] ?? '?').toString(),
     'familyId': familyId,
@@ -1979,7 +2000,7 @@ Future<void> _addCustomHabit(
   final providedId = (habit['id'] ?? '').toString().trim();
   final id = providedId.isNotEmpty
       ? providedId
-      : 'custom_${DateTime.now().millisecondsSinceEpoch}';
+      : 'custom_${store._nowProvider().millisecondsSinceEpoch}';
 
   if (_activeHabitIndex(activeHabits, id) != -1) {
     return;
@@ -2014,8 +2035,10 @@ Future<void> _addCustomHabit(
 
   activeHabits.add(<String, dynamic>{
     'id': id,
-    'createdAt':
-        (habit['createdAt'] ?? habit['created_at'] ?? _today()).toString(),
+    'createdAt': (habit['createdAt'] ??
+            habit['created_at'] ??
+            _today(store._calendarNowProvider))
+        .toString(),
     'name': (habit['name'] ?? habit['title'] ?? 'Habito').toString(),
     'emoji': resolvedEmoji,
     'description': (habit['description'] ?? '').toString(),
@@ -2377,7 +2400,8 @@ Future<void> _setCountHabitValue(
   final root = store._state;
   if (root == null) return;
   final originalRoot = _cloneMap(root);
-  final now = store._nowProvider();
+  final calendarNow = store._calendarNowProvider();
+  final technicalNow = store._nowProvider();
 
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
@@ -2388,10 +2412,10 @@ Future<void> _setCountHabitValue(
   if (index == -1) return;
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
-  if (!_isHabitExpectedForDate(habit, now)) return;
+  if (!_isHabitExpectedForDate(habit, calendarNow)) return;
   if (!_isCountHabit(habit)) return;
 
-  final dayKey = _dateKey(now);
+  final dayKey = _dateKey(calendarNow);
   final existingTransaction = await _habitRewardTransactionForDate(
     store,
     habitId: habitId,
@@ -2428,7 +2452,7 @@ Future<void> _setCountHabitValue(
     dateKey: dayKey,
     habitId: habitId,
     done: habit['doneToday'] == true,
-    epochMillis: now.millisecondsSinceEpoch,
+    epochMillis: technicalNow.millisecondsSinceEpoch,
   );
 
   _HabitRewardCompletionOutcome completionOutcome =
@@ -2611,7 +2635,7 @@ Future<void> _setCountHabitValue(
     userState: userState,
     habit: habit,
     habitId: habitId,
-    date: now,
+    date: calendarNow,
   );
 }
 
@@ -2623,7 +2647,8 @@ Future<void> _completeHabit(
   final root = store._state;
   if (root == null) return;
   final originalRoot = _cloneMap(root);
-  final now = store._nowProvider();
+  final calendarNow = store._calendarNowProvider();
+  final technicalNow = store._nowProvider();
 
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
@@ -2634,10 +2659,10 @@ Future<void> _completeHabit(
   if (index == -1) return;
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
-  if (!_isHabitExpectedForDate(habit, now)) return;
+  if (!_isHabitExpectedForDate(habit, calendarNow)) return;
 
   final type = _normalizedHabitType(habit['type']);
-  final dayKey = _dateKey(now);
+  final dayKey = _dateKey(calendarNow);
   final existingTransaction = await _habitRewardTransactionForDate(
     store,
     habitId: habitId,
@@ -2677,7 +2702,7 @@ Future<void> _completeHabit(
     dateKey: dayKey,
     habitId: habitId,
     done: habit['doneToday'] == true,
-    epochMillis: now.millisecondsSinceEpoch,
+    epochMillis: technicalNow.millisecondsSinceEpoch,
   );
   _HabitRewardCompletionOutcome completionOutcome =
       const _HabitRewardCompletionOutcome(
@@ -2819,7 +2844,7 @@ Future<void> _completeHabit(
     userState: userState,
     habit: habit,
     habitId: habitId,
-    date: now,
+    date: calendarNow,
   );
 }
 
@@ -2833,7 +2858,7 @@ Future<void> _toggleHabitDoneForDate(
 
   final userState = _ensureUserStateRoot(root);
 
-  if (_isSameDay(date, store._nowProvider())) {
+  if (_isSameDay(date, store._calendarNowProvider())) {
     await store.completeHabit(habitId: habitId);
     return;
   }
@@ -2903,7 +2928,7 @@ Future<void> _setHabitCompletionForKey(
     reversed: false,
   );
 
-  if (_isSameDay(date, store._nowProvider())) {
+  if (_isSameDay(date, store._calendarNowProvider())) {
     if (done) {
       await store.completeHabit(habitId: habitId);
       return;
@@ -3016,7 +3041,7 @@ Future<void> _setHabitSkipForKey(
     reversed: false,
   );
 
-  if (_isSameDay(date, store._nowProvider())) {
+  if (_isSameDay(date, store._calendarNowProvider())) {
     if (skipped) {
       final existingTransaction = await _habitRewardTransactionForDate(
         store,
@@ -3133,7 +3158,7 @@ Future<void> _setCountHabitValueForDate(
 
   final userState = _ensureUserStateRoot(root);
 
-  if (_isSameDay(date, store._nowProvider())) {
+  if (_isSameDay(date, store._calendarNowProvider())) {
     await store.setCountHabitValue(habitId: habitId, value: value);
     return;
   }
@@ -3208,6 +3233,10 @@ void _queueBestEffortHabitLogSyncForDate(
   bool? isSkippedOverride,
   num? countValueOverride,
 }) {
+  if (store.isCalendarSimulated) {
+    _logCalendarClockSkip('habit_log_sync');
+    return;
+  }
   final normalizedDate = DateTime(date.year, date.month, date.day);
   final dayKey = _dateKey(normalizedDate);
   final history = _ensureHistoryRoot(userState);
@@ -3376,6 +3405,14 @@ void _logStreakRecoverCloud(String message) {
   }
 }
 
+void _logCalendarClockSkip(String operation) {
+  if (kDebugMode) {
+    debugPrint(
+      '[calendar-clock] skipped remote date mutation because simulated calendar is active operation=$operation',
+    );
+  }
+}
+
 void _logStreakRecoverDebugSeed({
   required String habitId,
   required String breakId,
@@ -3438,8 +3475,13 @@ Future<void> _seedDebugRecoverableStreakBreak(
     return;
   }
 
-  final now = store._nowProvider();
-  final today = DateTime(now.year, now.month, now.day);
+  final calendarNow = store._calendarNowProvider();
+  final technicalNow = store._nowProvider();
+  final today = DateTime(
+    calendarNow.year,
+    calendarNow.month,
+    calendarNow.day,
+  );
   final yesterday = today.subtract(const Duration(days: 1));
   final missedOccurrenceDateKey = _dateKey(yesterday);
   final breakId = 'debug_streak_break_${habitId}_$missedOccurrenceDateKey';
@@ -3459,7 +3501,7 @@ Future<void> _seedDebugRecoverableStreakBreak(
     id: breakId,
     userId: (store.activeLocalScopeUserId ?? store.userId ?? '').trim(),
     habitId: habitId,
-    brokenAtMillis: now.millisecondsSinceEpoch,
+    brokenAtMillis: technicalNow.millisecondsSinceEpoch,
     missedOccurrenceDateKey: missedOccurrenceDateKey,
     previousStreak: 3,
     currentStreakAfterBreak: 0,
@@ -3602,9 +3644,11 @@ Future<_HabitRewardCompletionOutcome> _applyHabitRewardCompletion(
   required int baseXp,
   required int baseCoins,
 }) async {
-  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled(
+  final cloudHabitRewardsConfigured = HabitCurrencyRewardsConfig.resolveEnabled(
     override: store._cloudHabitRewardsEnabledOverride,
   );
+  final cloudHabitRewardsEnabled =
+      cloudHabitRewardsConfigured && !store.isCalendarSimulated;
   final cloudRewardHabitId = _cloudRewardHabitId(habit);
   final existingTransaction = await _habitRewardTransactionForDate(
     store,
@@ -3613,6 +3657,9 @@ Future<_HabitRewardCompletionOutcome> _applyHabitRewardCompletion(
   );
   final hasConfirmedCloudRewardTransaction =
       _isConfirmedCloudHabitRewardTransaction(existingTransaction);
+  if (cloudHabitRewardsConfigured && store.isCalendarSimulated) {
+    _logCalendarClockSkip('habit_reward_apply');
+  }
   if (existingTransaction != null) {
     if (cloudHabitRewardsEnabled && hasConfirmedCloudRewardTransaction) {
       _logHabitCloudReward(
@@ -3824,10 +3871,15 @@ Future<_HabitRewardReversalOutcome> _reverseHabitRewardCompletion(
     );
   }
 
-  final cloudHabitRewardsEnabled = HabitCurrencyRewardsConfig.resolveEnabled(
+  final cloudHabitRewardsConfigured = HabitCurrencyRewardsConfig.resolveEnabled(
     override: store._cloudHabitRewardsEnabledOverride,
   );
+  final cloudHabitRewardsEnabled =
+      cloudHabitRewardsConfigured && !store.isCalendarSimulated;
   final cloudRewardHabitId = _cloudRewardHabitId(habit);
+  if (cloudHabitRewardsConfigured && store.isCalendarSimulated) {
+    _logCalendarClockSkip('habit_reward_reverse');
+  }
   if (cloudHabitRewardsEnabled &&
       _isConfirmedCloudHabitRewardTransaction(existingTransaction)) {
     if (cloudRewardHabitId == null) {
@@ -4245,6 +4297,7 @@ int _computeHabitBestStreak(
   Map<DateTime, int> continuityByDay, {
   required Map<String, dynamic> userState,
   required String habitId,
+  required DateTime today,
 }) {
   final derived = _computeBestStreak(continuityByDay);
   final breakRecords = _habitStreakBreaksRoot(userState)
@@ -4264,7 +4317,7 @@ int _computeHabitBestStreak(
       habit: _habitByIdFromState(userState, habitId) ??
           <String, dynamic>{'id': habitId},
       afterDateKey: (record['missedOccurrenceDateKey'] ?? '').toString(),
-      until: DateTime.now(),
+      until: today,
     );
     final recovered = previousStreak + streakAfterRecovery;
     if (recovered > best) best = recovered;
@@ -4290,7 +4343,7 @@ List<ActiveStreakShield> _activeStreakShields(UserStateStore store) {
   if (root == null) return const <ActiveStreakShield>[];
   final rootCopy = _cloneMap(root);
   final userState = _ensureUserStateRoot(rootCopy);
-  final now = store._nowProvider();
+  final now = store._calendarNowProvider();
   final expired = _expireStreakShieldsForLocalDate(userState, now);
   final active = _habitStreakShieldsRoot(userState)
       .entries
@@ -4329,7 +4382,7 @@ ActiveStreakShield? _activeStreakShieldForHabit(
   if (root == null) return null;
   final rootCopy = _cloneMap(root);
   final userState = _ensureUserStateRoot(rootCopy);
-  final now = store._nowProvider();
+  final now = store._calendarNowProvider();
   final expired = _expireStreakShieldsForLocalDate(userState, now);
   final record = _activeStreakShieldRecordForHabit(userState, habitId);
   if (expired) {
@@ -4376,8 +4429,9 @@ Future<StreakShieldOperationResult> _activateStreakShield(
 
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
-  final now = store._nowProvider();
-  _expireStreakShieldsForLocalDate(userState, now);
+  final calendarNow = store._calendarNowProvider();
+  final technicalNow = store._nowProvider();
+  _expireStreakShieldsForLocalDate(userState, calendarNow);
   final habit = _habitByIdFromState(userState, normalizedHabitId);
   if (habit == null) {
     return const StreakShieldOperationResult(
@@ -4409,7 +4463,7 @@ Future<StreakShieldOperationResult> _activateStreakShield(
         shield: currentShieldModel,
       );
     }
-    if (currentShieldModel.isActiveForLocalDate(now)) {
+    if (currentShieldModel.isActiveForLocalDate(calendarNow)) {
       return const StreakShieldOperationResult(
         status: StreakShieldOperationStatus.shieldAlreadyActive,
       );
@@ -4419,12 +4473,17 @@ Future<StreakShieldOperationResult> _activateStreakShield(
   final isAuthenticated =
       _isAuthenticatedStreakProtectionUser(store, userState);
   final cloudRewardHabitId = _cloudRewardHabitId(habit);
-  if (isAuthenticated && cloudRewardHabitId != null) {
+  if (store.isCalendarSimulated) {
+    _logCalendarClockSkip('activate_streak_shield');
+  }
+  if (isAuthenticated &&
+      cloudRewardHabitId != null &&
+      !store.isCalendarSimulated) {
     final pending = await _pendingStreakShieldOperationForMutation(
       store,
       remoteHabitId: cloudRewardHabitId,
       operationId: normalizedOperationId,
-      protectedOccurrenceDate: _dateKey(now),
+      protectedOccurrenceDate: _dateKey(calendarNow),
       utilityId: normalizedUtilityId,
     );
     _logStreakShieldCloud(
@@ -4468,7 +4527,7 @@ Future<StreakShieldOperationResult> _activateStreakShield(
       normalizedOperationId,
     );
     if (changed) {
-      _touchLastSavedAt(nextUserState);
+      _touchLastSavedAt(nextUserState, nowProvider: store._nowProvider);
       nextRoot['userState'] = nextUserState;
       store._state = nextRoot;
       await store._repo.save(nextRoot);
@@ -4491,7 +4550,9 @@ Future<StreakShieldOperationResult> _activateStreakShield(
     );
   }
 
-  if (store._utilityConsumptionRepository != null && !isAuthenticated) {
+  if (store._utilityConsumptionRepository != null &&
+      !isAuthenticated &&
+      !store.isCalendarSimulated) {
     final cloudRewardHabitId = _cloudRewardHabitId(habit);
     final requestId =
         'utility_activate:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedOperationId';
@@ -4542,9 +4603,9 @@ Future<StreakShieldOperationResult> _activateStreakShield(
     userId: (store.activeLocalScopeUserId ?? store.userId ?? '').trim(),
     habitId: normalizedHabitId,
     utilityId: normalizedUtilityId,
-    activatedAtMillis: now.millisecondsSinceEpoch,
+    activatedAtMillis: technicalNow.millisecondsSinceEpoch,
     status: ActiveStreakShieldStatus.armed,
-    protectedOccurrenceDateKey: _dateKey(now),
+    protectedOccurrenceDateKey: _dateKey(calendarNow),
     operationId: normalizedOperationId,
   );
 
@@ -4635,7 +4696,8 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
     );
   }
 
-  final now = store._nowProvider();
+  final calendarNow = store._calendarNowProvider();
+  final technicalNow = store._nowProvider();
   final isAuthenticated =
       _isAuthenticatedStreakProtectionUser(store, userState);
   final remoteBreakId =
@@ -4646,7 +4708,8 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
           : '';
   if (!isAuthenticated &&
       remoteBreakId.isEmpty &&
-      !_isWithinRecoveryWindow(now, breakRecord.missedOccurrenceDateKey)) {
+      !_isWithinRecoveryWindow(
+          calendarNow, breakRecord.missedOccurrenceDateKey)) {
     final expired = breakRecord.copyWith(
       status: RecoverableStreakBreakStatus.expired,
     );
@@ -4662,7 +4725,12 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
     );
   }
 
-  if (isAuthenticated && remoteBreakId.isNotEmpty) {
+  if (store.isCalendarSimulated) {
+    _logCalendarClockSkip('recover_streak_break');
+  }
+  if (isAuthenticated &&
+      remoteBreakId.isNotEmpty &&
+      !store.isCalendarSimulated) {
     final pending = await _pendingStreakRecoverOperationForMutation(
       store,
       breakId: remoteBreakId,
@@ -4712,7 +4780,7 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
         cached['recoveryOperationId'] = normalizedOperationId;
         cachedBreaks[result.data!.breakRecord.breakId] = cached;
       }
-      _touchLastSavedAt(nextUserState);
+      _touchLastSavedAt(nextUserState, nowProvider: store._nowProvider);
       nextRoot['userState'] = nextUserState;
       store._state = nextRoot;
       await store._repo.save(nextRoot);
@@ -4737,7 +4805,9 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
     );
   }
 
-  if (store._utilityConsumptionRepository != null && !isAuthenticated) {
+  if (store._utilityConsumptionRepository != null &&
+      !isAuthenticated &&
+      !store.isCalendarSimulated) {
     final requestId =
         'utility_recover:${(store.activeLocalScopeUserId ?? store.userId ?? '').trim()}:$normalizedBreakId:$normalizedOperationId';
     _logStreakRecoverCloud(
@@ -4767,7 +4837,7 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
 
   final updated = breakRecord.copyWith(
     status: RecoverableStreakBreakStatus.recovered,
-    recoveredAtMillis: now.millisecondsSinceEpoch,
+    recoveredAtMillis: technicalNow.millisecondsSinceEpoch,
     recoveryOperationId: normalizedOperationId,
   );
   breaks[normalizedBreakId] = updated.toJson();
@@ -4811,7 +4881,7 @@ Future<void> _expireRecoverableStreakBreaks(UserStateStore store) async {
   if (root == null) return;
   final userState = _ensureUserStateRoot(root);
   final breaks = _habitStreakBreaksRoot(userState);
-  final now = store._nowProvider();
+  final now = store._calendarNowProvider();
   var changed = false;
 
   for (final entry in breaks.entries.toList(growable: false)) {

@@ -105,6 +105,24 @@ void main() {
       expect(repository.activateCalls, hasLength(1));
     });
 
+    test('simulated calendar skips cloud shield activation', () async {
+      final repository = _FakeStreakProtectionRepository();
+      final store = await _createStore(
+        repository: repository,
+        nowProvider: () => DateTime(2026, 7, 25, 10),
+        calendarNowProvider: () => DateTime(2026, 7, 26, 10),
+      );
+
+      final result = await store.activateStreakShield(
+        habitId: 'habit-1',
+        operationId: 'op-simulated',
+      );
+
+      expect(result.status, StreakShieldOperationStatus.success);
+      expect(repository.activateCalls, isEmpty);
+      expect(result.shield, isNotNull);
+    });
+
     test('armed shield allows the remote close RPC to run', () async {
       final repository = _FakeStreakProtectionRepository();
       final store = await _createStore(
@@ -398,6 +416,27 @@ void main() {
       expect(expired.status, StreakRecoverOperationStatus.recoveryExpired);
       expect(_cachedBreakStatus(expiredStore, 'remote-break-1'), 'expired');
     });
+
+    test('simulated calendar skips cloud break recovery', () async {
+      final repository = _FakeStreakProtectionRepository();
+      final store = await _createStore(
+        repository: repository,
+        nowProvider: () => DateTime(2026, 7, 25, 10),
+        calendarNowProvider: () => DateTime(2026, 7, 26, 10),
+        recoverableBreaks: <String, dynamic>{
+          'remote-break-1': _remoteBreakLocalJson(status: 'recoverable'),
+        },
+      );
+
+      final result = await store.recoverStreakBreak(
+        breakId: 'remote-break-1',
+        operationId: 'recover-simulated',
+      );
+
+      expect(result.status, StreakRecoverOperationStatus.success);
+      expect(repository.recoverCalls, isEmpty);
+      expect(result.recoveredBreak?.isRecovered, isTrue);
+    });
   });
 }
 
@@ -416,6 +455,7 @@ String? _cachedBreakStatus(UserStateStore store, String breakId) {
 Future<UserStateStore> _createStore({
   required _FakeStreakProtectionRepository repository,
   DateTime Function()? nowProvider,
+  DateTime Function()? calendarNowProvider,
   bool resetPrefs = true,
   String lastResetDate = '2026-07-24',
   Map<String, dynamic> initialShieldCache = const <String, dynamic>{},
@@ -436,6 +476,7 @@ Future<UserStateStore> _createStore({
     deviceTimeZoneProvider: const _FakeDeviceTimeZoneProvider(),
     currentSupabaseUserIdProvider: () => 'u1',
     nowProvider: currentNow,
+    calendarNowProvider: calendarNowProvider,
   );
   await store.save(<String, dynamic>{
     'userState': <String, dynamic>{

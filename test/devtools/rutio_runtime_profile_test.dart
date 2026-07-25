@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/devtools/rutio_calendar_clock.dart';
 import 'package:rutio/devtools/rutio_runtime_profile.dart';
 
 void main() {
@@ -52,6 +53,18 @@ void main() {
       );
 
       expect(profile.demoNowDate, isNull);
+    });
+
+    test('RUTIO_DEV_NOW stays separate from the demo profile', () {
+      final profile = RutioRuntimeProfile.parse();
+      final calendarNow = RutioCalendarClock.resolveFromValue(
+        rawValue: '2026-07-26T10:00:00',
+        releaseMode: false,
+      );
+
+      expect(profile.isDemoProfile, isFalse);
+      expect(profile.demoNowDate, isNull);
+      expect(calendarNow(), DateTime(2026, 7, 26, 10));
     });
 
     test('demo mode and screenshot mode can be enabled independently', () {

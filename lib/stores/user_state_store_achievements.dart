@@ -130,8 +130,7 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
       wallet['coins'] = currentCoins + reward.rewardAmber;
       userState['wallet'] = wallet;
       daily['coinsEarnedToday'] =
-          _safeInt(daily['coinsEarnedToday'], fallback: 0) +
-              reward.rewardAmber;
+          _safeInt(daily['coinsEarnedToday'], fallback: 0) + reward.rewardAmber;
     }
     userState['daily'] = daily;
 
@@ -151,8 +150,7 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
   achievements['rewardAppliedAchievementIds'] =
       rewardAppliedIds.toList(growable: false);
   final claims = _ensureClaimsRoot(userState);
-  claims['achievementRewardsClaimed'] =
-      confirmedIds.toList(growable: false);
+  claims['achievementRewardsClaimed'] = confirmedIds.toList(growable: false);
   userState['claims'] = claims;
   return appliedRewards;
 }
@@ -242,8 +240,8 @@ Future<void> _claimCloudAchievementAndLevelRewardsBestEffort(
   var changed = false;
 
   if (resolvePendingFirst) {
-    final pendingResults =
-        await store._achievementLevelRewardCoordinator.resolvePendingForCurrentUser();
+    final pendingResults = await store._achievementLevelRewardCoordinator
+        .resolvePendingForCurrentUser();
     for (final result in pendingResults) {
       final ledger = result.data;
       if (!result.isSuccess || ledger == null) continue;
@@ -309,7 +307,7 @@ Future<void> _claimCloudAchievementAndLevelRewardsBestEffort(
       rewardAppliedIds.toList(growable: false);
   root['userState'] = userState;
   store._state = root;
-  _touchLastSavedAt(userState);
+  _touchLastSavedAt(userState, nowProvider: store._nowProvider);
   await store.save(root);
 
   unawaited(store._globalWalletController?.refresh(force: true));
@@ -398,7 +396,7 @@ HabitStreakSnapshot _habitStreakSnapshotForHabitId(
   return _habitStreakSnapshotForHabit(
     userState,
     habit: habit,
-    today: today ?? DateTime.now(),
+    today: today ?? store._calendarNowProvider(),
   );
 }
 
@@ -413,7 +411,11 @@ Map<String, HabitStreakSnapshot> _habitStreakSnapshots(UserStateStore store) {
   for (final habit in activeHabits) {
     final habitId = _habitIdValue(habit);
     if (habitId == null || habitId.isEmpty) continue;
-    output[habitId] = _habitStreakSnapshotForHabit(userState, habit: habit);
+    output[habitId] = _habitStreakSnapshotForHabit(
+      userState,
+      habit: habit,
+      today: store._calendarNowProvider(),
+    );
   }
 
   return output;
@@ -436,7 +438,10 @@ Map<String, HabitStreakSnapshot> _familyConsistencySnapshots(
   }
 
   final userState = _ensureUserStateRoot(root);
-  return _familyConsistencySnapshotsFromUserState(userState);
+  return _familyConsistencySnapshotsFromUserState(
+    userState,
+    today: store._calendarNowProvider(),
+  );
 }
 
 Map<String, HabitStreakSnapshot> _achievementMetricSnapshots(
@@ -447,20 +452,28 @@ Map<String, HabitStreakSnapshot> _achievementMetricSnapshots(
 
   final userState = _ensureUserStateRoot(root);
   return {
-    ..._familyConsistencySnapshotsFromUserState(userState),
-    ..._specialAchievementSnapshotsFromUserState(userState),
+    ..._familyConsistencySnapshotsFromUserState(
+      userState,
+      today: store._calendarNowProvider(),
+    ),
+    ..._specialAchievementSnapshotsFromUserState(
+      userState,
+      today: store._calendarNowProvider(),
+    ),
   };
 }
 
 Map<String, HabitStreakSnapshot> _familyConsistencySnapshotsFromUserState(
-  Map<String, dynamic> userState,
-) {
+  Map<String, dynamic> userState, {
+  required DateTime today,
+}) {
   final output = <String, HabitStreakSnapshot>{};
 
   for (final familyId in FamilyTheme.order) {
     output[familyId] = _familyConsistencySnapshotForFamily(
       userState,
       familyId: familyId,
+      today: today,
     );
   }
 
@@ -493,11 +506,8 @@ HabitStreakSnapshot _familyConsistencySnapshotForFamily(
     familyId: normalizedFamilyId,
     habits: activeHabits,
   );
-  final referenceDay = DateTime(
-    (today ?? DateTime.now()).year,
-    (today ?? DateTime.now()).month,
-    (today ?? DateTime.now()).day,
-  );
+  final reference = today ?? DateTime.now();
+  final referenceDay = DateTime(reference.year, reference.month, reference.day);
 
   return HabitStreakSnapshot(
     habitId: normalizedFamilyId,
@@ -522,11 +532,8 @@ HabitStreakSnapshot _habitStreakSnapshotForHabit(
     userState,
     habit: habit,
   );
-  final now = DateTime(
-    (today ?? DateTime.now()).year,
-    (today ?? DateTime.now()).month,
-    (today ?? DateTime.now()).day,
-  );
+  final reference = today ?? DateTime.now();
+  final now = DateTime(reference.year, reference.month, reference.day);
   final currentStreak = _computeHabitCurrentStreak(
     continuityByDay,
     now,
@@ -537,6 +544,7 @@ HabitStreakSnapshot _habitStreakSnapshotForHabit(
     continuityByDay,
     userState: userState,
     habitId: habitId,
+    today: now,
   );
 
   return HabitStreakSnapshot(
@@ -640,9 +648,10 @@ bool _habitCompletedOnDate(
 }
 
 Map<String, HabitStreakSnapshot> _specialAchievementSnapshotsFromUserState(
-  Map<String, dynamic> userState,
-) {
-  final stats = _buildAchievementHistoryStats(userState);
+  Map<String, dynamic> userState, {
+  required DateTime today,
+}) {
+  final stats = _buildAchievementHistoryStats(userState, today: today);
   final output = <String, HabitStreakSnapshot>{};
 
   for (final achievement in AchievementCatalog.buildSpecialAchievements()) {
@@ -763,8 +772,9 @@ Map<String, HabitStreakSnapshot> _specialAchievementSnapshotsFromUserState(
 }
 
 _AchievementHistoryStats _buildAchievementHistoryStats(
-  Map<String, dynamic> userState,
-) {
+  Map<String, dynamic> userState, {
+  required DateTime today,
+}) {
   final activeHabits = _mutableActiveHabits(userState)
       .map((habit) => Map<String, dynamic>.from(habit))
       .toList(growable: false);
@@ -927,8 +937,7 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
     bestHabitStreak: bestHabitStreak,
     completionDays: completionDays,
     totalCompletions: totalCompletions,
-    currentGlobalStreak:
-        _computeCurrentStreak(globalCountsByDay, DateTime.now()),
+    currentGlobalStreak: _computeCurrentStreak(globalCountsByDay, today),
     bestGlobalStreak: _computeBestStreak(globalCountsByDay),
     recoveryCount: _computeRecoveryCount(globalCountsByDay),
     comebackAfterGapCount: _computeComebackAfterGapCount(globalCountsByDay),
@@ -1211,8 +1220,15 @@ _AchievementSyncOutcome _syncAchievementsFromCurrentHabits(
     unlockedById.putIfAbsent(id, () => entry);
   }
 
-  final snapshotsByFamily = _familyConsistencySnapshotsFromUserState(userState);
-  final specialSnapshots = _specialAchievementSnapshotsFromUserState(userState);
+  final today = store._calendarNowProvider();
+  final snapshotsByFamily = _familyConsistencySnapshotsFromUserState(
+    userState,
+    today: today,
+  );
+  final specialSnapshots = _specialAchievementSnapshotsFromUserState(
+    userState,
+    today: today,
+  );
 
   for (final familyId in FamilyTheme.order) {
     final snapshot = snapshotsByFamily[familyId] ??
@@ -1237,7 +1253,7 @@ _AchievementSyncOutcome _syncAchievementsFromCurrentHabits(
         id: achievementId,
         type: AchievementType.familyConsistency,
         tier: milestone.tier,
-        unlockedAt: legacyUnlockDates[legacyKey] ?? DateTime.now(),
+        unlockedAt: legacyUnlockDates[legacyKey] ?? store._nowProvider(),
         habitId: familyId,
         habitName: AchievementCatalog.familyAchievementTitle(
           familyId: familyId,
@@ -1276,7 +1292,7 @@ _AchievementSyncOutcome _syncAchievementsFromCurrentHabits(
       id: achievement.id,
       type: achievement.type,
       tier: achievement.tier,
-      unlockedAt: DateTime.now(),
+      unlockedAt: store._nowProvider(),
       habitId: achievement.habitId,
       habitName: achievement.habitName,
       familyId: achievement.familyId,

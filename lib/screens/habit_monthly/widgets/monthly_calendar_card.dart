@@ -6,6 +6,7 @@ import 'package:rutio/screens/habit_monthly/widgets/monthly_streak_row.dart';
 
 class MonthlyCalendarCard extends StatefulWidget {
   final DateTime monthCursor;
+  final DateTime? today;
   final Map<String, dynamic> habit;
   final Color accentColor;
   final Map<String, dynamic> habitCompletions;
@@ -17,6 +18,7 @@ class MonthlyCalendarCard extends StatefulWidget {
   const MonthlyCalendarCard({
     super.key,
     required this.monthCursor,
+    this.today,
     required this.habit,
     required this.accentColor,
     required this.habitCompletions,
@@ -56,7 +58,7 @@ class _MonthlyCalendarCardState extends State<MonthlyCalendarCard> {
   }
 
   void _syncInitialSelection() {
-    final now = DateTime.now();
+    final now = widget.today ?? DateTime.now();
     final currentMonth = widget.monthCursor.year == now.year &&
         widget.monthCursor.month == now.month;
     final initialDay = currentMonth ? now.day : 1;
@@ -100,6 +102,7 @@ class _MonthlyCalendarCardState extends State<MonthlyCalendarCard> {
           const SizedBox(height: 10),
           MonthlyCalendarGrid(
             monthCursor: widget.monthCursor,
+            today: widget.today,
             habit: widget.habit,
             accentColor: widget.accentColor,
             habitCompletions: widget.habitCompletions,

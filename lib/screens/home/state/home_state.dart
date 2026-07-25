@@ -80,15 +80,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _selectedDay = _onlyDate(DateTime.now());
+    final store = context.read<UserStateStore>();
+    _selectedDay = _onlyDate(store.calendarNow);
     _lastToday = _selectedDay;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final s = context.read<UserStateStore>();
-      if (s.state == null && !s.isLoading) {
-        s.load();
+      final store = context.read<UserStateStore>();
+      if (store.state == null && !store.isLoading) {
+        store.load();
       }
-      unawaited(s.maybeSyncHabitsFromRemoteBestEffort());
+      unawaited(store.maybeSyncHabitsFromRemoteBestEffort());
     });
     _schedulePostLoginNotificationPrompt();
 
@@ -319,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       store.state;
       unawaited(store.maybeSyncHabitsFromRemoteBestEffort());
 
-      final today = _onlyDate(DateTime.now());
+      final today = _onlyDate(store.calendarNow);
       if (today != _lastToday && _selectedDay == _lastToday) {
         setState(() {
           _selectedDay = today;
