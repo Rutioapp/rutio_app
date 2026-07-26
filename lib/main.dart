@@ -45,9 +45,12 @@ import 'screens/auth/sign_up_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final shopCloudConfig = ShopCloudRuntimeConfig.compiled();
+  final shopCloudConfig = ShopCloudRuntimeConfig.compiled(
+    isRelease: kReleaseMode,
+  );
   debugPrint(
     '[shop_cloud_config] '
+    'runtime_mode=${shopCloudConfig.runtimeMode.name} '
     'fully_cloud=${shopCloudConfig.isFullyCloud} '
     'fully_legacy=${shopCloudConfig.isFullyLegacy} '
     'invalid_mixed=${shopCloudConfig.isMixed} '
@@ -72,11 +75,16 @@ Future<void> main() async {
       stackTrace: stackTrace,
     );
   }
-  runApp(const MyApp());
+  runApp(MyApp(shopRuntimeConfig: shopCloudConfig));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({
+    super.key,
+    required this.shopRuntimeConfig,
+  });
+
+  final ShopCloudRuntimeConfig shopRuntimeConfig;
 
   static final GlobalKey<NavigatorState> _navigatorKey =
       GlobalKey<NavigatorState>();
@@ -85,6 +93,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<ShopCloudRuntimeConfig>.value(value: shopRuntimeConfig),
         Provider<UserStateStorage>(create: (_) => UserStateStorage()),
         Provider<AssetJsonLoader>(create: (_) => AssetJsonLoader()),
         Provider<AuthRepository>(create: (_) => AuthRepository()),
@@ -117,6 +126,8 @@ class MyApp extends StatelessWidget {
           create: (context) => ShopCosmeticsController(
             userStateStore: context.read<UserStateStore>(),
             globalWalletController: context.read<GlobalWalletController>(),
+            cloudEnabled:
+                context.read<ShopCloudRuntimeConfig>().cloudCosmeticsEnabled,
           ),
         ),
         ChangeNotifierProvider<AuthController>(

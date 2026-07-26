@@ -198,6 +198,32 @@ void main() {
       expect(cloudEntries.single.quantity, 1);
     });
 
+    test('cloud read failure does not fall back to legacy local state',
+        () async {
+      final legacyRepository = _TrackingShopRepository();
+      final controller = await _createController(
+        walletCoins: 500,
+        shopRepository: legacyRepository,
+        shopState: const ShopState(
+          backpackItems: <BackpackItem>[
+            BackpackItem(itemId: 'utility_xp_boost_1d', quantity: 2),
+          ],
+        ),
+        cloudReadEnabled: true,
+        cloudPurchaseEnabled: true,
+        currentSupabaseUserIdProvider: () => 'shop-controller-user',
+        shopCloudReadRepository: _FailingShopCloudReadRepository(),
+      );
+
+      await controller.hydrateVisibleEconomy();
+      final visibleShopState = await controller.getVisibleShopState();
+
+      expect(controller.economySource, ShopEconomySource.cloud);
+      expect(controller.economyStatus, ShopCloudEconomyStatus.failed);
+      expect(visibleShopState.backpackItems, isEmpty);
+      expect(legacyRepository.loadCalls, 0);
+    });
+
     test('cloud inventory does not create duplicate backpack entries',
         () async {
       final controller = await _createController(
@@ -1265,8 +1291,9 @@ Future<ShopController> _createController({
   MysteryBoxOpeningRepository? mysteryBoxOpeningRepository,
   FixedRandomSource? randomSource,
   DateTime Function()? nowProvider,
-  bool? cloudReadEnabled,
-  bool? cloudPurchaseEnabled,
+  bool cloudReadEnabled = false,
+  bool cloudPurchaseEnabled = false,
+  bool mysteryBoxCloudEnabled = false,
   bool utilityConsumptionEnabled = false,
   ShopCloudReadRepository? shopCloudReadRepository,
   UtilityConsumptionRepository? utilityConsumptionRepository,
@@ -1307,6 +1334,7 @@ Future<ShopController> _createController({
     nowProvider: nowProvider,
     cloudReadEnabled: cloudReadEnabled,
     cloudPurchaseEnabled: cloudPurchaseEnabled,
+    mysteryBoxCloudEnabled: mysteryBoxCloudEnabled,
     utilityConsumptionEnabled: utilityConsumptionEnabled,
     shopCloudReadRepository: shopCloudReadRepository,
     currentSupabaseUserIdProvider: currentSupabaseUserIdProvider,
@@ -1457,6 +1485,24 @@ class _CountingShopCloudReadRepository extends _FakeShopCloudReadRepository {
   Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
     fetchCount += 1;
     return super.fetchShopSnapshot();
+  }
+}
+
+class _FailingShopCloudReadRepository extends ShopCloudReadRepository {
+  _FailingShopCloudReadRepository()
+      : super(
+          readEnabled: true,
+          currentUserIdProvider: () => 'shop-controller-user',
+        );
+
+  @override
+  Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
+    return const ShopCloudReadResult<ShopCloudSnapshot>.failure(
+      error: ShopCloudReadError(
+        code: ShopCloudErrorCode.networkUnavailable,
+        message: 'Network unavailable.',
+      ),
+    );
   }
 }
 
@@ -1646,7 +1692,7 @@ ShopCloudSnapshot _cloudSnapshot({
 }) {
   return ShopCloudSnapshot(
     authenticatedUserId: 'shop-controller-user',
-    catalogItems: <RemoteShopItemDto>[],
+    catalogItems: <RemoteShopItemDto>[_remoteUtilityItem(itemId)],
     catalogBundles: const <RemoteShopBundleDto>[],
     wallet: walletCoins == null
         ? null
@@ -1676,6 +1722,27 @@ ShopCloudSnapshot _cloudSnapshot({
     fetchedAt: DateTime.utc(2026, 7, 18),
     catalogVersion: 1,
     warnings: const <ShopCloudWarning>[],
+  );
+}
+
+RemoteShopItemDto _remoteUtilityItem(String id) {
+  return RemoteShopItemDto(
+    id: id,
+    category: RemoteShopItemCategory.utility,
+    subtype: null,
+    rarity: RemoteShopItemRarity.common,
+    priceCoins: 1,
+    isConsumable: true,
+    isStackable: true,
+    maxQuantity: null,
+    equipSlot: null,
+    assetKey: null,
+    localizationKey: null,
+    isActive: true,
+    sortOrder: 1,
+    catalogVersion: 1,
+    createdAt: DateTime.utc(2026, 7, 18),
+    updatedAt: DateTime.utc(2026, 7, 18),
   );
 }
 

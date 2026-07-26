@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_flow_screen.dart';
 import 'package:rutio/stores/user_state_store.dart';
@@ -28,10 +29,15 @@ class _ShopScreenState extends State<ShopScreen> {
           userStateStore.activeLocalScopeUserId ?? userStateStore.userId,
     );
     final globalWalletController = context.read<GlobalWalletController>();
+    final runtimeConfig = _shopRuntimeConfigOf(context);
     _shopController = ShopController(
       userStateStore: userStateStore,
       globalWalletController: globalWalletController,
       shopRepository: _shopRepository,
+      cloudReadEnabled: runtimeConfig.shopReadEnabled,
+      cloudPurchaseEnabled: runtimeConfig.shopPurchaseEnabled,
+      mysteryBoxCloudEnabled: runtimeConfig.cloudMysteryBoxEnabled,
+      utilityConsumptionEnabled: runtimeConfig.cloudUtilityConsumptionEnabled,
     );
   }
 
@@ -44,5 +50,13 @@ class _ShopScreenState extends State<ShopScreen> {
       cosmeticsController: cosmeticsController,
       shopRepository: _shopRepository,
     );
+  }
+}
+
+ShopCloudRuntimeConfig _shopRuntimeConfigOf(BuildContext context) {
+  try {
+    return context.read<ShopCloudRuntimeConfig>();
+  } on ProviderNotFoundException {
+    return ShopCloudRuntimeConfig.compiled();
   }
 }
