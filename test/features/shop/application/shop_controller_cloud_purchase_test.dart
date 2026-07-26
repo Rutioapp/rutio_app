@@ -196,6 +196,105 @@ void main() {
       expect(controller.getWalletCoins(), 5000);
       expect((await fixture.shopRepository.load()).backpackItems, isEmpty);
     });
+
+    test('cloud purchase rejects utility missing from the remote catalog',
+        () async {
+      final purchaseUseCase = _FakePurchaseCloudUtilityUseCase(
+        resultFactory: () => throw StateError('purchase should not run'),
+      );
+      final fixture = await _createController(
+        purchaseUseCase: purchaseUseCase,
+        cloudSnapshot: _cloudSnapshot(
+          walletCoins: 5000,
+          itemId: 'utility_xp_boost_1d',
+          quantity: 0,
+          catalogItems: const <RemoteShopItemDto>[],
+        ),
+      );
+
+      final result =
+          await fixture.controller.purchaseItem('utility_xp_boost_1d');
+
+      expect(result.status, ShopControllerStatus.cloudPurchaseFailed);
+      expect(result.purchaseFailure?.code,
+          ShopPurchaseFailureCode.itemNotFoundOrInactive);
+      expect(purchaseUseCase.calls, 0);
+    });
+
+    test(
+        'cloud success preserves cached catalog when post-purchase refresh fails',
+        () async {
+      final purchaseUseCase = _FakePurchaseCloudUtilityUseCase(
+        resultFactory: () => ShopPurchaseResult.success(
+          itemId: 'utility_xp_boost_1d',
+          requestId: '9f5a1f2a-4a69-4d7c-8cf6-71b0f7df0d8d',
+          remoteResult: RemoteShopPurchaseResultDto(
+            requestId: '9f5a1f2a-4a69-4d7c-8cf6-71b0f7df0d8d',
+            operation: 'purchase',
+            itemId: 'utility_xp_boost_1d',
+            priceCoins: 222,
+            coins: 4778,
+            walletVersion: 2,
+            inventoryQuantity: 1,
+          ),
+        ),
+      );
+      final fixture = await _createController(
+        purchaseUseCase: purchaseUseCase,
+        cloudSnapshot: _cloudSnapshot(
+          walletCoins: 5000,
+          itemId: 'utility_xp_boost_1d',
+          quantity: 0,
+          failAfterCalls: 1,
+          catalogItems: <RemoteShopItemDto>[
+            _remoteUtility(
+              'utility_xp_boost_1d',
+              priceCoins: 222,
+              sortOrder: 4,
+            ),
+          ],
+        ),
+      );
+
+      final result =
+          await fixture.controller.purchaseItem('utility_xp_boost_1d');
+      final visibleCatalog = fixture.controller.getVisibleUtilityCatalogItems();
+
+      expect(result.status, ShopControllerStatus.success);
+      expect(result.cloudRefreshFailed, isFalse);
+      expect(visibleCatalog, hasLength(1));
+      expect(visibleCatalog.single.id, 'utility_xp_boost_1d');
+      expect(visibleCatalog.single.priceCoins, 222);
+    });
+
+    test('failed cloud purchase forces a snapshot refresh', () async {
+      final purchaseUseCase = _FakePurchaseCloudUtilityUseCase(
+        resultFactory: () => ShopPurchaseResult.failure(
+          itemId: 'utility_xp_boost_1d',
+          requestId: '9f5a1f2a-4a69-4d7c-8cf6-71b0f7df0d8d',
+          failure: const ShopPurchaseFailure(
+            code: ShopPurchaseFailureCode.timeout,
+            message: 'timeout',
+            retryable: true,
+          ),
+        ),
+      );
+      final cloudReadRepository = _cloudSnapshot(
+        walletCoins: 5000,
+        itemId: 'utility_xp_boost_1d',
+        quantity: 0,
+      );
+      final fixture = await _createController(
+        purchaseUseCase: purchaseUseCase,
+        cloudSnapshot: cloudReadRepository,
+      );
+
+      final result =
+          await fixture.controller.purchaseItem('utility_xp_boost_1d');
+
+      expect(result.status, ShopControllerStatus.cloudPurchaseFailed);
+      expect(cloudReadRepository.fetchShopSnapshotCalls, 2);
+    });
   });
 }
 
@@ -293,11 +392,15 @@ _FakeShopCloudReadRepository _cloudSnapshot({
   required int walletCoins,
   required String itemId,
   required int quantity,
+  List<RemoteShopItemDto>? catalogItems,
+  int? failAfterCalls,
 }) {
   return _FakeShopCloudReadRepository(
     walletCoins: walletCoins,
     itemId: itemId,
     quantity: quantity,
+    catalogItems: catalogItems,
+    failAfterCalls: failAfterCalls,
   );
 }
 
@@ -344,9 +447,13 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
     required int walletCoins,
     required String itemId,
     required int quantity,
+    List<RemoteShopItemDto>? catalogItems,
+    int? failAfterCalls,
   })  : _walletCoins = walletCoins,
         _itemId = itemId,
         _quantity = quantity,
+        _catalogItems = catalogItems,
+        _failAfterCalls = failAfterCalls,
         super(
           readEnabled: true,
           currentUserIdProvider: () => 'shop-controller-user',
@@ -355,27 +462,27 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
   final int _walletCoins;
   final String _itemId;
   final int _quantity;
+  final List<RemoteShopItemDto>? _catalogItems;
+  final int? _failAfterCalls;
+  int fetchShopSnapshotCalls = 0;
 
   @override
   Future<ShopCloudReadResult<ShopCloudSnapshot>> fetchShopSnapshot() async {
+    fetchShopSnapshotCalls += 1;
+    final failAfterCalls = _failAfterCalls;
+    if (failAfterCalls != null && fetchShopSnapshotCalls > failAfterCalls) {
+      return const ShopCloudReadResult<ShopCloudSnapshot>.failure(
+        error: ShopCloudReadError(
+          code: ShopCloudErrorCode.networkUnavailable,
+          message: 'network unavailable',
+        ),
+      );
+    }
     return ShopCloudReadResult<ShopCloudSnapshot>.success(
       data: ShopCloudSnapshot(
         authenticatedUserId: 'shop-controller-user',
-        catalogItems: <RemoteShopItemDto>[
-          RemoteShopItemDto.fromJson(<String, dynamic>{
-            'id': 'utility_xp_boost_1d',
-            'category': 'utility',
-            'subtype': 'xpBoost',
-            'priceCoins': 75,
-            'isConsumable': true,
-            'isStackable': true,
-            'isActive': true,
-            'sortOrder': 0,
-            'catalogVersion': 1,
-            'createdAt': '2026-07-18T00:00:00Z',
-            'updatedAt': '2026-07-18T00:00:00Z',
-          }),
-        ],
+        catalogItems:
+            _catalogItems ?? <RemoteShopItemDto>[_remoteUtility(_itemId)],
         catalogBundles: const <RemoteShopBundleDto>[],
         wallet: RemoteWalletDto(
           userId: 'shop-controller-user',
@@ -408,6 +515,28 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
       ),
     );
   }
+}
+
+RemoteShopItemDto _remoteUtility(
+  String id, {
+  int priceCoins = 75,
+  int sortOrder = 0,
+  bool isActive = true,
+}) {
+  return RemoteShopItemDto.fromJson(<String, dynamic>{
+    'id': id,
+    'category': 'utility',
+    'subtype': 'xpBoost',
+    'rarity': 'common',
+    'priceCoins': priceCoins,
+    'isConsumable': true,
+    'isStackable': true,
+    'isActive': isActive,
+    'sortOrder': sortOrder,
+    'catalogVersion': 1,
+    'createdAt': '2026-07-18T00:00:00Z',
+    'updatedAt': '2026-07-18T00:00:00Z',
+  });
 }
 
 class _ControllerFixture {

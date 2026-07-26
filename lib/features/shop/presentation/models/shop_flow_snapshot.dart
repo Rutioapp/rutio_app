@@ -39,6 +39,7 @@ class ShopFlowSnapshot {
     required ShopCosmeticsState cosmeticsState,
     required List<ActiveUtilityEffect> activeUtilityEffects,
     required List<MysteryBoxOpeningTransaction> pendingMysteryBoxOpenings,
+    List<ShopItem>? catalogItems,
   }) {
     return ShopFlowSnapshot(
       walletCoins: walletCoins,
@@ -47,7 +48,7 @@ class ShopFlowSnapshot {
       activeUtilityEffects: activeUtilityEffects,
       pendingMysteryBoxOpenings: pendingMysteryBoxOpenings,
       collections: ShopCatalog.allCollections,
-      catalogItems: ShopCatalog.allItems,
+      catalogItems: catalogItems ?? ShopCatalog.allItems,
     );
   }
 
@@ -87,7 +88,8 @@ class ShopFlowSnapshot {
         .where((ShopBundle bundle) =>
             cosmeticsState.ownedBundleIds.contains(bundle.id))
         .toList(growable: false)
-      ..sort((ShopBundle a, ShopBundle b) => a.sortOrder.compareTo(b.sortOrder));
+      ..sort(
+          (ShopBundle a, ShopBundle b) => a.sortOrder.compareTo(b.sortOrder));
   }
 
   List<BackpackItemViewModel> get backpackViewModels {
