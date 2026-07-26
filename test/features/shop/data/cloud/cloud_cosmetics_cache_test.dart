@@ -61,6 +61,26 @@ void main() {
       <String, dynamic>{
         'userId': 'user-a',
         'ownedAssetIds': <String>['wallpaper_mist_blue'],
+        'catalogItems': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'wallpaper_mist_blue',
+            'category': 'screen_background',
+            'subtype': null,
+            'rarity': 'common',
+            'priceCoins': 120,
+            'isConsumable': false,
+            'isStackable': false,
+            'maxQuantity': 1,
+            'equipSlot': 'screen_background',
+            'assetKey': 'wallpaper_mist_blue',
+            'localizationKey': 'wallpaper_mist_blue',
+            'isActive': true,
+            'sortOrder': 0,
+            'catalogVersion': 1,
+            'createdAt': '2026-07-19T12:00:00Z',
+            'updatedAt': '2026-07-19T12:00:00Z',
+          },
+        ],
         'catalogBundles': <Map<String, dynamic>>[
           <String, dynamic>{
             'id': 'pack_beige_rutio',
@@ -75,6 +95,23 @@ void main() {
             'updatedAt': '2026-07-19T12:00:00Z',
           },
         ],
+        'catalogBundleItems': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'bundleId': 'pack_beige_rutio',
+            'itemId': 'wallpaper_rutio_beige',
+            'slot': 'screen_background',
+          },
+          <String, dynamic>{
+            'bundleId': 'pack_beige_rutio',
+            'itemId': 'habit_card_warm_beige',
+            'slot': 'habit_card_background',
+          },
+          <String, dynamic>{
+            'bundleId': 'pack_beige_rutio',
+            'itemId': 'user_card_warm_beige',
+            'slot': 'user_card_background',
+          },
+        ],
         'equippedWallpaperId': 'wallpaper_mist_blue',
         'equippedHabitCardSkinId': null,
         'equippedUserCardSkinId': null,
@@ -85,6 +122,8 @@ void main() {
     );
 
     expect(snapshot.ownedBundleIds, isEmpty);
+    expect(snapshot.catalogItems, hasLength(1));
     expect(snapshot.catalogBundles, hasLength(1));
+    expect(snapshot.catalogBundleItems, hasLength(3));
   });
 }

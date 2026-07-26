@@ -13,7 +13,26 @@ void main() {
     final inventoryUpdatedAt = DateTime.utc(2026, 7, 20, 9);
     final snapshot = ShopCloudSnapshot(
       authenticatedUserId: 'cloud-user',
-      catalogItems: const <RemoteShopItemDto>[],
+      catalogItems: <RemoteShopItemDto>[
+        RemoteShopItemDto.fromJson(<String, dynamic>{
+          'id': 'wallpaper_dusty_lilac',
+          'category': 'screen_background',
+          'subtype': null,
+          'rarity': 'common',
+          'priceCoins': 120,
+          'isConsumable': false,
+          'isStackable': false,
+          'maxQuantity': 1,
+          'equipSlot': 'screen_background',
+          'assetKey': 'wallpaper_dusty_lilac',
+          'localizationKey': 'wallpaper_dusty_lilac',
+          'isActive': true,
+          'sortOrder': 4,
+          'catalogVersion': 8,
+          'createdAt': '2026-07-20T08:00:00Z',
+          'updatedAt': '2026-07-20T08:00:00Z',
+        }),
+      ],
       catalogBundles: <RemoteShopBundleDto>[
         RemoteShopBundleDto(
           id: 'pack_beige_rutio',
@@ -27,6 +46,23 @@ void main() {
           createdAt: DateTime.utc(2026, 7, 20, 8),
           updatedAt: DateTime.utc(2026, 7, 20, 8),
         ),
+      ],
+      catalogBundleItems: <RemoteShopBundleItemDto>[
+        RemoteShopBundleItemDto.fromJson(<String, dynamic>{
+          'bundle_id': 'pack_beige_rutio',
+          'item_id': 'wallpaper_rutio_beige',
+          'slot': 'screen_background',
+        }),
+        RemoteShopBundleItemDto.fromJson(<String, dynamic>{
+          'bundle_id': 'pack_beige_rutio',
+          'item_id': 'habit_card_warm_beige',
+          'slot': 'habit_card_background',
+        }),
+        RemoteShopBundleItemDto.fromJson(<String, dynamic>{
+          'bundle_id': 'pack_beige_rutio',
+          'item_id': 'user_card_warm_beige',
+          'slot': 'user_card_background',
+        }),
       ],
       wallet: null,
       inventory: <RemoteInventoryItemDto>[
@@ -72,7 +108,9 @@ void main() {
       cloudSnapshot.ownedAssetIds,
       contains('wallpaper_dusty_lilac'),
     );
+    expect(cloudSnapshot.catalogItems, hasLength(1));
     expect(cloudSnapshot.catalogBundles, hasLength(1));
+    expect(cloudSnapshot.catalogBundleItems, hasLength(3));
     expect(cloudSnapshot.catalogBundles.single.id, 'pack_beige_rutio');
     expect(
       ShopAssetsCatalog.getAssetById(cloudSnapshot.equippedWallpaperId!),

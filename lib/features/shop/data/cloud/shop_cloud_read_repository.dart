@@ -34,6 +34,8 @@ class ShopCloudReadRepository {
   final DateTime Function() _nowProvider;
   final Map<String, ShopCloudSnapshot> _snapshotCacheByUserId =
       <String, ShopCloudSnapshot>{};
+  Map<String, List<RemoteShopBundleItemDto>> _lastValidBundleItemsByBundleId =
+      <String, List<RemoteShopBundleItemDto>>{};
   String? _lastObservedUserId;
 
   static String? _defaultCurrentUserIdProvider() {
@@ -228,6 +230,13 @@ class ShopCloudReadRepository {
         localBundles: ShopAssetsCatalog.allBundles,
       );
       warnings.addAll(reconciliation.warnings);
+      _lastValidBundleItemsByBundleId =
+          Map<String, List<RemoteShopBundleItemDto>>.unmodifiable(
+        {
+          for (final entry in validBundleItemsByBundleId.entries)
+            entry.key: List<RemoteShopBundleItemDto>.unmodifiable(entry.value),
+        },
+      );
 
       return ShopCloudReadResult<List<RemoteShopBundleDto>>.success(
         data: List<RemoteShopBundleDto>.unmodifiable(validBundles),
@@ -646,11 +655,17 @@ class ShopCloudReadRepository {
       final catalogItems = catalogResult.data ?? const <RemoteShopItemDto>[];
       final catalogBundles =
           bundleCatalogResult.data ?? const <RemoteShopBundleDto>[];
+      final catalogBundleItems = _lastValidBundleItemsByBundleId.values
+          .expand((items) => items)
+          .toList(
+            growable: false,
+          );
       final snapshotWarnings = List<ShopCloudWarning>.unmodifiable(warnings);
       final snapshot = ShopCloudSnapshot(
         authenticatedUserId: userId,
         catalogItems: catalogItems,
         catalogBundles: catalogBundles,
+        catalogBundleItems: catalogBundleItems,
         wallet: wallet,
         inventory: inventoryResult.data ?? const <RemoteInventoryItemDto>[],
         equippedCosmetics:

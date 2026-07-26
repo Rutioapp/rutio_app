@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
-import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
@@ -157,6 +156,18 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
       );
     }
 
+    final resolvedCatalog = widget.controller.resolvedCatalog;
+    if (widget.controller.isCloudEnabled &&
+        resolvedCatalog.assets.isEmpty &&
+        resolvedCatalog.bundles.isEmpty &&
+        widget.controller.cloudState.status !=
+            ShopCosmeticsCloudStatus.loading) {
+      return const ShopEmptyState(
+        title: 'CosmÃ©ticos no disponibles',
+        message: 'No hemos podido cargar la tienda de cosmÃ©ticos ahora mismo.',
+      );
+    }
+
     final entries = _visibleEntries(state);
     if (entries.isEmpty) {
       return const ShopEmptyState(
@@ -233,7 +244,8 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                           quote,
                         ),
                         onPrimaryActionPressed: () =>
-                            _onBundlePrimaryActionPressed(bundle, quote, assets),
+                            _onBundlePrimaryActionPressed(
+                                bundle, quote, assets),
                       ),
                   };
                 },
@@ -246,22 +258,29 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   }
 
   List<_ShopEntry> _visibleEntries(ShopCosmeticsState state) {
+    final catalogAssets = widget.controller.resolvedAssets;
+    final catalogBundles = widget.controller.resolvedBundles;
+    final assetsById = <String, ShopAsset>{
+      for (final asset in catalogAssets) asset.id: asset,
+    };
     final allEntries = <_ShopEntry>[
-      ...ShopAssetsCatalog.allAssets.map(
+      ...catalogAssets.map(
         (ShopAsset asset) => _AssetEntry(
           asset: asset,
           ownershipState: state.assetOwnershipState(
             asset,
-            bundles: ShopAssetsCatalog.allBundles,
+            bundles: catalogBundles,
           ),
         ),
       ),
     ];
 
-    for (final bundle in ShopAssetsCatalog.allBundles) {
+    for (final bundle in catalogBundles) {
       final quote = ShopBundleCompletionQuote.tryCreate(
         bundle: bundle,
         state: state,
+        catalogAssets: catalogAssets,
+        catalogBundles: catalogBundles,
       );
       if (quote == null) {
         continue;
@@ -270,7 +289,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         _BundleEntry(
           bundle: bundle,
           assets: bundle.assetIds
-              .map(ShopAssetsCatalog.getAssetById)
+              .map((String assetId) => assetsById[assetId])
               .whereType<ShopAsset>()
               .toList(growable: false),
           quote: quote,
@@ -297,18 +316,18 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   }
 
   int _compareEntries(_ShopEntry a, _ShopEntry b) {
-    final ownershipCompare = a.ownershipRank.compareTo(b.ownershipRank);
-    if (ownershipCompare != 0) return ownershipCompare;
-
-    final rarityCompare =
-        _rarityOrder(a.rarity).compareTo(_rarityOrder(b.rarity));
-    if (rarityCompare != 0) return rarityCompare;
+    final sortOrderCompare = a.sortOrder.compareTo(b.sortOrder);
+    if (sortOrderCompare != 0) return sortOrderCompare;
 
     final categoryCompare = _categoryOrder(a.categoryOrder)
         .compareTo(_categoryOrder(b.categoryOrder));
     if (categoryCompare != 0) return categoryCompare;
 
-    return a.sortOrder.compareTo(b.sortOrder);
+    final rarityCompare =
+        _rarityOrder(a.rarity).compareTo(_rarityOrder(b.rarity));
+    if (rarityCompare != 0) return rarityCompare;
+
+    return a.ownershipRank.compareTo(b.ownershipRank);
   }
 
   int _rarityOrder(ShopAssetRarity rarity) {
@@ -515,7 +534,12 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   ShopBundleCompletionQuote? _bundleCompletionQuote(ShopBundle bundle) {
     final state = _state;
     if (state == null) return null;
-    return ShopBundleCompletionQuote.tryCreate(bundle: bundle, state: state);
+    return ShopBundleCompletionQuote.tryCreate(
+      bundle: bundle,
+      state: state,
+      catalogAssets: widget.controller.resolvedAssets,
+      catalogBundles: widget.controller.resolvedBundles,
+    );
   }
 
   String _assetFeedback(

@@ -132,7 +132,7 @@ class _ShopCosmeticDetailContainerState
 
     final bool isOwned = state.isAssetOwned(
       item.id,
-      bundles: ShopAssetsCatalog.allBundles,
+      bundles: widget.controller.resolvedBundles,
     );
     final bool isEquipped = switch (item.cosmeticSlot) {
       CosmeticSlot.background => state.equippedWallpaperId == item.id,
@@ -158,7 +158,11 @@ class _ShopCosmeticDetailContainerState
   }
 
   ShopItem? _resolveAssetItem(String itemId) {
-    final ShopAsset? asset = ShopAssetsCatalog.getAssetById(itemId);
+    final assetsById = <String, ShopAsset>{
+      for (final asset in widget.controller.resolvedAssets) asset.id: asset,
+    };
+    final ShopAsset? asset =
+        assetsById[itemId] ?? ShopAssetsCatalog.getAssetById(itemId);
     if (asset == null) {
       return null;
     }
