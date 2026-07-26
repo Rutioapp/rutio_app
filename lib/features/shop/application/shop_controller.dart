@@ -386,20 +386,19 @@ class ShopController extends ChangeNotifier {
   }
 
   Future<ShopState> getVisibleShopState() async {
-    final shopState = await _shopRepository.load();
     if (!isCloudEconomyEnabled) {
-      return shopState;
+      return _shopRepository.load();
     }
 
     await hydrateVisibleEconomy();
     final currentUserId = _currentSupabaseUserId();
     if (currentUserId == null) {
-      return shopState;
+      return const ShopState();
     }
     if (!_cloudSnapshotByUserId.containsKey(currentUserId)) {
-      return shopState;
+      return const ShopState();
     }
-    return _adjustShopStateForCloudPurchase(null, shopState);
+    return _adjustShopStateForCloudPurchase(null, const ShopState());
   }
 
   List<ShopItem> getVisibleUtilityCatalogItems() {
@@ -1439,8 +1438,9 @@ class ShopController extends ChangeNotifier {
         break;
       case ShopCloudErrorCode.featureDisabled:
         _setEconomyState(
-          source: ShopEconomySource.local,
-          status: ShopCloudEconomyStatus.disabled,
+          source: ShopEconomySource.cloud,
+          status: ShopCloudEconomyStatus.failed,
+          userId: currentUserId,
         );
         break;
       case ShopCloudErrorCode.networkUnavailable:
@@ -1465,7 +1465,9 @@ class ShopController extends ChangeNotifier {
     _cloudPurchaseWalletCoins = null;
     _cloudPurchaseInventoryQuantityByItemId.clear();
     _setEconomyState(
-      source: ShopEconomySource.local,
+      source: isCloudEconomyEnabled
+          ? ShopEconomySource.cloud
+          : ShopEconomySource.local,
       status: ShopCloudEconomyStatus.unauthenticated,
     );
   }
@@ -1650,6 +1652,9 @@ class ShopController extends ChangeNotifier {
   }
 
   Future<ShopState> _adjustedLocalShopState(ShopItem item) async {
+    if (isCloudEconomyEnabled) {
+      return _adjustShopStateForCloudPurchase(item, const ShopState());
+    }
     final shopState = await _shopRepository.load();
     return _adjustShopStateForCloudPurchase(item, shopState);
   }
