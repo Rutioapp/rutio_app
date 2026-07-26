@@ -30,6 +30,8 @@ class ShopCosmeticsService {
     final quote = ShopBundleCompletionQuote.tryCreate(
       bundle: bundle,
       state: state,
+      catalogAssets: ShopAssetsCatalog.allAssets,
+      catalogBundles: ShopAssetsCatalog.allBundles,
     );
     if (quote == null) return false;
     if (quote.isExplicitlyOwned) return false;
@@ -51,6 +53,8 @@ class ShopCosmeticsService {
     final quote = ShopBundleCompletionQuote.tryCreate(
       bundle: bundle,
       state: state,
+      catalogAssets: ShopAssetsCatalog.allAssets,
+      catalogBundles: ShopAssetsCatalog.allBundles,
     );
     return quote?.isPartiallyOwned ?? false;
   }
@@ -105,6 +109,8 @@ class ShopCosmeticsService {
     final quote = ShopBundleCompletionQuote.tryCreate(
       bundle: bundle,
       state: state,
+      catalogAssets: ShopAssetsCatalog.allAssets,
+      catalogBundles: ShopAssetsCatalog.allBundles,
     );
     if (quote == null) {
       return _result(ShopCosmeticsOperationStatus.bundleNotFound);
@@ -113,8 +119,7 @@ class ShopCosmeticsService {
       return _result(ShopCosmeticsOperationStatus.alreadyOwned,
           bundleId: bundleId);
     }
-    if (quote.missingItemCount > 0 &&
-        walletCoins < quote.effectivePriceAmber) {
+    if (quote.missingItemCount > 0 && walletCoins < quote.effectivePriceAmber) {
       return _result(
         ShopCosmeticsOperationStatus.insufficientCoins,
         bundleId: bundleId,
@@ -167,6 +172,8 @@ class ShopCosmeticsService {
     final quote = ShopBundleCompletionQuote.tryCreate(
       bundle: bundle,
       state: state,
+      catalogAssets: ShopAssetsCatalog.allAssets,
+      catalogBundles: ShopAssetsCatalog.allBundles,
     );
     if (quote == null) {
       return _result(ShopCosmeticsOperationStatus.bundleNotFound);

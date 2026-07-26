@@ -17,6 +17,8 @@ void main() {
           ],
           ownedBundleIds: <String>[],
         ),
+        catalogAssets: ShopAssetsCatalog.allAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
       )!;
 
       expect(quote.missingItemCount, 0);
@@ -31,6 +33,8 @@ void main() {
       final quote = ShopBundleCompletionQuote.tryCreate(
         bundle: bundle,
         state: const ShopCosmeticsState.initial(),
+        catalogAssets: ShopAssetsCatalog.allAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
       )!;
 
       expect(quote.missingItemCount, 3);
@@ -38,8 +42,7 @@ void main() {
       expect(quote.isPartiallyOwned, isFalse);
     });
 
-    test('calculates a proportional completion price for one owned asset',
-        () {
+    test('calculates a proportional completion price for one owned asset', () {
       final bundle = ShopAssetsCatalog.getBundleById('pack_beige_rutio')!;
       final quote = ShopBundleCompletionQuote.tryCreate(
         bundle: bundle,
@@ -47,6 +50,8 @@ void main() {
           ownedAssetIds: <String>['wallpaper_rutio_beige'],
           ownedBundleIds: <String>[],
         ),
+        catalogAssets: ShopAssetsCatalog.allAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
       )!;
 
       expect(quote.ownedItemCount, 1);
@@ -74,12 +79,15 @@ void main() {
           ownedAssetIds: <String>['wallpaper_rutio_beige'],
           ownedBundleIds: <String>[],
         ),
+        catalogAssets: ShopAssetsCatalog.allAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
       )!;
 
       expect(quote.effectivePriceAmber, quote.missingRetailPriceAmber);
     });
 
-    test('falls back to the missing retail price when original price is invalid',
+    test(
+        'falls back to the missing retail price when original price is invalid',
         () {
       final bundle = ShopAssetsCatalog.getBundleById('pack_beige_rutio')!
           .copyWith(originalPriceAmber: 0);
@@ -89,6 +97,8 @@ void main() {
           ownedAssetIds: <String>['wallpaper_rutio_beige'],
           ownedBundleIds: <String>[],
         ),
+        catalogAssets: ShopAssetsCatalog.allAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
       )!;
 
       expect(quote.effectivePriceAmber, quote.missingRetailPriceAmber);
@@ -106,12 +116,46 @@ void main() {
           ],
           ownedBundleIds: <String>['pack_beige_rutio'],
         ),
+        catalogAssets: ShopAssetsCatalog.allAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
       )!;
 
       expect(quote.isExplicitlyOwned, isTrue);
       expect(quote.isCompleteFromItems, isFalse);
       expect(quote.canEquip, isTrue);
       expect(quote.effectivePriceAmber, 0);
+    });
+
+    test('uses resolved catalog prices for partial pack quotes', () {
+      final bundle =
+          ShopAssetsCatalog.getBundleById('pack_beige_rutio')!.copyWith(
+        priceAmber: 300,
+        originalPriceAmber: 330,
+        discountPercentage: 9,
+      );
+      final catalogAssets = ShopAssetsCatalog.allAssets
+          .map((asset) => switch (asset.id) {
+                'habit_card_warm_beige' => asset.copyWith(priceAmber: 180),
+                'user_card_warm_beige' => asset.copyWith(priceAmber: 240),
+                _ => asset,
+              })
+          .toList(growable: false);
+      final quote = ShopBundleCompletionQuote.tryCreate(
+        bundle: bundle,
+        state: ShopCosmeticsState(
+          ownedAssetIds: <String>['wallpaper_rutio_beige'],
+          ownedBundleIds: <String>[],
+        ),
+        catalogAssets: catalogAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
+      )!;
+
+      expect(quote.missingRetailPriceAmber, 420);
+      expect(
+        quote.effectivePriceAmber,
+        ((420 * 300) / 330).ceil(),
+      );
+      expect(quote.isPartiallyOwned, isTrue);
     });
   });
 }

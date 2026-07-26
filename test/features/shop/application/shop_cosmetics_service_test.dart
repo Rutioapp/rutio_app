@@ -132,6 +132,8 @@ void main() {
       final quote = ShopBundleCompletionQuote.tryCreate(
         bundle: bundle,
         state: service.state,
+        catalogAssets: ShopAssetsCatalog.allAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
       )!;
       final result = service.purchaseBundle('pack_beige_rutio');
 
@@ -165,16 +167,20 @@ void main() {
       final quote = ShopBundleCompletionQuote.tryCreate(
         bundle: ShopAssetsCatalog.getBundleById('pack_beige_rutio')!,
         state: service.state,
+        catalogAssets: ShopAssetsCatalog.allAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
       )!;
 
       final result = service.purchaseBundle('pack_beige_rutio');
 
       expect(result.status, ShopCosmeticsOperationStatus.success);
-      expect(result.state.ownedAssetIds, containsAll(<String>[
-        'wallpaper_rutio_beige',
-        'habit_card_warm_beige',
-        'user_card_warm_beige',
-      ]));
+      expect(
+          result.state.ownedAssetIds,
+          containsAll(<String>[
+            'wallpaper_rutio_beige',
+            'habit_card_warm_beige',
+            'user_card_warm_beige',
+          ]));
       expect(result.state.ownedAssetIds.length, 3);
       expect(result.walletCoins, 1000 - quote.effectivePriceAmber);
     });

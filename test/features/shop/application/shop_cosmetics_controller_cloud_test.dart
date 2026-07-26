@@ -22,6 +22,7 @@ import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_repository.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
@@ -110,6 +111,90 @@ void main() {
       expect(controller.getEquippedUserCardAssetOrNullSync()?.id,
           'user_card_full_moon');
       expect(controller.state?.equippedUserCardSkinId, 'user_card_full_moon');
+    });
+
+    test('failed cloud fetch keeps the resolved catalog empty', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _failure(
+                ShopCloudErrorCode.networkUnavailable,
+                'network unavailable',
+              ),
+        ],
+      );
+
+      final env = await _createController(
+        cloudRepository: repo,
+      );
+      final controller = env.controller;
+
+      await controller.getState();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(controller.resolvedAssets, isEmpty);
+      expect(controller.resolvedBundles, isEmpty);
+      expect(controller.cloudState.status, ShopCosmeticsCloudStatus.failed);
+    });
+
+    test('cloud purchase rejects when the remote catalog is empty', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final emptyCatalogSnapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: const <String>[],
+        catalogItems: const <RemoteShopItemDto>[],
+        catalogBundles: const <RemoteShopBundleDto>[],
+        catalogBundleItems: const <RemoteShopBundleItemDto>[],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(emptyCatalogSnapshot),
+        ],
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(emptyCatalogSnapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.purchaseBundle('pack_beige_rutio');
+
+      expect(result.status, ShopCosmeticsOperationStatus.bundleNotFound);
+      expect(repo.purchaseCalls, isEmpty);
+    });
+
+    test('cloud equipBundle rejects when the bundle is absent remotely',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final emptyCatalogSnapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_rutio_beige',
+          'habit_card_warm_beige',
+          'user_card_warm_beige',
+        ],
+        ownedBundleIds: const <String>[],
+        catalogItems: const <RemoteShopItemDto>[],
+        catalogBundles: const <RemoteShopBundleDto>[],
+        catalogBundleItems: const <RemoteShopBundleItemDto>[],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(emptyCatalogSnapshot),
+        ],
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(emptyCatalogSnapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipBundle('pack_beige_rutio');
+
+      expect(result.status, ShopCosmeticsOperationStatus.bundleNotFound);
+      expect(repo.equipCalls, isEmpty);
     });
 
     test('cloud state ignores legacy bundles when resolving wallpaper',
@@ -496,12 +581,57 @@ void main() {
         version: 1,
         updatedAt: DateTime.utc(2026, 7, 19, 13),
       );
+      const bundleId = 'pack_beige_rutio';
+      final bundleAssetIds = <String>{
+        'wallpaper_rutio_beige',
+        'habit_card_warm_beige',
+        'user_card_warm_beige',
+      };
       final repo = _FakeCloudCosmeticsRepository(
         fetchResponses: <_FetchResponseFactory>[
           () async => _success(
                 _snapshot(
                   userId: 'shop-cloud-user',
                   ownedAssetIds: <String>['wallpaper_rutio_beige'],
+                  catalogItems: _catalogItems()
+                      .where((item) => bundleAssetIds.contains(item.id))
+                      .toList(growable: false),
+                  catalogBundles: _catalogBundles()
+                      .where((bundle) => bundle.id == bundleId)
+                      .toList(growable: false),
+                  catalogBundleItems: _catalogBundleItems()
+                      .where((item) => item.bundleId == bundleId)
+                      .toList(growable: false),
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_rutio_beige'],
+                  catalogItems: _catalogItems()
+                      .where((item) => bundleAssetIds.contains(item.id))
+                      .toList(growable: false),
+                  catalogBundles: _catalogBundles()
+                      .where((bundle) => bundle.id == bundleId)
+                      .toList(growable: false),
+                  catalogBundleItems: _catalogBundleItems()
+                      .where((item) => item.bundleId == bundleId)
+                      .toList(growable: false),
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_rutio_beige'],
+                  catalogItems: _catalogItems()
+                      .where((item) => bundleAssetIds.contains(item.id))
+                      .toList(growable: false),
+                  catalogBundles: _catalogBundles()
+                      .where((bundle) => bundle.id == bundleId)
+                      .toList(growable: false),
+                  catalogBundleItems: _catalogBundleItems()
+                      .where((item) => item.bundleId == bundleId)
+                      .toList(growable: false),
                 ),
               ),
         ],
@@ -520,9 +650,15 @@ void main() {
         globalWalletController: walletController,
       );
       final initialState = await env.controller.getState();
+      for (var attempt = 0;
+          attempt < 50 && env.controller.resolvedBundles.isEmpty;
+          attempt += 1) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect(env.controller.resolvedBundles, isNotEmpty);
       final initialRevision = env.controller.cloudSnapshotRevision;
 
-      final result = await env.controller.purchaseBundle('pack_beige_rutio');
+      final result = await env.controller.purchaseBundle(bundleId);
       await Future<void>.delayed(Duration.zero);
 
       expect(result.isSuccess, isFalse);
@@ -537,7 +673,7 @@ void main() {
       expect(env.controller.state?.equippedUserCardSkinId,
           initialState.equippedUserCardSkinId);
       expect(walletController.state.coins, 500);
-      expect(repo.purchaseCalls, contains('pack_beige_rutio'));
+      expect(repo.purchaseCalls, contains(bundleId));
     });
 
     test('cloud equip switches the correct slot and survives reload', () async {
@@ -1155,13 +1291,18 @@ CloudCosmeticsSnapshot _snapshot({
   String? wallpaperId,
   String? habitCardId,
   String? userCardId,
+  List<RemoteShopItemDto>? catalogItems,
+  List<RemoteShopBundleDto>? catalogBundles,
+  List<RemoteShopBundleItemDto>? catalogBundleItems,
 }) {
   final now = DateTime.utc(2026, 7, 19, 12);
   return CloudCosmeticsSnapshot(
     userId: userId,
+    catalogItems: catalogItems ?? _catalogItems(),
     ownedAssetIds: ownedAssetIds,
     ownedBundleIds: ownedBundleIds,
-    catalogBundles: const <RemoteShopBundleDto>[],
+    catalogBundles: catalogBundles ?? _catalogBundles(),
+    catalogBundleItems: catalogBundleItems ?? _catalogBundleItems(),
     equippedWallpaperId: wallpaperId,
     equippedHabitCardSkinId: habitCardId,
     equippedUserCardSkinId: userCardId,
@@ -1229,6 +1370,111 @@ Map<String, dynamic> _baseState({
       'activeHabits': <dynamic>[],
     },
   };
+}
+
+List<RemoteShopItemDto> _catalogItems() {
+  final now = DateTime.utc(2026, 7, 19, 12);
+  return ShopAssetsCatalog.allAssets
+      .map(
+        (asset) => RemoteShopItemDto(
+          id: asset.id,
+          category: switch (asset.category) {
+            ShopAssetCategory.wallpaper =>
+              RemoteShopItemCategory.screenBackground,
+            ShopAssetCategory.habitCard =>
+              RemoteShopItemCategory.habitCardBackground,
+            ShopAssetCategory.userCard =>
+              RemoteShopItemCategory.userCardBackground,
+          },
+          subtype: null,
+          rarity: switch (asset.rarity) {
+            ShopAssetRarity.common => RemoteShopItemRarity.common,
+            ShopAssetRarity.rare => RemoteShopItemRarity.rare,
+            ShopAssetRarity.epic => RemoteShopItemRarity.epic,
+            ShopAssetRarity.legendary => RemoteShopItemRarity.legendary,
+          },
+          priceCoins: asset.priceAmber,
+          isConsumable: false,
+          isStackable: false,
+          maxQuantity: null,
+          equipSlot: switch (asset.category) {
+            ShopAssetCategory.wallpaper => RemoteShopEquipSlot.screenBackground,
+            ShopAssetCategory.habitCard =>
+              RemoteShopEquipSlot.habitCardBackground,
+            ShopAssetCategory.userCard =>
+              RemoteShopEquipSlot.userCardBackground,
+          },
+          assetKey: null,
+          localizationKey: null,
+          isActive: asset.isPurchasable,
+          sortOrder: asset.sortOrder,
+          catalogVersion: 1,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      )
+      .toList(growable: false);
+}
+
+List<RemoteShopBundleDto> _catalogBundles() {
+  final now = DateTime.utc(2026, 7, 19, 12);
+  return ShopAssetsCatalog.allBundles
+      .map(
+        (bundle) => RemoteShopBundleDto(
+          id: bundle.id,
+          familyId: bundle.familyId,
+          rarity: switch (bundle.rarity) {
+            ShopAssetRarity.common => RemoteShopItemRarity.common,
+            ShopAssetRarity.rare => RemoteShopItemRarity.rare,
+            ShopAssetRarity.epic => RemoteShopItemRarity.epic,
+            ShopAssetRarity.legendary => RemoteShopItemRarity.legendary,
+          },
+          priceCoins: bundle.priceAmber,
+          originalPriceCoins: bundle.originalPriceAmber,
+          isActive: bundle.isPurchasable,
+          sortOrder: bundle.sortOrder,
+          catalogVersion: 1,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      )
+      .toList(growable: false);
+}
+
+List<RemoteShopBundleItemDto> _catalogBundleItems() {
+  return ShopAssetsCatalog.allBundles
+      .expand(
+        (bundle) => <RemoteShopBundleItemDto>[
+          _bundleItem(
+            bundle.id,
+            bundle.wallpaperItemId,
+            RemoteShopEquipSlot.screenBackground,
+          ),
+          _bundleItem(
+            bundle.id,
+            bundle.habitCardItemId,
+            RemoteShopEquipSlot.habitCardBackground,
+          ),
+          _bundleItem(
+            bundle.id,
+            bundle.userCardItemId,
+            RemoteShopEquipSlot.userCardBackground,
+          ),
+        ],
+      )
+      .toList(growable: false);
+}
+
+RemoteShopBundleItemDto _bundleItem(
+  String bundleId,
+  String itemId,
+  RemoteShopEquipSlot slot,
+) {
+  return RemoteShopBundleItemDto(
+    bundleId: bundleId,
+    itemId: itemId,
+    slot: slot,
+  );
 }
 
 class _MemoryCloudCosmeticsCache implements CloudCosmeticsCache {

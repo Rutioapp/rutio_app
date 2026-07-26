@@ -12,7 +12,9 @@ class CloudCosmeticsSnapshot {
     required this.userId,
     required this.ownedAssetIds,
     required this.ownedBundleIds,
+    this.catalogItems = const <RemoteShopItemDto>[],
     required this.catalogBundles,
+    this.catalogBundleItems = const <RemoteShopBundleItemDto>[],
     required this.equippedWallpaperId,
     required this.equippedHabitCardSkinId,
     required this.equippedUserCardSkinId,
@@ -24,7 +26,9 @@ class CloudCosmeticsSnapshot {
   final String userId;
   final List<String> ownedAssetIds;
   final List<String> ownedBundleIds;
+  final List<RemoteShopItemDto> catalogItems;
   final List<RemoteShopBundleDto> catalogBundles;
+  final List<RemoteShopBundleItemDto> catalogBundleItems;
   final String? equippedWallpaperId;
   final String? equippedHabitCardSkinId;
   final String? equippedUserCardSkinId;
@@ -37,8 +41,13 @@ class CloudCosmeticsSnapshot {
   ) {
     final ownedAssetIds = _resolveOwnedAssetIds(snapshot.inventory);
     final ownedBundleIds = _resolveOwnedBundleIds(snapshot.ownedBundles);
+    final catalogItems =
+        List<RemoteShopItemDto>.unmodifiable(snapshot.catalogItems);
     final catalogBundles =
         List<RemoteShopBundleDto>.unmodifiable(snapshot.catalogBundles);
+    final catalogBundleItems = List<RemoteShopBundleItemDto>.unmodifiable(
+      snapshot.catalogBundleItems,
+    );
     final equipped = _resolveEquippedCosmetics(
       snapshot.equippedCosmetics,
       ownedAssetIds,
@@ -48,7 +57,9 @@ class CloudCosmeticsSnapshot {
       userId: snapshot.authenticatedUserId,
       ownedAssetIds: List<String>.unmodifiable(ownedAssetIds),
       ownedBundleIds: List<String>.unmodifiable(ownedBundleIds),
+      catalogItems: catalogItems,
       catalogBundles: catalogBundles,
+      catalogBundleItems: catalogBundleItems,
       equippedWallpaperId: equipped.wallpaper,
       equippedHabitCardSkinId: equipped.habitCard,
       equippedUserCardSkinId: equipped.userCard,
@@ -83,7 +94,9 @@ class CloudCosmeticsSnapshot {
   CloudCosmeticsSnapshot copyWith({
     List<String>? ownedAssetIds,
     List<String>? ownedBundleIds,
+    List<RemoteShopItemDto>? catalogItems,
     List<RemoteShopBundleDto>? catalogBundles,
+    List<RemoteShopBundleItemDto>? catalogBundleItems,
     Object? equippedWallpaperId = _cloudCosmeticsUnset,
     Object? equippedHabitCardSkinId = _cloudCosmeticsUnset,
     Object? equippedUserCardSkinId = _cloudCosmeticsUnset,
@@ -97,8 +110,13 @@ class CloudCosmeticsSnapshot {
           List<String>.unmodifiable(ownedAssetIds ?? this.ownedAssetIds),
       ownedBundleIds:
           List<String>.unmodifiable(ownedBundleIds ?? this.ownedBundleIds),
+      catalogItems: List<RemoteShopItemDto>.unmodifiable(
+          catalogItems ?? this.catalogItems),
       catalogBundles: List<RemoteShopBundleDto>.unmodifiable(
         catalogBundles ?? this.catalogBundles,
+      ),
+      catalogBundleItems: List<RemoteShopBundleItemDto>.unmodifiable(
+        catalogBundleItems ?? this.catalogBundleItems,
       ),
       equippedWallpaperId: identical(equippedWallpaperId, _cloudCosmeticsUnset)
           ? this.equippedWallpaperId
@@ -122,9 +140,15 @@ class CloudCosmeticsSnapshot {
       'userId': userId,
       'ownedAssetIds': ownedAssetIds,
       'ownedBundleIds': ownedBundleIds,
+      'catalogItems': catalogItems.map((item) => item.toJson()).toList(
+            growable: false,
+          ),
       'catalogBundles': catalogBundles.map((bundle) => bundle.toJson()).toList(
             growable: false,
           ),
+      'catalogBundleItems': catalogBundleItems
+          .map((item) => item.toJson())
+          .toList(growable: false),
       'equippedWallpaperId': equippedWallpaperId,
       'equippedHabitCardSkinId': equippedHabitCardSkinId,
       'equippedUserCardSkinId': equippedUserCardSkinId,
@@ -152,11 +176,31 @@ class CloudCosmeticsSnapshot {
         (json['ownedBundleIds'] as List?)?.map((value) => value.toString()) ??
             const <String>[],
       )),
+      catalogItems: List<RemoteShopItemDto>.unmodifiable(
+        ((json['catalogItems'] as List?) ?? const <dynamic>[])
+            .whereType<Map>()
+            .map(
+              (value) => RemoteShopItemDto.fromJson(
+                Map<String, dynamic>.from(value.cast<String, dynamic>()),
+              ),
+            )
+            .toList(growable: false),
+      ),
       catalogBundles: List<RemoteShopBundleDto>.unmodifiable(
         ((json['catalogBundles'] as List?) ?? const <dynamic>[])
             .whereType<Map>()
             .map(
               (value) => RemoteShopBundleDto.fromJson(
+                Map<String, dynamic>.from(value.cast<String, dynamic>()),
+              ),
+            )
+            .toList(growable: false),
+      ),
+      catalogBundleItems: List<RemoteShopBundleItemDto>.unmodifiable(
+        ((json['catalogBundleItems'] as List?) ?? const <dynamic>[])
+            .whereType<Map>()
+            .map(
+              (value) => RemoteShopBundleItemDto.fromJson(
                 Map<String, dynamic>.from(value.cast<String, dynamic>()),
               ),
             )
@@ -237,6 +281,8 @@ DateTime _resolveUpdatedAt(ShopCloudSnapshot snapshot) {
   if (snapshot.wallet != null) {
     values.add(snapshot.wallet!.updatedAt);
   }
+  values.addAll(snapshot.catalogItems.map((row) => row.updatedAt));
+  values.addAll(snapshot.catalogBundles.map((row) => row.updatedAt));
   values.addAll(snapshot.inventory.map((row) => row.updatedAt));
   values.addAll(snapshot.equippedCosmetics.map((row) => row.equippedAt));
   values.addAll(snapshot.ownedBundles.map((row) => row.updatedAt));

@@ -241,6 +241,10 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
                 bundles: filteredBundles,
                 equippedCosmetics: equippedCosmetics,
                 cosmeticsState: cosmeticsState,
+                catalogAssets: widget.cosmeticsController?.resolvedAssets ??
+                    ShopAssetsCatalog.allAssets,
+                catalogBundles: widget.cosmeticsController?.resolvedBundles ??
+                    ShopAssetsCatalog.allBundles,
                 busyEquipBundleId: _busyEquipBundleId,
                 onEquipPressed: _handleEquipBundlePressed,
               )
@@ -313,11 +317,18 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
   }
 
   List<ShopBundle> _bundlesForFilter(ShopCosmeticsState state) {
+    final controller = _cachedController ?? widget.cosmeticsController;
+    final catalogAssets =
+        controller?.resolvedAssets ?? ShopAssetsCatalog.allAssets;
+    final catalogBundles =
+        controller?.resolvedBundles ?? ShopAssetsCatalog.allBundles;
     final Map<String, ShopBundle> resolved = <String, ShopBundle>{};
-    for (final ShopBundle bundle in ShopAssetsCatalog.allBundles) {
+    for (final ShopBundle bundle in catalogBundles) {
       final quote = ShopBundleCompletionQuote.tryCreate(
         bundle: bundle,
         state: state,
+        catalogAssets: catalogAssets,
+        catalogBundles: catalogBundles,
       );
       if (quote == null) continue;
       if (!quote.isExplicitlyOwned && !quote.isCompleteFromItems) continue;
@@ -325,7 +336,8 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
     }
 
     final List<ShopBundle> sorted = resolved.values.toList(growable: false);
-    sorted.sort((ShopBundle a, ShopBundle b) => a.sortOrder.compareTo(b.sortOrder));
+    sorted.sort(
+        (ShopBundle a, ShopBundle b) => a.sortOrder.compareTo(b.sortOrder));
     return sorted;
   }
 
@@ -378,20 +390,23 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
   ) {
     final ShopCosmeticsState state =
         controller.state ?? const ShopCosmeticsState.initial();
-    final List<ShopItem> resolvedItems = ShopAssetsCatalog.allAssets
+    final List<ShopAsset> catalogAssets = controller.resolvedAssets;
+    final List<ShopBundle> catalogBundles = controller.resolvedBundles;
+    final List<ShopItem> resolvedItems = catalogAssets
         .where(
           (ShopAsset asset) => state.isAssetOwned(
             asset.id,
-            bundles: ShopAssetsCatalog.allBundles,
+            bundles: catalogBundles,
           ),
         )
         .map(_mapAssetToShopItem)
         .whereType<ShopItem>()
         .toList(growable: false);
-    final List<ShopBundle> resolvedBundles = ShopAssetsCatalog.allBundles
+    final List<ShopBundle> resolvedBundles = catalogBundles
         .where((ShopBundle bundle) => state.ownedBundleIds.contains(bundle.id))
         .toList(growable: false)
-      ..sort((ShopBundle a, ShopBundle b) => a.sortOrder.compareTo(b.sortOrder));
+      ..sort(
+          (ShopBundle a, ShopBundle b) => a.sortOrder.compareTo(b.sortOrder));
 
     return _CustomizationViewData(
       walletCoins: controller.visibleWalletCoins,
@@ -585,6 +600,8 @@ class _OwnedBundlesSection extends StatelessWidget {
     required this.bundles,
     required this.equippedCosmetics,
     required this.cosmeticsState,
+    required this.catalogAssets,
+    required this.catalogBundles,
     required this.busyEquipBundleId,
     required this.onEquipPressed,
   });
@@ -592,6 +609,8 @@ class _OwnedBundlesSection extends StatelessWidget {
   final List<ShopBundle> bundles;
   final EquippedCosmetics equippedCosmetics;
   final ShopCosmeticsState cosmeticsState;
+  final List<ShopAsset> catalogAssets;
+  final List<ShopBundle> catalogBundles;
   final String? busyEquipBundleId;
   final Future<void> Function(String bundleId) onEquipPressed;
 
@@ -627,6 +646,8 @@ class _OwnedBundlesSection extends StatelessWidget {
                 final quote = ShopBundleCompletionQuote.tryCreate(
                   bundle: bundle,
                   state: cosmeticsState,
+                  catalogAssets: catalogAssets,
+                  catalogBundles: catalogBundles,
                 );
                 return ShopOwnedBundleCard(
                   key: Key('shopOwnedBundle-${bundle.id}'),
@@ -646,12 +667,15 @@ class _OwnedBundlesSection extends StatelessWidget {
   }
 
   List<ShopAsset> _bundleAssetsFor(ShopBundle bundle) {
+    final assetsById = <String, ShopAsset>{
+      for (final asset in catalogAssets) asset.id: asset,
+    };
     return <String>[
       bundle.wallpaperItemId,
       bundle.habitCardItemId,
       bundle.userCardItemId,
     ]
-        .map(ShopAssetsCatalog.getAssetById)
+        .map((String assetId) => assetsById[assetId])
         .whereType<ShopAsset>()
         .toList(growable: false);
   }

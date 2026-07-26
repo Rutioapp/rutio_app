@@ -1,4 +1,3 @@
-import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
@@ -34,8 +33,13 @@ class ShopBundleCompletionQuote {
   static ShopBundleCompletionQuote? tryCreate({
     required ShopBundle bundle,
     required ShopCosmeticsState state,
+    required Iterable<ShopAsset> catalogAssets,
+    required Iterable<ShopBundle> catalogBundles,
   }) {
-    final bundleAssets = _resolveBundleAssets(bundle);
+    final bundleAssets = _resolveBundleAssets(
+      bundle,
+      catalogAssets,
+    );
     if (bundleAssets == null) return null;
 
     final ownedAssets = <ShopAsset>[];
@@ -43,7 +47,7 @@ class ShopBundleCompletionQuote {
     for (final asset in bundleAssets) {
       final owned = state.isAssetOwned(
         asset.id,
-        bundles: ShopAssetsCatalog.allBundles,
+        bundles: catalogBundles,
       );
       if (owned) {
         ownedAssets.add(asset);
@@ -60,9 +64,8 @@ class ShopBundleCompletionQuote {
     });
     final isExplicitlyOwned = state.isBundleOwned(bundle.id);
     final isCompleteFromItems = !isExplicitlyOwned && missingItemCount == 0;
-    final isPartiallyOwned = !isExplicitlyOwned &&
-        missingItemCount > 0 &&
-        missingItemCount < 3;
+    final isPartiallyOwned =
+        !isExplicitlyOwned && missingItemCount > 0 && missingItemCount < 3;
     final effectivePriceAmber = _effectivePrice(
       bundle: bundle,
       missingRetailPriceAmber: missingRetailPriceAmber,
@@ -84,10 +87,16 @@ class ShopBundleCompletionQuote {
     );
   }
 
-  static List<ShopAsset>? _resolveBundleAssets(ShopBundle bundle) {
-    final wallpaper = ShopAssetsCatalog.getAssetById(bundle.wallpaperItemId);
-    final habitCard = ShopAssetsCatalog.getAssetById(bundle.habitCardItemId);
-    final userCard = ShopAssetsCatalog.getAssetById(bundle.userCardItemId);
+  static List<ShopAsset>? _resolveBundleAssets(
+    ShopBundle bundle,
+    Iterable<ShopAsset> catalogAssets,
+  ) {
+    final assetsById = <String, ShopAsset>{
+      for (final asset in catalogAssets) asset.id: asset,
+    };
+    final wallpaper = assetsById[bundle.wallpaperItemId];
+    final habitCard = assetsById[bundle.habitCardItemId];
+    final userCard = assetsById[bundle.userCardItemId];
     if (wallpaper == null ||
         habitCard == null ||
         userCard == null ||

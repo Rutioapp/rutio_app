@@ -8,6 +8,7 @@ import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_cache.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_config.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_request_id.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_snapshot.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cosmetics_catalog_resolver.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_equip_repository.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
@@ -169,6 +170,8 @@ class ShopCosmeticsController extends ChangeNotifier {
   ShopCosmeticsCloudState _cloudState =
       ShopCosmeticsCloudState.unauthenticated();
   final Set<String> _busyBundleEquipIds = <String>{};
+  final ShopCosmeticsCatalogResolver _catalogResolver =
+      const ShopCosmeticsCatalogResolver();
 
   ShopCosmeticsState? get state => _cachedState;
   ShopCosmeticsCloudState get cloudState => _cloudState;
@@ -188,6 +191,75 @@ class ShopCosmeticsController extends ChangeNotifier {
     final wallet = (userState['wallet'] as Map?)?.cast<String, dynamic>() ??
         <String, dynamic>{};
     return ((wallet['coins'] as num?) ?? 0).toInt();
+  }
+
+  ShopResolvedCosmeticsCatalog get resolvedCatalog {
+    if (!_cloudEnabled) {
+      return ShopResolvedCosmeticsCatalog(
+        assets: List<ShopAsset>.unmodifiable(ShopAssetsCatalog.allAssets),
+        bundles: List<ShopBundle>.unmodifiable(ShopAssetsCatalog.allBundles),
+      );
+    }
+
+    final snapshot = _cloudState.snapshot;
+    final scopeKey = _currentScope();
+    if (scopeKey == null ||
+        snapshot == null ||
+        _cloudState.userId != scopeKey) {
+      return const ShopResolvedCosmeticsCatalog.empty();
+    }
+
+    return _catalogResolver.resolve(
+      localAssets: ShopAssetsCatalog.allAssets,
+      localBundles: ShopAssetsCatalog.allBundles,
+      remoteItems: snapshot.catalogItems,
+      remoteBundles: snapshot.catalogBundles,
+      remoteBundleItems: snapshot.catalogBundleItems,
+    );
+  }
+
+  List<ShopAsset> get resolvedAssets => resolvedCatalog.assets;
+  List<ShopBundle> get resolvedBundles => resolvedCatalog.bundles;
+
+  ShopAsset? _catalogAssetById(String assetId) {
+    for (final asset in _catalogAssets()) {
+      if (asset.id == assetId) {
+        return asset;
+      }
+    }
+    return null;
+  }
+
+  ShopBundle? _catalogBundleById(String bundleId) {
+    for (final bundle in _catalogBundles()) {
+      if (bundle.id == bundleId) {
+        return bundle;
+      }
+    }
+    return null;
+  }
+
+  List<ShopAsset> _catalogAssets() {
+    if (_cloudEnabled) {
+      return resolvedAssets;
+    }
+    return ShopAssetsCatalog.allAssets;
+  }
+
+  List<ShopBundle> _catalogBundles() {
+    if (_cloudEnabled) {
+      return resolvedBundles;
+    }
+    return ShopAssetsCatalog.allBundles;
+  }
+
+  ShopBundle? _resolvedBundleById(String bundleId) {
+    for (final bundle in resolvedBundles) {
+      if (bundle.id == bundleId) {
+        return bundle;
+      }
+    }
+    return null;
   }
 
   bool get hasStateForCurrentScope =>
@@ -305,9 +377,9 @@ class ShopCosmeticsController extends ChangeNotifier {
   Future<bool> canPurchaseAsset(String assetId) async {
     if (_cloudEnabled) {
       final state = await _combinedCloudState();
-      final asset = ShopAssetsCatalog.getAssetById(assetId);
+      final asset = _catalogAssetById(assetId);
       if (asset == null) return false;
-      if (state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles)) {
+      if (state.isAssetOwned(assetId, bundles: _catalogBundles())) {
         return false;
       }
       final walletCoins = await _walletCoins();
@@ -321,11 +393,13 @@ class ShopCosmeticsController extends ChangeNotifier {
   Future<bool> canPurchaseBundle(String bundleId) async {
     if (_cloudEnabled) {
       final state = await _combinedCloudState();
-      final bundle = ShopAssetsCatalog.getBundleById(bundleId);
+      final bundle = _catalogBundleById(bundleId);
       if (bundle == null) return false;
       final quote = ShopBundleCompletionQuote.tryCreate(
         bundle: bundle,
         state: state,
+        catalogAssets: resolvedAssets,
+        catalogBundles: resolvedBundles,
       );
       if (quote == null) return false;
       if (quote.isExplicitlyOwned || quote.missingItemCount == 0) return false;
@@ -340,7 +414,7 @@ class ShopCosmeticsController extends ChangeNotifier {
   Future<bool> isAssetOwned(String assetId) async {
     if (_cloudEnabled) {
       final state = await _combinedCloudState();
-      return state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles);
+      return state.isAssetOwned(assetId, bundles: _catalogBundles());
     }
 
     final service = await _service();
@@ -360,11 +434,13 @@ class ShopCosmeticsController extends ChangeNotifier {
   Future<bool> isBundlePartiallyOwned(String bundleId) async {
     if (_cloudEnabled) {
       final state = await _combinedCloudState();
-      final bundle = ShopAssetsCatalog.getBundleById(bundleId);
+      final bundle = _catalogBundleById(bundleId);
       if (bundle == null) return false;
       final quote = ShopBundleCompletionQuote.tryCreate(
         bundle: bundle,
         state: state,
+        catalogAssets: resolvedAssets,
+        catalogBundles: resolvedBundles,
       );
       return quote?.isPartiallyOwned ?? false;
     }
@@ -376,11 +452,11 @@ class ShopCosmeticsController extends ChangeNotifier {
   Future<ShopAssetOwnershipState> assetOwnershipState(String assetId) async {
     if (_cloudEnabled) {
       final state = await _combinedCloudState();
-      final asset = ShopAssetsCatalog.getAssetById(assetId);
+      final asset = _catalogAssetById(assetId);
       if (asset == null) return ShopAssetOwnershipState.locked;
       return state.assetOwnershipState(
         asset,
-        bundles: ShopAssetsCatalog.allBundles,
+        bundles: _catalogBundles(),
       );
     }
 
@@ -680,15 +756,16 @@ class ShopCosmeticsController extends ChangeNotifier {
   ) async {
     final scopeKey = _currentScope();
     final traceId = _newTraceId('tap');
-    final asset = ShopAssetsCatalog.getAssetById(assetId);
+    final state = await _combinedCloudState();
+    final asset = _catalogAssetById(assetId);
     if (asset == null) {
       return _cloudFailureResult(
         status: ShopCosmeticsOperationStatus.assetNotFound,
+        state: state,
+        assetId: assetId,
       );
     }
-
-    final state = await _combinedCloudState();
-    if (state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles)) {
+    if (state.isAssetOwned(assetId, bundles: _catalogBundles())) {
       return _cloudFailureResult(
         status: ShopCosmeticsOperationStatus.alreadyOwned,
         state: state,
@@ -773,18 +850,27 @@ class ShopCosmeticsController extends ChangeNotifier {
   ) async {
     final scopeKey = _currentScope();
     final traceId = _newTraceId('tap');
-    final bundle = ShopAssetsCatalog.getBundleById(bundleId);
-    if (bundle == null) {
+    final state = await _combinedCloudState();
+    if (resolvedAssets.isEmpty || resolvedBundles.isEmpty) {
       return _cloudFailureResult(
         status: ShopCosmeticsOperationStatus.bundleNotFound,
+        state: state,
         bundleId: bundleId,
       );
     }
-
-    final state = await _combinedCloudState();
+    final bundle = _resolvedBundleById(bundleId);
+    if (bundle == null) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.bundleNotFound,
+        state: state,
+        bundleId: bundleId,
+      );
+    }
     final quote = ShopBundleCompletionQuote.tryCreate(
       bundle: bundle,
       state: state,
+      catalogAssets: resolvedAssets,
+      catalogBundles: resolvedBundles,
     );
     if (quote == null) {
       return _cloudFailureResult(
@@ -898,8 +984,8 @@ class ShopCosmeticsController extends ChangeNotifier {
   }) async {
     final scopeKey = _currentScope();
     traceId ??= _newTraceId('tap');
-    final asset = ShopAssetsCatalog.getAssetById(assetId);
     final state = await _combinedCloudState();
+    final asset = _catalogAssetById(assetId);
     if (asset == null) {
       return _cloudFailureResult(
         status: ShopCosmeticsOperationStatus.assetNotFound,
@@ -908,8 +994,7 @@ class ShopCosmeticsController extends ChangeNotifier {
       );
     }
 
-    final owned =
-        state.isAssetOwned(assetId, bundles: ShopAssetsCatalog.allBundles);
+    final owned = state.isAssetOwned(assetId, bundles: _catalogBundles());
     if (!owned) {
       return _cloudFailureResult(
         status: ShopCosmeticsOperationStatus.assetNotOwned,
@@ -981,7 +1066,15 @@ class ShopCosmeticsController extends ChangeNotifier {
     final scopeKey = _currentScope();
     final traceId = _newTraceId('tap');
     final state = await _combinedCloudState();
-    final bundle = ShopAssetsCatalog.getBundleById(bundleId);
+    if (resolvedAssets.isEmpty || resolvedBundles.isEmpty) {
+      return _cloudFailureResult(
+        status: ShopCosmeticsOperationStatus.bundleNotFound,
+        state: state,
+        bundleId: bundleId,
+        walletCoins: await _walletCoins(),
+      );
+    }
+    final bundle = _resolvedBundleById(bundleId);
     if (bundle == null) {
       return _cloudFailureResult(
         status: ShopCosmeticsOperationStatus.bundleNotFound,
@@ -993,6 +1086,8 @@ class ShopCosmeticsController extends ChangeNotifier {
     final quote = ShopBundleCompletionQuote.tryCreate(
       bundle: bundle,
       state: state,
+      catalogAssets: resolvedAssets,
+      catalogBundles: resolvedBundles,
     );
     if (quote == null) {
       return _cloudFailureResult(
@@ -1288,9 +1383,9 @@ class ShopCosmeticsController extends ChangeNotifier {
   }
 
   List<ShopAsset>? _resolveOwnedBundleAssets(ShopBundle bundle) {
-    final wallpaper = ShopAssetsCatalog.getAssetById(bundle.wallpaperItemId);
-    final habitCard = ShopAssetsCatalog.getAssetById(bundle.habitCardItemId);
-    final userCard = ShopAssetsCatalog.getAssetById(bundle.userCardItemId);
+    final wallpaper = _catalogAssetById(bundle.wallpaperItemId);
+    final habitCard = _catalogAssetById(bundle.habitCardItemId);
+    final userCard = _catalogAssetById(bundle.userCardItemId);
     if (wallpaper == null ||
         habitCard == null ||
         userCard == null ||
@@ -1646,8 +1741,7 @@ class ShopCosmeticsController extends ChangeNotifier {
       return null;
     }
 
-    final owned =
-        state.isAssetOwned(asset.id, bundles: ShopAssetsCatalog.allBundles);
+    final owned = state.isAssetOwned(asset.id, bundles: _catalogBundles());
     if (!owned) {
       _log(
         '$logLabel equippedId=$assetId owned=false categoryValid=true assetPath=null',
@@ -1690,8 +1784,12 @@ class ShopCosmeticsController extends ChangeNotifier {
       userId: scopeKey,
       ownedAssetIds: state.ownedAssetIds,
       ownedBundleIds: state.ownedBundleIds,
+      catalogItems:
+          _cloudState.snapshot?.catalogItems ?? const <RemoteShopItemDto>[],
       catalogBundles:
           _cloudState.snapshot?.catalogBundles ?? const <RemoteShopBundleDto>[],
+      catalogBundleItems: _cloudState.snapshot?.catalogBundleItems ??
+          const <RemoteShopBundleItemDto>[],
       equippedWallpaperId: state.equippedWallpaperId,
       equippedHabitCardSkinId: state.equippedHabitCardSkinId,
       equippedUserCardSkinId: state.equippedUserCardSkinId,

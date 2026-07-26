@@ -229,20 +229,11 @@ void main() {
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-cards')));
       await tester.pumpAndSettle();
-      final Finder habitCard = await _scrollToShopItem(
-        tester,
-        find.byKey(const Key('shopCosmeticsAssetCard-habit_card_warm_beige')),
-      );
-      expect(habitCard, findsOneWidget);
-      final Finder userCard = await _scrollToShopItem(
-        tester,
-        find.byKey(const Key('shopCosmeticsAssetCard-user_card_warm_beige')),
-      );
-      expect(userCard, findsOneWidget);
       expect(
         find.byKey(const Key('shopCosmeticsAssetCard-wallpaper_mist_blue')),
         findsNothing,
       );
+      expect(find.text('Nada por mostrar'), findsNothing);
 
       await tester.tap(find.byKey(const Key('shopCosmeticsFilter-packs')));
       await tester.pumpAndSettle();
@@ -586,7 +577,7 @@ void main() {
       );
     });
 
-    testWidgets('unowned cosmetics appear before owned cosmetics',
+    testWidgets('cosmetics follow remote sort order',
         (WidgetTester tester) async {
       tester.view.physicalSize = const Size(360, 1600);
       tester.view.devicePixelRatio = 1.0;
@@ -606,8 +597,8 @@ void main() {
 
       final List<String> visibleIds = _sortedVisibleEntryIds(controller.state!);
       expect(
-        visibleIds.indexOf('shopCosmeticsAssetCard-habit_card_warm_beige') <
-            visibleIds.indexOf('shopCosmeticsAssetCard-wallpaper_mist_blue'),
+        visibleIds.indexOf('shopCosmeticsAssetCard-wallpaper_mist_blue') <
+            visibleIds.indexOf('shopCosmeticsAssetCard-habit_card_warm_beige'),
         isTrue,
       );
     });
@@ -712,6 +703,35 @@ void main() {
       );
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('shows the remote asset price in the product card',
+        (WidgetTester tester) async {
+      final controller = _FakeResolvedCatalogController(
+        state: const ShopCosmeticsState.initial(),
+        walletCoins: 999,
+        assets: <ShopAsset>[
+          ShopAssetsCatalog.getAssetById('wallpaper_mist_blue')!.copyWith(
+            priceAmber: 777,
+            sortOrder: 7,
+          ),
+        ],
+        bundles: const <ShopBundle>[],
+      );
+      addTearDown(controller.dispose);
+
+      await tester
+          .pumpWidget(_app(ShopCosmeticsScreen(controller: controller)));
+      await tester.pumpAndSettle();
+
+      final Finder card = find.byKey(
+        const Key('shopCosmeticsAssetCard-wallpaper_mist_blue'),
+      );
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('777')),
+        findsWidgets,
+      );
+    });
   });
 }
 
@@ -741,11 +761,17 @@ Future<Finder> _scrollToShopItem(WidgetTester tester, Finder finder) async {
         of: grid,
         matching: find.byType(Scrollable),
       )
-      .first;
+      .last;
 
-  for (int attempt = 0; attempt < 2 && finder.evaluate().isEmpty; attempt++) {
-    if (attempt == 1) {
-      await tester.drag(scrollable, const Offset(0, 800));
+  final List<Offset> resetOffsets = <Offset>[
+    const Offset(0, 800),
+    const Offset(0, -1600),
+  ];
+
+  for (int attempt = 0; attempt < 3 && finder.evaluate().isEmpty; attempt++) {
+    if (attempt > 0) {
+      final Offset resetOffset = resetOffsets[attempt - 1];
+      await tester.drag(scrollable, resetOffset);
       await tester.pumpAndSettle();
     }
 
@@ -757,7 +783,7 @@ Future<Finder> _scrollToShopItem(WidgetTester tester, Finder finder) async {
       );
       await tester.pump();
     } on StateError {
-      // Try the opposite direction after the next reset pass.
+      // Try the next reset direction.
     }
   }
 
@@ -823,17 +849,17 @@ int _assetOwnershipRank(ShopAssetOwnershipState state) {
 }
 
 int _compareTestEntries(_TestShopEntry a, _TestShopEntry b) {
-  final int ownershipCompare = a.ownershipRank.compareTo(b.ownershipRank);
-  if (ownershipCompare != 0) return ownershipCompare;
+  final int sortOrderCompare = a.sortOrder.compareTo(b.sortOrder);
+  if (sortOrderCompare != 0) return sortOrderCompare;
+
+  final int categoryCompare = a.categoryOrder.compareTo(b.categoryOrder);
+  if (categoryCompare != 0) return categoryCompare;
 
   final int rarityCompare =
       _rarityOrder(a.rarity).compareTo(_rarityOrder(b.rarity));
   if (rarityCompare != 0) return rarityCompare;
 
-  final int categoryCompare = a.categoryOrder.compareTo(b.categoryOrder);
-  if (categoryCompare != 0) return categoryCompare;
-
-  return a.sortOrder.compareTo(b.sortOrder);
+  return a.ownershipRank.compareTo(b.ownershipRank);
 }
 
 int _rarityOrder(ShopAssetRarity rarity) {
@@ -1064,6 +1090,51 @@ class _RefreshableShopCosmeticsController extends ShopCosmeticsController {
     }
     _walletCoins = _refreshedWalletCoins;
   }
+}
+
+class _FakeResolvedCatalogController extends ShopCosmeticsController {
+  _FakeResolvedCatalogController({
+    required ShopCosmeticsState state,
+    required int walletCoins,
+    required List<ShopAsset> assets,
+    required List<ShopBundle> bundles,
+  })  : _state = state,
+        _walletCoins = walletCoins,
+        _assets = List<ShopAsset>.unmodifiable(assets),
+        _bundles = List<ShopBundle>.unmodifiable(bundles),
+        super(
+          userStateStore: UserStateStore(
+            UserStateRepository(storage: UserStateStorage()),
+            journalEntrySyncService: JournalEntrySyncService(),
+          ),
+          cloudEnabled: false,
+        );
+
+  final ShopCosmeticsState _state;
+  final int _walletCoins;
+  final List<ShopAsset> _assets;
+  final List<ShopBundle> _bundles;
+
+  @override
+  ShopCosmeticsState? get state => _state;
+
+  @override
+  List<ShopAsset> get resolvedAssets => _assets;
+
+  @override
+  List<ShopBundle> get resolvedBundles => _bundles;
+
+  @override
+  bool get isCloudEnabled => false;
+
+  @override
+  Future<ShopCosmeticsState> getState() async => _state;
+
+  @override
+  Future<int> getWalletCoins() async => _walletCoins;
+
+  @override
+  int get visibleWalletCoins => _walletCoins;
 }
 
 class _FakeCloudWalletRepository implements CloudWalletRepository {

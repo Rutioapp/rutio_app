@@ -9,6 +9,7 @@ class ShopCloudSnapshot {
     required this.authenticatedUserId,
     required this.catalogItems,
     required this.catalogBundles,
+    this.catalogBundleItems = const <RemoteShopBundleItemDto>[],
     required this.wallet,
     required this.inventory,
     required this.equippedCosmetics,
@@ -21,6 +22,7 @@ class ShopCloudSnapshot {
   final String authenticatedUserId;
   final List<RemoteShopItemDto> catalogItems;
   final List<RemoteShopBundleDto> catalogBundles;
+  final List<RemoteShopBundleItemDto> catalogBundleItems;
   final RemoteWalletDto? wallet;
   final List<RemoteInventoryItemDto> inventory;
   final List<RemoteEquippedCosmeticDto> equippedCosmetics;

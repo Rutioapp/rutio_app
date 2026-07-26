@@ -138,8 +138,7 @@ void main() {
       expect(notificationCount, greaterThan(0));
     });
 
-    test('bundle purchase completes a partially owned bundle',
-        () async {
+    test('bundle purchase completes a partially owned bundle', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final repository = await _shopRepository();
       await repository.save(
@@ -159,6 +158,8 @@ void main() {
           ownedAssetIds: <String>['wallpaper_rutio_beige'],
           ownedBundleIds: <String>[],
         ),
+        catalogAssets: ShopAssetsCatalog.allAssets,
+        catalogBundles: ShopAssetsCatalog.allBundles,
       )!;
 
       expect(
@@ -179,7 +180,8 @@ void main() {
         ]),
       );
       expect(persisted.ownedBundleIds, contains('pack_beige_rutio'));
-      expect(await controller.getWalletCoins(), 1000 - quote.effectivePriceAmber);
+      expect(
+          await controller.getWalletCoins(), 1000 - quote.effectivePriceAmber);
     });
 
     test('bundle purchase completes a fully owned bundle for zero coins',
