@@ -109,6 +109,63 @@ void main() {
       expect(result.failure?.code, ShopPurchaseFailureCode.cloudWalletMissing);
     });
 
+    test('rejects cloud utility when active catalog does not expose it',
+        () async {
+      final readRepo = _FakeShopCloudReadRepository(
+        currentUserIdProvider: () => 'user-1',
+        walletCoins: 5000,
+        activeCatalog: <RemoteShopItemDto>[
+          _remoteUtility('utility_xp_boost_1d', isActive: false),
+          _remoteCosmetic('wallpaper_mist_blue'),
+        ],
+      );
+      final purchaseDataSource = _FakePurchaseDataSource();
+      final useCase = PurchaseCloudUtilityUseCase(
+        purchaseRepository:
+            ShopCloudPurchaseRepository(dataSource: purchaseDataSource),
+        pendingOperationStore: _MemoryPendingShopOperationStore(),
+        cloudReadRepository: readRepo,
+        currentUserIdProvider: () => 'user-1',
+        purchaseEnabled: true,
+        readEnabled: true,
+      );
+
+      final result = await useCase.purchaseCloudUtility(
+        itemId: 'utility_xp_boost_1d',
+      );
+
+      expect(
+          result.failure?.code, ShopPurchaseFailureCode.itemNotFoundOrInactive);
+      expect(purchaseDataSource.calls, 0);
+    });
+
+    test('purchases supported utility using only remote catalog authority',
+        () async {
+      final purchaseDataSource = _FakePurchaseDataSource();
+      final useCase = PurchaseCloudUtilityUseCase(
+        purchaseRepository:
+            ShopCloudPurchaseRepository(dataSource: purchaseDataSource),
+        pendingOperationStore: _MemoryPendingShopOperationStore(),
+        cloudReadRepository: _FakeShopCloudReadRepository(
+          currentUserIdProvider: () => 'user-1',
+          walletCoins: 5000,
+          activeCatalog: <RemoteShopItemDto>[
+            _remoteUtility('utility_mystery_box_basic'),
+          ],
+        ),
+        currentUserIdProvider: () => 'user-1',
+        purchaseEnabled: true,
+        readEnabled: true,
+      );
+
+      final result = await useCase.purchaseCloudUtility(
+        itemId: 'utility_mystery_box_basic',
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(purchaseDataSource.calls, 1);
+    });
+
     test('reuses the same requestId across retries and pending resolution',
         () async {
       final currentUser = _CurrentUserHolder('user-1');
@@ -298,8 +355,10 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
   _FakeShopCloudReadRepository({
     required String? Function() currentUserIdProvider,
     int? walletCoins,
+    List<RemoteShopItemDto>? activeCatalog,
   })  : _currentUserIdProvider = currentUserIdProvider,
         _walletCoins = walletCoins,
+        _activeCatalog = activeCatalog,
         super(
           readEnabled: true,
           currentUserIdProvider: currentUserIdProvider,
@@ -307,6 +366,7 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
 
   final String? Function() _currentUserIdProvider;
   final int? _walletCoins;
+  final List<RemoteShopItemDto>? _activeCatalog;
 
   @override
   Future<ShopCloudReadResult<RemoteWalletDto?>> fetchWallet() async {
@@ -342,75 +402,80 @@ class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
   Future<ShopCloudReadResult<List<RemoteShopItemDto>>>
       fetchActiveCatalog() async {
     return ShopCloudReadResult<List<RemoteShopItemDto>>.success(
-      data: <RemoteShopItemDto>[
-        RemoteShopItemDto.fromJson(<String, dynamic>{
-          'id': 'utility_xp_boost_1d',
-          'category': 'utility',
-          'subtype': 'xpBoost',
-          'priceCoins': 75,
-          'isConsumable': true,
-          'isStackable': true,
-          'isActive': true,
-          'sortOrder': 0,
-          'catalogVersion': 1,
-          'createdAt': '2026-07-18T00:00:00Z',
-          'updatedAt': '2026-07-18T00:00:00Z',
-        }),
-        RemoteShopItemDto.fromJson(<String, dynamic>{
-          'id': 'utility_coin_boost_1d',
-          'category': 'utility',
-          'subtype': 'coinBoost',
-          'priceCoins': 100,
-          'isConsumable': true,
-          'isStackable': true,
-          'isActive': true,
-          'sortOrder': 1,
-          'catalogVersion': 1,
-          'createdAt': '2026-07-18T00:00:00Z',
-          'updatedAt': '2026-07-18T00:00:00Z',
-        }),
-        RemoteShopItemDto.fromJson(<String, dynamic>{
-          'id': 'utility_streak_recover_1',
-          'category': 'utility',
-          'subtype': 'streakRecover',
-          'priceCoins': 250,
-          'isConsumable': true,
-          'isStackable': true,
-          'isActive': true,
-          'sortOrder': 2,
-          'catalogVersion': 1,
-          'createdAt': '2026-07-18T00:00:00Z',
-          'updatedAt': '2026-07-18T00:00:00Z',
-        }),
-        RemoteShopItemDto.fromJson(<String, dynamic>{
-          'id': 'utility_streak_shield_1',
-          'category': 'utility',
-          'subtype': 'streakShield',
-          'priceCoins': 300,
-          'isConsumable': true,
-          'isStackable': true,
-          'isActive': true,
-          'sortOrder': 3,
-          'catalogVersion': 1,
-          'createdAt': '2026-07-18T00:00:00Z',
-          'updatedAt': '2026-07-18T00:00:00Z',
-        }),
-        RemoteShopItemDto.fromJson(<String, dynamic>{
-          'id': 'utility_mystery_box_basic',
-          'category': 'utility',
-          'subtype': 'mysteryBox',
-          'priceCoins': 100,
-          'isConsumable': true,
-          'isStackable': true,
-          'isActive': true,
-          'sortOrder': 4,
-          'catalogVersion': 1,
-          'createdAt': '2026-07-18T00:00:00Z',
-          'updatedAt': '2026-07-18T00:00:00Z',
-        }),
-      ],
+      data: _activeCatalog ??
+          <RemoteShopItemDto>[
+            _remoteUtility('utility_xp_boost_1d'),
+            _remoteUtility(
+              'utility_coin_boost_1d',
+              subtype: 'coinBoost',
+              priceCoins: 100,
+              sortOrder: 1,
+            ),
+            _remoteUtility(
+              'utility_streak_recover_1',
+              subtype: 'streakRecover',
+              priceCoins: 250,
+              sortOrder: 2,
+            ),
+            _remoteUtility(
+              'utility_streak_shield_1',
+              subtype: 'streakShield',
+              priceCoins: 300,
+              sortOrder: 3,
+            ),
+            _remoteUtility(
+              'utility_mystery_box_basic',
+              subtype: 'mysteryBox',
+              priceCoins: 100,
+              sortOrder: 4,
+            ),
+          ],
     );
   }
+}
+
+RemoteShopItemDto _remoteUtility(
+  String id, {
+  String subtype = 'xpBoost',
+  int priceCoins = 75,
+  int sortOrder = 0,
+  bool isActive = true,
+}) {
+  return RemoteShopItemDto.fromJson(<String, dynamic>{
+    'id': id,
+    'category': 'utility',
+    'subtype': subtype,
+    'rarity': 'common',
+    'priceCoins': priceCoins,
+    'isConsumable': true,
+    'isStackable': true,
+    'isActive': isActive,
+    'sortOrder': sortOrder,
+    'catalogVersion': 1,
+    'createdAt': '2026-07-18T00:00:00Z',
+    'updatedAt': '2026-07-18T00:00:00Z',
+  });
+}
+
+RemoteShopItemDto _remoteCosmetic(String id) {
+  return RemoteShopItemDto.fromJson(<String, dynamic>{
+    'id': id,
+    'category': 'screen_background',
+    'subtype': null,
+    'rarity': 'common',
+    'priceCoins': 50,
+    'isConsumable': false,
+    'isStackable': false,
+    'maxQuantity': 1,
+    'equipSlot': 'screen_background',
+    'assetKey': id,
+    'localizationKey': id,
+    'isActive': true,
+    'sortOrder': 0,
+    'catalogVersion': 1,
+    'createdAt': '2026-07-18T00:00:00Z',
+    'updatedAt': '2026-07-18T00:00:00Z',
+  });
 }
 
 class _MemoryPendingShopOperationStore implements PendingShopOperationStore {

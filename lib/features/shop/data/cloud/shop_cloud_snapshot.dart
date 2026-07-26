@@ -30,4 +30,32 @@ class ShopCloudSnapshot {
   final DateTime fetchedAt;
   final int? catalogVersion;
   final List<ShopCloudWarning> warnings;
+
+  ShopCloudSnapshot copyWith({
+    String? authenticatedUserId,
+    List<RemoteShopItemDto>? catalogItems,
+    List<RemoteShopBundleDto>? catalogBundles,
+    List<RemoteShopBundleItemDto>? catalogBundleItems,
+    RemoteWalletDto? wallet,
+    List<RemoteInventoryItemDto>? inventory,
+    List<RemoteEquippedCosmeticDto>? equippedCosmetics,
+    List<RemoteOwnedBundleDto>? ownedBundles,
+    DateTime? fetchedAt,
+    int? catalogVersion,
+    List<ShopCloudWarning>? warnings,
+  }) {
+    return ShopCloudSnapshot(
+      authenticatedUserId: authenticatedUserId ?? this.authenticatedUserId,
+      catalogItems: catalogItems ?? this.catalogItems,
+      catalogBundles: catalogBundles ?? this.catalogBundles,
+      catalogBundleItems: catalogBundleItems ?? this.catalogBundleItems,
+      wallet: wallet ?? this.wallet,
+      inventory: inventory ?? this.inventory,
+      equippedCosmetics: equippedCosmetics ?? this.equippedCosmetics,
+      ownedBundles: ownedBundles ?? this.ownedBundles,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      catalogVersion: catalogVersion ?? this.catalogVersion,
+      warnings: warnings ?? this.warnings,
+    );
+  }
 }

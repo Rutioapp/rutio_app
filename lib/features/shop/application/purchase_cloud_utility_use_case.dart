@@ -9,8 +9,6 @@ import '../domain/models/pending_shop_purchase.dart';
 import '../domain/pending_shop_operation_store.dart';
 import '../domain/shop_purchase_failure.dart';
 import '../domain/shop_purchase_result.dart';
-import '../domain/models/shop_item_enums.dart';
-import '../data/shop_catalog.dart';
 
 class PurchaseCloudUtilityUseCase {
   PurchaseCloudUtilityUseCase({
@@ -126,21 +124,6 @@ class PurchaseCloudUtilityUseCase {
       );
     }
 
-    final item = ShopCatalog.getItemById(normalizedItemId);
-    if (item == null ||
-        item.category != ShopItemCategory.utility ||
-        item.isEnabled == false) {
-      return ShopPurchaseResult.failure(
-        itemId: normalizedItemId,
-        requestId: normalizedRequestId ?? '',
-        failure: const ShopPurchaseFailure(
-          code: ShopPurchaseFailureCode.unsupportedCloudItem,
-          message: 'The requested item is not supported by cloud purchase.',
-          definitive: true,
-        ),
-      );
-    }
-
     final initialUserId = _currentUserId();
     if (initialUserId == null) {
       return ShopPurchaseResult.failure(
@@ -192,7 +175,7 @@ class PurchaseCloudUtilityUseCase {
       activeCatalogResult?.data ?? const <RemoteShopItemDto>[],
       normalizedItemId,
     );
-    if (remoteItem == null || !remoteItem.isActive) {
+    if (remoteItem == null || !remoteItem.isUtility || !remoteItem.isActive) {
       return ShopPurchaseResult.failure(
         itemId: normalizedItemId,
         requestId: normalizedRequestId ?? '',

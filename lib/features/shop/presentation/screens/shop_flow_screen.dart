@@ -154,6 +154,7 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
           const ShopCosmeticsState.initial(),
       activeUtilityEffects: const <ActiveUtilityEffect>[],
       pendingMysteryBoxOpenings: const <MysteryBoxOpeningTransaction>[],
+      catalogItems: widget.controller.getVisibleUtilityCatalogItems(),
     );
   }
 
@@ -177,6 +178,7 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
       cosmeticsState: cosmeticsState,
       activeUtilityEffects: activeUtilityEffects,
       pendingMysteryBoxOpenings: pendingMysteryBoxOpenings,
+      catalogItems: widget.controller.getVisibleUtilityCatalogItems(),
     );
   }
 
@@ -242,6 +244,16 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   }
 
   Future<void> _handleUsePressed(String itemId) async {
+    final snapshot = _snapshot;
+    final backpackQuantity = snapshot?.backpackItems
+            .where((entry) => entry.itemId == itemId)
+            .fold<int>(0, (sum, entry) => sum + entry.quantity) ??
+        0;
+    if (backpackQuantity <= 0) {
+      _showSnack('No quedan unidades en la mochila');
+      return;
+    }
+
     final item = ShopCatalog.getItemById(itemId);
     if (item == null) {
       _showSnack('No pudimos encontrar la utilidad');
@@ -733,7 +745,7 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
           );
         }
 
-        final ShopItem? item = ShopCatalog.getItemById(itemId);
+        final ShopItem? item = _itemForDetail(snapshot, itemId);
         if (item == null) {
           return const Scaffold(
             body: Center(
@@ -770,6 +782,22 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
           onEquipCompleted: _handleEquipCompleted,
         );
     }
+  }
+
+  ShopItem? _itemForDetail(ShopFlowSnapshot snapshot, String itemId) {
+    for (final item in snapshot.catalogItems) {
+      if (item.id == itemId) return item;
+    }
+
+    final localItem = ShopCatalog.getItemById(itemId);
+    if (localItem == null || localItem.category != ShopItemCategory.utility) {
+      return localItem;
+    }
+
+    final hasInventory = snapshot.backpackItems.any(
+      (entry) => entry.itemId == itemId && entry.quantity > 0,
+    );
+    return hasInventory ? localItem : null;
   }
 }
 

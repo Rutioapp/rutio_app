@@ -14,6 +14,7 @@ import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_repository.da
 import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_read_repository.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
+import 'package:rutio/features/shop/data/cloud/shop_utilities_catalog_resolver.dart';
 import 'package:rutio/features/shop/data/cloud/mystery_box_cloud_config.dart';
 import 'package:rutio/features/shop/data/cloud/mystery_box_opening_repository.dart';
 import 'package:rutio/features/shop/data/cloud/pending_mystery_box_operation_store.dart';
@@ -353,7 +354,23 @@ class ShopController extends ChangeNotifier {
   }
 
   Future<ShopItemState?> getItemState(String itemId) async {
-    final item = ShopCatalog.getItemById(itemId);
+    final normalizedItemId = itemId.trim();
+    ShopItem? item;
+    if (isCloudEconomyEnabled &&
+        _supportedCloudUtilityIds.contains(normalizedItemId)) {
+      item = _visibleUtilityItemById(normalizedItemId);
+      if (item == null) {
+        final visibleShopState = await getVisibleShopState();
+        final hasInventory = visibleShopState.backpackItems.any(
+          (entry) => entry.itemId == normalizedItemId && entry.quantity > 0,
+        );
+        if (hasInventory) {
+          item = ShopCatalog.getItemById(normalizedItemId);
+        }
+      }
+    } else {
+      item = ShopCatalog.getItemById(normalizedItemId);
+    }
     if (item == null) return null;
 
     final root = await _ensureRoot();
@@ -385,34 +402,53 @@ class ShopController extends ChangeNotifier {
     return _adjustShopStateForCloudPurchase(null, shopState);
   }
 
+  List<ShopItem> getVisibleUtilityCatalogItems() {
+    if (!isCloudEconomyEnabled) {
+      return ShopCatalog.allItems
+          .where((item) => item.category == ShopItemCategory.utility)
+          .toList(growable: false);
+    }
+
+    final currentUserId = _currentSupabaseUserId();
+    if (currentUserId == null) return const <ShopItem>[];
+    final snapshot = _cloudSnapshotByUserId[currentUserId];
+    if (snapshot == null) return const <ShopItem>[];
+
+    return ShopUtilitiesCatalogResolver(
+      supportedUtilityIds: _supportedCloudUtilityIds,
+    )
+        .resolve(
+          localItems: ShopCatalog.allItems,
+          remoteItems: snapshot.catalogItems,
+        )
+        .items;
+  }
+
   Future<ShopControllerResult> purchaseItem(String itemId) async {
-    final item = ShopCatalog.getItemById(itemId);
-    if (item == null) {
-      return _controllerResult(
-        ShopControllerStatus.itemNotFound,
-        item: null,
-        shopState: await _shopRepository.load(),
-      );
-    }
-
+    final normalizedItemId = itemId.trim();
     if (isCloudEconomyEnabled &&
-        item.category == ShopItemCategory.utility &&
-        !_supportedCloudUtilityIds.contains(item.id)) {
-      return _controllerResult(
-        ShopControllerStatus.cloudPurchaseFailed,
-        item: item,
-        shopState: await _shopRepository.load(),
-        purchaseFailure: const ShopPurchaseFailure(
-          code: ShopPurchaseFailureCode.unsupportedCloudItem,
-          message: 'The requested item is not supported by cloud purchase.',
-          definitive: true,
-        ),
-      );
-    }
+        _supportedCloudUtilityIds.contains(normalizedItemId)) {
+      final currentUserId = _currentSupabaseUserId();
+      if (currentUserId != null &&
+          _cloudSnapshotByUserId[currentUserId] == null) {
+        await hydrateVisibleEconomy(force: false);
+      }
 
-    if (isCloudEconomyEnabled &&
-        item.category == ShopItemCategory.utility &&
-        _supportedCloudUtilityIds.contains(item.id)) {
+      final item = _visibleUtilityItemById(normalizedItemId);
+      if (item == null || !item.isEnabled) {
+        return _controllerResult(
+          ShopControllerStatus.cloudPurchaseFailed,
+          item: item,
+          shopState: await _shopRepository.load(),
+          walletCoins: visibleCoinBalance ?? getWalletCoins(),
+          purchaseFailure: const ShopPurchaseFailure(
+            code: ShopPurchaseFailureCode.itemNotFoundOrInactive,
+            message: 'Shop item not found or inactive.',
+            definitive: true,
+          ),
+        );
+      }
+
       if (!_cloudEconomyCanPurchase()) {
         await hydrateVisibleEconomy(force: false);
       }
@@ -426,7 +462,6 @@ class ShopController extends ChangeNotifier {
         );
       }
 
-      final normalizedItemId = item.id.trim();
       final existingFuture = _activeCloudPurchaseByItemId[normalizedItemId];
       if (existingFuture != null) {
         return existingFuture;
@@ -439,6 +474,28 @@ class ShopController extends ChangeNotifier {
       } finally {
         _activeCloudPurchaseByItemId.remove(normalizedItemId);
       }
+    }
+
+    final item = ShopCatalog.getItemById(normalizedItemId);
+    if (item == null) {
+      return _controllerResult(
+        ShopControllerStatus.itemNotFound,
+        item: null,
+        shopState: await _shopRepository.load(),
+      );
+    }
+
+    if (isCloudEconomyEnabled && item.category == ShopItemCategory.utility) {
+      return _controllerResult(
+        ShopControllerStatus.cloudPurchaseFailed,
+        item: item,
+        shopState: await _shopRepository.load(),
+        purchaseFailure: const ShopPurchaseFailure(
+          code: ShopPurchaseFailureCode.unsupportedCloudItem,
+          message: 'The requested item is not supported by cloud purchase.',
+          definitive: true,
+        ),
+      );
     }
 
     final root = await _ensureRoot();
@@ -1218,6 +1275,14 @@ class ShopController extends ChangeNotifier {
     return isCloudEconomyReady && _cloudPurchaseWalletCoins != null;
   }
 
+  ShopItem? _visibleUtilityItemById(String itemId) {
+    final normalizedItemId = itemId.trim();
+    for (final item in getVisibleUtilityCatalogItems()) {
+      if (item.id == normalizedItemId) return item;
+    }
+    return null;
+  }
+
   ShopPurchaseFailure _cloudPurchaseUnavailableFailure() {
     switch (_economyStatus) {
       case ShopCloudEconomyStatus.unauthenticated:
@@ -1463,6 +1528,7 @@ class ShopController extends ChangeNotifier {
         );
       }
 
+      final refreshFailed = await _refreshCloudPurchaseSnapshot(force: true);
       return _controllerResult(
         ShopControllerStatus.cloudPurchaseFailed,
         item: item,
@@ -1470,8 +1536,10 @@ class ShopController extends ChangeNotifier {
         walletCoins: _cloudPurchaseWalletCoins ?? getWalletCoins(),
         purchaseFailure: result.failure,
         cloudPurchaseResult: result,
+        cloudRefreshFailed: refreshFailed,
       );
     } catch (error) {
+      final refreshFailed = await _refreshCloudPurchaseSnapshot(force: true);
       return _controllerResult(
         ShopControllerStatus.cloudPurchaseFailed,
         item: item,
@@ -1482,6 +1550,7 @@ class ShopController extends ChangeNotifier {
           message: 'Unexpected cloud purchase error.',
           cause: error,
         ),
+        cloudRefreshFailed: refreshFailed,
       );
     }
   }
@@ -1512,34 +1581,49 @@ class ShopController extends ChangeNotifier {
     _cloudPurchaseInventoryQuantityByItemId[remoteResult.itemId] =
         remoteResult.inventoryQuantity;
     if (_cloudEconomyUserId != null) {
-      _cloudSnapshotByUserId[_cloudEconomyUserId!] = ShopCloudSnapshot(
-        authenticatedUserId: _cloudEconomyUserId!,
-        catalogItems: const <RemoteShopItemDto>[],
-        wallet: RemoteWalletDto(
-          userId: _cloudEconomyUserId!,
-          coins: remoteResult.coins,
-          version: remoteResult.walletVersion,
-          createdAt: _nowProvider().toUtc(),
-          updatedAt: _nowProvider().toUtc(),
-        ),
-        inventory: <RemoteInventoryItemDto>[
+      final now = _nowProvider().toUtc();
+      final previousSnapshot = _cloudSnapshotByUserId[_cloudEconomyUserId!];
+      final nextWallet = RemoteWalletDto(
+        userId: _cloudEconomyUserId!,
+        coins: remoteResult.coins,
+        version: remoteResult.walletVersion,
+        createdAt: previousSnapshot?.wallet?.createdAt ?? now,
+        updatedAt: now,
+      );
+      final nextInventory = <RemoteInventoryItemDto>[
+        for (final entry
+            in previousSnapshot?.inventory ?? const <RemoteInventoryItemDto>[])
+          if (entry.itemId != remoteResult.itemId) entry,
+        if (remoteResult.inventoryQuantity > 0)
           RemoteInventoryItemDto(
             id: 'pending-${remoteResult.requestId}-${remoteResult.itemId}',
             userId: _cloudEconomyUserId!,
             itemId: remoteResult.itemId,
             quantity: remoteResult.inventoryQuantity,
             acquisitionSource: 'purchase',
-            acquiredAt: _nowProvider().toUtc(),
-            updatedAt: _nowProvider().toUtc(),
+            acquiredAt: now,
+            updatedAt: now,
           ),
-        ],
-        catalogBundles: const <RemoteShopBundleDto>[],
-        ownedBundles: const <RemoteOwnedBundleDto>[],
-        equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
-        fetchedAt: _nowProvider().toUtc(),
-        catalogVersion: null,
-        warnings: const <ShopCloudWarning>[],
-      );
+      ];
+      _cloudSnapshotByUserId[_cloudEconomyUserId!] = previousSnapshot?.copyWith(
+            wallet: nextWallet,
+            inventory: List<RemoteInventoryItemDto>.unmodifiable(
+              nextInventory,
+            ),
+            fetchedAt: now,
+          ) ??
+          ShopCloudSnapshot(
+            authenticatedUserId: _cloudEconomyUserId!,
+            catalogItems: const <RemoteShopItemDto>[],
+            wallet: nextWallet,
+            inventory: List<RemoteInventoryItemDto>.unmodifiable(nextInventory),
+            catalogBundles: const <RemoteShopBundleDto>[],
+            ownedBundles: const <RemoteOwnedBundleDto>[],
+            equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
+            fetchedAt: now,
+            catalogVersion: null,
+            warnings: const <ShopCloudWarning>[],
+          );
       _setEconomyState(
         source: ShopEconomySource.cloud,
         status: ShopCloudEconomyStatus.stale,
