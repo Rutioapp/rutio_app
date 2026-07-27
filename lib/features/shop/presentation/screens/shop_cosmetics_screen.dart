@@ -46,7 +46,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   ShopCosmeticsState? _state;
   int _walletCoins = 0;
   bool _loading = true;
-  String? _busyId;
+  final Set<String> _busyIds = <String>{};
   int _walletCoinsRefreshVersion = 0;
 
   @override
@@ -217,7 +217,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                         asset: asset,
                         ownershipState: ownershipState,
                         hasEnoughCoins: _walletCoins >= asset.priceAmber,
-                        busy: _busyId == asset.id,
+                        busy: _isAssetBusy(asset.id),
                         onPressed: () =>
                             _openAssetDetail(asset, ownershipState),
                         onPrimaryActionPressed: () =>
@@ -237,7 +237,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                         completionQuote: quote,
                         hasEnoughCoins:
                             _walletCoins >= quote.effectivePriceAmber,
-                        busy: _busyId == bundle.id,
+                        busy: _isBundleBusy(bundle.id),
                         onPressed: () => _openBundleDetail(
                           bundle,
                           assets,
@@ -360,10 +360,10 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     ShopAsset asset,
     ShopAssetOwnershipState ownershipState,
   ) async {
-    if (_busyId != null) return;
+    if (_isAssetBusy(asset.id)) return;
 
     setState(() {
-      _busyId = asset.id;
+      _busyIds.add(asset.id);
     });
 
     final result = switch (ownershipState) {
@@ -379,7 +379,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     if (!mounted) return;
 
     setState(() {
-      _busyId = null;
+      _busyIds.remove(asset.id);
     });
 
     _showFeedback(_assetFeedback(result, ownershipState));
@@ -397,10 +397,10 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   }
 
   Future<void> _handleBundlePurchase(ShopBundle bundle) async {
-    if (_busyId != null) return;
+    if (_isBundleBusy(bundle.id)) return;
 
     setState(() {
-      _busyId = bundle.id;
+      _busyIds.add(bundle.id);
     });
 
     final result = await widget.controller.purchaseBundle(bundle.id);
@@ -408,7 +408,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     if (!mounted) return;
 
     setState(() {
-      _busyId = null;
+      _busyIds.remove(bundle.id);
     });
 
     _showFeedback(_bundleFeedback(result));
@@ -435,7 +435,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
           asset: asset,
           ownershipState: ownershipState,
           walletCoins: _walletCoins,
-          busy: _busyId == asset.id,
+          busy: _isAssetBusy(asset.id),
           onPrimaryActionPressed: () async {
             Navigator.of(context).pop();
             if (ownershipState == ShopAssetOwnershipState.locked) {
@@ -464,7 +464,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
           bundleAssets: assets,
           completionQuote: quote,
           walletCoins: _walletCoins,
-          busy: _busyId == bundle.id,
+          busy: _isBundleBusy(bundle.id),
           onPrimaryActionPressed: () async {
             Navigator.of(context).pop();
             await _confirmBundlePurchase(bundle, assets);
@@ -475,7 +475,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   }
 
   Future<void> _confirmAssetPurchase(ShopAsset asset) async {
-    if (_busyId != null) return;
+    if (_isAssetBusy(asset.id)) return;
 
     final bool? shouldConfirm = await showModalBottomSheet<bool>(
       context: context,
@@ -499,7 +499,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     ShopBundle bundle,
     List<ShopAsset> assets,
   ) async {
-    if (_busyId != null) return;
+    if (_isBundleBusy(bundle.id)) return;
 
     final bool? shouldConfirm = await showModalBottomSheet<bool>(
       context: context,
@@ -522,6 +522,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   }
 
   void _showFeedback(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -542,6 +543,17 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     );
   }
 
+  bool _isAssetBusy(String assetId) {
+    return _busyIds.contains(assetId) ||
+        widget.controller.isCloudAssetPurchaseAwaitingResolution(assetId) ||
+        widget.controller.isCloudAssetEquipSlotBusy(assetId);
+  }
+
+  bool _isBundleBusy(String bundleId) {
+    return _busyIds.contains(bundleId) ||
+        widget.controller.isCloudBundlePurchaseAwaitingResolution(bundleId);
+  }
+
   String _assetFeedback(
     ShopCosmeticsOperationResult result,
     ShopAssetOwnershipState previousState,
@@ -557,6 +569,12 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         return 'Ya lo tienes en tu coleccion';
       case ShopCosmeticsOperationStatus.assetNotOwned:
         return 'Necesitas comprarlo antes de equiparlo';
+      case ShopCosmeticsOperationStatus.awaitingResolution:
+        return previousState == ShopAssetOwnershipState.locked
+            ? 'Estamos verificando la compra. Se actualizara automaticamente al recuperar la conexion.'
+            : 'Estamos verificando que diseno ha quedado equipado.';
+      case ShopCosmeticsOperationStatus.remoteStateApplied:
+        return 'Se ha actualizado el diseno equipado desde la nube.';
       case ShopCosmeticsOperationStatus.assetNotFound:
       case ShopCosmeticsOperationStatus.bundleNotFound:
       case ShopCosmeticsOperationStatus.bundleContainsOwnedAssets:
@@ -579,6 +597,10 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         return 'No hemos encontrado este pack';
       case ShopCosmeticsOperationStatus.assetNotOwned:
         return 'Operacion no disponible';
+      case ShopCosmeticsOperationStatus.awaitingResolution:
+        return 'Estamos verificando la compra. Se actualizara automaticamente al recuperar la conexion.';
+      case ShopCosmeticsOperationStatus.remoteStateApplied:
+        return 'Se ha actualizado el diseno equipado desde la nube.';
     }
   }
 }

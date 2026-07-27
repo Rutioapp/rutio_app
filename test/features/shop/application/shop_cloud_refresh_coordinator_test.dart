@@ -12,6 +12,7 @@ import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'package:rutio/features/shop/domain/models/active_utility_effect.dart';
 import 'package:rutio/features/shop/domain/models/mystery_box_opening_transaction.dart';
+import 'package:rutio/features/shop/domain/models/shop_cosmetics_operation_result.dart';
 import 'package:rutio/features/shop/domain/shop_purchase_result.dart';
 import 'package:rutio/features/shop/domain/shop_state.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
@@ -35,6 +36,7 @@ void main() {
         'pending',
         'wallet:user-a:true',
         'shop:true',
+        'cosmetics_pending',
         'cosmetics:true',
         'effects',
         'mystery_boxes',
@@ -63,6 +65,7 @@ void main() {
 
       expect(fixture.shopController.hydrateCalls, 1);
       expect(fixture.walletController.syncCalls, 1);
+      expect(fixture.cosmeticsController.pendingCalls, 1);
       expect(fixture.cosmeticsController.refreshCalls, 1);
     });
 
@@ -129,7 +132,9 @@ void main() {
         ..effectsError = StateError('effects failed')
         ..mysteryBoxesError = StateError('boxes failed');
       fixture.walletController.syncError = StateError('wallet failed');
-      fixture.cosmeticsController.refreshError = StateError('cosmetics failed');
+      fixture.cosmeticsController
+        ..pendingError = StateError('cosmetics pending failed')
+        ..refreshError = StateError('cosmetics failed');
 
       final failed = await fixture.coordinator.refreshShopCloudState(
         reason: ShopRefreshReason.opened,
@@ -141,14 +146,16 @@ void main() {
         ..effectsError = null
         ..mysteryBoxesError = null;
       fixture.walletController.syncError = null;
-      fixture.cosmeticsController.refreshError = null;
+      fixture.cosmeticsController
+        ..pendingError = null
+        ..refreshError = null;
       final retry = await fixture.coordinator.refreshShopCloudState(
         reason: ShopRefreshReason.opened,
         force: true,
       );
 
       expect(failed.status, ShopCloudRefreshStatus.failed);
-      expect(failed.errors, hasLength(6));
+      expect(failed.errors, hasLength(7));
       expect(retry.status, ShopCloudRefreshStatus.success);
       expect(fixture.shopController.hydrateCalls, 2);
     });
@@ -371,7 +378,21 @@ class _FakeShopCosmeticsController extends ShopCosmeticsController {
 
   final List<String> events;
   Object? refreshError;
+  Object? pendingError;
   int refreshCalls = 0;
+  int pendingCalls = 0;
+
+  @override
+  Future<List<ShopCosmeticsOperationResult>>
+      resolvePendingCloudPurchasesForCurrentUser({
+    int maxOperations = 4,
+  }) async {
+    pendingCalls += 1;
+    events.add('cosmetics_pending');
+    final error = pendingError;
+    if (error != null) throw error;
+    return const <ShopCosmeticsOperationResult>[];
+  }
 
   @override
   Future<ShopCosmeticsState> refreshCloudState({bool force = false}) async {
