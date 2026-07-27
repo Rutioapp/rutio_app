@@ -1,5 +1,4 @@
-import 'dart:math';
-
+import '../../../data/mappers/habit_remote_mapper.dart';
 import '../data/cloud/habit_currency_reward_errors.dart';
 import '../data/cloud/habit_currency_reward_ledger.dart';
 import '../data/cloud/habit_currency_reward_repository.dart';
@@ -8,6 +7,27 @@ import '../domain/models/habit_reward_transaction.dart';
 import '../domain/models/pending_currency_operation.dart';
 import '../domain/pending_currency_operation_store.dart';
 import 'habit_currency_reward_result.dart';
+
+String buildHabitRewardCompletionEventId({
+  required String remoteHabitId,
+  required String logicalDateKey,
+}) {
+  return 'habit_cloud_reward|${remoteHabitId.trim().toLowerCase()}|${logicalDateKey.trim()}';
+}
+
+String buildHabitRewardApplyRequestId({
+  required String remoteHabitId,
+  required String logicalDateKey,
+}) {
+  return 'habit_cloud_reward_apply|${remoteHabitId.trim().toLowerCase()}|${logicalDateKey.trim()}';
+}
+
+String buildHabitRewardReverseRequestId({
+  required String remoteHabitId,
+  required String logicalDateKey,
+}) {
+  return 'habit_cloud_reward_reverse|${remoteHabitId.trim().toLowerCase()}|${logicalDateKey.trim()}';
+}
 
 class HabitCurrencyRewardCoordinator {
   HabitCurrencyRewardCoordinator({
@@ -81,9 +101,25 @@ class HabitCurrencyRewardCoordinator {
 
     final results = <HabitCurrencyRewardOperationResult>[];
     for (final operation in pending.take(maxOperations)) {
+      final remoteHabitId = _normalizeRemoteHabitId(operation.habitId);
+      if (remoteHabitId == null) {
+        results.add(
+          HabitCurrencyRewardOperationResult(
+            state: HabitCurrencyRewardState.pending,
+            pendingOperation: operation,
+            failure: const HabitCurrencyRewardFailure(
+              code: HabitCurrencyRewardFailureCode.invalidResponse,
+              message:
+                  'Pending habit reward needs a remote habit UUID before retry.',
+            ),
+          ),
+        );
+        continue;
+      }
       final result = await _execute(
         operationType: operation.operationType,
         habitId: operation.habitId,
+        remoteHabitId: remoteHabitId,
         logicalDateKey: operation.logicalDateKey,
         completionEventId: operation.completionEventId,
         requestId: operation.requestId,
@@ -126,7 +162,8 @@ class HabitCurrencyRewardCoordinator {
     }
 
     final normalizedHabitId = habitId.trim();
-    final normalizedRemoteHabitId = remoteHabitId?.trim();
+    final normalizedRemoteHabitId = _normalizeRemoteHabitId(remoteHabitId);
+    final pendingHabitId = normalizedRemoteHabitId ?? normalizedHabitId;
     final normalizedDateKey = logicalDateKey.trim();
     if (normalizedHabitId.isEmpty || normalizedDateKey.isEmpty) {
       return HabitCurrencyRewardOperationResult(
@@ -147,27 +184,47 @@ class HabitCurrencyRewardCoordinator {
     final pendingOperations =
         await _pendingOperationStore.loadPendingOperations(userId);
     final pendingOperationForSource = pendingOperations.where((operation) {
-      return operation.habitId == normalizedHabitId &&
+      return _pendingHabitMatches(
+            operation.habitId,
+            localHabitId: normalizedHabitId,
+            remoteHabitId: normalizedRemoteHabitId,
+          ) &&
           operation.logicalDateKey == normalizedDateKey &&
           operation.operationType == operationType;
     }).toList(growable: false);
     final activePendingOperation = pendingOperationForSource.isNotEmpty
         ? pendingOperationForSource.first
         : null;
+    final activeRemoteHabitId = normalizedRemoteHabitId ??
+        _normalizeRemoteHabitId(activePendingOperation?.habitId);
     final activeCompletionEventId = _resolveCompletionEventId(
       transaction: transaction,
       pendingOperation: activePendingOperation,
       operationType: operationType,
       providedCompletionEventId: completionEventId,
+      remoteHabitId: activeRemoteHabitId,
+      logicalDateKey: normalizedDateKey,
     );
     final activeRequestId = _normalizeRequestId(
       requestId: requestId,
-      userId: userId,
-      habitId: normalizedHabitId,
+      pendingOperation: activePendingOperation,
+      remoteHabitId: activeRemoteHabitId,
       logicalDateKey: normalizedDateKey,
       operationType: operationType,
-      completionEventId: activeCompletionEventId,
     );
+    if (activeRemoteHabitId == null ||
+        activeCompletionEventId.isEmpty ||
+        activeRequestId.isEmpty) {
+      return HabitCurrencyRewardOperationResult(
+        state: HabitCurrencyRewardState.failure,
+        failure: const HabitCurrencyRewardFailure(
+          code: HabitCurrencyRewardFailureCode.invalidResponse,
+          message:
+              'Remote habit id is required to create a habit cloud reward.',
+          definitive: true,
+        ),
+      );
+    }
 
     final hasConfirmedCloudTransaction =
         _isConfirmedCloudHabitRewardTransaction(transaction);
@@ -204,7 +261,11 @@ class HabitCurrencyRewardCoordinator {
     );
     if (pendingByRequest.isNotEmpty) {
       final pending = pendingByRequest.first;
-      if (pending.habitId != normalizedHabitId ||
+      if (!_pendingHabitMatches(
+            pending.habitId,
+            localHabitId: normalizedHabitId,
+            remoteHabitId: normalizedRemoteHabitId,
+          ) ||
           pending.logicalDateKey != normalizedDateKey ||
           pending.operationType != operationType) {
         return HabitCurrencyRewardOperationResult(
@@ -220,21 +281,22 @@ class HabitCurrencyRewardCoordinator {
 
     final existingPendingBySource = pendingOperations.where(
       (operation) =>
-          operation.habitId == normalizedHabitId &&
+          _pendingHabitMatches(
+            operation.habitId,
+            localHabitId: normalizedHabitId,
+            remoteHabitId: normalizedRemoteHabitId,
+          ) &&
           operation.logicalDateKey == normalizedDateKey &&
           operation.completionEventId == activeCompletionEventId &&
           operation.operationType == operationType,
     );
-    final pendingOperation = existingPendingBySource.isNotEmpty
-        ? existingPendingBySource.first.copyWith(
-            lastAttemptAtMillis: _nowProvider().toUtc().millisecondsSinceEpoch,
-            attemptCount: existingPendingBySource.first.attemptCount,
-            status: PendingCurrencyOperationStatus.pending,
-          )
+    final hasExistingPending = existingPendingBySource.isNotEmpty;
+    final pendingOperation = hasExistingPending
+        ? existingPendingBySource.first
         : PendingCurrencyOperation(
             userId: userId,
             requestId: activeRequestId,
-            habitId: normalizedHabitId,
+            habitId: pendingHabitId,
             logicalDateKey: normalizedDateKey,
             completionEventId: activeCompletionEventId,
             operationType: operationType,
@@ -244,7 +306,9 @@ class HabitCurrencyRewardCoordinator {
             status: PendingCurrencyOperationStatus.pending,
           );
 
-    await _upsertPendingOperation(pendingOperation);
+    if (!hasExistingPending) {
+      await _upsertPendingOperation(pendingOperation);
+    }
 
     final maxAttempts = 1 + _maxAutoRetries;
     HabitCurrencyRewardFailure? lastFailure;
@@ -261,9 +325,7 @@ class HabitCurrencyRewardCoordinator {
       final response = await _callRemote(
         operationType: operationType,
         requestId: activeRequestId,
-        habitId: normalizedRemoteHabitId?.isNotEmpty == true
-            ? normalizedRemoteHabitId!
-            : normalizedHabitId,
+        habitId: activeRemoteHabitId,
         logicalDateKey: normalizedDateKey,
         completionEventId: activeCompletionEventId,
       );
@@ -496,15 +558,17 @@ class HabitCurrencyRewardCoordinator {
     required HabitRewardTransaction? transaction,
     required PendingCurrencyOperation? pendingOperation,
     required String? providedCompletionEventId,
+    required String? remoteHabitId,
+    required String logicalDateKey,
   }) {
-    final provided = providedCompletionEventId?.trim();
-    if (provided != null && provided.isNotEmpty) {
-      return provided;
-    }
-
     final pending = pendingOperation?.completionEventId.trim();
     if (pending != null && pending.isNotEmpty) {
       return pending;
+    }
+
+    final provided = providedCompletionEventId?.trim();
+    if (provided != null && provided.isNotEmpty) {
+      return provided;
     }
 
     if (transaction != null &&
@@ -524,25 +588,53 @@ class HabitCurrencyRewardCoordinator {
     if (transaction != null &&
         transaction.isReversed == true &&
         operationType == HabitRewardOperationType.apply) {
-      return _generateUuidV4();
+      final remote = remoteHabitId?.trim();
+      if (remote != null && remote.isNotEmpty) {
+        return buildHabitRewardCompletionEventId(
+          remoteHabitId: remote,
+          logicalDateKey: logicalDateKey,
+        );
+      }
     }
 
-    return _generateUuidV4();
+    final remote = remoteHabitId?.trim();
+    if (remote != null && remote.isNotEmpty) {
+      return buildHabitRewardCompletionEventId(
+        remoteHabitId: remote,
+        logicalDateKey: logicalDateKey,
+      );
+    }
+
+    return '';
   }
 
   String _normalizeRequestId({
     String? requestId,
-    required String userId,
-    required String habitId,
+    required PendingCurrencyOperation? pendingOperation,
+    required String? remoteHabitId,
     required String logicalDateKey,
     required HabitRewardOperationType operationType,
-    required String completionEventId,
   }) {
+    final pending = pendingOperation?.requestId.trim();
+    if (pending != null && pending.isNotEmpty) {
+      return pending;
+    }
     final provided = requestId?.trim();
     if (provided != null && provided.isNotEmpty) {
       return provided;
     }
-    return '$userId|$habitId|$logicalDateKey|${operationType.name}|$completionEventId';
+    final remote = remoteHabitId?.trim();
+    if (remote == null || remote.isEmpty) return '';
+    if (operationType == HabitRewardOperationType.reverse) {
+      return buildHabitRewardReverseRequestId(
+        remoteHabitId: remote,
+        logicalDateKey: logicalDateKey,
+      );
+    }
+    return buildHabitRewardApplyRequestId(
+      remoteHabitId: remote,
+      logicalDateKey: logicalDateKey,
+    );
   }
 
   String? _currentUserId() {
@@ -555,22 +647,24 @@ class HabitCurrencyRewardCoordinator {
     }
   }
 
-  static String _generateUuidV4() {
-    final rng = Random.secure();
-    final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    final parts = <String>[
-      _hex(bytes.sublist(0, 4)),
-      _hex(bytes.sublist(4, 6)),
-      _hex(bytes.sublist(6, 8)),
-      _hex(bytes.sublist(8, 10)),
-      _hex(bytes.sublist(10, 16)),
-    ];
-    return parts.join('-');
+  bool _pendingHabitMatches(
+    String pendingHabitId, {
+    required String localHabitId,
+    required String? remoteHabitId,
+  }) {
+    final normalizedPending = pendingHabitId.trim();
+    if (normalizedPending == localHabitId) return true;
+    final normalizedRemote = remoteHabitId?.trim();
+    return normalizedRemote != null &&
+        normalizedRemote.isNotEmpty &&
+        _normalizeRemoteHabitId(normalizedPending) == normalizedRemote;
   }
 
-  static String _hex(List<int> bytes) {
-    return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+  static String? _normalizeRemoteHabitId(String? value) {
+    final normalized = (value ?? '').trim();
+    if (normalized.isEmpty || !HabitRemoteMapper.isUuid(normalized)) {
+      return null;
+    }
+    return normalized.toLowerCase();
   }
 }

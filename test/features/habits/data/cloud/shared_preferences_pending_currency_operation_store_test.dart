@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/habits/data/cloud/shared_preferences_pending_currency_operation_store.dart';
 import 'package:rutio/features/habits/domain/models/pending_currency_operation.dart';
@@ -28,7 +30,8 @@ void main() {
         status: PendingCurrencyOperationStatus.pending,
       );
 
-      await store.savePendingOperations('user-1', <PendingCurrencyOperation>[pending]);
+      await store
+          .savePendingOperations('user-1', <PendingCurrencyOperation>[pending]);
 
       final loaded = await store.loadPendingOperations('user-1');
 
@@ -63,8 +66,10 @@ void main() {
         status: PendingCurrencyOperationStatus.awaitingResolution,
       );
 
-      await store.savePendingOperations('user-1', <PendingCurrencyOperation>[first]);
-      await store.savePendingOperations('user-2', <PendingCurrencyOperation>[second]);
+      await store
+          .savePendingOperations('user-1', <PendingCurrencyOperation>[first]);
+      await store
+          .savePendingOperations('user-2', <PendingCurrencyOperation>[second]);
 
       store = SharedPreferencesPendingCurrencyOperationStore();
 
@@ -88,10 +93,58 @@ void main() {
         attemptCount: 1,
         status: PendingCurrencyOperationStatus.pending,
       );
-      await store.savePendingOperations('user-1', <PendingCurrencyOperation>[pending]);
+      await store
+          .savePendingOperations('user-1', <PendingCurrencyOperation>[pending]);
       await store.clearPendingOperations('user-1');
 
       expect(await store.loadPendingOperations('user-1'), isEmpty);
+    });
+
+    test('loads and preserves legacy pending identifiers unchanged', () async {
+      final legacyJson = <Map<String, dynamic>>[
+        <String, dynamic>{
+          'userId': 'user-1',
+          'requestId': 'habit_reward_habit-local_2026-07-18',
+          'habitId': 'habit-local',
+          'logicalDateKey': '2026-07-18',
+          'completionEventId': 'habit_cloud_reward|habit-local|2026-07-18',
+          'operationType': 'reverse',
+          'createdAtMillis': 10,
+          'lastAttemptAtMillis': 11,
+          'attemptCount': 1,
+          'status': 'awaitingResolution',
+        },
+      ];
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        '${SharedPreferencesPendingCurrencyOperationStore.storagePrefix}_user-1':
+            jsonEncode(legacyJson),
+      });
+      store = SharedPreferencesPendingCurrencyOperationStore();
+
+      final loaded = await store.loadPendingOperations('user-1');
+
+      expect(loaded, hasLength(1));
+      expect(loaded.single.requestId, 'habit_reward_habit-local_2026-07-18');
+      expect(loaded.single.habitId, 'habit-local');
+      expect(
+        loaded.single.completionEventId,
+        'habit_cloud_reward|habit-local|2026-07-18',
+      );
+      expect(loaded.single.operationType, HabitRewardOperationType.reverse);
+
+      await store.savePendingOperations('user-1', loaded);
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(
+        '${SharedPreferencesPendingCurrencyOperationStore.storagePrefix}_user-1',
+      );
+      final encoded = jsonDecode(raw!) as List<dynamic>;
+      final saved = Map<String, dynamic>.from(encoded.single as Map);
+      expect(saved['requestId'], 'habit_reward_habit-local_2026-07-18');
+      expect(
+        saved['completionEventId'],
+        'habit_cloud_reward|habit-local|2026-07-18',
+      );
+      expect(saved['habitId'], 'habit-local');
     });
   });
 }

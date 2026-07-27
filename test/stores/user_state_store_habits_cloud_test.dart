@@ -73,6 +73,18 @@ void main() {
       expect(fixture.rewardRepository.applyCalls, 1);
       expect(fixture.rewardRepository.applyRequests.single.habitId,
           _remoteHabitUuid1);
+      expect(
+        fixture.rewardRepository.applyRequests.single.completionEventId,
+        'habit_cloud_reward|$_remoteHabitUuid1|2026-07-18',
+      );
+      expect(
+        fixture.rewardRepository.applyRequests.single.requestId,
+        'habit_cloud_reward_apply|$_remoteHabitUuid1|2026-07-18',
+      );
+      expect(
+        fixture.rewardRepository.applyRequests.single.requestId,
+        isNot(contains('habit-check')),
+      );
       expect(fixture.transactions, hasLength(1));
       expect(fixture.transactions.single.cloudOperationType, 'apply');
       expect(fixture.transactions.single.applyRequestId, isNotEmpty);
@@ -393,6 +405,14 @@ void main() {
       expect(fixture.rewardRepository.applyCalls, 1);
       expect(fixture.rewardRepository.applyRequests.single.habitId,
           _remoteHabitUuid2);
+      expect(
+        fixture.rewardRepository.applyRequests.single.completionEventId,
+        'habit_cloud_reward|$_remoteHabitUuid2|2026-07-18',
+      );
+      expect(
+        fixture.rewardRepository.applyRequests.single.requestId,
+        'habit_cloud_reward_apply|$_remoteHabitUuid2|2026-07-18',
+      );
       expect(fixture.transactions, hasLength(1));
       expect(fixture.transactions.single.cloudOperationType, 'apply');
       expect(_xp(fixture.store), 15);
@@ -751,6 +771,18 @@ void main() {
           _remoteHabitUuid2);
       expect(fixture.rewardRepository.reverseRequests.single.habitId,
           _remoteHabitUuid2);
+      expect(
+        fixture.rewardRepository.reverseRequests.single.completionEventId,
+        'habit_cloud_reward|$_remoteHabitUuid2|2026-07-18',
+      );
+      expect(
+        fixture.rewardRepository.reverseRequests.single.requestId,
+        'habit_cloud_reward_reverse|$_remoteHabitUuid2|2026-07-18',
+      );
+      expect(
+        fixture.rewardRepository.applyRequests.single.requestId,
+        isNot(fixture.rewardRepository.reverseRequests.single.requestId),
+      );
     });
 
     test('local mode remains intact', () async {
