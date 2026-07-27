@@ -1025,6 +1025,435 @@ void main() {
       expect(repo.equipCalls.single.slot, CosmeticSlot.userCard.remoteDbKey);
     });
 
+    test('cloud equip double tap on the same item shares one requestId',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final gate = Completer<void>();
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+      )..equipGate = gate.future;
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+        requestIdGenerator: () => 'equip-request-1',
+      ))
+          .controller;
+      await controller.getState();
+
+      final first = controller.equipAsset('wallpaper_mist_blue');
+      final second = controller.equipAsset('wallpaper_mist_blue');
+      await Future<void>.delayed(Duration.zero);
+      gate.complete();
+      final results = await Future.wait(<Future<ShopCosmeticsOperationResult>>[
+        first,
+        second,
+      ]);
+
+      expect(results.every((result) => result.isSuccess), isTrue);
+      expect(repo.equipCalls, hasLength(1));
+      expect(repo.equipCalls.single.requestId, 'equip-request-1');
+    });
+
+    test('cloud equip blocks concurrent incompatible items in the same slot',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final gate = Completer<void>();
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'wallpaper_soft_sage',
+        ],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+      )..equipGate = gate.future;
+      var requestIndex = 0;
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+        requestIdGenerator: () => 'equip-request-${++requestIndex}',
+      ))
+          .controller;
+      await controller.getState();
+
+      final first = controller.equipAsset('wallpaper_mist_blue');
+      await Future<void>.delayed(Duration.zero);
+      final second = await controller.equipAsset('wallpaper_soft_sage');
+      gate.complete();
+      final firstResult = await first;
+
+      expect(firstResult.isSuccess, isTrue);
+      expect(second.status, ShopCosmeticsOperationStatus.awaitingResolution);
+      expect(repo.equipCalls, hasLength(1));
+      expect(repo.equipCalls.single.itemId, 'wallpaper_mist_blue');
+      expect(repo.equipCalls.single.requestId, 'equip-request-1');
+    });
+
+    test('cloud equip allows different slots to run concurrently', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final gate = Completer<void>();
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'habit_card_warm_beige',
+        ],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+      )..equipGate = gate.future;
+      var requestIndex = 0;
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+        requestIdGenerator: () => 'equip-request-${++requestIndex}',
+      ))
+          .controller;
+      await controller.getState();
+
+      final wallpaper = controller.equipAsset('wallpaper_mist_blue');
+      final habitCard = controller.equipAsset('habit_card_warm_beige');
+      await Future<void>.delayed(Duration.zero);
+      gate.complete();
+      final results = await Future.wait(<Future<ShopCosmeticsOperationResult>>[
+        wallpaper,
+        habitCard,
+      ]);
+
+      expect(results.every((result) => result.isSuccess), isTrue);
+      expect(repo.equipCalls, hasLength(2));
+      expect(
+        repo.equipCalls.map((call) => call.slot).toSet(),
+        <String>{
+          CosmeticSlot.background.remoteDbKey,
+          CosmeticSlot.habitCard.remoteDbKey,
+        },
+      );
+    });
+
+    test('cloud equip timeout reconciles when refresh confirms requested item',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_mist_blue'],
+                  wallpaperId: 'wallpaper_mist_blue',
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_mist_blue'],
+                  wallpaperId: 'wallpaper_mist_blue',
+                ),
+              ),
+        ],
+      );
+      repo.equipOutcomes.add(
+        const ShopCloudEquipException(
+          code: ShopCosmeticsOperationFailureCode.timeout,
+          message: 'timeout',
+          retryable: true,
+        ),
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+        requestIdGenerator: () => 'equip-request-1',
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipAsset('wallpaper_mist_blue');
+
+      expect(result.status, ShopCosmeticsOperationStatus.success);
+      expect(controller.state?.equippedWallpaperId, 'wallpaper_mist_blue');
+      expect(repo.equipCalls.single.requestId, 'equip-request-1');
+      expect(repo.fetchCalls, greaterThanOrEqualTo(2));
+    });
+
+    test('cloud equip timeout applies remote truth when another item wins',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'wallpaper_soft_sage',
+        ],
+        wallpaperId: 'wallpaper_soft_sage',
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>[
+                    'wallpaper_mist_blue',
+                    'wallpaper_soft_sage',
+                  ],
+                  wallpaperId: 'wallpaper_soft_sage',
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>[
+                    'wallpaper_mist_blue',
+                    'wallpaper_soft_sage',
+                  ],
+                  wallpaperId: 'wallpaper_soft_sage',
+                ),
+              ),
+        ],
+      );
+      repo.equipOutcomes.add(
+        const ShopCloudEquipException(
+          code: ShopCosmeticsOperationFailureCode.networkUnavailable,
+          message: 'network unavailable',
+          retryable: true,
+        ),
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipAsset('wallpaper_mist_blue');
+
+      expect(result.status, ShopCosmeticsOperationStatus.remoteStateApplied);
+      expect(controller.state?.equippedWallpaperId, 'wallpaper_soft_sage');
+      expect(
+          controller.isCloudAssetEquipSlotBusy('wallpaper_mist_blue'), isFalse);
+    });
+
+    test('cloud equip timeout keeps confirmed state when refresh fails',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'wallpaper_soft_sage',
+        ],
+        wallpaperId: 'wallpaper_soft_sage',
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+          () async => _success(snapshot),
+          () async => _failure(
+                ShopCloudErrorCode.networkUnavailable,
+                'refresh failed',
+              ),
+        ],
+      );
+      repo.equipOutcomes.add(
+        const ShopCloudEquipException(
+          code: ShopCosmeticsOperationFailureCode.timeout,
+          message: 'timeout',
+          retryable: true,
+        ),
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipAsset('wallpaper_mist_blue');
+
+      expect(result.status, ShopCosmeticsOperationStatus.awaitingResolution);
+      expect(controller.state?.equippedWallpaperId, 'wallpaper_soft_sage');
+      expect(
+          controller.isCloudAssetEquipSlotBusy('wallpaper_mist_blue'), isFalse);
+    });
+
+    test('cloud equip can resolve on a later refresh after ambiguous failure',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+          () async => _success(snapshot),
+          () async => _failure(
+                ShopCloudErrorCode.networkUnavailable,
+                'refresh failed',
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_mist_blue'],
+                  wallpaperId: 'wallpaper_mist_blue',
+                ),
+              ),
+        ],
+      );
+      repo.equipOutcomes.add(
+        const ShopCloudEquipException(
+          code: ShopCosmeticsOperationFailureCode.timeout,
+          message: 'timeout',
+          retryable: true,
+        ),
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final ambiguous = await controller.equipAsset('wallpaper_mist_blue');
+      final refreshed = await controller.refreshCloudState(force: true);
+
+      expect(ambiguous.status, ShopCosmeticsOperationStatus.awaitingResolution);
+      expect(refreshed.equippedWallpaperId, 'wallpaper_mist_blue');
+      expect(controller.state?.equippedWallpaperId, 'wallpaper_mist_blue');
+    });
+
+    test('cloud equip ignores a late response after user changes', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final gate = Completer<void>();
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_mist_blue'],
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cloud-user',
+                  ownedAssetIds: <String>['wallpaper_mist_blue'],
+                ),
+              ),
+          () async => _success(
+                _snapshot(
+                  userId: 'shop-cosmetics-user-b',
+                  ownedAssetIds: <String>['wallpaper_soft_sage'],
+                  wallpaperId: 'wallpaper_soft_sage',
+                ),
+              ),
+        ],
+      )..equipGate = gate.future;
+      final env = await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(
+          _snapshot(
+            userId: 'shop-cloud-user',
+            ownedAssetIds: <String>['wallpaper_mist_blue'],
+          ),
+        ),
+      );
+      await env.controller.getState();
+
+      final equip = env.controller.equipAsset('wallpaper_mist_blue');
+      await Future<void>.delayed(Duration.zero);
+      await _switchScope(env.store, userId: 'shop-cosmetics-user-b');
+      gate.complete();
+      await equip;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(env.controller.state?.equippedWallpaperId,
+          isNot('wallpaper_mist_blue'));
+      expect(repo.equipCalls, hasLength(1));
+    });
+
+    test('cloud equip dispose during RPC does not notify afterwards', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final gate = Completer<void>();
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+      )..equipGate = gate.future;
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+      var notifyCount = 0;
+      controller.addListener(() {
+        notifyCount += 1;
+      });
+
+      final equip = controller.equipAsset('wallpaper_mist_blue');
+      await Future<void>.delayed(Duration.zero);
+      final beforeDisposeNotifyCount = notifyCount;
+      controller.dispose();
+      gate.complete();
+      await equip;
+
+      expect(notifyCount, beforeDisposeNotifyCount);
+      expect(repo.equipCalls, hasLength(1));
+    });
+
+    test('cloud equip definitive error clears slot operation', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: 'shop-cloud-user',
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+      );
+      final repo = _FakeCloudCosmeticsRepository(
+        fetchResponses: <_FetchResponseFactory>[
+          () async => _success(snapshot),
+        ],
+        equipError: const ShopCloudEquipException(
+          code: ShopCosmeticsOperationFailureCode.invalidEquipSlot,
+          message: 'Invalid equip slot.',
+          definitive: true,
+        ),
+      );
+      final controller = (await _createController(
+        cloudRepository: repo,
+        cloudCache: _memoryCache(snapshot),
+      ))
+          .controller;
+      await controller.getState();
+
+      final result = await controller.equipAsset('wallpaper_mist_blue');
+      final retry = await controller.equipAsset('wallpaper_mist_blue');
+
+      expect(result.status, ShopCosmeticsOperationStatus.bundleNotFound);
+      expect(retry.status, ShopCosmeticsOperationStatus.bundleNotFound);
+      expect(repo.equipCalls, hasLength(2));
+      expect(
+          controller.isCloudAssetEquipSlotBusy('wallpaper_mist_blue'), isFalse);
+    });
+
     test('cloud equipBundle performs three RPC calls with unique request ids',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -1800,6 +2229,7 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
   final List<Object?> equipOutcomes = <Object?>[];
   final ShopCloudEquipException? equipError;
   Future<void>? assetGate;
+  Future<void>? equipGate;
 
   int _fetchIndex = 0;
 
@@ -1809,6 +2239,7 @@ class _FakeCloudCosmeticsRepository implements CloudCosmeticsRepository {
     required String slot,
     required String requestId,
   }) async {
+    await equipGate;
     equipCalls.add(_EquipCall(
       itemId: itemId,
       slot: slot,

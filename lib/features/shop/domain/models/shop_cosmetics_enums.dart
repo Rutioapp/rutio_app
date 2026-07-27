@@ -14,4 +14,5 @@ enum ShopCosmeticsOperationStatus {
   alreadyOwned,
   assetNotOwned,
   awaitingResolution,
+  remoteStateApplied,
 }

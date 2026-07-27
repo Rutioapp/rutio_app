@@ -128,6 +128,38 @@ class ShopCosmeticsCloudState {
   }
 }
 
+enum _CloudEquipOperationPhase {
+  processing,
+  awaitingResolution,
+  success,
+  definitiveFailure,
+}
+
+class _CloudEquipOperation {
+  const _CloudEquipOperation({
+    required this.slot,
+    required this.assetId,
+    required this.requestId,
+    required this.phase,
+  });
+
+  final String slot;
+  final String assetId;
+  final String requestId;
+  final _CloudEquipOperationPhase phase;
+
+  _CloudEquipOperation copyWith({
+    _CloudEquipOperationPhase? phase,
+  }) {
+    return _CloudEquipOperation(
+      slot: slot,
+      assetId: assetId,
+      requestId: requestId,
+      phase: phase ?? this.phase,
+    );
+  }
+}
+
 class ShopCosmeticsController extends ChangeNotifier {
   ShopCosmeticsController({
     required UserStateStore userStateStore,
@@ -186,6 +218,11 @@ class ShopCosmeticsController extends ChangeNotifier {
   final Set<String> _busyBundleEquipIds = <String>{};
   final Set<String> _awaitingResolutionPurchaseKeys = <String>{};
   final Map<String, Future<ShopCosmeticsOperationResult>>
+      _activeCloudEquipBySlot =
+      <String, Future<ShopCosmeticsOperationResult>>{};
+  final Map<String, _CloudEquipOperation> _cloudEquipOperationsBySlot =
+      <String, _CloudEquipOperation>{};
+  final Map<String, Future<ShopCosmeticsOperationResult>>
       _activeCloudPurchasesByKey =
       <String, Future<ShopCosmeticsOperationResult>>{};
   Future<List<ShopCosmeticsOperationResult>>? _pendingPurchaseResolution;
@@ -215,6 +252,33 @@ class ShopCosmeticsController extends ChangeNotifier {
         resourceId: bundleId,
       ),
     );
+  }
+
+  bool isCloudAssetEquipProcessing(String assetId) {
+    if (!_cloudEnabled) return false;
+    final asset = _catalogAssetById(assetId);
+    if (asset == null) return false;
+    final operation = _cloudEquipOperationsBySlot[_resolveEquipSlot(asset)];
+    return operation?.assetId == assetId &&
+        operation?.phase == _CloudEquipOperationPhase.processing;
+  }
+
+  bool isCloudAssetEquipAwaitingResolution(String assetId) {
+    if (!_cloudEnabled) return false;
+    final asset = _catalogAssetById(assetId);
+    if (asset == null) return false;
+    final operation = _cloudEquipOperationsBySlot[_resolveEquipSlot(asset)];
+    return operation?.assetId == assetId &&
+        operation?.phase == _CloudEquipOperationPhase.awaitingResolution;
+  }
+
+  bool isCloudAssetEquipSlotBusy(String assetId) {
+    if (!_cloudEnabled) return false;
+    final asset = _catalogAssetById(assetId);
+    if (asset == null) return false;
+    final operation = _cloudEquipOperationsBySlot[_resolveEquipSlot(asset)];
+    return operation?.phase == _CloudEquipOperationPhase.processing ||
+        operation?.phase == _CloudEquipOperationPhase.awaitingResolution;
   }
 
   int get visibleWalletCoins {
@@ -769,6 +833,8 @@ class ShopCosmeticsController extends ChangeNotifier {
       _cachedState = null;
       _cachedScopeKey = null;
       _pendingStateLoad = null;
+      _activeCloudEquipBySlot.clear();
+      _cloudEquipOperationsBySlot.clear();
       if (_cloudEnabled) {
         _cloudState = ShopCosmeticsCloudState.unauthenticated();
       }
@@ -782,6 +848,8 @@ class ShopCosmeticsController extends ChangeNotifier {
 
     _cachedState = null;
     _cachedScopeKey = currentScope;
+    _activeCloudEquipBySlot.clear();
+    _cloudEquipOperationsBySlot.clear();
 
     if (!_cloudEnabled) {
       _pendingStateLoad = null;
@@ -1208,58 +1276,138 @@ class ShopCosmeticsController extends ChangeNotifier {
     }
 
     final previousItemId = state.getEquippedAssetIdForCategory(asset.category);
+    final slot = _resolveEquipSlot(asset);
+    final activeOperation = _cloudEquipOperationsBySlot[slot];
+    final activeFuture = _activeCloudEquipBySlot[slot];
+    if (activeOperation != null && activeFuture != null) {
+      if (activeOperation.assetId == assetId) {
+        return activeFuture;
+      }
+      return ShopCosmeticsOperationResult(
+        status: ShopCosmeticsOperationStatus.awaitingResolution,
+        state: state,
+        walletCoins: await _walletCoins(),
+        assetId: assetId,
+      );
+    }
+
+    final operation = _CloudEquipOperation(
+      slot: slot,
+      assetId: assetId,
+      requestId: _requestIdGenerator(),
+      phase: _CloudEquipOperationPhase.processing,
+    );
+    _setCloudEquipOperation(operation);
+
+    late final Future<ShopCosmeticsOperationResult> future;
+    future = _runCloudEquipAssetIntent(
+      asset: asset,
+      initialState: state,
+      traceId: traceId,
+      scopeKey: scopeKey,
+      previousItemId: previousItemId,
+      operation: operation,
+    ).whenComplete(() {
+      if (identical(_activeCloudEquipBySlot[slot], future)) {
+        _activeCloudEquipBySlot.remove(slot);
+      }
+      final currentOperation = _cloudEquipOperationsBySlot[slot];
+      if (currentOperation?.requestId == operation.requestId) {
+        _clearCloudEquipOperation(slot);
+      }
+    });
+    _activeCloudEquipBySlot[slot] = future;
+    return future;
+  }
+
+  Future<ShopCosmeticsOperationResult> _runCloudEquipAssetIntent({
+    required ShopAsset asset,
+    required ShopCosmeticsState initialState,
+    required String traceId,
+    required String? scopeKey,
+    required String? previousItemId,
+    required _CloudEquipOperation operation,
+  }) async {
     try {
       final nextState = await _performCloudEquipAssetStep(
         asset: asset,
-        state: state,
+        state: initialState,
         traceId: traceId,
         scopeKey: scopeKey,
         previousItemId: previousItemId,
+        requestId: operation.requestId,
       );
-      final resolvedScopeKey = scopeKey ?? _currentScope();
-      if (resolvedScopeKey == null) {
+      if (_currentScope() != scopeKey || scopeKey == null) {
         return _cloudFailureResult(
           status: ShopCosmeticsOperationStatus.bundleNotFound,
-          assetId: assetId,
+          assetId: asset.id,
           walletCoins: await _walletCoins(),
         );
       }
+      if (_isDisposed) {
+        return ShopCosmeticsOperationResult(
+          status: ShopCosmeticsOperationStatus.success,
+          state: initialState,
+          walletCoins: await _walletCoins(),
+          assetId: asset.id,
+        );
+      }
+      _setCloudEquipOperation(
+        operation.copyWith(phase: _CloudEquipOperationPhase.success),
+      );
       _markCloudMutation();
-      final snapshot = _buildCloudSnapshot(resolvedScopeKey, nextState);
+      final snapshot = _buildCloudSnapshot(scopeKey, nextState);
       await _applyConfirmedCloudSnapshot(
-        scopeKey: resolvedScopeKey,
+        scopeKey: scopeKey,
         snapshot: snapshot,
         traceId: traceId,
         stage: 'state_applied',
-        slot: _resolveEquipSlot(asset),
+        slot: operation.slot,
         previousItemId: previousItemId,
-        nextItemId: assetId,
+        nextItemId: asset.id,
         assetPath: asset.assetPath,
       );
-      unawaited(_syncFromCurrentScope(force: true));
       return ShopCosmeticsOperationResult(
         status: ShopCosmeticsOperationStatus.success,
         state: nextState,
         walletCoins: await _walletCoins(),
-        assetId: assetId,
+        assetId: asset.id,
       );
     } on ShopCloudEquipException catch (error) {
       _traceCloudCosmetics(
         'rpc_error',
         traceId: traceId,
         userId: scopeKey,
-        slot: _resolveEquipSlot(asset),
+        slot: operation.slot,
         previousItemId: previousItemId,
-        nextItemId: assetId,
+        nextItemId: asset.id,
         assetPath: asset.assetPath,
-        state: state,
+        state: initialState,
         note:
             'code=${error.code.name} retryable=${error.retryable} definitive=${error.definitive}',
       );
+      if (_shouldReconcileCloudEquipError(error)) {
+        _setCloudEquipOperation(
+          operation.copyWith(
+            phase: _CloudEquipOperationPhase.awaitingResolution,
+          ),
+        );
+        return _reconcileCloudEquipAsset(
+          asset: asset,
+          initialState: initialState,
+          traceId: traceId,
+          scopeKey: scopeKey,
+          previousItemId: previousItemId,
+          operation: operation,
+        );
+      }
+      _setCloudEquipOperation(
+        operation.copyWith(phase: _CloudEquipOperationPhase.definitiveFailure),
+      );
       return _mapCloudEquipFailure(
         error,
-        assetId: assetId,
-        currentState: state,
+        assetId: asset.id,
+        currentState: initialState,
       );
     }
   }
@@ -1400,9 +1548,10 @@ class ShopCosmeticsController extends ChangeNotifier {
     required String traceId,
     required String? scopeKey,
     required String? previousItemId,
+    String? requestId,
     String? note,
   }) async {
-    final requestId = CloudCosmeticsRequestId.generateV4();
+    requestId ??= _requestIdGenerator();
     final equipSlot = _resolveEquipSlot(asset);
     _traceCloudCosmetics(
       'tap',
@@ -1825,6 +1974,105 @@ class ShopCosmeticsController extends ChangeNotifier {
       next.add(value);
     }
     return next;
+  }
+
+  bool _shouldReconcileCloudEquipError(ShopCloudEquipException error) {
+    if (error.definitive) return false;
+    return switch (error.code) {
+      ShopCosmeticsOperationFailureCode.timeout ||
+      ShopCosmeticsOperationFailureCode.networkUnavailable ||
+      ShopCosmeticsOperationFailureCode.malformedResponse ||
+      ShopCosmeticsOperationFailureCode.unknown =>
+        true,
+      _ => error.keepPending,
+    };
+  }
+
+  Future<ShopCosmeticsOperationResult> _reconcileCloudEquipAsset({
+    required ShopAsset asset,
+    required ShopCosmeticsState initialState,
+    required String traceId,
+    required String? scopeKey,
+    required String? previousItemId,
+    required _CloudEquipOperation operation,
+  }) async {
+    if (_currentScope() != scopeKey || scopeKey == null || _isDisposed) {
+      return ShopCosmeticsOperationResult(
+        status: ShopCosmeticsOperationStatus.awaitingResolution,
+        state: initialState,
+        walletCoins: await _walletCoins(),
+        assetId: asset.id,
+      );
+    }
+
+    final revisionBeforeRefresh = _cloudSnapshotRevision;
+    final refreshed = await _syncFromCurrentScope(force: true);
+    if (_currentScope() != scopeKey || _isDisposed) {
+      return ShopCosmeticsOperationResult(
+        status: ShopCosmeticsOperationStatus.awaitingResolution,
+        state: initialState,
+        walletCoins: await _walletCoins(),
+        assetId: asset.id,
+      );
+    }
+
+    final snapshot = _cloudState.snapshot;
+    if (_cloudSnapshotRevision == revisionBeforeRefresh ||
+        _cloudState.status != ShopCosmeticsCloudStatus.ready ||
+        snapshot == null ||
+        snapshot.userId != scopeKey) {
+      return ShopCosmeticsOperationResult(
+        status: ShopCosmeticsOperationStatus.awaitingResolution,
+        state: initialState,
+        walletCoins: await _walletCoins(),
+        assetId: asset.id,
+      );
+    }
+
+    final remoteEquippedId =
+        refreshed.getEquippedAssetIdForCategory(asset.category);
+    final status = remoteEquippedId == asset.id
+        ? ShopCosmeticsOperationStatus.success
+        : ShopCosmeticsOperationStatus.remoteStateApplied;
+    _setCloudEquipOperation(
+      operation.copyWith(phase: _CloudEquipOperationPhase.success),
+    );
+    _traceCloudCosmetics(
+      'reconciled',
+      traceId: traceId,
+      userId: scopeKey,
+      slot: operation.slot,
+      previousItemId: previousItemId,
+      nextItemId: remoteEquippedId,
+      assetPath: asset.assetPath,
+      snapshot: snapshot,
+      state: refreshed,
+      note: remoteEquippedId == asset.id
+          ? 'requested_item_confirmed'
+          : 'remote_truth_applied requested=${asset.id}',
+    );
+    return ShopCosmeticsOperationResult(
+      status: status,
+      state: refreshed,
+      walletCoins: await _walletCoins(),
+      assetId: asset.id,
+    );
+  }
+
+  void _setCloudEquipOperation(_CloudEquipOperation operation) {
+    if (_isDisposed) return;
+    _cloudEquipOperationsBySlot[operation.slot] = operation;
+    notifyListeners();
+  }
+
+  void _clearCloudEquipOperation(String slot) {
+    if (_isDisposed) {
+      _cloudEquipOperationsBySlot.remove(slot);
+      return;
+    }
+    if (_cloudEquipOperationsBySlot.remove(slot) != null) {
+      notifyListeners();
+    }
   }
 
   Future<ShopCosmeticsOperationResult> _mapCloudEquipFailure(
