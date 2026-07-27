@@ -307,6 +307,8 @@ class ShopController extends ChangeNotifier {
 
   bool get isCloudEconomyEnabled => _cloudReadEnabled && _cloudPurchaseEnabled;
 
+  String? get currentSupabaseUserIdForShop => _currentSupabaseUserId();
+
   Future<void> hydrateVisibleEconomy({bool force = false}) async {
     if (!isCloudEconomyEnabled) {
       _setEconomyState(
@@ -326,6 +328,13 @@ class ShopController extends ChangeNotifier {
     if (!force &&
         _cloudEconomyUserId == currentUserId &&
         cachedSnapshot != null) {
+      return;
+    }
+    if (!force &&
+        _cloudEconomyUserId == currentUserId &&
+        (_economyStatus == ShopCloudEconomyStatus.failed ||
+            _economyStatus == ShopCloudEconomyStatus.stale ||
+            _economyStatus == ShopCloudEconomyStatus.walletMissing)) {
       return;
     }
 
@@ -391,6 +400,21 @@ class ShopController extends ChangeNotifier {
     }
 
     await hydrateVisibleEconomy();
+    final currentUserId = _currentSupabaseUserId();
+    if (currentUserId == null) {
+      return const ShopState();
+    }
+    if (!_cloudSnapshotByUserId.containsKey(currentUserId)) {
+      return const ShopState();
+    }
+    return _adjustShopStateForCloudPurchase(null, const ShopState());
+  }
+
+  Future<ShopState> getCachedVisibleShopState() async {
+    if (!isCloudEconomyEnabled) {
+      return _shopRepository.load();
+    }
+
     final currentUserId = _currentSupabaseUserId();
     if (currentUserId == null) {
       return const ShopState();

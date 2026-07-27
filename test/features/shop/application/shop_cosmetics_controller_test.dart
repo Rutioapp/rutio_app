@@ -500,7 +500,10 @@ void main() {
         repo,
         journalEntrySyncService: JournalEntrySyncService(),
       );
-      final controller = ShopCosmeticsController(userStateStore: store);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudEnabled: false,
+      );
 
       expect(await controller.getWalletCoins(), 0);
     });
@@ -711,6 +714,7 @@ Future<ShopCosmeticsController> _createController({
     userStateStore: store,
     repository:
         repository ?? await _shopRepositoryFor(preferences, userId: userId),
+    cloudEnabled: false,
   );
 }
 
