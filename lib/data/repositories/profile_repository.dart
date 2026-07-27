@@ -5,11 +5,17 @@ import '../../core/supabase/rutio_supabase_client.dart';
 import '../models/remote/remote_profile.dart';
 import 'repository_result.dart';
 
+typedef CurrentProfileUserIdProvider = String? Function();
+
 class ProfileRepository {
-  ProfileRepository({SupabaseClient? client})
-      : _client = client ?? RutioSupabaseClient.instance;
+  ProfileRepository({
+    SupabaseClient? client,
+    CurrentProfileUserIdProvider? currentUserIdProvider,
+  })  : _client = client ?? RutioSupabaseClient.instance,
+        _currentUserIdProvider = currentUserIdProvider;
 
   final SupabaseClient _client;
+  final CurrentProfileUserIdProvider? _currentUserIdProvider;
   final Set<String> _unsupportedColumns = <String>{};
 
   static const String _profilesTable = 'profiles';
@@ -35,6 +41,14 @@ class ProfileRepository {
       return RepositoryResult<RemoteProfile?>.success(
         data: RemoteProfile.fromMap(Map<String, dynamic>.from(row)),
       );
+    } on RemoteProfileParseException catch (error) {
+      return RepositoryResult<RemoteProfile?>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message,
+          cause: error,
+        ),
+      );
     } on PostgrestException catch (error) {
       return RepositoryResult<RemoteProfile?>.failure(
         _mapPostgrestError(
@@ -47,10 +61,9 @@ class ProfileRepository {
         debugPrint('[profile_repository] unexpected fetch error: $error');
       }
       return RepositoryResult<RemoteProfile?>.failure(
-        RepositoryError(
-          code: RepositoryErrorCode.unknown,
-          message: 'Could not fetch profile.',
-          cause: error,
+        _mapUnexpectedError(
+          error,
+          fallbackMessage: 'Could not fetch profile.',
         ),
       );
     }
@@ -206,6 +219,87 @@ class ProfileRepository {
     );
   }
 
+  Future<RepositoryResult<RemoteProfile>> markOnboardingInProgress({
+    int onboardingVersion = 1,
+  }) async {
+    if (onboardingVersion < 1) {
+      return RepositoryResult<RemoteProfile>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Onboarding version must be >= 1.',
+        ),
+      );
+    }
+
+    final currentResult = await _fetchRequiredCurrentProfile();
+    if (!currentResult.isSuccess) {
+      return RepositoryResult<RemoteProfile>.failure(currentResult.error!);
+    }
+
+    final current = currentResult.data!;
+    if (current.onboardingStatus == OnboardingStatus.completed) {
+      return RepositoryResult<RemoteProfile>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Cannot move completed onboarding back to in_progress.',
+        ),
+      );
+    }
+    if (onboardingVersion != current.onboardingVersion) {
+      return RepositoryResult<RemoteProfile>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Onboarding version must match the current remote version.',
+        ),
+      );
+    }
+
+    return _upsertScopedProfilePatch(
+      patch: <String, dynamic>{
+        'onboarding_status': OnboardingStatus.inProgress.toSupabase(),
+        'onboarding_version': current.onboardingVersion,
+        'onboarding_completed_at': null,
+      },
+      fallbackMessage: 'Could not mark onboarding in progress.',
+    );
+  }
+
+  Future<RepositoryResult<RemoteProfile>> markOnboardingCompleted({
+    int onboardingVersion = 1,
+  }) async {
+    if (onboardingVersion < 1) {
+      return RepositoryResult<RemoteProfile>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Onboarding version must be >= 1.',
+        ),
+      );
+    }
+
+    final currentResult = await _fetchRequiredCurrentProfile();
+    if (!currentResult.isSuccess) {
+      return RepositoryResult<RemoteProfile>.failure(currentResult.error!);
+    }
+
+    final current = currentResult.data!;
+    if (onboardingVersion != current.onboardingVersion) {
+      return RepositoryResult<RemoteProfile>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Onboarding version must match the current remote version.',
+        ),
+      );
+    }
+
+    return _updateScopedProfilePatch(
+      patch: <String, dynamic>{
+        'onboarding_status': OnboardingStatus.completed.toSupabase(),
+        'onboarding_version': current.onboardingVersion,
+      },
+      fallbackMessage: 'Could not mark onboarding completed.',
+    );
+  }
+
   /// Legacy compatibility method for existing callers that still expect a map.
   Future<Map<String, dynamic>?> fetchCurrentUserProfile() async {
     final result = await fetchCurrentProfile();
@@ -219,8 +313,8 @@ class ProfileRepository {
     User? user,
   }) async {
     final activeUser = user ?? currentUser;
-    final userId = activeUser?.id.trim();
-    if (activeUser == null || userId == null || userId.isEmpty) {
+    final userId = user?.id.trim() ?? _currentUserId();
+    if (userId == null || userId.isEmpty) {
       return RepositoryResult<RemoteProfile>.failure(_notAuthenticated());
     }
 
@@ -231,7 +325,7 @@ class ProfileRepository {
 
     // Keep email best-effort for row creation safety when the column exists.
     if (!payload.containsKey('email')) {
-      final fallbackEmail = _nullableTrim(activeUser.email);
+      final fallbackEmail = _nullableTrim(activeUser?.email);
       if (fallbackEmail != null) {
         payload['email'] = fallbackEmail;
       }
@@ -261,6 +355,14 @@ class ProfileRepository {
           );
         }
         return RepositoryResult<RemoteProfile>.success(data: profile);
+      } on RemoteProfileParseException catch (error) {
+        return RepositoryResult<RemoteProfile>.failure(
+          RepositoryError(
+            code: RepositoryErrorCode.invalidResponse,
+            message: error.message,
+            cause: error,
+          ),
+        );
       } on PostgrestException catch (error) {
         final missingColumn = _extractMissingColumn(error);
         final canRetryWithColumnDropped = missingColumn != null &&
@@ -293,13 +395,68 @@ class ProfileRepository {
           debugPrint('[profile_repository] unexpected upsert error: $error');
         }
         return RepositoryResult<RemoteProfile>.failure(
-          RepositoryError(
-            code: RepositoryErrorCode.unknown,
-            message: fallbackMessage,
-            cause: error,
+          _mapUnexpectedError(
+            error,
+            fallbackMessage: fallbackMessage,
           ),
         );
       }
+    }
+  }
+
+  Future<RepositoryResult<RemoteProfile>> _updateScopedProfilePatch({
+    required Map<String, dynamic> patch,
+    required String fallbackMessage,
+  }) async {
+    final userId = _currentUserId();
+    if (userId == null || userId.isEmpty) {
+      return RepositoryResult<RemoteProfile>.failure(_notAuthenticated());
+    }
+
+    final payload = _removeKnownUnsupportedColumns(patch);
+
+    try {
+      final row = await _client
+          .from(_profilesTable)
+          .update(payload)
+          .eq('id', userId)
+          .select()
+          .single();
+      final profile = RemoteProfile.fromMap(Map<String, dynamic>.from(row));
+      if (profile.id != userId) {
+        return RepositoryResult<RemoteProfile>.failure(
+          RepositoryError(
+            code: RepositoryErrorCode.invalidResponse,
+            message: 'Profile update response did not match current user.',
+          ),
+        );
+      }
+      return RepositoryResult<RemoteProfile>.success(data: profile);
+    } on RemoteProfileParseException catch (error) {
+      return RepositoryResult<RemoteProfile>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message,
+          cause: error,
+        ),
+      );
+    } on PostgrestException catch (error) {
+      return RepositoryResult<RemoteProfile>.failure(
+        _mapPostgrestError(
+          error,
+          fallbackMessage: fallbackMessage,
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[profile_repository] unexpected update error: $error');
+      }
+      return RepositoryResult<RemoteProfile>.failure(
+        _mapUnexpectedError(
+          error,
+          fallbackMessage: fallbackMessage,
+        ),
+      );
     }
   }
 
@@ -340,9 +497,26 @@ class ProfileRepository {
   }
 
   String? _currentUserId() {
-    final userId = currentUser?.id.trim();
+    final userId = (_currentUserIdProvider?.call() ?? currentUser?.id)?.trim();
     if (userId == null || userId.isEmpty) return null;
     return userId;
+  }
+
+  Future<RepositoryResult<RemoteProfile>> _fetchRequiredCurrentProfile() async {
+    final result = await fetchCurrentProfile();
+    if (!result.isSuccess) {
+      return RepositoryResult<RemoteProfile>.failure(result.error!);
+    }
+    final profile = result.data;
+    if (profile == null) {
+      return RepositoryResult<RemoteProfile>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.notFound,
+          message: 'Profile row was not found.',
+        ),
+      );
+    }
+    return RepositoryResult<RemoteProfile>.success(data: profile);
   }
 
   RepositoryError _notAuthenticated() {
@@ -400,10 +574,42 @@ class ProfileRepository {
     }
 
     final rawMessage = error.message.toLowerCase();
+    if (rawMessage.contains('invalid onboarding transition') ||
+        rawMessage.contains('onboarding_version')) {
+      return RepositoryError(
+        code: RepositoryErrorCode.invalidResponse,
+        message: error.message,
+        cause: error,
+      );
+    }
     if (rawMessage.contains('network') ||
         rawMessage.contains('socket') ||
         rawMessage.contains('timeout') ||
         rawMessage.contains('connection')) {
+      return RepositoryError(
+        code: RepositoryErrorCode.network,
+        message: 'Network error while accessing profile data.',
+        cause: error,
+      );
+    }
+
+    return RepositoryError(
+      code: RepositoryErrorCode.unknown,
+      message: fallbackMessage,
+      cause: error,
+    );
+  }
+
+  RepositoryError _mapUnexpectedError(
+    Object error, {
+    required String fallbackMessage,
+  }) {
+    final rawMessage = error.toString().toLowerCase();
+    if (rawMessage.contains('network') ||
+        rawMessage.contains('socket') ||
+        rawMessage.contains('timeout') ||
+        rawMessage.contains('connection') ||
+        rawMessage.contains('failed host lookup')) {
       return RepositoryError(
         code: RepositoryErrorCode.network,
         message: 'Network error while accessing profile data.',
