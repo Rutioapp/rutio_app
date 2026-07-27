@@ -13,4 +13,5 @@ enum ShopCosmeticsOperationStatus {
   insufficientCoins,
   alreadyOwned,
   assetNotOwned,
+  awaitingResolution,
 }

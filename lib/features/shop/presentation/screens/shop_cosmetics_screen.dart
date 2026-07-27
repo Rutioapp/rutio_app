@@ -217,7 +217,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                         asset: asset,
                         ownershipState: ownershipState,
                         hasEnoughCoins: _walletCoins >= asset.priceAmber,
-                        busy: _busyId == asset.id,
+                        busy: _isAssetBusy(asset.id),
                         onPressed: () =>
                             _openAssetDetail(asset, ownershipState),
                         onPrimaryActionPressed: () =>
@@ -237,7 +237,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
                         completionQuote: quote,
                         hasEnoughCoins:
                             _walletCoins >= quote.effectivePriceAmber,
-                        busy: _busyId == bundle.id,
+                        busy: _isBundleBusy(bundle.id),
                         onPressed: () => _openBundleDetail(
                           bundle,
                           assets,
@@ -435,7 +435,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
           asset: asset,
           ownershipState: ownershipState,
           walletCoins: _walletCoins,
-          busy: _busyId == asset.id,
+          busy: _isAssetBusy(asset.id),
           onPrimaryActionPressed: () async {
             Navigator.of(context).pop();
             if (ownershipState == ShopAssetOwnershipState.locked) {
@@ -464,7 +464,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
           bundleAssets: assets,
           completionQuote: quote,
           walletCoins: _walletCoins,
-          busy: _busyId == bundle.id,
+          busy: _isBundleBusy(bundle.id),
           onPrimaryActionPressed: () async {
             Navigator.of(context).pop();
             await _confirmBundlePurchase(bundle, assets);
@@ -542,6 +542,16 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     );
   }
 
+  bool _isAssetBusy(String assetId) {
+    return _busyId == assetId ||
+        widget.controller.isCloudAssetPurchaseAwaitingResolution(assetId);
+  }
+
+  bool _isBundleBusy(String bundleId) {
+    return _busyId == bundleId ||
+        widget.controller.isCloudBundlePurchaseAwaitingResolution(bundleId);
+  }
+
   String _assetFeedback(
     ShopCosmeticsOperationResult result,
     ShopAssetOwnershipState previousState,
@@ -557,6 +567,8 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         return 'Ya lo tienes en tu coleccion';
       case ShopCosmeticsOperationStatus.assetNotOwned:
         return 'Necesitas comprarlo antes de equiparlo';
+      case ShopCosmeticsOperationStatus.awaitingResolution:
+        return 'Estamos verificando la compra. Se actualizara automaticamente al recuperar la conexion.';
       case ShopCosmeticsOperationStatus.assetNotFound:
       case ShopCosmeticsOperationStatus.bundleNotFound:
       case ShopCosmeticsOperationStatus.bundleContainsOwnedAssets:
@@ -579,6 +591,8 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         return 'No hemos encontrado este pack';
       case ShopCosmeticsOperationStatus.assetNotOwned:
         return 'Operacion no disponible';
+      case ShopCosmeticsOperationStatus.awaitingResolution:
+        return 'Estamos verificando la compra. Se actualizara automaticamente al recuperar la conexion.';
     }
   }
 }

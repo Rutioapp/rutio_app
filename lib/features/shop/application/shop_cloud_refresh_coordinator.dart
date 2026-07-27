@@ -208,6 +208,11 @@ class ShopCloudRefreshCoordinator {
         action: () => _shopController.hydrateVisibleEconomy(force: force),
       ),
       _RefreshStep(
+        label: 'pending_cosmetics_purchases',
+        action: () =>
+            _cosmeticsController.resolvePendingCloudPurchasesForCurrentUser(),
+      ),
+      _RefreshStep(
         label: 'cosmetics',
         action: () => _cosmeticsController.refreshCloudState(force: force),
       ),
