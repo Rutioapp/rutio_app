@@ -3346,7 +3346,7 @@ bool _isConfirmedCloudHabitRewardTransaction(
 }
 
 String _cloudHabitRewardCompletionEventId({
-  required String habitId,
+  required String remoteHabitId,
   required String dateKey,
   HabitRewardTransaction? existingTransaction,
 }) {
@@ -3355,7 +3355,10 @@ String _cloudHabitRewardCompletionEventId({
   if (existingCompletionEventId.isNotEmpty) {
     return existingCompletionEventId;
   }
-  return 'habit_cloud_reward|${habitId.trim()}|${dateKey.trim()}';
+  return buildHabitRewardCompletionEventId(
+    remoteHabitId: remoteHabitId,
+    logicalDateKey: dateKey,
+  );
 }
 
 void _logHabitCloudReward(String message) {
@@ -3713,16 +3716,20 @@ Future<_HabitRewardCompletionOutcome> _applyHabitRewardCompletion(
     }
 
     final completionEventId = _cloudHabitRewardCompletionEventId(
-      habitId: habitId,
+      remoteHabitId: cloudRewardHabitId,
       dateKey: dateKey,
       existingTransaction: existingTransaction,
+    );
+    final requestId = buildHabitRewardApplyRequestId(
+      remoteHabitId: cloudRewardHabitId,
+      logicalDateKey: dateKey,
     );
     final result = await store._habitCurrencyRewardCoordinator.applyHabitReward(
       habitId: habitId,
       remoteHabitId: cloudRewardHabitId,
       logicalDateKey: dateKey,
       completionEventId: completionEventId,
-      requestId: _habitRewardTransactionId(habitId, dateKey),
+      requestId: requestId,
     );
     final failure = result.failure;
     _logHabitCloudReward(
@@ -3895,7 +3902,10 @@ Future<_HabitRewardReversalOutcome> _reverseHabitRewardCompletion(
       remoteHabitId: cloudRewardHabitId,
       logicalDateKey: dateKey,
       completionEventId: existingTransaction.completionEventId,
-      requestId: _habitRewardTransactionId(habitId, dateKey),
+      requestId: buildHabitRewardReverseRequestId(
+        remoteHabitId: cloudRewardHabitId,
+        logicalDateKey: dateKey,
+      ),
     );
     if (result.isSuccess) {
       await _activeUtilityEffectsRepositoryForStore(store).loadEffects(
