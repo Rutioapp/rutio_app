@@ -17,13 +17,11 @@ void main() {
         )
         ..enqueueJson(
           statusCode: 200,
-          body: _profileRow(status: 'in_progress', version: 2),
+          body: _profileRow(status: 'in_progress'),
         );
       final repository = _repository(client);
 
-      final result = await repository.markOnboardingInProgress(
-        onboardingVersion: 2,
-      );
+      final result = await repository.markOnboardingInProgress();
 
       expect(result.isSuccess, isTrue);
       expect(result.data!.onboardingStatus, OnboardingStatus.inProgress);
@@ -32,18 +30,21 @@ void main() {
       final body =
           jsonDecode(client.requests.last.body!) as Map<String, dynamic>;
       expect(body['onboarding_status'], 'in_progress');
-      expect(body['onboarding_version'], 2);
+      expect(body['onboarding_version'], 1);
       expect(body['onboarding_completed_at'], isNull);
     });
 
-    test('markOnboardingCompleted is idempotent for completed profiles',
-        () async {
+    test('markOnboardingCompleted allows pending to completed', () async {
       final client = _QueueingHttpClient()
+        ..enqueueJson(
+          statusCode: 200,
+          body: _profileRow(status: 'pending'),
+        )
         ..enqueueJson(
           statusCode: 200,
           body: _profileRow(
             status: 'completed',
-            completedAt: '2026-07-27T21:30:00.000Z',
+            completedAt: '2026-07-27T21:35:00.000Z',
           ),
         );
       final repository = _repository(client);
@@ -52,25 +53,79 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.data!.onboardingStatus, OnboardingStatus.completed);
-      expect(client.requests, hasLength(1));
-      expect(client.requests.single.method, 'GET');
+      expect(
+        result.data!.onboardingCompletedAt,
+        DateTime.parse('2026-07-27T21:35:00.000Z'),
+      );
+      expect(client.requests, hasLength(2));
+      expect(client.requests.last.method, 'PATCH');
+      final body =
+          jsonDecode(client.requests.last.body!) as Map<String, dynamic>;
+      expect(body['onboarding_status'], 'completed');
+      expect(body['onboarding_version'], 1);
+      expect(body.containsKey('onboarding_completed_at'), isFalse);
     });
 
-    test('markOnboardingCompleted refuses pending without server timestamp RPC',
-        () async {
+    test('markOnboardingCompleted allows in_progress to completed', () async {
       final client = _QueueingHttpClient()
         ..enqueueJson(
           statusCode: 200,
-          body: _profileRow(status: 'pending'),
+          body: _profileRow(status: 'in_progress'),
+        )
+        ..enqueueJson(
+          statusCode: 200,
+          body: _profileRow(
+            status: 'completed',
+            completedAt: '2026-07-27T21:40:00.000Z',
+          ),
         );
       final repository = _repository(client);
 
       final result = await repository.markOnboardingCompleted();
 
-      expect(result.isSuccess, isFalse);
-      expect(result.error?.code, RepositoryErrorCode.invalidResponse);
-      expect(result.error?.message, contains('server-side timestamp RPC'));
-      expect(client.requests, hasLength(1));
+      expect(result.isSuccess, isTrue);
+      expect(result.data!.onboardingStatus, OnboardingStatus.completed);
+      expect(
+        result.data!.onboardingCompletedAt,
+        DateTime.parse('2026-07-27T21:40:00.000Z'),
+      );
+      expect(client.requests, hasLength(2));
+      expect(client.requests.last.method, 'PATCH');
+    });
+
+    test('markOnboardingCompleted is idempotent for completed profiles',
+        () async {
+      const completedAt = '2026-07-27T21:30:00.000Z';
+      final client = _QueueingHttpClient()
+        ..enqueueJson(
+          statusCode: 200,
+          body: _profileRow(
+            status: 'completed',
+            completedAt: completedAt,
+          ),
+        )
+        ..enqueueJson(
+          statusCode: 200,
+          body: _profileRow(
+            status: 'completed',
+            completedAt: completedAt,
+          ),
+        );
+      final repository = _repository(client);
+
+      final result = await repository.markOnboardingCompleted();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.data!.onboardingStatus, OnboardingStatus.completed);
+      expect(
+        result.data!.onboardingCompletedAt,
+        DateTime.parse(completedAt),
+      );
+      expect(client.requests, hasLength(2));
+      expect(client.requests.last.method, 'PATCH');
+      final body =
+          jsonDecode(client.requests.last.body!) as Map<String, dynamic>;
+      expect(body.containsKey('onboarding_completed_at'), isFalse);
     });
 
     test('blocks completed to in_progress regression', () async {
@@ -90,6 +145,49 @@ void main() {
       expect(result.error?.code, RepositoryErrorCode.invalidResponse);
       expect(result.error?.message, contains('completed onboarding'));
       expect(client.requests, hasLength(1));
+    });
+
+    test('blocks arbitrary onboarding version changes locally', () async {
+      final client = _QueueingHttpClient()
+        ..enqueueJson(
+          statusCode: 200,
+          body: _profileRow(status: 'pending', version: 1),
+        );
+      final repository = _repository(client);
+
+      final result = await repository.markOnboardingCompleted(
+        onboardingVersion: 2,
+      );
+
+      expect(result.isSuccess, isFalse);
+      expect(result.error?.code, RepositoryErrorCode.invalidResponse);
+      expect(result.error?.message, contains('current remote version'));
+      expect(client.requests, hasLength(1));
+    });
+
+    test('maps rejected onboarding transition from Supabase', () async {
+      final client = _QueueingHttpClient()
+        ..enqueueJson(
+          statusCode: 200,
+          body: _profileRow(status: 'pending'),
+        )
+        ..enqueueJson(
+          statusCode: 400,
+          body: <String, dynamic>{
+            'code': 'P0001',
+            'message': 'invalid onboarding transition: pending to archived',
+            'details': null,
+            'hint': null,
+          },
+        );
+      final repository = _repository(client);
+
+      final result = await repository.markOnboardingCompleted();
+
+      expect(result.isSuccess, isFalse);
+      expect(result.error?.code, RepositoryErrorCode.invalidResponse);
+      expect(result.error?.message, contains('invalid onboarding transition'));
+      expect(client.requests, hasLength(2));
     });
 
     test('fetch maps invalid remote onboarding state as invalidResponse',

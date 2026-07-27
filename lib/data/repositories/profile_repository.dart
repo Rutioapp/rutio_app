@@ -245,11 +245,19 @@ class ProfileRepository {
         ),
       );
     }
+    if (onboardingVersion != current.onboardingVersion) {
+      return RepositoryResult<RemoteProfile>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Onboarding version must match the current remote version.',
+        ),
+      );
+    }
 
     return _upsertScopedProfilePatch(
       patch: <String, dynamic>{
         'onboarding_status': OnboardingStatus.inProgress.toSupabase(),
-        'onboarding_version': onboardingVersion,
+        'onboarding_version': current.onboardingVersion,
         'onboarding_completed_at': null,
       },
       fallbackMessage: 'Could not mark onboarding in progress.',
@@ -274,16 +282,21 @@ class ProfileRepository {
     }
 
     final current = currentResult.data!;
-    if (current.onboardingStatus == OnboardingStatus.completed) {
-      return RepositoryResult<RemoteProfile>.success(data: current);
+    if (onboardingVersion != current.onboardingVersion) {
+      return RepositoryResult<RemoteProfile>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Onboarding version must match the current remote version.',
+        ),
+      );
     }
 
-    return RepositoryResult<RemoteProfile>.failure(
-      const RepositoryError(
-        code: RepositoryErrorCode.invalidResponse,
-        message:
-            'Completing onboarding requires a server-side timestamp RPC before updating pending/in_progress profiles.',
-      ),
+    return _updateScopedProfilePatch(
+      patch: <String, dynamic>{
+        'onboarding_status': OnboardingStatus.completed.toSupabase(),
+        'onboarding_version': current.onboardingVersion,
+      },
+      fallbackMessage: 'Could not mark onboarding completed.',
     );
   }
 
@@ -388,6 +401,62 @@ class ProfileRepository {
           ),
         );
       }
+    }
+  }
+
+  Future<RepositoryResult<RemoteProfile>> _updateScopedProfilePatch({
+    required Map<String, dynamic> patch,
+    required String fallbackMessage,
+  }) async {
+    final userId = _currentUserId();
+    if (userId == null || userId.isEmpty) {
+      return RepositoryResult<RemoteProfile>.failure(_notAuthenticated());
+    }
+
+    final payload = _removeKnownUnsupportedColumns(patch);
+
+    try {
+      final row = await _client
+          .from(_profilesTable)
+          .update(payload)
+          .eq('id', userId)
+          .select()
+          .single();
+      final profile = RemoteProfile.fromMap(Map<String, dynamic>.from(row));
+      if (profile.id != userId) {
+        return RepositoryResult<RemoteProfile>.failure(
+          RepositoryError(
+            code: RepositoryErrorCode.invalidResponse,
+            message: 'Profile update response did not match current user.',
+          ),
+        );
+      }
+      return RepositoryResult<RemoteProfile>.success(data: profile);
+    } on RemoteProfileParseException catch (error) {
+      return RepositoryResult<RemoteProfile>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message,
+          cause: error,
+        ),
+      );
+    } on PostgrestException catch (error) {
+      return RepositoryResult<RemoteProfile>.failure(
+        _mapPostgrestError(
+          error,
+          fallbackMessage: fallbackMessage,
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[profile_repository] unexpected update error: $error');
+      }
+      return RepositoryResult<RemoteProfile>.failure(
+        _mapUnexpectedError(
+          error,
+          fallbackMessage: fallbackMessage,
+        ),
+      );
     }
   }
 
@@ -505,6 +574,14 @@ class ProfileRepository {
     }
 
     final rawMessage = error.message.toLowerCase();
+    if (rawMessage.contains('invalid onboarding transition') ||
+        rawMessage.contains('onboarding_version')) {
+      return RepositoryError(
+        code: RepositoryErrorCode.invalidResponse,
+        message: error.message,
+        cause: error,
+      );
+    }
     if (rawMessage.contains('network') ||
         rawMessage.contains('socket') ||
         rawMessage.contains('timeout') ||

@@ -326,3 +326,231 @@ Cobertura:
 - Definir comportamiento offline cuando no hay cache local y no se puede leer remoto.
 - Sustituir gradualmente `UserStateStore.onboardingDone` como fuente de decision.
 - Implementar RPC de completado remoto con timestamp del servidor antes de conectar pantallas de onboarding.
+
+## Fase 2C - Finalizacion con timestamp del servidor
+
+### Migracion
+
+Ruta exacta:
+
+`supabase/migrations/20260727213017_enforce_remote_onboarding_transitions.sql`
+
+SQL completo guardado:
+
+```sql
+begin;
+
+-- Enforces remote onboarding state transitions on public.profiles.
+-- Flutter may request a state change, but PostgreSQL owns the completion
+-- timestamp and rejects regressions or arbitrary contract version changes.
+create function app_private.enforce_profile_onboarding_transition()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.onboarding_version is distinct from old.onboarding_version then
+    raise exception 'onboarding_version cannot be changed by this operation';
+  end if;
+
+  if old.onboarding_status = 'pending'
+     and new.onboarding_status in ('pending', 'in_progress') then
+    new.onboarding_completed_at := null;
+    return new;
+  end if;
+
+  if old.onboarding_status = 'pending'
+     and new.onboarding_status = 'completed' then
+    new.onboarding_completed_at := statement_timestamp();
+    return new;
+  end if;
+
+  if old.onboarding_status = 'in_progress'
+     and new.onboarding_status = 'pending' then
+    raise exception 'invalid onboarding transition: in_progress to pending';
+  end if;
+
+  if old.onboarding_status = 'in_progress'
+     and new.onboarding_status = 'in_progress' then
+    new.onboarding_completed_at := null;
+    return new;
+  end if;
+
+  if old.onboarding_status = 'in_progress'
+     and new.onboarding_status = 'completed' then
+    new.onboarding_completed_at := statement_timestamp();
+    return new;
+  end if;
+
+  if old.onboarding_status = 'completed'
+     and new.onboarding_status = 'completed' then
+    new.onboarding_completed_at := old.onboarding_completed_at;
+    new.onboarding_version := old.onboarding_version;
+    return new;
+  end if;
+
+  if old.onboarding_status = 'completed'
+     and new.onboarding_status in ('pending', 'in_progress') then
+    raise exception 'invalid onboarding transition: completed to %', new.onboarding_status;
+  end if;
+
+  raise exception 'invalid onboarding transition: % to %',
+    old.onboarding_status,
+    new.onboarding_status;
+end;
+$$;
+
+comment on function app_private.enforce_profile_onboarding_transition() is
+  'Trigger-only guard for public.profiles onboarding transitions. Uses PostgreSQL statement_timestamp() for first completion and preserves completed timestamps idempotently.';
+
+-- Runs only when onboarding state columns are part of an UPDATE statement.
+create trigger trg_profiles_enforce_onboarding_transition
+before update of onboarding_status, onboarding_version, onboarding_completed_at
+on public.profiles
+for each row
+execute function app_private.enforce_profile_onboarding_transition();
+
+comment on trigger trg_profiles_enforce_onboarding_transition
+on public.profiles is
+  'Before-update guard that blocks onboarding regressions, blocks client version changes, and assigns completion timestamps on the server.';
+
+revoke execute on function app_private.enforce_profile_onboarding_transition()
+from public;
+revoke execute on function app_private.enforce_profile_onboarding_transition()
+from anon;
+revoke execute on function app_private.enforce_profile_onboarding_transition()
+from authenticated;
+
+commit;
+```
+
+### Funcion y trigger
+
+- Funcion creada: `app_private.enforce_profile_onboarding_transition()`.
+- Trigger creado: `trg_profiles_enforce_onboarding_transition`.
+- Timing y evento: `BEFORE UPDATE OF onboarding_status, onboarding_version, onboarding_completed_at ON public.profiles`.
+- La funcion usa `security definer`, referencias cualificadas y `set search_path = ''`.
+- Se revoca `execute` directo a `public`, `anon` y `authenticated`; se invoca solo mediante trigger.
+- No se amplian grants ni se duplican politicas RLS de `public.profiles`.
+
+### Transiciones
+
+Permitidas:
+
+- `pending -> pending`
+- `pending -> in_progress`
+- `pending -> completed`
+- `in_progress -> in_progress`
+- `in_progress -> completed`
+- `completed -> completed`
+
+Bloqueadas:
+
+- `in_progress -> pending`
+- `completed -> pending`
+- `completed -> in_progress`
+- Cualquier otro estado no contemplado por el contrato.
+
+### Version y timestamp
+
+- `onboarding_version` no puede cambiar durante estas transiciones: `NEW.onboarding_version = OLD.onboarding_version`.
+- Un cambio arbitrario de version lanza `onboarding_version cannot be changed by this operation`.
+- En `pending -> completed` e `in_progress -> completed`, PostgreSQL asigna `statement_timestamp()`.
+- Flutter no envia `onboarding_completed_at`; cualquier valor recibido seria ignorado por el trigger al completar.
+- En `completed -> completed`, la operacion es idempotente y conserva `OLD.onboarding_completed_at` y `OLD.onboarding_version`.
+- Cuando el estado final es `pending` o `in_progress`, `onboarding_completed_at` queda en `null`.
+
+### Cambios Flutter
+
+`lib/data/repositories/profile_repository.dart`:
+
+- `markOnboardingCompleted(...)` permite `pending -> completed`, `in_progress -> completed` y `completed -> completed`.
+- El completion usa `update(...).eq('id', userId).select().single()` para recuperar la fila completa resultante del trigger.
+- El payload de completion envia solo `onboarding_status` y `onboarding_version`.
+- El payload de completion no envia `onboarding_completed_at`.
+- La version solicitada debe coincidir con `current.onboardingVersion`; si no coincide, se devuelve `RepositoryErrorCode.invalidResponse`.
+- Las regresiones locales conocidas siguen bloqueadas antes de escribir.
+- Los rechazos de Supabase con `invalid onboarding transition` u `onboarding_version` se mapean a `invalidResponse`.
+
+`markOnboardingInProgress(...)` sigue funcionando y ahora valida que la version solicitada coincida con la version remota actual.
+
+### Tests anadidos o actualizados
+
+- `test/data/repositories/profile_repository_onboarding_test.dart`
+- `test/supabase/enforce_remote_onboarding_transitions_migration_static_test.dart`
+
+Cobertura nueva:
+
+- `pending -> pending`
+- `pending -> completed`
+- `in_progress -> completed`
+- timestamp devuelto por servidor
+- Flutter no envia `onboarding_completed_at`
+- `completed -> completed` conserva fecha
+- bloqueo de `completed -> in_progress`
+- bloqueo de cambio arbitrario de version
+- parseo de la fila devuelta tras el update
+- propagacion controlada de transicion rechazada por Supabase
+- `markOnboardingInProgress(...)` continua funcionando
+- verificacion estatica de funcion, trigger, `BEFORE UPDATE`, `statement_timestamp()`, regresiones, idempotencia y proteccion de version
+
+### Validaciones
+
+Comandos previstos para esta fase:
+
+```powershell
+dart format lib/data/repositories/profile_repository.dart test/data/repositories/profile_repository_onboarding_test.dart test/supabase/enforce_remote_onboarding_transitions_migration_static_test.dart
+flutter analyze lib/data/repositories/profile_repository.dart test/data/repositories/profile_repository_onboarding_test.dart test/supabase/enforce_remote_onboarding_transitions_migration_static_test.dart
+flutter test test/data/repositories/profile_repository_onboarding_test.dart test/data/models/remote_profile_onboarding_test.dart test/supabase/enforce_remote_onboarding_transitions_migration_static_test.dart
+supabase migration list --linked
+supabase db push --linked --dry-run
+supabase db lint --linked
+```
+
+No se debe ejecutar `supabase db push --linked` sin `--dry-run` durante esta tarea.
+
+### Aplicacion recomendada
+
+Opcion recomendada:
+
+```powershell
+supabase db push --linked
+```
+
+Opcion manual de respaldo:
+
+Copiar el SQL completo de la migracion y ejecutarlo en el SQL Editor de Supabase.
+
+No usar ambas opciones para el mismo entorno, porque intentarian aplicar dos veces el mismo cambio.
+
+### Consulta SQL de verificacion posterior
+
+Consulta de solo lectura para ejecutar despues de aplicar la migracion:
+
+```sql
+select
+  trigger_info.trigger_name,
+  trigger_info.event_manipulation,
+  trigger_info.action_timing,
+  trigger_info.event_object_schema,
+  trigger_info.event_object_table,
+  routine_info.routine_schema as function_schema,
+  routine_info.routine_name as function_name,
+  routine_info.routine_type as function_type
+from information_schema.triggers as trigger_info
+join information_schema.routines as routine_info
+  on routine_info.specific_schema = 'app_private'
+ and routine_info.routine_name = 'enforce_profile_onboarding_transition'
+where trigger_info.event_object_schema = 'public'
+  and trigger_info.event_object_table = 'profiles'
+  and trigger_info.trigger_name = 'trg_profiles_enforce_onboarding_transition'
+order by trigger_info.trigger_name;
+```
+
+### Pendiente para Bootstrap Gate
+
+- Conectar `RemoteProfile.onboardingStatus` con la decision Welcome/Auth/Home.
+- Definir politica de cache/offline para el arranque.
+- Sustituir gradualmente `UserStateStore.onboardingDone` como fuente de decision.
+- No se modifica el arranque ni la navegacion en Fase 2C.
