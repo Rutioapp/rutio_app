@@ -322,6 +322,13 @@ class ShopCosmeticsController extends ChangeNotifier {
 
   Future<ShopCosmeticsState> hydrate() => getState();
 
+  Future<ShopCosmeticsState> refreshCloudState({bool force = false}) {
+    if (_cloudEnabled) {
+      return _syncFromCurrentScope(force: force);
+    }
+    return getState();
+  }
+
   @override
   void dispose() {
     _userStateStore.removeListener(_handleUserStateStoreChanged);

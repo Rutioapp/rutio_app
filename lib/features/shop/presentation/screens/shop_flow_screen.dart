@@ -6,8 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
 import 'package:rutio/features/global_wallet/presentation/global_wallet_ui_state.dart';
+import 'package:rutio/features/shop/application/shop_cloud_refresh_coordinator.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
 import 'package:rutio/features/shop/domain/models/active_utility_effect.dart';
@@ -66,17 +68,20 @@ class ShopFlowScreen extends StatefulWidget {
     required this.controller,
     required this.cosmeticsController,
     this.shopRepository,
+    this.refreshCoordinator,
   });
 
   final ShopController controller;
   final ShopCosmeticsController cosmeticsController;
   final ShopLocalRepository? shopRepository;
+  final ShopCloudRefreshCoordinator? refreshCoordinator;
 
   @override
   State<ShopFlowScreen> createState() => _ShopFlowScreenState();
 }
 
-class _ShopFlowScreenState extends State<ShopFlowScreen> {
+class _ShopFlowScreenState extends State<ShopFlowScreen>
+    with WidgetsBindingObserver {
   final List<_ShopFlowPage> _stack = <_ShopFlowPage>[_ShopFlowPage.home];
 
   ShopFlowSnapshot? _snapshot;
@@ -84,14 +89,37 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   bool _isMysteryBoxRouteVisible = false;
   bool _isStreakUtilityFlowVisible = false;
   Future<void>? _pendingSnapshotReload;
+  ShopCloudRefreshCoordinator? _ownedRefreshCoordinator;
+  bool _postFrameOpenRefreshScheduled = false;
+  bool _snapshotReloadScheduled = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     widget.controller.addListener(_handleStoreChanged);
     widget.cosmeticsController.addListener(_handleStoreChanged);
     _snapshot = _buildImmediateSnapshot();
-    unawaited(_reloadSnapshot());
+    _scheduleSnapshotReload();
+    _scheduleOpenRefresh();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureOwnedRefreshCoordinator();
+  }
+
+  void _ensureOwnedRefreshCoordinator() {
+    if (widget.refreshCoordinator != null) return;
+    _ownedRefreshCoordinator ??= ShopCloudRefreshCoordinator(
+      shopController: widget.controller,
+      cosmeticsController: widget.cosmeticsController,
+      walletController: context.read<GlobalWalletController>(),
+      runtimeConfig: _shopRuntimeConfigOf(context),
+      currentUserIdProvider: () =>
+          widget.controller.currentSupabaseUserIdForShop,
+    );
   }
 
   @override
@@ -100,23 +128,75 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
     if (!identical(oldWidget.controller, widget.controller)) {
       oldWidget.controller.removeListener(_handleStoreChanged);
       widget.controller.addListener(_handleStoreChanged);
+      _ownedRefreshCoordinator = null;
     }
     if (!identical(oldWidget.cosmeticsController, widget.cosmeticsController)) {
       oldWidget.cosmeticsController.removeListener(_handleStoreChanged);
       widget.cosmeticsController.addListener(_handleStoreChanged);
+      _ownedRefreshCoordinator = null;
     }
+    _ensureOwnedRefreshCoordinator();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.controller.removeListener(_handleStoreChanged);
     widget.cosmeticsController.removeListener(_handleStoreChanged);
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed || !mounted) return;
+    unawaited(
+      _refreshShopCloudState(
+        reason: ShopRefreshReason.resumed,
+        force: true,
+      ),
+    );
+  }
+
   void _handleStoreChanged() {
     if (!mounted) return;
-    unawaited(_reloadSnapshot());
+    _scheduleSnapshotReload();
+  }
+
+  void _scheduleSnapshotReload() {
+    if (_snapshotReloadScheduled) return;
+    _snapshotReloadScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _snapshotReloadScheduled = false;
+      if (!mounted) return;
+      unawaited(_reloadSnapshot());
+    });
+  }
+
+  void _scheduleOpenRefresh() {
+    if (_postFrameOpenRefreshScheduled) return;
+    _postFrameOpenRefreshScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _postFrameOpenRefreshScheduled = false;
+      if (!mounted) return;
+      unawaited(
+        _refreshShopCloudState(
+          reason: ShopRefreshReason.opened,
+          force: true,
+        ),
+      );
+    });
+  }
+
+  Future<void> _refreshShopCloudState({
+    required ShopRefreshReason reason,
+    required bool force,
+  }) async {
+    final coordinator = widget.refreshCoordinator ?? _ownedRefreshCoordinator;
+    if (coordinator == null) return;
+    await coordinator.refreshShopCloudState(reason: reason, force: force);
+    if (!mounted) return;
+    await _reloadSnapshot();
   }
 
   Future<void> _reloadSnapshot() async {
@@ -159,14 +239,9 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
   }
 
   Future<ShopFlowSnapshot?> _loadSnapshot() async {
-    if (widget.controller.isCloudEconomyEnabled) {
-      await widget.controller.resolvePendingPurchasesForCurrentUser();
-      await widget.controller.hydrateVisibleEconomy();
-    }
-
     final int walletCoins = widget.controller.visibleCoinBalance ??
         widget.controller.getWalletCoins();
-    final shopState = await widget.controller.getVisibleShopState();
+    final shopState = await widget.controller.getCachedVisibleShopState();
     final cosmeticsState = await widget.cosmeticsController.getState();
     final activeUtilityEffects =
         await widget.controller.getActiveUtilityEffects();
@@ -213,7 +288,7 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
 
     if (poppedPage == _ShopFlowPage.cosmetics ||
         poppedPage == _ShopFlowPage.customization) {
-      _reloadSnapshot();
+      _scheduleSnapshotReload();
     }
   }
 
@@ -798,6 +873,21 @@ class _ShopFlowScreenState extends State<ShopFlowScreen> {
       (entry) => entry.itemId == itemId && entry.quantity > 0,
     );
     return hasInventory ? localItem : null;
+  }
+}
+
+ShopCloudRuntimeConfig _shopRuntimeConfigOf(BuildContext context) {
+  try {
+    return context.read<ShopCloudRuntimeConfig>();
+  } on ProviderNotFoundException {
+    return const ShopCloudRuntimeConfig(
+      shopReadEnabled: false,
+      shopPurchaseEnabled: false,
+      cloudCosmeticsEnabled: false,
+      cloudUtilityConsumptionEnabled: false,
+      cloudMysteryBoxEnabled: false,
+      runtimeMode: ShopRuntimeMode.localDemo,
+    );
   }
 }
 

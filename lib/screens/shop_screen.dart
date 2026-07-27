@@ -51,6 +51,12 @@ class _ShopScreenState extends State<ShopScreen> {
       shopRepository: _shopRepository,
     );
   }
+
+  @override
+  void dispose() {
+    _shopController.dispose();
+    super.dispose();
+  }
 }
 
 ShopCloudRuntimeConfig _shopRuntimeConfigOf(BuildContext context) {

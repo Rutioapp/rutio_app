@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -7,11 +9,13 @@ import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
 import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
 import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
+import 'package:rutio/features/shop/application/shop_cloud_refresh_coordinator.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_read_repository.dart';
+import 'package:rutio/features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
 import 'package:rutio/features/shop/data/shop_local_repository.dart';
@@ -37,6 +41,67 @@ void main() {
       await tester.pumpWidget(_app(_flow(env)));
 
       expect(find.text('Tienda'), findsOneWidget);
+    });
+
+    testWidgets('opening requests a post-frame cloud refresh', (
+      WidgetTester tester,
+    ) async {
+      final env = await _createEnv();
+      final refreshCoordinator = _RecordingShopRefreshCoordinator(env);
+
+      await tester.pumpWidget(
+        _app(_flow(env, refreshCoordinator: refreshCoordinator)),
+      );
+      await tester.pump();
+
+      expect(refreshCoordinator.reasons, contains(ShopRefreshReason.opened));
+    });
+
+    testWidgets('resumed lifecycle requests a cloud refresh', (
+      WidgetTester tester,
+    ) async {
+      final env = await _createEnv();
+      final refreshCoordinator = _RecordingShopRefreshCoordinator(env);
+
+      await tester.pumpWidget(
+        _app(_flow(env, refreshCoordinator: refreshCoordinator)),
+      );
+      await tester.pump();
+      refreshCoordinator.reasons.clear();
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(refreshCoordinator.reasons, <ShopRefreshReason>[
+        ShopRefreshReason.resumed,
+      ]);
+    });
+
+    testWidgets('unmount during refresh does not update disposed shop flow', (
+      WidgetTester tester,
+    ) async {
+      final env = await _createEnv();
+      final refreshCoordinator = _RecordingShopRefreshCoordinator(env);
+
+      await tester.pumpWidget(
+        _app(_flow(env, refreshCoordinator: refreshCoordinator)),
+      );
+      await tester.pump();
+      refreshCoordinator.reasons.clear();
+      final gate = Completer<void>();
+      refreshCoordinator.gate = gate.future;
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+
+      gate.complete();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(refreshCoordinator.reasons, <ShopRefreshReason>[
+        ShopRefreshReason.resumed,
+      ]);
     });
 
     testWidgets(
@@ -838,13 +903,20 @@ Widget _app(Widget child) {
   );
 }
 
-Widget _flow(_Env env) {
-  return ChangeNotifierProvider.value(
-    value: env.walletController,
-    child: ShopFlowScreen(
-      controller: env.controller,
-      cosmeticsController: env.cosmeticsController,
-      shopRepository: env.shopRepository,
+Widget _flow(
+  _Env env, {
+  ShopCloudRefreshCoordinator? refreshCoordinator,
+}) {
+  return Provider<ShopCloudRuntimeConfig>.value(
+    value: env.runtimeConfig,
+    child: ChangeNotifierProvider.value(
+      value: env.walletController,
+      child: ShopFlowScreen(
+        controller: env.controller,
+        cosmeticsController: env.cosmeticsController,
+        shopRepository: env.shopRepository,
+        refreshCoordinator: refreshCoordinator,
+      ),
     ),
   );
 }
@@ -886,14 +958,17 @@ Future<_Env> _createEnv({
     userStateStore: store,
     globalWalletController: effectiveWalletController,
     shopRepository: shopRepository,
-    cloudReadEnabled: cloudReadEnabled,
-    cloudPurchaseEnabled: cloudPurchaseEnabled,
+    cloudReadEnabled: cloudReadEnabled ?? false,
+    cloudPurchaseEnabled: cloudPurchaseEnabled ?? false,
+    mysteryBoxCloudEnabled: false,
+    utilityConsumptionEnabled: false,
     shopCloudReadRepository: shopCloudReadRepository,
     currentSupabaseUserIdProvider: currentSupabaseUserIdProvider,
   );
   final cosmeticsController = ShopCosmeticsController(
     userStateStore: store,
     globalWalletController: effectiveWalletController,
+    cloudEnabled: false,
   );
   await cosmeticsController.getState();
   addTearDown(store.dispose);
@@ -902,12 +977,30 @@ Future<_Env> _createEnv({
   }
   addTearDown(controller.dispose);
   addTearDown(cosmeticsController.dispose);
+  final runtimeConfig = cloudReadEnabled == true && cloudPurchaseEnabled == true
+      ? const ShopCloudRuntimeConfig(
+          shopReadEnabled: true,
+          shopPurchaseEnabled: true,
+          cloudCosmeticsEnabled: true,
+          cloudUtilityConsumptionEnabled: true,
+          cloudMysteryBoxEnabled: true,
+          runtimeMode: ShopRuntimeMode.cloud,
+        )
+      : const ShopCloudRuntimeConfig(
+          shopReadEnabled: false,
+          shopPurchaseEnabled: false,
+          cloudCosmeticsEnabled: false,
+          cloudUtilityConsumptionEnabled: false,
+          cloudMysteryBoxEnabled: false,
+          runtimeMode: ShopRuntimeMode.localDemo,
+        );
 
   return _Env(
     controller: controller,
     cosmeticsController: cosmeticsController,
     walletController: effectiveWalletController,
     shopRepository: shopRepository,
+    runtimeConfig: runtimeConfig,
   );
 }
 
@@ -976,12 +1069,14 @@ class _Env {
     required this.cosmeticsController,
     required this.walletController,
     required this.shopRepository,
+    required this.runtimeConfig,
   });
 
   final ShopController controller;
   final ShopCosmeticsController cosmeticsController;
   final GlobalWalletController walletController;
   final ShopLocalRepository shopRepository;
+  final ShopCloudRuntimeConfig runtimeConfig;
 }
 
 class _FakeShopCloudReadRepository extends ShopCloudReadRepository {
@@ -1068,6 +1163,40 @@ class _MemoryWalletCache implements WalletCache {
   @override
   Future<void> clearForUser(String userId) async {
     _entries.remove(userId);
+  }
+}
+
+class _RecordingShopRefreshCoordinator extends ShopCloudRefreshCoordinator {
+  _RecordingShopRefreshCoordinator(_Env env)
+      : super(
+          shopController: env.controller,
+          cosmeticsController: env.cosmeticsController,
+          walletController: env.walletController,
+          runtimeConfig: const ShopCloudRuntimeConfig(
+            shopReadEnabled: true,
+            shopPurchaseEnabled: true,
+            cloudCosmeticsEnabled: true,
+            cloudUtilityConsumptionEnabled: true,
+            cloudMysteryBoxEnabled: true,
+            runtimeMode: ShopRuntimeMode.cloud,
+          ),
+          currentUserIdProvider: () => 'shop-flow-user',
+        );
+
+  final List<ShopRefreshReason> reasons = <ShopRefreshReason>[];
+  Future<void>? gate;
+
+  @override
+  Future<ShopCloudRefreshResult> refreshShopCloudState({
+    required ShopRefreshReason reason,
+    bool force = false,
+  }) async {
+    reasons.add(reason);
+    await gate;
+    return ShopCloudRefreshResult.success(
+      reason: reason,
+      userId: 'shop-flow-user',
+    );
   }
 }
 
