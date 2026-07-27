@@ -203,6 +203,72 @@ void main() {
       expect(notifications, 1);
     });
 
+    test('keeps confirmed balance in memory when cache save fails', () async {
+      final controller = GlobalWalletController(
+        repository: _FakeCloudWalletRepository(),
+        cache: _ThrowingWalletCache(),
+        currentUserIdProvider: () => 'user-a',
+        enabled: true,
+      );
+      var notifications = 0;
+      controller.addListener(() {
+        notifications += 1;
+      });
+
+      await controller.applyConfirmedBalance(
+        userId: 'user-a',
+        coins: 510,
+        updatedAt: DateTime.utc(2026, 7, 18, 14),
+      );
+
+      expect(controller.state.status, GlobalWalletStatus.ready);
+      expect(controller.state.coins, 510);
+      expect(notifications, 1);
+    });
+
+    test('ignores confirmed balances for a changed user', () async {
+      String currentUserId = 'user-a';
+      final controller = GlobalWalletController(
+        repository: _FakeCloudWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => currentUserId,
+        enabled: true,
+      );
+
+      currentUserId = 'user-b';
+      await controller.applyConfirmedBalance(
+        userId: 'user-a',
+        coins: 510,
+        updatedAt: DateTime.utc(2026, 7, 18, 14),
+      );
+
+      expect(controller.state.status, GlobalWalletStatus.unauthenticated);
+      expect(controller.state.coins, isNull);
+    });
+
+    test('older confirmed balance without version cannot overwrite newer',
+        () async {
+      final controller = GlobalWalletController(
+        repository: _FakeCloudWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'user-a',
+        enabled: true,
+      );
+
+      await controller.applyConfirmedBalance(
+        userId: 'user-a',
+        coins: 520,
+        updatedAt: DateTime.utc(2026, 7, 18, 14, 2),
+      );
+      await controller.applyConfirmedBalance(
+        userId: 'user-a',
+        coins: 510,
+        updatedAt: DateTime.utc(2026, 7, 18, 14, 1),
+      );
+
+      expect(controller.state.coins, 520);
+    });
+
     test('rejects negative balances and ignores other users', () async {
       final controller = GlobalWalletController(
         repository: _FakeCloudWalletRepository(),
@@ -405,4 +471,17 @@ class _MemoryWalletCache implements WalletCache {
   Future<void> clearForUser(String userId) async {
     _entries.remove(userId);
   }
+}
+
+class _ThrowingWalletCache implements WalletCache {
+  @override
+  Future<WalletCacheEntry?> read(String userId) async => null;
+
+  @override
+  Future<WalletCacheEntry?> save(CloudWalletSnapshot snapshot) {
+    throw StateError('cache unavailable');
+  }
+
+  @override
+  Future<void> clearForUser(String userId) async {}
 }
