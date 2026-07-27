@@ -1,9 +1,60 @@
 import 'package:flutter/foundation.dart';
 
+enum OnboardingStatus {
+  pending,
+  inProgress,
+  completed;
+
+  factory OnboardingStatus.fromSupabase(String value) {
+    final normalized = value.trim();
+    switch (normalized) {
+      case 'pending':
+        return OnboardingStatus.pending;
+      case 'in_progress':
+        return OnboardingStatus.inProgress;
+      case 'completed':
+        return OnboardingStatus.completed;
+    }
+    throw RemoteProfileParseException(
+      'Unknown onboarding_status "$value".',
+    );
+  }
+
+  String toSupabase() {
+    switch (this) {
+      case OnboardingStatus.pending:
+        return 'pending';
+      case OnboardingStatus.inProgress:
+        return 'in_progress';
+      case OnboardingStatus.completed:
+        return 'completed';
+    }
+  }
+}
+
+class RemoteProfileParseException implements FormatException {
+  const RemoteProfileParseException(this.message, [this.source, this.offset]);
+
+  @override
+  final String message;
+
+  @override
+  final dynamic source;
+
+  @override
+  final int? offset;
+
+  @override
+  String toString() => 'RemoteProfileParseException: $message';
+}
+
 @immutable
 class RemoteProfile {
   const RemoteProfile({
     required this.id,
+    required this.onboardingStatus,
+    required this.onboardingVersion,
+    required this.onboardingCompletedAt,
     this.email,
     this.displayName,
     this.avatarUrl,
@@ -20,6 +71,9 @@ class RemoteProfile {
   });
 
   final String id;
+  final OnboardingStatus onboardingStatus;
+  final int onboardingVersion;
+  final DateTime? onboardingCompletedAt;
   final String? email;
   final String? displayName;
   final String? avatarUrl;
@@ -35,8 +89,26 @@ class RemoteProfile {
   final Map<String, dynamic> raw;
 
   factory RemoteProfile.fromMap(Map<String, dynamic> map) {
+    final onboardingStatus = OnboardingStatus.fromSupabase(
+      _requiredTrim(map, 'onboarding_status'),
+    );
+    final onboardingVersion = _requiredPositiveInt(
+      map,
+      'onboarding_version',
+    );
+    final onboardingCompletedAt = _nullableDateTime(
+      map['onboarding_completed_at'] ?? map['onboardingCompletedAt'],
+    );
+    _validateOnboardingConsistency(
+      status: onboardingStatus,
+      completedAt: onboardingCompletedAt,
+    );
+
     return RemoteProfile(
       id: (map['id'] ?? '').toString(),
+      onboardingStatus: onboardingStatus,
+      onboardingVersion: onboardingVersion,
+      onboardingCompletedAt: onboardingCompletedAt,
       email: _nullableTrim(map['email']),
       displayName: _nullableTrim(map['display_name'] ?? map['displayName']),
       avatarUrl: _nullableTrim(map['avatar_url'] ?? map['avatarUrl']),
@@ -56,7 +128,8 @@ class RemoteProfile {
       dailyMotivationTime: _nullableTrim(
         map['daily_motivation_time'] ?? map['dailyMotivationTime'],
       ),
-      lastLoginAt: _nullableDateTime(map['last_login_at'] ?? map['lastLoginAt']),
+      lastLoginAt:
+          _nullableDateTime(map['last_login_at'] ?? map['lastLoginAt']),
       lastSeenAt: _nullableDateTime(map['last_seen_at'] ?? map['lastSeenAt']),
       createdAt: _nullableDateTime(map['created_at'] ?? map['createdAt']),
       updatedAt: _nullableDateTime(map['updated_at'] ?? map['updatedAt']),
@@ -68,6 +141,11 @@ class RemoteProfile {
     return <String, dynamic>{
       'id': id,
       if (email != null) 'email': email,
+      'onboarding_status': onboardingStatus.toSupabase(),
+      'onboarding_version': onboardingVersion,
+      if (onboardingCompletedAt != null)
+        'onboarding_completed_at':
+            onboardingCompletedAt!.toUtc().toIso8601String(),
       if (displayName != null) 'display_name': displayName,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
       if (preferredLanguageCode != null)
@@ -78,9 +156,12 @@ class RemoteProfile {
         'daily_motivation_enabled': dailyMotivationEnabled,
       if (marketingNotificationsEnabled != null)
         'marketing_notifications_enabled': marketingNotificationsEnabled,
-      if (dailyMotivationTime != null) 'daily_motivation_time': dailyMotivationTime,
-      if (lastLoginAt != null) 'last_login_at': lastLoginAt!.toUtc().toIso8601String(),
-      if (lastSeenAt != null) 'last_seen_at': lastSeenAt!.toUtc().toIso8601String(),
+      if (dailyMotivationTime != null)
+        'daily_motivation_time': dailyMotivationTime,
+      if (lastLoginAt != null)
+        'last_login_at': lastLoginAt!.toUtc().toIso8601String(),
+      if (lastSeenAt != null)
+        'last_seen_at': lastSeenAt!.toUtc().toIso8601String(),
       if (createdAt != null) 'created_at': createdAt!.toUtc().toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toUtc().toIso8601String(),
     };
@@ -89,6 +170,42 @@ class RemoteProfile {
   static String? _nullableTrim(dynamic value) {
     final normalized = (value ?? '').toString().trim();
     return normalized.isEmpty ? null : normalized;
+  }
+
+  static String _requiredTrim(Map<String, dynamic> map, String key) {
+    final normalized = _nullableTrim(map[key]);
+    if (normalized == null) {
+      throw RemoteProfileParseException('Missing required "$key".');
+    }
+    return normalized;
+  }
+
+  static int _requiredPositiveInt(Map<String, dynamic> map, String key) {
+    final raw = map[key];
+    final parsed = raw is int ? raw : int.tryParse((raw ?? '').toString());
+    if (parsed == null) {
+      throw RemoteProfileParseException('Invalid "$key".');
+    }
+    if (parsed < 1) {
+      throw RemoteProfileParseException('"$key" must be >= 1.');
+    }
+    return parsed;
+  }
+
+  static void _validateOnboardingConsistency({
+    required OnboardingStatus status,
+    required DateTime? completedAt,
+  }) {
+    if (status == OnboardingStatus.completed && completedAt == null) {
+      throw const RemoteProfileParseException(
+        'completed onboarding requires onboarding_completed_at.',
+      );
+    }
+    if (status != OnboardingStatus.completed && completedAt != null) {
+      throw const RemoteProfileParseException(
+        'pending/in_progress onboarding requires null onboarding_completed_at.',
+      );
+    }
   }
 
   static bool? _nullableBool(dynamic value) {

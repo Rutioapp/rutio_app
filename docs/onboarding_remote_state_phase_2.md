@@ -214,3 +214,115 @@ comment on column public.profiles.onboarding_completed_at is
 
 commit;
 ```
+
+## Fase 2B - Integracion Flutter
+
+### Modelo y enum
+
+Se amplio `lib/data/models/remote/remote_profile.dart` con:
+
+- `enum OnboardingStatus { pending, inProgress, completed }`
+- `RemoteProfileParseException`
+- `RemoteProfile.onboardingStatus`
+- `RemoteProfile.onboardingVersion`
+- `RemoteProfile.onboardingCompletedAt`
+
+Mapeo Supabase:
+
+| Flutter | Supabase |
+| --- | --- |
+| `OnboardingStatus.pending` | `pending` |
+| `OnboardingStatus.inProgress` | `in_progress` |
+| `OnboardingStatus.completed` | `completed` |
+
+El modelo valida:
+
+- `onboarding_status` desconocido: error de parseo controlado.
+- `onboarding_version >= 1`.
+- `completed` requiere `onboarding_completed_at`.
+- `pending` e `in_progress` requieren `onboarding_completed_at = null`.
+- Los timestamps se parsean con `DateTime.tryParse` y se serializan en UTC.
+
+### Repositorio ampliado
+
+Se amplio `lib/data/repositories/profile_repository.dart`:
+
+- `fetchCurrentProfile()` devuelve el estado remoto real desde `public.profiles`.
+- `markOnboardingInProgress({int onboardingVersion = 1})`.
+- `markOnboardingCompleted({int onboardingVersion = 1})`.
+- `currentUserIdProvider` opcional para tests sin sesion Supabase real.
+
+`UserStateStore.onboardingDone` no se elimina ni se usa como fuente para leer el estado remoto.
+
+### Transiciones
+
+Permitidas por el contrato:
+
+- `pending -> in_progress`
+- `pending -> completed`
+- `in_progress -> completed`
+- `completed -> completed`
+
+Implementadas ahora:
+
+- `pending -> in_progress`
+- `in_progress -> in_progress`
+- `completed -> completed` como operacion idempotente sin escritura adicional
+
+Bloqueadas:
+
+- `completed -> pending`
+- `completed -> in_progress`
+- `in_progress -> pending`
+
+### Tratamiento de errores
+
+Se mantiene `RepositoryResult` y `RepositoryErrorCode`:
+
+- perfil no encontrado: `notFound`
+- estado remoto invalido o inconsistente: `invalidResponse`
+- version menor que 1: `invalidResponse`
+- error de permisos/RLS: `permissionDenied`
+- error de red: `network`
+- errores restantes: `unknown`
+
+### Timestamp del servidor
+
+No se envia una hora local para `onboarding_completed_at`.
+
+La API directa de Supabase/PostgREST usada por `supabase_flutter` actualiza filas mediante JSON y no permite asignar de forma segura una expresion SQL como `now()` en `onboarding_completed_at`. Por eso `markOnboardingCompleted()` solo es idempotente cuando el perfil remoto ya esta en `completed`. Para completar perfiles `pending` o `in_progress` hace falta una pequena RPC en una fase posterior, por ejemplo `complete_onboarding(version integer)`, que ejecute en PostgreSQL:
+
+```sql
+onboarding_status = 'completed',
+onboarding_version = greatest(input_version, 1),
+onboarding_completed_at = now()
+```
+
+Esta decision evita fingir tiempo de servidor con el reloj del dispositivo.
+
+### Tests anadidos
+
+- `test/data/models/remote_profile_onboarding_test.dart`
+- `test/data/repositories/profile_repository_onboarding_test.dart`
+
+Cobertura:
+
+- parseo de `pending`
+- parseo de `in_progress`
+- parseo de `completed` con fecha
+- rechazo de estado desconocido
+- rechazo de version menor que 1
+- rechazo de `completed` sin fecha
+- rechazo de `pending` o `in_progress` con fecha
+- serializacion hacia Supabase
+- actualizacion a `in_progress`
+- idempotencia de `completed`
+- bloqueo de transicion regresiva `completed -> in_progress`
+- error controlado para `pending -> completed` hasta disponer de RPC con timestamp de servidor
+
+### Pendiente para Bootstrap Gate
+
+- Consumir `RemoteProfile.onboardingStatus` en el arranque.
+- Definir comportamiento offline cuando no hay cache local y no se puede leer remoto.
+- Sustituir gradualmente `UserStateStore.onboardingDone` como fuente de decision.
+- Implementar RPC de completado remoto con timestamp del servidor antes de conectar pantallas de onboarding.
