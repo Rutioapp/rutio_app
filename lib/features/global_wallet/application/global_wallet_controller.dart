@@ -33,6 +33,7 @@ class GlobalWalletController extends ChangeNotifier {
   GlobalWalletState _state = GlobalWalletState.unauthenticated();
   String? _activeUserId;
   int _requestEpoch = 0;
+  bool _isDisposed = false;
   final Map<String, int> _confirmedBalanceVersionByUserId = <String, int>{};
 
   GlobalWalletState get state => _state;
@@ -62,7 +63,7 @@ class GlobalWalletController extends ChangeNotifier {
         ),
         userId: normalizedUserId,
       );
-      notifyListeners();
+      _notifyWalletListeners();
       return _state;
     }
 
@@ -75,7 +76,7 @@ class GlobalWalletController extends ChangeNotifier {
         ? GlobalWalletState.syncing(
             userId: normalizedUserId, cache: cachedEntry)
         : GlobalWalletState.loading(userId: normalizedUserId);
-    notifyListeners();
+    _notifyWalletListeners();
 
     final result = await _repository.fetchWallet();
     if (!_isRequestCurrent(requestEpoch, normalizedUserId)) {
@@ -94,7 +95,7 @@ class GlobalWalletController extends ChangeNotifier {
           userId: normalizedUserId,
           failure: failure,
         );
-        notifyListeners();
+        _notifyWalletListeners();
         return _state;
       }
 
@@ -104,7 +105,7 @@ class GlobalWalletController extends ChangeNotifier {
           cacheEntry: cachedEntry,
           failure: failure,
         );
-        notifyListeners();
+        _notifyWalletListeners();
         return _state;
       }
 
@@ -112,7 +113,7 @@ class GlobalWalletController extends ChangeNotifier {
         failure: failure,
         userId: normalizedUserId,
       );
-      notifyListeners();
+      _notifyWalletListeners();
       return _state;
     }
 
@@ -134,7 +135,7 @@ class GlobalWalletController extends ChangeNotifier {
           userId: normalizedUserId,
         );
       }
-      notifyListeners();
+      _notifyWalletListeners();
       return _state;
     }
 
@@ -160,7 +161,7 @@ class GlobalWalletController extends ChangeNotifier {
         userId: normalizedUserId,
         cacheEntry: effectiveCache,
       );
-      notifyListeners();
+      _notifyWalletListeners();
       return _state;
     }
 
@@ -169,7 +170,7 @@ class GlobalWalletController extends ChangeNotifier {
       snapshot: snapshot,
       cache: effectiveCache,
     );
-    notifyListeners();
+    _notifyWalletListeners();
     return _state;
   }
 
@@ -179,6 +180,7 @@ class GlobalWalletController extends ChangeNotifier {
     int? version,
     DateTime? updatedAt,
   }) async {
+    if (_isDisposed) return;
     final normalizedUserId = _normalizeUserId(userId);
     if (normalizedUserId == null) return;
     if (coins < 0) {
@@ -187,8 +189,18 @@ class GlobalWalletController extends ChangeNotifier {
 
     final requestEpoch = _requestEpoch;
     final currentUserId = _normalizeUserId(_currentUserId());
-    if (currentUserId != normalizedUserId) return;
-    if (_activeUserId != null && _activeUserId != normalizedUserId) return;
+    if (currentUserId != normalizedUserId) {
+      _debugWalletBalance(
+        'confirmed balance ignored: session changed userId=$normalizedUserId',
+      );
+      return;
+    }
+    if (_activeUserId != null && _activeUserId != normalizedUserId) {
+      _debugWalletBalance(
+        'confirmed balance ignored: active wallet changed userId=$normalizedUserId',
+      );
+      return;
+    }
 
     _activeUserId = normalizedUserId;
 
@@ -197,6 +209,18 @@ class GlobalWalletController extends ChangeNotifier {
     final currentCache =
         _state.userId == normalizedUserId ? _state.cachedEntry : null;
     final now = (updatedAt ?? _nowProvider()).toUtc();
+    if (version == null &&
+        _confirmedBalanceIsOlderThanCurrent(
+          userId: normalizedUserId,
+          updatedAt: now,
+          currentSnapshot: currentSnapshot,
+          currentCache: currentCache,
+        )) {
+      _debugWalletBalance(
+        'confirmed balance ignored: older timestamp userId=$normalizedUserId',
+      );
+      return;
+    }
     final confirmedVersion = version ??
         _deriveConfirmedVersion(
           userId: normalizedUserId,
@@ -222,37 +246,34 @@ class GlobalWalletController extends ChangeNotifier {
       updatedAt: now,
       fetchedAt: now,
     );
-
-    final storedEntry = await _cache.save(snapshot);
-    if (!_isCurrentSession(requestEpoch, normalizedUserId)) return;
-
-    final effectiveCache = storedEntry ??
-        (await _cache.read(normalizedUserId)) ??
-        WalletCacheEntry.fromSnapshot(
-          snapshot,
-          cachedAt: now,
-        );
-    if (!_isCurrentSession(requestEpoch, normalizedUserId)) return;
-
-    final latestKnownVersion = _currentKnownVersion(
-      userId: normalizedUserId,
-      snapshot: _state.userId == normalizedUserId ? _state.snapshot : null,
-      cacheEntry: _state.userId == normalizedUserId ? _state.cachedEntry : null,
+    final optimisticCacheEntry = WalletCacheEntry.fromSnapshot(
+      snapshot,
+      cachedAt: now,
     );
-    if (confirmedVersion < latestKnownVersion) return;
-
-    if (!snapshotIsNewerOrEqual(snapshot, effectiveCache) &&
-        confirmedVersion == effectiveCache.version) {
-      return;
-    }
 
     _confirmedBalanceVersionByUserId[normalizedUserId] = confirmedVersion;
     _state = GlobalWalletState.ready(
       userId: normalizedUserId,
       snapshot: snapshot,
-      cache: effectiveCache,
+      cache: optimisticCacheEntry,
     );
-    notifyListeners();
+    _notifyWalletListeners();
+    _debugWalletBalance(
+      'confirmed balance applied userId=$normalizedUserId '
+      'coins=$coins version=$confirmedVersion',
+    );
+
+    try {
+      await _cache.save(snapshot);
+      _debugWalletBalance(
+        'confirmed balance cache updated userId=$normalizedUserId '
+        'coins=$coins version=$confirmedVersion',
+      );
+    } catch (error) {
+      _debugWalletBalance(
+        'confirmed balance cache failed userId=$normalizedUserId error=$error',
+      );
+    }
   }
 
   Future<GlobalWalletState> refresh({bool force = false}) {
@@ -267,7 +288,7 @@ class GlobalWalletController extends ChangeNotifier {
     _requestEpoch += 1;
     _activeUserId = null;
     _state = GlobalWalletState.unauthenticated();
-    notifyListeners();
+    _notifyWalletListeners();
     return _state;
   }
 
@@ -308,6 +329,25 @@ class GlobalWalletController extends ChangeNotifier {
     return knownVersion + 1;
   }
 
+  bool _confirmedBalanceIsOlderThanCurrent({
+    required String userId,
+    required DateTime updatedAt,
+    CloudWalletSnapshot? currentSnapshot,
+    WalletCacheEntry? currentCache,
+  }) {
+    if (currentSnapshot != null &&
+        currentSnapshot.userId == userId &&
+        updatedAt.isBefore(currentSnapshot.updatedAt.toUtc())) {
+      return true;
+    }
+    if (currentCache != null &&
+        currentCache.userId == userId &&
+        updatedAt.isBefore(currentCache.updatedAt.toUtc())) {
+      return true;
+    }
+    return false;
+  }
+
   bool snapshotIsNewerOrEqual(
     CloudWalletSnapshot snapshot,
     WalletCacheEntry cacheEntry,
@@ -345,6 +385,23 @@ class GlobalWalletController extends ChangeNotifier {
     final normalized = (userId ?? '').trim();
     if (normalized.isEmpty) return null;
     return normalized;
+  }
+
+  void _notifyWalletListeners() {
+    if (_isDisposed) return;
+    notifyListeners();
+  }
+
+  void _debugWalletBalance(String message) {
+    if (kDebugMode) {
+      debugPrint('[global_wallet] $message');
+    }
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 
   static String? _defaultCurrentUserIdProvider() {

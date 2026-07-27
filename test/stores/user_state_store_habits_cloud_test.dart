@@ -10,6 +10,12 @@ import 'package:rutio/features/habits/domain/habit_reward_transaction_repository
 import 'package:rutio/features/habits/domain/models/habit_reward_transaction.dart';
 import 'package:rutio/features/habits/domain/models/pending_currency_operation.dart';
 import 'package:rutio/features/habits/domain/pending_currency_operation_store.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
+import 'package:rutio/features/global_wallet/application/global_wallet_state.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_errors.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_repository.dart';
+import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
+import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
 import 'package:rutio/features/shop/domain/active_utility_effects_repository.dart';
 import 'package:rutio/features/shop/domain/models/active_utility_effect.dart';
 import 'package:rutio/stores/user_state_store.dart';
@@ -75,6 +81,252 @@ void main() {
       expect(_xp(fixture.store), 0);
       expect(_coins(fixture.store), 0);
       expect((await fixture.effects()).single.remainingUses, 9);
+    });
+
+    test('confirmed reward updates GlobalWalletController immediately',
+        () async {
+      final walletCache = _MemoryWalletCache();
+      final walletController = GlobalWalletController(
+        repository: _NeverWalletRepository(),
+        cache: walletCache,
+        currentUserIdProvider: () => 'cloud-habit-user-wallet-1',
+        enabled: true,
+        nowProvider: () => DateTime.utc(2026, 7, 18, 12),
+      );
+      var walletNotifications = 0;
+      walletController.addListener(() {
+        walletNotifications += 1;
+      });
+      final fixture = await _seedFixture(
+        scopeUserId: 'cloud-habit-user-wallet-1',
+        cloudHabitRewardsEnabled: true,
+        globalWalletController: walletController,
+        habits: <Map<String, dynamic>>[
+          _habit(
+            id: 'habit-check',
+            type: 'check',
+            target: 1,
+            remoteId: _remoteHabitUuid1,
+          ),
+        ],
+        activeEffects: const <ActiveUtilityEffect>[],
+        rewardHandler: (request, effects) {
+          return HabitCurrencyRewardResult.success(
+            data: _ledgerFor(
+              request: request,
+              userId: 'cloud-habit-user-wallet-1',
+              coinDelta: 10,
+              balanceAfter: 5010,
+            ),
+          );
+        },
+      );
+
+      await fixture.store.completeHabit(habitId: 'habit-check');
+
+      expect(walletController.state.status, GlobalWalletStatus.ready);
+      expect(walletController.state.coins, 5010);
+      expect(walletCache.readSync('cloud-habit-user-wallet-1')?.coins, 5010);
+      expect(walletNotifications, 1);
+    });
+
+    test('uses balanceAfter instead of adding coinDelta locally', () async {
+      final walletController = GlobalWalletController(
+        repository: _NeverWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'cloud-habit-user-wallet-2',
+        enabled: true,
+      );
+      await walletController.applyConfirmedBalance(
+        userId: 'cloud-habit-user-wallet-2',
+        coins: 5000,
+        version: 1,
+        updatedAt: DateTime.utc(2026, 7, 18, 11),
+      );
+      final fixture = await _seedFixture(
+        scopeUserId: 'cloud-habit-user-wallet-2',
+        cloudHabitRewardsEnabled: true,
+        globalWalletController: walletController,
+        habits: <Map<String, dynamic>>[
+          _habit(
+            id: 'habit-check',
+            type: 'check',
+            target: 1,
+            remoteId: _remoteHabitUuid1,
+          ),
+        ],
+        activeEffects: const <ActiveUtilityEffect>[],
+        rewardHandler: (request, effects) {
+          return HabitCurrencyRewardResult.success(
+            data: _ledgerFor(
+              request: request,
+              userId: 'cloud-habit-user-wallet-2',
+              coinDelta: 10,
+              balanceAfter: 7000,
+            ),
+          );
+        },
+      );
+
+      await fixture.store.completeHabit(habitId: 'habit-check');
+
+      expect(walletController.state.coins, 7000);
+    });
+
+    test('idempotent reward response does not duplicate coins', () async {
+      final walletController = GlobalWalletController(
+        repository: _NeverWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'cloud-habit-user-wallet-3',
+        enabled: true,
+      );
+      final fixture = await _seedFixture(
+        scopeUserId: 'cloud-habit-user-wallet-3',
+        cloudHabitRewardsEnabled: true,
+        globalWalletController: walletController,
+        habits: <Map<String, dynamic>>[
+          _habit(
+            id: 'habit-check',
+            type: 'check',
+            target: 1,
+            remoteId: _remoteHabitUuid1,
+          ),
+        ],
+        activeEffects: const <ActiveUtilityEffect>[],
+        rewardHandler: (request, effects) {
+          return HabitCurrencyRewardResult.success(
+            data: _ledgerFor(
+              request: request,
+              userId: 'cloud-habit-user-wallet-3',
+              coinDelta: 10,
+              balanceAfter: 5010,
+              isIdempotent: true,
+            ),
+          );
+        },
+      );
+
+      await fixture.store.completeHabit(habitId: 'habit-check');
+      await walletController.applyConfirmedBalance(
+        userId: 'cloud-habit-user-wallet-3',
+        coins: 5010,
+        updatedAt: DateTime.utc(2026, 7, 18, 12),
+      );
+
+      expect(walletController.state.coins, 5010);
+    });
+
+    test('consecutive rewards apply the final confirmed balance', () async {
+      var call = 0;
+      final walletController = GlobalWalletController(
+        repository: _NeverWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'cloud-habit-user-wallet-4',
+        enabled: true,
+      );
+      final fixture = await _seedFixture(
+        scopeUserId: 'cloud-habit-user-wallet-4',
+        cloudHabitRewardsEnabled: true,
+        globalWalletController: walletController,
+        habits: <Map<String, dynamic>>[
+          _habit(
+            id: 'habit-check',
+            type: 'check',
+            target: 1,
+            remoteId: _remoteHabitUuid1,
+          ),
+          _habit(
+            id: 'habit-count',
+            type: 'count',
+            target: 5,
+            remoteId: _remoteHabitUuid2,
+          ),
+        ],
+        activeEffects: const <ActiveUtilityEffect>[],
+        rewardHandler: (request, effects) {
+          call += 1;
+          return HabitCurrencyRewardResult.success(
+            data: _ledgerFor(
+              request: request,
+              userId: 'cloud-habit-user-wallet-4',
+              coinDelta: 10,
+              balanceAfter: call == 1 ? 5010 : 5020,
+              createdAt: DateTime.utc(2026, 7, 18, 12, call),
+            ),
+          );
+        },
+      );
+
+      await fixture.store.completeHabit(habitId: 'habit-check');
+      await fixture.store.setCountHabitValue(habitId: 'habit-count', value: 5);
+
+      expect(walletController.state.coins, 5020);
+    });
+
+    test('remote error preserves the previous visible wallet balance',
+        () async {
+      final walletController = GlobalWalletController(
+        repository: _NeverWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'cloud-habit-user-wallet-5',
+        enabled: true,
+      );
+      await walletController.applyConfirmedBalance(
+        userId: 'cloud-habit-user-wallet-5',
+        coins: 5000,
+        updatedAt: DateTime.utc(2026, 7, 18, 11),
+      );
+      final fixture = await _seedFixture(
+        scopeUserId: 'cloud-habit-user-wallet-5',
+        cloudHabitRewardsEnabled: true,
+        globalWalletController: walletController,
+        habits: <Map<String, dynamic>>[
+          _habit(
+            id: 'habit-check',
+            type: 'check',
+            target: 1,
+            remoteId: _remoteHabitUuid1,
+          ),
+        ],
+        activeEffects: const <ActiveUtilityEffect>[],
+        rewardHandler: (request, effects) {
+          return HabitCurrencyRewardResult.failure(
+            failure: const HabitCurrencyRewardFailure(
+              code: HabitCurrencyRewardFailureCode.networkUnavailable,
+              message: 'offline',
+              retryable: true,
+            ),
+          );
+        },
+      );
+
+      await fixture.store.completeHabit(habitId: 'habit-check');
+
+      expect(walletController.state.coins, 5000);
+      expect(fixture.rewardRepository.applyCalls, greaterThanOrEqualTo(1));
+    });
+
+    test('local mode does not touch GlobalWalletController', () async {
+      final walletController = GlobalWalletController(
+        repository: _NeverWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'local-habit-wallet-user',
+        enabled: true,
+      );
+      final fixture = await _seedFixture(
+        scopeUserId: 'local-habit-wallet-user',
+        cloudHabitRewardsEnabled: false,
+        globalWalletController: walletController,
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'habit-check', type: 'check', target: 1),
+        ],
+        activeEffects: const <ActiveUtilityEffect>[],
+      );
+
+      await fixture.store.completeHabit(habitId: 'habit-check');
+
+      expect(walletController.state.status, GlobalWalletStatus.unauthenticated);
+      expect(_coins(fixture.store), greaterThan(0));
     });
 
     test('legacy local transaction does not block the cloud RPC', () async {
@@ -543,6 +795,7 @@ Future<_Fixture> _seedFixture({
     _HabitCurrencyRewardRequest request,
     _TrackingActiveUtilityEffectsRepository effects,
   )? reverseHandler,
+  GlobalWalletController? globalWalletController,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -576,6 +829,8 @@ Future<_Fixture> _seedFixture({
     habitCurrencyRewardCoordinator: coordinator,
     habitRewardTransactionRepository: transactionRepository,
     cloudHabitRewardsEnabledOverride: cloudHabitRewardsEnabled,
+    globalWalletController: globalWalletController,
+    currentSupabaseUserIdProvider: () => scopeUserId,
   );
   await store.save(
     _baseState(
@@ -616,6 +871,8 @@ HabitCurrencyRewardLedgerEntry _ledgerFor({
   int bonusXp = 0,
   int bonusCoins = 0,
   List<String> appliedEffectIds = const <String>[],
+  DateTime? createdAt,
+  bool isIdempotent = false,
 }) {
   return HabitCurrencyRewardLedgerEntry(
     id: 'ledger-${request.operationType}-${request.requestId}',
@@ -628,8 +885,8 @@ HabitCurrencyRewardLedgerEntry _ledgerFor({
     logicalDateKey: request.logicalDateKey,
     coinDelta: coinDelta,
     balanceAfter: balanceAfter,
-    createdAt: DateTime.utc(2026, 7, 18, 12, 0, 0),
-    isIdempotent: false,
+    createdAt: createdAt ?? DateTime.utc(2026, 7, 18, 12, 0, 0),
+    isIdempotent: isIdempotent,
     baseXp: baseXp,
     bonusXp: bonusXp,
     bonusCoins: bonusCoins,
@@ -981,6 +1238,37 @@ class _NoopPendingCurrencyOperationStore
     String userId,
     List<PendingCurrencyOperation> operations,
   ) async {}
+}
+
+class _NeverWalletRepository implements CloudWalletRepository {
+  @override
+  Future<WalletReadResult<CloudWalletSnapshot>> fetchWallet() {
+    throw StateError('Wallet refresh should not run for this test.');
+  }
+}
+
+class _MemoryWalletCache implements WalletCache {
+  final Map<String, WalletCacheEntry> _entries = <String, WalletCacheEntry>{};
+
+  WalletCacheEntry? readSync(String userId) => _entries[userId];
+
+  @override
+  Future<WalletCacheEntry?> read(String userId) async => _entries[userId];
+
+  @override
+  Future<WalletCacheEntry?> save(CloudWalletSnapshot snapshot) async {
+    final entry = WalletCacheEntry.fromSnapshot(
+      snapshot,
+      cachedAt: DateTime.utc(2026, 7, 18, 12),
+    );
+    _entries[snapshot.userId] = entry;
+    return entry;
+  }
+
+  @override
+  Future<void> clearForUser(String userId) async {
+    _entries.remove(userId);
+  }
 }
 
 class _HabitCurrencyRewardRequest {

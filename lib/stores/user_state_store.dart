@@ -39,6 +39,7 @@ import '../features/achievements/domain/models/unlocked_achievement_record.dart'
 import '../features/gamification/application/level_up_celebration_controller.dart';
 import '../features/habits/domain/models/habit_occurrence_status.dart';
 import '../features/habits/application/habit_currency_reward_coordinator.dart';
+import '../features/habits/application/habit_currency_reward_result.dart';
 import '../features/habits/data/cloud/habit_currency_reward_repository.dart';
 import '../features/habits/data/cloud/habit_currency_rewards_config.dart';
 import '../features/habits/data/cloud/device_time_zone_provider.dart';

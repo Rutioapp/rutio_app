@@ -3364,6 +3364,49 @@ void _logHabitCloudReward(String message) {
   }
 }
 
+Future<void> _applyConfirmedHabitRewardWalletBalance(
+  UserStateStore store, {
+  required HabitCurrencyRewardOperationResult result,
+}) async {
+  final walletController = store._globalWalletController;
+  if (walletController == null || !walletController.isEnabled) return;
+
+  final ledger = result.ledger;
+  if (ledger == null) return;
+
+  final userIdAtCompletion = ledger.userId.trim();
+  if (userIdAtCompletion.isEmpty) return;
+
+  final activeUserId = (store._currentSupabaseUserIdProvider() ?? '').trim();
+  if (activeUserId != userIdAtCompletion) {
+    _logHabitCloudReward(
+      'wallet update ignored sessionChanged userId=$userIdAtCompletion',
+    );
+    return;
+  }
+
+  _logHabitCloudReward(
+    'wallet update received userId=$userIdAtCompletion '
+    'balanceAfter=${ledger.balanceAfter} idempotent=${ledger.isIdempotent}',
+  );
+
+  try {
+    await walletController.applyConfirmedBalance(
+      userId: userIdAtCompletion,
+      coins: ledger.balanceAfter,
+      updatedAt: ledger.createdAt,
+    );
+    _logHabitCloudReward(
+      'wallet update applied userId=$userIdAtCompletion '
+      'balanceAfter=${ledger.balanceAfter}',
+    );
+  } catch (error) {
+    _logHabitCloudReward(
+      'wallet update failed userId=$userIdAtCompletion error=$error',
+    );
+  }
+}
+
 void _logStreakShieldCloud(String message) {
   if (kDebugMode) {
     debugPrint('[streak_shield_cloud] $message');
@@ -3694,6 +3737,10 @@ Future<_HabitRewardCompletionOutcome> _applyHabitRewardCompletion(
     );
     if (result.isSuccess && result.transaction != null) {
       final transaction = result.transaction!;
+      await _applyConfirmedHabitRewardWalletBalance(
+        store,
+        result: result,
+      );
       await _activeUtilityEffectsRepositoryForStore(store).loadEffects(
         _rewardScopeForStore(store),
       );
