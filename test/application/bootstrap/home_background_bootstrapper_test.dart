@@ -16,7 +16,7 @@ void main() {
   testWidgets('preloads the equipped wallpaper asset and becomes ready',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    await ShopCosmeticsRepository().save(
+    await _saveScopedCosmeticsState(
       ShopCosmeticsState(
         ownedAssetIds: const <String>['wallpaper_mist_blue'],
         ownedBundleIds: const <String>[],
@@ -25,7 +25,10 @@ void main() {
     );
 
     final store = await _createStore();
-    final controller = ShopCosmeticsController(userStateStore: store);
+    final controller = ShopCosmeticsController(
+      userStateStore: store,
+      cloudEnabled: false,
+    );
     final precachedAssets = <String>[];
     final bootstrapper = HomeBackgroundBootstrapper(
       controller: controller,
@@ -52,7 +55,7 @@ void main() {
 
   testWidgets('falls back when wallpaper precache fails', (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    await ShopCosmeticsRepository().save(
+    await _saveScopedCosmeticsState(
       ShopCosmeticsState(
         ownedAssetIds: const <String>['wallpaper_mist_blue'],
         ownedBundleIds: const <String>[],
@@ -61,7 +64,10 @@ void main() {
     );
 
     final store = await _createStore();
-    final controller = ShopCosmeticsController(userStateStore: store);
+    final controller = ShopCosmeticsController(
+      userStateStore: store,
+      cloudEnabled: false,
+    );
     final bootstrapper = HomeBackgroundBootstrapper(
       controller: controller,
       precacheImageCallback: (_, __) async {
@@ -85,7 +91,7 @@ void main() {
   testWidgets('invalid wallpaper id uses fallback and does not precache',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    await ShopCosmeticsRepository().save(
+    await _saveScopedCosmeticsState(
       ShopCosmeticsState(
         ownedAssetIds: const <String>[],
         ownedBundleIds: const <String>[],
@@ -94,7 +100,10 @@ void main() {
     );
 
     final store = await _createStore();
-    final controller = ShopCosmeticsController(userStateStore: store);
+    final controller = ShopCosmeticsController(
+      userStateStore: store,
+      cloudEnabled: false,
+    );
     var precacheCalls = 0;
     final bootstrapper = HomeBackgroundBootstrapper(
       controller: controller,
@@ -115,6 +124,12 @@ void main() {
     expect(result.didPrecacheCustomWallpaper, isFalse);
     expect(precacheCalls, 0);
   });
+}
+
+Future<void> _saveScopedCosmeticsState(ShopCosmeticsState state) {
+  return ShopCosmeticsRepository(
+    scopeResolver: () => 'bootstrap-test-user',
+  ).save(state);
 }
 
 Future<UserStateStore> _createStore() async {
