@@ -11,6 +11,8 @@ import 'package:rutio/data/repositories/repository_result.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/devtools/demo_seed/demo_seed_models.dart';
+import 'package:rutio/features/habits/data/cloud/streak_protection_remote_models.dart';
+import 'package:rutio/features/habits/data/cloud/streak_protection_repository.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -1087,6 +1089,7 @@ Future<UserStateStore> _buildStore({
     habitRepository: habitRepository ?? _FakeHabitRepository(),
     habitLogRepository: habitLogRepository ?? _FakeHabitLogRepository(),
     journalEntrySyncService: JournalEntrySyncService(),
+    streakProtectionRepository: _FakeStreakProtectionRepository(),
     currentSupabaseUserIdProvider: () => authenticatedUserId,
     nowProvider: nowProvider,
   );
@@ -1326,4 +1329,90 @@ class _FakeDiaryV2SupabaseRepository extends DiaryV2SupabaseRepository {
           client: SupabaseClient('https://example.com', 'anon-key'),
           currentUserIdProvider: () => 'user-1',
         );
+}
+
+class _FakeStreakProtectionRepository implements StreakProtectionRepository {
+  @override
+  Future<RepositoryResult<void>> setHabitTimeZone(String timeZone) async {
+    return const RepositoryResult<void>.success();
+  }
+
+  @override
+  Future<RepositoryResult<ActivateStreakShieldRemoteResult>>
+      activateStreakShield({
+    required String requestId,
+    required String habitId,
+    required String protectedOccurrenceDate,
+    required String operationId,
+    required String utilityId,
+  }) async {
+    return RepositoryResult<ActivateStreakShieldRemoteResult>.failure(
+      const RepositoryError(
+        code: RepositoryErrorCode.unknown,
+        message: 'Not implemented in this fake.',
+      ),
+    );
+  }
+
+  @override
+  Future<RepositoryResult<CloseMissedHabitOccurrenceRemoteResult>>
+      closeMissedHabitOccurrence({
+    required String requestId,
+    required String habitId,
+    required String logicalDate,
+    required String breakId,
+  }) async {
+    return RepositoryResult<CloseMissedHabitOccurrenceRemoteResult>.failure(
+      const RepositoryError(
+        code: RepositoryErrorCode.unknown,
+        message: 'Not implemented in this fake.',
+      ),
+    );
+  }
+
+  @override
+  Future<RepositoryResult<RecoverStreakBreakRemoteResult>> recoverStreakBreak({
+    required String requestId,
+    required String breakId,
+    required String utilityId,
+  }) async {
+    return RepositoryResult<RecoverStreakBreakRemoteResult>.failure(
+      const RepositoryError(
+        code: RepositoryErrorCode.unknown,
+        message: 'Not implemented in this fake.',
+      ),
+    );
+  }
+
+  @override
+  Future<RepositoryResult<List<HabitStreakShieldRemote>>>
+      fetchArmedShieldsForCurrentUser() async {
+    return const RepositoryResult<List<HabitStreakShieldRemote>>.success(
+      data: <HabitStreakShieldRemote>[],
+    );
+  }
+
+  @override
+  Future<RepositoryResult<List<HabitStreakBreakRemote>>>
+      fetchRecoverableBreaksForCurrentUser() async {
+    return const RepositoryResult<List<HabitStreakBreakRemote>>.success(
+      data: <HabitStreakBreakRemote>[],
+    );
+  }
+
+  @override
+  Future<RepositoryResult<List<HabitStreakShieldRemote>>>
+      fetchShieldsForCurrentUser() async {
+    return const RepositoryResult<List<HabitStreakShieldRemote>>.success(
+      data: <HabitStreakShieldRemote>[],
+    );
+  }
+
+  @override
+  Future<RepositoryResult<List<HabitStreakBreakRemote>>>
+      fetchBreaksForCurrentUser() async {
+    return const RepositoryResult<List<HabitStreakBreakRemote>>.success(
+      data: <HabitStreakBreakRemote>[],
+    );
+  }
 }
