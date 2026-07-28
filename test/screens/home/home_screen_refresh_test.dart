@@ -15,7 +15,9 @@ import 'package:rutio/features/shop/data/cloud/shop_cloud_equip_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_errors.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cloud_purchase_dtos.dart';
 import 'package:rutio/features/shop/data/cloud/shop_cosmetics_cloud_repository.dart';
+import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_cosmetics_repository.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_state.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/home/home_screen.dart';
@@ -122,6 +124,7 @@ void main() {
     final controller = ShopCosmeticsController(
       userStateStore: store,
       repository: repository,
+      cloudEnabled: false,
     );
     await controller.hydrate();
 
@@ -136,12 +139,57 @@ void main() {
     expect(_habitCardAssetName(tester), contains('habit_card_soft_camel'));
   });
 
+  testWidgets('home first pump renders prepared cosmetics without fallback',
+      (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final store = _FakeHomeStore();
+    final repository = ShopCosmeticsRepository(
+      scopeResolver: () => store.activeLocalScopeUserId ?? store.userId,
+    );
+    await repository.save(
+      ShopCosmeticsState(
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'habit_card_soft_sage',
+          'user_card_full_moon',
+        ],
+        ownedBundleIds: <String>[],
+        equippedWallpaperId: 'wallpaper_mist_blue',
+        equippedHabitCardSkinId: 'habit_card_soft_sage',
+        equippedUserCardSkinId: 'user_card_full_moon',
+      ),
+    );
+    final controller = ShopCosmeticsController(
+      userStateStore: store,
+      repository: repository,
+      cloudEnabled: false,
+    );
+    await controller.hydrate();
+
+    await tester.pumpWidget(_app(store: store, controller: controller));
+
+    expect(
+      _homeWallpaperAssetNames(tester),
+      contains('assets/shop/wallpapers/common/wallpaper_mist_blue.webp'),
+    );
+    expect(_habitCardAssetName(tester), contains('habit_card_soft_sage'));
+    final userCard = tester.widget<Image>(
+      find.byKey(const Key('userIdentityRowBackgroundImage')),
+    );
+    expect((userCard.image as AssetImage).assetName,
+        contains('user_card_full_moon'));
+    expect(
+        find.byKey(const Key('homeBackgroundDefaultBackground')), findsNothing);
+    expect(find.byKey(const Key('userIdentityRowFallbackBackground')),
+        findsNothing);
+  });
+
   testWidgets('home updates cloud wallpaper immediately after equip',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final store = _FakeHomeStore();
     final snapshot = _cloudSnapshot(
-      userId: 'home-cloud-user',
+      userId: 'home-refresh-user',
       ownedAssetIds: <String>[
         'wallpaper_mist_blue',
         'wallpaper_dusty_lilac',
@@ -153,7 +201,7 @@ void main() {
         () async => _cloudSuccess(snapshot),
         () async => _cloudSuccess(
               _cloudSnapshot(
-                userId: 'home-cloud-user',
+                userId: 'home-refresh-user',
                 ownedAssetIds: <String>[
                   'wallpaper_mist_blue',
                   'wallpaper_dusty_lilac',
@@ -196,7 +244,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final store = _FakeHomeStore();
     final snapshot = _cloudSnapshot(
-      userId: 'home-cloud-user',
+      userId: 'home-refresh-user',
       ownedAssetIds: <String>[
         'wallpaper_mist_blue',
         'wallpaper_dusty_lilac',
@@ -208,7 +256,7 @@ void main() {
         () async => _cloudSuccess(snapshot),
         () async => _cloudSuccess(
               _cloudSnapshot(
-                userId: 'home-cloud-user',
+                userId: 'home-refresh-user',
                 ownedAssetIds: <String>[
                   'wallpaper_mist_blue',
                   'wallpaper_dusty_lilac',
@@ -442,13 +490,120 @@ CloudCosmeticsSnapshot _cloudSnapshot({
     userId: userId,
     ownedAssetIds: ownedAssetIds,
     ownedBundleIds: const <String>[],
-    catalogBundles: const <RemoteShopBundleDto>[],
+    catalogItems: _catalogItems(),
+    catalogBundles: _catalogBundles(),
+    catalogBundleItems: _catalogBundleItems(),
     equippedWallpaperId: wallpaperId,
     equippedHabitCardSkinId: null,
     equippedUserCardSkinId: null,
     catalogVersion: 1,
     fetchedAt: now,
     updatedAt: now,
+  );
+}
+
+List<RemoteShopItemDto> _catalogItems() {
+  final now = DateTime.utc(2026, 7, 19, 12);
+  return ShopAssetsCatalog.allAssets
+      .map(
+        (asset) => RemoteShopItemDto(
+          id: asset.id,
+          category: switch (asset.category) {
+            ShopAssetCategory.wallpaper =>
+              RemoteShopItemCategory.screenBackground,
+            ShopAssetCategory.habitCard =>
+              RemoteShopItemCategory.habitCardBackground,
+            ShopAssetCategory.userCard =>
+              RemoteShopItemCategory.userCardBackground,
+          },
+          subtype: null,
+          rarity: switch (asset.rarity) {
+            ShopAssetRarity.common => RemoteShopItemRarity.common,
+            ShopAssetRarity.rare => RemoteShopItemRarity.rare,
+            ShopAssetRarity.epic => RemoteShopItemRarity.epic,
+            ShopAssetRarity.legendary => RemoteShopItemRarity.legendary,
+          },
+          priceCoins: asset.priceAmber,
+          isConsumable: false,
+          isStackable: false,
+          maxQuantity: null,
+          equipSlot: switch (asset.category) {
+            ShopAssetCategory.wallpaper => RemoteShopEquipSlot.screenBackground,
+            ShopAssetCategory.habitCard =>
+              RemoteShopEquipSlot.habitCardBackground,
+            ShopAssetCategory.userCard =>
+              RemoteShopEquipSlot.userCardBackground,
+          },
+          assetKey: null,
+          localizationKey: null,
+          isActive: asset.isPurchasable,
+          sortOrder: asset.sortOrder,
+          catalogVersion: 1,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      )
+      .toList(growable: false);
+}
+
+List<RemoteShopBundleDto> _catalogBundles() {
+  final now = DateTime.utc(2026, 7, 19, 12);
+  return ShopAssetsCatalog.allBundles
+      .map(
+        (bundle) => RemoteShopBundleDto(
+          id: bundle.id,
+          familyId: bundle.familyId,
+          rarity: switch (bundle.rarity) {
+            ShopAssetRarity.common => RemoteShopItemRarity.common,
+            ShopAssetRarity.rare => RemoteShopItemRarity.rare,
+            ShopAssetRarity.epic => RemoteShopItemRarity.epic,
+            ShopAssetRarity.legendary => RemoteShopItemRarity.legendary,
+          },
+          priceCoins: bundle.priceAmber,
+          originalPriceCoins: bundle.originalPriceAmber,
+          isActive: bundle.isPurchasable,
+          sortOrder: bundle.sortOrder,
+          catalogVersion: 1,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      )
+      .toList(growable: false);
+}
+
+List<RemoteShopBundleItemDto> _catalogBundleItems() {
+  return ShopAssetsCatalog.allBundles
+      .expand(
+        (bundle) => <RemoteShopBundleItemDto>[
+          _bundleItem(
+            bundle.id,
+            bundle.wallpaperItemId,
+            RemoteShopEquipSlot.screenBackground,
+          ),
+          _bundleItem(
+            bundle.id,
+            bundle.habitCardItemId,
+            RemoteShopEquipSlot.habitCardBackground,
+          ),
+          _bundleItem(
+            bundle.id,
+            bundle.userCardItemId,
+            RemoteShopEquipSlot.userCardBackground,
+          ),
+        ],
+      )
+      .toList(growable: false);
+}
+
+RemoteShopBundleItemDto _bundleItem(
+  String bundleId,
+  String itemId,
+  RemoteShopEquipSlot slot,
+) {
+  return RemoteShopBundleItemDto(
+    bundleId: bundleId,
+    itemId: itemId,
+    slot: slot,
   );
 }
 

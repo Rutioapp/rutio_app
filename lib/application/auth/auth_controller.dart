@@ -61,6 +61,10 @@ class AuthController extends ChangeNotifier {
       debugPrint(
         '[auth] initial auth state: ${_currentUser != null ? 'signedIn' : 'signedOut'}',
       );
+      debugPrint(
+        '[BootstrapTrace] event=auth_initial_value '
+        'user=${_currentUser != null}',
+      );
     }
 
     _authSubscription = _authRepository.authStateChanges.listen(
@@ -378,6 +382,10 @@ class AuthController extends ChangeNotifier {
           '[auth] auth state changed: ${nextUser != null ? 'signedIn' : 'signedOut'} (event=${state.event.name})',
         );
         debugPrint('[auth] auth state userId: $authUserId');
+        debugPrint(
+          '[BootstrapTrace] event=auth_stream_event '
+          'user=${nextUser != null} authEvent=${state.event.name}',
+        );
       }
       if (nextUser != null) {
         _userStateStore.restoreGamificationOverlaysAfterLogout();

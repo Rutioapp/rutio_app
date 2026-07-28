@@ -206,23 +206,146 @@ Future<void> _maybeSyncHabitsFromRemoteBestEffort(
   await _runHabitsRemotePull(store, source: ignoreCooldown ? 'manual' : 'auto');
 }
 
-Future<void> _runHabitsRemotePull(
+Future<EssentialHabitsBootstrapResult> _prepareEssentialHabitsForBootstrap(
+  UserStateStore store, {
+  required String userId,
+  bool forceRemote = false,
+}) {
+  final normalizedUserId = userId.trim();
+  final activeScope = _normalizedScopeUserId(store._activeLocalScopeUserId);
+  if (normalizedUserId.isEmpty ||
+      activeScope != normalizedUserId ||
+      store.userId != normalizedUserId) {
+    return Future<EssentialHabitsBootstrapResult>.value(
+      EssentialHabitsBootstrapResult(
+        status: EssentialHabitsBootstrapStatus.failed,
+        userId: normalizedUserId.isEmpty ? null : normalizedUserId,
+        source: 'scope_changed',
+        scopeEpoch: store._scopeEpoch,
+        requestId: ++store._essentialHabitsBootstrapRequestId,
+        duration: Duration.zero,
+        error: StateError('Habit bootstrap scope does not match session.'),
+      ),
+    );
+  }
+
+  final existing = store._essentialHabitsBootstrapFuture;
+  if (!forceRemote &&
+      existing != null &&
+      store._essentialHabitsBootstrapUserId == normalizedUserId) {
+    return existing;
+  }
+
+  final requestId = ++store._essentialHabitsBootstrapRequestId;
+  store._essentialHabitsBootstrapUserId = normalizedUserId;
+  late final Future<EssentialHabitsBootstrapResult> future;
+  future = _runEssentialHabitsBootstrap(
+    store,
+    userId: normalizedUserId,
+    requestId: requestId,
+    forceRemote: forceRemote,
+  ).whenComplete(() {
+    if (identical(store._essentialHabitsBootstrapFuture, future)) {
+      store._essentialHabitsBootstrapFuture = null;
+    }
+  });
+  store._essentialHabitsBootstrapFuture = future;
+  return future;
+}
+
+Future<EssentialHabitsBootstrapResult> _runEssentialHabitsBootstrap(
+  UserStateStore store, {
+  required String userId,
+  required int requestId,
+  required bool forceRemote,
+}) async {
+  final startedAt = store._nowProvider();
+  final scopeEpochAtStart = store._scopeEpoch;
+  if (!forceRemote && _hasValidScopedHabitsCache(store, userId)) {
+    return EssentialHabitsBootstrapResult(
+      status: _hasAnyActiveHabit(store)
+          ? EssentialHabitsBootstrapStatus.readyFromCache
+          : EssentialHabitsBootstrapStatus.confirmedEmpty,
+      userId: userId,
+      source: _hasAnyActiveHabit(store) ? 'cache' : 'empty_cache',
+      scopeEpoch: scopeEpochAtStart,
+      requestId: requestId,
+      duration: store._nowProvider().difference(startedAt),
+    );
+  }
+
+  if (_looksLikeEmptyTemplateState(store)) {
+    _debugHabitPull(
+        'essential bootstrap found empty template; remote required');
+  }
+
+  final pull = await _runHabitsRemotePull(
+    store,
+    source: 'bootstrap',
+    requestId: requestId,
+  );
+  if (pull.canBuildHome) return pull;
+
+  if (_hasValidScopedHabitsCache(store, userId)) {
+    return EssentialHabitsBootstrapResult(
+      status: EssentialHabitsBootstrapStatus.degraded,
+      userId: userId,
+      source: 'cache_degraded',
+      scopeEpoch: scopeEpochAtStart,
+      requestId: requestId,
+      duration: store._nowProvider().difference(startedAt),
+      error: pull.error,
+    );
+  }
+  return pull;
+}
+
+Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
   UserStateStore store, {
   required String source,
+  int? requestId,
 }) async {
+  final startedAt = store._nowProvider();
+  final effectiveRequestId =
+      requestId ?? ++store._essentialHabitsBootstrapRequestId;
   final authenticatedUserId = _currentHabitPullAuthenticatedUserId(store);
   if (!_shouldSyncHabitsForCurrentScope(
     store,
     authenticatedUserId: authenticatedUserId,
   )) {
-    return;
+    return _habitBootstrapResult(
+      store,
+      status: EssentialHabitsBootstrapStatus.failed,
+      source: 'scope_unavailable',
+      userId: authenticatedUserId,
+      requestId: effectiveRequestId,
+      startedAt: startedAt,
+      error: StateError('Habit pull scope unavailable.'),
+    );
   }
   if (authenticatedUserId == null) {
-    return;
+    return _habitBootstrapResult(
+      store,
+      status: EssentialHabitsBootstrapStatus.failed,
+      source: 'unauthenticated',
+      userId: null,
+      requestId: effectiveRequestId,
+      startedAt: startedAt,
+      error: StateError('Habit pull requires authentication.'),
+    );
   }
   if (store._isHabitsRemotePullRunning) {
     _debugHabitPull('$source pull skipped: already running');
-    return;
+    final pending = store._essentialHabitsBootstrapFuture;
+    if (pending != null) return pending;
+    return _habitBootstrapResult(
+      store,
+      status: EssentialHabitsBootstrapStatus.loading,
+      source: 'already_running',
+      userId: authenticatedUserId,
+      requestId: effectiveRequestId,
+      startedAt: startedAt,
+    );
   }
 
   store._isHabitsRemotePullRunning = true;
@@ -243,7 +366,15 @@ Future<void> _runHabitsRemotePull(
         '$source pull failed while fetching habits: '
         '${habitsResult.error?.code.name}: ${habitsResult.error?.message}',
       );
-      return;
+      return _habitBootstrapResult(
+        store,
+        status: EssentialHabitsBootstrapStatus.failed,
+        source: 'remote_habits_failed',
+        userId: authenticatedUserId,
+        requestId: effectiveRequestId,
+        startedAt: startedAt,
+        error: habitsResult.error,
+      );
     }
 
     final remoteHabits = habitsResult.data ?? const <RemoteHabit>[];
@@ -256,7 +387,15 @@ Future<void> _runHabitsRemotePull(
         '$source pull aborted: unsafe remote habit scope detected '
         '(${remoteHabitScopeValidation.reason})',
       );
-      return;
+      return _habitBootstrapResult(
+        store,
+        status: EssentialHabitsBootstrapStatus.failed,
+        source: 'foreign_remote_habits',
+        userId: authenticatedUserId,
+        requestId: effectiveRequestId,
+        startedAt: startedAt,
+        error: StateError(remoteHabitScopeValidation.reason ?? 'unsafe scope'),
+      );
     }
 
     final remoteLogs = <RemoteHabitLog>[];
@@ -274,7 +413,15 @@ Future<void> _runHabitsRemotePull(
           '"$remoteHabitId": ${logsResult.error?.code.name}: '
           '${logsResult.error?.message}',
         );
-        return;
+        return _habitBootstrapResult(
+          store,
+          status: EssentialHabitsBootstrapStatus.failed,
+          source: 'remote_logs_failed',
+          userId: authenticatedUserId,
+          requestId: effectiveRequestId,
+          startedAt: startedAt,
+          error: logsResult.error,
+        );
       }
 
       final scopedLogs = logsResult.data ?? const <RemoteHabitLog>[];
@@ -289,7 +436,16 @@ Future<void> _runHabitsRemotePull(
           'for remoteHabitId="$remoteHabitId" '
           '(${remoteLogScopeValidation.reason})',
         );
-        return;
+        return _habitBootstrapResult(
+          store,
+          status: EssentialHabitsBootstrapStatus.failed,
+          source: 'foreign_remote_logs',
+          userId: authenticatedUserId,
+          requestId: effectiveRequestId,
+          startedAt: startedAt,
+          error:
+              StateError(remoteLogScopeValidation.reason ?? 'unsafe log scope'),
+        );
       }
       remoteLogs.addAll(scopedLogs);
     }
@@ -298,13 +454,28 @@ Future<void> _runHabitsRemotePull(
         scopeUserAtStart !=
             _normalizedScopeUserId(store._activeLocalScopeUserId)) {
       _debugHabitPull('$source pull skipped: scope changed during fetch');
-      return;
+      return _habitBootstrapResult(
+        store,
+        status: EssentialHabitsBootstrapStatus.failed,
+        source: 'scope_changed',
+        userId: authenticatedUserId,
+        requestId: effectiveRequestId,
+        startedAt: startedAt,
+        error: StateError('Scope changed during habit pull.'),
+      );
     }
 
     final root = store._state;
     if (root == null) {
       _debugHabitPull('$source pull skipped: local state unavailable');
-      return;
+      return _habitBootstrapResult(
+        store,
+        status: EssentialHabitsBootstrapStatus.failed,
+        source: 'local_state_unavailable',
+        userId: authenticatedUserId,
+        requestId: effectiveRequestId,
+        startedAt: startedAt,
+      );
     }
 
     final userState = _ensureUserStateRoot(root);
@@ -329,13 +500,30 @@ Future<void> _runHabitsRemotePull(
     final streakProtectionChanged =
         await _syncStreakProtectionIntoUserState(store, userState: userState);
 
+    final remoteConfirmedEmpty = remoteHabits.isEmpty;
+    final readinessMarkerChanged = _markEssentialHabitsBootstrapReady(
+      userState,
+      source: remoteConfirmedEmpty ? 'confirmed_empty' : 'remote',
+      at: store._nowProvider(),
+    );
+
     if (!mergedHabits.changed &&
         !mergedLogs.changed &&
         !streakShieldExpired &&
-        !streakProtectionChanged) {
+        !streakProtectionChanged &&
+        !readinessMarkerChanged) {
       store._lastHabitsRemotePullSuccessAt = store._nowProvider();
       _debugHabitPull('$source pull completed: no local habit changes applied');
-      return;
+      return _habitBootstrapResult(
+        store,
+        status: remoteConfirmedEmpty
+            ? EssentialHabitsBootstrapStatus.confirmedEmpty
+            : EssentialHabitsBootstrapStatus.readyFromRemote,
+        source: remoteConfirmedEmpty ? 'confirmed_empty' : 'remote',
+        userId: authenticatedUserId,
+        requestId: effectiveRequestId,
+        startedAt: startedAt,
+      );
     }
 
     userState['activeHabits'] = mergedHabits.habits;
@@ -347,11 +535,97 @@ Future<void> _runHabitsRemotePull(
     root['userState'] = userState;
     await store.save(root);
     store._lastHabitsRemotePullSuccessAt = store._nowProvider();
+    return _habitBootstrapResult(
+      store,
+      status: remoteConfirmedEmpty
+          ? EssentialHabitsBootstrapStatus.confirmedEmpty
+          : EssentialHabitsBootstrapStatus.readyFromRemote,
+      source: remoteConfirmedEmpty ? 'confirmed_empty' : 'remote',
+      userId: authenticatedUserId,
+      requestId: effectiveRequestId,
+      startedAt: startedAt,
+    );
   } catch (error) {
     _debugHabitPull('$source pull unexpected error: $error');
+    return _habitBootstrapResult(
+      store,
+      status: EssentialHabitsBootstrapStatus.failed,
+      source: 'unexpected_error',
+      userId: authenticatedUserId,
+      requestId: effectiveRequestId,
+      startedAt: startedAt,
+      error: error,
+    );
   } finally {
     store._isHabitsRemotePullRunning = false;
   }
+}
+
+bool _hasValidScopedHabitsCache(UserStateStore store, String userId) {
+  final root = store._state;
+  if (root == null) return false;
+  if (store._activeLocalScopeUserId != userId || store.userId != userId) {
+    return false;
+  }
+  if (_hasAnyActiveHabit(store)) return true;
+  return _hasConfirmedEmptyHabitsMarker(root);
+}
+
+bool _hasAnyActiveHabit(UserStateStore store) {
+  final root = store._state;
+  if (root == null) return false;
+  final userState = _ensureUserStateRoot(root);
+  return _mutableActiveHabits(userState).isNotEmpty;
+}
+
+bool _looksLikeEmptyTemplateState(UserStateStore store) {
+  final root = store._state;
+  if (root == null) return false;
+  final userState = _ensureUserStateRoot(root);
+  return _mutableActiveHabits(userState).isEmpty &&
+      !_hasConfirmedEmptyHabitsMarker(root);
+}
+
+bool _hasConfirmedEmptyHabitsMarker(Map<String, dynamic> root) {
+  final userState = _ensureUserStateRoot(root);
+  final meta = _map(userState['meta']);
+  return (meta['essentialHabitsBootstrapSource'] ?? '').toString() ==
+      'confirmed_empty';
+}
+
+bool _markEssentialHabitsBootstrapReady(
+  Map<String, dynamic> userState, {
+  required String source,
+  required DateTime at,
+}) {
+  final meta = _map(userState['meta']);
+  final timestamp = at.toUtc().toIso8601String();
+  final changed = meta['essentialHabitsBootstrapSource'] != source ||
+      meta['essentialHabitsBootstrapReadyAt'] != timestamp;
+  meta['essentialHabitsBootstrapSource'] = source;
+  meta['essentialHabitsBootstrapReadyAt'] = timestamp;
+  userState['meta'] = meta;
+  return changed;
+}
+
+EssentialHabitsBootstrapResult _habitBootstrapResult(
+  UserStateStore store, {
+  required EssentialHabitsBootstrapStatus status,
+  required String source,
+  required String? userId,
+  required int requestId,
+  required DateTime startedAt,
+  Object? error,
+}) {
+  return EssentialHabitsBootstrapResult(
+    status: status,
+    userId: userId,
+    source: source,
+    scopeEpoch: store._scopeEpoch,
+    requestId: requestId,
+    duration: store._nowProvider().difference(startedAt),
+    error: error,
+  );
 }
 
 bool _shouldSyncHabitsForCurrentScope(

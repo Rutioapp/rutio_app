@@ -63,24 +63,31 @@ void main() {
         find.byKey(const Key('homeBackgroundWallpaperImage')), findsOneWidget);
     expect(find.byKey(const Key('homeBackgroundWallpaperOverlay')),
         findsOneWidget);
-    expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsOneWidget);
-    expect(find.byKey(const Key('homeBackgroundDefaultBackground')),
-        findsOneWidget);
+    expect(
+        find.byKey(const Key('homeBackgroundDefaultBackground')), findsNothing);
+    expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsNothing);
   });
 
   testWidgets(
       'home background resolves equipped wallpaper from cosmetics state',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    await ShopCosmeticsRepository().save(
+    final store = await _createStore();
+    final repository = ShopCosmeticsRepository(
+      scopeResolver: () => store.activeLocalScopeUserId ?? store.userId,
+    );
+    await repository.save(
       ShopCosmeticsState(
         ownedAssetIds: const <String>['wallpaper_mist_blue'],
         ownedBundleIds: const <String>[],
         equippedWallpaperId: 'wallpaper_mist_blue',
       ),
     );
-    final store = await _createStore();
-    final cosmeticsController = ShopCosmeticsController(userStateStore: store);
+    final cosmeticsController = ShopCosmeticsController(
+      userStateStore: store,
+      repository: repository,
+      cloudEnabled: false,
+    );
     await cosmeticsController.hydrate();
 
     await tester.pumpWidget(
@@ -103,7 +110,9 @@ void main() {
 
     expect(
         find.byKey(const Key('homeBackgroundWallpaperImage')), findsOneWidget);
-    expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsOneWidget);
+    expect(find.byKey(const Key('homeBackgroundDefaultArt')), findsNothing);
+    expect(
+        find.byKey(const Key('homeBackgroundDefaultBackground')), findsNothing);
   });
 
   testWidgets('home background invalid wallpaper falls back without crashing',
@@ -133,7 +142,11 @@ void main() {
       'home background reacts to equipped wallpaper changes in the same session',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    await ShopCosmeticsRepository().save(
+    final store = await _createStore();
+    final repository = ShopCosmeticsRepository(
+      scopeResolver: () => store.activeLocalScopeUserId ?? store.userId,
+    );
+    await repository.save(
       ShopCosmeticsState(
         ownedAssetIds: const <String>[
           'wallpaper_mist_blue',
@@ -143,8 +156,11 @@ void main() {
         equippedWallpaperId: 'wallpaper_mist_blue',
       ),
     );
-    final store = await _createStore();
-    final cosmeticsController = ShopCosmeticsController(userStateStore: store);
+    final cosmeticsController = ShopCosmeticsController(
+      userStateStore: store,
+      repository: repository,
+      cloudEnabled: false,
+    );
     await cosmeticsController.hydrate();
 
     await tester.pumpWidget(
@@ -181,7 +197,7 @@ void main() {
     );
     expect(
       find.byKey(const Key('homeBackgroundDefaultBackground')),
-      findsOneWidget,
+      findsNothing,
     );
   });
 
@@ -216,6 +232,11 @@ void main() {
     );
 
     expect(find.byKey(const Key('habitCardBackgroundImage')), findsOneWidget);
+    final decorated = tester.widget<Container>(
+      find.byKey(const Key('habitCardSurface')),
+    );
+    final decoration = decorated.decoration as BoxDecoration?;
+    expect(decoration?.color, isNot(Colors.white.withValues(alpha: 0.74)));
   });
 
   testWidgets('habit card applies configured alignment and overlay',
@@ -349,6 +370,8 @@ void main() {
 
     expect(find.byKey(const Key('userIdentityRowBackgroundImage')),
         findsOneWidget);
+    expect(find.byKey(const Key('userIdentityRowFallbackBackground')),
+        findsNothing);
 
     final image = tester.widget<Image>(
       find.byKey(const Key('userIdentityRowBackgroundImage')),
@@ -375,15 +398,22 @@ void main() {
       'user identity row resolves equipped user card from cosmetics state',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    await ShopCosmeticsRepository().save(
+    final store = await _createStore();
+    final repository = ShopCosmeticsRepository(
+      scopeResolver: () => store.activeLocalScopeUserId ?? store.userId,
+    );
+    await repository.save(
       ShopCosmeticsState(
         ownedAssetIds: const <String>['user_card_warm_beige'],
         ownedBundleIds: const <String>[],
         equippedUserCardSkinId: 'user_card_warm_beige',
       ),
     );
-    final store = await _createStore();
-    final cosmeticsController = ShopCosmeticsController(userStateStore: store);
+    final cosmeticsController = ShopCosmeticsController(
+      userStateStore: store,
+      repository: repository,
+      cloudEnabled: false,
+    );
     await cosmeticsController.hydrate();
 
     await tester.pumpWidget(

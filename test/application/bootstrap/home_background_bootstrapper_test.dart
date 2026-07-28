@@ -29,6 +29,7 @@ void main() {
       userStateStore: store,
       cloudEnabled: false,
     );
+    await controller.getState();
     final precachedAssets = <String>[];
     final bootstrapper = HomeBackgroundBootstrapper(
       controller: controller,
@@ -68,6 +69,7 @@ void main() {
       userStateStore: store,
       cloudEnabled: false,
     );
+    await controller.getState();
     final bootstrapper = HomeBackgroundBootstrapper(
       controller: controller,
       precacheImageCallback: (_, __) async {

@@ -139,16 +139,19 @@ class MyApp extends StatelessWidget {
             globalWalletController: context.read<GlobalWalletController>(),
           ),
         ),
-        ChangeNotifierProxyProvider3<AuthController, UserStateStore,
-            ProfileRepository, BootstrapController>(
+        ChangeNotifierProxyProvider4<AuthController, UserStateStore,
+            ProfileRepository, ShopCosmeticsController, BootstrapController>(
           create: (context) => BootstrapController(
             authController: context.read<AuthController>(),
             userStateStore: context.read<UserStateStore>(),
             profileRepository: ProfileBootstrapRepository(
               context.read<ProfileRepository>(),
             ),
+            essentialCosmeticsPreparer: ShopBootstrapEssentialCosmeticsPreparer(
+              context.read<ShopCosmeticsController>(),
+            ),
           ),
-          update: (_, __, ___, ____, controller) => controller!,
+          update: (_, __, ___, ____, _____, controller) => controller!,
         ),
       ],
       child: NotificationRuntime(

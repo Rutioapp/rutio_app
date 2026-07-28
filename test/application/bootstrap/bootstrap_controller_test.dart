@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/application/auth/auth_controller.dart';
@@ -17,7 +18,11 @@ import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_errors.dart
 import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_repository.dart';
 import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.dart';
 import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
+import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/app_startup_gate.dart';
+import 'package:rutio/screens/splash_screen.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -303,6 +308,149 @@ void main() {
       expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
     });
 
+    test('destination=home waits for habits and cosmetics', () async {
+      final habitsCompleter = Completer<EssentialHabitsBootstrapResult>();
+      final cosmeticsCompleter = Completer<CosmeticsBootstrapResult>();
+      final habits = _FakeEssentialHabitsPreparer(completer: habitsCompleter);
+      final cosmetics =
+          _FakeEssentialCosmeticsPreparer(completer: cosmeticsCompleter);
+      final fixture = _Fixture(
+        profileStatus: OnboardingStatus.completed,
+        habitsPreparer: habits,
+        cosmeticsPreparer: cosmetics,
+      );
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+
+      expect(habits.calls, 1);
+      expect(cosmetics.calls, 1);
+      expect(fixture.bootstrap.state.destination, isNull);
+      expect(
+        fixture.bootstrap.state.phase,
+        BootstrapPhase.loadingEssentialCosmetics,
+      );
+
+      habitsCompleter.complete(_habitsReady('user-1'));
+      await fixture.pump();
+      expect(fixture.bootstrap.state.destination, isNull);
+
+      cosmeticsCompleter.complete(_cosmeticsReady('user-1'));
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
+    });
+
+    test('independent habits and cosmetics run in parallel', () async {
+      final habitsCompleter = Completer<EssentialHabitsBootstrapResult>();
+      final cosmeticsCompleter = Completer<CosmeticsBootstrapResult>();
+      final habits = _FakeEssentialHabitsPreparer(completer: habitsCompleter);
+      final cosmetics =
+          _FakeEssentialCosmeticsPreparer(completer: cosmeticsCompleter);
+      final fixture = _Fixture(
+        habitsPreparer: habits,
+        cosmeticsPreparer: cosmetics,
+      );
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+
+      expect(habits.calls, 1);
+      expect(cosmetics.calls, 1);
+      expect(cosmetics.startedAt, isNotNull);
+      expect(habitsCompleter.isCompleted, isFalse);
+
+      habitsCompleter.complete(_habitsReady('user-1'));
+      cosmeticsCompleter.complete(_cosmeticsReady('user-1'));
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
+    });
+
+    test('essential failure produces failed bootstrap', () async {
+      final fixture = _Fixture(
+        habitsPreparer: _FakeEssentialHabitsPreparer(
+          status: EssentialHabitsBootstrapStatus.failed,
+        ),
+      );
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.failed);
+      expect(
+        fixture.bootstrap.state.error?.type,
+        BootstrapErrorType.essentialHabits,
+      );
+      expect(fixture.bootstrap.state.destination, isNull);
+    });
+
+    test('essential cosmetics failure produces failed bootstrap', () async {
+      final fixture = _Fixture(
+        cosmeticsPreparer: _FakeEssentialCosmeticsPreparer(
+          status: CosmeticsBootstrapStatus.failed,
+        ),
+      );
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.failed);
+      expect(
+        fixture.bootstrap.state.error?.type,
+        BootstrapErrorType.essentialCosmetics,
+      );
+      expect(fixture.bootstrap.state.destination, isNull);
+    });
+
+    test('does not publish home before cosmetics resolvers are verified',
+        () async {
+      final fixture = _Fixture(
+        cosmeticsPreparer: _FakeEssentialCosmeticsPreparer(
+          resolversVerified: false,
+        ),
+      );
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.failed);
+      expect(
+        fixture.bootstrap.state.error?.type,
+        BootstrapErrorType.essentialCosmetics,
+      );
+      expect(fixture.bootstrap.state.destination, isNull);
+    });
+
+    test('cosmetics result records an applied revision before home', () async {
+      final cosmetics = _FakeEssentialCosmeticsPreparer(appliedRevision: 7);
+      final fixture = _Fixture(cosmeticsPreparer: cosmetics);
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
+      expect(cosmetics.lastResult?.appliedRevision, 7);
+      expect(cosmetics.lastResult?.resolversVerified, isTrue);
+    });
+
+    test('retry after essential failure creates a new run', () async {
+      final habits = _FakeEssentialHabitsPreparer(
+        status: EssentialHabitsBootstrapStatus.failed,
+      );
+      final fixture = _Fixture(habitsPreparer: habits);
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+      final failedRun = fixture.bootstrap.state.runId;
+
+      habits.status = EssentialHabitsBootstrapStatus.readyFromRemote;
+      await fixture.bootstrap.retry();
+
+      expect(fixture.bootstrap.state.runId, greaterThan(failedRun));
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
+      expect(habits.calls, 2);
+    });
+
     test('double Continue calls perform one remote completion', () async {
       final fixture = _Fixture(profileStatus: OnboardingStatus.pending);
       fixture.resolveUser('user-1');
@@ -322,12 +470,12 @@ void main() {
       await Future.wait(<Future<void>>[first, second]);
     });
 
-    testWidgets('direct /home shows bootstrap before Home is ready',
+    testWidgets('cold start /home keeps Splash before Home is ready',
         (tester) async {
       final fixture = _Fixture();
 
       await tester.pumpWidget(
-        MaterialApp(
+        _localizedApp(
           routes: {
             '/home': (_) => ChangeNotifierProvider<BootstrapController>.value(
                   value: fixture.bootstrap,
@@ -340,20 +488,268 @@ void main() {
         ),
       );
 
-      expect(find.text('Preparando tu espacio…'), findsOneWidget);
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.textContaining('Preparando tu espacio'), findsNothing);
       expect(find.text('Home'), findsNothing);
+    });
+
+    testWidgets('Home waits for cosmetics and appears without generic frame',
+        (tester) async {
+      final habitsCompleter = Completer<EssentialHabitsBootstrapResult>();
+      final cosmeticsCompleter = Completer<CosmeticsBootstrapResult>();
+      final habits = _FakeEssentialHabitsPreparer(completer: habitsCompleter);
+      final cosmetics =
+          _FakeEssentialCosmeticsPreparer(completer: cosmeticsCompleter);
+      final fixture = _Fixture(
+        habitsPreparer: habits,
+        cosmeticsPreparer: cosmetics,
+      );
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<BootstrapController>.value(
+          value: fixture.bootstrap,
+          child: _localizedApp(
+            home: AppStartupGate(
+              authenticatedBuilder: _personalizedHomeBuilder,
+            ),
+          ),
+        ),
+      );
+      fixture.resolveUser('user-1');
+      await tester.pump();
+
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.textContaining('Preparando tu espacio'), findsNothing);
+      expect(find.text('Generic Home'), findsNothing);
+      expect(find.text('Personalized Home'), findsNothing);
+
+      habitsCompleter.complete(_habitsReady('user-1'));
+      await tester.pump();
+
+      expect(habits.calls, 1);
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.textContaining('Preparando tu espacio'), findsNothing);
+      expect(find.text('Generic Home'), findsNothing);
+      expect(find.text('Personalized Home'), findsNothing);
+
+      cosmeticsCompleter.complete(_cosmeticsReady('user-1'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('Preparando tu espacio'), findsNothing);
+      expect(find.text('Generic Home'), findsNothing);
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.text('Personalized Home'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 1999));
+
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.text('Personalized Home'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 1));
+
+      expect(find.byType(SplashScreen), findsNothing);
+      expect(find.text('Personalized Home'), findsOneWidget);
+    });
+
+    testWidgets(
+        'restored cold start ignores redundant initialSession before first Home',
+        (tester) async {
+      final habitsCompleter = Completer<EssentialHabitsBootstrapResult>();
+      final cosmeticsCompleter = Completer<CosmeticsBootstrapResult>();
+      final habits = _FakeEssentialHabitsPreparer(completer: habitsCompleter);
+      final cosmetics =
+          _FakeEssentialCosmeticsPreparer(completer: cosmeticsCompleter);
+      final fixture = _Fixture(
+        restoredUserId: 'user-1',
+        habitsPreparer: habits,
+        cosmeticsPreparer: cosmetics,
+      );
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<BootstrapController>.value(
+          value: fixture.bootstrap,
+          child: _localizedApp(
+            home: AppStartupGate(
+              authenticatedBuilder: _personalizedHomeBuilder,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(SplashScreen), findsOneWidget);
+
+      fixture.resolveUser('user-1');
+      await tester.pump();
+
+      expect(fixture.bootstrap.state.mode, BootstrapRunMode.coldStart);
+      expect(find.byType(SplashScreen), findsOneWidget);
+
+      habitsCompleter.complete(_habitsReady('user-1'));
+      cosmeticsCompleter.complete(_cosmeticsReady('user-1'));
+      await tester.pump();
+
+      final runIdBeforeRedundantEvent = fixture.bootstrap.state.runId;
+      fixture.resolveUser('user-1');
+      await tester.pump();
+      await tester.pump();
+
+      expect(fixture.bootstrap.state.runId, runIdBeforeRedundantEvent);
+      expect(cosmetics.calls, 1);
+      expect(fixture.bootstrap.state.cosmeticsReadyToken?.appliedRevision, 1);
+      expect(find.textContaining('Preparando tu espacio'), findsNothing);
+      expect(find.text('Generic Home'), findsNothing);
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.text('Personalized Home'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 2000));
+
+      expect(find.byType(SplashScreen), findsNothing);
+      expect(find.text('Personalized Home'), findsOneWidget);
+    });
+
+    testWidgets('manual login shows preparing while cosmetics are pending',
+        (tester) async {
+      final cosmeticsCompleter = Completer<CosmeticsBootstrapResult>();
+      final cosmetics =
+          _FakeEssentialCosmeticsPreparer(completer: cosmeticsCompleter);
+      final fixture = _Fixture(
+        profileResult: _ProfileResult.network,
+        cosmeticsPreparer: cosmetics,
+      );
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<BootstrapController>.value(
+          value: fixture.bootstrap,
+          child: _localizedApp(
+            home: AppStartupGate(
+              authenticatedBuilder: _personalizedHomeBuilder,
+            ),
+          ),
+        ),
+      );
+      fixture.resolveUser('user-1');
+      await tester.pump();
+
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.failed);
+
+      fixture.profile.result = _ProfileResult.completed;
+      unawaited(fixture.bootstrap.retry());
+      await tester.pump();
+
+      expect(fixture.bootstrap.state.mode, BootstrapRunMode.inAppBootstrap);
+      expect(find.byType(SplashScreen), findsNothing);
+      expect(find.textContaining('Preparando tu espacio'), findsOneWidget);
+      expect(find.text('Personalized Home'), findsNothing);
+
+      cosmeticsCompleter.complete(_cosmeticsReady('user-1'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('Preparando tu espacio'), findsNothing);
+      expect(find.text('Personalized Home'), findsOneWidget);
+    });
+
+    testWidgets('direct /shop waits for essential bootstrap before content',
+        (tester) async {
+      final habitsCompleter = Completer<EssentialHabitsBootstrapResult>();
+      final cosmeticsCompleter = Completer<CosmeticsBootstrapResult>();
+      final habits = _FakeEssentialHabitsPreparer(completer: habitsCompleter);
+      final cosmetics =
+          _FakeEssentialCosmeticsPreparer(completer: cosmeticsCompleter);
+      final fixture = _Fixture(
+        habitsPreparer: habits,
+        cosmeticsPreparer: cosmetics,
+      );
+
+      await tester.pumpWidget(
+        _localizedApp(
+          routes: {
+            '/shop': (_) => ChangeNotifierProvider<BootstrapController>.value(
+                  value: fixture.bootstrap,
+                  child: const AppStartupGate(
+                    authenticatedBuilder: _shopBuilder,
+                  ),
+                ),
+          },
+          initialRoute: '/shop',
+        ),
+      );
+      fixture.resolveUser('user-1');
+      await tester.pump();
+
+      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.textContaining('Preparando tu espacio'), findsNothing);
+      expect(find.text('Shop'), findsNothing);
+
+      habitsCompleter.complete(_habitsReady('user-1'));
+      cosmeticsCompleter.complete(_cosmeticsReady('user-1'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.textContaining('Preparando tu espacio'), findsNothing);
+      expect(find.text('Shop'), findsOneWidget);
     });
   });
 }
 
+Widget _localizedApp({
+  Widget? home,
+  Map<String, WidgetBuilder>? routes,
+  String? initialRoute,
+}) {
+  return MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: home,
+    routes: routes ?? const <String, WidgetBuilder>{},
+    initialRoute: initialRoute,
+  );
+}
+
 Widget _homeBuilder(BuildContext context) => const Text('Home');
+
+Widget _personalizedHomeBuilder(BuildContext context) =>
+    const Text('Personalized Home');
+
+Widget _shopBuilder(BuildContext context) => const Text('Shop');
+
+EssentialHabitsBootstrapResult _habitsReady(String userId) {
+  return EssentialHabitsBootstrapResult(
+    status: EssentialHabitsBootstrapStatus.readyFromRemote,
+    userId: userId,
+    source: 'remote',
+    scopeEpoch: 1,
+    requestId: 1,
+    duration: Duration.zero,
+  );
+}
+
+CosmeticsBootstrapResult _cosmeticsReady(String userId) {
+  return CosmeticsBootstrapResult(
+    status: CosmeticsBootstrapStatus.readyFromRemote,
+    userId: userId,
+    source: 'remote',
+    requestId: 1,
+    duration: Duration.zero,
+  );
+}
 
 class _Fixture {
   _Fixture({
+    String? restoredUserId,
     bool localOnboardingDone = false,
     OnboardingStatus profileStatus = OnboardingStatus.completed,
     _ProfileResult profileResult = _ProfileResult.fromStatus,
     Completer<RepositoryResult<RemoteProfile?>>? profileCompleter,
+    _FakeEssentialHabitsPreparer? habitsPreparer,
+    _FakeEssentialCosmeticsPreparer? cosmeticsPreparer,
+    _FakeEssentialAssetPreloader? assetPreloader,
   })  : authStream = StreamController<AuthState>.broadcast(sync: true),
         userStore = _FakeUserStateStore(
           localOnboardingDone: localOnboardingDone,
@@ -364,6 +760,10 @@ class _Fixture {
           result: profileResult,
           completer: profileCompleter,
         ) {
+    if (restoredUserId != null) {
+      currentUser = _user(restoredUserId);
+      profile.currentFetchUserId = restoredUserId;
+    }
     auth = AuthController(
       AuthRepository(
         authStateChangesProvider: () => authStream.stream,
@@ -378,6 +778,10 @@ class _Fixture {
       authController: auth,
       userStateStore: userStore,
       profileRepository: profile,
+      essentialHabitsPreparer: habitsPreparer ?? _FakeEssentialHabitsPreparer(),
+      essentialCosmeticsPreparer:
+          cosmeticsPreparer ?? _FakeEssentialCosmeticsPreparer(),
+      essentialAssetPreloader: assetPreloader ?? _FakeEssentialAssetPreloader(),
     );
     addTearDown(() async {
       bootstrap.dispose();
@@ -564,6 +968,117 @@ class _FakeGlobalWalletController extends GlobalWalletController {
   @override
   Future<GlobalWalletState> clearSession() async {
     return GlobalWalletState.unauthenticated();
+  }
+}
+
+class _FakeEssentialHabitsPreparer implements BootstrapEssentialHabitsPreparer {
+  _FakeEssentialHabitsPreparer({
+    this.completer,
+    this.status = EssentialHabitsBootstrapStatus.readyFromRemote,
+  });
+
+  Completer<EssentialHabitsBootstrapResult>? completer;
+  EssentialHabitsBootstrapStatus status;
+  int calls = 0;
+  DateTime? startedAt;
+
+  @override
+  Future<EssentialHabitsBootstrapResult> prepare({
+    required String userId,
+    bool forceRemote = false,
+  }) {
+    calls += 1;
+    startedAt = DateTime.now();
+    final pending = completer;
+    if (pending != null) return pending.future;
+    return Future<EssentialHabitsBootstrapResult>.value(
+      EssentialHabitsBootstrapResult(
+        status: status,
+        userId: userId,
+        source: status == EssentialHabitsBootstrapStatus.confirmedEmpty
+            ? 'confirmed_empty'
+            : 'remote',
+        scopeEpoch: 1,
+        requestId: calls,
+        duration: Duration.zero,
+      ),
+    );
+  }
+}
+
+class _FakeEssentialCosmeticsPreparer
+    implements BootstrapEssentialCosmeticsPreparer {
+  _FakeEssentialCosmeticsPreparer({
+    this.completer,
+    this.status = CosmeticsBootstrapStatus.readyFromRemote,
+    this.resolversVerified = true,
+    this.appliedRevision = 1,
+  });
+
+  Completer<CosmeticsBootstrapResult>? completer;
+  CosmeticsBootstrapStatus status;
+  bool resolversVerified;
+  int appliedRevision;
+  bool tokenValid = true;
+  int calls = 0;
+  DateTime? startedAt;
+  CosmeticsBootstrapResult? lastResult;
+
+  @override
+  Future<CosmeticsBootstrapResult> prepare({
+    required String userId,
+    bool forceRemote = false,
+  }) {
+    calls += 1;
+    startedAt = DateTime.now();
+    final pending = completer;
+    if (pending != null) return pending.future;
+    final result = CosmeticsBootstrapResult(
+      status: status,
+      userId: userId,
+      source: status == CosmeticsBootstrapStatus.confirmedEmpty
+          ? 'confirmed_empty'
+          : 'remote',
+      requestId: calls,
+      duration: Duration.zero,
+      appliedRevision: appliedRevision,
+      resolversVerified: resolversVerified,
+      readyToken: createReadyToken(userId: userId),
+    );
+    lastResult = result;
+    return Future<CosmeticsBootstrapResult>.value(result);
+  }
+
+  @override
+  CosmeticsReadyToken? createReadyToken({required String userId}) {
+    if (!resolversVerified) return null;
+    return CosmeticsReadyToken(
+      controllerIdentity: 1,
+      userId: userId,
+      scope: userId,
+      appliedRevision: appliedRevision,
+      equippedWallpaperId: 'wallpaper_mist_blue',
+      equippedHabitCardId: 'habit_card_soft_sage',
+      equippedUserCardId: 'user_card_full_moon',
+      wallpaperResolved: true,
+      habitCardResolved: true,
+      userCardResolved: true,
+    );
+  }
+
+  @override
+  bool validateReadyToken(CosmeticsReadyToken token) => tokenValid;
+}
+
+class _FakeEssentialAssetPreloader implements BootstrapEssentialAssetPreloader {
+  int calls = 0;
+  Object? error;
+
+  @override
+  Future<void> preload(Iterable<ShopAsset> assets) async {
+    calls += 1;
+    final failure = error;
+    if (failure != null) throw failure;
   }
 }
 

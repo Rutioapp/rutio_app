@@ -176,6 +176,14 @@ Future<void> _switchLocalScope(
 
   final scopeChanged = normalizedUserId != currentUserId;
   if (!scopeChanged && !forceReload && store._state != null) {
+    if (kDebugMode) {
+      debugPrint(
+        '[BootstrapTrace] event=scope_change_requested '
+        'from=${_debugUserIdLabel(currentUserId ?? 'guest')} '
+        'to=${_debugUserIdLabel(normalizedUserId ?? 'guest')} '
+        'same_scope_ignored=true',
+      );
+    }
     return;
   }
 
@@ -188,6 +196,12 @@ Future<void> _switchLocalScope(
       '[user_state_store] switching local scope: '
       'userId=${normalizedUserId ?? 'guest'} '
       '(epoch=$switchEpoch)',
+    );
+    debugPrint(
+      '[BootstrapTrace] event=scope_change_requested '
+      'from=${_debugUserIdLabel(currentUserId ?? 'guest')} '
+      'to=${_debugUserIdLabel(normalizedUserId ?? 'guest')} '
+      'forceReload=$forceReload',
     );
   }
 
@@ -205,6 +219,13 @@ Future<void> _switchLocalScope(
     expectedScopeEpoch: switchEpoch,
     force: true,
   );
+  if (kDebugMode) {
+    debugPrint(
+      '[BootstrapTrace] event=scope_change_applied '
+      'scope=${_debugUserIdLabel(store._activeLocalScopeUserId ?? 'guest')} '
+      'epoch=${store._scopeEpoch}',
+    );
+  }
 }
 
 String? _normalizedScopeUserId(String? userId) {

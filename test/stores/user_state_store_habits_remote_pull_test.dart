@@ -1067,6 +1067,103 @@ void main() {
       expect(habitRepository.fetchCalls, 2);
       expect(store.lastHabitsRemotePullAttemptAt, now);
     });
+
+    test('essential bootstrap uses valid scoped habit cache', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final habitRepository = _FakeHabitRepository();
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(id: 'habit-1', name: 'Cached Habit'),
+        ],
+      );
+
+      final result =
+          await store.prepareEssentialHabitsForBootstrap(userId: 'user-1');
+
+      expect(result.status, EssentialHabitsBootstrapStatus.readyFromCache);
+      expect(result.canBuildHome, isTrue);
+      expect(habitRepository.fetchCalls, 0);
+    });
+
+    test('essential bootstrap does not treat empty template as ready',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final habitRepository = _FakeHabitRepository();
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+      );
+
+      final result =
+          await store.prepareEssentialHabitsForBootstrap(userId: 'user-1');
+
+      expect(habitRepository.fetchCalls, 1);
+      expect(result.status, EssentialHabitsBootstrapStatus.confirmedEmpty);
+      expect(result.source, 'confirmed_empty');
+    });
+
+    test('essential bootstrap remote pull applies habits before Home',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final habitRepository = _FakeHabitRepository(
+        fetchedHabits: <RemoteHabit>[
+          _remoteCheckHabit(
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Remote Habit',
+          ),
+        ],
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+      );
+
+      final result =
+          await store.prepareEssentialHabitsForBootstrap(userId: 'user-1');
+
+      expect(result.status, EssentialHabitsBootstrapStatus.readyFromRemote);
+      expect(store.activeHabits, hasLength(1));
+      expect(store.activeHabits.first['name'], 'Remote Habit');
+    });
+
+    test('essential bootstrap shares in-flight remote pull', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final fetchCompleter = Completer<RepositoryResult<List<RemoteHabit>>>();
+      final habitRepository = _FakeHabitRepository(
+        fetchHandler: () => fetchCompleter.future,
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+      );
+
+      final first = store.prepareEssentialHabitsForBootstrap(userId: 'user-1');
+      await Future<void>.delayed(Duration.zero);
+      final second = store.prepareEssentialHabitsForBootstrap(userId: 'user-1');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(habitRepository.fetchCalls, 1);
+      fetchCompleter.complete(
+        RepositoryResult<List<RemoteHabit>>.success(
+          data: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'Remote Habit',
+            ),
+          ],
+        ),
+      );
+
+      final results =
+          await Future.wait(<Future<EssentialHabitsBootstrapResult>>[
+        first,
+        second,
+      ]);
+      expect(results.every((result) => result.canBuildHome), isTrue);
+      expect(habitRepository.fetchCalls, 1);
+    });
   });
 }
 
@@ -1093,6 +1190,7 @@ Future<UserStateStore> _buildStore({
     currentSupabaseUserIdProvider: () => authenticatedUserId,
     nowProvider: nowProvider,
   );
+  await store.switchLocalScope(userId: userId);
   await store.save(
     <String, dynamic>{
       'userState': <String, dynamic>{

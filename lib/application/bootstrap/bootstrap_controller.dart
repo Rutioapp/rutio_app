@@ -1,14 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/models/remote/remote_profile.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../../data/repositories/repository_result.dart';
 import '../../devtools/rutio_runtime_profile.dart';
+import '../../features/shop/application/shop_cosmetics_controller.dart';
+import '../../features/shop/domain/models/shop_asset.dart';
 import '../../stores/user_state_store.dart';
 import '../auth/auth_controller.dart';
+
+enum BootstrapRunMode {
+  coldStart,
+  inAppBootstrap,
+}
 
 abstract class BootstrapProfileRepository {
   Future<RepositoryResult<RemoteProfile?>> fetchCurrentProfile();
@@ -36,12 +45,159 @@ class ProfileBootstrapRepository implements BootstrapProfileRepository {
       );
 }
 
+abstract class BootstrapEssentialHabitsPreparer {
+  Future<EssentialHabitsBootstrapResult> prepare({
+    required String userId,
+    bool forceRemote = false,
+  });
+}
+
+class UserStateBootstrapEssentialHabitsPreparer
+    implements BootstrapEssentialHabitsPreparer {
+  const UserStateBootstrapEssentialHabitsPreparer(this._store);
+
+  final UserStateStore _store;
+
+  @override
+  Future<EssentialHabitsBootstrapResult> prepare({
+    required String userId,
+    bool forceRemote = false,
+  }) =>
+      _store.prepareEssentialHabitsForBootstrap(
+        userId: userId,
+        forceRemote: forceRemote,
+      );
+}
+
+abstract class BootstrapEssentialCosmeticsPreparer {
+  Future<CosmeticsBootstrapResult> prepare({
+    required String userId,
+    bool forceRemote = false,
+  });
+
+  CosmeticsReadyToken? createReadyToken({required String userId});
+
+  bool validateReadyToken(CosmeticsReadyToken token);
+}
+
+class ShopBootstrapEssentialCosmeticsPreparer
+    implements BootstrapEssentialCosmeticsPreparer {
+  const ShopBootstrapEssentialCosmeticsPreparer(this._controller);
+
+  final ShopCosmeticsController _controller;
+
+  @override
+  Future<CosmeticsBootstrapResult> prepare({
+    required String userId,
+    bool forceRemote = false,
+  }) =>
+      _controller.prepareEssentialCosmeticsForBootstrap(
+        userId: userId,
+        forceRemote: forceRemote,
+      );
+
+  @override
+  CosmeticsReadyToken? createReadyToken({required String userId}) =>
+      _controller.createReadyTokenForBootstrap(userId: userId);
+
+  @override
+  bool validateReadyToken(CosmeticsReadyToken token) =>
+      _controller.validateReadyToken(token);
+}
+
+class NoopBootstrapCosmeticsPreparer
+    implements BootstrapEssentialCosmeticsPreparer {
+  const NoopBootstrapCosmeticsPreparer();
+
+  @override
+  Future<CosmeticsBootstrapResult> prepare({
+    required String userId,
+    bool forceRemote = false,
+  }) async {
+    return CosmeticsBootstrapResult(
+      status: CosmeticsBootstrapStatus.confirmedEmpty,
+      userId: userId,
+      source: 'confirmed_empty',
+      requestId: 0,
+      duration: Duration.zero,
+    );
+  }
+
+  @override
+  CosmeticsReadyToken? createReadyToken({required String userId}) =>
+      CosmeticsReadyToken(
+        controllerIdentity: 0,
+        userId: userId,
+        scope: userId,
+        appliedRevision: 0,
+        equippedWallpaperId: null,
+        equippedHabitCardId: null,
+        equippedUserCardId: null,
+        wallpaperResolved: true,
+        habitCardResolved: true,
+        userCardResolved: true,
+      );
+
+  @override
+  bool validateReadyToken(CosmeticsReadyToken token) => true;
+}
+
+abstract class BootstrapEssentialAssetPreloader {
+  Future<void> preload(Iterable<ShopAsset> assets);
+}
+
+class RootBundleEssentialAssetPreloader
+    implements BootstrapEssentialAssetPreloader {
+  RootBundleEssentialAssetPreloader({AssetBundle? bundle})
+      : _bundle = bundle ?? rootBundle;
+
+  final AssetBundle _bundle;
+  final Set<String> _preloadedPaths = <String>{};
+
+  @override
+  Future<void> preload(Iterable<ShopAsset> assets) async {
+    final paths = <String>{
+      for (final asset in assets)
+        if (asset.assetPath.trim().isNotEmpty) asset.assetPath.trim(),
+    }..removeAll(_preloadedPaths);
+    if (paths.isEmpty) return;
+    await Future.wait(paths.map((path) async {
+      await _bundle.load(path);
+      await _precacheImageProvider(buildShopAssetImageProvider(path));
+    }));
+    _preloadedPaths.addAll(paths);
+  }
+
+  Future<void> _precacheImageProvider(ImageProvider<Object> provider) {
+    final completer = Completer<void>();
+    final stream = provider.resolve(ImageConfiguration.empty);
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (_, __) {
+        stream.removeListener(listener);
+        if (!completer.isCompleted) completer.complete();
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        stream.removeListener(listener);
+        if (!completer.isCompleted) {
+          completer.completeError(error, stackTrace);
+        }
+      },
+    );
+    stream.addListener(listener);
+    return completer.future;
+  }
+}
+
 enum BootstrapPhase {
   idle,
   resolvingSession,
   selectingUserScope,
   loadingLocalState,
   loadingRemoteProfile,
+  loadingEssentialHabits,
+  loadingEssentialCosmetics,
+  preloadingEssentialAssets,
   decidingDestination,
   ready,
   failed,
@@ -61,6 +217,9 @@ enum BootstrapErrorType {
   invalidRemoteResponse,
   staleSession,
   localState,
+  essentialHabits,
+  essentialCosmetics,
+  essentialAssets,
   unknown,
 }
 
@@ -84,19 +243,23 @@ class BootstrapState {
   const BootstrapState({
     required this.phase,
     required this.runId,
+    this.mode = BootstrapRunMode.coldStart,
     this.user,
     this.remoteProfile,
     this.destination,
     this.error,
+    this.cosmeticsReadyToken,
     this.usesOfflinePolicy = false,
   });
 
   final BootstrapPhase phase;
   final int runId;
+  final BootstrapRunMode mode;
   final User? user;
   final RemoteProfile? remoteProfile;
   final BootstrapDestination? destination;
   final BootstrapError? error;
+  final CosmeticsReadyToken? cosmeticsReadyToken;
   final bool usesOfflinePolicy;
 
   bool get isReady => phase == BootstrapPhase.ready && destination != null;
@@ -105,6 +268,7 @@ class BootstrapState {
   BootstrapState copyWith({
     BootstrapPhase? phase,
     int? runId,
+    BootstrapRunMode? mode,
     User? user,
     bool clearUser = false,
     RemoteProfile? remoteProfile,
@@ -112,17 +276,23 @@ class BootstrapState {
     BootstrapDestination? destination,
     bool clearDestination = false,
     BootstrapError? error,
+    CosmeticsReadyToken? cosmeticsReadyToken,
+    bool clearCosmeticsReadyToken = false,
     bool clearError = false,
     bool? usesOfflinePolicy,
   }) {
     return BootstrapState(
       phase: phase ?? this.phase,
       runId: runId ?? this.runId,
+      mode: mode ?? this.mode,
       user: clearUser ? null : user ?? this.user,
       remoteProfile:
           clearRemoteProfile ? null : remoteProfile ?? this.remoteProfile,
       destination: clearDestination ? null : destination ?? this.destination,
       error: clearError ? null : error ?? this.error,
+      cosmeticsReadyToken: clearCosmeticsReadyToken
+          ? null
+          : cosmeticsReadyToken ?? this.cosmeticsReadyToken,
       usesOfflinePolicy: usesOfflinePolicy ?? this.usesOfflinePolicy,
     );
   }
@@ -130,6 +300,7 @@ class BootstrapState {
   static const initial = BootstrapState(
     phase: BootstrapPhase.idle,
     runId: 0,
+    mode: BootstrapRunMode.coldStart,
   );
 }
 
@@ -138,9 +309,18 @@ class BootstrapController extends ChangeNotifier {
     required AuthController authController,
     required UserStateStore userStateStore,
     required BootstrapProfileRepository profileRepository,
+    BootstrapEssentialHabitsPreparer? essentialHabitsPreparer,
+    BootstrapEssentialCosmeticsPreparer? essentialCosmeticsPreparer,
+    BootstrapEssentialAssetPreloader? essentialAssetPreloader,
   })  : _authController = authController,
         _userStateStore = userStateStore,
-        _profileRepository = profileRepository {
+        _profileRepository = profileRepository,
+        _essentialHabitsPreparer = essentialHabitsPreparer ??
+            UserStateBootstrapEssentialHabitsPreparer(userStateStore),
+        _essentialCosmeticsPreparer = essentialCosmeticsPreparer,
+        _essentialAssetPreloader =
+            essentialAssetPreloader ?? RootBundleEssentialAssetPreloader() {
+    _trace(0, 'controller_created');
     _authController.addListener(_handleAuthChanged);
     unawaited(start());
   }
@@ -148,17 +328,29 @@ class BootstrapController extends ChangeNotifier {
   final AuthController _authController;
   final UserStateStore _userStateStore;
   final BootstrapProfileRepository _profileRepository;
+  final BootstrapEssentialHabitsPreparer _essentialHabitsPreparer;
+  final BootstrapEssentialCosmeticsPreparer? _essentialCosmeticsPreparer;
+  final BootstrapEssentialAssetPreloader _essentialAssetPreloader;
 
   BootstrapState _state = BootstrapState.initial;
   int _nextRunId = 0;
   String? _lastResolvedUserId;
   bool _isCompletingTemporaryOnboarding = false;
+  bool _hasStartedInitialBootstrap = false;
 
   BootstrapState get state => _state;
 
-  Future<void> start() => _run();
+  Future<void> start() => _run(mode: _consumeNextRunMode());
 
-  Future<void> retry() => _run();
+  Future<void> retry() => _run(mode: BootstrapRunMode.inAppBootstrap);
+
+  void logColdStartSplashShown() {
+    _log(_state.runId, 'cold_start_showing_splash');
+  }
+
+  void logPreparingScreenShown() {
+    _log(_state.runId, 'showing_preparing_screen');
+  }
 
   Future<void> completeTemporaryOnboarding() async {
     if (_isCompletingTemporaryOnboarding) return;
@@ -181,7 +373,12 @@ class BootstrapController extends ChangeNotifier {
 
     _isCompletingTemporaryOnboarding = true;
     try {
-      _setState(_state.copyWith(phase: BootstrapPhase.decidingDestination));
+      _setState(
+        _state.copyWith(
+          phase: BootstrapPhase.decidingDestination,
+          mode: BootstrapRunMode.inAppBootstrap,
+        ),
+      );
       final result = await _profileRepository.markOnboardingCompleted(
         onboardingVersion: profile.onboardingVersion,
       );
@@ -208,13 +405,21 @@ class BootstrapController extends ChangeNotifier {
       }
 
       _log(runId, 'profile_ready status=completed');
+      final cosmeticsReadyToken = await _prepareHomeEssentials(
+        runId: runId,
+        userId: userId,
+        startedAt: DateTime.now(),
+      );
+      if (cosmeticsReadyToken == null) return;
       _setState(
         BootstrapState(
           phase: BootstrapPhase.ready,
           runId: runId,
+          mode: BootstrapRunMode.inAppBootstrap,
           user: _state.user,
           remoteProfile: completed,
           destination: BootstrapDestination.home,
+          cosmeticsReadyToken: cosmeticsReadyToken,
         ),
       );
       _log(runId, 'destination=home');
@@ -227,12 +432,30 @@ class BootstrapController extends ChangeNotifier {
     final currentUserId = _authController.currentUser?.id;
     final sessionResolved = _authController.isSessionResolved;
     if (!sessionResolved) return;
-    if (currentUserId == _lastResolvedUserId && _state.isReady) return;
+    _trace(
+      _state.runId,
+      'auth_stream_event',
+      note: 'user=${currentUserId != null}',
+    );
+    if (_state.mode == BootstrapRunMode.coldStart &&
+        _state.phase == BootstrapPhase.resolvingSession &&
+        !_state.isReady &&
+        !_state.isFailed) {
+      return;
+    }
+    if (currentUserId == _lastResolvedUserId && !_state.isFailed) {
+      _trace(
+        _state.runId,
+        'auth_stream_event',
+        note: 'same_user_ignored user=${currentUserId != null}',
+      );
+      return;
+    }
     _log(_state.runId, 'auth_changed user=${currentUserId != null}');
-    unawaited(_run());
+    unawaited(_run(mode: BootstrapRunMode.inAppBootstrap));
   }
 
-  Future<void> _run() async {
+  Future<void> _run({required BootstrapRunMode mode}) async {
     final runId = ++_nextRunId;
     final startedAt = DateTime.now();
     _lastResolvedUserId = _authController.currentUser?.id;
@@ -240,7 +463,16 @@ class BootstrapController extends ChangeNotifier {
       BootstrapState(
         phase: BootstrapPhase.resolvingSession,
         runId: runId,
+        mode: mode,
       ),
+    );
+    _log(runId,
+        'mode=${mode == BootstrapRunMode.coldStart ? 'cold_start' : 'in_app'}');
+    _trace(
+      runId,
+      'auth_initial_value',
+      note:
+          'mode=${mode == BootstrapRunMode.coldStart ? 'cold_start' : 'in_app'} user=${_lastResolvedUserId != null}',
     );
     _log(runId, 'phase=resolving_session', startedAt: startedAt);
 
@@ -272,15 +504,18 @@ class BootstrapController extends ChangeNotifier {
         BootstrapState(
           phase: BootstrapPhase.selectingUserScope,
           runId: runId,
+          mode: mode,
           user: user,
         ),
       );
       _log(runId, 'phase=selecting_user_scope', startedAt: startedAt);
+      _trace(runId, 'scope_change_requested');
       await _userStateStore.switchLocalScope(userId: user.id);
       if (!_isCurrentRun(runId) || _authController.currentUser?.id != user.id) {
         return;
       }
       _log(runId, 'scope_selected', startedAt: startedAt);
+      _trace(runId, 'scope_change_applied');
 
       _setState(_state.copyWith(phase: BootstrapPhase.loadingLocalState));
       _log(runId, 'phase=loading_local_state', startedAt: startedAt);
@@ -344,10 +579,32 @@ class BootstrapController extends ChangeNotifier {
       _setState(_state.copyWith(phase: BootstrapPhase.decidingDestination));
       _log(runId, 'phase=deciding_destination', startedAt: startedAt);
       final destination = _destinationForProfile(profile);
+      if (destination == BootstrapDestination.home) {
+        final cosmeticsReadyToken = await _prepareHomeEssentials(
+          runId: runId,
+          userId: user.id,
+          startedAt: startedAt,
+        );
+        if (cosmeticsReadyToken == null) return;
+        _setState(
+          BootstrapState(
+            phase: BootstrapPhase.ready,
+            runId: runId,
+            mode: mode,
+            user: user,
+            remoteProfile: profile,
+            destination: destination,
+            cosmeticsReadyToken: cosmeticsReadyToken,
+          ),
+        );
+        _log(runId, 'destination=${destination.name}', startedAt: startedAt);
+        return;
+      }
       _setState(
         BootstrapState(
           phase: BootstrapPhase.ready,
           runId: runId,
+          mode: mode,
           user: user,
           remoteProfile: profile,
           destination: destination,
@@ -373,6 +630,7 @@ class BootstrapController extends ChangeNotifier {
       BootstrapState(
         phase: BootstrapPhase.loadingLocalState,
         runId: runId,
+        mode: _state.mode,
       ),
     );
     _log(runId, 'phase=loading_local_state', startedAt: startedAt);
@@ -388,6 +646,7 @@ class BootstrapController extends ChangeNotifier {
       BootstrapState(
         phase: BootstrapPhase.ready,
         runId: runId,
+        mode: _state.mode,
         destination: destination,
       ),
     );
@@ -402,6 +661,181 @@ class BootstrapController extends ChangeNotifier {
       case OnboardingStatus.completed:
         return BootstrapDestination.home;
     }
+  }
+
+  Future<CosmeticsReadyToken?> _prepareHomeEssentials({
+    required int runId,
+    required String userId,
+    required DateTime startedAt,
+  }) async {
+    _setState(_state.copyWith(phase: BootstrapPhase.loadingEssentialHabits));
+    _log(runId, 'essential_habits_started', startedAt: startedAt);
+    final habitsStartedAt = DateTime.now();
+    final habitsFuture = _essentialHabitsPreparer.prepare(userId: userId);
+
+    _setState(_state.copyWith(phase: BootstrapPhase.loadingEssentialCosmetics));
+    _log(runId, 'essential_cosmetics_started', startedAt: startedAt);
+    _trace(runId, 'cosmetics_prepare_started');
+    final cosmeticsStartedAt = DateTime.now();
+    final cosmeticsFuture =
+        (_essentialCosmeticsPreparer ?? const NoopBootstrapCosmeticsPreparer())
+            .prepare(userId: userId);
+
+    final results = await Future.wait<Object>(<Future<Object>>[
+      habitsFuture,
+      cosmeticsFuture,
+    ]);
+    if (!_isCurrentUserRun(runId, userId)) {
+      _log(runId, 'stale_result_discarded domain=essentials');
+      return null;
+    }
+
+    final habits = results[0] as EssentialHabitsBootstrapResult;
+    final cosmetics = results[1] as CosmeticsBootstrapResult;
+    _log(
+      runId,
+      'essential_habits_ready source=${_bootstrapSourceLabel(habits.source)} '
+      'duration_ms=${DateTime.now().difference(habitsStartedAt).inMilliseconds}',
+    );
+    _log(
+      runId,
+      'essential_cosmetics_ready '
+      'source=${_bootstrapSourceLabel(cosmetics.source)} '
+      'duration_ms=${DateTime.now().difference(cosmeticsStartedAt).inMilliseconds}',
+    );
+    _log(
+      runId,
+      'cosmetics_snapshot_applied revision=${cosmetics.appliedRevision}',
+    );
+    if (cosmetics.readyToken != null) {
+      _trace(
+        runId,
+        'cosmetics_snapshot_applied',
+        token: cosmetics.readyToken,
+      );
+    }
+
+    if (habits.userId != userId || !habits.canBuildHome) {
+      _fail(
+        runId,
+        BootstrapError(
+          type: BootstrapErrorType.essentialHabits,
+          message:
+              'No hemos podido preparar tu espacio.\n\nComprueba tu conexiÃ³n e intÃ©ntalo de nuevo.',
+          cause: habits.error,
+        ),
+      );
+      return null;
+    }
+    if (cosmetics.userId != userId || !cosmetics.canBuildHome) {
+      _fail(
+        runId,
+        BootstrapError(
+          type: BootstrapErrorType.essentialCosmetics,
+          message:
+              'No hemos podido preparar tu espacio.\n\nComprueba tu conexiÃ³n e intÃ©ntalo de nuevo.',
+          cause: cosmetics.error,
+        ),
+      );
+      return null;
+    }
+    if (!cosmetics.resolversVerified) {
+      _fail(
+        runId,
+        BootstrapError(
+          type: BootstrapErrorType.essentialCosmetics,
+          message:
+              'No hemos podido preparar tu espacio.\n\nComprueba tu conexiÃƒÂ³n e intÃƒÂ©ntalo de nuevo.',
+          cause: StateError('Cosmetics resolvers were not verified.'),
+        ),
+      );
+      return null;
+    }
+    final cosmeticsPreparer =
+        _essentialCosmeticsPreparer ?? const NoopBootstrapCosmeticsPreparer();
+    final readyToken = cosmetics.readyToken ??
+        cosmeticsPreparer.createReadyToken(userId: userId);
+    if (readyToken == null ||
+        !cosmeticsPreparer.validateReadyToken(readyToken)) {
+      _fail(
+        runId,
+        BootstrapError(
+          type: BootstrapErrorType.essentialCosmetics,
+          message:
+              'No hemos podido preparar tu espacio.\n\nComprueba tu conexiÃƒÆ’Ã‚Â³n e intÃƒÆ’Ã‚Â©ntalo de nuevo.',
+          cause: StateError('Cosmetics readiness token is not valid.'),
+        ),
+      );
+      return null;
+    }
+    _trace(runId, 'cosmetics_resolvers_verified', token: readyToken);
+
+    _setState(_state.copyWith(phase: BootstrapPhase.preloadingEssentialAssets));
+    final assetStartedAt = DateTime.now();
+    try {
+      await _essentialAssetPreloader.preload(cosmetics.visibleAssets);
+    } catch (error) {
+      if (!_isCurrentUserRun(runId, userId)) {
+        _log(runId, 'stale_result_discarded domain=assets');
+        return null;
+      }
+      _fail(
+        runId,
+        BootstrapError(
+          type: BootstrapErrorType.essentialAssets,
+          message:
+              'No hemos podido preparar tu espacio.\n\nComprueba tu conexiÃ³n e intÃ©ntalo de nuevo.',
+          cause: error,
+        ),
+      );
+      return null;
+    }
+
+    if (!_isCurrentUserRun(runId, userId)) {
+      _log(runId, 'stale_result_discarded domain=assets');
+      return null;
+    }
+    _log(
+      runId,
+      'essential_assets_preloaded '
+      'duration_ms=${DateTime.now().difference(assetStartedAt).inMilliseconds}',
+    );
+    _log(runId, 'assets_preloaded');
+    _trace(runId, 'assets_preloaded', token: readyToken);
+    if (!cosmeticsPreparer.validateReadyToken(readyToken)) {
+      _fail(
+        runId,
+        BootstrapError(
+          type: BootstrapErrorType.essentialCosmetics,
+          message:
+              'No hemos podido preparar tu espacio.\n\nComprueba tu conexiÃƒÆ’Ã‚Â³n e intÃƒÆ’Ã‚Â©ntalo de nuevo.',
+          cause: StateError('Cosmetics readiness token changed after assets.'),
+        ),
+      );
+      return null;
+    }
+    _log(
+      runId,
+      'home_ready total_ms=${DateTime.now().difference(startedAt).inMilliseconds}',
+    );
+    _trace(runId, 'publishing_home', token: readyToken);
+    return readyToken;
+  }
+
+  BootstrapRunMode _consumeNextRunMode() {
+    if (_hasStartedInitialBootstrap) {
+      return BootstrapRunMode.inAppBootstrap;
+    }
+    _hasStartedInitialBootstrap = true;
+    return BootstrapRunMode.coldStart;
+  }
+
+  String _bootstrapSourceLabel(String source) {
+    if (source.contains('confirmed_empty')) return 'confirmed_empty';
+    if (source.contains('degraded')) return 'degraded';
+    if (source.contains('cache')) return 'cache';
+    if (source.contains('remote')) return 'remote';
+    return source;
   }
 
   BootstrapError _errorFromRepository(RepositoryError? error) {
@@ -461,6 +895,10 @@ class BootstrapController extends ChangeNotifier {
 
   bool _isCurrentRun(int runId) => runId == _state.runId;
 
+  bool _isCurrentUserRun(int runId, String userId) {
+    return _isCurrentRun(runId) && _authController.currentUser?.id == userId;
+  }
+
   void _setState(BootstrapState state) {
     _state = state;
     notifyListeners();
@@ -472,6 +910,38 @@ class BootstrapController extends ChangeNotifier {
         ? ''
         : ' t=${DateTime.now().difference(startedAt).inMilliseconds}ms';
     debugPrint('[Bootstrap] run=$runId $message$elapsed');
+  }
+
+  void _trace(
+    int runId,
+    String event, {
+    CosmeticsReadyToken? token,
+    String? note,
+  }) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[BootstrapTrace] event=$event '
+      'runId=$runId '
+      'mode=${_state.mode == BootstrapRunMode.coldStart ? 'cold_start' : 'in_app'} '
+      'controllerIdentity=${token?.controllerIdentity ?? 'none'} '
+      'scope=${_debugScope(token?.scope ?? _userStateStore.activeLocalScopeUserId ?? _userStateStore.userId)} '
+      'user=${_authController.currentUser != null} '
+      'appliedRevision=${token?.appliedRevision ?? 'none'} '
+      'equippedWallpaperId=${token?.equippedWallpaperId ?? 'none'} '
+      'equippedHabitCardId=${token?.equippedHabitCardId ?? 'none'} '
+      'equippedUserCardId=${token?.equippedUserCardId ?? 'none'} '
+      'wallpaperResolved=${token?.wallpaperResolved ?? false} '
+      'habitCardResolved=${token?.habitCardResolved ?? false} '
+      'userCardResolved=${token?.userCardResolved ?? false} '
+      '${note == null ? '' : 'note=$note'}',
+    );
+  }
+
+  String _debugScope(String? scope) {
+    final value = scope?.trim();
+    if (value == null || value.isEmpty) return 'guest';
+    if (value.length <= 8) return value;
+    return '${value.substring(0, 4)}...${value.substring(value.length - 4)}';
   }
 
   @override

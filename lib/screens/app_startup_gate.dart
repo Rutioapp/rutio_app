@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,9 +10,10 @@ import '../utils/app_theme.dart';
 import 'auth/sign_in_screen.dart';
 import 'onboarding/temporary_onboarding_screen.dart';
 import 'root_gate.dart';
+import 'splash_screen.dart';
 import 'welcome_screen.dart';
 
-class AppStartupGate extends StatelessWidget {
+class AppStartupGate extends StatefulWidget {
   const AppStartupGate({
     super.key,
     this.authenticatedBuilder,
@@ -19,11 +22,47 @@ class AppStartupGate extends StatelessWidget {
   final WidgetBuilder? authenticatedBuilder;
 
   @override
+  State<AppStartupGate> createState() => _AppStartupGateState();
+}
+
+class _AppStartupGateState extends State<AppStartupGate> {
+  static const Duration _minimumSplashDuration = Duration(milliseconds: 2000);
+
+  Timer? _minimumSplashTimer;
+  bool _minimumSplashElapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _minimumSplashTimer = Timer(_minimumSplashDuration, () {
+      if (!mounted) return;
+      setState(() {
+        _minimumSplashElapsed = true;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _minimumSplashTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<BootstrapController>(
       builder: (context, controller, _) {
         final state = controller.state;
+        final isColdStart = state.mode == BootstrapRunMode.coldStart;
         if (state.isReady) {
+          if (isColdStart && !_minimumSplashElapsed) {
+            controller.logColdStartSplashShown();
+            return const SplashScreen(
+              autoAdvanceDuration: null,
+              enableTapToContinue: false,
+              showTapHint: false,
+            );
+          }
           if (state.destination == BootstrapDestination.onboarding &&
               !_hasOnboardingProfile(state)) {
             return const BootstrapPreparationScreen();
@@ -38,6 +77,16 @@ class AppStartupGate extends StatelessWidget {
           );
         }
 
+        if (isColdStart) {
+          controller.logColdStartSplashShown();
+          return const SplashScreen(
+            autoAdvanceDuration: null,
+            enableTapToContinue: false,
+            showTapHint: false,
+          );
+        }
+
+        controller.logPreparingScreenShown();
         return const BootstrapPreparationScreen();
       },
     );
@@ -49,7 +98,7 @@ class AppStartupGate extends StatelessWidget {
   ) {
     switch (destination) {
       case BootstrapDestination.home:
-        return authenticatedBuilder?.call(context) ?? const RootGate();
+        return widget.authenticatedBuilder?.call(context) ?? const RootGate();
       case BootstrapDestination.welcome:
         return const WelcomeScreen();
       case BootstrapDestination.authentication:

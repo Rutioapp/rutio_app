@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'package:rutio/constants/color_palette.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:rutio/utils/app_theme.dart';
@@ -239,6 +240,17 @@ class UserCardThemeBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundImageProvider = backgroundImageAssetPath == null
+        ? null
+        : buildShopAssetImageProvider(backgroundImageAssetPath!);
+    if (kDebugMode) {
+      debugPrint(
+        '[HomeFirstFrame] component=user_card '
+        'inputAsset=${backgroundImageAssetPath == null ? 'null' : 'present'} '
+        'displayedAsset=${backgroundImageProvider == null ? 'null' : 'present'} '
+        'fallback=${backgroundImageProvider == null}',
+      );
+    }
     return DecoratedBox(
       key: const Key('userIdentityRowThemeBackground'),
       decoration: BoxDecoration(
@@ -251,16 +263,18 @@ class UserCardThemeBackground extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: <Widget>[
-            DecoratedBox(
-              key: const Key('userIdentityRowFallbackBackground'),
-              decoration: fallbackDecoration,
-            ),
-            if (backgroundImageAssetPath != null)
+            if (backgroundImageProvider == null)
+              DecoratedBox(
+                key: const Key('userIdentityRowFallbackBackground'),
+                decoration: fallbackDecoration,
+              ),
+            if (backgroundImageProvider != null)
               Positioned.fill(
-                child: Image.asset(
-                  backgroundImageAssetPath!,
+                child: Image(
+                  image: backgroundImageProvider,
                   key: const Key('userIdentityRowBackgroundImage'),
                   fit: BoxFit.cover,
+                  gaplessPlayback: true,
                   errorBuilder: (_, error, stackTrace) {
                     UserIdentityRow._log(
                       'UserIdentityRow failed to load '

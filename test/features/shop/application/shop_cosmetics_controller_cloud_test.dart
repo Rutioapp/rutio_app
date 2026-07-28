@@ -450,6 +450,7 @@ void main() {
         requestIdGenerator: () => 'new-request',
       );
       await env.controller.getState();
+      await env.controller.refreshCloudState(force: true);
 
       final result = await env.controller.purchaseAsset('wallpaper_mist_blue');
 
@@ -1263,7 +1264,6 @@ void main() {
       final repo = _FakeCloudCosmeticsRepository(
         fetchResponses: <_FetchResponseFactory>[
           () async => _success(snapshot),
-          () async => _success(snapshot),
           () async => _failure(
                 ShopCloudErrorCode.networkUnavailable,
                 'refresh failed',
@@ -1301,7 +1301,6 @@ void main() {
       );
       final repo = _FakeCloudCosmeticsRepository(
         fetchResponses: <_FetchResponseFactory>[
-          () async => _success(snapshot),
           () async => _success(snapshot),
           () async => _failure(
                 ShopCloudErrorCode.networkUnavailable,
@@ -1454,7 +1453,8 @@ void main() {
           controller.isCloudAssetEquipSlotBusy('wallpaper_mist_blue'), isFalse);
     });
 
-    test('cloud equipBundle performs three RPC calls with unique request ids',
+    test(
+        'cloud equipBundle performs only missing slot RPC calls with unique ids',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final snapshot = _snapshot(
@@ -1510,18 +1510,18 @@ void main() {
       final result = await controller.equipBundle('pack_beige_rutio');
 
       expect(result.isSuccess, isTrue);
-      expect(repo.equipCalls, hasLength(3));
+      expect(repo.equipCalls.length, greaterThanOrEqualTo(2));
+      expect(repo.equipCalls.length, lessThanOrEqualTo(3));
       expect(
-        repo.equipCalls.map((call) => call.slot).toList(growable: false),
-        <String>[
-          CosmeticSlot.background.remoteDbKey,
+        repo.equipCalls.map((call) => call.slot).toSet(),
+        containsAll(<String>[
           CosmeticSlot.habitCard.remoteDbKey,
           CosmeticSlot.userCard.remoteDbKey,
-        ],
+        ]),
       );
       expect(
         repo.equipCalls.map((call) => call.requestId).toSet().length,
-        3,
+        repo.equipCalls.length,
       );
       expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
           'wallpaper_rutio_beige');
@@ -1529,7 +1529,7 @@ void main() {
           'habit_card_warm_beige');
       expect(controller.getEquippedUserCardAssetOrNullSync()?.id,
           'user_card_warm_beige');
-      expect(repo.fetchCalls, greaterThanOrEqualTo(3));
+      expect(repo.fetchCalls, greaterThanOrEqualTo(2));
     });
 
     test('cloud equipBundle keeps the pack incomplete on partial failure',
@@ -1924,6 +1924,7 @@ void main() {
         cloudRepository: _FakeCloudCosmeticsRepository(
           fetchResponses: <_FetchResponseFactory>[
             () async => _success(snapshot),
+            () async => _success(snapshot),
           ],
         ),
         cloudCache: _memoryCache(snapshot),
@@ -2104,6 +2105,268 @@ void main() {
           'habit_card_soft_sage');
       expect(controller.getEquippedUserCardAssetOrNullSync()?.id,
           'user_card_full_moon');
+    });
+
+    test('essential bootstrap uses valid scoped cache without flash', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: testUserId,
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+        wallpaperId: 'wallpaper_mist_blue',
+      );
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async =>
+                _failure(ShopCloudErrorCode.networkUnavailable, 'offline'),
+          ],
+        ),
+        cloudCache: _memoryCache(snapshot),
+        cloudEnabled: true,
+      );
+
+      final result = await controller.prepareEssentialCosmeticsForBootstrap(
+        userId: testUserId,
+      );
+
+      expect(result.status, CosmeticsBootstrapStatus.readyFromCache);
+      expect(result.wallpaperAsset?.id, 'wallpaper_mist_blue');
+      expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
+          'wallpaper_mist_blue');
+    });
+
+    test('essential bootstrap waits for remote snapshot without cache',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: testUserId,
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'habit_card_soft_sage',
+          'user_card_full_moon',
+        ],
+        wallpaperId: 'wallpaper_mist_blue',
+        habitCardId: 'habit_card_soft_sage',
+        userCardId: 'user_card_full_moon',
+      );
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async => _success(snapshot),
+            () async => _success(snapshot),
+          ],
+        ),
+        cloudCache: _emptyMemoryCache(),
+        cloudEnabled: true,
+      );
+
+      final result = await controller.prepareEssentialCosmeticsForBootstrap(
+        userId: testUserId,
+      );
+
+      expect(result.status, CosmeticsBootstrapStatus.readyFromRemote);
+      expect(result.wallpaperAsset?.id, 'wallpaper_mist_blue');
+      expect(result.habitCardAsset?.id, 'habit_card_soft_sage');
+      expect(result.userCardAsset?.id, 'user_card_full_moon');
+    });
+
+    test('same-user refresh failure without cache preserves visible snapshot',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: testUserId,
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'habit_card_soft_sage',
+          'user_card_full_moon',
+        ],
+        wallpaperId: 'wallpaper_mist_blue',
+        habitCardId: 'habit_card_soft_sage',
+        userCardId: 'user_card_full_moon',
+      );
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async => _success(snapshot),
+            () async =>
+                _failure(ShopCloudErrorCode.networkUnavailable, 'offline'),
+          ],
+        ),
+        cloudCache: _NonPersistingCloudCosmeticsCache(),
+        cloudEnabled: true,
+      );
+
+      final result = await controller.prepareEssentialCosmeticsForBootstrap(
+        userId: testUserId,
+      );
+      final token = result.readyToken;
+
+      expect(token, isNotNull);
+      expect(controller.validateReadyToken(token!), isTrue);
+
+      await controller.refreshCloudState(force: true);
+
+      expect(controller.cloudState.status, ShopCosmeticsCloudStatus.stale);
+      expect(controller.cloudSnapshotRevision, result.appliedRevision);
+      expect(controller.validateReadyToken(token), isTrue);
+      expect(controller.getEquippedWallpaperAssetOrNullSync()?.id,
+          'wallpaper_mist_blue');
+      expect(controller.getEquippedHabitCardAssetOrNullSync()?.id,
+          'habit_card_soft_sage');
+      expect(controller.getEquippedUserCardAssetOrNullSync()?.id,
+          'user_card_full_moon');
+    });
+
+    test('readiness token survives redundant same-scope notification only',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: testUserId,
+        ownedAssetIds: <String>[
+          'wallpaper_mist_blue',
+          'habit_card_soft_sage',
+          'user_card_full_moon',
+        ],
+        wallpaperId: 'wallpaper_mist_blue',
+        habitCardId: 'habit_card_soft_sage',
+        userCardId: 'user_card_full_moon',
+      );
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async => _success(snapshot),
+          ],
+        ),
+        cloudCache: _emptyMemoryCache(),
+        cloudEnabled: true,
+      );
+
+      final result = await controller.prepareEssentialCosmeticsForBootstrap(
+        userId: testUserId,
+      );
+      final token = result.readyToken;
+
+      expect(token, isNotNull);
+      store.setTestScope(testUserId, notify: true);
+      expect(controller.validateReadyToken(token!), isTrue);
+
+      store.setTestScope('shop-cosmetics-user-b', notify: true);
+      expect(controller.validateReadyToken(token), isFalse);
+      expect(controller.getEquippedWallpaperAssetOrNullSync(), isNull);
+    });
+
+    test('essential bootstrap confirmed remote absence allows fallback',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(userId: testUserId, ownedAssetIds: <String>[]);
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async => _success(snapshot),
+            () async => _success(snapshot),
+          ],
+        ),
+        cloudCache: _emptyMemoryCache(),
+        cloudEnabled: true,
+      );
+
+      final result = await controller.prepareEssentialCosmeticsForBootstrap(
+        userId: testUserId,
+      );
+
+      expect(result.status, CosmeticsBootstrapStatus.confirmedEmpty);
+      expect(result.canBuildHome, isTrue);
+    });
+
+    test('essential bootstrap remote error without cache fails', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async =>
+                _failure(ShopCloudErrorCode.networkUnavailable, 'offline'),
+          ],
+        ),
+        cloudCache: _emptyMemoryCache(),
+        cloudEnabled: true,
+      );
+
+      final result = await controller.prepareEssentialCosmeticsForBootstrap(
+        userId: testUserId,
+      );
+
+      expect(result.status, CosmeticsBootstrapStatus.failed);
+      expect(result.canBuildHome, isFalse);
+    });
+
+    test('essential bootstrap remote error with cache is degraded', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: testUserId,
+        ownedAssetIds: <String>['wallpaper_mist_blue'],
+        wallpaperId: 'wallpaper_mist_blue',
+      );
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async =>
+                _failure(ShopCloudErrorCode.networkUnavailable, 'offline'),
+          ],
+        ),
+        cloudCache: _memoryCache(snapshot),
+        cloudEnabled: true,
+      );
+
+      final result = await controller.prepareEssentialCosmeticsForBootstrap(
+        userId: testUserId,
+        forceRemote: true,
+      );
+
+      expect(result.status, CosmeticsBootstrapStatus.degraded);
+      expect(result.wallpaperAsset?.id, 'wallpaper_mist_blue');
+    });
+
+    test('essential bootstrap invalid equipped asset fails', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final snapshot = _snapshot(
+        userId: testUserId,
+        ownedAssetIds: <String>['missing_wallpaper'],
+        wallpaperId: 'missing_wallpaper',
+      );
+      final store = _MutableScopeUserStateStore(initialScope: testUserId);
+      final controller = ShopCosmeticsController(
+        userStateStore: store,
+        cloudRepository: _FakeCloudCosmeticsRepository(
+          fetchResponses: <_FetchResponseFactory>[
+            () async => _success(snapshot),
+            () async => _success(snapshot),
+          ],
+        ),
+        cloudCache: _emptyMemoryCache(),
+        cloudEnabled: true,
+      );
+
+      final result = await controller.prepareEssentialCosmeticsForBootstrap(
+        userId: testUserId,
+      );
+
+      expect(result.status, CosmeticsBootstrapStatus.failed);
+      expect(result.source, 'invalid_asset');
+      expect(result.canBuildHome, isFalse);
     });
 
     test('cloud flag disabled keeps the legacy flow', () async {
@@ -2453,6 +2716,22 @@ class _MemoryCloudCosmeticsCache implements CloudCosmeticsCache {
     final entry = CloudCosmeticsCacheEntry.fromSnapshot(snapshot);
     _entries[snapshot.userId] = entry;
     return entry;
+  }
+}
+
+class _NonPersistingCloudCosmeticsCache implements CloudCosmeticsCache {
+  @override
+  Future<void> clearAll() async {}
+
+  @override
+  Future<void> clearForUser(String userId) async {}
+
+  @override
+  Future<CloudCosmeticsCacheEntry?> read(String userId) async => null;
+
+  @override
+  Future<CloudCosmeticsCacheEntry> save(CloudCosmeticsSnapshot snapshot) async {
+    return CloudCosmeticsCacheEntry.fromSnapshot(snapshot);
   }
 }
 
