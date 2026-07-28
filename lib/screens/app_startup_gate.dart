@@ -54,8 +54,12 @@ class _AppStartupGateState extends State<AppStartupGate> {
       builder: (context, controller, _) {
         final state = controller.state;
         final isColdStart = state.mode == BootstrapRunMode.coldStart;
+        final routeName = ModalRoute.of(context)?.settings.name;
+        final shouldHoldReadySplash = isColdStart &&
+            !_minimumSplashElapsed &&
+            (routeName == null || routeName == '/' || routeName == '/home');
         if (state.isReady) {
-          if (isColdStart && !_minimumSplashElapsed) {
+          if (shouldHoldReadySplash) {
             controller.logColdStartSplashShown();
             return const SplashScreen(
               autoAdvanceDuration: null,

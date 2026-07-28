@@ -27,6 +27,18 @@ class _StreakProtectionRemoteSnapshot {
   final bool isComplete;
 }
 
+class _StreakProtectionSyncOutcome {
+  const _StreakProtectionSyncOutcome({
+    required this.changed,
+    required this.remoteQueryCount,
+    required this.deduplicatedLoadCount,
+  });
+
+  final bool changed;
+  final int remoteQueryCount;
+  final int deduplicatedLoadCount;
+}
+
 Future<void> _syncStreakProtectionFromRemoteBestEffort(
   UserStateStore store,
 ) async {
@@ -61,23 +73,54 @@ Future<bool> _syncStreakProtectionIntoUserState(
   UserStateStore store, {
   required Map<String, dynamic> userState,
 }) async {
+  final outcome = await _syncStreakProtectionIntoUserStateWithMetrics(
+    store,
+    userState: userState,
+  );
+  return outcome.changed;
+}
+
+Future<_StreakProtectionSyncOutcome>
+    _syncStreakProtectionIntoUserStateWithMetrics(
+  UserStateStore store, {
+  required Map<String, dynamic> userState,
+}) async {
   final authenticatedUserId = store._currentSupabaseUserIdProvider();
   if ((authenticatedUserId ?? '').trim().isEmpty) {
-    return false;
+    return const _StreakProtectionSyncOutcome(
+      changed: false,
+      remoteQueryCount: 0,
+      deduplicatedLoadCount: 0,
+    );
   }
   final localUserId =
       (userState['userId'] ?? userState['id'] ?? '').toString().trim();
   if (localUserId.isEmpty || localUserId != authenticatedUserId!.trim()) {
-    return false;
+    return const _StreakProtectionSyncOutcome(
+      changed: false,
+      remoteQueryCount: 0,
+      deduplicatedLoadCount: 0,
+    );
   }
 
-  final closeChanged =
-      await _closeRemoteMissedHabitOccurrencesBestEffort(store, userState);
+  final closeOutcome =
+      await _closeRemoteMissedHabitOccurrencesBestEffortWithMetrics(
+    store,
+    userState,
+  );
 
-  final snapshot = await _fetchStreakProtectionSnapshot(store, userState);
-  var changed = closeChanged;
+  final snapshotOutcome =
+      await _fetchStreakProtectionSnapshotWithMetrics(store, userState);
+  final snapshot = snapshotOutcome.snapshot;
+  var changed = closeOutcome.changed;
   if (snapshot == null) {
-    return changed;
+    return _StreakProtectionSyncOutcome(
+      changed: changed,
+      remoteQueryCount:
+          closeOutcome.remoteQueryCount + snapshotOutcome.remoteQueryCount,
+      deduplicatedLoadCount: closeOutcome.deduplicatedLoadCount +
+          snapshotOutcome.deduplicatedLoadCount,
+    );
   }
 
   if (snapshot.timeZoneChanged) {
@@ -91,7 +134,13 @@ Future<bool> _syncStreakProtectionIntoUserState(
   }
 
   if (!snapshot.isComplete) {
-    return changed;
+    return _StreakProtectionSyncOutcome(
+      changed: changed,
+      remoteQueryCount:
+          closeOutcome.remoteQueryCount + snapshotOutcome.remoteQueryCount,
+      deduplicatedLoadCount: closeOutcome.deduplicatedLoadCount +
+          snapshotOutcome.deduplicatedLoadCount,
+    );
   }
 
   changed = _reconcileRemoteStreakProtectionSnapshot(
@@ -100,14 +149,33 @@ Future<bool> _syncStreakProtectionIntoUserState(
         breaks: snapshot.breaks,
       ) ||
       changed;
-  return changed;
+  return _StreakProtectionSyncOutcome(
+    changed: changed,
+    remoteQueryCount:
+        closeOutcome.remoteQueryCount + snapshotOutcome.remoteQueryCount,
+    deduplicatedLoadCount: closeOutcome.deduplicatedLoadCount +
+        snapshotOutcome.deduplicatedLoadCount,
+  );
 }
 
-Future<_StreakProtectionRemoteSnapshot?> _fetchStreakProtectionSnapshot(
+class _StreakProtectionSnapshotFetchOutcome {
+  const _StreakProtectionSnapshotFetchOutcome({
+    required this.snapshot,
+    required this.remoteQueryCount,
+    required this.deduplicatedLoadCount,
+  });
+
+  final _StreakProtectionRemoteSnapshot? snapshot;
+  final int remoteQueryCount;
+  final int deduplicatedLoadCount;
+}
+
+Future<_StreakProtectionSnapshotFetchOutcome>
+    _fetchStreakProtectionSnapshotWithMetrics(
   UserStateStore store,
   Map<String, dynamic> userState,
 ) async {
-  return _fetchSharedStreakProtectionSnapshot(store, userState);
+  return _fetchSharedStreakProtectionSnapshotWithMetrics(store, userState);
 }
 
 Future<_StreakProtectionRemoteSnapshot?> _fetchFreshStreakProtectionSnapshot(
@@ -118,16 +186,23 @@ Future<_StreakProtectionRemoteSnapshot?> _fetchFreshStreakProtectionSnapshot(
   if (activeFetch != null) {
     await activeFetch;
   }
-  return _fetchSharedStreakProtectionSnapshot(store, userState);
+  final outcome =
+      await _fetchSharedStreakProtectionSnapshotWithMetrics(store, userState);
+  return outcome.snapshot;
 }
 
-Future<_StreakProtectionRemoteSnapshot?> _fetchSharedStreakProtectionSnapshot(
+Future<_StreakProtectionSnapshotFetchOutcome>
+    _fetchSharedStreakProtectionSnapshotWithMetrics(
   UserStateStore store,
   Map<String, dynamic> userState,
 ) async {
   final activeFetch = store._streakProtectionRemoteSyncFuture;
   if (activeFetch != null) {
-    return activeFetch;
+    return _StreakProtectionSnapshotFetchOutcome(
+      snapshot: await activeFetch,
+      remoteQueryCount: 0,
+      deduplicatedLoadCount: 1,
+    );
   }
 
   late final Future<_StreakProtectionRemoteSnapshot?> fetchFuture;
@@ -135,7 +210,11 @@ Future<_StreakProtectionRemoteSnapshot?> _fetchSharedStreakProtectionSnapshot(
   store._streakProtectionRemoteSyncFuture = fetchFuture;
 
   try {
-    return await fetchFuture;
+    return _StreakProtectionSnapshotFetchOutcome(
+      snapshot: await fetchFuture,
+      remoteQueryCount: 3,
+      deduplicatedLoadCount: 0,
+    );
   } finally {
     if (identical(store._streakProtectionRemoteSyncFuture, fetchFuture)) {
       store._streakProtectionRemoteSyncFuture = null;
@@ -348,13 +427,18 @@ Future<bool> _confirmStreakProtectionSnapshotAfterMutation(
       changed;
 }
 
-Future<bool> _closeRemoteMissedHabitOccurrencesBestEffort(
+Future<_StreakProtectionSyncOutcome>
+    _closeRemoteMissedHabitOccurrencesBestEffortWithMetrics(
   UserStateStore store,
   Map<String, dynamic> userState,
 ) async {
   final activeClose = store._streakProtectionRemoteCloseFuture;
   if (activeClose != null) {
-    return activeClose;
+    return _StreakProtectionSyncOutcome(
+      changed: await activeClose,
+      remoteQueryCount: 0,
+      deduplicatedLoadCount: 1,
+    );
   }
 
   late final Future<bool> sharedFuture;
@@ -362,7 +446,11 @@ Future<bool> _closeRemoteMissedHabitOccurrencesBestEffort(
       _runCloseRemoteMissedHabitOccurrencesBestEffort(store, userState);
   store._streakProtectionRemoteCloseFuture = sharedFuture;
   try {
-    return await sharedFuture;
+    return _StreakProtectionSyncOutcome(
+      changed: await sharedFuture,
+      remoteQueryCount: 0,
+      deduplicatedLoadCount: 0,
+    );
   } finally {
     if (identical(store._streakProtectionRemoteCloseFuture, sharedFuture)) {
       store._streakProtectionRemoteCloseFuture = null;

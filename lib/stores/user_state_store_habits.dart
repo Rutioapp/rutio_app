@@ -233,7 +233,11 @@ Future<EssentialHabitsBootstrapResult> _prepareEssentialHabitsForBootstrap(
   if (!forceRemote &&
       existing != null &&
       store._essentialHabitsBootstrapUserId == normalizedUserId) {
-    return existing;
+    return existing.then(
+      (result) => result.copyWith(
+        deduplicatedLoadCount: result.deduplicatedLoadCount + 1,
+      ),
+    );
   }
 
   final requestId = ++store._essentialHabitsBootstrapRequestId;
@@ -294,6 +298,9 @@ Future<EssentialHabitsBootstrapResult> _runEssentialHabitsBootstrap(
       scopeEpoch: scopeEpochAtStart,
       requestId: requestId,
       duration: store._nowProvider().difference(startedAt),
+      remoteQueryCount: pull.remoteQueryCount,
+      deduplicatedLoadCount: pull.deduplicatedLoadCount,
+      staleResultDiscardCount: pull.staleResultDiscardCount,
       error: pull.error,
     );
   }
@@ -337,7 +344,13 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
   if (store._isHabitsRemotePullRunning) {
     _debugHabitPull('$source pull skipped: already running');
     final pending = store._essentialHabitsBootstrapFuture;
-    if (pending != null) return pending;
+    if (pending != null) {
+      return pending.then(
+        (result) => result.copyWith(
+          deduplicatedLoadCount: result.deduplicatedLoadCount + 1,
+        ),
+      );
+    }
     return _habitBootstrapResult(
       store,
       status: EssentialHabitsBootstrapStatus.loading,
@@ -353,6 +366,7 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
   final scopeEpochAtStart = store._scopeEpoch;
   final scopeUserAtStart =
       _normalizedScopeUserId(store._activeLocalScopeUserId);
+  var remoteQueryCount = 0;
 
   try {
     if (store._state == null) {
@@ -361,6 +375,7 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
 
     final habitsResult =
         await _habitRepositoryForStore(store).fetchHabitsForCurrentUser();
+    remoteQueryCount += 1;
     if (!habitsResult.isSuccess) {
       _debugHabitPull(
         '$source pull failed while fetching habits: '
@@ -407,6 +422,7 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
           await _habitLogRepositoryForStore(store).fetchLogsForHabit(
         remoteHabitId,
       );
+      remoteQueryCount += 1;
       if (!logsResult.isSuccess) {
         _debugHabitPull(
           '$source pull failed while fetching logs for remote habit '
@@ -497,8 +513,11 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
       remoteLogs: remoteLogs,
       authenticatedUserId: authenticatedUserId,
     );
-    final streakProtectionChanged =
-        await _syncStreakProtectionIntoUserState(store, userState: userState);
+    final streakProtectionOutcome =
+        await _syncStreakProtectionIntoUserStateWithMetrics(
+      store,
+      userState: userState,
+    );
 
     final remoteConfirmedEmpty = remoteHabits.isEmpty;
     final readinessMarkerChanged = _markEssentialHabitsBootstrapReady(
@@ -510,7 +529,7 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
     if (!mergedHabits.changed &&
         !mergedLogs.changed &&
         !streakShieldExpired &&
-        !streakProtectionChanged &&
+        !streakProtectionOutcome.changed &&
         !readinessMarkerChanged) {
       store._lastHabitsRemotePullSuccessAt = store._nowProvider();
       _debugHabitPull('$source pull completed: no local habit changes applied');
@@ -523,6 +542,9 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
         userId: authenticatedUserId,
         requestId: effectiveRequestId,
         startedAt: startedAt,
+        remoteQueryCount:
+            remoteQueryCount + streakProtectionOutcome.remoteQueryCount,
+        deduplicatedLoadCount: streakProtectionOutcome.deduplicatedLoadCount,
       );
     }
 
@@ -544,6 +566,9 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
       userId: authenticatedUserId,
       requestId: effectiveRequestId,
       startedAt: startedAt,
+      remoteQueryCount:
+          remoteQueryCount + streakProtectionOutcome.remoteQueryCount,
+      deduplicatedLoadCount: streakProtectionOutcome.deduplicatedLoadCount,
     );
   } catch (error) {
     _debugHabitPull('$source pull unexpected error: $error');
@@ -615,6 +640,9 @@ EssentialHabitsBootstrapResult _habitBootstrapResult(
   required String? userId,
   required int requestId,
   required DateTime startedAt,
+  int remoteQueryCount = 0,
+  int deduplicatedLoadCount = 0,
+  int staleResultDiscardCount = 0,
   Object? error,
 }) {
   return EssentialHabitsBootstrapResult(
@@ -624,6 +652,9 @@ EssentialHabitsBootstrapResult _habitBootstrapResult(
     scopeEpoch: store._scopeEpoch,
     requestId: requestId,
     duration: store._nowProvider().difference(startedAt),
+    remoteQueryCount: remoteQueryCount,
+    deduplicatedLoadCount: deduplicatedLoadCount,
+    staleResultDiscardCount: staleResultDiscardCount,
     error: error,
   );
 }

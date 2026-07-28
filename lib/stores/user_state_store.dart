@@ -142,6 +142,9 @@ class EssentialHabitsBootstrapResult {
     required this.scopeEpoch,
     required this.requestId,
     required this.duration,
+    this.remoteQueryCount = 0,
+    this.deduplicatedLoadCount = 0,
+    this.staleResultDiscardCount = 0,
     this.error,
   });
 
@@ -151,6 +154,9 @@ class EssentialHabitsBootstrapResult {
   final int scopeEpoch;
   final int requestId;
   final Duration duration;
+  final int remoteQueryCount;
+  final int deduplicatedLoadCount;
+  final int staleResultDiscardCount;
   final Object? error;
 
   bool get canBuildHome =>
@@ -158,6 +164,34 @@ class EssentialHabitsBootstrapResult {
       status == EssentialHabitsBootstrapStatus.readyFromRemote ||
       status == EssentialHabitsBootstrapStatus.confirmedEmpty ||
       status == EssentialHabitsBootstrapStatus.degraded;
+
+  EssentialHabitsBootstrapResult copyWith({
+    EssentialHabitsBootstrapStatus? status,
+    String? userId,
+    String? source,
+    int? scopeEpoch,
+    int? requestId,
+    Duration? duration,
+    int? remoteQueryCount,
+    int? deduplicatedLoadCount,
+    int? staleResultDiscardCount,
+    Object? error,
+  }) {
+    return EssentialHabitsBootstrapResult(
+      status: status ?? this.status,
+      userId: userId ?? this.userId,
+      source: source ?? this.source,
+      scopeEpoch: scopeEpoch ?? this.scopeEpoch,
+      requestId: requestId ?? this.requestId,
+      duration: duration ?? this.duration,
+      remoteQueryCount: remoteQueryCount ?? this.remoteQueryCount,
+      deduplicatedLoadCount:
+          deduplicatedLoadCount ?? this.deduplicatedLoadCount,
+      staleResultDiscardCount:
+          staleResultDiscardCount ?? this.staleResultDiscardCount,
+      error: error ?? this.error,
+    );
+  }
 }
 
 class UserStateStore extends ChangeNotifier {

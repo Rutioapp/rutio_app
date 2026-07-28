@@ -19,6 +19,26 @@ enum BootstrapRunMode {
   inAppBootstrap,
 }
 
+typedef BootstrapDebugLogger = void Function(String message);
+
+class _BootstrapRunTelemetry {
+  _BootstrapRunTelemetry({
+    required this.runId,
+    required this.mode,
+    required this.startedAt,
+  });
+
+  final int runId;
+  final BootstrapRunMode mode;
+  final DateTime startedAt;
+  int remoteQueriesExecuted = 0;
+  int deduplicatedLoads = 0;
+  int staleResultsDiscarded = 0;
+  String habitsSource = 'unknown';
+  String cosmeticsSource = 'unknown';
+  bool habitsAndCosmeticsParallel = false;
+}
+
 abstract class BootstrapProfileRepository {
   Future<RepositoryResult<RemoteProfile?>> fetchCurrentProfile();
 
@@ -312,6 +332,7 @@ class BootstrapController extends ChangeNotifier {
     BootstrapEssentialHabitsPreparer? essentialHabitsPreparer,
     BootstrapEssentialCosmeticsPreparer? essentialCosmeticsPreparer,
     BootstrapEssentialAssetPreloader? essentialAssetPreloader,
+    BootstrapDebugLogger? debugLogger,
   })  : _authController = authController,
         _userStateStore = userStateStore,
         _profileRepository = profileRepository,
@@ -319,7 +340,8 @@ class BootstrapController extends ChangeNotifier {
             UserStateBootstrapEssentialHabitsPreparer(userStateStore),
         _essentialCosmeticsPreparer = essentialCosmeticsPreparer,
         _essentialAssetPreloader =
-            essentialAssetPreloader ?? RootBundleEssentialAssetPreloader() {
+            essentialAssetPreloader ?? RootBundleEssentialAssetPreloader(),
+        _debugLogger = debugLogger ?? debugPrint {
     _trace(0, 'controller_created');
     _authController.addListener(_handleAuthChanged);
     unawaited(start());
@@ -331,12 +353,15 @@ class BootstrapController extends ChangeNotifier {
   final BootstrapEssentialHabitsPreparer _essentialHabitsPreparer;
   final BootstrapEssentialCosmeticsPreparer? _essentialCosmeticsPreparer;
   final BootstrapEssentialAssetPreloader _essentialAssetPreloader;
+  final BootstrapDebugLogger _debugLogger;
 
   BootstrapState _state = BootstrapState.initial;
   int _nextRunId = 0;
   String? _lastResolvedUserId;
   bool _isCompletingTemporaryOnboarding = false;
   bool _hasStartedInitialBootstrap = false;
+  final Map<int, _BootstrapRunTelemetry> _telemetryByRunId =
+      <int, _BootstrapRunTelemetry>{};
 
   BootstrapState get state => _state;
 
@@ -458,6 +483,11 @@ class BootstrapController extends ChangeNotifier {
   Future<void> _run({required BootstrapRunMode mode}) async {
     final runId = ++_nextRunId;
     final startedAt = DateTime.now();
+    _telemetryByRunId[runId] = _BootstrapRunTelemetry(
+      runId: runId,
+      mode: mode,
+      startedAt: startedAt,
+    );
     _lastResolvedUserId = _authController.currentUser?.id;
     _setState(
       BootstrapState(
@@ -475,12 +505,22 @@ class BootstrapController extends ChangeNotifier {
           'mode=${mode == BootstrapRunMode.coldStart ? 'cold_start' : 'in_app'} user=${_lastResolvedUserId != null}',
     );
     _log(runId, 'phase=resolving_session', startedAt: startedAt);
+    _timeline(runId, 'bootstrap_started');
 
     try {
+      final sessionStartedAt = DateTime.now();
       final session = _authController.isSessionResolved
           ? _authController.sessionSnapshot
           : await _authController.initialSessionResolved;
-      if (!_isCurrentRun(runId)) return;
+      _metric(
+        runId,
+        'session_resolution',
+        DateTime.now().difference(sessionStartedAt),
+      );
+      if (!_isCurrentRun(runId)) {
+        _recordStaleDiscard(runId, domain: 'session');
+        return;
+      }
 
       final user = session.user;
       _lastResolvedUserId = user?.id;
@@ -489,13 +529,9 @@ class BootstrapController extends ChangeNotifier {
         'session_resolved user=${user != null}',
         startedAt: startedAt,
       );
+      _timeline(runId, 'session_ready');
 
-      if (RutioRuntimeProfile.isDemo) {
-        await _loadGuestStateAndDecide(runId, startedAt);
-        return;
-      }
-
-      if (user == null) {
+      if (RutioRuntimeProfile.isDemo || user == null) {
         await _loadGuestStateAndDecide(runId, startedAt);
         return;
       }
@@ -510,32 +546,53 @@ class BootstrapController extends ChangeNotifier {
       );
       _log(runId, 'phase=selecting_user_scope', startedAt: startedAt);
       _trace(runId, 'scope_change_requested');
+      final scopeStartedAt = DateTime.now();
       await _userStateStore.switchLocalScope(userId: user.id);
       if (!_isCurrentRun(runId) || _authController.currentUser?.id != user.id) {
+        _recordStaleDiscard(runId, domain: 'scope');
         return;
       }
+      _metric(
+          runId, 'scope_selection', DateTime.now().difference(scopeStartedAt));
       _log(runId, 'scope_selected', startedAt: startedAt);
       _trace(runId, 'scope_change_applied');
+      _timeline(runId, 'scope_ready');
 
       _setState(_state.copyWith(phase: BootstrapPhase.loadingLocalState));
       _log(runId, 'phase=loading_local_state', startedAt: startedAt);
+      final localStateStartedAt = DateTime.now();
       if (_userStateStore.state == null && !_userStateStore.isLoading) {
         await _userStateStore.load();
       }
       if (!_isCurrentRun(runId) || _authController.currentUser?.id != user.id) {
+        _recordStaleDiscard(runId, domain: 'local_state');
         return;
       }
       if (_userStateStore.activeLocalScopeUserId != user.id ||
           _userStateStore.userId != user.id) {
         throw StateError('Local state scope does not match current user.');
       }
+      _metric(
+        runId,
+        'local_state',
+        DateTime.now().difference(localStateStartedAt),
+      );
       _log(runId, 'local_state_ready', startedAt: startedAt);
+      _timeline(runId, 'local_state_ready');
 
       _setState(_state.copyWith(phase: BootstrapPhase.loadingRemoteProfile));
       _log(runId, 'phase=loading_remote_profile', startedAt: startedAt);
       _log(runId, 'profile_load_started', startedAt: startedAt);
+      final profileStartedAt = DateTime.now();
       final profileResult = await _profileRepository.fetchCurrentProfile();
+      _metric(
+        runId,
+        'remote_profile',
+        DateTime.now().difference(profileStartedAt),
+      );
+      _telemetryByRunId[runId]?.remoteQueriesExecuted += 1;
       if (!_isCurrentRun(runId) || _authController.currentUser?.id != user.id) {
+        _recordStaleDiscard(runId, domain: 'profile');
         _fail(
           runId,
           const BootstrapError(
@@ -575,6 +632,7 @@ class BootstrapController extends ChangeNotifier {
         'profile_ready status=${profile.onboardingStatus.toSupabase()}',
         startedAt: startedAt,
       );
+      _timeline(runId, 'profile_ready');
 
       _setState(_state.copyWith(phase: BootstrapPhase.decidingDestination));
       _log(runId, 'phase=deciding_destination', startedAt: startedAt);
@@ -586,6 +644,7 @@ class BootstrapController extends ChangeNotifier {
           startedAt: startedAt,
         );
         if (cosmeticsReadyToken == null) return;
+        final publishStartedAt = DateTime.now();
         _setState(
           BootstrapState(
             phase: BootstrapPhase.ready,
@@ -597,6 +656,13 @@ class BootstrapController extends ChangeNotifier {
             cosmeticsReadyToken: cosmeticsReadyToken,
           ),
         );
+        _metric(
+          runId,
+          'home_publish',
+          DateTime.now().difference(publishStartedAt),
+        );
+        _timeline(runId, 'home_published');
+        _finishRun(runId);
         _log(runId, 'destination=${destination.name}', startedAt: startedAt);
         return;
       }
@@ -610,9 +676,13 @@ class BootstrapController extends ChangeNotifier {
           destination: destination,
         ),
       );
+      _finishRun(runId);
       _log(runId, 'destination=${destination.name}', startedAt: startedAt);
     } catch (error) {
-      if (!_isCurrentRun(runId)) return;
+      if (!_isCurrentRun(runId)) {
+        _recordStaleDiscard(runId, domain: 'exception');
+        return;
+      }
       _fail(
         runId,
         BootstrapError(
@@ -634,9 +704,16 @@ class BootstrapController extends ChangeNotifier {
       ),
     );
     _log(runId, 'phase=loading_local_state', startedAt: startedAt);
+    final localStateStartedAt = DateTime.now();
     await _userStateStore.switchLocalScope(userId: null);
-    if (!_isCurrentRun(runId) || _authController.currentUser != null) return;
+    if (!_isCurrentRun(runId) || _authController.currentUser != null) {
+      _recordStaleDiscard(runId, domain: 'guest_local_state');
+      return;
+    }
+    _metric(
+        runId, 'local_state', DateTime.now().difference(localStateStartedAt));
     _log(runId, 'local_state_ready', startedAt: startedAt);
+    _timeline(runId, 'local_state_ready');
 
     _setState(_state.copyWith(phase: BootstrapPhase.decidingDestination));
     final destination = _userStateStore.onboardingDone
@@ -650,6 +727,7 @@ class BootstrapController extends ChangeNotifier {
         destination: destination,
       ),
     );
+    _finishRun(runId);
     _log(runId, 'destination=${destination.name}', startedAt: startedAt);
   }
 
@@ -668,18 +746,22 @@ class BootstrapController extends ChangeNotifier {
     required String userId,
     required DateTime startedAt,
   }) async {
+    final telemetry = _telemetryByRunId[runId];
     _setState(_state.copyWith(phase: BootstrapPhase.loadingEssentialHabits));
     _log(runId, 'essential_habits_started', startedAt: startedAt);
+    _timeline(runId, 'habits_started');
     final habitsStartedAt = DateTime.now();
     final habitsFuture = _essentialHabitsPreparer.prepare(userId: userId);
 
     _setState(_state.copyWith(phase: BootstrapPhase.loadingEssentialCosmetics));
     _log(runId, 'essential_cosmetics_started', startedAt: startedAt);
     _trace(runId, 'cosmetics_prepare_started');
+    _timeline(runId, 'cosmetics_started');
     final cosmeticsStartedAt = DateTime.now();
     final cosmeticsFuture =
         (_essentialCosmeticsPreparer ?? const NoopBootstrapCosmeticsPreparer())
             .prepare(userId: userId);
+    telemetry?.habitsAndCosmeticsParallel = true;
 
     final results = await Future.wait<Object>(<Future<Object>>[
       habitsFuture,
@@ -687,11 +769,38 @@ class BootstrapController extends ChangeNotifier {
     ]);
     if (!_isCurrentUserRun(runId, userId)) {
       _log(runId, 'stale_result_discarded domain=essentials');
+      _recordStaleDiscard(runId, domain: 'essentials');
       return null;
     }
 
     final habits = results[0] as EssentialHabitsBootstrapResult;
     final cosmetics = results[1] as CosmeticsBootstrapResult;
+    telemetry?.habitsSource = _bootstrapSourceLabel(habits.source);
+    telemetry?.cosmeticsSource = _bootstrapSourceLabel(cosmetics.source);
+    telemetry?.remoteQueriesExecuted +=
+        habits.remoteQueryCount + cosmetics.remoteQueryCount;
+    telemetry?.deduplicatedLoads +=
+        habits.deduplicatedLoadCount + cosmetics.deduplicatedLoadCount;
+    telemetry?.staleResultsDiscarded +=
+        habits.staleResultDiscardCount + cosmetics.staleResultDiscardCount;
+    _metric(
+      runId,
+      'essential_habits',
+      DateTime.now().difference(habitsStartedAt),
+      extras: <String, Object>{
+        'source': telemetry?.habitsSource ?? 'unknown',
+      },
+    );
+    _metric(
+      runId,
+      'essential_cosmetics',
+      DateTime.now().difference(cosmeticsStartedAt),
+      extras: <String, Object>{
+        'source': telemetry?.cosmeticsSource ?? 'unknown',
+      },
+    );
+    _timeline(runId, 'habits_ready');
+    _timeline(runId, 'cosmetics_ready');
     _log(
       runId,
       'essential_habits_ready source=${_bootstrapSourceLabel(habits.source)} '
@@ -777,6 +886,7 @@ class BootstrapController extends ChangeNotifier {
     } catch (error) {
       if (!_isCurrentUserRun(runId, userId)) {
         _log(runId, 'stale_result_discarded domain=assets');
+        _recordStaleDiscard(runId, domain: 'assets');
         return null;
       }
       _fail(
@@ -793,8 +903,14 @@ class BootstrapController extends ChangeNotifier {
 
     if (!_isCurrentUserRun(runId, userId)) {
       _log(runId, 'stale_result_discarded domain=assets');
+      _recordStaleDiscard(runId, domain: 'assets');
       return null;
     }
+    _metric(
+      runId,
+      'essential_assets',
+      DateTime.now().difference(assetStartedAt),
+    );
     _log(
       runId,
       'essential_assets_preloaded '
@@ -802,6 +918,7 @@ class BootstrapController extends ChangeNotifier {
     );
     _log(runId, 'assets_preloaded');
     _trace(runId, 'assets_preloaded', token: readyToken);
+    _timeline(runId, 'assets_ready');
     if (!cosmeticsPreparer.validateReadyToken(readyToken)) {
       _fail(
         runId,
@@ -891,6 +1008,7 @@ class BootstrapController extends ChangeNotifier {
       ),
     );
     _log(runId, 'failed type=${error.type.name}');
+    _finishRun(runId);
   }
 
   bool _isCurrentRun(int runId) => runId == _state.runId;
@@ -904,12 +1022,66 @@ class BootstrapController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _recordStaleDiscard(int runId, {required String domain}) {
+    final telemetry = _telemetryByRunId[runId];
+    if (telemetry == null) return;
+    telemetry.staleResultsDiscarded += 1;
+    _log(runId, 'stale_result_discarded domain=$domain');
+  }
+
+  void _metric(
+    int runId,
+    String metric,
+    Duration duration, {
+    Map<String, Object>? extras,
+  }) {
+    if (!kDebugMode) return;
+    final buffer = StringBuffer(
+      '[BootstrapPerf] run=$runId metric=$metric '
+      'duration_ms=${duration.inMilliseconds}',
+    );
+    extras?.forEach((key, value) {
+      buffer.write(' $key=$value');
+    });
+    _debugLogger(buffer.toString());
+  }
+
+  void _timeline(int runId, String event) {
+    if (!kDebugMode) return;
+    final telemetry = _telemetryByRunId[runId];
+    final elapsed = telemetry == null
+        ? 0
+        : DateTime.now().difference(telemetry.startedAt).inMilliseconds;
+    _debugLogger('[BootstrapTimeline] run=$runId event=$event t_ms=$elapsed');
+  }
+
+  void _finishRun(int runId) {
+    final telemetry = _telemetryByRunId.remove(runId);
+    if (telemetry == null) return;
+    _metric(
+      runId,
+      'total',
+      DateTime.now().difference(telemetry.startedAt),
+      extras: <String, Object>{
+        'mode': telemetry.mode == BootstrapRunMode.coldStart
+            ? 'cold_start'
+            : 'in_app',
+        'habits_source': telemetry.habitsSource,
+        'cosmetics_source': telemetry.cosmeticsSource,
+        'habits_cosmetics_parallel': telemetry.habitsAndCosmeticsParallel,
+        'remote_queries': telemetry.remoteQueriesExecuted,
+        'deduplicated_loads': telemetry.deduplicatedLoads,
+        'stale_results_discarded': telemetry.staleResultsDiscarded,
+      },
+    );
+  }
+
   void _log(int runId, String message, {DateTime? startedAt}) {
     if (!kDebugMode) return;
     final elapsed = startedAt == null
         ? ''
         : ' t=${DateTime.now().difference(startedAt).inMilliseconds}ms';
-    debugPrint('[Bootstrap] run=$runId $message$elapsed');
+    _debugLogger('[Bootstrap] run=$runId $message$elapsed');
   }
 
   void _trace(
@@ -919,7 +1091,7 @@ class BootstrapController extends ChangeNotifier {
     String? note,
   }) {
     if (!kDebugMode) return;
-    debugPrint(
+    _debugLogger(
       '[BootstrapTrace] event=$event '
       'runId=$runId '
       'mode=${_state.mode == BootstrapRunMode.coldStart ? 'cold_start' : 'in_app'} '
