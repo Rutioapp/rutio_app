@@ -76,14 +76,11 @@ class _SignUpScreenState extends State<SignUpScreen>
     if (displayName.isNotEmpty) {
       await store.updateProfileFields(displayName: displayName);
     }
-    await store.setOnboardingDone(
-      true,
-      email: _emailController.text.trim(),
-    );
     if (!mounted) return;
 
-    // Auth screens can be pushed above /root from the welcome flow. After a
-    // real Supabase session exists, reset to /root so AuthGate can reveal app.
+    // Auth screens can be pushed above the startup gate from the welcome flow.
+    // After a real Supabase session exists, reset to /root so bootstrap can
+    // make the remote onboarding decision.
     Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
 

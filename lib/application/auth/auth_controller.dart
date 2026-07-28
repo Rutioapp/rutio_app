@@ -10,15 +10,41 @@ import '../../data/repositories/profile_repository.dart';
 import '../../features/global_wallet/application/global_wallet_controller.dart';
 import '../../stores/user_state_store.dart';
 
+enum AuthSessionResolution {
+  unresolved,
+  resolvedWithoutUser,
+  resolvedWithUser,
+}
+
+@immutable
+class AuthSessionSnapshot {
+  const AuthSessionSnapshot({
+    required this.resolution,
+    required this.user,
+  });
+
+  final AuthSessionResolution resolution;
+  final User? user;
+
+  bool get isResolved => resolution != AuthSessionResolution.unresolved;
+
+  static const unresolved = AuthSessionSnapshot(
+    resolution: AuthSessionResolution.unresolved,
+    user: null,
+  );
+}
+
 class AuthController extends ChangeNotifier {
   AuthController(
     this._authRepository, {
     required UserStateStore userStateStore,
     required GlobalWalletController globalWalletController,
     ProfileRepository? profileRepository,
+    bool enableBackgroundProfileSync = true,
   })  : _userStateStore = userStateStore,
         _globalWalletController = globalWalletController,
-        _profileRepository = profileRepository {
+        _profileRepository = profileRepository,
+        _enableBackgroundProfileSync = enableBackgroundProfileSync {
     if (RutioRuntimeProfile.isDemo) {
       // Demo profile is intentionally local-only: avoid binding to any live
       // Supabase session so real accounts are never mutated during demos.
@@ -26,7 +52,7 @@ class AuthController extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('[auth] demo profile active: skipping Supabase auth sync');
       }
-      _finishSessionCheck();
+      _resolveSession(null);
       return;
     }
 
@@ -41,7 +67,6 @@ class AuthController extends ChangeNotifier {
       _handleAuthState,
       onError: _handleAuthStateError,
     );
-    _finishSessionCheck();
     if (_currentUser != null) {
       final initialUserId = _currentUser!.id;
       _fireAndForget(() async {
@@ -50,11 +75,13 @@ class AuthController extends ChangeNotifier {
           () => _globalWalletController.syncSession(userId: initialUserId),
           context: 'global wallet sync (controller_init)',
         );
-        await _bootstrapCurrentUserProfileMetadata(
-          reason: 'controller_init',
-          touchLastLogin: true,
-        );
-        await _syncCurrentUserProfile(reason: 'controller_init');
+        if (_enableBackgroundProfileSync) {
+          await _bootstrapCurrentUserProfileMetadata(
+            reason: 'controller_init',
+            touchLastLogin: true,
+          );
+          await _syncCurrentUserProfile(reason: 'controller_init');
+        }
       }, context: 'auth controller init');
     }
   }
@@ -63,11 +90,15 @@ class AuthController extends ChangeNotifier {
   final UserStateStore _userStateStore;
   final GlobalWalletController _globalWalletController;
   final ProfileRepository? _profileRepository;
+  final bool _enableBackgroundProfileSync;
   StreamSubscription<AuthState>? _authSubscription;
 
   User? _currentUser;
   bool _isLoading = false;
   bool _isCheckingSession = true;
+  AuthSessionResolution _sessionResolution = AuthSessionResolution.unresolved;
+  final Completer<AuthSessionSnapshot> _initialSessionCompleter =
+      Completer<AuthSessionSnapshot>();
   bool _isSyncingProfile = false;
   bool _isBootstrappingProfileMetadata = false;
   String? _errorMessage;
@@ -76,6 +107,15 @@ class AuthController extends ChangeNotifier {
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   bool get isCheckingSession => _isCheckingSession;
+  AuthSessionResolution get sessionResolution => _sessionResolution;
+  bool get isSessionResolved =>
+      _sessionResolution != AuthSessionResolution.unresolved;
+  AuthSessionSnapshot get sessionSnapshot => AuthSessionSnapshot(
+        resolution: _sessionResolution,
+        user: _currentUser,
+      );
+  Future<AuthSessionSnapshot> get initialSessionResolved =>
+      _initialSessionCompleter.future;
   String? get errorMessage => _errorMessage;
   String? get noticeMessage => _noticeMessage;
   bool get isAuthenticated => _currentUser != null;
@@ -123,18 +163,19 @@ class AuthController extends ChangeNotifier {
         debugPrint('[auth] sign in succeeded: userId=${_currentUser!.id}');
         debugPrint('[auth] currentUser after sign in: yes');
       }
+      _resolveSession(_currentUser);
       _userStateStore.restoreGamificationOverlaysAfterLogout();
       await _userStateStore.switchLocalScope(userId: _currentUser!.id);
       unawaited(
         _globalWalletController.syncSession(userId: _currentUser!.id),
       );
-      unawaited(
-        _bootstrapCurrentUserProfileMetadata(
+      if (_enableBackgroundProfileSync) {
+        unawaited(_bootstrapCurrentUserProfileMetadata(
           reason: 'sign_in',
           touchLastLogin: true,
-        ),
-      );
-      await _syncCurrentUserProfile(reason: 'sign_in');
+        ));
+        await _syncCurrentUserProfile(reason: 'sign_in');
+      }
       notifyListeners();
       return response;
     } on AuthException catch (error) {
@@ -201,18 +242,19 @@ class AuthController extends ChangeNotifier {
         return null;
       }
 
+      _resolveSession(_currentUser);
       _userStateStore.restoreGamificationOverlaysAfterLogout();
       await _userStateStore.switchLocalScope(userId: _currentUser!.id);
       unawaited(
         _globalWalletController.syncSession(userId: _currentUser!.id),
       );
-      unawaited(
-        _bootstrapCurrentUserProfileMetadata(
+      if (_enableBackgroundProfileSync) {
+        unawaited(_bootstrapCurrentUserProfileMetadata(
           reason: 'sign_up',
           touchLastLogin: true,
-        ),
-      );
-      await _syncCurrentUserProfile(reason: 'sign_up');
+        ));
+        await _syncCurrentUserProfile(reason: 'sign_up');
+      }
 
       if (kDebugMode) {
         debugPrint('[auth] sign up succeeded: userId=${_currentUser!.id}');
@@ -244,6 +286,7 @@ class AuthController extends ChangeNotifier {
     try {
       await _authRepository.signOut();
       _currentUser = null;
+      _resolveSession(null);
       _userStateStore.suppressGamificationOverlaysDuringLogout();
       await _globalWalletController.clearSession();
       await _userStateStore.switchLocalScope(
@@ -328,30 +371,32 @@ class AuthController extends ChangeNotifier {
 
   void _handleAuthState(AuthState state) {
     try {
-      _currentUser = state.session?.user ?? _authRepository.currentUser;
+      final nextUser = state.session?.user ?? _authRepository.currentUser;
       if (kDebugMode) {
-        final authUserId = _currentUser?.id ?? 'guest';
+        final authUserId = nextUser?.id ?? 'guest';
         debugPrint(
-          '[auth] auth state changed: ${_currentUser != null ? 'signedIn' : 'signedOut'} (event=${state.event.name})',
+          '[auth] auth state changed: ${nextUser != null ? 'signedIn' : 'signedOut'} (event=${state.event.name})',
         );
         debugPrint('[auth] auth state userId: $authUserId');
       }
-      if (_currentUser != null) {
+      if (nextUser != null) {
         _userStateStore.restoreGamificationOverlaysAfterLogout();
-        final userId = _currentUser!.id;
+        final userId = nextUser.id;
         _fireAndForget(() async {
           await _userStateStore.switchLocalScope(userId: userId);
           _fireAndForget(
             () => _globalWalletController.syncSession(userId: userId),
             context: 'global wallet sync (auth_state_${state.event.name})',
           );
-          await _bootstrapCurrentUserProfileMetadata(
-            reason: 'auth_state_${state.event.name}',
-            touchLastLogin: _shouldTouchLastLogin(state.event),
-          );
-          await _syncCurrentUserProfile(
-            reason: 'auth_state_${state.event.name}',
-          );
+          if (_enableBackgroundProfileSync) {
+            await _bootstrapCurrentUserProfileMetadata(
+              reason: 'auth_state_${state.event.name}',
+              touchLastLogin: _shouldTouchLastLogin(state.event),
+            );
+            await _syncCurrentUserProfile(
+              reason: 'auth_state_${state.event.name}',
+            );
+          }
         }, context: 'auth state signed in (${state.event.name})');
       } else {
         _userStateStore.suppressGamificationOverlaysDuringLogout();
@@ -371,14 +416,13 @@ class AuthController extends ChangeNotifier {
           debugPrint('[auth] sign out cleared/updated user state');
         }
       }
-      _finishSessionCheck();
-      notifyListeners();
+      _resolveSession(nextUser);
     } catch (error, stackTrace) {
       if (kDebugMode) {
         debugPrint('[auth] auth state handler error: $error');
         debugPrintStack(stackTrace: stackTrace);
       }
-      _finishSessionCheck();
+      _resolveSession(_currentUser);
     }
   }
 
@@ -391,7 +435,7 @@ class AuthController extends ChangeNotifier {
             : '[auth] auth stream error',
       );
     }
-    _finishSessionCheck();
+    _resolveSession(_currentUser);
   }
 
   bool _shouldTouchLastLogin(AuthChangeEvent event) {
@@ -621,10 +665,26 @@ class AuthController extends ChangeNotifier {
     return 'none';
   }
 
-  void _finishSessionCheck() {
-    if (!_isCheckingSession) return;
+  void _resolveSession(User? user) {
+    final nextResolution = user == null
+        ? AuthSessionResolution.resolvedWithoutUser
+        : AuthSessionResolution.resolvedWithUser;
+    final changed = _isCheckingSession ||
+        _sessionResolution != nextResolution ||
+        _currentUser?.id != user?.id;
+    _currentUser = user;
     _isCheckingSession = false;
-    notifyListeners();
+    _sessionResolution = nextResolution;
+    final snapshot = AuthSessionSnapshot(
+      resolution: nextResolution,
+      user: user,
+    );
+    if (!_initialSessionCompleter.isCompleted) {
+      _initialSessionCompleter.complete(snapshot);
+    }
+    if (changed) {
+      notifyListeners();
+    }
   }
 
   void _setLoading(bool value) {

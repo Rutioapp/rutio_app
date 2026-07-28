@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/gen/app_localizations.dart';
 
 import 'application/auth/auth_controller.dart';
+import 'application/bootstrap/bootstrap_controller.dart';
 import 'core/supabase/rutio_supabase_client.dart';
 import 'services/notification_runtime.dart';
 import 'services/notification_service.dart';
@@ -138,6 +139,17 @@ class MyApp extends StatelessWidget {
             globalWalletController: context.read<GlobalWalletController>(),
           ),
         ),
+        ChangeNotifierProxyProvider3<AuthController, UserStateStore,
+            ProfileRepository, BootstrapController>(
+          create: (context) => BootstrapController(
+            authController: context.read<AuthController>(),
+            userStateStore: context.read<UserStateStore>(),
+            profileRepository: ProfileBootstrapRepository(
+              context.read<ProfileRepository>(),
+            ),
+          ),
+          update: (_, __, ___, ____, controller) => controller!,
+        ),
       ],
       child: NotificationRuntime(
         child: Consumer<UserStateStore>(
@@ -166,13 +178,13 @@ class MyApp extends StatelessWidget {
               '/auth-signup': (_) => const SignUpScreen(),
               SignInScreen.route: (_) => const SignInScreen(),
               SignUpScreen.route: (_) => const SignUpScreen(),
-              AuthGate.route: (_) => const AuthGate(
+              AuthGate.route: (_) => const AppStartupGate(
                     authenticatedBuilder: _authenticatedRootBuilder,
                   ),
-              '/root': (_) => const AuthGate(
+              '/root': (_) => const AppStartupGate(
                     authenticatedBuilder: _authenticatedRootBuilder,
                   ),
-              '/home': (_) => const AuthGate(
+              '/home': (_) => const AppStartupGate(
                     authenticatedBuilder: _authenticatedHomeBuilder,
                   ),
               TodoScreen.route: (_) => const TodoScreen(),
@@ -184,7 +196,9 @@ class MyApp extends StatelessWidget {
               '/archived': (_) => ArchivedHabitsScreen(),
               '/stats': (_) => const StatisticsV3Screen(),
               StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
-              '/shop': (_) => const ShopScreen(),
+              '/shop': (_) => const AppStartupGate(
+                    authenticatedBuilder: _authenticatedShopBuilder,
+                  ),
             },
           ),
         ),
@@ -196,3 +210,5 @@ class MyApp extends StatelessWidget {
 Widget _authenticatedRootBuilder(BuildContext context) => const RootGate();
 
 Widget _authenticatedHomeBuilder(BuildContext context) => const HomeScreen();
+
+Widget _authenticatedShopBuilder(BuildContext context) => const ShopScreen();

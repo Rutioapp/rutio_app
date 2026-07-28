@@ -829,10 +829,15 @@ class ShopCosmeticsController extends ChangeNotifier {
 
   void _handleUserStateStoreChanged() {
     final currentScope = _currentScope();
+    final previousScope = _cachedScopeKey;
+    _log('session_changed user=${currentScope != null}');
     if (currentScope == null) {
+      _log('scope_changed from=${_debugScope(previousScope)} to=guest');
+      _markCloudMutation();
       _cachedState = null;
       _cachedScopeKey = null;
       _pendingStateLoad = null;
+      _pendingCloudStateLoad = null;
       _activeCloudEquipBySlot.clear();
       _cloudEquipOperationsBySlot.clear();
       if (_cloudEnabled) {
@@ -846,13 +851,19 @@ class ShopCosmeticsController extends ChangeNotifier {
       return;
     }
 
+    _log(
+      'scope_changed from=${_debugScope(previousScope)} '
+      'to=${_debugScope(currentScope)}',
+    );
+    _markCloudMutation();
     _cachedState = null;
-    _cachedScopeKey = currentScope;
+    _cachedScopeKey = null;
+    _pendingStateLoad = null;
+    _pendingCloudStateLoad = null;
     _activeCloudEquipBySlot.clear();
     _cloudEquipOperationsBySlot.clear();
 
     if (!_cloudEnabled) {
-      _pendingStateLoad = null;
       notifyListeners();
       return;
     }
@@ -2110,9 +2121,12 @@ class ShopCosmeticsController extends ChangeNotifier {
   Future<ShopCosmeticsState> _syncFromCurrentScope({bool force = false}) async {
     final scopeKey = _currentScope();
     if (scopeKey == null) {
+      _markCloudMutation();
       _cloudState = ShopCosmeticsCloudState.unauthenticated();
       _cachedState = null;
       _cachedScopeKey = null;
+      _pendingStateLoad = null;
+      _pendingCloudStateLoad = null;
       return const ShopCosmeticsState.initial();
     }
 
@@ -2122,6 +2136,7 @@ class ShopCosmeticsController extends ChangeNotifier {
       '[shop_cloud_cosmetics] refresh_started generation=$generation '
       'scope=$scopeKey force=$force',
     );
+    _log('hydration_started scope=${_debugScope(scopeKey)}');
     _traceCloudCosmetics(
       'home_build',
       traceId: traceId,
@@ -2141,19 +2156,46 @@ class ShopCosmeticsController extends ChangeNotifier {
       return pending;
     }
 
+    final completer = Completer<ShopCosmeticsState>();
     late final Future<ShopCosmeticsState> future;
-    future = _loadCloudState(
-      scopeKey: scopeKey,
-      force: force,
-      generation: generation,
-      traceId: traceId,
-    ).whenComplete(() {
+    future = completer.future.whenComplete(() {
       if (identical(_pendingCloudStateLoad, future)) {
         _pendingCloudStateLoad = null;
       }
     });
     _pendingCloudStateLoad = future;
+    unawaited(_completeCloudStateLoad(
+      completer: completer,
+      scopeKey: scopeKey,
+      force: force,
+      generation: generation,
+      traceId: traceId,
+    ));
     return future;
+  }
+
+  Future<void> _completeCloudStateLoad({
+    required Completer<ShopCosmeticsState> completer,
+    required String scopeKey,
+    required bool force,
+    required int generation,
+    required String traceId,
+  }) async {
+    try {
+      final state = await _loadCloudState(
+        scopeKey: scopeKey,
+        force: force,
+        generation: generation,
+        traceId: traceId,
+      );
+      if (!completer.isCompleted) {
+        completer.complete(state);
+      }
+    } catch (error, stackTrace) {
+      if (!completer.isCompleted) {
+        completer.completeError(error, stackTrace);
+      }
+    }
   }
 
   Future<ShopCosmeticsState> _loadCloudState({
@@ -2170,14 +2212,20 @@ class ShopCosmeticsController extends ChangeNotifier {
         '[shop_cloud_cosmetics] stale_refresh_ignored generation=$generation '
         'scope=$scopeKey stage=cache',
       );
+      _log('stale_result_discarded scope=${_debugScope(scopeKey)} stage=cache');
       return _cachedState ?? const ShopCosmeticsState.initial();
     }
 
     if (cacheEntry != null && !force) {
+      _log('cache_loaded scope=${_debugScope(scopeKey)} hit=true');
       if (_isStaleCloudLoad(scopeKey, mutationVersion)) {
         _log(
           '[shop_cloud_cosmetics] stale_refresh_ignored generation=$generation '
           'scope=$scopeKey stage=cache_hit',
+        );
+        _log(
+          'stale_result_discarded scope=${_debugScope(scopeKey)} '
+          'stage=cache_hit',
         );
         return _cachedState ?? const ShopCosmeticsState.initial();
       }
@@ -2192,16 +2240,22 @@ class ShopCosmeticsController extends ChangeNotifier {
         );
       }
     } else if (cacheEntry == null) {
+      _log('cache_loaded scope=${_debugScope(scopeKey)} hit=false');
       if (_isStaleCloudLoad(scopeKey, mutationVersion)) {
         _log(
           '[shop_cloud_cosmetics] stale_refresh_ignored generation=$generation '
           'scope=$scopeKey stage=no_cache',
+        );
+        _log(
+          'stale_result_discarded scope=${_debugScope(scopeKey)} '
+          'stage=no_cache',
         );
         return _cachedState ?? const ShopCosmeticsState.initial();
       }
       _setCloudState(ShopCosmeticsCloudState.loading(userId: scopeKey));
     }
 
+    _log('cloud_refresh_started scope=${_debugScope(scopeKey)}');
     final result = await _cloudRepository.fetchSnapshot();
     final fetchCompletedAt = DateTime.now().toUtc();
     if (_isStaleCloudLoad(scopeKey, mutationVersion)) {
@@ -2209,6 +2263,7 @@ class ShopCosmeticsController extends ChangeNotifier {
         '[shop_cloud_cosmetics] stale_refresh_ignored generation=$generation '
         'scope=$scopeKey stage=fetch',
       );
+      _log('stale_result_discarded scope=${_debugScope(scopeKey)} stage=fetch');
       return _cachedState ?? const ShopCosmeticsState.initial();
     }
 
@@ -2313,6 +2368,13 @@ class ShopCosmeticsController extends ChangeNotifier {
     }
 
     final snapshot = result.data!;
+    if (snapshot.userId != scopeKey) {
+      _log(
+        'stale_result_discarded scope=${_debugScope(scopeKey)} '
+        'stage=fetch user_mismatch=true',
+      );
+      return _cachedState ?? const ShopCosmeticsState.initial();
+    }
     final currentSnapshot = _cloudState.snapshot;
     if (currentSnapshot != null) {
       final comparison =
@@ -2354,6 +2416,7 @@ class ShopCosmeticsController extends ChangeNotifier {
       '[shop_cloud_cosmetics] refresh_applied generation=$generation '
       'scope=$scopeKey source=remote stale=false',
     );
+    _log('cloud_refresh_applied scope=${_debugScope(scopeKey)}');
     return combinedState;
   }
 
@@ -2369,7 +2432,8 @@ class ShopCosmeticsController extends ChangeNotifier {
   }
 
   bool _isStaleCloudLoad(String scopeKey, int mutationVersion) {
-    return _currentScope() != scopeKey ||
+    return _isDisposed ||
+        _currentScope() != scopeKey ||
         mutationVersion != _cloudMutationVersion;
   }
 
@@ -2536,6 +2600,13 @@ class ShopCosmeticsController extends ChangeNotifier {
   void _log(String message) {
     if (!kDebugMode) return;
     debugPrint('[ShopCosmetics] $message');
+  }
+
+  String _debugScope(String? scope) {
+    final value = scope?.trim();
+    if (value == null || value.isEmpty) return 'guest';
+    if (value.length <= 8) return value;
+    return '${value.substring(0, 4)}…${value.substring(value.length - 4)}';
   }
 
   String _newTraceId(String stage) {
