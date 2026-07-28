@@ -39,6 +39,98 @@ enum ShopCosmeticsCloudStatus {
   failed,
 }
 
+enum CosmeticsBootstrapStatus {
+  unknown,
+  loading,
+  readyFromCache,
+  readyFromRemote,
+  confirmedEmpty,
+  degraded,
+  failed,
+}
+
+@immutable
+class CosmeticsBootstrapResult {
+  const CosmeticsBootstrapResult({
+    required this.status,
+    required this.userId,
+    required this.source,
+    required this.requestId,
+    required this.duration,
+    this.wallpaperAsset,
+    this.habitCardAsset,
+    this.userCardAsset,
+    this.error,
+    this.appliedRevision = 0,
+    this.resolversVerified = true,
+    this.controllerIdentity,
+    this.readyToken,
+  });
+
+  final CosmeticsBootstrapStatus status;
+  final String? userId;
+  final String source;
+  final int requestId;
+  final Duration duration;
+  final ShopAsset? wallpaperAsset;
+  final ShopAsset? habitCardAsset;
+  final ShopAsset? userCardAsset;
+  final Object? error;
+  final int appliedRevision;
+  final bool resolversVerified;
+  final int? controllerIdentity;
+  final CosmeticsReadyToken? readyToken;
+
+  bool get canBuildHome =>
+      status == CosmeticsBootstrapStatus.readyFromCache ||
+      status == CosmeticsBootstrapStatus.readyFromRemote ||
+      status == CosmeticsBootstrapStatus.confirmedEmpty ||
+      status == CosmeticsBootstrapStatus.degraded;
+
+  List<ShopAsset> get visibleAssets => <ShopAsset>[
+        if (wallpaperAsset != null) wallpaperAsset!,
+        if (habitCardAsset != null) habitCardAsset!,
+        if (userCardAsset != null) userCardAsset!,
+      ];
+}
+
+@immutable
+class CosmeticsReadyToken {
+  const CosmeticsReadyToken({
+    required this.controllerIdentity,
+    required this.userId,
+    required this.scope,
+    required this.appliedRevision,
+    required this.equippedWallpaperId,
+    required this.equippedHabitCardId,
+    required this.equippedUserCardId,
+    required this.wallpaperResolved,
+    required this.habitCardResolved,
+    required this.userCardResolved,
+  });
+
+  final int controllerIdentity;
+  final String userId;
+  final String scope;
+  final int appliedRevision;
+  final String? equippedWallpaperId;
+  final String? equippedHabitCardId;
+  final String? equippedUserCardId;
+  final bool wallpaperResolved;
+  final bool habitCardResolved;
+  final bool userCardResolved;
+
+  String get debugDescription => 'controllerIdentity=$controllerIdentity '
+      'scope=$scope '
+      'appliedRevision=$appliedRevision '
+      'equippedWallpaperId=${equippedWallpaperId ?? 'none'} '
+      'equippedHabitCardId=${equippedHabitCardId ?? 'none'} '
+      'equippedUserCardId=${equippedUserCardId ?? 'none'} '
+      'wallpaperResolved=$wallpaperResolved '
+      'habitCardResolved=$habitCardResolved '
+      'userCardResolved=$userCardResolved';
+}
+
 class ShopCosmeticsCloudState {
   const ShopCosmeticsCloudState({
     required this.status,
@@ -189,6 +281,10 @@ class ShopCosmeticsController extends ChangeNotifier {
         _nowProvider = nowProvider ?? DateTime.now,
         _cloudEnabled =
             CloudCosmeticsConfig.resolveEnabled(override: cloudEnabled) {
+    _traceBootstrap(
+      'controller_created',
+      note: 'controllerIdentity=${identityHashCode(this)}',
+    );
     _userStateStore.addListener(_handleUserStateStoreChanged);
     _globalWalletController?.addListener(_handleGlobalWalletChanged);
     if (_cloudEnabled) {
@@ -210,8 +306,12 @@ class ShopCosmeticsController extends ChangeNotifier {
   Future<ShopCosmeticsState>? _pendingStateLoad;
   Future<ShopCosmeticsState>? _pendingCloudStateLoad;
   int _cloudMutationVersion = 0;
+  int _cosmeticsBootstrapRequestId = 0;
+  Future<CosmeticsBootstrapResult>? _pendingCosmeticsBootstrap;
+  String? _pendingCosmeticsBootstrapScopeKey;
   int _cloudRefreshGeneration = 0;
   int _cloudSnapshotRevision = 0;
+  String? _pendingCloudStateLoadScopeKey;
   String? _lastTraceId;
   ShopCosmeticsCloudState _cloudState =
       ShopCosmeticsCloudState.unauthenticated();
@@ -425,6 +525,49 @@ class ShopCosmeticsController extends ChangeNotifier {
 
   Future<ShopCosmeticsState> hydrate() => getState();
 
+  Future<CosmeticsBootstrapResult> prepareEssentialCosmeticsForBootstrap({
+    required String userId,
+    bool forceRemote = false,
+  }) {
+    final scopeKey = _currentScope();
+    final normalizedUserId = userId.trim();
+    final requestId = ++_cosmeticsBootstrapRequestId;
+    if (scopeKey == null || scopeKey != normalizedUserId) {
+      return Future<CosmeticsBootstrapResult>.value(
+        CosmeticsBootstrapResult(
+          status: CosmeticsBootstrapStatus.failed,
+          userId: normalizedUserId.isEmpty ? null : normalizedUserId,
+          source: 'scope_changed',
+          requestId: requestId,
+          duration: Duration.zero,
+          error: StateError('Cosmetics scope does not match session.'),
+        ),
+      );
+    }
+
+    final pending = _pendingCosmeticsBootstrap;
+    if (!forceRemote &&
+        pending != null &&
+        _pendingCosmeticsBootstrapScopeKey == scopeKey) {
+      return pending;
+    }
+
+    late final Future<CosmeticsBootstrapResult> future;
+    future = _prepareEssentialCosmeticsForCurrentScope(
+      scopeKey: scopeKey,
+      requestId: requestId,
+      forceRemote: forceRemote,
+    ).whenComplete(() {
+      if (identical(_pendingCosmeticsBootstrap, future)) {
+        _pendingCosmeticsBootstrap = null;
+        _pendingCosmeticsBootstrapScopeKey = null;
+      }
+    });
+    _pendingCosmeticsBootstrap = future;
+    _pendingCosmeticsBootstrapScopeKey = scopeKey;
+    return future;
+  }
+
   Future<ShopCosmeticsState> refreshCloudState({bool force = false}) {
     if (_cloudEnabled) {
       return _syncFromCurrentScope(force: force);
@@ -481,6 +624,37 @@ class ShopCosmeticsController extends ChangeNotifier {
 
   ShopAsset? getEquippedUserCardAssetOrNullSync() {
     return getEquippedAssetForCategorySync(ShopAssetCategory.userCard);
+  }
+
+  CosmeticsReadyToken? createReadyTokenForBootstrap({required String userId}) {
+    final scopeKey = _currentScope();
+    final state = _stateForReadiness();
+    if (scopeKey == null || scopeKey != userId || state == null) {
+      return null;
+    }
+    return _buildReadyToken(userId: userId, scopeKey: scopeKey, state: state);
+  }
+
+  bool validateReadyToken(CosmeticsReadyToken token) {
+    final current = createReadyTokenForBootstrap(userId: token.userId);
+    final valid = current != null &&
+        current.controllerIdentity == token.controllerIdentity &&
+        current.scope == token.scope &&
+        current.appliedRevision >= token.appliedRevision &&
+        current.equippedWallpaperId == token.equippedWallpaperId &&
+        current.equippedHabitCardId == token.equippedHabitCardId &&
+        current.equippedUserCardId == token.equippedUserCardId &&
+        current.wallpaperResolved == token.wallpaperResolved &&
+        current.habitCardResolved == token.habitCardResolved &&
+        current.userCardResolved == token.userCardResolved;
+    if (!valid) {
+      _traceBootstrap(
+        'home_readiness_contract_violated',
+        token: current ?? token,
+        note: 'expected="${token.debugDescription}"',
+      );
+    }
+    return valid;
   }
 
   Future<int> getWalletCoins() => _walletCoins();
@@ -829,10 +1003,29 @@ class ShopCosmeticsController extends ChangeNotifier {
 
   void _handleUserStateStoreChanged() {
     final currentScope = _currentScope();
+    final previousScope = _cachedScopeKey;
+    _log('session_changed user=${currentScope != null}');
     if (currentScope == null) {
+      if (previousScope != null && _userStateStore.isLoading) {
+        _traceBootstrap(
+          'cosmetics_invalidated',
+          note:
+              'ignored_transient_guest previousScope=${_debugScope(previousScope)}',
+        );
+        return;
+      }
+      _log('scope_changed from=${_debugScope(previousScope)} to=guest');
+      _traceBootstrap(
+        'cosmetics_invalidated',
+        note: 'from=${_debugScope(previousScope)} to=guest',
+      );
+      _markCloudMutation();
       _cachedState = null;
       _cachedScopeKey = null;
       _pendingStateLoad = null;
+      _pendingCloudStateLoad = null;
+      _pendingCosmeticsBootstrap = null;
+      _pendingCosmeticsBootstrapScopeKey = null;
       _activeCloudEquipBySlot.clear();
       _cloudEquipOperationsBySlot.clear();
       if (_cloudEnabled) {
@@ -843,16 +1036,33 @@ class ShopCosmeticsController extends ChangeNotifier {
     }
 
     if (_cachedScopeKey == currentScope) {
+      _traceBootstrap(
+        'scope_change_applied',
+        note: 'same_scope_ignored scope=${_debugScope(currentScope)}',
+      );
       return;
     }
 
+    _log(
+      'scope_changed from=${_debugScope(previousScope)} '
+      'to=${_debugScope(currentScope)}',
+    );
+    _traceBootstrap(
+      'cosmetics_invalidated',
+      note:
+          'from=${_debugScope(previousScope)} to=${_debugScope(currentScope)}',
+    );
+    _markCloudMutation();
     _cachedState = null;
-    _cachedScopeKey = currentScope;
+    _cachedScopeKey = null;
+    _pendingStateLoad = null;
+    _pendingCloudStateLoad = null;
+    _pendingCosmeticsBootstrap = null;
+    _pendingCosmeticsBootstrapScopeKey = null;
     _activeCloudEquipBySlot.clear();
     _cloudEquipOperationsBySlot.clear();
 
     if (!_cloudEnabled) {
-      _pendingStateLoad = null;
       notifyListeners();
       return;
     }
@@ -2110,9 +2320,12 @@ class ShopCosmeticsController extends ChangeNotifier {
   Future<ShopCosmeticsState> _syncFromCurrentScope({bool force = false}) async {
     final scopeKey = _currentScope();
     if (scopeKey == null) {
+      _markCloudMutation();
       _cloudState = ShopCosmeticsCloudState.unauthenticated();
       _cachedState = null;
       _cachedScopeKey = null;
+      _pendingStateLoad = null;
+      _pendingCloudStateLoad = null;
       return const ShopCosmeticsState.initial();
     }
 
@@ -2122,6 +2335,12 @@ class ShopCosmeticsController extends ChangeNotifier {
       '[shop_cloud_cosmetics] refresh_started generation=$generation '
       'scope=$scopeKey force=$force',
     );
+    _traceBootstrap(
+      'cosmetics_refresh_started',
+      note:
+          'scope=${_debugScope(scopeKey)} generation=$generation force=$force',
+    );
+    _log('hydration_started scope=${_debugScope(scopeKey)}');
     _traceCloudCosmetics(
       'home_build',
       traceId: traceId,
@@ -2137,23 +2356,54 @@ class ShopCosmeticsController extends ChangeNotifier {
       note: force ? 'runtime_sync' : 'cold_start_sync',
     );
     final pending = _pendingCloudStateLoad;
-    if (!force && pending != null && _cachedScopeKey == scopeKey) {
+    if (!force &&
+        pending != null &&
+        _pendingCloudStateLoadScopeKey == scopeKey) {
       return pending;
     }
 
+    final completer = Completer<ShopCosmeticsState>();
     late final Future<ShopCosmeticsState> future;
-    future = _loadCloudState(
+    future = completer.future.whenComplete(() {
+      if (identical(_pendingCloudStateLoad, future)) {
+        _pendingCloudStateLoad = null;
+        _pendingCloudStateLoadScopeKey = null;
+      }
+    });
+    _pendingCloudStateLoad = future;
+    _pendingCloudStateLoadScopeKey = scopeKey;
+    unawaited(_completeCloudStateLoad(
+      completer: completer,
       scopeKey: scopeKey,
       force: force,
       generation: generation,
       traceId: traceId,
-    ).whenComplete(() {
-      if (identical(_pendingCloudStateLoad, future)) {
-        _pendingCloudStateLoad = null;
-      }
-    });
-    _pendingCloudStateLoad = future;
+    ));
     return future;
+  }
+
+  Future<void> _completeCloudStateLoad({
+    required Completer<ShopCosmeticsState> completer,
+    required String scopeKey,
+    required bool force,
+    required int generation,
+    required String traceId,
+  }) async {
+    try {
+      final state = await _loadCloudState(
+        scopeKey: scopeKey,
+        force: force,
+        generation: generation,
+        traceId: traceId,
+      );
+      if (!completer.isCompleted) {
+        completer.complete(state);
+      }
+    } catch (error, stackTrace) {
+      if (!completer.isCompleted) {
+        completer.completeError(error, stackTrace);
+      }
+    }
   }
 
   Future<ShopCosmeticsState> _loadCloudState({
@@ -2170,14 +2420,20 @@ class ShopCosmeticsController extends ChangeNotifier {
         '[shop_cloud_cosmetics] stale_refresh_ignored generation=$generation '
         'scope=$scopeKey stage=cache',
       );
+      _log('stale_result_discarded scope=${_debugScope(scopeKey)} stage=cache');
       return _cachedState ?? const ShopCosmeticsState.initial();
     }
 
     if (cacheEntry != null && !force) {
+      _log('cache_loaded scope=${_debugScope(scopeKey)} hit=true');
       if (_isStaleCloudLoad(scopeKey, mutationVersion)) {
         _log(
           '[shop_cloud_cosmetics] stale_refresh_ignored generation=$generation '
           'scope=$scopeKey stage=cache_hit',
+        );
+        _log(
+          'stale_result_discarded scope=${_debugScope(scopeKey)} '
+          'stage=cache_hit',
         );
         return _cachedState ?? const ShopCosmeticsState.initial();
       }
@@ -2192,16 +2448,33 @@ class ShopCosmeticsController extends ChangeNotifier {
         );
       }
     } else if (cacheEntry == null) {
+      _log('cache_loaded scope=${_debugScope(scopeKey)} hit=false');
       if (_isStaleCloudLoad(scopeKey, mutationVersion)) {
         _log(
           '[shop_cloud_cosmetics] stale_refresh_ignored generation=$generation '
           'scope=$scopeKey stage=no_cache',
         );
+        _log(
+          'stale_result_discarded scope=${_debugScope(scopeKey)} '
+          'stage=no_cache',
+        );
         return _cachedState ?? const ShopCosmeticsState.initial();
       }
-      _setCloudState(ShopCosmeticsCloudState.loading(userId: scopeKey));
+      final visibleSnapshot = _cloudState.snapshot;
+      _setCloudState(
+        ShopCosmeticsCloudState.loading(
+          userId: scopeKey,
+          cache: visibleSnapshot != null && _cloudState.userId == scopeKey
+              ? CloudCosmeticsCacheEntry(
+                  snapshot: visibleSnapshot,
+                  cachedAt: _nowProvider().toUtc(),
+                )
+              : null,
+        ),
+      );
     }
 
+    _log('cloud_refresh_started scope=${_debugScope(scopeKey)}');
     final result = await _cloudRepository.fetchSnapshot();
     final fetchCompletedAt = DateTime.now().toUtc();
     if (_isStaleCloudLoad(scopeKey, mutationVersion)) {
@@ -2209,14 +2482,46 @@ class ShopCosmeticsController extends ChangeNotifier {
         '[shop_cloud_cosmetics] stale_refresh_ignored generation=$generation '
         'scope=$scopeKey stage=fetch',
       );
+      _log('stale_result_discarded scope=${_debugScope(scopeKey)} stage=fetch');
       return _cachedState ?? const ShopCosmeticsState.initial();
     }
 
     if (!result.isSuccess || result.data == null) {
       final failureMessage =
           result.error?.message ?? 'Could not fetch cloud cosmetics.';
+      final currentSnapshot = _cloudState.snapshot;
+      if (currentSnapshot != null && _cloudState.userId == scopeKey) {
+        _setCloudState(
+          ShopCosmeticsCloudState.stale(
+            userId: scopeKey,
+            cache: _cloudState.cachedEntry ??
+                CloudCosmeticsCacheEntry(
+                  snapshot: currentSnapshot,
+                  cachedAt: _nowProvider().toUtc(),
+                ),
+            failureMessage: failureMessage,
+          ),
+        );
+        _cachedState ??= currentSnapshot.toState();
+        _cachedScopeKey = scopeKey;
+        _lastTraceId = traceId;
+        _traceCloudCosmetics(
+          'state_applied',
+          traceId: traceId,
+          userId: scopeKey,
+          snapshot: currentSnapshot,
+          state: _cachedState,
+          generation: generation,
+          note: 'refresh_failed_preserve_visible_snapshot',
+        );
+        _traceBootstrap(
+          'cosmetics_refresh_applied',
+          token: createReadyTokenForBootstrap(userId: scopeKey),
+          note: 'preserved_visible_snapshot',
+        );
+        return _cachedState ?? currentSnapshot.toState();
+      }
       if (cacheEntry != null) {
-        final currentSnapshot = _cloudState.snapshot;
         if (currentSnapshot != null) {
           final comparison = compareCloudCosmeticsSnapshots(
               currentSnapshot, cacheEntry.snapshot);
@@ -2303,6 +2608,11 @@ class ShopCosmeticsController extends ChangeNotifier {
         );
       }
       final fallback = const ShopCosmeticsState.initial();
+      _traceBootstrap(
+        'cosmetics_invalidated',
+        note:
+            'remote_failed_no_confirmed_snapshot scope=${_debugScope(scopeKey)}',
+      );
       _setCachedState(fallback,
           scopeKey: scopeKey, shouldNotifyListeners: true);
       _log(
@@ -2313,6 +2623,22 @@ class ShopCosmeticsController extends ChangeNotifier {
     }
 
     final snapshot = result.data!;
+    _log(
+      '[shop_cloud_cosmetics] snapshot_received generation=$generation '
+      'scope=$scopeKey revision=${_cloudSnapshotRevision + 1}',
+    );
+    _traceBootstrap(
+      'cosmetics_snapshot_received',
+      note:
+          'scope=${_debugScope(scopeKey)} revision=${_cloudSnapshotRevision + 1}',
+    );
+    if (snapshot.userId != scopeKey) {
+      _log(
+        'stale_result_discarded scope=${_debugScope(scopeKey)} '
+        'stage=fetch user_mismatch=true',
+      );
+      return _cachedState ?? const ShopCosmeticsState.initial();
+    }
     final currentSnapshot = _cloudState.snapshot;
     if (currentSnapshot != null) {
       final comparison =
@@ -2354,6 +2680,12 @@ class ShopCosmeticsController extends ChangeNotifier {
       '[shop_cloud_cosmetics] refresh_applied generation=$generation '
       'scope=$scopeKey source=remote stale=false',
     );
+    _log('cloud_refresh_applied scope=${_debugScope(scopeKey)}');
+    _traceBootstrap(
+      'cosmetics_refresh_applied',
+      token: createReadyTokenForBootstrap(userId: scopeKey),
+      note: 'source=remote',
+    );
     return combinedState;
   }
 
@@ -2368,8 +2700,189 @@ class ShopCosmeticsController extends ChangeNotifier {
     return _syncFromCurrentScope(force: false);
   }
 
+  Future<CosmeticsBootstrapResult> _prepareEssentialCosmeticsForCurrentScope({
+    required String scopeKey,
+    required int requestId,
+    required bool forceRemote,
+  }) async {
+    final startedAt = DateTime.now();
+    if (!_cloudEnabled) {
+      final state = await getState();
+      if (_currentScope() != scopeKey) {
+        return _cosmeticsBootstrapResult(
+          status: CosmeticsBootstrapStatus.failed,
+          userId: scopeKey,
+          source: 'scope_changed',
+          requestId: requestId,
+          startedAt: startedAt,
+          state: state,
+          error: StateError('Scope changed during local cosmetics load.'),
+        );
+      }
+      return _cosmeticsBootstrapResult(
+        status: _hasAnyEquippedCosmetic(state)
+            ? CosmeticsBootstrapStatus.readyFromCache
+            : CosmeticsBootstrapStatus.confirmedEmpty,
+        userId: scopeKey,
+        source: _hasAnyEquippedCosmetic(state) ? 'local' : 'confirmed_empty',
+        requestId: requestId,
+        startedAt: startedAt,
+        state: state,
+      );
+    }
+
+    final cacheEntry = await _cloudCache.read(scopeKey);
+    if (_currentScope() != scopeKey) {
+      _log(
+          'stale_result_discarded scope=${_debugScope(scopeKey)} stage=bootstrap_cache');
+      return _cosmeticsBootstrapResult(
+        status: CosmeticsBootstrapStatus.failed,
+        userId: scopeKey,
+        source: 'scope_changed',
+        requestId: requestId,
+        startedAt: startedAt,
+        error: StateError('Scope changed during cosmetics cache read.'),
+      );
+    }
+
+    if (cacheEntry != null && !forceRemote) {
+      final cachedState = cacheEntry.snapshot.toState();
+      final invalid = _invalidEquippedAssetIds(cachedState);
+      if (invalid.isEmpty) {
+        _setCachedState(
+          cachedState,
+          scopeKey: scopeKey,
+          shouldNotifyListeners: true,
+        );
+        _setCloudState(
+          ShopCosmeticsCloudState.loading(userId: scopeKey, cache: cacheEntry),
+        );
+        unawaited(_syncFromCurrentScope(force: true));
+        return _cosmeticsBootstrapResult(
+          status: _hasAnyEquippedCosmetic(cachedState)
+              ? CosmeticsBootstrapStatus.readyFromCache
+              : CosmeticsBootstrapStatus.confirmedEmpty,
+          userId: scopeKey,
+          source: _hasAnyEquippedCosmetic(cachedState)
+              ? 'cache'
+              : 'confirmed_empty',
+          requestId: requestId,
+          startedAt: startedAt,
+          state: cachedState,
+        );
+      }
+      _log(
+        'asset_invalid scope=${_debugScope(scopeKey)} ids=${invalid.join(',')}',
+      );
+    }
+
+    final state = await _syncFromCurrentScope(force: forceRemote);
+    if (_currentScope() != scopeKey) {
+      _log(
+          'stale_result_discarded scope=${_debugScope(scopeKey)} stage=bootstrap_remote');
+      return _cosmeticsBootstrapResult(
+        status: CosmeticsBootstrapStatus.failed,
+        userId: scopeKey,
+        source: 'scope_changed',
+        requestId: requestId,
+        startedAt: startedAt,
+        state: state,
+        error: StateError('Scope changed during cosmetics remote fetch.'),
+      );
+    }
+
+    final invalid = _invalidEquippedAssetIds(state);
+    if (invalid.isNotEmpty) {
+      return _cosmeticsBootstrapResult(
+        status: CosmeticsBootstrapStatus.failed,
+        userId: scopeKey,
+        source: 'invalid_asset',
+        requestId: requestId,
+        startedAt: startedAt,
+        state: state,
+        error: StateError('Invalid equipped cosmetic asset.'),
+      );
+    }
+
+    switch (_cloudState.status) {
+      case ShopCosmeticsCloudStatus.ready:
+        return _cosmeticsBootstrapResult(
+          status: _hasAnyEquippedCosmetic(state)
+              ? CosmeticsBootstrapStatus.readyFromRemote
+              : CosmeticsBootstrapStatus.confirmedEmpty,
+          userId: scopeKey,
+          source: _hasAnyEquippedCosmetic(state) ? 'remote' : 'confirmed_empty',
+          requestId: requestId,
+          startedAt: startedAt,
+          state: state,
+        );
+      case ShopCosmeticsCloudStatus.stale:
+        return _cosmeticsBootstrapResult(
+          status: CosmeticsBootstrapStatus.degraded,
+          userId: scopeKey,
+          source: 'cache_degraded',
+          requestId: requestId,
+          startedAt: startedAt,
+          state: state,
+          error: _cloudState.failureMessage,
+        );
+      case ShopCosmeticsCloudStatus.failed:
+      case ShopCosmeticsCloudStatus.walletMissing:
+        if (cacheEntry != null) {
+          return _cosmeticsBootstrapResult(
+            status: CosmeticsBootstrapStatus.degraded,
+            userId: scopeKey,
+            source: 'cache_degraded',
+            requestId: requestId,
+            startedAt: startedAt,
+            state: state,
+            error: _cloudState.failureMessage,
+          );
+        }
+        return _cosmeticsBootstrapResult(
+          status: CosmeticsBootstrapStatus.failed,
+          userId: scopeKey,
+          source: 'remote_failed',
+          requestId: requestId,
+          startedAt: startedAt,
+          state: state,
+          error: _cloudState.failureMessage,
+        );
+      case ShopCosmeticsCloudStatus.loading:
+        if (cacheEntry != null) {
+          return _cosmeticsBootstrapResult(
+            status: CosmeticsBootstrapStatus.degraded,
+            userId: scopeKey,
+            source: 'cache_degraded',
+            requestId: requestId,
+            startedAt: startedAt,
+            state: state,
+            error: _cloudState.failureMessage,
+          );
+        }
+        return _cosmeticsBootstrapResult(
+          status: CosmeticsBootstrapStatus.failed,
+          userId: scopeKey,
+          source: 'not_ready',
+          requestId: requestId,
+          startedAt: startedAt,
+          state: state,
+        );
+      case ShopCosmeticsCloudStatus.unauthenticated:
+        return _cosmeticsBootstrapResult(
+          status: CosmeticsBootstrapStatus.failed,
+          userId: scopeKey,
+          source: 'not_ready',
+          requestId: requestId,
+          startedAt: startedAt,
+          state: state,
+        );
+    }
+  }
+
   bool _isStaleCloudLoad(String scopeKey, int mutationVersion) {
-    return _currentScope() != scopeKey ||
+    return _isDisposed ||
+        _currentScope() != scopeKey ||
         mutationVersion != _cloudMutationVersion;
   }
 
@@ -2413,6 +2926,174 @@ class ShopCosmeticsController extends ChangeNotifier {
       '$logLabel equippedId=$assetId owned=true categoryValid=true assetPath=${asset.assetPath}',
     );
     return asset;
+  }
+
+  CosmeticsBootstrapResult _cosmeticsBootstrapResult({
+    required CosmeticsBootstrapStatus status,
+    required String? userId,
+    required String source,
+    required int requestId,
+    required DateTime startedAt,
+    ShopCosmeticsState? state,
+    Object? error,
+  }) {
+    final wallpaperAsset = state == null
+        ? null
+        : _getValidatedEquippedAssetOrNull(
+            state,
+            ShopAssetCategory.wallpaper,
+          );
+    final habitCardAsset = state == null
+        ? null
+        : _getValidatedEquippedAssetOrNull(
+            state,
+            ShopAssetCategory.habitCard,
+          );
+    final userCardAsset = state == null
+        ? null
+        : _getValidatedEquippedAssetOrNull(
+            state,
+            ShopAssetCategory.userCard,
+          );
+    final resolversVerified = _verifyBootstrapResolvers(
+      userId: userId,
+      state: state,
+      wallpaperAsset: wallpaperAsset,
+      habitCardAsset: habitCardAsset,
+      userCardAsset: userCardAsset,
+    );
+    final readyToken =
+        userId == null ? null : createReadyTokenForBootstrap(userId: userId);
+    if (readyToken != null) {
+      _traceBootstrap('cosmetics_resolvers_verified', token: readyToken);
+    }
+    return CosmeticsBootstrapResult(
+      status: status,
+      userId: userId,
+      source: source,
+      requestId: requestId,
+      duration: DateTime.now().difference(startedAt),
+      wallpaperAsset: wallpaperAsset,
+      habitCardAsset: habitCardAsset,
+      userCardAsset: userCardAsset,
+      error: error,
+      appliedRevision: _cloudSnapshotRevision,
+      resolversVerified: resolversVerified,
+      controllerIdentity: identityHashCode(this),
+      readyToken: readyToken,
+    );
+  }
+
+  ShopCosmeticsState? _stateForReadiness() {
+    if (_cloudEnabled) {
+      final scopeKey = _currentScope();
+      final snapshot = _cloudState.snapshot;
+      if (scopeKey == null ||
+          snapshot == null ||
+          _cloudState.userId != scopeKey ||
+          snapshot.userId != scopeKey) {
+        return null;
+      }
+      return snapshot.toState();
+    }
+    if (_cachedState == null || _cachedScopeKey != _currentScope()) {
+      return null;
+    }
+    return _cachedState;
+  }
+
+  CosmeticsReadyToken _buildReadyToken({
+    required String userId,
+    required String scopeKey,
+    required ShopCosmeticsState state,
+  }) {
+    final wallpaperId =
+        state.getEquippedAssetIdForCategory(ShopAssetCategory.wallpaper);
+    final habitCardId =
+        state.getEquippedAssetIdForCategory(ShopAssetCategory.habitCard);
+    final userCardId =
+        state.getEquippedAssetIdForCategory(ShopAssetCategory.userCard);
+    return CosmeticsReadyToken(
+      controllerIdentity: identityHashCode(this),
+      userId: userId,
+      scope: scopeKey,
+      appliedRevision: _cloudSnapshotRevision,
+      equippedWallpaperId: wallpaperId,
+      equippedHabitCardId: habitCardId,
+      equippedUserCardId: userCardId,
+      wallpaperResolved:
+          wallpaperId == null || getEquippedWallpaperAssetOrNullSync() != null,
+      habitCardResolved:
+          habitCardId == null || getEquippedHabitCardAssetOrNullSync() != null,
+      userCardResolved:
+          userCardId == null || getEquippedUserCardAssetOrNullSync() != null,
+    );
+  }
+
+  bool _verifyBootstrapResolvers({
+    required String? userId,
+    required ShopCosmeticsState? state,
+    required ShopAsset? wallpaperAsset,
+    required ShopAsset? habitCardAsset,
+    required ShopAsset? userCardAsset,
+  }) {
+    if (state == null) return false;
+    final scopeKey = _currentScope();
+    if (scopeKey == null || scopeKey != userId) return false;
+    if (_cachedScopeKey != scopeKey) return false;
+    if (_cloudEnabled && _cloudState.userId != scopeKey) return false;
+
+    final currentState = _cloudEnabled
+        ? _cloudState.snapshot?.toState() ?? _cachedState
+        : _cachedState;
+    if (currentState == null) return false;
+
+    bool matches(
+      ShopAssetCategory category,
+      ShopAsset? resolvedFromResult,
+      ShopAsset? resolvedSync,
+    ) {
+      final equippedId = currentState.getEquippedAssetIdForCategory(category);
+      if (equippedId == null || equippedId.trim().isEmpty) {
+        return resolvedFromResult == null && resolvedSync == null;
+      }
+      return resolvedFromResult?.id == equippedId &&
+          resolvedSync?.id == equippedId;
+    }
+
+    return matches(
+          ShopAssetCategory.wallpaper,
+          wallpaperAsset,
+          getEquippedWallpaperAssetOrNullSync(),
+        ) &&
+        matches(
+          ShopAssetCategory.habitCard,
+          habitCardAsset,
+          getEquippedHabitCardAssetOrNullSync(),
+        ) &&
+        matches(
+          ShopAssetCategory.userCard,
+          userCardAsset,
+          getEquippedUserCardAssetOrNullSync(),
+        );
+  }
+
+  bool _hasAnyEquippedCosmetic(ShopCosmeticsState state) {
+    return (state.equippedWallpaperId ?? '').trim().isNotEmpty ||
+        (state.equippedHabitCardSkinId ?? '').trim().isNotEmpty ||
+        (state.equippedUserCardSkinId ?? '').trim().isNotEmpty;
+  }
+
+  List<String> _invalidEquippedAssetIds(ShopCosmeticsState state) {
+    final invalid = <String>[];
+    for (final category in ShopAssetCategory.values) {
+      final equippedId = state.getEquippedAssetIdForCategory(category);
+      if (equippedId == null || equippedId.trim().isEmpty) continue;
+      if (_getValidatedEquippedAssetOrNull(state, category) == null) {
+        invalid.add(equippedId);
+      }
+    }
+    return invalid;
   }
 
   String _resolveEquipSlot(ShopAsset asset) {
@@ -2502,6 +3183,11 @@ class ShopCosmeticsController extends ChangeNotifier {
       state: nextState,
       assetPath: assetPath,
     );
+    _traceBootstrap(
+      'cosmetics_snapshot_applied',
+      token: createReadyTokenForBootstrap(userId: scopeKey),
+      note: 'stage=$stage',
+    );
     if (notify) {
       _traceCloudCosmetics(
         'notify',
@@ -2536,6 +3222,38 @@ class ShopCosmeticsController extends ChangeNotifier {
   void _log(String message) {
     if (!kDebugMode) return;
     debugPrint('[ShopCosmetics] $message');
+  }
+
+  void _traceBootstrap(
+    String event, {
+    CosmeticsReadyToken? token,
+    String? note,
+  }) {
+    if (!kDebugMode) return;
+    final state = _cachedState;
+    debugPrint(
+      '[BootstrapTrace] event=$event '
+      'controllerIdentity=${identityHashCode(this)} '
+      'scope=${_debugScope(_currentScope())} '
+      'user=${_currentScope() != null} '
+      'revision=$_cloudSnapshotRevision '
+      'cloud=${_cloudState.status.name} '
+      'hydrating=${_pendingCloudStateLoad != null} '
+      'equippedWallpaperId=${state?.equippedWallpaperId ?? token?.equippedWallpaperId ?? 'none'} '
+      'equippedHabitCardId=${state?.equippedHabitCardSkinId ?? token?.equippedHabitCardId ?? 'none'} '
+      'equippedUserCardId=${state?.equippedUserCardSkinId ?? token?.equippedUserCardId ?? 'none'} '
+      'wallpaperResolved=${token?.wallpaperResolved ?? false} '
+      'habitCardResolved=${token?.habitCardResolved ?? false} '
+      'userCardResolved=${token?.userCardResolved ?? false} '
+      '${note == null ? '' : 'note=$note'}',
+    );
+  }
+
+  String _debugScope(String? scope) {
+    final value = scope?.trim();
+    if (value == null || value.isEmpty) return 'guest';
+    if (value.length <= 8) return value;
+    return '${value.substring(0, 4)}…${value.substring(value.length - 4)}';
   }
 
   String _newTraceId(String stage) {

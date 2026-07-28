@@ -37,7 +37,6 @@ class HomeBackgroundBootstrapper {
 
   Future<HomeBackgroundBootstrapResult> prepare(BuildContext context) async {
     try {
-      await _controller.hydrate();
       if (!context.mounted) {
         throw StateError('BuildContext disposed during wallpaper bootstrap');
       }

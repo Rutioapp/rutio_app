@@ -49,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _didQueuePostLoginNotificationPrompt = false;
   bool _isPostLoginNotificationPromptVisible = false;
   bool _isCheckingPostLoginNotificationPrompt = false;
+  bool _didTraceFirstBuild = false;
   int _postLoginPromptRetryCount = 0;
   static const int _maxPostLoginPromptRetries = 4;
   static const String _notificationOnboardingLogPrefix =
@@ -73,7 +74,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) => buildContent(context);
+  Widget build(BuildContext context) {
+    _traceFirstBuildCosmeticsContract(context);
+    return buildContent(context);
+  }
 
   @override
   void initState() {
@@ -88,8 +92,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (s.state == null && !s.isLoading) {
         s.load();
       }
-      unawaited(s.maybeSyncHabitsFromRemoteBestEffort());
     });
+    unawaited(
+      context.read<UserStateStore>().maybeSyncHabitsFromRemoteBestEffort(),
+    );
     _schedulePostLoginNotificationPrompt();
 
     _confettiController = ConfettiController(
@@ -97,6 +103,53 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
 
     _primeCatalogFamilies();
+  }
+
+  void _traceFirstBuildCosmeticsContract(BuildContext context) {
+    if (_didTraceFirstBuild || !kDebugMode) return;
+    _didTraceFirstBuild = true;
+    var valid = true;
+    try {
+      final bootstrap = context.read<BootstrapController>();
+      final cosmetics = context.read<ShopCosmeticsController>();
+      final token = bootstrap.state.cosmeticsReadyToken;
+      final wallpaper =
+          cosmetics.getEquippedWallpaperAssetOrNullSync()?.assetPath;
+      final habitCard = cosmetics.getEquippedHabitCardAssetOrNullSync()?.id;
+      final userCard = cosmetics.getEquippedUserCardAssetOrNullSync()?.id;
+      debugPrint(
+        '[BootstrapTrace] event=home_first_build '
+        'runId=${bootstrap.state.runId} '
+        'mode=${bootstrap.state.mode == BootstrapRunMode.coldStart ? 'cold_start' : 'in_app'} '
+        'controllerIdentity=${identityHashCode(cosmetics)} '
+        'scope=${token?.scope ?? 'none'} '
+        'appliedRevision=${cosmetics.cloudSnapshotRevision} '
+        'equippedWallpaperId=${token?.equippedWallpaperId ?? 'none'} '
+        'equippedHabitCardId=${token?.equippedHabitCardId ?? 'none'} '
+        'equippedUserCardId=${token?.equippedUserCardId ?? 'none'} '
+        'wallpaperResolved=${wallpaper != null || token?.equippedWallpaperId == null} '
+        'habitCardResolved=${habitCard != null || token?.equippedHabitCardId == null} '
+        'userCardResolved=${userCard != null || token?.equippedUserCardId == null}',
+      );
+      valid = token != null && cosmetics.validateReadyToken(token);
+      debugPrint(
+        '[BootstrapTrace] event=home_cosmetics_resolved '
+        'controllerIdentity=${identityHashCode(cosmetics)} '
+        'scope=${token?.scope ?? 'none'} '
+        'appliedRevision=${cosmetics.cloudSnapshotRevision} '
+        'wallpaperResolved=${wallpaper != null || token?.equippedWallpaperId == null} '
+        'habitCardResolved=${habitCard != null || token?.equippedHabitCardId == null} '
+        'userCardResolved=${userCard != null || token?.equippedUserCardId == null}',
+      );
+      assert(valid, 'Home readiness cosmetics contract violated.');
+    } catch (_) {
+      debugPrint(
+        '[BootstrapTrace] event=home_readiness_contract_violated '
+        'reason=missing_provider_or_invalid_token',
+      );
+      return;
+    }
+    assert(valid, 'Home readiness cosmetics contract violated.');
   }
 
   void _schedulePostLoginNotificationPrompt() {

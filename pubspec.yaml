@@ -158,10 +158,13 @@ flutter:
 
 flutter_launcher_icons:
   android: true
-  ios: false
-  image_path_android: design/branding/app_icons/android/rutio_launcher_android.png
-  adaptive_icon_background: "#F5EDE0"
-  adaptive_icon_foreground: design/branding/app_icons/android/rutio_launcher_android_foreground.png
+  ios: true
+  image_path_android: assets/branding/generated/rutio_logo_android_icon_1024.png
+  image_path_ios: assets/branding/generated/rutio_logo_ios_icon_1024.png
+  adaptive_icon_background: "#CFA683"
+  adaptive_icon_foreground: assets/branding/generated/rutio_logo_adaptive_foreground_1024.png
+  adaptive_icon_foreground_inset: 8
+  remove_alpha_ios: true
   min_sdk_android: 21
 
 

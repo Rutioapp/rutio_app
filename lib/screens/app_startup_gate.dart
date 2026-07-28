@@ -1,174 +1,185 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../application/auth/auth_controller.dart';
-import '../application/bootstrap/async_bootstrap_gate.dart';
-import '../application/bootstrap/home_background_bootstrapper.dart';
-import '../devtools/rutio_runtime_profile.dart';
-import '../features/shop/application/shop_cosmetics_controller.dart';
-import '../stores/user_state_store.dart';
+import '../application/bootstrap/bootstrap_controller.dart';
+import '../data/models/remote/remote_profile.dart';
+import '../utils/app_theme.dart';
 import 'auth/sign_in_screen.dart';
+import 'onboarding/temporary_onboarding_screen.dart';
 import 'root_gate.dart';
 import 'splash_screen.dart';
 import 'welcome_screen.dart';
 
-const Duration kMinimumStartupSplashDuration = Duration(milliseconds: 900);
-
-enum _StartupDestination {
-  home,
-  welcome,
-  auth,
-}
-
-@immutable
-class _StartupGateResult {
-  const _StartupGateResult({
-    required this.destination,
-    required this.usedWallpaperFallback,
+class AppStartupGate extends StatefulWidget {
+  const AppStartupGate({
+    super.key,
+    this.authenticatedBuilder,
   });
 
-  final _StartupDestination destination;
-  final bool usedWallpaperFallback;
+  final WidgetBuilder? authenticatedBuilder;
+
+  @override
+  State<AppStartupGate> createState() => _AppStartupGateState();
 }
 
-class AppStartupGate extends StatelessWidget {
-  const AppStartupGate({super.key});
+class _AppStartupGateState extends State<AppStartupGate> {
+  static const Duration _minimumSplashDuration = Duration(milliseconds: 2000);
+
+  Timer? _minimumSplashTimer;
+  bool _minimumSplashElapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _minimumSplashTimer = Timer(_minimumSplashDuration, () {
+      if (!mounted) return;
+      setState(() {
+        _minimumSplashElapsed = true;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _minimumSplashTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AsyncBootstrapGate<_StartupGateResult>(
-      minimumInitializationDuration: kMinimumStartupSplashDuration,
-      initializer: _initializeStartup,
-      initializingBuilder: (_) => const SplashScreen(
-        showTapHint: false,
-      ),
-      readyBuilder: (context, result) => _buildDestination(context, result),
-      failedBuilder: (context, error, stackTrace) {
-        if (kDebugMode) {
-          debugPrint('[startup] bootstrap failed: $error');
-          debugPrintStack(
-            label: '[startup]',
-            stackTrace: stackTrace,
+    return Consumer<BootstrapController>(
+      builder: (context, controller, _) {
+        final state = controller.state;
+        final isColdStart = state.mode == BootstrapRunMode.coldStart;
+        if (state.isReady) {
+          if (isColdStart && !_minimumSplashElapsed) {
+            controller.logColdStartSplashShown();
+            return const SplashScreen(
+              autoAdvanceDuration: null,
+              enableTapToContinue: false,
+              showTapHint: false,
+            );
+          }
+          if (state.destination == BootstrapDestination.onboarding &&
+              !_hasOnboardingProfile(state)) {
+            return const BootstrapPreparationScreen();
+          }
+          return _buildDestination(context, state.destination!);
+        }
+
+        if (state.isFailed) {
+          return BootstrapPreparationScreen(
+            errorMessage: state.error?.message,
+            onRetry: controller.retry,
           );
         }
-        return _buildDestination(
-          context,
-          _fallbackResultForCurrentState(
-            authController: context.read<AuthController>(),
-            userStateStore: context.read<UserStateStore>(),
-          ),
-        );
+
+        if (isColdStart) {
+          controller.logColdStartSplashShown();
+          return const SplashScreen(
+            autoAdvanceDuration: null,
+            enableTapToContinue: false,
+            showTapHint: false,
+          );
+        }
+
+        controller.logPreparingScreenShown();
+        return const BootstrapPreparationScreen();
       },
     );
   }
 
-  static Future<_StartupGateResult> _initializeStartup(
+  Widget _buildDestination(
     BuildContext context,
-  ) async {
-    final authController = context.read<AuthController>();
-    final userStateStore = context.read<UserStateStore>();
-    final cosmeticsController = context.read<ShopCosmeticsController>();
-
-    if (kDebugMode) {
-      debugPrint('[startup] bootstrap started');
-    }
-
-    await _ensureLocalStateReady(userStateStore);
-    await _waitForAuthSessionCheck(authController);
-
-    final shouldOpenHome =
-        authController.currentUser != null || RutioRuntimeProfile.isDemo;
-    final destination = shouldOpenHome
-        ? _StartupDestination.home
-        : userStateStore.onboardingDone
-            ? _StartupDestination.auth
-            : _StartupDestination.welcome;
-
-    if (!shouldOpenHome) {
-      if (kDebugMode) {
-        debugPrint('[startup] bootstrap ready without home background preload');
-      }
-      return _StartupGateResult(
-        destination: destination,
-        usedWallpaperFallback: false,
-      );
-    }
-
-    if (!context.mounted) {
-      return _StartupGateResult(
-        destination: destination,
-        usedWallpaperFallback: true,
-      );
-    }
-
-    final bootstrapper = HomeBackgroundBootstrapper(
-      controller: cosmeticsController,
-    );
-    final backgroundResult = await bootstrapper.prepare(context);
-
-    if (kDebugMode) {
-      debugPrint(
-        '[startup] bootstrap ready destination=${destination.name} '
-        'usedWallpaperFallback=${backgroundResult.usedFallback} '
-        'didPrecacheCustomWallpaper=${backgroundResult.didPrecacheCustomWallpaper} '
-        'wallpaperAssetPath=${backgroundResult.wallpaperAsset?.assetPath}',
-      );
-    }
-
-    return _StartupGateResult(
-      destination: destination,
-      usedWallpaperFallback: backgroundResult.usedFallback,
-    );
-  }
-
-  static Future<void> _ensureLocalStateReady(UserStateStore store) async {
-    if (store.state == null && !store.isLoading) {
-      await store.load();
-    }
-
-    while (store.isLoading) {
-      await Future<void>.delayed(const Duration(milliseconds: 16));
-    }
-  }
-
-  static Future<void> _waitForAuthSessionCheck(
-      AuthController authController) async {
-    while (authController.isCheckingSession) {
-      await Future<void>.delayed(const Duration(milliseconds: 16));
-    }
-  }
-
-  static Widget _buildDestination(
-    BuildContext context,
-    _StartupGateResult result,
+    BootstrapDestination destination,
   ) {
-    switch (result.destination) {
-      case _StartupDestination.home:
-        return const RootGate();
-      case _StartupDestination.welcome:
+    switch (destination) {
+      case BootstrapDestination.home:
+        return widget.authenticatedBuilder?.call(context) ?? const RootGate();
+      case BootstrapDestination.welcome:
         return const WelcomeScreen();
-      case _StartupDestination.auth:
+      case BootstrapDestination.authentication:
         return const SignInScreen();
+      case BootstrapDestination.onboarding:
+        return const TemporaryOnboardingScreen();
     }
   }
 
-  static _StartupGateResult _fallbackResultForCurrentState({
-    required AuthController authController,
-    required UserStateStore userStateStore,
-  }) {
-    final shouldOpenHome =
-        authController.currentUser != null || RutioRuntimeProfile.isDemo;
-    final destination = shouldOpenHome
-        ? _StartupDestination.home
-        : userStateStore.onboardingDone
-            ? _StartupDestination.auth
-            : _StartupDestination.welcome;
-    return _StartupGateResult(
-      destination: destination,
-      usedWallpaperFallback: true,
+  bool _hasOnboardingProfile(BootstrapState state) {
+    final profile = state.remoteProfile;
+    if (profile == null) return false;
+    switch (profile.onboardingStatus) {
+      case OnboardingStatus.pending:
+      case OnboardingStatus.inProgress:
+        return true;
+      case OnboardingStatus.completed:
+        return false;
+    }
+  }
+}
+
+class BootstrapPreparationScreen extends StatelessWidget {
+  const BootstrapPreparationScreen({
+    super.key,
+    this.errorMessage,
+    this.onRetry,
+  });
+
+  final String? errorMessage;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final brightness = MediaQuery.platformBrightnessOf(context);
+    final isDark = brightness == Brightness.dark;
+    final background = isDark ? AppColors.ink : AppColors.cream;
+    final foreground = isDark ? AppColors.cream : AppColors.ink;
+    final muted = foreground.withValues(alpha: 0.68);
+
+    return Scaffold(
+      backgroundColor: background,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CupertinoActivityIndicator(radius: 14),
+                const SizedBox(height: 22),
+                Text(
+                  'Preparando tu espacio…',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.authTitle.copyWith(
+                    color: foreground,
+                    fontSize: 24,
+                  ),
+                ),
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.authSub.copyWith(
+                      color: muted,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  CupertinoButton.filled(
+                    borderRadius: BorderRadius.circular(8),
+                    onPressed: onRetry,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

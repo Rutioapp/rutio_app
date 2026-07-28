@@ -1,0 +1,47 @@
+{
+  "source_path": "D:\\Downloads\\Nuego logo rutio Sin fondo.png",
+  "source_size": [
+    1254,
+    1254
+  ],
+  "source_alpha_bbox": [
+    371,
+    346,
+    881,
+    893
+  ],
+  "source_margins": {
+    "left": 371,
+    "top": 346,
+    "right": 373,
+    "bottom": 361
+  },
+  "master_size": [
+    1024,
+    1024
+  ],
+  "master_alpha_bbox": [
+    120,
+    92,
+    903,
+    932
+  ],
+  "master_margins": {
+    "left": 120,
+    "top": 92,
+    "right": 121,
+    "bottom": 92
+  },
+  "scales": {
+    "master_visible_max": 840,
+    "launcher_visible_max": 980,
+    "adaptive_visible_max": 760,
+    "adaptive_xml_inset_percent": 8,
+    "android_splash_visible_max": 102,
+    "android_splash_icon_visible_max": 173,
+    "launcher_optical_offset": [
+      10,
+      -8
+    ]
+  }
+}

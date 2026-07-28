@@ -6,6 +6,13 @@ import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 
 const Object _shopAssetUnset = Object();
 
+ImageProvider<Object> buildShopAssetImageProvider(String assetPath) {
+  return ShopAsset._assetImageCache.putIfAbsent(
+    assetPath,
+    () => AssetImage(assetPath),
+  );
+}
+
 class ShopAsset {
   const ShopAsset({
     required this.id,
@@ -62,7 +69,7 @@ class ShopAsset {
   }
 
   AssetImage get imageProvider =>
-      _assetImageCache.putIfAbsent(assetPath, () => AssetImage(assetPath));
+      buildShopAssetImageProvider(assetPath) as AssetImage;
 
   Alignment get imageAlignment => Alignment(imageAlignmentX, imageAlignmentY);
 

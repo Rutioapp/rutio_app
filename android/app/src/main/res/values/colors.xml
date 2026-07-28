@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launch_splash_background">#CFE4F2</color>
+    <color name="launch_splash_camel">#CFE4F2</color>
+    <color name="launch_splash_sky_top">#EAF3FB</color>
+    <color name="launch_splash_sky_mid_1">#D6EAF6</color>
+    <color name="launch_splash_sky_mid_2">#C8DDED</color>
+    <color name="launch_splash_sky_bottom">#D4CAAC</color>
+    <color name="launch_splash_icon_background">#00000000</color>
+    <color name="ic_launcher_background">#CFA683</color>
+</resources>

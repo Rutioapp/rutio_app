@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:rutio/features/shop/domain/models/habit_card_content_tone.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/screens/home/widgets/habit/habit_card_badge_zone.dart';
 import 'package:rutio/screens/home/widgets/habit/habit_card_foreground_style.dart';
@@ -216,7 +217,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     final provider = widget.backgroundImageProvider ??
         (widget.backgroundImageAssetPath == null
             ? null
-            : AssetImage(widget.backgroundImageAssetPath!));
+            : buildShopAssetImageProvider(widget.backgroundImageAssetPath!));
     if (provider == null || provider == _lastPrecachedBackgroundProvider) {
       return;
     }
@@ -242,7 +243,8 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     final backgroundImageProvider = widget.backgroundImageProvider ??
         (widget.backgroundImageAssetPath == null
             ? null
-            : AssetImage(widget.backgroundImageAssetPath!));
+            : buildShopAssetImageProvider(widget.backgroundImageAssetPath!));
+    _logFirstFrame(backgroundImageProvider != null);
     final hasBackgroundOverlay = backgroundImageProvider != null &&
         widget.backgroundOverlayColor != null &&
         widget.backgroundOverlayOpacity > 0;
@@ -512,11 +514,14 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
           borderRadius: BorderRadius.circular(radius),
           onTap: widget.onTap ?? openDefault,
           child: Container(
+            key: const Key('habitCardSurface'),
             constraints: BoxConstraints(
               minHeight: widget.compact ? 68 : 76,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.74),
+              color: backgroundImageProvider == null
+                  ? Colors.white.withValues(alpha: 0.74)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(radius),
               boxShadow: [
                 BoxShadow(
@@ -547,6 +552,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                           image: backgroundImageProvider,
                           fit: widget.backgroundImageFit,
                           alignment: widget.backgroundImageAlignment,
+                          gaplessPlayback: true,
                           errorBuilder: (_, error, stackTrace) {
                             if (kDebugMode) {
                               debugPrint(
@@ -644,6 +650,16 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
           ),
         ),
       ),
+    );
+  }
+
+  void _logFirstFrame(bool hasBackgroundImage) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[HomeFirstFrame] component=habit_card '
+      'inputAsset=${widget.backgroundImageAssetPath == null ? 'null' : 'present'} '
+      'displayedAsset=${hasBackgroundImage ? 'present' : 'null'} '
+      'fallback=${!hasBackgroundImage}',
     );
   }
 }

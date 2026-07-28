@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 
 class HomeBackground extends StatelessWidget {
   const HomeBackground({
@@ -77,7 +78,8 @@ class _ReactiveHomeBackgroundSceneState
     super.initState();
     _displayedWallpaperAssetPath = widget.wallpaperAssetPath;
     if (_displayedWallpaperAssetPath != null) {
-      _preparedWallpaperProvider = AssetImage(_displayedWallpaperAssetPath!);
+      _preparedWallpaperProvider =
+          buildShopAssetImageProvider(_displayedWallpaperAssetPath!);
     }
   }
 
@@ -97,7 +99,7 @@ class _ReactiveHomeBackgroundSceneState
       return;
     }
 
-    final provider = AssetImage(nextPath);
+    final provider = buildShopAssetImageProvider(nextPath);
     setState(() {
       _displayedWallpaperAssetPath = nextPath;
       _preparedWallpaperProvider = provider;
@@ -116,6 +118,10 @@ class _ReactiveHomeBackgroundSceneState
   @override
   Widget build(BuildContext context) {
     if (_displayedWallpaperAssetPath == null) {
+      _logFirstFrame(
+        inputAsset: widget.wallpaperAssetPath,
+        displayedAsset: _displayedWallpaperAssetPath,
+      );
       HomeBackground._log(
         'HomeLandscapeBackground fallback=true mode=defaultBackground',
       );
@@ -126,6 +132,10 @@ class _ReactiveHomeBackgroundSceneState
       );
     }
 
+    _logFirstFrame(
+      inputAsset: widget.wallpaperAssetPath,
+      displayedAsset: _displayedWallpaperAssetPath,
+    );
     HomeBackground._log(
       'HomeLandscapeBackground applying wallpaperAssetPath=$_displayedWallpaperAssetPath '
       'fallback=false mode=customWallpaper',
@@ -143,6 +153,19 @@ class _ReactiveHomeBackgroundSceneState
           ),
         ),
       ),
+    );
+  }
+
+  void _logFirstFrame({
+    required String? inputAsset,
+    required String? displayedAsset,
+  }) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[HomeFirstFrame] component=background '
+      'inputAsset=${inputAsset == null ? 'null' : 'present'} '
+      'displayedAsset=${displayedAsset == null ? 'null' : 'present'} '
+      'fallback=${displayedAsset == null}',
     );
   }
 }
@@ -188,16 +211,17 @@ class _CustomWallpaperBackgroundVisual extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        const _DefaultHomeBackgroundVisual(),
         Image(
-          image: wallpaperProvider ?? AssetImage(wallpaperAssetPath),
+          image: wallpaperProvider ??
+              buildShopAssetImageProvider(wallpaperAssetPath),
           key: const Key('homeBackgroundWallpaperImage'),
           fit: BoxFit.cover,
+          gaplessPlayback: true,
           errorBuilder: (_, error, stackTrace) {
             HomeBackground._log(
               'HomeLandscapeBackground asset load failed path=$wallpaperAssetPath',
             );
-            return const SizedBox.shrink();
+            return const _DefaultHomeBackgroundVisual();
           },
         ),
         const DecoratedBox(

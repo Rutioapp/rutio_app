@@ -122,6 +122,44 @@ class SupabaseUserProgressBootstrapResult {
   final bool backfillSynced;
 }
 
+enum EssentialHabitsBootstrapStatus {
+  unknown,
+  loading,
+  readyFromCache,
+  readyFromRemote,
+  confirmedEmpty,
+  degraded,
+  failed,
+  emptyFromTemplate,
+}
+
+@immutable
+class EssentialHabitsBootstrapResult {
+  const EssentialHabitsBootstrapResult({
+    required this.status,
+    required this.userId,
+    required this.source,
+    required this.scopeEpoch,
+    required this.requestId,
+    required this.duration,
+    this.error,
+  });
+
+  final EssentialHabitsBootstrapStatus status;
+  final String? userId;
+  final String source;
+  final int scopeEpoch;
+  final int requestId;
+  final Duration duration;
+  final Object? error;
+
+  bool get canBuildHome =>
+      status == EssentialHabitsBootstrapStatus.readyFromCache ||
+      status == EssentialHabitsBootstrapStatus.readyFromRemote ||
+      status == EssentialHabitsBootstrapStatus.confirmedEmpty ||
+      status == EssentialHabitsBootstrapStatus.degraded;
+}
+
 class UserStateStore extends ChangeNotifier {
   static const Duration diaryV2AutoPullCooldown = Duration(minutes: 10);
   static const Duration habitsAutoPullCooldown = Duration(minutes: 10);
@@ -261,6 +299,9 @@ class UserStateStore extends ChangeNotifier {
   DateTime? _lastDiaryV2RemotePullSuccessAt;
   DateTime? _lastHabitsRemotePullAttemptAt;
   DateTime? _lastHabitsRemotePullSuccessAt;
+  Future<EssentialHabitsBootstrapResult>? _essentialHabitsBootstrapFuture;
+  String? _essentialHabitsBootstrapUserId;
+  int _essentialHabitsBootstrapRequestId = 0;
   Object? _accountDeletionError;
   String? _activeLocalScopeUserId;
   int _scopeEpoch = 0;
@@ -577,6 +618,16 @@ class UserStateStore extends ChangeNotifier {
       _maybeSyncHabitsFromRemoteBestEffort(
         this,
         ignoreCooldown: ignoreCooldown,
+      );
+
+  Future<EssentialHabitsBootstrapResult> prepareEssentialHabitsForBootstrap({
+    required String userId,
+    bool forceRemote = false,
+  }) =>
+      _prepareEssentialHabitsForBootstrap(
+        this,
+        userId: userId,
+        forceRemote: forceRemote,
       );
 
   Future<void> reorderVisibleHabits({

@@ -148,6 +148,12 @@ Future<_AuthFixture> _createFixture({
     globalWalletController: walletController,
     profileRepository: null,
   );
+  authStream.add(
+    _authState(
+      AuthChangeEvent.initialSession,
+      currentUser == null ? null : _session(currentUser),
+    ),
+  );
 
   await _flushMicrotasks();
 

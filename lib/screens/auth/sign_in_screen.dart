@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../../application/auth/auth_controller.dart';
 import '../../l10n/l10n.dart';
-import '../../stores/user_state_store.dart';
 import '../../utils/app_theme.dart';
 import 'sign_up_screen.dart';
 import 'widgets/auth_field.dart';
@@ -68,14 +67,9 @@ class _SignInScreenState extends State<SignInScreen>
         authController.isAuthenticated || response?.session?.user != null;
     if (!hasAuthenticatedUser) return;
 
-    await context.read<UserStateStore>().setOnboardingDone(
-          true,
-          email: _emailController.text.trim(),
-        );
-    if (!mounted) return;
-
-    // Auth screens can be pushed above /root from the welcome flow. After a
-    // real Supabase session exists, reset to /root so AuthGate can reveal app.
+    // Auth screens can be pushed above the startup gate from the welcome flow.
+    // After a real Supabase session exists, reset to /root so bootstrap can
+    // make the remote onboarding decision.
     Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
 
