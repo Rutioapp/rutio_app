@@ -1,5 +1,122 @@
 import 'package:flutter/cupertino.dart';
 
+@visibleForTesting
+enum HabitCardSwipeVisualState {
+  idle,
+  dragging,
+  settlingClosed,
+  settlingLeftOpen,
+  committingRight,
+  actionInFlight,
+}
+
+@visibleForTesting
+class HabitCardSwipeMotionConfig {
+  const HabitCardSwipeMotionConfig({
+    this.actionWidth = 78,
+    this.openThresholdRatio = 0.30,
+    this.rightVisualLimit = 84,
+    this.rightCompleteThreshold = 54,
+    this.rightFlingMinOffset = 26,
+    this.rightFlingVelocity = 520,
+    this.leftFlingVelocity = -320,
+    this.overscrollResistance = 0.28,
+    this.maxOverscroll = 36,
+    this.settleDuration = const Duration(milliseconds: 220),
+    this.settleCurve = Curves.easeOutCubic,
+  });
+
+  final double actionWidth;
+  final double openThresholdRatio;
+  final double rightVisualLimit;
+  final double rightCompleteThreshold;
+  final double rightFlingMinOffset;
+  final double rightFlingVelocity;
+  final double leftFlingVelocity;
+  final double overscrollResistance;
+  final double maxOverscroll;
+  final Duration settleDuration;
+  final Curve settleCurve;
+
+  double get revealWidth => actionWidth * 3;
+  double get openOffset => -revealWidth;
+  double get leftOpenThreshold => revealWidth * openThresholdRatio;
+
+  double applyDragDelta({
+    required double currentOffset,
+    required double delta,
+    required bool canSwipeRightComplete,
+  }) {
+    return applyBounds(
+      currentOffset + delta,
+      canSwipeRightComplete: canSwipeRightComplete,
+    );
+  }
+
+  double applyBounds(
+    double rawOffset, {
+    required bool canSwipeRightComplete,
+  }) {
+    final rightLimit = canSwipeRightComplete ? rightVisualLimit : 0.0;
+    if (rawOffset < openOffset) {
+      final excess = openOffset - rawOffset;
+      return openOffset - _resistedOverscroll(excess);
+    }
+    if (rawOffset > rightLimit) {
+      final excess = rawOffset - rightLimit;
+      return rightLimit + _resistedOverscroll(excess);
+    }
+    return rawOffset;
+  }
+
+  HabitCardSwipeSettleTarget resolveSettleTarget({
+    required double offset,
+    required double velocityX,
+    required bool startedFromOpenTray,
+    required bool canSwipeRightComplete,
+    required bool hasRightCompleteCallback,
+  }) {
+    final canCompleteFromSwipe = !startedFromOpenTray &&
+        canSwipeRightComplete &&
+        hasRightCompleteCallback;
+    final passedRightThreshold = offset >= rightCompleteThreshold;
+    final flingRight =
+        velocityX >= rightFlingVelocity && offset >= rightFlingMinOffset;
+
+    if (canCompleteFromSwipe && (passedRightThreshold || flingRight)) {
+      return HabitCardSwipeSettleTarget.rightCommit;
+    }
+
+    if (offset > 0) {
+      return HabitCardSwipeSettleTarget.closed;
+    }
+
+    final shouldOpen =
+        offset.abs() >= leftOpenThreshold || velocityX < leftFlingVelocity;
+    if (shouldOpen) {
+      return HabitCardSwipeSettleTarget.leftOpen;
+    }
+
+    return HabitCardSwipeSettleTarget.closed;
+  }
+
+  double progressForOffset(double offset, double targetExtent) {
+    if (targetExtent <= 0) return 0;
+    return (offset / targetExtent).clamp(0.0, 1.0);
+  }
+
+  double _resistedOverscroll(double excess) {
+    return (excess * overscrollResistance).clamp(0.0, maxOverscroll);
+  }
+}
+
+@visibleForTesting
+enum HabitCardSwipeSettleTarget {
+  closed,
+  leftOpen,
+  rightCommit,
+}
+
 class HabitCardSwipeShell extends StatefulWidget {
   const HabitCardSwipeShell({
     super.key,
@@ -18,6 +135,7 @@ class HabitCardSwipeShell extends StatefulWidget {
     required this.onSkip,
     required this.onEdit,
     required this.onDelete,
+    this.motionConfig = const HabitCardSwipeMotionConfig(),
   });
 
   final String cardId;
@@ -35,13 +153,7 @@ class HabitCardSwipeShell extends StatefulWidget {
   final Future<void> Function() onSkip;
   final VoidCallback? onEdit;
   final Future<void> Function() onDelete;
-
-  static const double _actionWidth = 78;
-  static const double _openThresholdRatio = 0.30;
-  static const double _rightVisualLimit = 84;
-  static const double _rightCompleteThreshold = 54;
-  static const double _rightFlingMinOffset = 26;
-  static const double _rightFlingVelocity = 520;
+  final HabitCardSwipeMotionConfig motionConfig;
 
   @override
   State<HabitCardSwipeShell> createState() => _HabitCardSwipeShellState();
@@ -53,20 +165,22 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
   late Animation<double> _offsetAnimation;
 
   double _offset = 0;
-  bool _isDragging = false;
+  HabitCardSwipeVisualState _visualState = HabitCardSwipeVisualState.idle;
   bool _startedFromOpenTray = false;
 
-  double get _revealWidth => HabitCardSwipeShell._actionWidth * 3;
-  double get _openOffset => -_revealWidth;
+  HabitCardSwipeMotionConfig get _config => widget.motionConfig;
+  bool get _isInteractionLocked =>
+      _visualState == HabitCardSwipeVisualState.committingRight ||
+      _visualState == HabitCardSwipeVisualState.actionInFlight;
 
   @override
   void initState() {
     super.initState();
-    _offset = widget.isOpen ? _openOffset : 0;
+    _offset = widget.isOpen ? _config.openOffset : 0;
     _offsetAnimation = AlwaysStoppedAnimation<double>(_offset);
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      duration: _config.settleDuration,
     )..addListener(() {
         setState(() {
           _offset = _offsetAnimation.value;
@@ -77,10 +191,21 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
   @override
   void didUpdateWidget(covariant HabitCardSwipeShell oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_isDragging) return;
+    if (oldWidget.motionConfig.settleDuration != _config.settleDuration) {
+      _controller.duration = _config.settleDuration;
+    }
+    if (_visualState == HabitCardSwipeVisualState.dragging ||
+        _isInteractionLocked) {
+      return;
+    }
 
     if (oldWidget.isOpen != widget.isOpen) {
-      _animateTo(widget.isOpen ? _openOffset : 0);
+      _settleTo(
+        widget.isOpen ? _config.openOffset : 0,
+        widget.isOpen
+            ? HabitCardSwipeVisualState.settlingLeftOpen
+            : HabitCardSwipeVisualState.settlingClosed,
+      );
     }
   }
 
@@ -90,11 +215,16 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
     super.dispose();
   }
 
-  void _animateTo(double target) {
+  void _settleTo(double target, HabitCardSwipeVisualState settlingState) {
     final clampedTarget =
-        target.clamp(_openOffset, HabitCardSwipeShell._rightVisualLimit);
+        target.clamp(_config.openOffset, _config.rightVisualLimit);
     if ((_offset - clampedTarget).abs() < 0.5) {
-      setState(() => _offset = clampedTarget);
+      setState(() {
+        _offset = clampedTarget;
+        if (settlingState != HabitCardSwipeVisualState.committingRight) {
+          _visualState = HabitCardSwipeVisualState.idle;
+        }
+      });
       return;
     }
 
@@ -102,57 +232,67 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
     _offsetAnimation = Tween<double>(
       begin: _offset,
       end: clampedTarget,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    ).animate(CurvedAnimation(parent: _controller, curve: _config.settleCurve));
+    setState(() => _visualState = settlingState);
     _controller
       ..value = 0
-      ..forward();
+      ..forward().whenComplete(() {
+        if (!mounted || _visualState != settlingState) return;
+        if (settlingState == HabitCardSwipeVisualState.committingRight) {
+          return;
+        }
+        setState(() => _visualState = HabitCardSwipeVisualState.idle);
+      });
   }
 
   Future<void> _handleAction(Future<void> Function() callback) async {
-    widget.onRequestClose();
-    await callback();
+    if (_isInteractionLocked) return;
+    setState(() => _visualState = HabitCardSwipeVisualState.actionInFlight);
+    try {
+      widget.onRequestClose();
+      await callback();
+    } finally {
+      if (mounted && _visualState == HabitCardSwipeVisualState.actionInFlight) {
+        setState(() => _visualState = HabitCardSwipeVisualState.idle);
+      }
+    }
+  }
+
+  Future<void> _handleSyncAction(VoidCallback callback) async {
+    if (_isInteractionLocked) return;
+    setState(() => _visualState = HabitCardSwipeVisualState.actionInFlight);
+    try {
+      widget.onRequestClose();
+      callback();
+    } finally {
+      if (mounted && _visualState == HabitCardSwipeVisualState.actionInFlight) {
+        setState(() => _visualState = HabitCardSwipeVisualState.idle);
+      }
+    }
   }
 
   void _handleHorizontalStart(DragStartDetails details) {
-    _isDragging = true;
+    if (_isInteractionLocked) return;
+    if (_controller.isAnimating) {
+      _offset = _offsetAnimation.value;
+    }
+    _visualState = HabitCardSwipeVisualState.dragging;
     _startedFromOpenTray = widget.isOpen || _offset < -0.5;
     widget.onRequestCloseOtherCards(widget.cardId);
     _controller.stop();
   }
 
   void _handleHorizontalUpdate(DragUpdateDetails details) {
+    if (_visualState != HabitCardSwipeVisualState.dragging) return;
     final dx = details.delta.dx;
     if (dx == 0) return;
 
-    if (dx > 0) {
-      if (_offset < 0) {
-        final nextOffset = (_offset + dx).clamp(_openOffset, 0.0);
-        if (nextOffset == _offset) return;
-        setState(() {
-          _offset = nextOffset;
-        });
-        return;
-      }
-
-      if (!widget.canSwipeRightComplete ||
-          widget.onSwipeRightComplete == null) {
-        return;
-      }
-
-      final dragFactor =
-          _offset > (HabitCardSwipeShell._rightVisualLimit * 0.55)
-              ? 0.42
-              : 0.72;
-      final nextOffset = (_offset + (dx * dragFactor))
-          .clamp(0.0, HabitCardSwipeShell._rightVisualLimit);
-      if (nextOffset == _offset) return;
-      setState(() {
-        _offset = nextOffset;
-      });
-      return;
-    }
-
-    final nextOffset = (_offset + dx).clamp(_openOffset, 0.0);
+    final nextOffset = _config.applyDragDelta(
+      currentOffset: _offset,
+      delta: dx,
+      canSwipeRightComplete:
+          widget.canSwipeRightComplete && widget.onSwipeRightComplete != null,
+    );
     if (nextOffset == _offset) return;
 
     setState(() {
@@ -164,55 +304,63 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
   }
 
   Future<void> _handleHorizontalEnd(DragEndDetails details) async {
-    _isDragging = false;
+    if (_visualState != HabitCardSwipeVisualState.dragging) return;
     final rightVelocity = details.velocity.pixelsPerSecond.dx;
-    final canCompleteFromSwipe = !_startedFromOpenTray &&
-        widget.canSwipeRightComplete &&
-        widget.onSwipeRightComplete != null;
-    final passedRightThreshold =
-        _offset >= HabitCardSwipeShell._rightCompleteThreshold;
-    final flingRight =
-        rightVelocity >= HabitCardSwipeShell._rightFlingVelocity &&
-            _offset >= HabitCardSwipeShell._rightFlingMinOffset;
-
-    if (canCompleteFromSwipe && (passedRightThreshold || flingRight)) {
-      _startedFromOpenTray = false;
-      _animateTo(0);
-      await widget.onSwipeRightComplete!.call();
-      return;
-    }
+    final target = _config.resolveSettleTarget(
+      offset: _offset,
+      velocityX: rightVelocity,
+      startedFromOpenTray: _startedFromOpenTray,
+      canSwipeRightComplete: widget.canSwipeRightComplete,
+      hasRightCompleteCallback: widget.onSwipeRightComplete != null,
+    );
     _startedFromOpenTray = false;
 
-    if (_offset > 0) {
-      _animateTo(0);
+    if (target == HabitCardSwipeSettleTarget.rightCommit) {
+      await _commitRight();
       return;
     }
 
-    final openThreshold =
-        _revealWidth * HabitCardSwipeShell._openThresholdRatio;
-    final shouldOpen = _offset.abs() >= openThreshold ||
-        details.velocity.pixelsPerSecond.dx < -320;
-
-    if (shouldOpen) {
+    if (target == HabitCardSwipeSettleTarget.leftOpen) {
       widget.onRequestOpen(widget.cardId);
-      _animateTo(_openOffset);
+      _settleTo(
+        _config.openOffset,
+        HabitCardSwipeVisualState.settlingLeftOpen,
+      );
       return;
     }
 
     widget.onRequestClose();
-    _animateTo(0);
+    _settleTo(0, HabitCardSwipeVisualState.settlingClosed);
+  }
+
+  Future<void> _commitRight() async {
+    if (_isInteractionLocked || widget.onSwipeRightComplete == null) return;
+    setState(() => _visualState = HabitCardSwipeVisualState.committingRight);
+    _settleTo(0, HabitCardSwipeVisualState.committingRight);
+    try {
+      await widget.onSwipeRightComplete!.call();
+    } finally {
+      if (mounted &&
+          _visualState == HabitCardSwipeVisualState.committingRight) {
+        setState(() => _visualState = HabitCardSwipeVisualState.idle);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final revealWidth = _revealWidth;
+    final revealWidth = _config.revealWidth;
     final verticalInset = widget.compact ? 6.0 : 8.0;
     final radius = widget.compact ? 18.0 : 20.0;
-    final revealProgress =
-        ((_offset < 0 ? _offset.abs() : 0.0) / revealWidth).clamp(0.0, 1.0);
+    final revealProgress = _config.progressForOffset(
+      _offset < 0 ? _offset.abs() : 0.0,
+      revealWidth,
+    );
     final showTray = revealProgress > 0.001;
-    final rightProgress =
-        (_offset / HabitCardSwipeShell._rightVisualLimit).clamp(0.0, 1.0);
+    final rightProgress = _config.progressForOffset(
+      _offset,
+      _config.rightVisualLimit,
+    );
     final showRightCue = widget.canSwipeRightComplete && rightProgress > 0.001;
 
     return Stack(
@@ -257,23 +405,24 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
                       _SwipeTrayActionButton(
                         icon: CupertinoIcons.forward_end_fill,
                         label: widget.skipLabel,
-                        onTap: () => _handleAction(widget.onSkip),
+                        onTap: _isInteractionLocked
+                            ? null
+                            : () => _handleAction(widget.onSkip),
                       ),
                       _SwipeTrayActionButton(
                         icon: CupertinoIcons.pencil,
                         label: widget.editLabel,
-                        onTap: widget.onEdit == null
+                        onTap: widget.onEdit == null || _isInteractionLocked
                             ? null
-                            : () {
-                                widget.onRequestClose();
-                                widget.onEdit!.call();
-                              },
+                            : () => _handleSyncAction(widget.onEdit!),
                       ),
                       _SwipeTrayActionButton(
                         icon: CupertinoIcons.delete,
                         label: widget.deleteLabel,
                         isDestructive: true,
-                        onTap: () => _handleAction(widget.onDelete),
+                        onTap: _isInteractionLocked
+                            ? null
+                            : () => _handleAction(widget.onDelete),
                       ),
                     ],
                   ),
@@ -281,17 +430,19 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
               ),
             ),
           ),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(_offset, 0, 0),
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onHorizontalDragStart: _handleHorizontalStart,
-            onHorizontalDragUpdate: _handleHorizontalUpdate,
-            onHorizontalDragEnd: _handleHorizontalEnd,
-            onTap: widget.isOpen ? widget.onRequestClose : null,
-            child: widget.child,
+        RepaintBoundary(
+          child: Transform.translate(
+            offset: Offset(_offset, 0),
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragStart: _handleHorizontalStart,
+              onHorizontalDragUpdate: _handleHorizontalUpdate,
+              onHorizontalDragEnd: _handleHorizontalEnd,
+              onTap: widget.isOpen && !_isInteractionLocked
+                  ? widget.onRequestClose
+                  : null,
+              child: widget.child,
+            ),
           ),
         ),
       ],
