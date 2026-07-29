@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/physics.dart';
 
 @visibleForTesting
 enum HabitCardSwipeVisualState {
@@ -23,8 +24,11 @@ class HabitCardSwipeMotionConfig {
     this.overdragResistance = 0.20,
     this.maxOverscroll = 36,
     this.settleTolerance = 0.5,
-    this.settleDuration = const Duration(milliseconds: 220),
-    this.settleCurve = Curves.easeOutCubic,
+    this.springMass = 1.0,
+    this.springStiffness = 480.0,
+    this.springDamping = 42.0,
+    this.springToleranceDistance = 0.5,
+    this.springToleranceVelocity = 5.0,
   });
 
   final double leftActionsExtent;
@@ -37,10 +41,14 @@ class HabitCardSwipeMotionConfig {
   final double overdragResistance;
   final double maxOverscroll;
   final double settleTolerance;
-  final Duration settleDuration;
-  final Curve settleCurve;
+  final double springMass;
+  final double springStiffness;
+  final double springDamping;
+  final double springToleranceDistance;
+  final double springToleranceVelocity;
 
   double get revealWidth => leftActionsExtent;
+  double get closedOffset => 0;
   double get openOffset => -leftActionsExtent;
   double get leftOpenThreshold => leftActionsExtent * leftOpenThresholdFraction;
 
@@ -54,6 +62,36 @@ class HabitCardSwipeMotionConfig {
 
   double rightVisualLimit(double cardWidth) {
     return cardWidth * rightVisualLimitFraction;
+  }
+
+  SpringDescription get springDescription {
+    return SpringDescription(
+      mass: springMass,
+      stiffness: springStiffness,
+      damping: springDamping,
+    );
+  }
+
+  Tolerance get springTolerance {
+    return Tolerance(
+      distance: springToleranceDistance,
+      velocity: springToleranceVelocity,
+    );
+  }
+
+  SpringSimulation springSimulation({
+    required double start,
+    required double target,
+    required double velocity,
+  }) {
+    return SpringSimulation(
+      springDescription,
+      start,
+      target,
+      velocity,
+      snapToEnd: true,
+      tolerance: springTolerance,
+    );
   }
 
   double applyDragDelta({
@@ -205,10 +243,10 @@ class HabitCardSwipeShell extends StatefulWidget {
 class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late Animation<double> _offsetAnimation;
 
   double _offset = 0;
   double _cardWidth = 0;
+  int _settleGeneration = 0;
   HabitCardSwipeVisualState _visualState = HabitCardSwipeVisualState.idle;
   bool _startedFromOpenTray = false;
 
@@ -221,23 +259,15 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
   void initState() {
     super.initState();
     _offset = widget.isOpen ? _config.openOffset : 0;
-    _offsetAnimation = AlwaysStoppedAnimation<double>(_offset);
-    _controller = AnimationController(
-      vsync: this,
-      duration: _config.settleDuration,
-    )..addListener(() {
-        setState(() {
-          _offset = _offsetAnimation.value;
-        });
+    _controller = AnimationController.unbounded(vsync: this, value: _offset)
+      ..addListener(() {
+        _offset = _controller.value;
       });
   }
 
   @override
   void didUpdateWidget(covariant HabitCardSwipeShell oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.motionConfig.settleDuration != _config.settleDuration) {
-      _controller.duration = _config.settleDuration;
-    }
     if (_visualState == HabitCardSwipeVisualState.dragging ||
         _isInteractionLocked) {
       return;
@@ -249,6 +279,7 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
         widget.isOpen
             ? HabitCardSwipeVisualState.settlingLeftOpen
             : HabitCardSwipeVisualState.settlingClosed,
+        velocity: 0,
       );
     }
   }
@@ -259,12 +290,23 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
     super.dispose();
   }
 
-  void _settleTo(double target, HabitCardSwipeVisualState settlingState) {
+  void _settleTo(
+    double target,
+    HabitCardSwipeVisualState settlingState, {
+    required double velocity,
+  }) {
     final clampedTarget =
         target.clamp(_config.openOffset, _config.rightVisualLimit(_cardWidth));
-    if ((_offset - clampedTarget).abs() < _config.settleTolerance) {
+    final currentOffset = _controller.value;
+    _offset = currentOffset;
+    _settleGeneration += 1;
+    final generation = _settleGeneration;
+
+    if ((currentOffset - clampedTarget).abs() < _config.settleTolerance &&
+        velocity.abs() < _config.springToleranceVelocity) {
       setState(() {
         _offset = clampedTarget;
+        _controller.value = clampedTarget;
         if (settlingState != HabitCardSwipeVisualState.committingRight) {
           _visualState = HabitCardSwipeVisualState.idle;
         }
@@ -273,20 +315,28 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
     }
 
     _controller.stop();
-    _offsetAnimation = Tween<double>(
-      begin: _offset,
-      end: clampedTarget,
-    ).animate(CurvedAnimation(parent: _controller, curve: _config.settleCurve));
+    _controller.value = currentOffset;
     setState(() => _visualState = settlingState);
-    _controller
-      ..value = 0
-      ..forward().whenComplete(() {
-        if (!mounted || _visualState != settlingState) return;
+    final simulation = _config.springSimulation(
+      start: currentOffset,
+      target: clampedTarget,
+      velocity: velocity,
+    );
+    _controller.animateWith(simulation).whenComplete(() {
+      if (!mounted ||
+          _visualState != settlingState ||
+          generation != _settleGeneration) {
+        return;
+      }
+      setState(() {
+        _offset = clampedTarget;
+        _controller.value = clampedTarget;
         if (settlingState == HabitCardSwipeVisualState.committingRight) {
           return;
         }
-        setState(() => _visualState = HabitCardSwipeVisualState.idle);
+        _visualState = HabitCardSwipeVisualState.idle;
       });
+    });
   }
 
   Future<void> _handleAction(Future<void> Function() callback) async {
@@ -317,13 +367,15 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
 
   void _handleHorizontalStart(DragStartDetails details) {
     if (_isInteractionLocked) return;
+    _settleGeneration += 1;
     if (_controller.isAnimating) {
-      _offset = _offsetAnimation.value;
+      _offset = _controller.value;
     }
+    _controller.stop();
+    _controller.value = _offset;
     _visualState = HabitCardSwipeVisualState.dragging;
     _startedFromOpenTray = widget.isOpen || _offset < -0.5;
     widget.onRequestCloseOtherCards(widget.cardId);
-    _controller.stop();
   }
 
   void _handleHorizontalUpdate(DragUpdateDetails details) {
@@ -342,6 +394,7 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
 
     setState(() {
       _offset = nextOffset;
+      _controller.value = nextOffset;
       if (_offset < -2 && !widget.isOpen) {
         widget.onRequestOpen(widget.cardId);
       }
@@ -364,7 +417,7 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
     _startedFromOpenTray = false;
 
     if (target == HabitCardSwipeDestination.rightCommit) {
-      await _commitRight();
+      await _commitRight(rightVelocity);
       return;
     }
 
@@ -373,18 +426,23 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
       _settleTo(
         _config.openOffset,
         HabitCardSwipeVisualState.settlingLeftOpen,
+        velocity: rightVelocity,
       );
       return;
     }
 
     widget.onRequestClose();
-    _settleTo(0, HabitCardSwipeVisualState.settlingClosed);
+    _settleTo(
+      0,
+      HabitCardSwipeVisualState.settlingClosed,
+      velocity: rightVelocity,
+    );
   }
 
-  Future<void> _commitRight() async {
+  Future<void> _commitRight(double velocity) async {
     if (_isInteractionLocked || widget.onSwipeRightComplete == null) return;
     setState(() => _visualState = HabitCardSwipeVisualState.committingRight);
-    _settleTo(0, HabitCardSwipeVisualState.committingRight);
+    _settleTo(0, HabitCardSwipeVisualState.committingRight, velocity: velocity);
     try {
       await widget.onSwipeRightComplete!.call();
     } finally {
@@ -406,101 +464,109 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
         _cardWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
             ? constraints.maxWidth
             : _cardWidth;
-        final revealProgress = _config.progressForOffset(
-          _offset < 0 ? _offset.abs() : 0.0,
-          revealWidth,
-        );
-        final showTray = revealProgress > 0.001;
-        final rightProgress = _config.progressForOffset(
-          _offset,
-          _config.rightVisualLimit(_cardWidth),
-        );
-        final showRightCue =
-            widget.canSwipeRightComplete && rightProgress > 0.001;
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            final offset = _controller.value;
+            final revealProgress = _config.progressForOffset(
+              offset < 0 ? offset.abs() : 0.0,
+              revealWidth,
+            );
+            final showTray = revealProgress > 0.001;
+            final rightProgress = _config.progressForOffset(
+              offset,
+              _config.rightVisualLimit(_cardWidth),
+            );
+            final showRightCue =
+                widget.canSwipeRightComplete && rightProgress > 0.001;
 
-        return Stack(
-          children: [
-            if (showRightCue)
-              Positioned.fill(
-                child: Container(
-                  margin: EdgeInsets.symmetric(vertical: verticalInset),
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.systemGreen
-                        .withValues(alpha: 0.04 + (0.06 * rightProgress)),
-                    borderRadius: BorderRadius.circular(radius),
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Icon(
-                        CupertinoIcons.check_mark_circled_solid,
-                        size: 20,
+            return Stack(
+              children: [
+                if (showRightCue)
+                  Positioned.fill(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(vertical: verticalInset),
+                      decoration: BoxDecoration(
                         color: CupertinoColors.systemGreen
-                            .withValues(alpha: 0.34 + (0.22 * rightProgress)),
+                            .withValues(alpha: 0.04 + (0.06 * rightProgress)),
+                        borderRadius: BorderRadius.circular(radius),
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Icon(
+                            CupertinoIcons.check_mark_circled_solid,
+                            size: 20,
+                            color: CupertinoColors.systemGreen.withValues(
+                                alpha: 0.34 + (0.22 * rightProgress)),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            if (showTray)
-              Positioned.fill(
-                child: Container(
-                  margin: EdgeInsets.symmetric(vertical: verticalInset),
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.systemGrey6.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(radius),
-                  ),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: SizedBox(
-                      width: revealWidth,
-                      child: Row(
-                        children: [
-                          _SwipeTrayActionButton(
-                            icon: CupertinoIcons.forward_end_fill,
-                            label: widget.skipLabel,
-                            onTap: _isInteractionLocked
-                                ? null
-                                : () => _handleAction(widget.onSkip),
+                if (showTray)
+                  Positioned.fill(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(vertical: verticalInset),
+                      decoration: BoxDecoration(
+                        color:
+                            CupertinoColors.systemGrey6.withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(radius),
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: SizedBox(
+                          width: revealWidth,
+                          child: Row(
+                            children: [
+                              _SwipeTrayActionButton(
+                                icon: CupertinoIcons.forward_end_fill,
+                                label: widget.skipLabel,
+                                onTap: _isInteractionLocked
+                                    ? null
+                                    : () => _handleAction(widget.onSkip),
+                              ),
+                              _SwipeTrayActionButton(
+                                icon: CupertinoIcons.pencil,
+                                label: widget.editLabel,
+                                onTap: widget.onEdit == null ||
+                                        _isInteractionLocked
+                                    ? null
+                                    : () => _handleSyncAction(widget.onEdit!),
+                              ),
+                              _SwipeTrayActionButton(
+                                icon: CupertinoIcons.delete,
+                                label: widget.deleteLabel,
+                                isDestructive: true,
+                                onTap: _isInteractionLocked
+                                    ? null
+                                    : () => _handleAction(widget.onDelete),
+                              ),
+                            ],
                           ),
-                          _SwipeTrayActionButton(
-                            icon: CupertinoIcons.pencil,
-                            label: widget.editLabel,
-                            onTap: widget.onEdit == null || _isInteractionLocked
-                                ? null
-                                : () => _handleSyncAction(widget.onEdit!),
-                          ),
-                          _SwipeTrayActionButton(
-                            icon: CupertinoIcons.delete,
-                            label: widget.deleteLabel,
-                            isDestructive: true,
-                            onTap: _isInteractionLocked
-                                ? null
-                                : () => _handleAction(widget.onDelete),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
+                RepaintBoundary(
+                  child: Transform.translate(
+                    offset: Offset(offset, 0),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onHorizontalDragStart: _handleHorizontalStart,
+                      onHorizontalDragUpdate: _handleHorizontalUpdate,
+                      onHorizontalDragEnd: _handleHorizontalEnd,
+                      onTap: widget.isOpen && !_isInteractionLocked
+                          ? widget.onRequestClose
+                          : null,
+                      child: widget.child,
+                    ),
+                  ),
                 ),
-              ),
-            RepaintBoundary(
-              child: Transform.translate(
-                offset: Offset(_offset, 0),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onHorizontalDragStart: _handleHorizontalStart,
-                  onHorizontalDragUpdate: _handleHorizontalUpdate,
-                  onHorizontalDragEnd: _handleHorizontalEnd,
-                  onTap: widget.isOpen && !_isInteractionLocked
-                      ? widget.onRequestClose
-                      : null,
-                  child: widget.child,
-                ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );

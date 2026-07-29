@@ -106,6 +106,66 @@ void main() {
         HabitCardSwipeVisualState.actionInFlight,
       ]);
     });
+
+    test('defines exact closed and leftOpen targets', () {
+      expect(config.closedOffset, 0);
+      expect(config.openOffset, -config.leftActionsExtent);
+      expect(config.openOffset, -234);
+    });
+
+    test('keeps phase 3 thresholds and resistance intact', () {
+      expect(config.leftActionsExtent, 234);
+      expect(config.leftOpenThresholdFraction, 0.45);
+      expect(config.rightCommitThresholdFraction, 0.50);
+      expect(config.rightFlickVelocity, 700);
+      expect(config.leftFlickVelocity, 700);
+      expect(config.overdragResistance, 0.20);
+      expect(config.rightVisualLimitFraction, 0.60);
+    });
+
+    test('centralizes spring parameters', () {
+      expect(config.springMass, 1.0);
+      expect(config.springStiffness, 480.0);
+      expect(config.springDamping, 42.0);
+      expect(config.springToleranceDistance, greaterThan(0));
+      expect(config.springToleranceVelocity, greaterThan(0));
+      expect(config.springDescription.mass, config.springMass);
+      expect(config.springDescription.stiffness, config.springStiffness);
+      expect(config.springDescription.damping, config.springDamping);
+    });
+
+    test('passes initial velocity direction and magnitude to the spring', () {
+      final positive = config.springSimulation(
+        start: 120,
+        target: config.closedOffset,
+        velocity: 900,
+      );
+      final negative = config.springSimulation(
+        start: -120,
+        target: config.openOffset,
+        velocity: -850,
+      );
+
+      expect(positive.x(0), 120);
+      expect(positive.dx(0), closeTo(900, 0.1));
+      expect(negative.x(0), -120);
+      expect(negative.dx(0), closeTo(-850, 0.1));
+    });
+
+    test('spring creation does not modify destination decisions', () {
+      const offset = 30.0;
+      const velocity = 700.0;
+      final before = _destination(offset: offset, velocity: velocity);
+
+      config.springSimulation(
+        start: offset,
+        target: config.closedOffset,
+        velocity: velocity,
+      );
+
+      final after = _destination(offset: offset, velocity: velocity);
+      expect(after, before);
+    });
   });
 
   testWidgets('renders the three left actions in the current order',
@@ -287,6 +347,28 @@ void main() {
     expect(_cardOffsetX(tester), closeTo(0, 0.1));
   });
 
+  testWidgets('short drag to closed does not execute completion callback',
+      (tester) async {
+    var completeCalls = 0;
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          onSwipeRightComplete: () async => completeCalls += 1,
+        ),
+      ),
+    );
+
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(90, 0),
+      const Duration(milliseconds: 600),
+    );
+    await tester.pumpAndSettle();
+
+    expect(completeCalls, 0);
+    expect(_cardOffsetX(tester), closeTo(0, 0.1));
+  });
+
   testWidgets('right overdrag reduces only the excess after the limit',
       (tester) async {
     await tester.pumpWidget(
@@ -323,6 +405,72 @@ void main() {
     expect(openedIds, isNotEmpty);
     expect(_cardOffsetX(tester), closeTo(-234, 0.1));
     expect(find.text('Saltar'), findsOneWidget);
+  });
+
+  testWidgets('leftOpen settling target is exactly negative action extent',
+      (tester) async {
+    const config = HabitCardSwipeMotionConfig();
+
+    await tester.pumpWidget(_testApp(_shell(motionConfig: config)));
+
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(-130, 0),
+      const Duration(milliseconds: 500),
+    );
+    await tester.pumpAndSettle();
+
+    expect(_cardOffsetX(tester), closeTo(config.openOffset, 0.1));
+    expect(_cardOffsetX(tester), closeTo(-config.leftActionsExtent, 0.1));
+  });
+
+  testWidgets('leftOpen settling does not execute completion callback',
+      (tester) async {
+    var completeCalls = 0;
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          onSwipeRightComplete: () async => completeCalls += 1,
+        ),
+      ),
+    );
+
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(-130, 0),
+      const Duration(milliseconds: 500),
+    );
+    await tester.pumpAndSettle();
+
+    expect(completeCalls, 0);
+    expect(_cardOffsetX(tester), closeTo(-234, 0.1));
+  });
+
+  testWidgets('release velocity affects spring evolution for the same target',
+      (tester) async {
+    await tester.pumpWidget(_testApp(_shell()));
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(-110, 0),
+      const Duration(milliseconds: 800),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    final slowOffset = _cardOffsetX(tester);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await tester.pumpWidget(_testApp(_shell()));
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(-110, 0),
+      const Duration(milliseconds: 100),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    final fastOffset = _cardOffsetX(tester);
+
+    expect(fastOffset, lessThan(slowOffset));
   });
 
   testWidgets('right drag below the 50 percent threshold closes',
@@ -431,6 +579,57 @@ void main() {
     await gesture.up();
   });
 
+  testWidgets('new drag interrupts settlingClosed from the visible offset',
+      (tester) async {
+    await tester
+        .pumpWidget(_testApp(_shell(onSwipeRightComplete: () async {})));
+
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(150, 0),
+      const Duration(milliseconds: 700),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    final settlingOffset = _cardOffsetX(tester);
+    expect(settlingOffset, greaterThan(0));
+    expect(settlingOffset, lessThan(150));
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byKey(_childKey)));
+    await gesture.moveBy(const Offset(-20, 0));
+    await tester.pump();
+
+    expect(_cardOffsetX(tester), closeTo(settlingOffset - 20, 1.0));
+
+    await gesture.up();
+  });
+
+  testWidgets('new drag interrupts settlingLeftOpen from the visible offset',
+      (tester) async {
+    await tester.pumpWidget(_testApp(_shell()));
+
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(-130, 0),
+      const Duration(milliseconds: 500),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    final settlingOffset = _cardOffsetX(tester);
+    expect(settlingOffset, lessThan(-90));
+    expect(settlingOffset, greaterThan(-234));
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byKey(_childKey)));
+    await gesture.moveBy(const Offset(20, 0));
+    await tester.pump();
+
+    expect(_cardOffsetX(tester), closeTo(settlingOffset + 20, 1.0));
+
+    await gesture.up();
+  });
+
   testWidgets('left actions remain fixed under the moving card',
       (tester) async {
     await tester.pumpWidget(_testApp(_shell(isOpen: true)));
@@ -445,6 +644,24 @@ void main() {
     expect(after, closeTo(before, 0.1));
 
     await gesture.up();
+  });
+
+  testWidgets('left actions remain fixed while the spring is settling',
+      (tester) async {
+    await tester.pumpWidget(_testApp(_shell(isOpen: true)));
+
+    final before = tester.getCenter(find.text('Saltar')).dx;
+
+    await tester.timedDragFrom(
+      _visibleCardPoint(),
+      const Offset(180, 0),
+      const Duration(milliseconds: 600),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+
+    final after = tester.getCenter(find.text('Saltar')).dx;
+    expect(after, closeTo(before, 0.1));
   });
 
   testWidgets('opened card can close from its current position',
@@ -575,6 +792,48 @@ void main() {
     expect(find.text('Habit child'), findsOneWidget);
   });
 
+  testWidgets('external isOpen owner synchronizes the visual offset',
+      (tester) async {
+    var isOpen = false;
+
+    Widget buildHarness() {
+      return _testApp(
+        _shell(
+          isOpen: isOpen,
+          onRequestOpen: (_) => isOpen = true,
+          onRequestClose: () => isOpen = false,
+        ),
+      );
+    }
+
+    await tester.pumpWidget(buildHarness());
+    expect(_cardOffsetX(tester), closeTo(0, 0.1));
+
+    isOpen = true;
+    await tester.pumpWidget(buildHarness());
+    await tester.pumpAndSettle();
+    expect(_cardOffsetX(tester), closeTo(-234, 0.1));
+
+    isOpen = false;
+    await tester.pumpWidget(buildHarness());
+    await tester.pumpAndSettle();
+    expect(_cardOffsetX(tester), closeTo(0, 0.1));
+  });
+
+  testWidgets('does not use AnimatedContainer for horizontal position',
+      (tester) async {
+    await tester.pumpWidget(_testApp(_shell()));
+
+    expect(
+      find.descendant(
+        of: find.byType(HabitCardSwipeShell),
+        matching: find.byType(AnimatedContainer),
+      ),
+      findsNothing,
+    );
+    expect(find.byType(Transform), findsWidgets);
+  });
+
   testWidgets('preserves action labels and icon semantics', (tester) async {
     await tester.pumpWidget(
       _testApp(
@@ -628,6 +887,7 @@ HabitCardSwipeShell _shell({
   Future<void> Function()? onSkip,
   VoidCallback? onEdit,
   Future<void> Function()? onDelete,
+  HabitCardSwipeMotionConfig motionConfig = const HabitCardSwipeMotionConfig(),
   Widget? child,
 }) {
   return HabitCardSwipeShell(
@@ -645,6 +905,7 @@ HabitCardSwipeShell _shell({
     onSkip: onSkip ?? () async {},
     onEdit: onEdit,
     onDelete: onDelete ?? () async {},
+    motionConfig: motionConfig,
     child: child ??
         Container(
           key: _childKey,
