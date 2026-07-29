@@ -63,6 +63,7 @@ class EditProfileController {
   Future<void> pickAvatar({
     required BuildContext context,
     required ImageSource source,
+    required UserStateStore store,
   }) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
@@ -102,9 +103,15 @@ class EditProfileController {
       if (picked == null) return;
       if (!context.mounted) return;
 
+      final userId = store.activeLocalScopeUserId ?? store.userId;
+      if (userId == null || userId.trim().isEmpty) {
+        throw StateError(
+            'Cannot persist avatar without an authenticated user.');
+      }
       final File saved = await _avatarService.pickCropAndPersist(
         context: context,
         pickedPath: picked.path,
+        userId: userId,
       );
 
       avatarPath.value = saved.path;

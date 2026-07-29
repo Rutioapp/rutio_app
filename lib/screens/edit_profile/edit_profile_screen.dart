@@ -32,7 +32,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _showImageSourceSheet() async {
+  Future<void> _showImageSourceSheet(UserStateStore store) async {
     final l10n = context.l10n;
     showModalBottomSheet(
       context: context,
@@ -50,7 +50,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   title: Text(l10n.editProfileTakePhoto),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _c.pickAvatar(context: context, source: ImageSource.camera);
+                    _c.pickAvatar(
+                      context: context,
+                      source: ImageSource.camera,
+                      store: store,
+                    );
                   },
                 ),
                 ListTile(
@@ -61,6 +65,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     _c.pickAvatar(
                       context: context,
                       source: ImageSource.gallery,
+                      store: store,
                     );
                   },
                 ),
@@ -142,7 +147,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           children: [
                             AvatarSection(
                               avatarPath: _c.avatarPath,
-                              onTap: _showImageSourceSheet,
+                              onTap: () => _showImageSourceSheet(store),
                             ),
                             const SizedBox(height: 24),
                             StatsRow.fromStore(context, store),

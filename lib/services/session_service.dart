@@ -1,40 +1,79 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SessionService {
   SessionService._();
   static final SessionService instance = SessionService._();
 
-  static const String _kUserKey = 'local_user_v1'; // {email, pass}
+  @visibleForTesting
+  static const String userKey = 'local_user_v1';
 
   Future<bool> signUp({required String email, required String pass}) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kUserKey);
+    await _cleanLegacyCredentialIfPresent(prefs);
+    final raw = prefs.getString(userKey);
     if (raw != null) {
-      final existing = jsonDecode(raw);
+      final existing = _decodeMap(raw);
       final existingEmail = (existing['email'] ?? '').toString().toLowerCase();
       if (existingEmail == email.toLowerCase()) return false;
       // 1 usuario por dispositivo:
       return false;
     }
-    await prefs.setString(_kUserKey, jsonEncode({'email': email, 'pass': pass}));
+    await prefs.setString(userKey, jsonEncode({'email': email.trim()}));
     return true;
   }
 
   Future<bool> login({required String email, required String pass}) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_kUserKey);
-    if (raw == null) return false;
-
-    final data = jsonDecode(raw);
-    final savedEmail = (data['email'] ?? '').toString().toLowerCase();
-    final savedPass = (data['pass'] ?? '').toString();
-
-    return email.toLowerCase() == savedEmail && pass == savedPass;
+    await _cleanLegacyCredentialIfPresent(prefs);
+    return false;
   }
 
   Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kUserKey);
+    await prefs.remove(userKey);
+  }
+
+  Future<void> cleanLegacyCredential() async {
+    final prefs = await SharedPreferences.getInstance();
+    await _cleanLegacyCredentialIfPresent(prefs);
+  }
+
+  Future<void> _cleanLegacyCredentialIfPresent(SharedPreferences prefs) async {
+    final raw = prefs.getString(userKey);
+    if (raw == null) return;
+
+    final data = _decodeMap(raw);
+    if (data.isEmpty) {
+      await prefs.remove(userKey);
+      return;
+    }
+
+    final containsLegacySecret = data.containsKey('pass') ||
+        data.containsKey('password') ||
+        data.containsKey('token');
+    if (!containsLegacySecret) return;
+
+    final email = (data['email'] ?? '').toString().trim();
+    if (email.isEmpty) {
+      await prefs.remove(userKey);
+      return;
+    }
+    await prefs.setString(userKey, jsonEncode({'email': email}));
+    if (kDebugMode) {
+      debugPrint('[session_service] cleaned legacy local_user_v1 credential');
+    }
+  }
+
+  Map<String, dynamic> _decodeMap(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return decoded.cast<String, dynamic>();
+    } catch (_) {
+      return <String, dynamic>{};
+    }
+    return <String, dynamic>{};
   }
 }
