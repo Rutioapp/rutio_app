@@ -505,6 +505,98 @@ void main() {
       expect(((store.state!['userState'] as Map)['wallet'] as Map)['coins'], 0);
     });
 
+    test('multiple habits use a single batch logs query', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitLogRepository = _FakeHabitLogRepository(
+        logsByRemoteHabitId: <String, List<RemoteHabitLog>>{
+          '550e8400-e29b-41d4-a716-446655440000': <RemoteHabitLog>[
+            RemoteHabitLog(
+              id: '660e8400-e29b-41d4-a716-446655440000',
+              userId: 'user-1',
+              habitId: '550e8400-e29b-41d4-a716-446655440000',
+              logDate: DateTime(2026, 6, 21),
+              value: 1,
+              isCompleted: true,
+              source: 'manual',
+              updatedAt: DateTime.utc(2026, 6, 21, 7),
+            ),
+          ],
+          '550e8400-e29b-41d4-a716-446655440001': <RemoteHabitLog>[
+            RemoteHabitLog(
+              id: '660e8400-e29b-41d4-a716-446655440001',
+              userId: 'user-1',
+              habitId: '550e8400-e29b-41d4-a716-446655440001',
+              logDate: DateTime(2026, 6, 21),
+              value: 3,
+              isCompleted: false,
+              source: 'manual',
+              updatedAt: DateTime.utc(2026, 6, 21, 7),
+            ),
+          ],
+        },
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'Read',
+            ),
+            _remoteCountHabit(
+              id: '550e8400-e29b-41d4-a716-446655440001',
+              name: 'Push Ups',
+              targetCount: 10,
+            ),
+          ],
+        ),
+        habitLogRepository: habitLogRepository,
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'habit-1',
+            remoteId: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Read',
+          ),
+          _localCountHabit(
+            id: 'habit-2',
+            remoteId: '550e8400-e29b-41d4-a716-446655440001',
+            name: 'Push Ups',
+            target: 10,
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(habitLogRepository.fetchCalls, 0);
+      expect(habitLogRepository.batchFetchCalls, 1);
+      final history = ((store.state!['userState'] as Map)['history'] as Map);
+      final completions = history['habitCompletions'] as Map;
+      final countValues = history['habitCountValues'] as Map;
+      expect(((completions['2026-06-21'] as Map)['habit-1']), isTrue);
+      expect(((countValues['2026-06-21'] as Map)['habit-2']), 3);
+    });
+
+    test('no remote habits do not trigger a batch logs query', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitLogRepository = _FakeHabitLogRepository();
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: const <RemoteHabit>[],
+        ),
+        habitLogRepository: habitLogRepository,
+        activeHabits: const <Map<String, dynamic>>[],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(habitLogRepository.fetchCalls, 0);
+      expect(habitLogRepository.batchFetchCalls, 0);
+    });
+
     test('foreign remote logs abort merge and keep local progress unchanged',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -1406,6 +1498,7 @@ class _FakeHabitLogRepository extends HabitLogRepository {
   final RepositoryResult<List<RemoteHabitLog>>? _fetchResult;
 
   int fetchCalls = 0;
+  int batchFetchCalls = 0;
 
   @override
   Future<RepositoryResult<List<RemoteHabitLog>>> fetchLogsForHabit(
@@ -1418,6 +1511,21 @@ class _FakeHabitLogRepository extends HabitLogRepository {
         RepositoryResult<List<RemoteHabitLog>>.success(
           data: logsByRemoteHabitId[habitId] ?? const <RemoteHabitLog>[],
         );
+  }
+
+  @override
+  Future<RepositoryResult<List<RemoteHabitLog>>> fetchLogsForHabits(
+    Iterable<String> habitIds, {
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    batchFetchCalls += 1;
+    final data = <RemoteHabitLog>[];
+    for (final habitId in habitIds) {
+      data.addAll(logsByRemoteHabitId[habitId] ?? const <RemoteHabitLog>[]);
+    }
+    return _fetchResult ??
+        RepositoryResult<List<RemoteHabitLog>>.success(data: data);
   }
 }
 

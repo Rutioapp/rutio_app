@@ -142,6 +142,11 @@ class EssentialHabitsBootstrapResult {
     required this.scopeEpoch,
     required this.requestId,
     required this.duration,
+    this.remoteQueryCount = 0,
+    this.deduplicatedLoadCount = 0,
+    this.staleResultDiscardCount = 0,
+    this.operationDurations = const <String, Duration>{},
+    this.operationQueryCounts = const <String, int>{},
     this.error,
   });
 
@@ -151,6 +156,11 @@ class EssentialHabitsBootstrapResult {
   final int scopeEpoch;
   final int requestId;
   final Duration duration;
+  final int remoteQueryCount;
+  final int deduplicatedLoadCount;
+  final int staleResultDiscardCount;
+  final Map<String, Duration> operationDurations;
+  final Map<String, int> operationQueryCounts;
   final Object? error;
 
   bool get canBuildHome =>
@@ -158,6 +168,38 @@ class EssentialHabitsBootstrapResult {
       status == EssentialHabitsBootstrapStatus.readyFromRemote ||
       status == EssentialHabitsBootstrapStatus.confirmedEmpty ||
       status == EssentialHabitsBootstrapStatus.degraded;
+
+  EssentialHabitsBootstrapResult copyWith({
+    EssentialHabitsBootstrapStatus? status,
+    String? userId,
+    String? source,
+    int? scopeEpoch,
+    int? requestId,
+    Duration? duration,
+    int? remoteQueryCount,
+    int? deduplicatedLoadCount,
+    int? staleResultDiscardCount,
+    Map<String, Duration>? operationDurations,
+    Map<String, int>? operationQueryCounts,
+    Object? error,
+  }) {
+    return EssentialHabitsBootstrapResult(
+      status: status ?? this.status,
+      userId: userId ?? this.userId,
+      source: source ?? this.source,
+      scopeEpoch: scopeEpoch ?? this.scopeEpoch,
+      requestId: requestId ?? this.requestId,
+      duration: duration ?? this.duration,
+      remoteQueryCount: remoteQueryCount ?? this.remoteQueryCount,
+      deduplicatedLoadCount:
+          deduplicatedLoadCount ?? this.deduplicatedLoadCount,
+      staleResultDiscardCount:
+          staleResultDiscardCount ?? this.staleResultDiscardCount,
+      operationDurations: operationDurations ?? this.operationDurations,
+      operationQueryCounts: operationQueryCounts ?? this.operationQueryCounts,
+      error: error ?? this.error,
+    );
+  }
 }
 
 class UserStateStore extends ChangeNotifier {
@@ -293,8 +335,9 @@ class UserStateStore extends ChangeNotifier {
   bool _isSupabaseJournalEntriesBackfillRunning = false;
   bool _isDiaryV2RemotePullRunning = false;
   bool _isHabitsRemotePullRunning = false;
-  Future<_StreakProtectionRemoteSnapshot?>? _streakProtectionRemoteSyncFuture;
-  Future<bool>? _streakProtectionRemoteCloseFuture;
+  Future<_StreakProtectionSnapshotFetchOutcome>?
+      _streakProtectionRemoteSyncFuture;
+  Future<_CloseMissedOccurrencesOutcome>? _streakProtectionRemoteCloseFuture;
   DateTime? _lastDiaryV2RemotePullAttemptAt;
   DateTime? _lastDiaryV2RemotePullSuccessAt;
   DateTime? _lastHabitsRemotePullAttemptAt;
