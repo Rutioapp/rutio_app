@@ -14,6 +14,7 @@ void main() {
         config.applyDragDelta(
           currentOffset: 10,
           delta: 30,
+          cardWidth: 360,
           canSwipeRightComplete: true,
         ),
         40,
@@ -22,6 +23,7 @@ void main() {
         config.applyDragDelta(
           currentOffset: -30,
           delta: -50,
+          cardWidth: 360,
           canSwipeRightComplete: true,
         ),
         -80,
@@ -33,22 +35,25 @@ void main() {
         config.applyDragDelta(
           currentOffset: 80,
           delta: 4,
+          cardWidth: 360,
           canSwipeRightComplete: true,
         ),
         84,
       );
       expect(
         config.applyDragDelta(
-          currentOffset: 84,
+          currentOffset: 216,
           delta: 20,
+          cardWidth: 360,
           canSwipeRightComplete: true,
         ),
-        greaterThan(84),
+        greaterThan(216),
       );
       expect(
         config.applyDragDelta(
           currentOffset: -234,
           delta: -20,
+          cardWidth: 360,
           canSwipeRightComplete: true,
         ),
         lessThan(-234),
@@ -56,42 +61,39 @@ void main() {
     });
 
     test('resolves targets with current thresholds', () {
+      expect(_destination(offset: 179), HabitCardSwipeDestination.closed);
+      expect(_destination(offset: 180), HabitCardSwipeDestination.rightCommit);
       expect(
-        config.resolveSettleTarget(
-          offset: 54,
-          velocityX: 0,
-          startedFromOpenTray: false,
-          canSwipeRightComplete: true,
-          hasRightCompleteCallback: true,
-        ),
-        HabitCardSwipeSettleTarget.rightCommit,
+        _destination(offset: 30, velocity: 700),
+        HabitCardSwipeDestination.rightCommit,
       );
       expect(
-        config.resolveSettleTarget(
-          offset: -72,
-          velocityX: 0,
-          startedFromOpenTray: false,
-          canSwipeRightComplete: true,
-          hasRightCompleteCallback: true,
-        ),
-        HabitCardSwipeSettleTarget.leftOpen,
+        _destination(offset: -106),
+        HabitCardSwipeDestination.leftOpen,
+      );
+      expect(_destination(offset: -12), HabitCardSwipeDestination.closed);
+      expect(
+        _destination(offset: 180, velocity: -700),
+        HabitCardSwipeDestination.rightCommit,
       );
       expect(
-        config.resolveSettleTarget(
-          offset: -12,
-          velocityX: 0,
-          startedFromOpenTray: false,
-          canSwipeRightComplete: true,
-          hasRightCompleteCallback: true,
-        ),
-        HabitCardSwipeSettleTarget.closed,
+        _destination(offset: 30, velocity: -700),
+        HabitCardSwipeDestination.closed,
+      );
+      expect(
+        _destination(offset: -20, velocity: -700),
+        HabitCardSwipeDestination.leftOpen,
+      );
+      expect(
+        _destination(offset: 30, velocity: 700, startedOpen: true),
+        HabitCardSwipeDestination.closed,
       );
     });
 
     test('normalizes progress', () {
-      expect(config.progressForOffset(42, 84), 0.5);
-      expect(config.progressForOffset(-4, 84), 0);
-      expect(config.progressForOffset(120, 84), 1);
+      expect(config.progressForOffset(108, 216), 0.5);
+      expect(config.progressForOffset(-4, 216), 0);
+      expect(config.progressForOffset(240, 216), 1);
     });
 
     test('defines the expected visual states', () {
@@ -211,7 +213,11 @@ void main() {
       ),
     );
 
-    await tester.drag(find.byKey(_childKey), const Offset(160, 0));
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(190, 0),
+      const Duration(milliseconds: 500),
+    );
     await tester.pump();
 
     expect(completeCalls, 1);
@@ -223,8 +229,7 @@ void main() {
       _testApp(_shell(onSwipeRightComplete: () async {})),
     );
 
-    final gesture =
-        await tester.startGesture(tester.getCenter(find.byKey(_childKey)));
+    final gesture = await tester.startGesture(_visibleCardPoint());
     await gesture.moveBy(const Offset(40, 0));
     await tester.pump();
 
@@ -282,6 +287,22 @@ void main() {
     expect(_cardOffsetX(tester), closeTo(0, 0.1));
   });
 
+  testWidgets('right overdrag reduces only the excess after the limit',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(_shell(onSwipeRightComplete: () async {})),
+    );
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byKey(_childKey)));
+    await gesture.moveBy(const Offset(260, 0));
+    await tester.pump();
+
+    expect(_cardOffsetX(tester), closeTo(224.8, 0.1));
+
+    await gesture.up();
+  });
+
   testWidgets('sufficient left drag opens the action rail', (tester) async {
     final openedIds = <String>[];
     await tester.pumpWidget(
@@ -292,12 +313,75 @@ void main() {
       ),
     );
 
-    await tester.drag(find.byKey(_childKey), const Offset(-90, 0));
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(-130, 0),
+      const Duration(milliseconds: 500),
+    );
     await tester.pumpAndSettle();
 
     expect(openedIds, isNotEmpty);
     expect(_cardOffsetX(tester), closeTo(-234, 0.1));
     expect(find.text('Saltar'), findsOneWidget);
+  });
+
+  testWidgets('right drag below the 50 percent threshold closes',
+      (tester) async {
+    var completeCalls = 0;
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          onSwipeRightComplete: () async => completeCalls += 1,
+        ),
+      ),
+    );
+
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(160, 0),
+      const Duration(milliseconds: 600),
+    );
+    await tester.pumpAndSettle();
+
+    expect(completeCalls, 0);
+    expect(_cardOffsetX(tester), closeTo(0, 0.1));
+  });
+
+  testWidgets('right drag above the 50 percent threshold completes once',
+      (tester) async {
+    var completeCalls = 0;
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          onSwipeRightComplete: () async => completeCalls += 1,
+        ),
+      ),
+    );
+
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(190, 0),
+      const Duration(milliseconds: 600),
+    );
+    await tester.pumpAndSettle();
+
+    expect(completeCalls, 1);
+  });
+
+  testWidgets('right flick completes with shorter travel', (tester) async {
+    var completeCalls = 0;
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          onSwipeRightComplete: () async => completeCalls += 1,
+        ),
+      ),
+    );
+
+    await tester.fling(find.byKey(_childKey), const Offset(70, 0), 900);
+    await tester.pump();
+
+    expect(completeCalls, 1);
   });
 
   testWidgets('completion callback is not executed during drag update',
@@ -313,7 +397,7 @@ void main() {
 
     final gesture =
         await tester.startGesture(tester.getCenter(find.byKey(_childKey)));
-    await gesture.moveBy(const Offset(80, 0));
+    await gesture.moveBy(const Offset(190, 0));
     await tester.pump();
 
     expect(completeCalls, 0);
@@ -327,15 +411,18 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_testApp(_shell()));
 
-    await tester.drag(find.byKey(_childKey), const Offset(-90, 0));
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(-130, 0),
+      const Duration(milliseconds: 500),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     final settlingOffset = _cardOffsetX(tester);
     expect(settlingOffset, lessThan(-90));
     expect(settlingOffset, greaterThan(-234));
 
-    final gesture =
-        await tester.startGesture(tester.getCenter(find.byKey(_childKey)));
+    final gesture = await tester.startGesture(_visibleCardPoint());
     await gesture.moveBy(const Offset(20, 0));
     await tester.pump();
 
@@ -358,6 +445,27 @@ void main() {
     expect(after, closeTo(before, 0.1));
 
     await gesture.up();
+  });
+
+  testWidgets('opened card can close from its current position',
+      (tester) async {
+    var closeCalls = 0;
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          isOpen: true,
+          onRequestClose: () => closeCalls += 1,
+        ),
+      ),
+    );
+
+    expect(_cardOffsetX(tester), closeTo(-234, 0.1));
+
+    await tester.dragFrom(_visibleCardPoint(), const Offset(180, 0));
+    await tester.pumpAndSettle();
+
+    expect(closeCalls, greaterThanOrEqualTo(1));
+    expect(_cardOffsetX(tester), closeTo(0, 0.1));
   });
 
   testWidgets('two quick async action taps execute once while pending',
@@ -498,7 +606,7 @@ Widget _testApp(Widget child) {
         alignment: Alignment.topLeft,
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: child,
+          child: SizedBox(width: 360, child: child),
         ),
       ),
     ),
@@ -551,6 +659,26 @@ HabitCardSwipeShell _shell({
 
 double _centerX(WidgetTester tester, String label) {
   return tester.getCenter(find.text(label)).dx;
+}
+
+Offset _visibleCardPoint() => const Offset(80, 64);
+
+HabitCardSwipeDestination _destination({
+  required double offset,
+  double velocity = 0,
+  bool startedOpen = false,
+}) {
+  const config = HabitCardSwipeMotionConfig();
+  return resolveSwipeDestination(
+    offset: offset,
+    velocity: velocity,
+    cardWidth: 360,
+    leftActionsExtent: config.leftActionsExtent,
+    startedOpen: startedOpen,
+    canSwipeRightComplete: true,
+    hasRightCompleteCallback: true,
+    config: config,
+  );
 }
 
 double _cardOffsetX(WidgetTester tester) {

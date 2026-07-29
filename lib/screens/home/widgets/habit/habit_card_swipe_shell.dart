@@ -13,51 +13,69 @@ enum HabitCardSwipeVisualState {
 @visibleForTesting
 class HabitCardSwipeMotionConfig {
   const HabitCardSwipeMotionConfig({
-    this.actionWidth = 78,
-    this.openThresholdRatio = 0.30,
-    this.rightVisualLimit = 84,
-    this.rightCompleteThreshold = 54,
-    this.rightFlingMinOffset = 26,
-    this.rightFlingVelocity = 520,
-    this.leftFlingVelocity = -320,
-    this.overscrollResistance = 0.28,
+    this.leftActionsExtent = 234,
+    this.leftOpenThresholdFraction = 0.45,
+    this.rightCommitThresholdFraction = 0.50,
+    this.rightFlickMinDistanceFraction = 0.08,
+    this.rightFlickVelocity = 700,
+    this.leftFlickVelocity = 700,
+    this.rightVisualLimitFraction = 0.60,
+    this.overdragResistance = 0.20,
     this.maxOverscroll = 36,
+    this.settleTolerance = 0.5,
     this.settleDuration = const Duration(milliseconds: 220),
     this.settleCurve = Curves.easeOutCubic,
   });
 
-  final double actionWidth;
-  final double openThresholdRatio;
-  final double rightVisualLimit;
-  final double rightCompleteThreshold;
-  final double rightFlingMinOffset;
-  final double rightFlingVelocity;
-  final double leftFlingVelocity;
-  final double overscrollResistance;
+  final double leftActionsExtent;
+  final double leftOpenThresholdFraction;
+  final double rightCommitThresholdFraction;
+  final double rightFlickMinDistanceFraction;
+  final double rightFlickVelocity;
+  final double leftFlickVelocity;
+  final double rightVisualLimitFraction;
+  final double overdragResistance;
   final double maxOverscroll;
+  final double settleTolerance;
   final Duration settleDuration;
   final Curve settleCurve;
 
-  double get revealWidth => actionWidth * 3;
-  double get openOffset => -revealWidth;
-  double get leftOpenThreshold => revealWidth * openThresholdRatio;
+  double get revealWidth => leftActionsExtent;
+  double get openOffset => -leftActionsExtent;
+  double get leftOpenThreshold => leftActionsExtent * leftOpenThresholdFraction;
+
+  double rightCommitThreshold(double cardWidth) {
+    return cardWidth * rightCommitThresholdFraction;
+  }
+
+  double rightFlickMinDistance(double cardWidth) {
+    return cardWidth * rightFlickMinDistanceFraction;
+  }
+
+  double rightVisualLimit(double cardWidth) {
+    return cardWidth * rightVisualLimitFraction;
+  }
 
   double applyDragDelta({
     required double currentOffset,
     required double delta,
+    required double cardWidth,
     required bool canSwipeRightComplete,
   }) {
     return applyBounds(
       currentOffset + delta,
+      cardWidth: cardWidth,
       canSwipeRightComplete: canSwipeRightComplete,
     );
   }
 
   double applyBounds(
     double rawOffset, {
+    required double cardWidth,
     required bool canSwipeRightComplete,
   }) {
-    final rightLimit = canSwipeRightComplete ? rightVisualLimit : 0.0;
+    final rightLimit =
+        canSwipeRightComplete ? rightVisualLimit(cardWidth) : 0.0;
     if (rawOffset < openOffset) {
       final excess = openOffset - rawOffset;
       return openOffset - _resistedOverscroll(excess);
@@ -69,9 +87,11 @@ class HabitCardSwipeMotionConfig {
     return rawOffset;
   }
 
-  HabitCardSwipeSettleTarget resolveSettleTarget({
+  HabitCardSwipeDestination resolveSwipeDestination({
     required double offset,
-    required double velocityX,
+    required double velocity,
+    required double cardWidth,
+    required double leftActionsExtent,
     required bool startedFromOpenTray,
     required bool canSwipeRightComplete,
     required bool hasRightCompleteCallback,
@@ -79,25 +99,26 @@ class HabitCardSwipeMotionConfig {
     final canCompleteFromSwipe = !startedFromOpenTray &&
         canSwipeRightComplete &&
         hasRightCompleteCallback;
-    final passedRightThreshold = offset >= rightCompleteThreshold;
-    final flingRight =
-        velocityX >= rightFlingVelocity && offset >= rightFlingMinOffset;
+    final passedRightThreshold = offset >= rightCommitThreshold(cardWidth);
+    final flingRight = velocity >= rightFlickVelocity &&
+        offset >= rightFlickMinDistance(cardWidth);
 
     if (canCompleteFromSwipe && (passedRightThreshold || flingRight)) {
-      return HabitCardSwipeSettleTarget.rightCommit;
+      return HabitCardSwipeDestination.rightCommit;
     }
 
     if (offset > 0) {
-      return HabitCardSwipeSettleTarget.closed;
+      return HabitCardSwipeDestination.closed;
     }
 
     final shouldOpen =
-        offset.abs() >= leftOpenThreshold || velocityX < leftFlingVelocity;
+        offset.abs() >= leftActionsExtent * leftOpenThresholdFraction ||
+            velocity <= -leftFlickVelocity;
     if (shouldOpen) {
-      return HabitCardSwipeSettleTarget.leftOpen;
+      return HabitCardSwipeDestination.leftOpen;
     }
 
-    return HabitCardSwipeSettleTarget.closed;
+    return HabitCardSwipeDestination.closed;
   }
 
   double progressForOffset(double offset, double targetExtent) {
@@ -106,15 +127,37 @@ class HabitCardSwipeMotionConfig {
   }
 
   double _resistedOverscroll(double excess) {
-    return (excess * overscrollResistance).clamp(0.0, maxOverscroll);
+    return (excess * overdragResistance).clamp(0.0, maxOverscroll);
   }
 }
 
 @visibleForTesting
-enum HabitCardSwipeSettleTarget {
+enum HabitCardSwipeDestination {
   closed,
   leftOpen,
   rightCommit,
+}
+
+@visibleForTesting
+HabitCardSwipeDestination resolveSwipeDestination({
+  required double offset,
+  required double velocity,
+  required double cardWidth,
+  required double leftActionsExtent,
+  required bool startedOpen,
+  required bool canSwipeRightComplete,
+  required bool hasRightCompleteCallback,
+  required HabitCardSwipeMotionConfig config,
+}) {
+  return config.resolveSwipeDestination(
+    offset: offset,
+    velocity: velocity,
+    cardWidth: cardWidth,
+    leftActionsExtent: leftActionsExtent,
+    startedFromOpenTray: startedOpen,
+    canSwipeRightComplete: canSwipeRightComplete,
+    hasRightCompleteCallback: hasRightCompleteCallback,
+  );
 }
 
 class HabitCardSwipeShell extends StatefulWidget {
@@ -165,6 +208,7 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
   late Animation<double> _offsetAnimation;
 
   double _offset = 0;
+  double _cardWidth = 0;
   HabitCardSwipeVisualState _visualState = HabitCardSwipeVisualState.idle;
   bool _startedFromOpenTray = false;
 
@@ -217,8 +261,8 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
 
   void _settleTo(double target, HabitCardSwipeVisualState settlingState) {
     final clampedTarget =
-        target.clamp(_config.openOffset, _config.rightVisualLimit);
-    if ((_offset - clampedTarget).abs() < 0.5) {
+        target.clamp(_config.openOffset, _config.rightVisualLimit(_cardWidth));
+    if ((_offset - clampedTarget).abs() < _config.settleTolerance) {
       setState(() {
         _offset = clampedTarget;
         if (settlingState != HabitCardSwipeVisualState.committingRight) {
@@ -290,6 +334,7 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
     final nextOffset = _config.applyDragDelta(
       currentOffset: _offset,
       delta: dx,
+      cardWidth: _cardWidth,
       canSwipeRightComplete:
           widget.canSwipeRightComplete && widget.onSwipeRightComplete != null,
     );
@@ -306,21 +351,24 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
   Future<void> _handleHorizontalEnd(DragEndDetails details) async {
     if (_visualState != HabitCardSwipeVisualState.dragging) return;
     final rightVelocity = details.velocity.pixelsPerSecond.dx;
-    final target = _config.resolveSettleTarget(
+    final target = resolveSwipeDestination(
       offset: _offset,
-      velocityX: rightVelocity,
-      startedFromOpenTray: _startedFromOpenTray,
+      velocity: rightVelocity,
+      cardWidth: _cardWidth,
+      leftActionsExtent: _config.leftActionsExtent,
+      startedOpen: _startedFromOpenTray,
       canSwipeRightComplete: widget.canSwipeRightComplete,
       hasRightCompleteCallback: widget.onSwipeRightComplete != null,
+      config: _config,
     );
     _startedFromOpenTray = false;
 
-    if (target == HabitCardSwipeSettleTarget.rightCommit) {
+    if (target == HabitCardSwipeDestination.rightCommit) {
       await _commitRight();
       return;
     }
 
-    if (target == HabitCardSwipeSettleTarget.leftOpen) {
+    if (target == HabitCardSwipeDestination.leftOpen) {
       widget.onRequestOpen(widget.cardId);
       _settleTo(
         _config.openOffset,
@@ -352,100 +400,109 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
     final revealWidth = _config.revealWidth;
     final verticalInset = widget.compact ? 6.0 : 8.0;
     final radius = widget.compact ? 18.0 : 20.0;
-    final revealProgress = _config.progressForOffset(
-      _offset < 0 ? _offset.abs() : 0.0,
-      revealWidth,
-    );
-    final showTray = revealProgress > 0.001;
-    final rightProgress = _config.progressForOffset(
-      _offset,
-      _config.rightVisualLimit,
-    );
-    final showRightCue = widget.canSwipeRightComplete && rightProgress > 0.001;
 
-    return Stack(
-      children: [
-        if (showRightCue)
-          Positioned.fill(
-            child: Container(
-              margin: EdgeInsets.symmetric(vertical: verticalInset),
-              decoration: BoxDecoration(
-                color: CupertinoColors.systemGreen
-                    .withValues(alpha: 0.04 + (0.06 * rightProgress)),
-                borderRadius: BorderRadius.circular(radius),
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Icon(
-                    CupertinoIcons.check_mark_circled_solid,
-                    size: 20,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _cardWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+            ? constraints.maxWidth
+            : _cardWidth;
+        final revealProgress = _config.progressForOffset(
+          _offset < 0 ? _offset.abs() : 0.0,
+          revealWidth,
+        );
+        final showTray = revealProgress > 0.001;
+        final rightProgress = _config.progressForOffset(
+          _offset,
+          _config.rightVisualLimit(_cardWidth),
+        );
+        final showRightCue =
+            widget.canSwipeRightComplete && rightProgress > 0.001;
+
+        return Stack(
+          children: [
+            if (showRightCue)
+              Positioned.fill(
+                child: Container(
+                  margin: EdgeInsets.symmetric(vertical: verticalInset),
+                  decoration: BoxDecoration(
                     color: CupertinoColors.systemGreen
-                        .withValues(alpha: 0.34 + (0.22 * rightProgress)),
+                        .withValues(alpha: 0.04 + (0.06 * rightProgress)),
+                    borderRadius: BorderRadius.circular(radius),
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Icon(
+                        CupertinoIcons.check_mark_circled_solid,
+                        size: 20,
+                        color: CupertinoColors.systemGreen
+                            .withValues(alpha: 0.34 + (0.22 * rightProgress)),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-        if (showTray)
-          Positioned.fill(
-            child: Container(
-              margin: EdgeInsets.symmetric(vertical: verticalInset),
-              decoration: BoxDecoration(
-                color: CupertinoColors.systemGrey6.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(radius),
-              ),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: revealWidth,
-                  child: Row(
-                    children: [
-                      _SwipeTrayActionButton(
-                        icon: CupertinoIcons.forward_end_fill,
-                        label: widget.skipLabel,
-                        onTap: _isInteractionLocked
-                            ? null
-                            : () => _handleAction(widget.onSkip),
+            if (showTray)
+              Positioned.fill(
+                child: Container(
+                  margin: EdgeInsets.symmetric(vertical: verticalInset),
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemGrey6.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(radius),
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: revealWidth,
+                      child: Row(
+                        children: [
+                          _SwipeTrayActionButton(
+                            icon: CupertinoIcons.forward_end_fill,
+                            label: widget.skipLabel,
+                            onTap: _isInteractionLocked
+                                ? null
+                                : () => _handleAction(widget.onSkip),
+                          ),
+                          _SwipeTrayActionButton(
+                            icon: CupertinoIcons.pencil,
+                            label: widget.editLabel,
+                            onTap: widget.onEdit == null || _isInteractionLocked
+                                ? null
+                                : () => _handleSyncAction(widget.onEdit!),
+                          ),
+                          _SwipeTrayActionButton(
+                            icon: CupertinoIcons.delete,
+                            label: widget.deleteLabel,
+                            isDestructive: true,
+                            onTap: _isInteractionLocked
+                                ? null
+                                : () => _handleAction(widget.onDelete),
+                          ),
+                        ],
                       ),
-                      _SwipeTrayActionButton(
-                        icon: CupertinoIcons.pencil,
-                        label: widget.editLabel,
-                        onTap: widget.onEdit == null || _isInteractionLocked
-                            ? null
-                            : () => _handleSyncAction(widget.onEdit!),
-                      ),
-                      _SwipeTrayActionButton(
-                        icon: CupertinoIcons.delete,
-                        label: widget.deleteLabel,
-                        isDestructive: true,
-                        onTap: _isInteractionLocked
-                            ? null
-                            : () => _handleAction(widget.onDelete),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
+            RepaintBoundary(
+              child: Transform.translate(
+                offset: Offset(_offset, 0),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragStart: _handleHorizontalStart,
+                  onHorizontalDragUpdate: _handleHorizontalUpdate,
+                  onHorizontalDragEnd: _handleHorizontalEnd,
+                  onTap: widget.isOpen && !_isInteractionLocked
+                      ? widget.onRequestClose
+                      : null,
+                  child: widget.child,
+                ),
+              ),
             ),
-          ),
-        RepaintBoundary(
-          child: Transform.translate(
-            offset: Offset(_offset, 0),
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onHorizontalDragStart: _handleHorizontalStart,
-              onHorizontalDragUpdate: _handleHorizontalUpdate,
-              onHorizontalDragEnd: _handleHorizontalEnd,
-              onTap: widget.isOpen && !_isInteractionLocked
-                  ? widget.onRequestClose
-                  : null,
-              child: widget.child,
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
