@@ -56,6 +56,11 @@ extension _HomeScreenBuild on _HomeScreenState {
     }
 
     final homeData = buildHomeViewData(root, _selectedDay);
+    final selectedDateKey = _dateKey(_selectedDay);
+    final completionTransitions = _habitCompletionTransitions.values
+        .where((transition) => transition.dateKey == selectedDateKey)
+        .toList(growable: false)
+      ..sort((a, b) => a.originalIndex.compareTo(b.originalIndex));
 
     final args = ModalRoute.of(context)?.settings.arguments;
     final argsMap = (args is Map) ? args : const <String, dynamic>{};
@@ -87,6 +92,7 @@ extension _HomeScreenBuild on _HomeScreenState {
       scaffoldKey: _scaffoldKey,
       username: username,
       homeData: homeData,
+      completionTransitions: completionTransitions,
       showCompleted: _showCompleted,
       showSkipped: _showSkipped,
       onOpenDrawer: () => _buildViewDrawer(context),
@@ -114,6 +120,13 @@ extension _HomeScreenBuild on _HomeScreenState {
         compact: compact,
         backgroundAsset: habitCardBackgroundAsset,
       ),
+      completionTransitionBuilder: (ctx, transition) =>
+          _habitCompletionTransitionCard(
+        context: ctx,
+        transition: transition,
+        backgroundAsset: habitCardBackgroundAsset,
+      ),
+      onCompletionTransitionDismissed: _removeHabitCompletionTransition,
       completedHeaderBuilder: (count) => _completedHeader(count: count),
       skippedHeaderBuilder: (count) => _skippedHeader(count: count),
       onPendingReorder: (oldIndex, newIndex) => _reorderHabitSection(
@@ -148,6 +161,7 @@ class _HomeLoadedView extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final String username;
   final HomeViewData homeData;
+  final List<HomeHabitCompletionTransition> completionTransitions;
   final bool showCompleted;
   final bool showSkipped;
   final Widget Function() onOpenDrawer;
@@ -158,6 +172,14 @@ class _HomeLoadedView extends StatelessWidget {
   final Widget dayProgress;
   final Widget Function(BuildContext ctx, Map<String, dynamic> habit,
       {bool compact}) habitCardBuilder;
+  final Widget Function(
+    BuildContext ctx,
+    HomeHabitCompletionTransition transition,
+  ) completionTransitionBuilder;
+  final void Function({
+    required String habitId,
+    required String transitionId,
+  }) onCompletionTransitionDismissed;
   final Widget Function(int count) completedHeaderBuilder;
   final Widget Function(int count) skippedHeaderBuilder;
   final Future<void> Function(int oldIndex, int newIndex) onPendingReorder;
@@ -168,6 +190,7 @@ class _HomeLoadedView extends StatelessWidget {
     required this.scaffoldKey,
     required this.username,
     required this.homeData,
+    required this.completionTransitions,
     required this.showCompleted,
     required this.showSkipped,
     required this.onOpenDrawer,
@@ -177,6 +200,8 @@ class _HomeLoadedView extends StatelessWidget {
     required this.weekStrip,
     required this.dayProgress,
     required this.habitCardBuilder,
+    required this.completionTransitionBuilder,
+    required this.onCompletionTransitionDismissed,
     required this.completedHeaderBuilder,
     required this.skippedHeaderBuilder,
     required this.onPendingReorder,
@@ -249,9 +274,14 @@ class _HomeLoadedView extends StatelessWidget {
                             pendingHabits: homeData.pendingHabits,
                             completedHabits: homeData.completedHabits,
                             skippedHabits: homeData.skippedHabits,
+                            completionTransitions: completionTransitions,
                             showCompleted: showCompleted,
                             showSkipped: showSkipped,
                             habitCardBuilder: habitCardBuilder,
+                            completionTransitionBuilder:
+                                completionTransitionBuilder,
+                            onCompletionTransitionDismissed:
+                                onCompletionTransitionDismissed,
                             completedHeaderBuilder: completedHeaderBuilder,
                             skippedHeaderBuilder: skippedHeaderBuilder,
                             onPendingReorder: onPendingReorder,

@@ -87,7 +87,10 @@ extension _HomeScreenHeaderBuilders on _HomeScreenState {
                     onTap: () {
                       final newDay = _onlyDate(d);
                       IosFeedback.selection();
-                      _applyHomeState(() => _selectedDay = newDay);
+                      _applyHomeState(() {
+                        _selectedDay = newDay;
+                        _habitCompletionTransitions.clear();
+                      });
                       context.read<UserStateStore>().setActiveViewDate(newDay);
                     },
                   ),

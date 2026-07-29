@@ -9,12 +9,21 @@ class HomeHabitsSliver extends StatefulWidget {
   final List<Map<String, dynamic>> pendingHabits;
   final List<Map<String, dynamic>> completedHabits;
   final List<Map<String, dynamic>> skippedHabits;
+  final List<HomeHabitCompletionTransition> completionTransitions;
 
   final bool showCompleted;
   final bool showSkipped;
 
   final Widget Function(BuildContext ctx, Map<String, dynamic> habit,
       {bool compact}) habitCardBuilder;
+  final Widget Function(
+    BuildContext ctx,
+    HomeHabitCompletionTransition transition,
+  ) completionTransitionBuilder;
+  final void Function({
+    required String habitId,
+    required String transitionId,
+  }) onCompletionTransitionDismissed;
   final Widget Function(int count) completedHeaderBuilder;
   final Widget Function(int count) skippedHeaderBuilder;
   final Future<void> Function(int oldIndex, int newIndex) onPendingReorder;
@@ -27,9 +36,12 @@ class HomeHabitsSliver extends StatefulWidget {
     required this.pendingHabits,
     required this.completedHabits,
     required this.skippedHabits,
+    required this.completionTransitions,
     required this.showCompleted,
     required this.showSkipped,
     required this.habitCardBuilder,
+    required this.completionTransitionBuilder,
+    required this.onCompletionTransitionDismissed,
     required this.completedHeaderBuilder,
     required this.skippedHeaderBuilder,
     required this.onPendingReorder,
@@ -258,6 +270,86 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
     );
   }
 
+  Widget _buildCompletionTransitionItem({
+    required BuildContext context,
+    required HomeHabitCompletionTransition transition,
+    double bottomPadding = IosSpacing.sm,
+  }) {
+    return _HomeHabitCompletionTransitionTile(
+      key: transition.widgetKey,
+      transition: transition,
+      bottomPadding: bottomPadding,
+      onDismissed: widget.onCompletionTransitionDismissed,
+      child: widget.completionTransitionBuilder(context, transition),
+    );
+  }
+
+  Widget _buildPendingSectionWithCompletionTransitions({
+    required BuildContext context,
+  }) {
+    final entries = <_PendingCompletionVisualEntry>[];
+    final sortedTransitions = widget.completionTransitions.toList()
+      ..sort((a, b) {
+        final byIndex = a.originalIndex.compareTo(b.originalIndex);
+        if (byIndex != 0) return byIndex;
+        return a.transitionId.compareTo(b.transitionId);
+      });
+    var transitionCursor = 0;
+
+    for (var index = 0; index < widget.pendingHabits.length; index += 1) {
+      while (transitionCursor < sortedTransitions.length &&
+          sortedTransitions[transitionCursor].originalIndex <= index) {
+        entries.add(
+          _PendingCompletionVisualEntry.transition(
+            sortedTransitions[transitionCursor],
+          ),
+        );
+        transitionCursor += 1;
+      }
+      entries.add(
+        _PendingCompletionVisualEntry.habit(
+          habit: widget.pendingHabits[index],
+          originalIndex: index,
+        ),
+      );
+    }
+
+    while (transitionCursor < sortedTransitions.length) {
+      entries.add(
+        _PendingCompletionVisualEntry.transition(
+          sortedTransitions[transitionCursor],
+        ),
+      );
+      transitionCursor += 1;
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (ctx, index) {
+          final entry = entries[index];
+          final transition = entry.transition;
+          if (transition != null) {
+            return _buildCompletionTransitionItem(
+              context: ctx,
+              transition: transition,
+            );
+          }
+
+          final habit = entry.habit!;
+          return _buildStaticItem(
+            context: ctx,
+            habit: habit,
+            compact: false,
+            index: entry.originalIndex,
+            keyPrefix: 'habit_pending',
+            bottomPadding: IosSpacing.sm,
+          );
+        },
+        childCount: entries.length,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.viewHabits.isEmpty) {
@@ -286,19 +378,27 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
     return SliverMainAxisGroup(
       slivers: [
         widget.pendingHabits.length < 2
-            ? _buildStaticHabitSection(
-                habits: widget.pendingHabits,
-                compact: false,
-                keyPrefix: 'habit_pending',
-                bottomPadding: IosSpacing.sm,
-              )
-            : _buildHabitSection(
-                habits: widget.pendingHabits,
-                compact: false,
-                keyPrefix: 'habit_pending',
-                onReorder: widget.onPendingReorder,
-                bottomPadding: IosSpacing.sm,
-              ),
+            ? (widget.completionTransitions.isEmpty
+                ? _buildStaticHabitSection(
+                    habits: widget.pendingHabits,
+                    compact: false,
+                    keyPrefix: 'habit_pending',
+                    bottomPadding: IosSpacing.sm,
+                  )
+                : _buildPendingSectionWithCompletionTransitions(
+                    context: context,
+                  ))
+            : (widget.completionTransitions.isEmpty
+                ? _buildHabitSection(
+                    habits: widget.pendingHabits,
+                    compact: false,
+                    keyPrefix: 'habit_pending',
+                    onReorder: widget.onPendingReorder,
+                    bottomPadding: IosSpacing.sm,
+                  )
+                : _buildPendingSectionWithCompletionTransitions(
+                    context: context,
+                  )),
         if (widget.completedHabits.isNotEmpty)
           SliverToBoxAdapter(
             child: Padding(
@@ -357,6 +457,123 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
                   bottomPadding: IosSpacing.xs,
                 ),
       ],
+    );
+  }
+}
+
+class _PendingCompletionVisualEntry {
+  const _PendingCompletionVisualEntry._({
+    this.habit,
+    this.transition,
+    required this.originalIndex,
+  });
+
+  factory _PendingCompletionVisualEntry.habit({
+    required Map<String, dynamic> habit,
+    required int originalIndex,
+  }) {
+    return _PendingCompletionVisualEntry._(
+      habit: habit,
+      originalIndex: originalIndex,
+    );
+  }
+
+  factory _PendingCompletionVisualEntry.transition(
+    HomeHabitCompletionTransition transition,
+  ) {
+    return _PendingCompletionVisualEntry._(
+      transition: transition,
+      originalIndex: transition.originalIndex,
+    );
+  }
+
+  final Map<String, dynamic>? habit;
+  final HomeHabitCompletionTransition? transition;
+  final int originalIndex;
+}
+
+class _HomeHabitCompletionTransitionTile extends StatefulWidget {
+  const _HomeHabitCompletionTransitionTile({
+    super.key,
+    required this.transition,
+    required this.child,
+    required this.bottomPadding,
+    required this.onDismissed,
+  });
+
+  final HomeHabitCompletionTransition transition;
+  final Widget child;
+  final double bottomPadding;
+  final void Function({
+    required String habitId,
+    required String transitionId,
+  }) onDismissed;
+
+  @override
+  State<_HomeHabitCompletionTransitionTile> createState() =>
+      _HomeHabitCompletionTransitionTileState();
+}
+
+class _HomeHabitCompletionTransitionTileState
+    extends State<_HomeHabitCompletionTransitionTile>
+    with SingleTickerProviderStateMixin {
+  static const Duration _duration = Duration(milliseconds: 220);
+
+  late final AnimationController _controller;
+  late final Animation<double> _sizeFactor;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _slideOffset;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: _duration);
+    final curved = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    _sizeFactor = Tween<double>(begin: 1, end: 0).animate(curved);
+    _opacity = Tween<double>(begin: 0.92, end: 0).animate(curved);
+    _slideOffset = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0.035, 0),
+    ).animate(curved);
+    _controller.addStatusListener((status) {
+      if (status != AnimationStatus.completed) return;
+      widget.onDismissed(
+        habitId: widget.transition.habitId,
+        transitionId: widget.transition.transitionId,
+      );
+    });
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      ignoring: true,
+      child: ClipRect(
+        child: SizeTransition(
+          sizeFactor: _sizeFactor,
+          axisAlignment: -1,
+          child: FadeTransition(
+            opacity: _opacity,
+            child: SlideTransition(
+              position: _slideOffset,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: widget.bottomPadding),
+                child: widget.child,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

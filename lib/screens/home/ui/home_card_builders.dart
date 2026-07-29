@@ -29,6 +29,16 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
   String _homeSwipeDeleteConfirmAction(BuildContext context) =>
       _isSpanishHomeSwipe(context) ? 'Eliminar' : 'Delete';
 
+  int _pendingHabitIndexForTransition(BuildContext context, String habitId) {
+    final root = context.read<UserStateStore>().state;
+    if (root == null) return 0;
+    final pending = buildHomeViewData(root, _selectedDay).pendingHabits;
+    final index = pending.indexWhere(
+      (habit) => (habit['id'] ?? habit['habitId'] ?? '').toString() == habitId,
+    );
+    return index < 0 ? pending.length : index;
+  }
+
   String _homeTimesPerWeekProgressLabel(
     BuildContext context, {
     required int completed,
@@ -426,12 +436,27 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       onRequestClose: closeTrayIfOpen,
       onSwipeRightComplete: !isCounting
           ? () async {
+              final transition = _registerHabitCompletionTransition(
+                habitId: id,
+                habit: habit,
+                originalIndex: _pendingHabitIndexForTransition(context, id),
+              );
               IosFeedback.lightImpact();
-              await context.read<UserStateStore>().setHabitCompletionForKey(
-                    habitId: id,
-                    dateKey: _dateKey(_selectedDay),
-                    done: !doneToday,
+              try {
+                await context.read<UserStateStore>().setHabitCompletionForKey(
+                      habitId: id,
+                      dateKey: _dateKey(_selectedDay),
+                      done: !doneToday,
+                    );
+              } catch (_) {
+                if (transition != null) {
+                  _removeHabitCompletionTransition(
+                    habitId: transition.habitId,
+                    transitionId: transition.transitionId,
                   );
+                }
+                rethrow;
+              }
             }
           : null,
       onSkip: () async {
@@ -449,5 +474,120 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     );
 
     return revealCard;
+  }
+
+  Widget _habitCompletionTransitionCard({
+    required BuildContext context,
+    required HomeHabitCompletionTransition transition,
+    ShopAsset? backgroundAsset,
+  }) {
+    final habit = transition.habitSnapshot;
+    final familyId =
+        (habit['familyId'] ?? habit['family'] ?? habit['familyKey'] ?? '')
+            .toString();
+    final familyColor = _familyColor(familyId);
+    final familyMeta = _catalogFamiliesById[familyId];
+    final familyEmoji = (familyMeta?['emoji'] ?? '').toString().trim();
+    final habitEmoji =
+        (habit['emoji'] ?? habit['habitEmoji'] ?? '').toString().trim();
+    final resolvedEmoji = habitEmoji.isNotEmpty ? habitEmoji : familyEmoji;
+    final rawTitle =
+        (habit['title'] ?? habit['name'] ?? habit['habitName'] ?? '')
+            .toString();
+    final description = (habit['description'] ??
+            habit['subtitle'] ??
+            habit['detail'] ??
+            habit['goalText'] ??
+            habit['note'] ??
+            '')
+        .toString();
+    final type = (habit['type'] ?? habit['kind'] ?? 'check').toString();
+    final isCounting = type != 'check';
+
+    num toNum(dynamic v, {num fallback = 0}) {
+      if (v is num) {
+        if (v is double && !v.isFinite) return fallback;
+        return v;
+      }
+      final raw = (v ?? '').toString().trim();
+      if (raw.isEmpty) return fallback;
+      final parsed = num.tryParse(raw.replaceAll(',', '.'));
+      if (parsed == null) return fallback;
+      if (parsed is double && !parsed.isFinite) return fallback;
+      return parsed;
+    }
+
+    num toPositiveNum(dynamic v, {num fallback = 1}) {
+      final parsed = toNum(v, fallback: fallback);
+      return parsed > 0 ? parsed : fallback;
+    }
+
+    final current = toNum(
+      habit['progress'] ?? habit['current'] ?? habit['value'],
+      fallback: 0,
+    );
+    final target =
+        toPositiveNum(habit['target'] ?? habit['goal'] ?? 1, fallback: 1);
+    final title = _localizedHabitTitle(
+      context,
+      habit: habit,
+      fallbackTitle: rawTitle,
+      target: target,
+    );
+    final unitLabel = _localizedUnitLabel(
+      context,
+      (habit['unit'] ?? habit['unitLabel'] ?? habit['units'] ?? '').toString(),
+    );
+    final reminderLabel = _habitReminderLabel(habit);
+    final isTimesPerWeekCheck = habit['isTimesPerWeekCheck'] == true;
+    final weeklyCompletedCount =
+        toNum(habit['weeklyCompletedCount'], fallback: 0).toInt();
+    final weeklyTargetCount =
+        toPositiveNum(habit['weeklyTargetCount'], fallback: 1).toInt();
+    final String? weeklyProgressLabel = isTimesPerWeekCheck
+        ? _homeTimesPerWeekProgressLabel(
+            context,
+            completed: weeklyCompletedCount + 1,
+            target: weeklyTargetCount,
+          )
+        : null;
+
+    String completionBurstText = context.l10n.homeHabitCompletionBurstDefault;
+    final rawXpReward = habit['xpReward'] ??
+        habit['xp'] ??
+        habit['rewardXp'] ??
+        habit['habitXp'];
+    if (rawXpReward is num) {
+      completionBurstText = '+${rawXpReward.toInt()} XP';
+    } else {
+      final raw = (rawXpReward ?? '').toString().trim();
+      if (raw.isNotEmpty) completionBurstText = raw;
+    }
+
+    return HabitCardWidget(
+      title: title,
+      description: description,
+      backgroundImageAssetPath: backgroundAsset?.assetPath,
+      backgroundImageProvider: backgroundAsset?.imageProvider,
+      backgroundImageFit: backgroundAsset?.imageFit ?? BoxFit.cover,
+      backgroundImageAlignment:
+          backgroundAsset?.imageAlignment ?? Alignment.center,
+      backgroundOverlayColor: backgroundAsset?.overlayColor,
+      backgroundOverlayOpacity: backgroundAsset?.overlayOpacity ?? 0,
+      contentTone: backgroundAsset?.contentTone ?? HabitCardContentTone.dark,
+      useContentScrim: backgroundAsset?.useContentScrim ?? false,
+      emoji: resolvedEmoji.isEmpty ? null : resolvedEmoji,
+      familyColor: familyColor,
+      progress: isCounting ? (target <= 0 ? 0 : current / target) : 1,
+      isCompleted: !isCounting,
+      isSkipped: false,
+      isCounting: isCounting,
+      completionBurstText: completionBurstText,
+      currentCount: current,
+      targetCount: target,
+      unitLabel: unitLabel.isEmpty ? null : unitLabel,
+      reminderLabel: reminderLabel,
+      weeklyProgressLabel: weeklyProgressLabel,
+    );
   }
 }

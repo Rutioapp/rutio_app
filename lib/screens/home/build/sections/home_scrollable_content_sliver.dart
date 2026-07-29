@@ -11,9 +11,12 @@ class HomeScrollableContentSliver extends StatelessWidget {
     required this.pendingHabits,
     required this.completedHabits,
     required this.skippedHabits,
+    required this.completionTransitions,
     required this.showCompleted,
     required this.showSkipped,
     required this.habitCardBuilder,
+    required this.completionTransitionBuilder,
+    required this.onCompletionTransitionDismissed,
     required this.completedHeaderBuilder,
     required this.skippedHeaderBuilder,
     required this.onPendingReorder,
@@ -27,10 +30,19 @@ class HomeScrollableContentSliver extends StatelessWidget {
   final List<Map<String, dynamic>> pendingHabits;
   final List<Map<String, dynamic>> completedHabits;
   final List<Map<String, dynamic>> skippedHabits;
+  final List<HomeHabitCompletionTransition> completionTransitions;
   final bool showCompleted;
   final bool showSkipped;
   final Widget Function(BuildContext ctx, Map<String, dynamic> habit,
       {bool compact}) habitCardBuilder;
+  final Widget Function(
+    BuildContext ctx,
+    HomeHabitCompletionTransition transition,
+  ) completionTransitionBuilder;
+  final void Function({
+    required String habitId,
+    required String transitionId,
+  }) onCompletionTransitionDismissed;
   final Widget Function(int count) completedHeaderBuilder;
   final Widget Function(int count) skippedHeaderBuilder;
   final Future<void> Function(int oldIndex, int newIndex) onPendingReorder;
@@ -60,9 +72,12 @@ class HomeScrollableContentSliver extends StatelessWidget {
               pendingHabits: pendingHabits,
               completedHabits: completedHabits,
               skippedHabits: skippedHabits,
+              completionTransitions: completionTransitions,
               showCompleted: showCompleted,
               showSkipped: showSkipped,
               habitCardBuilder: habitCardBuilder,
+              completionTransitionBuilder: completionTransitionBuilder,
+              onCompletionTransitionDismissed: onCompletionTransitionDismissed,
               completedHeaderBuilder: completedHeaderBuilder,
               skippedHeaderBuilder: skippedHeaderBuilder,
               onPendingReorder: onPendingReorder,

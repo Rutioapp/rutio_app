@@ -44,6 +44,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _showCompleted = false;
   bool _showSkipped = false;
   String? _revealedHomeSwipeHabitId;
+  int _habitCompletionTransitionSequence = 0;
+  final Map<String, HomeHabitCompletionTransition> _habitCompletionTransitions =
+      {};
   final NotificationPermissionController _notificationPermissionController =
       NotificationPermissionController();
   bool _didQueuePostLoginNotificationPrompt = false;
@@ -63,6 +66,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _applyHomeState(VoidCallback update) {
     if (!mounted) return;
     setState(update);
+  }
+
+  HomeHabitCompletionTransition? _registerHabitCompletionTransition({
+    required String habitId,
+    required Map<String, dynamic> habit,
+    required int originalIndex,
+  }) {
+    final normalizedId = habitId.trim();
+    if (normalizedId.isEmpty ||
+        _habitCompletionTransitions.containsKey(normalizedId)) {
+      return null;
+    }
+
+    final transition = HomeHabitCompletionTransition(
+      transitionId: (++_habitCompletionTransitionSequence).toString(),
+      habitId: normalizedId,
+      originalIndex: originalIndex,
+      dateKey: _dateKey(_selectedDay),
+      habitSnapshot: Map<String, dynamic>.from(habit),
+      startedAt: DateTime.now(),
+    );
+    _applyHomeState(() {
+      _habitCompletionTransitions[normalizedId] = transition;
+      if (_revealedHomeSwipeHabitId == normalizedId) {
+        _revealedHomeSwipeHabitId = null;
+      }
+    });
+    return transition;
+  }
+
+  void _removeHabitCompletionTransition({
+    required String habitId,
+    required String transitionId,
+  }) {
+    final current = _habitCompletionTransitions[habitId];
+    if (current == null || current.transitionId != transitionId) return;
+    _applyHomeState(() {
+      _habitCompletionTransitions.remove(habitId);
+    });
+  }
+
+  void _clearHabitCompletionTransitions() {
+    if (_habitCompletionTransitions.isEmpty) return;
+    _applyHomeState(_habitCompletionTransitions.clear);
   }
 
   Future<void> _handleManualRefresh(UserStateStore store) async {
@@ -377,6 +424,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         setState(() {
           _selectedDay = today;
         });
+        _clearHabitCompletionTransitions();
       }
       _lastToday = today;
     }
@@ -395,7 +443,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _customDescCtrl.dispose();
     _customTargetCtrl.dispose();
     _customUnitsCtrl.dispose();
+    _habitCompletionTransitions.clear();
 
     super.dispose();
   }
+}
+
+@visibleForTesting
+class HomeHabitCompletionTransition {
+  const HomeHabitCompletionTransition({
+    required this.transitionId,
+    required this.habitId,
+    required this.originalIndex,
+    required this.dateKey,
+    required this.habitSnapshot,
+    required this.startedAt,
+  });
+
+  final String transitionId;
+  final String habitId;
+  final int originalIndex;
+  final String dateKey;
+  final Map<String, dynamic> habitSnapshot;
+  final DateTime startedAt;
+
+  Key get widgetKey =>
+      ValueKey('habit_completion_transition_${transitionId}_$habitId');
 }
