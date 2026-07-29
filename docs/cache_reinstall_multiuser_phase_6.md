@@ -358,3 +358,158 @@ El Punto 6 puede cerrarse cuando:
 5. Reinstalacion/backup este documentado y validado en Android e iOS.
 6. Corrupcion/versionado produzca miss seguro o limpieza explicita sin mezcla de usuarios.
 7. Punto 4 siga sin navegacion desde cache.
+
+# 6B - Correcciones altas de aislamiento y seguridad
+
+## Preflight
+
+- `local_user_v1` estaba implementado en `lib/services/session_service.dart` como JSON `{email, pass}` en `SharedPreferences`. El escritor real guardaba `{'email': email, 'pass': pass}` y el lector comparaba `pass` en texto claro.
+- `SessionService` no participa en el login productivo Supabase. Las pantallas de acceso usan `AuthController.signInWithEmailPassword(...)` y `AuthRepository.signInWithPassword(...)`. Fuera del propio servicio, solo `UserLocalDataCleanup.clearAll()` lo invocaba para borrar la clave legacy.
+- El logout de Ajustes iba por `SettingsScreen._handleLogOut -> UserStateStore.clearAuthSessionState() -> Supabase.instance.client.auth.signOut() -> switchLocalScope(null) -> Navigator /welcome`.
+- Si `Supabase.auth.signOut()` fallaba en `UserStateStore`, el catch era silencioso. No se registraba el error ni quedaba un contrato local claro sobre la sesion SDK.
+- Android no declaraba `allowBackup`, `fullBackupContent` ni `dataExtractionRules` en el manifest principal, debug o profile.
+- Los avatares nuevos se guardaban en `Documents/avatars/avatar_<millis>.<ext>`, sin entorno ni usuario en el path fisico. El aislamiento dependia de que el perfil scoped mantuviera la referencia correcta.
+
+Riesgos confirmados: credencial local legacy, error de sign-out silenciado, backup Android implicito y path global de avatar.
+
+Riesgos descartados: no se encontro token propio de Rutio en `local_user_v1`; no se encontro uso productivo de `SessionService` para autologin Supabase.
+
+## Credenciales locales
+
+`SessionService` queda reducido a compatibilidad legacy fail-safe:
+
+- Limpia payloads antiguos con `pass`, `password` o `token`.
+- Conserva solo `email` cuando existe y no hay secreto.
+- Elimina JSON corrupto o payload sin email util.
+- No devuelve ni expone contraseñas al dominio.
+- Las escrituras nuevas no contienen password.
+- El login legacy queda fail-closed y devuelve `false`; el login productivo sigue siendo Supabase Auth.
+
+No se introdujo `flutter_secure_storage` porque no hay necesidad funcional separada: la sesion productiva la gestiona Supabase Auth.
+
+Tests añadidos en `test/services/session_service_test.dart`:
+
+- Payload legacy con password.
+- Escritura nueva sin password.
+- Payload sin password.
+- JSON corrupto.
+- Campo password con tipo incorrecto.
+- Login legacy fail-closed y clear sin repersistir credencial.
+
+## Logout
+
+Flujo anterior:
+
+- Settings llamaba directamente a `UserStateStore.clearAuthSessionState()`.
+- Ese metodo ejecutaba Supabase `signOut()` y despues scope guest.
+- El helper de Supabase capturaba cualquier error sin observabilidad.
+
+Flujo nuevo:
+
+- Settings usa `AuthController.signOut()`.
+- `AuthController` bloquea llamadas concurrentes con un future in-flight.
+- La invalidacion local ocurre antes de esperar a Supabase: `_currentUser = null`, resolucion de sesion sin usuario, invalidacion de memoria bootstrap, limpieza wallet, supresion de overlays y `switchLocalScope(userId: null, forceReload: true)`.
+- Despues llama una sola vez a `AuthRepository.signOut()`, que usa `Supabase.auth.signOut()`.
+- Si llega un evento tardio de la misma cuenta localmente cerrada, se ignora para no reabrir Home.
+- Si llega un evento `signedOut` duplicado tras la limpieza local, no repite el scope switch.
+
+Comportamiento ante fallo de Supabase:
+
+- Los datos privados dejan de estar visibles por invalidacion local inmediata.
+- La app queda sin usuario autenticado local aunque el SDK no haya confirmado el cierre.
+- Se registra el fallo en debug sin tokens ni payloads.
+- `AuthController.errorMessage` expone un error normalizado y reintentable.
+- No se manipulan manualmente tokens internos del SDK.
+- Limitacion documentada: si el SDK conserva una sesion valida tras un fallo real de `signOut()`, podria reaparecer en un reinicio fisico de app; esa prueba pertenece a 6D.
+
+Tests añadidos en `test/application/auth/auth_controller_test.dart`:
+
+- Logout correcto.
+- Una sola llamada a sign-out.
+- Doble pulsacion/in-flight.
+- Excepcion de sign-out.
+- Datos privados/scope guest aunque falle.
+- Evento tardio de la cuenta cerrada no reabre Home.
+- Nuevo login crea un scope nuevo.
+
+## Backup Android
+
+Politica elegida para V1: desactivar backup de datos de la aplicacion.
+
+Se modifico `android/app/src/main/AndroidManifest.xml` con:
+
+```xml
+android:allowBackup="false"
+```
+
+No se añadieron `fullBackupContent` ni `dataExtractionRules` para evitar una configuracion redundante o contradictoria con `allowBackup=false`.
+
+Con esta politica, Rutio no depende de defaults de plataforma para restaurar `SharedPreferences`, documentos locales, avatares, caches privadas, pending operations o storage de sesion gestionado por SDK. Tras reinstalacion, el usuario puede necesitar iniciar sesion de nuevo; los datos sincronizados deben reconstruirse desde Supabase.
+
+Tests añadidos en `test/android/android_backup_policy_test.dart`:
+
+- Manifest principal declara `android:allowBackup="false"`.
+- Debug/profile no sobrescriben la politica.
+- No existen reglas XML contradictorias referenciadas desde manifest.
+
+No se ejecuto build completa ni prueba fisica de restore; queda para 6D.
+
+## Avatar
+
+Path anterior:
+
+```text
+<Documents>/avatars/avatar_<millis>.<ext>
+```
+
+Path nuevo para avatares escritos desde editar perfil:
+
+```text
+<Documents>/avatars/<environment>/<safeUserNamespace>/v1/avatar_<millis>.<ext>
+```
+
+El namespace de usuario se construye con `safeUserNamespace(userId)`, basado en base64url del `userId.trim()`, sin usar email y sin permitir ids vacios. El entorno sale de `RutioRuntimeProfile.current.profileName` y se normaliza como segmento seguro de path.
+
+No se migra automaticamente un avatar global legacy porque el propietario no puede demostrarse solo desde el path antiguo. Un archivo legacy solo se conserva si ya estaba referenciado por el perfil scoped existente; una nueva seleccion escribe en el path aislado.
+
+Logout conserva archivos de avatar aislados por usuario, pero invalida referencias en memoria al cambiar scope. Otro usuario no recibe el path de A salvo que exista un bug externo que copie el perfil scoped de A, cubierto por fases posteriores.
+
+Tests añadidos en `test/screens/edit_profile/avatar_service_test.dart`:
+
+- A y B obtienen paths distintos.
+- El mismo usuario obtiene namespace estable.
+- Entornos distintos no comparten path.
+- Identificador malicioso no escapa del directorio.
+- User id vacio se rechaza.
+
+## Normalizacion de identidad
+
+Se creo `lib/core/identity/user_namespace.dart` con dos funciones minimas para las areas tocadas:
+
+- `normalizeRequiredUserId(...)`
+- `safeUserNamespace(...)`
+
+No se extendio a todos los stores en 6B para evitar una migracion global fuera de alcance.
+
+## Concurrencia y aislamiento
+
+- Logout invalida `_latestPostHomeBootstrapRunIdByScopeKey` y `_pendingLastLoginTouchUserId`.
+- `_isCurrentPostHomeContext(...)` ya requiere `isAuthenticated`; tras logout local queda false.
+- Los eventos auth tardios del mismo usuario localmente cerrado no restauran la cuenta anterior.
+- Un nuevo login limpia el bloqueo local y crea scope nuevo.
+
+## Riesgos pendientes
+
+Pospuestos a 6C-6F:
+
+- Pending operations globales por dominio.
+- Notificaciones programadas multiusuario.
+- Corrupcion/versionado global de stores.
+- Restore fisico Android/iOS.
+- Bateria exhaustiva A -> B.
+- Modo offline y sincronizacion general.
+- Onboarding.
+
+## Estado final
+
+Los cuatro riesgos altos de 6B quedan corregidos con alcance dirigido: credenciales legacy neutralizadas, logout fail-closed con observabilidad, politica Android explicita y nuevos avatares aislados por entorno/usuario.

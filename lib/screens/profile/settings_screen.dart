@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../application/auth/auth_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
 import 'widgets/account_action_settings_row.dart';
@@ -96,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final l10n = context.l10n;
 
     try {
-      await context.read<UserStateStore>().clearAuthSessionState();
+      await context.read<AuthController>().signOut();
       if (!context.mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
     } catch (_) {
@@ -312,7 +313,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(l10n.settingsLogoutConfirmAction),
           ),
         ],
-        ),
+      ),
     );
 
     return result == true;

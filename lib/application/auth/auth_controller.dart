@@ -141,6 +141,8 @@ class AuthController extends ChangeNotifier {
   final Map<String, int> _latestPostHomeBootstrapRunIdByScopeKey =
       <String, int>{};
   String? _pendingLastLoginTouchUserId;
+  Future<void>? _signOutInFlight;
+  String? _locallySignedOutUserId;
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -196,6 +198,7 @@ class AuthController extends ChangeNotifier {
         _setError('Email or password is incorrect.');
         return null;
       }
+      _locallySignedOutUserId = null;
 
       if (kDebugMode) {
         debugPrint('[auth] sign in succeeded: userId=${_currentUser!.id}');
@@ -262,6 +265,9 @@ class AuthController extends ChangeNotifier {
         displayName: displayName,
       );
       _currentUser = response.session?.user ?? _authRepository.currentUser;
+      if (_currentUser != null) {
+        _locallySignedOutUserId = null;
+      }
       if (_currentUser == null && response.user != null) {
         _setNotice(
           'Account created. Please check your email to confirm your account.',
@@ -321,25 +327,46 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    final inFlight = _signOutInFlight;
+    if (inFlight != null) return inFlight;
+
+    final future = _signOutFailClosed();
+    _signOutInFlight = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_signOutInFlight, future)) {
+        _signOutInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _signOutFailClosed() async {
     _setLoading(true);
     _setError(null);
     _setNotice(null);
+    final previousUserId = _currentUser?.id ?? _authRepository.currentUser?.id;
+    _locallySignedOutUserId = previousUserId;
+    _currentUser = null;
+    _pendingLastLoginTouchUserId = null;
+    _latestPostHomeBootstrapRunIdByScopeKey.clear();
+    _resolveSession(null);
+
+    await _profileRepository?.invalidateBootstrapProfileDecisionMemory(
+      userId: previousUserId,
+      reason: BootstrapProfileDecisionMemoryInvalidationReason.logout,
+      bumpSessionGeneration: true,
+    );
+    _userStateStore.suppressGamificationOverlaysDuringLogout();
+    await _globalWalletController.clearSession();
+    await _userStateStore.switchLocalScope(
+      userId: null,
+      forceReload: true,
+    );
+
     try {
       await _authRepository.signOut();
-      final previousUserId = _currentUser?.id;
-      _currentUser = null;
-      _resolveSession(null);
-      await _profileRepository?.invalidateBootstrapProfileDecisionMemory(
-        userId: previousUserId,
-        reason: BootstrapProfileDecisionMemoryInvalidationReason.logout,
-        bumpSessionGeneration: true,
-      );
-      _userStateStore.suppressGamificationOverlaysDuringLogout();
-      await _globalWalletController.clearSession();
-      await _userStateStore.switchLocalScope(
-        userId: null,
-        forceReload: true,
-      );
+      _locallySignedOutUserId = null;
       notifyListeners();
       if (kDebugMode) {
         debugPrint('[auth] sign out succeeded');
@@ -349,12 +376,12 @@ class AuthController extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('[auth] sign out failed (AuthException): ${error.message}');
       }
-      _setError(_mapAuthError(error.message, isSignIn: true));
+      _setError('Could not finish remote sign-out. Please try again.');
     } catch (error) {
       if (kDebugMode) {
         debugPrint('[auth] sign out failed (unexpected): $error');
       }
-      _setError('Connection error. Please try again.');
+      _setError('Could not finish remote sign-out. Please try again.');
     } finally {
       _setLoading(false);
     }
@@ -415,6 +442,24 @@ class AuthController extends ChangeNotifier {
     try {
       final previousUserId = _currentUser?.id;
       final nextUser = state.session?.user ?? _authRepository.currentUser;
+      if (nextUser == null &&
+          _currentUser == null &&
+          _locallySignedOutUserId != null) {
+        if (kDebugMode) {
+          debugPrint('[auth] ignored duplicate signed-out event');
+        }
+        _resolveSession(null);
+        return;
+      }
+      if (nextUser != null &&
+          _currentUser == null &&
+          _locallySignedOutUserId == nextUser.id) {
+        if (kDebugMode) {
+          debugPrint('[auth] ignored stale auth event after local sign out');
+        }
+        _resolveSession(null);
+        return;
+      }
       if (kDebugMode) {
         final authUserId = nextUser?.id ?? 'guest';
         debugPrint(

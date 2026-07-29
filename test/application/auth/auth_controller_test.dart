@@ -27,6 +27,101 @@ import 'package:rutio/stores/user_state_store.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('AuthController fail-closed sign out', () {
+    test('successful logout clears local scope and calls sign-out once',
+        () async {
+      final fixture = await _createSignOutFixture(currentUserId: 'user-a');
+
+      await fixture.controller.signOut();
+
+      expect(fixture.signOutCalls, 1);
+      expect(fixture.controller.isAuthenticated, isFalse);
+      expect(fixture.userStateStore.suppressed, isTrue);
+      expect(fixture.userStateStore.scopeHistory.last, isNull);
+      expect(fixture.walletController.clearSessionCalls, 1);
+      expect(fixture.controller.errorMessage, isNull);
+    });
+
+    test('double tap reuses the in-flight sign-out', () async {
+      final completer = Completer<void>();
+      final fixture = await _createSignOutFixture(
+        currentUserId: 'user-a',
+        signOutCompleter: completer,
+      );
+
+      final first = fixture.controller.signOut();
+      final second = fixture.controller.signOut();
+      await _flushMicrotasks();
+
+      expect(fixture.signOutCalls, 1);
+      completer.complete();
+      await Future.wait(<Future<void>>[first, second]);
+
+      expect(fixture.signOutCalls, 1);
+      expect(fixture.controller.isAuthenticated, isFalse);
+      expect(fixture.userStateStore.scopeHistory.last, isNull);
+    });
+
+    test('sign-out exception leaves private data hidden and reports error',
+        () async {
+      final fixture = await _createSignOutFixture(
+        currentUserId: 'user-a',
+        signOutError: AuthException('network failure'),
+      );
+
+      await fixture.controller.signOut();
+
+      expect(fixture.signOutCalls, 1);
+      expect(fixture.controller.isAuthenticated, isFalse);
+      expect(fixture.userStateStore.scopeHistory.last, isNull);
+      expect(fixture.walletController.clearSessionCalls, 1);
+      expect(
+        fixture.controller.errorMessage,
+        'Could not finish remote sign-out. Please try again.',
+      );
+    });
+
+    test('stale auth event for locally signed-out user does not reopen home',
+        () async {
+      final fixture = await _createSignOutFixture(
+        currentUserId: 'user-a',
+        signOutError: AuthException('network failure'),
+      );
+
+      await fixture.controller.signOut();
+      fixture.authStream.add(
+        _authState(AuthChangeEvent.tokenRefreshed, _session(_user('user-a'))),
+      );
+      await _flushMicrotasks();
+
+      expect(fixture.controller.isAuthenticated, isFalse);
+      expect(fixture.userStateStore.scopeHistory.last, isNull);
+    });
+
+    test('new login after failed logout creates a new scope', () async {
+      final fixture = await _createSignOutFixture(
+        currentUserId: 'user-a',
+        signOutError: AuthException('network failure'),
+        signInUserId: 'user-b',
+      );
+
+      await fixture.controller.signOut();
+      final response = await fixture.controller.signInWithEmailPassword(
+        email: 'b@example.com',
+        password: 'secret-password',
+      );
+
+      expect(response, isNotNull);
+      expect(fixture.controller.currentUser?.id, 'user-b');
+      expect(
+          fixture.userStateStore.scopeHistory,
+          containsAll(<String?>[
+            null,
+            'user-b',
+          ]));
+    });
+  });
+
   group('AuthController auth stream recovery', () {
     test('AuthRetryableFetchException does not propagate and keeps the user',
         () async {
@@ -495,6 +590,98 @@ class _AuthFixture {
   final _FakeGlobalWalletController walletController;
 }
 
+Future<_SignOutFixture> _createSignOutFixture({
+  required String currentUserId,
+  Completer<void>? signOutCompleter,
+  Object? signOutError,
+  String signInUserId = 'user-b',
+}) async {
+  final authStream = StreamController<AuthState>.broadcast(sync: true);
+  final userStateStore = _SignOutUserStateStore();
+  final walletController = _FakeGlobalWalletController(
+    throwOnNextSync: false,
+  );
+  final fixture = _SignOutFixture._(
+    authStream: authStream,
+    userStateStore: userStateStore,
+    walletController: walletController,
+    currentUser: _user(currentUserId),
+    signInUser: _user(signInUserId),
+    signOutCompleter: signOutCompleter,
+    signOutError: signOutError,
+  );
+
+  fixture.controller = AuthController(
+    AuthRepository(
+      authStateChangesProvider: () => authStream.stream,
+      currentUserProvider: () => fixture.currentUser,
+      signOutProvider: fixture.signOut,
+      signInWithEmailPasswordProvider: fixture.signIn,
+    ),
+    userStateStore: userStateStore,
+    globalWalletController: walletController,
+    profileRepository: null,
+    enableBackgroundProfileSync: false,
+  );
+  authStream.add(
+    _authState(
+      AuthChangeEvent.initialSession,
+      _session(fixture.currentUser!),
+    ),
+  );
+  await _flushMicrotasks();
+  return fixture;
+}
+
+class _SignOutFixture {
+  _SignOutFixture._({
+    required this.authStream,
+    required this.userStateStore,
+    required this.walletController,
+    required this.currentUser,
+    required this.signInUser,
+    this.signOutCompleter,
+    this.signOutError,
+  });
+
+  final StreamController<AuthState> authStream;
+  final _SignOutUserStateStore userStateStore;
+  final _FakeGlobalWalletController walletController;
+  final User signInUser;
+  final Completer<void>? signOutCompleter;
+  final Object? signOutError;
+  late AuthController controller;
+  User? currentUser;
+  int signOutCalls = 0;
+
+  Future<void> signOut() async {
+    signOutCalls += 1;
+    final pending = signOutCompleter;
+    if (pending != null) {
+      await pending.future;
+    }
+    if (signOutError != null) {
+      throw signOutError!;
+    }
+    currentUser = null;
+    authStream.add(_authState(AuthChangeEvent.signedOut, null));
+  }
+
+  Future<AuthResponse> signIn({
+    required String email,
+    required String password,
+  }) async {
+    currentUser = signInUser;
+    authStream.add(
+      _authState(AuthChangeEvent.signedIn, _session(signInUser)),
+    );
+    return AuthResponse(
+      session: _session(signInUser),
+      user: signInUser,
+    );
+  }
+}
+
 class _PostHomeAuthFixture {
   _PostHomeAuthFixture._({
     required this.authStream,
@@ -524,6 +711,43 @@ class _PostHomeAuthFixture {
   }
 
   Future<void> pump() => _flushMicrotasks();
+}
+
+class _SignOutUserStateStore extends UserStateStore {
+  _SignOutUserStateStore()
+      : super(
+          UserStateRepository(storage: UserStateStorage()),
+          journalEntrySyncService: JournalEntrySyncService(),
+        );
+
+  final List<String?> scopeHistory = <String?>[];
+  bool suppressed = false;
+  String? _scopeUserId = 'user-a';
+  int _scopeEpoch = 1;
+
+  @override
+  String? get activeLocalScopeUserId => _scopeUserId;
+
+  @override
+  String? get userId => _scopeUserId;
+
+  @override
+  int get scopeEpoch => _scopeEpoch;
+
+  @override
+  Future<void> switchLocalScope({
+    String? userId,
+    bool forceReload = false,
+  }) async {
+    _scopeUserId = userId;
+    _scopeEpoch += 1;
+    scopeHistory.add(userId);
+  }
+
+  @override
+  void suppressGamificationOverlaysDuringLogout() {
+    suppressed = true;
+  }
 }
 
 class _FakeUserStateStore extends UserStateStore {

@@ -43,8 +43,10 @@ Future<void> _signOutSupabaseSessionIfPresent() async {
     final client = Supabase.instance.client;
     if (client.auth.currentSession == null) return;
     await client.auth.signOut();
-  } catch (_) {
-    // Keep local deletion successful even if session invalidation fails silently.
+  } catch (error) {
+    if (kDebugMode) {
+      debugPrint('[user_state_store] Supabase sign-out failed: $error');
+    }
   }
 }
 
