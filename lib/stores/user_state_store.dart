@@ -145,6 +145,8 @@ class EssentialHabitsBootstrapResult {
     this.remoteQueryCount = 0,
     this.deduplicatedLoadCount = 0,
     this.staleResultDiscardCount = 0,
+    this.operationDurations = const <String, Duration>{},
+    this.operationQueryCounts = const <String, int>{},
     this.error,
   });
 
@@ -157,6 +159,8 @@ class EssentialHabitsBootstrapResult {
   final int remoteQueryCount;
   final int deduplicatedLoadCount;
   final int staleResultDiscardCount;
+  final Map<String, Duration> operationDurations;
+  final Map<String, int> operationQueryCounts;
   final Object? error;
 
   bool get canBuildHome =>
@@ -175,6 +179,8 @@ class EssentialHabitsBootstrapResult {
     int? remoteQueryCount,
     int? deduplicatedLoadCount,
     int? staleResultDiscardCount,
+    Map<String, Duration>? operationDurations,
+    Map<String, int>? operationQueryCounts,
     Object? error,
   }) {
     return EssentialHabitsBootstrapResult(
@@ -189,6 +195,8 @@ class EssentialHabitsBootstrapResult {
           deduplicatedLoadCount ?? this.deduplicatedLoadCount,
       staleResultDiscardCount:
           staleResultDiscardCount ?? this.staleResultDiscardCount,
+      operationDurations: operationDurations ?? this.operationDurations,
+      operationQueryCounts: operationQueryCounts ?? this.operationQueryCounts,
       error: error ?? this.error,
     );
   }
@@ -327,8 +335,9 @@ class UserStateStore extends ChangeNotifier {
   bool _isSupabaseJournalEntriesBackfillRunning = false;
   bool _isDiaryV2RemotePullRunning = false;
   bool _isHabitsRemotePullRunning = false;
-  Future<_StreakProtectionRemoteSnapshot?>? _streakProtectionRemoteSyncFuture;
-  Future<bool>? _streakProtectionRemoteCloseFuture;
+  Future<_StreakProtectionSnapshotFetchOutcome>?
+      _streakProtectionRemoteSyncFuture;
+  Future<_CloseMissedOccurrencesOutcome>? _streakProtectionRemoteCloseFuture;
   DateTime? _lastDiaryV2RemotePullAttemptAt;
   DateTime? _lastDiaryV2RemotePullSuccessAt;
   DateTime? _lastHabitsRemotePullAttemptAt;

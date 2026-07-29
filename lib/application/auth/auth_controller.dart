@@ -5,10 +5,17 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../devtools/rutio_runtime_profile.dart';
+import '../../data/models/remote/remote_profile.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../../features/global_wallet/application/global_wallet_controller.dart';
 import '../../stores/user_state_store.dart';
+
+typedef AuthDebugLogger = void Function(String message);
+
+typedef PostHomeBootstrapTaskRunner = Future<void> Function(
+  PostHomeBootstrapTaskContext context,
+);
 
 enum AuthSessionResolution {
   unresolved,
@@ -34,6 +41,27 @@ class AuthSessionSnapshot {
   );
 }
 
+@immutable
+class PostHomeBootstrapTaskContext {
+  const PostHomeBootstrapTaskContext({
+    required this.bootstrapRunId,
+    required this.userId,
+    required this.scopeUserId,
+    required this.scopeEpoch,
+    this.bootstrapDecision,
+  });
+
+  final int bootstrapRunId;
+  final String userId;
+  final String scopeUserId;
+  final int scopeEpoch;
+  final BootstrapProfileDecision? bootstrapDecision;
+
+  String get scopeKey => '$userId|$scopeUserId|$scopeEpoch';
+
+  String get operationKey => '$bootstrapRunId|$scopeKey';
+}
+
 class AuthController extends ChangeNotifier {
   AuthController(
     this._authRepository, {
@@ -41,10 +69,14 @@ class AuthController extends ChangeNotifier {
     required GlobalWalletController globalWalletController,
     ProfileRepository? profileRepository,
     bool enableBackgroundProfileSync = true,
+    PostHomeBootstrapTaskRunner? postHomeBootstrapTaskRunner,
+    AuthDebugLogger? debugLogger,
   })  : _userStateStore = userStateStore,
         _globalWalletController = globalWalletController,
         _profileRepository = profileRepository,
-        _enableBackgroundProfileSync = enableBackgroundProfileSync {
+        _enableBackgroundProfileSync = enableBackgroundProfileSync,
+        _postHomeBootstrapTaskRunner = postHomeBootstrapTaskRunner,
+        _debugLogger = debugLogger ?? debugPrint {
     if (RutioRuntimeProfile.isDemo) {
       // Demo profile is intentionally local-only: avoid binding to any live
       // Supabase session so real accounts are never mutated during demos.
@@ -80,11 +112,7 @@ class AuthController extends ChangeNotifier {
           context: 'global wallet sync (controller_init)',
         );
         if (_enableBackgroundProfileSync) {
-          await _bootstrapCurrentUserProfileMetadata(
-            reason: 'controller_init',
-            touchLastLogin: true,
-          );
-          await _syncCurrentUserProfile(reason: 'controller_init');
+          _markLastLoginTouchPending(initialUserId);
         }
       }, context: 'auth controller init');
     }
@@ -95,6 +123,8 @@ class AuthController extends ChangeNotifier {
   final GlobalWalletController _globalWalletController;
   final ProfileRepository? _profileRepository;
   final bool _enableBackgroundProfileSync;
+  final PostHomeBootstrapTaskRunner? _postHomeBootstrapTaskRunner;
+  final AuthDebugLogger _debugLogger;
   StreamSubscription<AuthState>? _authSubscription;
 
   User? _currentUser;
@@ -103,10 +133,14 @@ class AuthController extends ChangeNotifier {
   AuthSessionResolution _sessionResolution = AuthSessionResolution.unresolved;
   final Completer<AuthSessionSnapshot> _initialSessionCompleter =
       Completer<AuthSessionSnapshot>();
-  bool _isSyncingProfile = false;
-  bool _isBootstrappingProfileMetadata = false;
+  bool _isEnsuringProfileForBootstrap = false;
   String? _errorMessage;
   String? _noticeMessage;
+  final Map<String, Future<void>> _postHomeBootstrapInFlight =
+      <String, Future<void>>{};
+  final Map<String, int> _latestPostHomeBootstrapRunIdByScopeKey =
+      <String, int>{};
+  String? _pendingLastLoginTouchUserId;
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -174,12 +208,12 @@ class AuthController extends ChangeNotifier {
         _globalWalletController.syncSession(userId: _currentUser!.id),
       );
       if (_enableBackgroundProfileSync) {
-        unawaited(_bootstrapCurrentUserProfileMetadata(
-          reason: 'sign_in',
-          touchLastLogin: true,
-        ));
-        await _syncCurrentUserProfile(reason: 'sign_in');
+        _markLastLoginTouchPending(_currentUser!.id);
       }
+      await _profileRepository?.invalidateBootstrapProfileDecisionMemory(
+        reason: BootstrapProfileDecisionMemoryInvalidationReason.sessionChanged,
+        bumpSessionGeneration: true,
+      );
       notifyListeners();
       return response;
     } on AuthException catch (error) {
@@ -253,12 +287,15 @@ class AuthController extends ChangeNotifier {
         _globalWalletController.syncSession(userId: _currentUser!.id),
       );
       if (_enableBackgroundProfileSync) {
-        unawaited(_bootstrapCurrentUserProfileMetadata(
+        _markLastLoginTouchPending(_currentUser!.id);
+        await _ensureCurrentUserProfileForBootstrap(
           reason: 'sign_up',
-          touchLastLogin: true,
-        ));
-        await _syncCurrentUserProfile(reason: 'sign_up');
+        );
       }
+      await _profileRepository?.invalidateBootstrapProfileDecisionMemory(
+        reason: BootstrapProfileDecisionMemoryInvalidationReason.sessionChanged,
+        bumpSessionGeneration: true,
+      );
 
       if (kDebugMode) {
         debugPrint('[auth] sign up succeeded: userId=${_currentUser!.id}');
@@ -289,8 +326,14 @@ class AuthController extends ChangeNotifier {
     _setNotice(null);
     try {
       await _authRepository.signOut();
+      final previousUserId = _currentUser?.id;
       _currentUser = null;
       _resolveSession(null);
+      await _profileRepository?.invalidateBootstrapProfileDecisionMemory(
+        userId: previousUserId,
+        reason: BootstrapProfileDecisionMemoryInvalidationReason.logout,
+        bumpSessionGeneration: true,
+      );
       _userStateStore.suppressGamificationOverlaysDuringLogout();
       await _globalWalletController.clearSession();
       await _userStateStore.switchLocalScope(
@@ -317,11 +360,10 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  Future<void> _bootstrapCurrentUserProfileMetadata({
+  Future<void> _ensureCurrentUserProfileForBootstrap({
     required String reason,
-    required bool touchLastLogin,
   }) async {
-    if (_isBootstrappingProfileMetadata) return;
+    if (_isEnsuringProfileForBootstrap) return;
 
     final profileRepository = _profileRepository;
     if (profileRepository == null) return;
@@ -329,9 +371,9 @@ class AuthController extends ChangeNotifier {
     final user = _currentUser ?? _authRepository.currentUser;
     if (user == null) return;
 
-    _isBootstrappingProfileMetadata = true;
+    _isEnsuringProfileForBootstrap = true;
     try {
-      final ensured = await profileRepository.ensureCurrentProfile(
+      final ensured = await profileRepository.upsertCurrentProfile(
         email: user.email,
         displayName: _firstNonEmpty(<String?>[
           _normalizedValue(user.userMetadata?['display_name']),
@@ -344,37 +386,34 @@ class AuthController extends ChangeNotifier {
       );
 
       if (!ensured.isSuccess && kDebugMode) {
-        debugPrint(
+        _debugLogger(
           '[auth] profile ensure failed ($reason): ${ensured.error?.message}',
         );
-      }
-
-      if (touchLastLogin) {
-        final loginTouch = await profileRepository.touchLastLogin();
-        if (!loginTouch.isSuccess && kDebugMode) {
-          debugPrint(
-            '[auth] last_login_at touch failed ($reason): ${loginTouch.error?.message}',
-          );
-        }
-      }
-
-      final lastSeenTouch = await profileRepository.touchLastSeen();
-      if (!lastSeenTouch.isSuccess && kDebugMode) {
-        debugPrint(
-          '[auth] last_seen_at touch failed ($reason): ${lastSeenTouch.error?.message}',
+      } else if (ensured.data != null &&
+          _userStateStore.activeLocalScopeUserId == user.id) {
+        await profileRepository
+            .storeBootstrapProfileDecisionFromRemoteProfileInMemory(
+          profile: ensured.data!,
+          scopeUserId: user.id,
+          scopeEpoch: _userStateStore.scopeEpoch,
+          source: BootstrapProfileDecisionMemorySource.remoteProfileUpsert,
+          expectedUserId: user.id,
         );
       }
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[auth] warning: profile metadata bootstrap failed: $error');
+        _debugLogger(
+          '[auth] warning: profile ensure for bootstrap failed: $error',
+        );
       }
     } finally {
-      _isBootstrappingProfileMetadata = false;
+      _isEnsuringProfileForBootstrap = false;
     }
   }
 
   void _handleAuthState(AuthState state) {
     try {
+      final previousUserId = _currentUser?.id;
       final nextUser = state.session?.user ?? _authRepository.currentUser;
       if (kDebugMode) {
         final authUserId = nextUser?.id ?? 'guest';
@@ -388,6 +427,19 @@ class AuthController extends ChangeNotifier {
         );
       }
       if (nextUser != null) {
+        if (previousUserId != nextUser.id) {
+          final profileRepository = _profileRepository;
+          if (profileRepository != null) {
+            unawaited(
+              profileRepository.invalidateBootstrapProfileDecisionMemory(
+                userId: previousUserId,
+                reason: BootstrapProfileDecisionMemoryInvalidationReason
+                    .userChanged,
+                bumpSessionGeneration: true,
+              ),
+            );
+          }
+        }
         _userStateStore.restoreGamificationOverlaysAfterLogout();
         final userId = nextUser.id;
         _fireAndForget(() async {
@@ -397,16 +449,22 @@ class AuthController extends ChangeNotifier {
             context: 'global wallet sync (auth_state_${state.event.name})',
           );
           if (_enableBackgroundProfileSync) {
-            await _bootstrapCurrentUserProfileMetadata(
-              reason: 'auth_state_${state.event.name}',
-              touchLastLogin: _shouldTouchLastLogin(state.event),
-            );
-            await _syncCurrentUserProfile(
-              reason: 'auth_state_${state.event.name}',
-            );
+            if (_shouldTouchLastLogin(state.event)) {
+              _markLastLoginTouchPending(userId);
+            }
           }
         }, context: 'auth state signed in (${state.event.name})');
       } else {
+        final profileRepository = _profileRepository;
+        if (profileRepository != null) {
+          unawaited(
+            profileRepository.invalidateBootstrapProfileDecisionMemory(
+              userId: previousUserId,
+              reason: BootstrapProfileDecisionMemoryInvalidationReason.logout,
+              bumpSessionGeneration: true,
+            ),
+          );
+        }
         _userStateStore.suppressGamificationOverlaysDuringLogout();
         _fireAndForget(
           () => _globalWalletController.clearSession(),
@@ -462,174 +520,6 @@ class AuthController extends ChangeNotifier {
     return error.toString().contains('Failed host lookup');
   }
 
-  Future<void> _syncCurrentUserProfile({required String reason}) async {
-    if (_isSyncingProfile) return;
-
-    final user = _currentUser ?? _authRepository.currentUser;
-    if (user == null) return;
-
-    _isSyncingProfile = true;
-    Map<String, dynamic>? profile;
-
-    if (kDebugMode) {
-      debugPrint('[auth] profile fetch started ($reason) userId=${user.id}');
-    }
-
-    try {
-      await _userStateStore.switchLocalScope(userId: user.id);
-
-      if (_userStateStore.state == null && !_userStateStore.isLoading) {
-        await _userStateStore.load();
-      }
-
-      final profileResult = await _profileRepository?.fetchCurrentProfile();
-      if (profileResult != null && !profileResult.isSuccess) {
-        if (kDebugMode) {
-          debugPrint(
-            '[auth] profile fetch warning: ${profileResult.error?.message}',
-          );
-        }
-      }
-
-      final remoteProfile = profileResult?.data;
-      if (remoteProfile == null && kDebugMode) {
-        debugPrint(
-          '[auth] Profile row not found for current Supabase user.',
-        );
-      }
-
-      if (remoteProfile != null) {
-        profile = remoteProfile.toMap();
-      }
-
-      final remoteDisplayName = _normalizedValue(profile?['display_name']);
-      final metadataDisplayName =
-          _normalizedValue(user.userMetadata?['display_name']);
-      final metadataName = _normalizedValue(user.userMetadata?['name']);
-      final emailPrefix = _emailPrefix(user.email);
-      final existingLocalName = _normalizedValue(_userStateStore.displayName);
-      final resolvedDisplayName = _firstNonEmpty(<String?>[
-            remoteDisplayName,
-            metadataDisplayName,
-            metadataName,
-            emailPrefix,
-            existingLocalName,
-          ]) ??
-          '';
-
-      final resolvedEmail = _firstNonEmpty(<String?>[
-        _normalizedValue(profile?['email']),
-        _normalizedValue(user.email),
-        _normalizedValue(_userStateStore.authEmail),
-      ]);
-
-      final fallbackSource = _displayNameFallbackSource(
-        hasProfileDisplayName: remoteDisplayName.isNotEmpty,
-        metadataDisplayName: metadataDisplayName,
-        metadataName: metadataName,
-        emailPrefix: emailPrefix,
-        existingLocalName: existingLocalName,
-      );
-
-      if (kDebugMode) {
-        debugPrint(
-          '[auth] profile fetch succeeded with hasDisplayName: ${remoteDisplayName.isNotEmpty ? 'yes' : 'no'}',
-        );
-        if (fallbackSource != null) {
-          debugPrint('[auth] fallback used: $fallbackSource');
-        }
-      }
-
-      await _userStateStore.applySupabaseIdentity(
-        userId: user.id,
-        email: resolvedEmail,
-        displayName: resolvedDisplayName,
-        avatarUrl: _normalizedValue(profile?['avatar_url']),
-      );
-
-      _fireAndForget(() async {
-        final progressBootstrap =
-            await _userStateStore.syncSupabaseUserProgressBootstrapBestEffort();
-        if (kDebugMode) {
-          debugPrint(
-            '[auth] user progress restore status: '
-            '${progressBootstrap.restoreResult.status.name}',
-          );
-        }
-        final userProgressBackfillSynced = progressBootstrap.backfillSynced;
-        if (kDebugMode) {
-          debugPrint(
-            '[auth] user progress backfill synced: ${userProgressBackfillSynced ? 'yes' : 'no'}',
-          );
-        }
-
-        final habitSummary =
-            await _userStateStore.syncExistingLocalHabitsOnce();
-        if (kDebugMode) {
-          debugPrint(
-            '[auth] habit backfill summary: '
-            'total=${habitSummary.totalCandidates}, '
-            'uploaded=${habitSummary.uploadedCount}, '
-            'skipped=${habitSummary.skippedCount}, '
-            'failed=${habitSummary.failedCount}',
-          );
-        }
-
-        final habitLogSummary =
-            await _userStateStore.syncExistingLocalHabitLogsOnce();
-        if (kDebugMode) {
-          debugPrint(
-            '[auth] habit log backfill summary: '
-            'total=${habitLogSummary.totalCandidates}, '
-            'uploaded=${habitLogSummary.uploadedCount}, '
-            'skipped=${habitLogSummary.skippedCount}, '
-            'failed=${habitLogSummary.failedCount}',
-          );
-        }
-
-        final journalSummary =
-            await _userStateStore.syncExistingLocalJournalEntriesOnce();
-        if (kDebugMode) {
-          debugPrint(
-            '[auth] journal backfill summary: '
-            'total=${journalSummary.totalCandidates}, '
-            'uploaded=${journalSummary.uploadedCount}, '
-            'skipped=${journalSummary.skippedCount}, '
-            'failed=${journalSummary.failedCount}',
-          );
-        }
-
-        if (kDebugMode) {
-          debugPrint('[auth] achievement backfill call started');
-        }
-        final achievementSummary =
-            await _userStateStore.syncExistingLocalAchievementsOnce();
-        if (kDebugMode) {
-          debugPrint('[auth] achievement backfill call returned');
-        }
-        if (kDebugMode) {
-          debugPrint(
-            '[auth] achievement backfill summary: '
-            'total=${achievementSummary.totalCandidates}, '
-            'uploaded=${achievementSummary.uploadedCount}, '
-            'skipped=${achievementSummary.skippedCount}, '
-            'failed=${achievementSummary.failedCount}',
-          );
-        }
-      }, context: 'profile backfill ($reason)');
-
-      if (kDebugMode) {
-        debugPrint('[auth] display name applied to UserStateStore');
-      }
-    } catch (error) {
-      if (kDebugMode) {
-        debugPrint('[auth] warning: profile sync failed: $error');
-      }
-    } finally {
-      _isSyncingProfile = false;
-    }
-  }
-
   String? _firstNonEmpty(List<String?> values) {
     for (final value in values) {
       final normalized = _normalizedValue(value);
@@ -646,31 +536,6 @@ class AuthController extends ChangeNotifier {
     final atIndex = normalizedEmail.indexOf('@');
     if (atIndex <= 0) return '';
     return normalizedEmail.substring(0, atIndex).trim();
-  }
-
-  String? _displayNameFallbackSource({
-    required bool hasProfileDisplayName,
-    required String metadataDisplayName,
-    required String metadataName,
-    required String emailPrefix,
-    required String existingLocalName,
-  }) {
-    if (hasProfileDisplayName) {
-      return null;
-    }
-    if (metadataDisplayName.isNotEmpty) {
-      return 'auth user_metadata.display_name';
-    }
-    if (metadataName.isNotEmpty) {
-      return 'auth user_metadata.name';
-    }
-    if (emailPrefix.isNotEmpty) {
-      return 'email prefix';
-    }
-    if (existingLocalName.isNotEmpty) {
-      return 'existing local/default Rutio name';
-    }
-    return 'none';
   }
 
   void _resolveSession(User? user) {
@@ -759,6 +624,376 @@ class AuthController extends ChangeNotifier {
     }
 
     return 'Authentication failed. Please try again.';
+  }
+
+  void startPostHomeBootstrapWork({
+    required int bootstrapRunId,
+    required String userId,
+    required String scopeUserId,
+    required int scopeEpoch,
+    BootstrapProfileDecision? bootstrapDecision,
+  }) {
+    if (!_enableBackgroundProfileSync) return;
+    final context = PostHomeBootstrapTaskContext(
+      bootstrapRunId: bootstrapRunId,
+      userId: userId,
+      scopeUserId: scopeUserId,
+      scopeEpoch: scopeEpoch,
+      bootstrapDecision: bootstrapDecision,
+    );
+    _latestPostHomeBootstrapRunIdByScopeKey[context.scopeKey] = bootstrapRunId;
+    _fireAndForget(
+      () => _schedulePostHomeBootstrapWork(context),
+      context: 'post-home bootstrap work',
+    );
+  }
+
+  Future<void> _schedulePostHomeBootstrapWork(
+    PostHomeBootstrapTaskContext context,
+  ) async {
+    if (!_isCurrentPostHomeContext(context)) {
+      _recordPostHomeStaleDiscard(context, stage: 'schedule');
+      return;
+    }
+
+    final operationKey = context.operationKey;
+    final existing = _postHomeBootstrapInFlight[operationKey];
+    if (existing != null) {
+      return existing;
+    }
+
+    final runner =
+        _postHomeBootstrapTaskRunner ?? _runDefaultPostHomeBootstrapWork;
+    late final Future<void> future;
+    future = runner(context).whenComplete(() {
+      if (identical(_postHomeBootstrapInFlight[operationKey], future)) {
+        _postHomeBootstrapInFlight.remove(operationKey);
+      }
+    });
+    _postHomeBootstrapInFlight[operationKey] = future;
+    return future;
+  }
+
+  Future<void> _runDefaultPostHomeBootstrapWork(
+    PostHomeBootstrapTaskContext context,
+  ) async {
+    final startedAt = DateTime.now();
+    try {
+      final profileStartedAt = DateTime.now();
+      await _runPostHomeProfileMetadata(context);
+      _bootstrapMetric(
+        context.bootstrapRunId,
+        'post_home_profile_metadata',
+        DateTime.now().difference(profileStartedAt),
+      );
+      if (!_isCurrentPostHomeContext(context)) {
+        _recordPostHomeStaleDiscard(context, stage: 'profile_metadata');
+        return;
+      }
+
+      final backfillsStartedAt = DateTime.now();
+      await _runPostHomeBackfills(context);
+      _bootstrapMetric(
+        context.bootstrapRunId,
+        'post_home_backfills',
+        DateTime.now().difference(backfillsStartedAt),
+      );
+    } catch (error, stackTrace) {
+      _recordPostHomeError(
+        context,
+        stage: 'unexpected',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return;
+    } finally {
+      _bootstrapMetric(
+        context.bootstrapRunId,
+        'post_home_total',
+        DateTime.now().difference(startedAt),
+      );
+    }
+  }
+
+  Future<void> _runPostHomeProfileMetadata(
+    PostHomeBootstrapTaskContext context,
+  ) async {
+    final profileRepository = _profileRepository;
+    if (profileRepository == null) return;
+    if (!_isCurrentPostHomeContext(context)) return;
+
+    await _runPostHomeFullProfileSync(context);
+    if (!_isCurrentPostHomeContext(context)) {
+      _recordPostHomeStaleDiscard(context, stage: 'profile_sync');
+      return;
+    }
+
+    final shouldTouchLastLogin = _pendingLastLoginTouchUserId == context.userId;
+    if (shouldTouchLastLogin) {
+      final loginTouch = await profileRepository.touchLastLogin();
+      if (!_isCurrentPostHomeContext(context)) {
+        _recordPostHomeStaleDiscard(context, stage: 'touch_last_login');
+        return;
+      }
+      if (!loginTouch.isSuccess) {
+        _recordPostHomeError(
+          context,
+          stage: 'touch_last_login',
+          error: loginTouch.error ?? 'unknown',
+        );
+      } else if (_pendingLastLoginTouchUserId == context.userId) {
+        _pendingLastLoginTouchUserId = null;
+      }
+    }
+
+    if (!_isCurrentPostHomeContext(context)) return;
+    final lastSeenTouch = await profileRepository.touchLastSeen();
+    if (!_isCurrentPostHomeContext(context)) {
+      _recordPostHomeStaleDiscard(context, stage: 'touch_last_seen');
+      return;
+    }
+    if (!lastSeenTouch.isSuccess) {
+      _recordPostHomeError(
+        context,
+        stage: 'touch_last_seen',
+        error: lastSeenTouch.error ?? 'unknown',
+      );
+    }
+  }
+
+  Future<void> _runPostHomeFullProfileSync(
+    PostHomeBootstrapTaskContext context,
+  ) async {
+    final profileRepository = _profileRepository;
+    if (profileRepository == null) return;
+    if (!_isCurrentPostHomeContext(context)) return;
+
+    Map<String, dynamic>? profile;
+    try {
+      final profileResult = await profileRepository.fetchCurrentProfile();
+      if (!_isCurrentPostHomeContext(context)) {
+        _recordPostHomeStaleDiscard(context, stage: 'profile_fetch');
+        return;
+      }
+      if (!profileResult.isSuccess) {
+        _recordPostHomeError(
+          context,
+          stage: 'profile_fetch',
+          error: profileResult.error ?? 'unknown',
+        );
+        return;
+      }
+
+      final remoteProfile = profileResult.data;
+      if (remoteProfile != null) {
+        profile = remoteProfile.toMap();
+      }
+
+      final currentUser = _currentUser ?? _authRepository.currentUser;
+      if (currentUser == null) {
+        _recordPostHomeStaleDiscard(context, stage: 'profile_fetch');
+        return;
+      }
+
+      final remoteDisplayName = _normalizedValue(profile?['display_name']);
+      final metadataDisplayName =
+          _normalizedValue(currentUser.userMetadata?['display_name']);
+      final metadataName = _normalizedValue(currentUser.userMetadata?['name']);
+      final emailPrefix = _emailPrefix(currentUser.email);
+      final existingLocalName = _normalizedValue(_userStateStore.displayName);
+      final resolvedDisplayName = _firstNonEmpty(<String?>[
+            remoteDisplayName,
+            metadataDisplayName,
+            metadataName,
+            emailPrefix,
+            existingLocalName,
+          ]) ??
+          '';
+
+      final resolvedEmail = _firstNonEmpty(<String?>[
+        _normalizedValue(profile?['email']),
+        _normalizedValue(currentUser.email),
+        _normalizedValue(_userStateStore.authEmail),
+      ]);
+
+      await _userStateStore.applySupabaseIdentity(
+        userId: currentUser.id,
+        email: resolvedEmail,
+        displayName: resolvedDisplayName,
+        avatarUrl: _normalizedValue(profile?['avatar_url']),
+      );
+      if (remoteProfile != null) {
+        await profileRepository
+            .storeBootstrapProfileDecisionFromRemoteProfileInMemory(
+          profile: remoteProfile,
+          scopeUserId: context.scopeUserId,
+          scopeEpoch: context.scopeEpoch,
+          source: BootstrapProfileDecisionMemorySource.remoteProfile,
+          expectedUserId: currentUser.id,
+        );
+      }
+    } catch (error, stackTrace) {
+      _recordPostHomeError(
+        context,
+        stage: 'profile_sync',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _runPostHomeBackfills(
+    PostHomeBootstrapTaskContext context,
+  ) async {
+    if (!_isCurrentPostHomeContext(context)) return;
+
+    final progressBootstrap =
+        await _userStateStore.syncSupabaseUserProgressBootstrapBestEffort();
+    if (!_isCurrentPostHomeContext(context)) {
+      _recordPostHomeStaleDiscard(context, stage: 'user_progress');
+      return;
+    }
+    if (kDebugMode) {
+      _debugLogger(
+        '[auth] user progress restore status: '
+        '${progressBootstrap.restoreResult.status.name}',
+      );
+      _debugLogger(
+        '[auth] user progress backfill synced: '
+        '${progressBootstrap.backfillSynced ? 'yes' : 'no'}',
+      );
+    }
+
+    final habitSummary = await _userStateStore.syncExistingLocalHabitsOnce();
+    if (!_isCurrentPostHomeContext(context)) {
+      _recordPostHomeStaleDiscard(context, stage: 'habit_backfill');
+      return;
+    }
+    if (kDebugMode) {
+      _debugLogger(
+        '[auth] habit backfill summary: '
+        'total=${habitSummary.totalCandidates}, '
+        'uploaded=${habitSummary.uploadedCount}, '
+        'skipped=${habitSummary.skippedCount}, '
+        'failed=${habitSummary.failedCount}',
+      );
+    }
+
+    final habitLogSummary =
+        await _userStateStore.syncExistingLocalHabitLogsOnce();
+    if (!_isCurrentPostHomeContext(context)) {
+      _recordPostHomeStaleDiscard(context, stage: 'habit_log_backfill');
+      return;
+    }
+    if (kDebugMode) {
+      _debugLogger(
+        '[auth] habit log backfill summary: '
+        'total=${habitLogSummary.totalCandidates}, '
+        'uploaded=${habitLogSummary.uploadedCount}, '
+        'skipped=${habitLogSummary.skippedCount}, '
+        'failed=${habitLogSummary.failedCount}',
+      );
+    }
+
+    final journalSummary =
+        await _userStateStore.syncExistingLocalJournalEntriesOnce();
+    if (!_isCurrentPostHomeContext(context)) {
+      _recordPostHomeStaleDiscard(context, stage: 'journal_backfill');
+      return;
+    }
+    if (kDebugMode) {
+      _debugLogger(
+        '[auth] journal backfill summary: '
+        'total=${journalSummary.totalCandidates}, '
+        'uploaded=${journalSummary.uploadedCount}, '
+        'skipped=${journalSummary.skippedCount}, '
+        'failed=${journalSummary.failedCount}',
+      );
+    }
+
+    final achievementSummary =
+        await _userStateStore.syncExistingLocalAchievementsOnce();
+    if (!_isCurrentPostHomeContext(context)) {
+      _recordPostHomeStaleDiscard(context, stage: 'achievement_backfill');
+      return;
+    }
+    if (kDebugMode) {
+      _debugLogger(
+        '[auth] achievement backfill summary: '
+        'total=${achievementSummary.totalCandidates}, '
+        'uploaded=${achievementSummary.uploadedCount}, '
+        'skipped=${achievementSummary.skippedCount}, '
+        'failed=${achievementSummary.failedCount}',
+      );
+    }
+  }
+
+  bool _isCurrentPostHomeContext(PostHomeBootstrapTaskContext context) {
+    final currentUserId =
+        (_currentUser ?? _authRepository.currentUser)?.id.trim();
+    final scopeUserId = _userStateStore.activeLocalScopeUserId?.trim() ??
+        _userStateStore.userId?.trim();
+    return currentUserId == context.userId &&
+        scopeUserId == context.scopeUserId &&
+        _userStateStore.scopeEpoch == context.scopeEpoch &&
+        _latestPostHomeBootstrapRunIdByScopeKey[context.scopeKey] ==
+            context.bootstrapRunId &&
+        isAuthenticated;
+  }
+
+  void _markLastLoginTouchPending(String userId) {
+    final normalized = userId.trim();
+    if (normalized.isEmpty) return;
+    _pendingLastLoginTouchUserId = normalized;
+  }
+
+  void _recordPostHomeStaleDiscard(
+    PostHomeBootstrapTaskContext context, {
+    required String stage,
+  }) {
+    _bootstrapMetric(
+      context.bootstrapRunId,
+      'post_home_stale_discard',
+      Duration.zero,
+      extras: <String, Object>{'stage': stage},
+    );
+  }
+
+  void _recordPostHomeError(
+    PostHomeBootstrapTaskContext context, {
+    required String stage,
+    required Object error,
+    StackTrace? stackTrace,
+  }) {
+    if (kDebugMode) {
+      _debugLogger('[auth] post-home bootstrap error ($stage): $error');
+      if (stackTrace != null) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    }
+    _bootstrapMetric(
+      context.bootstrapRunId,
+      'post_home_error',
+      Duration.zero,
+      extras: <String, Object>{'stage': stage},
+    );
+  }
+
+  void _bootstrapMetric(
+    int runId,
+    String metric,
+    Duration duration, {
+    Map<String, Object>? extras,
+  }) {
+    if (!kDebugMode) return;
+    final buffer = StringBuffer(
+      '[BootstrapPerf] run=$runId metric=$metric '
+      'duration_ms=${duration.inMilliseconds}',
+    );
+    extras?.forEach((key, value) {
+      buffer.write(' $key=$value');
+    });
+    _debugLogger(buffer.toString());
   }
 
   void _fireAndForget(

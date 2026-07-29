@@ -49,6 +49,91 @@ class RemoteProfileParseException implements FormatException {
 }
 
 @immutable
+class BootstrapProfileDecision {
+  const BootstrapProfileDecision({
+    required this.userId,
+    required this.onboardingStatus,
+    required this.onboardingVersion,
+    required this.onboardingCompletedAt,
+  });
+
+  final String userId;
+  final OnboardingStatus onboardingStatus;
+  final int onboardingVersion;
+  final DateTime? onboardingCompletedAt;
+
+  factory BootstrapProfileDecision.fromMap(
+    Map<String, dynamic> map, {
+    required String expectedUserId,
+  }) {
+    final userId = RemoteProfile._requiredTrim(map, 'id');
+    if (userId != expectedUserId) {
+      throw RemoteProfileParseException(
+        'Profile decision id "$userId" did not match current user.',
+      );
+    }
+
+    final onboardingStatus = OnboardingStatus.fromSupabase(
+      RemoteProfile._requiredTrim(map, 'onboarding_status'),
+    );
+    final onboardingVersion = RemoteProfile._requiredPositiveInt(
+      map,
+      'onboarding_version',
+    );
+    final onboardingCompletedAt = RemoteProfile._nullableDateTime(
+      map['onboarding_completed_at'] ?? map['onboardingCompletedAt'],
+    );
+    RemoteProfile._validateOnboardingConsistency(
+      status: onboardingStatus,
+      completedAt: onboardingCompletedAt,
+    );
+
+    return BootstrapProfileDecision(
+      userId: userId,
+      onboardingStatus: onboardingStatus,
+      onboardingVersion: onboardingVersion,
+      onboardingCompletedAt: onboardingCompletedAt,
+    );
+  }
+
+  RemoteProfile toRemoteProfile() {
+    return RemoteProfile(
+      id: userId,
+      onboardingStatus: onboardingStatus,
+      onboardingVersion: onboardingVersion,
+      onboardingCompletedAt: onboardingCompletedAt,
+    );
+  }
+
+  factory BootstrapProfileDecision.fromRemoteProfile(
+    RemoteProfile profile, {
+    String? expectedUserId,
+  }) {
+    final userId = profile.id.trim();
+    if (userId.isEmpty) {
+      throw const RemoteProfileParseException(
+        'Profile decision requires a non-empty user id.',
+      );
+    }
+    if (expectedUserId != null && userId != expectedUserId) {
+      throw RemoteProfileParseException(
+        'Profile decision id "$userId" did not match current user.',
+      );
+    }
+    RemoteProfile._validateOnboardingConsistency(
+      status: profile.onboardingStatus,
+      completedAt: profile.onboardingCompletedAt,
+    );
+    return BootstrapProfileDecision(
+      userId: userId,
+      onboardingStatus: profile.onboardingStatus,
+      onboardingVersion: profile.onboardingVersion,
+      onboardingCompletedAt: profile.onboardingCompletedAt,
+    );
+  }
+}
+
+@immutable
 class RemoteProfile {
   const RemoteProfile({
     required this.id,
@@ -165,6 +250,15 @@ class RemoteProfile {
       if (createdAt != null) 'created_at': createdAt!.toUtc().toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toUtc().toIso8601String(),
     };
+  }
+
+  BootstrapProfileDecision toBootstrapProfileDecision({
+    String? expectedUserId,
+  }) {
+    return BootstrapProfileDecision.fromRemoteProfile(
+      this,
+      expectedUserId: expectedUserId,
+    );
   }
 
   static String? _nullableTrim(dynamic value) {

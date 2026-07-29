@@ -60,6 +60,8 @@ class CosmeticsBootstrapResult {
     this.remoteQueryCount = 0,
     this.deduplicatedLoadCount = 0,
     this.staleResultDiscardCount = 0,
+    this.operationDurations = const <String, Duration>{},
+    this.operationQueryCounts = const <String, int>{},
     this.wallpaperAsset,
     this.habitCardAsset,
     this.userCardAsset,
@@ -78,6 +80,8 @@ class CosmeticsBootstrapResult {
   final int remoteQueryCount;
   final int deduplicatedLoadCount;
   final int staleResultDiscardCount;
+  final Map<String, Duration> operationDurations;
+  final Map<String, int> operationQueryCounts;
   final ShopAsset? wallpaperAsset;
   final ShopAsset? habitCardAsset;
   final ShopAsset? userCardAsset;
@@ -108,6 +112,8 @@ class CosmeticsBootstrapResult {
     int? remoteQueryCount,
     int? deduplicatedLoadCount,
     int? staleResultDiscardCount,
+    Map<String, Duration>? operationDurations,
+    Map<String, int>? operationQueryCounts,
     ShopAsset? wallpaperAsset,
     ShopAsset? habitCardAsset,
     ShopAsset? userCardAsset,
@@ -128,6 +134,8 @@ class CosmeticsBootstrapResult {
           deduplicatedLoadCount ?? this.deduplicatedLoadCount,
       staleResultDiscardCount:
           staleResultDiscardCount ?? this.staleResultDiscardCount,
+      operationDurations: operationDurations ?? this.operationDurations,
+      operationQueryCounts: operationQueryCounts ?? this.operationQueryCounts,
       wallpaperAsset: wallpaperAsset ?? this.wallpaperAsset,
       habitCardAsset: habitCardAsset ?? this.habitCardAsset,
       userCardAsset: userCardAsset ?? this.userCardAsset,
@@ -2756,6 +2764,8 @@ class ShopCosmeticsController extends ChangeNotifier {
     required bool forceRemote,
   }) async {
     final startedAt = DateTime.now();
+    final operationDurations = <String, Duration>{};
+    final operationQueryCounts = <String, int>{};
     if (!_cloudEnabled) {
       final state = await getState();
       if (_currentScope() != scopeKey) {
@@ -2766,6 +2776,8 @@ class ShopCosmeticsController extends ChangeNotifier {
           requestId: requestId,
           startedAt: startedAt,
           state: state,
+          operationDurations: operationDurations,
+          operationQueryCounts: operationQueryCounts,
           error: StateError('Scope changed during local cosmetics load.'),
         );
       }
@@ -2778,10 +2790,15 @@ class ShopCosmeticsController extends ChangeNotifier {
         requestId: requestId,
         startedAt: startedAt,
         state: state,
+        operationDurations: operationDurations,
+        operationQueryCounts: operationQueryCounts,
       );
     }
 
+    final cacheReadStopwatch = Stopwatch()..start();
     final cacheEntry = await _cloudCache.read(scopeKey);
+    cacheReadStopwatch.stop();
+    operationDurations['cosmetics_cache_read'] = cacheReadStopwatch.elapsed;
     if (_currentScope() != scopeKey) {
       _log(
           'stale_result_discarded scope=${_debugScope(scopeKey)} stage=bootstrap_cache');
@@ -2792,6 +2809,8 @@ class ShopCosmeticsController extends ChangeNotifier {
         requestId: requestId,
         startedAt: startedAt,
         staleResultDiscardCount: 1,
+        operationDurations: operationDurations,
+        operationQueryCounts: operationQueryCounts,
         error: StateError('Scope changed during cosmetics cache read.'),
       );
     }
@@ -2821,6 +2840,11 @@ class ShopCosmeticsController extends ChangeNotifier {
           startedAt: startedAt,
           remoteQueryCount: 1,
           state: cachedState,
+          operationDurations: operationDurations,
+          operationQueryCounts: <String, int>{
+            ...operationQueryCounts,
+            'cosmetics_remote_fetch': 1,
+          },
         );
       }
       _log(
@@ -2828,7 +2852,11 @@ class ShopCosmeticsController extends ChangeNotifier {
       );
     }
 
+    final remoteFetchStopwatch = Stopwatch()..start();
     final state = await _syncFromCurrentScope(force: forceRemote);
+    remoteFetchStopwatch.stop();
+    operationDurations['cosmetics_remote_fetch'] = remoteFetchStopwatch.elapsed;
+    operationQueryCounts['cosmetics_remote_fetch'] = 1;
     if (_currentScope() != scopeKey) {
       _log(
           'stale_result_discarded scope=${_debugScope(scopeKey)} stage=bootstrap_remote');
@@ -2841,6 +2869,8 @@ class ShopCosmeticsController extends ChangeNotifier {
         remoteQueryCount: 1,
         staleResultDiscardCount: 1,
         state: state,
+        operationDurations: operationDurations,
+        operationQueryCounts: operationQueryCounts,
         error: StateError('Scope changed during cosmetics remote fetch.'),
       );
     }
@@ -2854,6 +2884,8 @@ class ShopCosmeticsController extends ChangeNotifier {
         requestId: requestId,
         startedAt: startedAt,
         state: state,
+        operationDurations: operationDurations,
+        operationQueryCounts: operationQueryCounts,
         error: StateError('Invalid equipped cosmetic asset.'),
       );
     }
@@ -2870,6 +2902,8 @@ class ShopCosmeticsController extends ChangeNotifier {
           startedAt: startedAt,
           remoteQueryCount: 1,
           state: state,
+          operationDurations: operationDurations,
+          operationQueryCounts: operationQueryCounts,
         );
       case ShopCosmeticsCloudStatus.stale:
         return _cosmeticsBootstrapResult(
@@ -2880,6 +2914,8 @@ class ShopCosmeticsController extends ChangeNotifier {
           startedAt: startedAt,
           remoteQueryCount: 1,
           state: state,
+          operationDurations: operationDurations,
+          operationQueryCounts: operationQueryCounts,
           error: _cloudState.failureMessage,
         );
       case ShopCosmeticsCloudStatus.failed:
@@ -2893,6 +2929,8 @@ class ShopCosmeticsController extends ChangeNotifier {
             startedAt: startedAt,
             remoteQueryCount: 1,
             state: state,
+            operationDurations: operationDurations,
+            operationQueryCounts: operationQueryCounts,
             error: _cloudState.failureMessage,
           );
         }
@@ -2904,6 +2942,8 @@ class ShopCosmeticsController extends ChangeNotifier {
           startedAt: startedAt,
           remoteQueryCount: 1,
           state: state,
+          operationDurations: operationDurations,
+          operationQueryCounts: operationQueryCounts,
           error: _cloudState.failureMessage,
         );
       case ShopCosmeticsCloudStatus.loading:
@@ -2916,6 +2956,8 @@ class ShopCosmeticsController extends ChangeNotifier {
             startedAt: startedAt,
             remoteQueryCount: 1,
             state: state,
+            operationDurations: operationDurations,
+            operationQueryCounts: operationQueryCounts,
             error: _cloudState.failureMessage,
           );
         }
@@ -2927,6 +2969,8 @@ class ShopCosmeticsController extends ChangeNotifier {
           startedAt: startedAt,
           remoteQueryCount: 1,
           state: state,
+          operationDurations: operationDurations,
+          operationQueryCounts: operationQueryCounts,
         );
       case ShopCosmeticsCloudStatus.unauthenticated:
         return _cosmeticsBootstrapResult(
@@ -2937,6 +2981,8 @@ class ShopCosmeticsController extends ChangeNotifier {
           startedAt: startedAt,
           remoteQueryCount: 1,
           state: state,
+          operationDurations: operationDurations,
+          operationQueryCounts: operationQueryCounts,
         );
     }
   }
@@ -2998,9 +3044,12 @@ class ShopCosmeticsController extends ChangeNotifier {
     int remoteQueryCount = 0,
     int deduplicatedLoadCount = 0,
     int staleResultDiscardCount = 0,
+    Map<String, Duration> operationDurations = const <String, Duration>{},
+    Map<String, int> operationQueryCounts = const <String, int>{},
     ShopCosmeticsState? state,
     Object? error,
   }) {
+    final resolveStopwatch = Stopwatch()..start();
     final wallpaperAsset = state == null
         ? null
         : _getValidatedEquippedAssetOrNull(
@@ -3026,6 +3075,7 @@ class ShopCosmeticsController extends ChangeNotifier {
       habitCardAsset: habitCardAsset,
       userCardAsset: userCardAsset,
     );
+    resolveStopwatch.stop();
     final readyToken =
         userId == null ? null : createReadyTokenForBootstrap(userId: userId);
     if (readyToken != null) {
@@ -3040,6 +3090,11 @@ class ShopCosmeticsController extends ChangeNotifier {
       remoteQueryCount: remoteQueryCount,
       deduplicatedLoadCount: deduplicatedLoadCount,
       staleResultDiscardCount: staleResultDiscardCount,
+      operationDurations: <String, Duration>{
+        ...operationDurations,
+        'cosmetics_resolve_visible': resolveStopwatch.elapsed,
+      },
+      operationQueryCounts: operationQueryCounts,
       wallpaperAsset: wallpaperAsset,
       habitCardAsset: habitCardAsset,
       userCardAsset: userCardAsset,

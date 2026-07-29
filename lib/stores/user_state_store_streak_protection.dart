@@ -32,11 +32,15 @@ class _StreakProtectionSyncOutcome {
     required this.changed,
     required this.remoteQueryCount,
     required this.deduplicatedLoadCount,
+    this.operationDurations = const <String, Duration>{},
+    this.operationQueryCounts = const <String, int>{},
   });
 
   final bool changed;
   final int remoteQueryCount;
   final int deduplicatedLoadCount;
+  final Map<String, Duration> operationDurations;
+  final Map<String, int> operationQueryCounts;
 }
 
 Future<void> _syncStreakProtectionFromRemoteBestEffort(
@@ -120,6 +124,14 @@ Future<_StreakProtectionSyncOutcome>
           closeOutcome.remoteQueryCount + snapshotOutcome.remoteQueryCount,
       deduplicatedLoadCount: closeOutcome.deduplicatedLoadCount +
           snapshotOutcome.deduplicatedLoadCount,
+      operationDurations: <String, Duration>{
+        ...closeOutcome.operationDurations,
+        ...snapshotOutcome.operationDurations,
+      },
+      operationQueryCounts: <String, int>{
+        ...closeOutcome.operationQueryCounts,
+        ...snapshotOutcome.operationQueryCounts,
+      },
     );
   }
 
@@ -140,21 +152,40 @@ Future<_StreakProtectionSyncOutcome>
           closeOutcome.remoteQueryCount + snapshotOutcome.remoteQueryCount,
       deduplicatedLoadCount: closeOutcome.deduplicatedLoadCount +
           snapshotOutcome.deduplicatedLoadCount,
+      operationDurations: <String, Duration>{
+        ...closeOutcome.operationDurations,
+        ...snapshotOutcome.operationDurations,
+      },
+      operationQueryCounts: <String, int>{
+        ...closeOutcome.operationQueryCounts,
+        ...snapshotOutcome.operationQueryCounts,
+      },
     );
   }
-
+  final operationDurations = <String, Duration>{
+    ...closeOutcome.operationDurations,
+    ...snapshotOutcome.operationDurations,
+  };
+  final reconciliationStopwatch = Stopwatch()..start();
   changed = _reconcileRemoteStreakProtectionSnapshot(
         userState,
         shields: snapshot.shields,
         breaks: snapshot.breaks,
       ) ||
       changed;
+  reconciliationStopwatch.stop();
+  operationDurations['streak_reconciliation'] = reconciliationStopwatch.elapsed;
   return _StreakProtectionSyncOutcome(
     changed: changed,
     remoteQueryCount:
         closeOutcome.remoteQueryCount + snapshotOutcome.remoteQueryCount,
     deduplicatedLoadCount: closeOutcome.deduplicatedLoadCount +
         snapshotOutcome.deduplicatedLoadCount,
+    operationDurations: operationDurations,
+    operationQueryCounts: <String, int>{
+      ...closeOutcome.operationQueryCounts,
+      ...snapshotOutcome.operationQueryCounts,
+    },
   );
 }
 
@@ -163,11 +194,41 @@ class _StreakProtectionSnapshotFetchOutcome {
     required this.snapshot,
     required this.remoteQueryCount,
     required this.deduplicatedLoadCount,
+    this.operationDurations = const <String, Duration>{},
+    this.operationQueryCounts = const <String, int>{},
   });
 
   final _StreakProtectionRemoteSnapshot? snapshot;
   final int remoteQueryCount;
   final int deduplicatedLoadCount;
+  final Map<String, Duration> operationDurations;
+  final Map<String, int> operationQueryCounts;
+}
+
+class _HabitTimeZoneSyncOutcome {
+  const _HabitTimeZoneSyncOutcome({
+    required this.changed,
+    required this.remoteQueryCount,
+    required this.duration,
+  });
+
+  final bool changed;
+  final int remoteQueryCount;
+  final Duration duration;
+}
+
+class _CloseMissedOccurrencesOutcome {
+  const _CloseMissedOccurrencesOutcome({
+    required this.changed,
+    required this.remoteQueryCount,
+    required this.deduplicatedLoadCount,
+    required this.duration,
+  });
+
+  final bool changed;
+  final int remoteQueryCount;
+  final int deduplicatedLoadCount;
+  final Duration duration;
 }
 
 Future<_StreakProtectionSnapshotFetchOutcome>
@@ -198,22 +259,28 @@ Future<_StreakProtectionSnapshotFetchOutcome>
 ) async {
   final activeFetch = store._streakProtectionRemoteSyncFuture;
   if (activeFetch != null) {
+    final outcome = await activeFetch;
     return _StreakProtectionSnapshotFetchOutcome(
-      snapshot: await activeFetch,
+      snapshot: outcome.snapshot,
       remoteQueryCount: 0,
       deduplicatedLoadCount: 1,
+      operationDurations: outcome.operationDurations,
+      operationQueryCounts: outcome.operationQueryCounts,
     );
   }
 
-  late final Future<_StreakProtectionRemoteSnapshot?> fetchFuture;
+  late final Future<_StreakProtectionSnapshotFetchOutcome> fetchFuture;
   fetchFuture = _runStreakProtectionSnapshotFetch(store, userState);
   store._streakProtectionRemoteSyncFuture = fetchFuture;
 
   try {
+    final outcome = await fetchFuture;
     return _StreakProtectionSnapshotFetchOutcome(
-      snapshot: await fetchFuture,
-      remoteQueryCount: 3,
+      snapshot: outcome.snapshot,
+      remoteQueryCount: outcome.remoteQueryCount,
       deduplicatedLoadCount: 0,
+      operationDurations: outcome.operationDurations,
+      operationQueryCounts: outcome.operationQueryCounts,
     );
   } finally {
     if (identical(store._streakProtectionRemoteSyncFuture, fetchFuture)) {
@@ -222,87 +289,153 @@ Future<_StreakProtectionSnapshotFetchOutcome>
   }
 }
 
-Future<_StreakProtectionRemoteSnapshot?> _runStreakProtectionSnapshotFetch(
+Future<_StreakProtectionSnapshotFetchOutcome> _runStreakProtectionSnapshotFetch(
   UserStateStore store,
   Map<String, dynamic> userState,
 ) async {
   final repository = _streakProtectionRepositoryForStore(store);
-  final timeZoneChanged = await _syncHabitTimeZoneCacheBestEffort(
+  final timeZoneOutcome = await _syncHabitTimeZoneCacheBestEffort(
     store,
     userState: userState,
     repository: repository,
   );
+  final operationDurations = <String, Duration>{
+    'habit_timezone': timeZoneOutcome.duration,
+  };
+  final operationQueryCounts = <String, int>{
+    'habit_timezone': timeZoneOutcome.remoteQueryCount,
+  };
+
+  final shieldsStopwatch = Stopwatch()..start();
 
   final shieldsResult = await repository.fetchShieldsForCurrentUser();
+  shieldsStopwatch.stop();
+  operationDurations['streak_shields_fetch'] = shieldsStopwatch.elapsed;
+  operationQueryCounts['streak_shields_fetch'] = 1;
   if (!shieldsResult.isSuccess) {
     _debugStreakProtectionSync(
       'shield fetch skipped: ${shieldsResult.error?.message}',
     );
-    return _StreakProtectionRemoteSnapshot(
-      timeZoneChanged: timeZoneChanged,
-      shields: const <HabitStreakShieldRemote>[],
-      breaks: const <HabitStreakBreakRemote>[],
-      isComplete: false,
+    return _StreakProtectionSnapshotFetchOutcome(
+      snapshot: _StreakProtectionRemoteSnapshot(
+        timeZoneChanged: timeZoneOutcome.changed,
+        shields: const <HabitStreakShieldRemote>[],
+        breaks: const <HabitStreakBreakRemote>[],
+        isComplete: false,
+      ),
+      remoteQueryCount: timeZoneOutcome.remoteQueryCount + 1,
+      deduplicatedLoadCount: 0,
+      operationDurations: operationDurations,
+      operationQueryCounts: operationQueryCounts,
     );
   }
 
+  final breaksStopwatch = Stopwatch()..start();
   final breaksResult = await repository.fetchBreaksForCurrentUser();
+  breaksStopwatch.stop();
+  operationDurations['streak_breaks_fetch'] = breaksStopwatch.elapsed;
+  operationQueryCounts['streak_breaks_fetch'] = 1;
   if (!breaksResult.isSuccess) {
     _debugStreakProtectionSync(
       'break fetch skipped: ${breaksResult.error?.message}',
     );
-    return _StreakProtectionRemoteSnapshot(
-      timeZoneChanged: timeZoneChanged,
-      shields: const <HabitStreakShieldRemote>[],
-      breaks: const <HabitStreakBreakRemote>[],
-      isComplete: false,
+    return _StreakProtectionSnapshotFetchOutcome(
+      snapshot: _StreakProtectionRemoteSnapshot(
+        timeZoneChanged: timeZoneOutcome.changed,
+        shields: const <HabitStreakShieldRemote>[],
+        breaks: const <HabitStreakBreakRemote>[],
+        isComplete: false,
+      ),
+      remoteQueryCount: timeZoneOutcome.remoteQueryCount + 2,
+      deduplicatedLoadCount: 0,
+      operationDurations: operationDurations,
+      operationQueryCounts: operationQueryCounts,
     );
   }
 
-  return _StreakProtectionRemoteSnapshot(
-    timeZoneChanged: timeZoneChanged,
-    shields: shieldsResult.data ?? const <HabitStreakShieldRemote>[],
-    breaks: breaksResult.data ?? const <HabitStreakBreakRemote>[],
-    isComplete: true,
+  return _StreakProtectionSnapshotFetchOutcome(
+    snapshot: _StreakProtectionRemoteSnapshot(
+      timeZoneChanged: timeZoneOutcome.changed,
+      shields: shieldsResult.data ?? const <HabitStreakShieldRemote>[],
+      breaks: breaksResult.data ?? const <HabitStreakBreakRemote>[],
+      isComplete: true,
+    ),
+    remoteQueryCount: timeZoneOutcome.remoteQueryCount + 2,
+    deduplicatedLoadCount: 0,
+    operationDurations: operationDurations,
+    operationQueryCounts: operationQueryCounts,
   );
 }
 
-Future<bool> _syncHabitTimeZoneCacheBestEffort(
+Future<_HabitTimeZoneSyncOutcome> _syncHabitTimeZoneCacheBestEffort(
   UserStateStore store, {
   required Map<String, dynamic> userState,
   required StreakProtectionRepository repository,
 }) async {
+  final stopwatch = Stopwatch()..start();
   String? timeZone;
   try {
     timeZone =
         (await store._deviceTimeZoneProvider.getLocalIanaTimeZone())?.trim();
   } catch (error) {
     _debugStreakProtectionSync('device timezone unavailable: $error');
-    return false;
+    stopwatch.stop();
+    return _HabitTimeZoneSyncOutcome(
+      changed: false,
+      remoteQueryCount: 0,
+      duration: stopwatch.elapsed,
+    );
   }
 
   if (timeZone == null || timeZone.isEmpty) {
     _debugStreakProtectionSync('device timezone unavailable');
-    return false;
+    stopwatch.stop();
+    return _HabitTimeZoneSyncOutcome(
+      changed: false,
+      remoteQueryCount: 0,
+      duration: stopwatch.elapsed,
+    );
   }
   if (RegExp(r'^[+-]\d{2}:\d{2}$').hasMatch(timeZone)) {
     _debugStreakProtectionSync('offset timezone rejected: $timeZone');
-    return false;
+    stopwatch.stop();
+    return _HabitTimeZoneSyncOutcome(
+      changed: false,
+      remoteQueryCount: 0,
+      duration: stopwatch.elapsed,
+    );
   }
 
   final meta = _map(userState['meta']);
   final lastSynced = (meta['lastSyncedHabitTimeZone'] ?? '').toString().trim();
-  if (lastSynced == timeZone) return false;
+  if (lastSynced == timeZone) {
+    stopwatch.stop();
+    return _HabitTimeZoneSyncOutcome(
+      changed: false,
+      remoteQueryCount: 0,
+      duration: stopwatch.elapsed,
+    );
+  }
 
   final result = await repository.setHabitTimeZone(timeZone);
   if (!result.isSuccess) {
     _debugStreakProtectionSync(
       'timezone sync failed: ${result.error?.message}',
     );
-    return false;
+    stopwatch.stop();
+    return _HabitTimeZoneSyncOutcome(
+      changed: false,
+      remoteQueryCount: 1,
+      duration: stopwatch.elapsed,
+    );
   }
 
-  return true;
+  stopwatch.stop();
+  return _HabitTimeZoneSyncOutcome(
+    changed: true,
+    remoteQueryCount: 1,
+    duration: stopwatch.elapsed,
+  );
 }
 
 Future<String?> _currentDeviceTimeZoneBestEffort(
@@ -434,22 +567,33 @@ Future<_StreakProtectionSyncOutcome>
 ) async {
   final activeClose = store._streakProtectionRemoteCloseFuture;
   if (activeClose != null) {
+    final outcome = await activeClose;
     return _StreakProtectionSyncOutcome(
-      changed: await activeClose,
+      changed: outcome.changed,
       remoteQueryCount: 0,
       deduplicatedLoadCount: 1,
+      operationDurations: <String, Duration>{
+        'missed_occurrences_close': outcome.duration,
+      },
     );
   }
 
-  late final Future<bool> sharedFuture;
+  late final Future<_CloseMissedOccurrencesOutcome> sharedFuture;
   sharedFuture =
       _runCloseRemoteMissedHabitOccurrencesBestEffort(store, userState);
   store._streakProtectionRemoteCloseFuture = sharedFuture;
   try {
+    final outcome = await sharedFuture;
     return _StreakProtectionSyncOutcome(
-      changed: await sharedFuture,
-      remoteQueryCount: 0,
-      deduplicatedLoadCount: 0,
+      changed: outcome.changed,
+      remoteQueryCount: outcome.remoteQueryCount,
+      deduplicatedLoadCount: outcome.deduplicatedLoadCount,
+      operationDurations: <String, Duration>{
+        'missed_occurrences_close': outcome.duration,
+      },
+      operationQueryCounts: <String, int>{
+        'missed_occurrences_close': outcome.remoteQueryCount,
+      },
     );
   } finally {
     if (identical(store._streakProtectionRemoteCloseFuture, sharedFuture)) {
@@ -458,11 +602,21 @@ Future<_StreakProtectionSyncOutcome>
   }
 }
 
-Future<bool> _runCloseRemoteMissedHabitOccurrencesBestEffort(
+Future<_CloseMissedOccurrencesOutcome>
+    _runCloseRemoteMissedHabitOccurrencesBestEffort(
   UserStateStore store,
   Map<String, dynamic> userState,
 ) async {
-  if (!_isAuthenticatedStreakProtectionUser(store, userState)) return false;
+  final stopwatch = Stopwatch()..start();
+  if (!_isAuthenticatedStreakProtectionUser(store, userState)) {
+    stopwatch.stop();
+    return _CloseMissedOccurrencesOutcome(
+      changed: false,
+      remoteQueryCount: 0,
+      deduplicatedLoadCount: 0,
+      duration: stopwatch.elapsed,
+    );
+  }
   final todayKey = _todayFrom(store._nowProvider);
   final history = _ensureHistoryRoot(userState);
   final occurrenceStatuses = _map(history[_habitOccurrenceStatusesKey]);
@@ -476,6 +630,7 @@ Future<bool> _runCloseRemoteMissedHabitOccurrencesBestEffort(
   final repository = _streakProtectionRepositoryForStore(store);
 
   var changed = false;
+  var remoteQueryCount = 0;
   for (final dayEntry in occurrenceStatuses.entries.toList(growable: false)) {
     final dayKey = dayEntry.key.toString().trim();
     if (dayKey.isEmpty || dayKey.compareTo(todayKey) >= 0) continue;
@@ -505,6 +660,7 @@ Future<bool> _runCloseRemoteMissedHabitOccurrencesBestEffort(
         logicalDate: dayKey,
         breakId: breakId,
       );
+      remoteQueryCount += 1;
       if (!result.isSuccess || result.data == null) {
         _debugStreakProtectionSync(
           'close skipped habitId=$localHabitId date=$dayKey: '
@@ -521,7 +677,13 @@ Future<bool> _runCloseRemoteMissedHabitOccurrencesBestEffort(
           changed;
     }
   }
-  return changed;
+  stopwatch.stop();
+  return _CloseMissedOccurrencesOutcome(
+    changed: changed,
+    remoteQueryCount: remoteQueryCount,
+    deduplicatedLoadCount: 0,
+    duration: stopwatch.elapsed,
+  );
 }
 
 bool _applyClosedOccurrenceRemoteResult(
