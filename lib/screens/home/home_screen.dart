@@ -42,6 +42,7 @@ import 'package:rutio/widgets/home/home_add_fab.dart';
 import 'package:rutio/widgets/home/user_identity_row.dart';
 
 import 'package:rutio/screens/home/widgets/chips/home_day_chip.dart';
+import 'package:rutio/screens/home/widgets/habit/habit_card_swipe_shell.dart';
 import 'package:rutio/screens/home/widgets/habit/habit_card_widget.dart';
 
 part 'state/home_state.dart';
