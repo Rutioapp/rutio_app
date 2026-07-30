@@ -29,6 +29,75 @@ void main() {
     expect(HabitCardStatusFeedbackMotionConfig.tickFinalScale, 1);
   });
 
+  test('tap completion uses skip-like programmatic motion constants', () {
+    expect(homeHabitTapCompletionVelocityX, 0);
+    expect(homeHabitTapCompletionSpringStiffness, 156.25);
+    expect(
+      homeHabitTapCompletionSpringStiffness,
+      lessThan(
+        HabitCardStatusFeedbackMotionConfig.skippedEntrySpringStiffness,
+      ),
+    );
+    expect(homeHabitTapCompletionSpringDamping, 26.25);
+  });
+
+  test('count completion transition only starts on pending crossing', () {
+    expect(
+      shouldAnimateCountCompletionUpdate(
+        selectedFilter: HomeHabitStatusFilter.pending,
+        currentValue: 3,
+        nextValue: 4,
+        targetValue: 5,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldAnimateCountCompletionUpdate(
+        selectedFilter: HomeHabitStatusFilter.pending,
+        currentValue: 4,
+        nextValue: 5,
+        targetValue: 5,
+      ),
+      isTrue,
+    );
+    expect(
+      shouldAnimateCountCompletionUpdate(
+        selectedFilter: HomeHabitStatusFilter.pending,
+        currentValue: 4,
+        nextValue: 7,
+        targetValue: 5,
+      ),
+      isTrue,
+    );
+    expect(
+      shouldAnimateCountCompletionUpdate(
+        selectedFilter: HomeHabitStatusFilter.pending,
+        currentValue: 5,
+        nextValue: 6,
+        targetValue: 5,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldAnimateCountCompletionUpdate(
+        selectedFilter: HomeHabitStatusFilter.pending,
+        currentValue: 5,
+        nextValue: 4,
+        targetValue: 5,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldAnimateCountCompletionUpdate(
+        selectedFilter: HomeHabitStatusFilter.completed,
+        currentValue: 4,
+        nextValue: 5,
+        targetValue: 5,
+      ),
+      isFalse,
+    );
+  });
+
   testWidgets('status feedback renders completed and skipped variants',
       (tester) async {
     const completedKey = ValueKey('completed_feedback');
@@ -167,6 +236,143 @@ void main() {
         closeTo(feedbackLeft, 0.1));
     expect(
         find.byIcon(CupertinoIcons.check_mark_circled_solid), findsOneWidget);
+  });
+
+  testWidgets(
+      'tap completion snapshot starts centered and reveals completed feedback',
+      (tester) async {
+    final transition = _transition(
+      'a',
+      originalIndex: 0,
+      initialOffsetX: 0,
+      velocityX: homeHabitTapCompletionVelocityX,
+      rightRevealProgress: 0,
+      useTapCompletionMotion: true,
+    );
+
+    await tester.pumpWidget(
+      _testApp(
+        pendingHabits: [_habit('b')],
+        transitions: [transition],
+      ),
+    );
+
+    expect(find.byKey(transition.widgetKey), findsOneWidget);
+    expect(find.byKey(_feedbackKey(transition)), findsOneWidget);
+    expect(find.byKey(const ValueKey('transition_visual_a')), findsOneWidget);
+    expect(find.byKey(const ValueKey('habit_visual_a')), findsNothing);
+    expect(_transitionOffsetX(tester, 'a'), closeTo(0, 0.1));
+    expect(_statusIconOpacity(tester), 0);
+
+    final feedbackLeft =
+        tester.getTopLeft(find.byKey(_feedbackKey(transition))).dx;
+    final initialNextCardTop =
+        tester.getTopLeft(find.byKey(const ValueKey('habit_visual_b'))).dy;
+    final offsets = <double>[_transitionOffsetX(tester, 'a')];
+    final opacities = <double>[_statusIconOpacity(tester)];
+
+    for (final delta in const [
+      Duration(milliseconds: 16),
+      Duration(milliseconds: 24),
+      Duration(milliseconds: 40),
+      Duration(milliseconds: 80),
+    ]) {
+      await tester.pump(delta);
+      offsets.add(_transitionOffsetX(tester, 'a'));
+      opacities.add(_statusIconOpacity(tester));
+      expect(find.byKey(transition.widgetKey), findsOneWidget);
+      expect(find.byKey(_feedbackKey(transition)), findsOneWidget);
+      expect(find.byKey(const ValueKey('transition_visual_a')), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byKey(_feedbackKey(transition))).dx,
+        closeTo(feedbackLeft, 0.1),
+      );
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('habit_visual_b'))).dy,
+        closeTo(initialNextCardTop, 0.1),
+      );
+    }
+
+    for (var index = 1; index < offsets.length; index += 1) {
+      expect(offsets[index], greaterThanOrEqualTo(offsets[index - 1]));
+    }
+    expect(offsets.last, greaterThan(0));
+    expect(offsets.last, lessThanOrEqualTo(transition.exitOffsetX));
+    expect(opacities.any((opacity) => opacity > 0 && opacity < 1), isTrue);
+
+    await _pumpUntilForegroundExits(tester, transition);
+
+    expect(
+        _transitionOffsetX(tester, 'a'), closeTo(transition.exitOffsetX, 0.5));
+    expect(_statusIconOpacity(tester), 1);
+    expect(find.byKey(_feedbackKey(transition)), findsOneWidget);
+    expect(find.byKey(const ValueKey('habit_visual_a')), findsNothing);
+  });
+
+  testWidgets('count completion snapshot uses the same completed transition',
+      (tester) async {
+    final transition = _transition(
+      'count-a',
+      originalIndex: 0,
+      initialOffsetX: 0,
+      velocityX: homeHabitTapCompletionVelocityX,
+      rightRevealProgress: 0,
+      habitSnapshot: _countHabit('count-a', current: 4, target: 5),
+      useTapCompletionMotion: true,
+    );
+
+    await tester.pumpWidget(
+      _testApp(
+        pendingHabits: [_countHabit('count-a', current: 4, target: 5)],
+        transitions: [transition],
+      ),
+    );
+
+    expect(find.byKey(transition.widgetKey), findsOneWidget);
+    expect(find.byKey(_feedbackKey(transition)), findsOneWidget);
+    expect(find.byKey(const ValueKey('habit_visual_count-a')), findsNothing);
+    expect(
+        find.byIcon(CupertinoIcons.check_mark_circled_solid), findsOneWidget);
+    expect(_transitionOffsetX(tester, 'count-a'), closeTo(0, 0.1));
+
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(_transitionOffsetX(tester, 'count-a'), greaterThan(0));
+    expect(find.byKey(const ValueKey('habit_visual_count-a')), findsNothing);
+  });
+
+  testWidgets(
+      'tap completion foreground starts slower than default completed spring',
+      (tester) async {
+    final tapTransition = _transition(
+      'tap',
+      originalIndex: 0,
+      initialOffsetX: 0,
+      velocityX: 0,
+      rightRevealProgress: 0,
+      useTapCompletionMotion: true,
+    );
+    final defaultTransition = _transition(
+      'default',
+      originalIndex: 0,
+      initialOffsetX: 0,
+      velocityX: 0,
+      rightRevealProgress: 0,
+    );
+
+    await tester.pumpWidget(_testApp(transitions: [tapTransition]));
+    await tester.pump(const Duration(milliseconds: 80));
+    final tapOffset = _transitionOffsetX(tester, 'tap');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    await tester.pumpWidget(_testApp(transitions: [defaultTransition]));
+    await tester.pump(const Duration(milliseconds: 80));
+    final defaultOffset = _transitionOffsetX(tester, 'default');
+
+    expect(tapOffset, greaterThan(0));
+    expect(tapOffset, lessThan(defaultOffset));
+    expect(defaultTransition.useTapCompletionMotion, isFalse);
   });
 
   testWidgets('completed handoff keeps tick left inset opacity and scale',
@@ -677,6 +883,22 @@ Map<String, dynamic> _habit(String id) {
   };
 }
 
+Map<String, dynamic> _countHabit(
+  String id, {
+  required num current,
+  required num target,
+}) {
+  return {
+    'id': id,
+    'title': 'Count habit $id',
+    'type': 'count',
+    'progress': current,
+    'target': target,
+    'doneToday': false,
+    'skippedToday': false,
+  };
+}
+
 HomeHabitCompletionTransition _transition(
   String id, {
   required int originalIndex,
@@ -686,6 +908,8 @@ HomeHabitCompletionTransition _transition(
   double cardWidth = 360,
   double rightRevealProgress = 1,
   double leftRevealProgress = 1,
+  bool useTapCompletionMotion = false,
+  Map<String, dynamic>? habitSnapshot,
 }) {
   return HomeHabitCompletionTransition(
     transitionId: 't-$id',
@@ -693,7 +917,7 @@ HomeHabitCompletionTransition _transition(
     kind: kind,
     originalIndex: originalIndex,
     dateKey: '2026-07-29',
-    habitSnapshot: _habit(id),
+    habitSnapshot: habitSnapshot ?? _habit(id),
     startedAt: DateTime(2026, 7, 29, 12),
     initialOffsetX: initialOffsetX,
     velocityX: velocityX,
@@ -701,6 +925,7 @@ HomeHabitCompletionTransition _transition(
     commitProgress: 1,
     rightRevealProgress: rightRevealProgress,
     leftRevealProgress: leftRevealProgress,
+    useTapCompletionMotion: useTapCompletionMotion,
   );
 }
 
@@ -798,4 +1023,18 @@ Future<void> _pumpUntilCollapseStarts(
     }
   }
   fail('Expected status feedback collapse to start.');
+}
+
+Future<void> _pumpUntilForegroundExits(
+  WidgetTester tester,
+  HomeHabitCompletionTransition transition,
+) async {
+  for (var frame = 0; frame < 90; frame += 1) {
+    await tester.pump(const Duration(milliseconds: 16));
+    if (_transitionOffsetX(tester, transition.habitId) >=
+        transition.exitOffsetX - 0.5) {
+      return;
+    }
+  }
+  fail('Expected foreground to exit right.');
 }

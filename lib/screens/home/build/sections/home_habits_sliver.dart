@@ -454,6 +454,11 @@ class _HomeHabitCompletionTransitionTileState
     stiffness: HabitCardStatusFeedbackMotionConfig.skippedEntrySpringStiffness,
     damping: HabitCardStatusFeedbackMotionConfig.skippedEntrySpringDamping,
   );
+  static const SpringDescription _tapCompletionSpring = SpringDescription(
+    mass: HabitCardStatusFeedbackMotionConfig.springMass,
+    stiffness: homeHabitTapCompletionSpringStiffness,
+    damping: homeHabitTapCompletionSpringDamping,
+  );
 
   late final AnimationController _holdController;
   late final AnimationController _collapseController;
@@ -515,7 +520,7 @@ class _HomeHabitCompletionTransitionTileState
     await Future.wait([
       _horizontalController.animateWith(
         SpringSimulation(
-          _horizontalSpring,
+          _foregroundSpring,
           widget.transition.initialOffsetX,
           widget.transition.exitOffsetX,
           _initialVelocity,
@@ -544,6 +549,13 @@ class _HomeHabitCompletionTransitionTileState
       return widget.transition.velocityX.clamp(-2800.0, 0.0).toDouble();
     }
     return widget.transition.velocityX.clamp(0.0, 2800.0).toDouble();
+  }
+
+  SpringDescription get _foregroundSpring {
+    if (widget.transition.useTapCompletionMotion) {
+      return _tapCompletionSpring;
+    }
+    return _horizontalSpring;
   }
 
   double get _initialFeedbackOffset {

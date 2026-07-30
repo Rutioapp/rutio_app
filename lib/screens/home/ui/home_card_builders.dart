@@ -305,6 +305,17 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     }
 
     final isTrayOpen = _revealedHomeSwipeHabitId == id;
+    double measuredCardWidth = 0;
+
+    double resolvedCardWidth() {
+      if (measuredCardWidth.isFinite && measuredCardWidth > 0) {
+        return measuredCardWidth;
+      }
+      final fallbackWidth =
+          MediaQuery.sizeOf(context).width - (IosSpacing.lg * 2);
+      return fallbackWidth.isFinite && fallbackWidth > 0 ? fallbackWidth : 360;
+    }
+
     void closeTrayIfOpen() {
       if (_revealedHomeSwipeHabitId != id) return;
       _applyHomeState(() => _revealedHomeSwipeHabitId = null);
@@ -355,15 +366,47 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       isCounting: isCounting,
       completionBurstText: completionBurstText,
       onCheckTap: () async {
+        HomeHabitCompletionTransition? transition;
+        final shouldUseTapCompletionTransition =
+            _habitStatusFilter == HomeHabitStatusFilter.pending &&
+                canRightCommitComplete;
+
+        if (shouldUseTapCompletionTransition) {
+          transition = _registerHabitCompletionTransition(
+            habitId: id,
+            habit: habit,
+            originalIndex: _pendingHabitIndexForTransition(context, id),
+            visualState: HabitCardRightCommitVisualState(
+              offsetX: 0,
+              velocityX: homeHabitTapCompletionVelocityX,
+              cardWidth: resolvedCardWidth(),
+              commitProgress: 0,
+              rightRevealProgress: 0,
+            ),
+            useTapCompletionMotion: true,
+          );
+          if (transition == null) return;
+        }
+
         // IOS-FIRST IMPROVEMENT START
         await IosFeedback.success();
         if (!context.mounted) return;
 
-        await context.read<UserStateStore>().setHabitCompletionForKey(
-              habitId: id,
-              dateKey: _dateKey(_selectedDay),
-              done: !(doneToday && !skippedToday),
+        try {
+          await context.read<UserStateStore>().setHabitCompletionForKey(
+                habitId: id,
+                dateKey: _dateKey(_selectedDay),
+                done: !(doneToday && !skippedToday),
+              );
+        } catch (_) {
+          if (transition != null) {
+            _removeHabitCompletionTransition(
+              habitId: transition.habitId,
+              transitionId: transition.transitionId,
             );
+          }
+          rethrow;
+        }
       },
       currentCount: current,
       targetCount: target,
@@ -377,11 +420,23 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
                 fallback: 1,
               ).toDouble();
               final next = current + step;
-              context.read<UserStateStore>().setCountHabitValueForDate(
-                    habitId: id,
-                    date: _selectedDay,
-                    value: next,
-                  );
+              unawaited(
+                _applyCountUpdateFromHome(
+                  context: context,
+                  habitId: id,
+                  habit: habit,
+                  currentValue: current,
+                  nextValue: next,
+                  targetValue: target,
+                  cardWidth: resolvedCardWidth(),
+                  productiveCallback: () =>
+                      context.read<UserStateStore>().setCountHabitValueForDate(
+                            habitId: id,
+                            date: _selectedDay,
+                            value: next,
+                          ),
+                ),
+              );
             }
           : null,
       onDecrement: isCounting
@@ -401,9 +456,12 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       onCountTap: isCounting
           ? () => _editCountValueDialog(
                 context: context,
+                habit: habit,
                 habitId: id,
                 date: _selectedDay,
-                currentValue: current.toInt(),
+                currentValue: current,
+                targetValue: target,
+                cardWidth: resolvedCardWidth(),
                 unitLabel: unitLabel.isEmpty ? null : unitLabel,
               )
           : null,
@@ -498,7 +556,15 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       child: card,
     );
 
-    return revealCard;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        if (width.isFinite && width > 0) {
+          measuredCardWidth = width;
+        }
+        return revealCard;
+      },
+    );
   }
 
   Widget _habitCompletionTransitionCard({

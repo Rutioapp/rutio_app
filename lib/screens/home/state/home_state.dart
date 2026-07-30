@@ -78,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     required Map<String, dynamic> habit,
     required int originalIndex,
     required HabitCardRightCommitVisualState visualState,
+    bool useTapCompletionMotion = false,
   }) {
     final normalizedId = habitId.trim();
     if (normalizedId.isEmpty ||
@@ -98,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       cardWidth: visualState.cardWidth,
       commitProgress: visualState.commitProgress,
       rightRevealProgress: visualState.rightRevealProgress,
+      useTapCompletionMotion: useTapCompletionMotion,
     );
     _applyHomeState(() {
       _habitCompletionTransitions[normalizedId] = transition;
@@ -283,6 +285,54 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _habitCompletionTransitions
       ..clear()
       ..addAll(next);
+  }
+
+  Future<void> _applyCountUpdateFromHome({
+    required BuildContext context,
+    required String habitId,
+    required Map<String, dynamic> habit,
+    required num currentValue,
+    required num nextValue,
+    required num targetValue,
+    required double cardWidth,
+    required Future<void> Function() productiveCallback,
+  }) async {
+    final crossesToCompleted = shouldAnimateCountCompletionUpdate(
+      selectedFilter: _habitStatusFilter,
+      currentValue: currentValue,
+      nextValue: nextValue,
+      targetValue: targetValue,
+    );
+
+    HomeHabitCompletionTransition? transition;
+    if (crossesToCompleted) {
+      transition = _registerHabitCompletionTransition(
+        habitId: habitId,
+        habit: habit,
+        originalIndex: _pendingHabitIndexForTransition(context, habitId),
+        visualState: HabitCardRightCommitVisualState(
+          offsetX: 0,
+          velocityX: homeHabitTapCompletionVelocityX,
+          cardWidth: cardWidth,
+          commitProgress: 0,
+          rightRevealProgress: 0,
+        ),
+        useTapCompletionMotion: true,
+      );
+      if (transition == null) return;
+    }
+
+    try {
+      await productiveCallback();
+    } catch (_) {
+      if (transition != null) {
+        _removeHabitCompletionTransition(
+          habitId: transition.habitId,
+          transitionId: transition.transitionId,
+        );
+      }
+      rethrow;
+    }
   }
 
   void _scrollHomeToTopOnNextFrame() {
@@ -566,17 +616,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _editCountValueDialog({
     required BuildContext context,
+    required Map<String, dynamic> habit,
     required String habitId,
     required DateTime date,
-    required int currentValue,
+    required num currentValue,
+    required num targetValue,
+    required double cardWidth,
     String? unitLabel,
   }) async {
-    final store = this.context.read<UserStateStore>();
     final controller = TextEditingController(text: currentValue.toString());
     // IOS-FIRST IMPROVEMENT START
     final result = await showCupertinoDialog<int>(
       context: context,
       builder: (ctx) {
+        var didSubmit = false;
         return CupertinoAlertDialog(
           title: Text(context.l10n.homeEditCounterTitle),
           content: Padding(
@@ -604,8 +657,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             CupertinoDialogAction(
               isDefaultAction: true,
               onPressed: () {
+                if (didSubmit) return;
                 final raw = controller.text.trim();
                 final v = int.tryParse(raw);
+                if (v == null) return;
+                didSubmit = true;
                 Navigator.pop(ctx, v);
               },
               child: Text(context.l10n.commonSave),
@@ -620,11 +676,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     final safe = result < 0 ? 0 : result;
     if (!mounted) return;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted || !context.mounted) return;
 
-    store.setCountHabitValueForDate(
+    await _applyCountUpdateFromHome(
+      context: context,
       habitId: habitId,
-      date: date,
-      value: safe,
+      habit: habit,
+      currentValue: currentValue,
+      nextValue: safe,
+      targetValue: targetValue,
+      cardWidth: cardWidth,
+      productiveCallback: () =>
+          this.context.read<UserStateStore>().setCountHabitValueForDate(
+                habitId: habitId,
+                date: date,
+                value: safe,
+              ),
     );
   }
 
@@ -687,7 +755,27 @@ List<Map<String, dynamic>> habitsForFilter(
 }
 
 @visibleForTesting
+bool shouldAnimateCountCompletionUpdate({
+  required HomeHabitStatusFilter selectedFilter,
+  required num currentValue,
+  required num nextValue,
+  required num targetValue,
+}) {
+  if (selectedFilter != HomeHabitStatusFilter.pending) return false;
+  return currentValue < targetValue && nextValue >= targetValue;
+}
+
+@visibleForTesting
 const double homeHabitStatusFeedbackExitMargin = 24;
+
+@visibleForTesting
+const double homeHabitTapCompletionVelocityX = 0;
+
+@visibleForTesting
+const double homeHabitTapCompletionSpringStiffness = 156.25;
+
+@visibleForTesting
+const double homeHabitTapCompletionSpringDamping = 26.25;
 
 @visibleForTesting
 class HomeHabitCompletionTransition {
@@ -705,6 +793,7 @@ class HomeHabitCompletionTransition {
     required this.commitProgress,
     this.rightRevealProgress = 1,
     this.leftRevealProgress = 1,
+    this.useTapCompletionMotion = false,
     this.visualAnimationCompleted = false,
     this.pendingRemoved = false,
   });
@@ -722,6 +811,7 @@ class HomeHabitCompletionTransition {
   final double commitProgress;
   final double rightRevealProgress;
   final double leftRevealProgress;
+  final bool useTapCompletionMotion;
   final bool visualAnimationCompleted;
   final bool pendingRemoved;
 
@@ -753,6 +843,7 @@ class HomeHabitCompletionTransition {
       commitProgress: commitProgress,
       rightRevealProgress: rightRevealProgress,
       leftRevealProgress: leftRevealProgress,
+      useTapCompletionMotion: useTapCompletionMotion,
       visualAnimationCompleted:
           visualAnimationCompleted ?? this.visualAnimationCompleted,
       pendingRemoved: pendingRemoved ?? this.pendingRemoved,
