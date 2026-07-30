@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/physics.dart';
+import 'package:rutio/screens/home/widgets/habit/habit_card_status_feedback.dart';
 
 @visibleForTesting
 enum HabitCardSwipeVisualState {
@@ -9,6 +10,38 @@ enum HabitCardSwipeVisualState {
   settlingLeftOpen,
   committingRight,
   actionInFlight,
+}
+
+class HabitCardRightCommitVisualState {
+  const HabitCardRightCommitVisualState({
+    required this.offsetX,
+    required this.velocityX,
+    required this.cardWidth,
+    required this.commitProgress,
+    required this.rightRevealProgress,
+  });
+
+  final double offsetX;
+  final double velocityX;
+  final double cardWidth;
+  final double commitProgress;
+  final double rightRevealProgress;
+}
+
+class HabitCardSkipVisualState {
+  const HabitCardSkipVisualState({
+    required this.offsetX,
+    required this.velocityX,
+    required this.cardWidth,
+    required this.revealProgress,
+    required this.leftRevealProgress,
+  });
+
+  final double offsetX;
+  final double velocityX;
+  final double cardWidth;
+  final double revealProgress;
+  final double leftRevealProgress;
 }
 
 @visibleForTesting
@@ -64,6 +97,12 @@ class HabitCardSwipeMotionConfig {
     return cardWidth * rightVisualLimitFraction;
   }
 
+  double rightRevealExtent(double cardWidth) {
+    return rightCommitThreshold(cardWidth);
+  }
+
+  double get leftRevealExtent => leftActionsExtent;
+
   SpringDescription get springDescription {
     return SpringDescription(
       mass: springMass,
@@ -117,6 +156,9 @@ class HabitCardSwipeMotionConfig {
     if (rawOffset < openOffset) {
       final excess = openOffset - rawOffset;
       return openOffset - _resistedOverscroll(excess);
+    }
+    if (!canSwipeRightComplete && rawOffset > 0) {
+      return 0;
     }
     if (rawOffset > rightLimit) {
       final excess = rawOffset - rightLimit;
@@ -230,8 +272,9 @@ class HabitCardSwipeShell extends StatefulWidget {
   final void Function(String cardId) onRequestCloseOtherCards;
   final void Function(String cardId) onRequestOpen;
   final VoidCallback onRequestClose;
-  final Future<void> Function()? onSwipeRightComplete;
-  final Future<void> Function() onSkip;
+  final Future<void> Function(HabitCardRightCommitVisualState visualState)?
+      onSwipeRightComplete;
+  final Future<void> Function(HabitCardSkipVisualState visualState) onSkip;
   final VoidCallback? onEdit;
   final Future<void> Function() onDelete;
   final HabitCardSwipeMotionConfig motionConfig;
@@ -352,6 +395,36 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
     }
   }
 
+  Future<void> _handleSkipAction() async {
+    if (_isInteractionLocked) return;
+    _settleGeneration += 1;
+    if (_controller.isAnimating) {
+      _offset = _controller.value;
+    }
+    _controller.stop();
+    _controller.value = _offset;
+    final revealProgress = _config.progressForOffset(
+      _offset < 0 ? _offset.abs() : 0.0,
+      _config.leftRevealExtent,
+    );
+    final visualState = HabitCardSkipVisualState(
+      offsetX: _offset,
+      velocityX: 0,
+      cardWidth: _cardWidth,
+      revealProgress: revealProgress,
+      leftRevealProgress: revealProgress,
+    );
+    setState(() => _visualState = HabitCardSwipeVisualState.actionInFlight);
+    try {
+      widget.onRequestClose();
+      await widget.onSkip(visualState);
+    } finally {
+      if (mounted && _visualState == HabitCardSwipeVisualState.actionInFlight) {
+        setState(() => _visualState = HabitCardSwipeVisualState.idle);
+      }
+    }
+  }
+
   Future<void> _handleSyncAction(VoidCallback callback) async {
     if (_isInteractionLocked) return;
     setState(() => _visualState = HabitCardSwipeVisualState.actionInFlight);
@@ -441,10 +514,27 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
 
   Future<void> _commitRight(double velocity) async {
     if (_isInteractionLocked || widget.onSwipeRightComplete == null) return;
+    _settleGeneration += 1;
+    _controller.stop();
+    _offset = _controller.value;
+    final commitProgress = _config.progressForOffset(
+      _offset,
+      _config.rightCommitThreshold(_cardWidth),
+    );
+    final rightRevealProgress = _config.progressForOffset(
+      _offset,
+      _config.rightRevealExtent(_cardWidth),
+    );
+    final visualState = HabitCardRightCommitVisualState(
+      offsetX: _offset,
+      velocityX: velocity,
+      cardWidth: _cardWidth,
+      commitProgress: commitProgress,
+      rightRevealProgress: rightRevealProgress,
+    );
     setState(() => _visualState = HabitCardSwipeVisualState.committingRight);
-    _settleTo(0, HabitCardSwipeVisualState.committingRight, velocity: velocity);
     try {
-      await widget.onSwipeRightComplete!.call();
+      await widget.onSwipeRightComplete!.call(visualState);
     } finally {
       if (mounted &&
           _visualState == HabitCardSwipeVisualState.committingRight) {
@@ -470,37 +560,30 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
             final offset = _controller.value;
             final revealProgress = _config.progressForOffset(
               offset < 0 ? offset.abs() : 0.0,
-              revealWidth,
+              _config.leftRevealExtent,
             );
             final showTray = revealProgress > 0.001;
             final rightProgress = _config.progressForOffset(
               offset,
-              _config.rightVisualLimit(_cardWidth),
+              _config.rightRevealExtent(_cardWidth),
             );
-            final showRightCue =
-                widget.canSwipeRightComplete && rightProgress > 0.001;
+            final canShowRightFeedback = widget.canSwipeRightComplete &&
+                widget.onSwipeRightComplete != null;
 
             return Stack(
+              clipBehavior: Clip.hardEdge,
               children: [
-                if (showRightCue)
+                if (canShowRightFeedback)
                   Positioned.fill(
-                    child: Container(
-                      margin: EdgeInsets.symmetric(vertical: verticalInset),
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.systemGreen
-                            .withValues(alpha: 0.04 + (0.06 * rightProgress)),
+                    child: Opacity(
+                      opacity: offset > 0 ? 1 : 0,
+                      child: HabitCardStatusFeedback(
+                        key: const Key('habitCardRightCommitFeedback'),
+                        kind: HomeHabitStatusFeedbackKind.completed,
                         borderRadius: BorderRadius.circular(radius),
-                      ),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Icon(
-                            CupertinoIcons.check_mark_circled_solid,
-                            size: 20,
-                            color: CupertinoColors.systemGreen.withValues(
-                                alpha: 0.34 + (0.22 * rightProgress)),
-                          ),
+                        iconProgress: rightProgress,
+                        iconOpacityKey: const Key(
+                          'habitCardRightCommitFeedbackIconOpacity',
                         ),
                       ),
                     ),
@@ -525,7 +608,7 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
                                 label: widget.skipLabel,
                                 onTap: _isInteractionLocked
                                     ? null
-                                    : () => _handleAction(widget.onSkip),
+                                    : _handleSkipAction,
                               ),
                               _SwipeTrayActionButton(
                                 icon: CupertinoIcons.pencil,

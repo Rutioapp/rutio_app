@@ -294,6 +294,8 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
         if (byIndex != 0) return byIndex;
         return a.transitionId.compareTo(b.transitionId);
       });
+    final activeTransitionHabitIds =
+        sortedTransitions.map((transition) => transition.habitId).toSet();
     var transitionCursor = 0;
 
     for (var index = 0; index < widget.pendingHabits.length; index += 1) {
@@ -305,6 +307,13 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
           ),
         );
         transitionCursor += 1;
+      }
+      final habitId = (widget.pendingHabits[index]['id'] ??
+              widget.pendingHabits[index]['habitId'] ??
+              '')
+          .toString();
+      if (activeTransitionHabitIds.contains(habitId)) {
+        continue;
       }
       entries.add(
         _PendingCompletionVisualEntry.habit(
@@ -516,42 +525,154 @@ class _HomeHabitCompletionTransitionTile extends StatefulWidget {
 
 class _HomeHabitCompletionTransitionTileState
     extends State<_HomeHabitCompletionTransitionTile>
-    with SingleTickerProviderStateMixin {
-  static const Duration _duration = Duration(milliseconds: 220);
+    with TickerProviderStateMixin {
+  static const SpringDescription _horizontalSpring = SpringDescription(
+    mass: HabitCardStatusFeedbackMotionConfig.springMass,
+    stiffness: HabitCardStatusFeedbackMotionConfig.springStiffness,
+    damping: HabitCardStatusFeedbackMotionConfig.springDamping,
+  );
+  static const SpringDescription _skippedEntrySpring = SpringDescription(
+    mass: HabitCardStatusFeedbackMotionConfig.springMass,
+    stiffness: HabitCardStatusFeedbackMotionConfig.skippedEntrySpringStiffness,
+    damping: HabitCardStatusFeedbackMotionConfig.skippedEntrySpringDamping,
+  );
 
-  late final AnimationController _controller;
+  late final AnimationController _holdController;
+  late final AnimationController _collapseController;
+  late final AnimationController _horizontalController;
+  late final AnimationController _feedbackHorizontalController;
   late final Animation<double> _sizeFactor;
-  late final Animation<double> _opacity;
-  late final Animation<Offset> _slideOffset;
+  late final Animation<double> _feedbackOpacity;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: _duration);
-    final curved = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
+    _holdController = AnimationController(
+      vsync: this,
+      duration: HabitCardStatusFeedbackMotionConfig.holdDurationFor(
+        widget.transition.kind,
+      ),
     );
-    _sizeFactor = Tween<double>(begin: 1, end: 0).animate(curved);
-    _opacity = Tween<double>(begin: 0.92, end: 0).animate(curved);
-    _slideOffset = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0.035, 0),
-    ).animate(curved);
-    _controller.addStatusListener((status) {
+    _collapseController = AnimationController(
+      vsync: this,
+      duration: HabitCardStatusFeedbackMotionConfig.collapseDurationFor(
+        widget.transition.kind,
+      ),
+    );
+    _horizontalController = AnimationController.unbounded(
+      vsync: this,
+      value: widget.transition.initialOffsetX,
+    );
+    _feedbackHorizontalController = AnimationController.unbounded(
+      vsync: this,
+      value: _initialFeedbackOffset,
+    );
+    _sizeFactor = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(
+        parent: _collapseController,
+        curve: Curves.easeInOutCubic,
+      ),
+    );
+    _feedbackOpacity = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(
+        parent: _collapseController,
+        curve: const Interval(
+          HabitCardStatusFeedbackMotionConfig.fadeStartCollapseFraction,
+          1.0,
+          curve: Curves.easeOutCubic,
+        ),
+      ),
+    );
+    _collapseController.addStatusListener((status) {
       if (status != AnimationStatus.completed) return;
       widget.onDismissed(
         habitId: widget.transition.habitId,
         transitionId: widget.transition.transitionId,
       );
     });
-    _controller.forward();
+    _startSequence();
+  }
+
+  Future<void> _startSequence() async {
+    await Future.wait([
+      _horizontalController.animateWith(
+        SpringSimulation(
+          _horizontalSpring,
+          widget.transition.initialOffsetX,
+          widget.transition.exitOffsetX,
+          _initialVelocity,
+          tolerance: const Tolerance(distance: 0.5, velocity: 5),
+        ),
+      ),
+      if (widget.transition.kind == HomeHabitStatusFeedbackKind.skipped)
+        _feedbackHorizontalController.animateWith(
+          SpringSimulation(
+            _skippedEntrySpring,
+            _initialFeedbackOffset,
+            0,
+            _feedbackInitialVelocity,
+            tolerance: const Tolerance(distance: 0.5, velocity: 5),
+          ),
+        ),
+    ]);
+    if (!mounted) return;
+    await _holdController.forward();
+    if (!mounted) return;
+    await _collapseController.forward();
+  }
+
+  double get _initialVelocity {
+    if (widget.transition.kind == HomeHabitStatusFeedbackKind.skipped) {
+      return widget.transition.velocityX.clamp(-2800.0, 0.0).toDouble();
+    }
+    return widget.transition.velocityX.clamp(0.0, 2800.0).toDouble();
+  }
+
+  double get _initialFeedbackOffset {
+    if (widget.transition.kind != HomeHabitStatusFeedbackKind.skipped) return 0;
+    return widget.transition.cardWidth + homeHabitStatusFeedbackExitMargin;
+  }
+
+  double get _feedbackInitialVelocity {
+    if (widget.transition.kind != HomeHabitStatusFeedbackKind.skipped) return 0;
+    return widget.transition.velocityX.clamp(-2800.0, 0.0).toDouble();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _horizontalController.dispose();
+    _feedbackHorizontalController.dispose();
+    _collapseController.dispose();
+    _holdController.dispose();
     super.dispose();
+  }
+
+  double get _displayHorizontalOffset {
+    final value = _horizontalController.value;
+    final start = widget.transition.initialOffsetX;
+    final end = widget.transition.exitOffsetX;
+    if (end < start) {
+      return value.clamp(end, start).toDouble();
+    }
+    return value.clamp(start, end).toDouble();
+  }
+
+  double get _feedbackIconProgress {
+    if (widget.transition.kind == HomeHabitStatusFeedbackKind.skipped) {
+      return 1;
+    }
+    final revealExtent = widget.transition.cardWidth * 0.5;
+    if (revealExtent <= 0) return widget.transition.rightRevealProgress;
+    return (_displayHorizontalOffset / revealExtent).clamp(
+      widget.transition.rightRevealProgress.clamp(0.0, 1.0),
+      1.0,
+    );
+  }
+
+  double get _displayFeedbackHorizontalOffset {
+    if (widget.transition.kind != HomeHabitStatusFeedbackKind.skipped) return 0;
+    final value = _feedbackHorizontalController.value;
+    return value.clamp(0.0, _initialFeedbackOffset).toDouble();
   }
 
   @override
@@ -559,19 +680,51 @@ class _HomeHabitCompletionTransitionTileState
     return IgnorePointer(
       ignoring: true,
       child: ClipRect(
-        child: SizeTransition(
-          sizeFactor: _sizeFactor,
-          axisAlignment: -1,
-          child: FadeTransition(
-            opacity: _opacity,
-            child: SlideTransition(
-              position: _slideOffset,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([
+            _holdController,
+            _collapseController,
+            _horizontalController,
+            _feedbackHorizontalController,
+          ]),
+          builder: (context, child) {
+            return SizeTransition(
+              sizeFactor: _sizeFactor,
+              alignment: Alignment.topCenter,
               child: Padding(
                 padding: EdgeInsets.only(bottom: widget.bottomPadding),
-                child: widget.child,
+                child: Stack(
+                  fit: StackFit.passthrough,
+                  children: [
+                    Positioned.fill(
+                      child: FadeTransition(
+                        opacity: _feedbackOpacity,
+                        child: Transform.translate(
+                          offset: Offset(_displayFeedbackHorizontalOffset, 0),
+                          child: HabitCardStatusFeedback(
+                            key: ValueKey(
+                              'habit_status_feedback_'
+                              '${widget.transition.kind.name}_'
+                              '${widget.transition.transitionId}_'
+                              '${widget.transition.habitId}',
+                            ),
+                            kind: widget.transition.kind,
+                            borderRadius: BorderRadius.circular(20),
+                            iconProgress: _feedbackIconProgress,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Transform.translate(
+                      offset: Offset(_displayHorizontalOffset, 0),
+                      child: child,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
+          child: widget.child,
         ),
       ),
     );

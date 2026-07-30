@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/screens/home/widgets/habit/habit_card_status_feedback.dart';
 import 'package:rutio/screens/home/widgets/habit/habit_card_swipe_shell.dart';
 
 void main() {
@@ -57,6 +58,28 @@ void main() {
           canSwipeRightComplete: true,
         ),
         lessThan(-234),
+      );
+    });
+
+    test('clamps positive offset to zero when right completion is disabled',
+        () {
+      expect(
+        config.applyDragDelta(
+          currentOffset: 0,
+          delta: 120,
+          cardWidth: 360,
+          canSwipeRightComplete: false,
+        ),
+        0,
+      );
+      expect(
+        config.applyDragDelta(
+          currentOffset: -40,
+          delta: 80,
+          cardWidth: 360,
+          canSwipeRightComplete: false,
+        ),
+        0,
       );
     });
 
@@ -121,6 +144,7 @@ void main() {
       expect(config.leftFlickVelocity, 700);
       expect(config.overdragResistance, 0.20);
       expect(config.rightVisualLimitFraction, 0.60);
+      expect(config.rightRevealExtent(360), config.rightCommitThreshold(360));
     });
 
     test('centralizes spring parameters', () {
@@ -256,9 +280,27 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(CupertinoIcons.forward_end_fill), findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.pencil), findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.delete), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(CupertinoButton),
+        matching: find.byIcon(CupertinoIcons.forward_end_fill),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(CupertinoButton),
+        matching: find.byIcon(CupertinoIcons.pencil),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(CupertinoButton),
+        matching: find.byIcon(CupertinoIcons.delete),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('right swipe keeps the current completion callback',
@@ -495,6 +537,39 @@ void main() {
     expect(_cardOffsetX(tester), closeTo(0, 0.1));
   });
 
+  testWidgets('right drag is inert when right completion is disabled',
+      (tester) async {
+    HabitCardRightCommitVisualState? reportedVisualState;
+    var completeCalls = 0;
+
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          canSwipeRightComplete: false,
+          onSwipeRightCompleteWithVisualState: (visualState) async {
+            reportedVisualState = visualState;
+            completeCalls += 1;
+          },
+        ),
+      ),
+    );
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byKey(_childKey)));
+    await gesture.moveBy(const Offset(120, 0));
+    await tester.pump();
+
+    expect(_cardOffsetX(tester), closeTo(0, 0.1));
+    expect(find.byKey(const Key('habitCardRightCommitFeedback')), findsNothing);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(completeCalls, 0);
+    expect(reportedVisualState, isNull);
+    expect(_cardOffsetX(tester), closeTo(0, 0.1));
+  });
+
   testWidgets('right drag above the 50 percent threshold completes once',
       (tester) async {
     var completeCalls = 0;
@@ -514,6 +589,259 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(completeCalls, 1);
+  });
+
+  testWidgets('right commit reports the exact visual offset to Home',
+      (tester) async {
+    HabitCardRightCommitVisualState? reportedVisualState;
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          onSwipeRightCompleteWithVisualState: (visualState) async {
+            reportedVisualState = visualState;
+          },
+        ),
+      ),
+    );
+
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(190, 0),
+      const Duration(milliseconds: 600),
+    );
+    await tester.pump();
+
+    expect(reportedVisualState, isNotNull);
+    expect(reportedVisualState!.offsetX, closeTo(190, 1.0));
+    expect(reportedVisualState!.cardWidth, closeTo(360, 0.1));
+    expect(reportedVisualState!.commitProgress, greaterThanOrEqualTo(1));
+    expect(reportedVisualState!.rightRevealProgress, greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('completed feedback is mounted under the foreground and reveals',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        _shell(onSwipeRightComplete: () async {}),
+      ),
+    );
+
+    expect(
+        find.byKey(const Key('habitCardRightCommitFeedback')), findsOneWidget);
+    expect(_rightFeedbackIconOpacity(tester), 0);
+    final feedbackLeft = tester
+        .getTopLeft(find.byKey(const Key('habitCardRightCommitFeedback')))
+        .dx;
+    final initialIconCenter = tester.getCenter(
+      find.descendant(
+        of: find.byKey(const Key('habitCardRightCommitFeedback')),
+        matching: find.byKey(const Key('habitCardStatusFeedbackIcon')),
+      ),
+    );
+    final feedbackCenter =
+        tester.getCenter(find.byKey(const Key('habitCardRightCommitFeedback')));
+    expect(
+      initialIconCenter.dx,
+      closeTo(
+        feedbackLeft +
+            HabitCardStatusFeedbackMotionConfig.statusIconHorizontalInset +
+            16,
+        0.1,
+      ),
+    );
+    expect(initialIconCenter.dx, lessThan(feedbackCenter.dx));
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byKey(_childKey)));
+    await gesture.moveBy(const Offset(50, 0));
+    await tester.pump();
+    final partialOpacity = _rightFeedbackIconOpacity(tester);
+    expect(partialOpacity, greaterThan(0));
+    expect(partialOpacity, lessThan(1));
+    expect(_cardOffsetX(tester), closeTo(50, 0.1));
+    expect(
+      tester
+          .getTopLeft(find.byKey(const Key('habitCardRightCommitFeedback')))
+          .dx,
+      closeTo(feedbackLeft, 0.1),
+    );
+    expect(
+      tester
+          .getCenter(
+            find.descendant(
+              of: find.byKey(const Key('habitCardRightCommitFeedback')),
+              matching: find.byKey(const Key('habitCardStatusFeedbackIcon')),
+            ),
+          )
+          .dx,
+      closeTo(initialIconCenter.dx, 0.1),
+    );
+
+    await gesture.moveBy(const Offset(90, 0));
+    await tester.pump();
+    expect(_rightFeedbackIconOpacity(tester), greaterThan(partialOpacity));
+    expect(_rightFeedbackIconOpacity(tester), closeTo(1, 0.01));
+
+    await gesture.moveBy(const Offset(-140, 0));
+    await tester.pump();
+    expect(_cardOffsetX(tester), closeTo(0, 0.1));
+    expect(_rightFeedbackIconOpacity(tester), 0);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('left swipe does not reveal completed feedback', (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        _shell(onSwipeRightComplete: () async {}),
+      ),
+    );
+
+    await tester.drag(find.byKey(_childKey), const Offset(-120, 0));
+    await tester.pump();
+
+    expect(_cardOffsetX(tester), lessThan(0));
+    expect(_rightFeedbackIconOpacity(tester), 0);
+  });
+
+  testWidgets(
+      'left drag shows only the white action rail, not skipped feedback',
+      (tester) async {
+    await tester.pumpWidget(_testApp(_shell()));
+
+    expect(find.byKey(const Key('habitCardLeftSkipFeedback')), findsNothing);
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byKey(_childKey)));
+    await gesture.moveBy(const Offset(-60, 0));
+    await tester.pump();
+    expect(find.byKey(const Key('habitCardLeftSkipFeedback')), findsNothing);
+    expect(find.byKey(const Key('habitCardLeftSkipFeedbackIconOpacity')),
+        findsNothing);
+    expect(find.text('Saltar'), findsOneWidget);
+    expect(find.text('Editar'), findsOneWidget);
+    expect(find.text('Eliminar'), findsOneWidget);
+    expect(_rightFeedbackIconOpacity(tester), 0);
+    expect(_cardOffsetX(tester), closeTo(-60, 0.1));
+
+    await gesture.moveBy(const Offset(-120, 0));
+    await tester.pump();
+    expect(find.byKey(const Key('habitCardLeftSkipFeedback')), findsNothing);
+    expect(_cardOffsetX(tester), closeTo(-180, 0.1));
+
+    await gesture.moveBy(const Offset(180, 0));
+    await tester.pump();
+    expect(_cardOffsetX(tester), closeTo(0, 0.1));
+    expect(find.byKey(const Key('habitCardLeftSkipFeedback')), findsNothing);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('right swipe does not reveal skipped feedback', (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        _shell(onSwipeRightComplete: () async {}),
+      ),
+    );
+
+    await tester.drag(find.byKey(_childKey), const Offset(120, 0));
+    await tester.pump();
+
+    expect(_cardOffsetX(tester), greaterThan(0));
+    expect(_leftSkipFeedbackIconOpacity(tester), 0);
+  });
+
+  testWidgets('edit and delete do not execute skip transition callback',
+      (tester) async {
+    var skipCalls = 0;
+    var editCalls = 0;
+    var deleteCalls = 0;
+
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          isOpen: true,
+          onSkip: () async => skipCalls += 1,
+          onEdit: () => editCalls += 1,
+          onDelete: () async => deleteCalls += 1,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Editar'));
+    await tester.pump();
+    await tester.tap(find.text('Eliminar'));
+    await tester.pump();
+
+    expect(skipCalls, 0);
+    expect(editCalls, 1);
+    expect(deleteCalls, 1);
+  });
+
+  testWidgets('emoji moves with the foreground and feedback has no emoji',
+      (tester) async {
+    const emojiKey = Key('foregroundEmoji');
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          onSwipeRightComplete: () async {},
+          child: Container(
+            key: _childKey,
+            width: 360,
+            height: 96,
+            color: Colors.white,
+            alignment: Alignment.centerLeft,
+            child: const Text('💧', key: emojiKey),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('habitCardRightCommitFeedback')),
+        matching: find.text('💧'),
+      ),
+      findsNothing,
+    );
+    final initialEmojiLeft = tester.getTopLeft(find.byKey(emojiKey)).dx;
+
+    await tester.drag(find.byKey(_childKey), const Offset(80, 0));
+    await tester.pump();
+
+    expect(
+      tester.getTopLeft(find.byKey(emojiKey)).dx,
+      closeTo(initialEmojiLeft + 80, 1),
+    );
+  });
+
+  testWidgets('right commit does not settle the card back to center',
+      (tester) async {
+    final completer = Completer<void>();
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          onSwipeRightComplete: () => completer.future,
+        ),
+      ),
+    );
+
+    await tester.timedDrag(
+      find.byKey(_childKey),
+      const Offset(190, 0),
+      const Duration(milliseconds: 600),
+    );
+    await tester.pump();
+    final commitOffset = _cardOffsetX(tester);
+
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(_cardOffsetX(tester), closeTo(commitOffset, 0.1));
+    expect(_cardOffsetX(tester), greaterThan(0));
+
+    completer.complete();
+    await tester.pump();
   });
 
   testWidgets('right flick completes with shorter travel', (tester) async {
@@ -713,6 +1041,35 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('skip action reports the open rail visual state before callback',
+      (tester) async {
+    HabitCardSkipVisualState? reportedVisualState;
+    var skipCalls = 0;
+
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          isOpen: true,
+          onSkipWithVisualState: (visualState) async {
+            reportedVisualState = visualState;
+            skipCalls += 1;
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Saltar'));
+    await tester.pump();
+
+    expect(skipCalls, 1);
+    expect(reportedVisualState, isNotNull);
+    expect(reportedVisualState!.offsetX, closeTo(-234, 0.1));
+    expect(reportedVisualState!.cardWidth, closeTo(360, 0.1));
+    expect(reportedVisualState!.revealProgress, closeTo(1, 0.01));
+    expect(reportedVisualState!.leftRevealProgress, closeTo(1, 0.01));
+    expect(_cardOffsetX(tester), closeTo(-234, 0.1));
+  });
+
   testWidgets('two quick right commits execute once while pending',
       (tester) async {
     var completeCalls = 0;
@@ -849,9 +1206,27 @@ void main() {
     expect(find.text('Skip'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('Delete'), findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.forward_end_fill), findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.pencil), findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.delete), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(CupertinoButton),
+        matching: find.byIcon(CupertinoIcons.forward_end_fill),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(CupertinoButton),
+        matching: find.byIcon(CupertinoIcons.pencil),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(CupertinoButton),
+        matching: find.byIcon(CupertinoIcons.delete),
+      ),
+      findsOneWidget,
+    );
   });
 }
 
@@ -884,7 +1259,11 @@ HabitCardSwipeShell _shell({
   void Function(String cardId)? onRequestOpen,
   VoidCallback? onRequestClose,
   Future<void> Function()? onSwipeRightComplete,
+  Future<void> Function(HabitCardRightCommitVisualState visualState)?
+      onSwipeRightCompleteWithVisualState,
   Future<void> Function()? onSkip,
+  Future<void> Function(HabitCardSkipVisualState visualState)?
+      onSkipWithVisualState,
   VoidCallback? onEdit,
   Future<void> Function()? onDelete,
   HabitCardSwipeMotionConfig motionConfig = const HabitCardSwipeMotionConfig(),
@@ -901,8 +1280,14 @@ HabitCardSwipeShell _shell({
     onRequestCloseOtherCards: onRequestCloseOtherCards ?? (_) {},
     onRequestOpen: onRequestOpen ?? (_) {},
     onRequestClose: onRequestClose ?? () {},
-    onSwipeRightComplete: onSwipeRightComplete,
-    onSkip: onSkip ?? () async {},
+    onSwipeRightComplete: onSwipeRightCompleteWithVisualState ??
+        (onSwipeRightComplete == null
+            ? null
+            : (_) => onSwipeRightComplete.call()),
+    onSkip: onSkipWithVisualState ??
+        (visualState) async {
+          await onSkip?.call();
+        },
     onEdit: onEdit,
     onDelete: onDelete ?? () async {},
     motionConfig: motionConfig,
@@ -949,4 +1334,23 @@ double _cardOffsetX(WidgetTester tester) {
   );
   final transform = tester.widget<Transform>(transformFinder.first);
   return transform.transform.getTranslation().x;
+}
+
+double _rightFeedbackIconOpacity(WidgetTester tester) {
+  final finder =
+      find.byKey(const Key('habitCardRightCommitFeedbackIconOpacity'));
+  if (finder.evaluate().isEmpty) return 0;
+  final opacity = tester.widget<Opacity>(
+    finder,
+  );
+  return opacity.opacity;
+}
+
+double _leftSkipFeedbackIconOpacity(WidgetTester tester) {
+  final finder = find.byKey(const Key('habitCardLeftSkipFeedbackIconOpacity'));
+  if (finder.evaluate().isEmpty) return 0;
+  final opacity = tester.widget<Opacity>(
+    finder,
+  );
+  return opacity.opacity;
 }

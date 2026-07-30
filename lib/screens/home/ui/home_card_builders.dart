@@ -215,6 +215,12 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     final progress01 = isCounting
         ? (target <= 0 ? 0.0 : (current / target).clamp(0.0, 1.0).toDouble())
         : (doneToday && !skippedToday ? 1.0 : 0.0);
+    final completionVisualIntent = (doneToday && !skippedToday)
+        ? HabitCompletionVisualIntent.uncomplete
+        : HabitCompletionVisualIntent.complete;
+    final canRightCommitComplete = !isCounting &&
+        completionVisualIntent == HabitCompletionVisualIntent.complete;
+    final canStatusExitSkip = !doneToday && !skippedToday;
 
     final unitLabel = _localizedUnitLabel(
       context,
@@ -353,7 +359,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
         await IosFeedback.success();
         if (!context.mounted) return;
 
-        context.read<UserStateStore>().setHabitCompletionForKey(
+        await context.read<UserStateStore>().setHabitCompletionForKey(
               habitId: id,
               dateKey: _dateKey(_selectedDay),
               done: !(doneToday && !skippedToday),
@@ -418,7 +424,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       cardId: id,
       isOpen: isTrayOpen,
       compact: compact,
-      canSwipeRightComplete: !isCounting,
+      canSwipeRightComplete: canRightCommitComplete,
       skipLabel: _homeSwipeSkipLabel(context),
       editLabel: _homeSwipeEditLabel(context),
       deleteLabel: _homeSwipeDeleteLabel(context),
@@ -434,12 +440,13 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
         _applyHomeState(() => _revealedHomeSwipeHabitId = cardId);
       },
       onRequestClose: closeTrayIfOpen,
-      onSwipeRightComplete: !isCounting
-          ? () async {
+      onSwipeRightComplete: canRightCommitComplete
+          ? (visualState) async {
               final transition = _registerHabitCompletionTransition(
                 habitId: id,
                 habit: habit,
                 originalIndex: _pendingHabitIndexForTransition(context, id),
+                visualState: visualState,
               );
               IosFeedback.lightImpact();
               try {
@@ -459,12 +466,30 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
               }
             }
           : null,
-      onSkip: () async {
-        await context.read<UserStateStore>().setHabitSkipForKey(
-              habitId: id,
-              dateKey: _dateKey(_selectedDay),
-              skipped: !skippedToday,
+      onSkip: (visualState) async {
+        final transition = canStatusExitSkip
+            ? _registerHabitSkipTransition(
+                habitId: id,
+                habit: habit,
+                originalIndex: _pendingHabitIndexForTransition(context, id),
+                visualState: visualState,
+              )
+            : null;
+        try {
+          await context.read<UserStateStore>().setHabitSkipForKey(
+                habitId: id,
+                dateKey: _dateKey(_selectedDay),
+                skipped: !skippedToday,
+              );
+        } catch (_) {
+          if (transition != null) {
+            _removeHabitCompletionTransition(
+              habitId: transition.habitId,
+              transitionId: transition.transitionId,
             );
+          }
+          rethrow;
+        }
       },
       onEdit: () => openHabitDetails(mode: HabitDetailScreenMode.editOnly),
       onDelete: () async {
@@ -547,7 +572,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     final String? weeklyProgressLabel = isTimesPerWeekCheck
         ? _homeTimesPerWeekProgressLabel(
             context,
-            completed: weeklyCompletedCount + 1,
+            completed: weeklyCompletedCount,
             target: weeklyTargetCount,
           )
         : null;
@@ -578,8 +603,8 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       useContentScrim: backgroundAsset?.useContentScrim ?? false,
       emoji: resolvedEmoji.isEmpty ? null : resolvedEmoji,
       familyColor: familyColor,
-      progress: isCounting ? (target <= 0 ? 0 : current / target) : 1,
-      isCompleted: !isCounting,
+      progress: isCounting ? (target <= 0 ? 0 : current / target) : 0,
+      isCompleted: false,
       isSkipped: false,
       isCounting: isCounting,
       completionBurstText: completionBurstText,

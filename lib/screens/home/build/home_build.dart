@@ -57,6 +57,14 @@ extension _HomeScreenBuild on _HomeScreenState {
 
     final homeData = buildHomeViewData(root, _selectedDay);
     final selectedDateKey = _dateKey(_selectedDay);
+    final pendingHabitIds = homeData.pendingHabits
+        .map((habit) => (habit['id'] ?? habit['habitId'] ?? '').toString())
+        .where((habitId) => habitId.trim().isNotEmpty)
+        .toSet();
+    _reconcileHabitCompletionTransitions(
+      pendingHabitIds: pendingHabitIds,
+      dateKey: selectedDateKey,
+    );
     final completionTransitions = _habitCompletionTransitions.values
         .where((transition) => transition.dateKey == selectedDateKey)
         .toList(growable: false)
@@ -126,7 +134,8 @@ extension _HomeScreenBuild on _HomeScreenState {
         transition: transition,
         backgroundAsset: habitCardBackgroundAsset,
       ),
-      onCompletionTransitionDismissed: _removeHabitCompletionTransition,
+      onCompletionTransitionDismissed:
+          _markHabitCompletionTransitionVisualCompleted,
       completedHeaderBuilder: (count) => _completedHeader(count: count),
       skippedHeaderBuilder: (count) => _skippedHeader(count: count),
       onPendingReorder: (oldIndex, newIndex) => _reorderHabitSection(
