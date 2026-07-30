@@ -41,6 +41,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // =========================
   // Secciones colapsables
   // =========================
+  final ScrollController _homeScrollController = ScrollController();
+  HomeHabitStatusFilter _habitStatusFilter = HomeHabitStatusFilter.pending;
+  String? _homeScopeSignature;
+
+  // Obsoleto desde Fase 6C: las secciones inferiores ya no se renderizan.
   bool _showCompleted = false;
   bool _showSkipped = false;
   String? _revealedHomeSwipeHabitId;
@@ -216,6 +221,110 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _clearHabitCompletionTransitions() {
     if (_habitCompletionTransitions.isEmpty) return;
     _applyHomeState(_habitCompletionTransitions.clear);
+  }
+
+  void _syncHomeUiScope(UserStateStore store) {
+    String? safeString(dynamic Function() read) {
+      try {
+        final value = read()?.toString().trim();
+        return value == null || value.isEmpty ? null : value;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    int safeInt(dynamic Function() read) {
+      try {
+        final value = read();
+        if (value is int) return value;
+        if (value is num) return value.toInt();
+        return int.tryParse((value ?? '').toString()) ?? 0;
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    final signature = [
+      safeString(() => store.activeLocalScopeUserId) ?? '',
+      safeString(() => store.userId) ?? '',
+      safeInt(() => store.scopeEpoch),
+    ].join('|');
+    if (_homeScopeSignature == signature) return;
+
+    final hadPreviousScope = _homeScopeSignature != null;
+    _homeScopeSignature = signature;
+    if (!hadPreviousScope) return;
+
+    _habitStatusFilter = HomeHabitStatusFilter.pending;
+    _showCompleted = false;
+    _showSkipped = false;
+    _revealedHomeSwipeHabitId = null;
+    _habitCompletionTransitions.clear();
+  }
+
+  void _markVisibleHabitStatusTransitionsFinished() {
+    if (_habitCompletionTransitions.isEmpty) return;
+    final next = Map<String, HomeHabitCompletionTransition>.from(
+      _habitCompletionTransitions,
+    );
+    var didChange = false;
+    for (final entry in _habitCompletionTransitions.entries) {
+      final transition = entry.value;
+      if (transition.visualAnimationCompleted) continue;
+      final updated = transition.copyWith(visualAnimationCompleted: true);
+      if (updated.isReadyForCleanup) {
+        next.remove(entry.key);
+      } else {
+        next[entry.key] = updated;
+      }
+      didChange = true;
+    }
+    if (!didChange) return;
+    _habitCompletionTransitions
+      ..clear()
+      ..addAll(next);
+  }
+
+  void _scrollHomeToTopOnNextFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_homeScrollController.hasClients) return;
+      final position = _homeScrollController.position;
+      if (!position.hasPixels || !position.hasContentDimensions) return;
+      final target = position.minScrollExtent;
+      if (!target.isFinite) return;
+      _homeScrollController.jumpTo(target);
+    });
+  }
+
+  void _keepHomeScrollPositionValidOnNextFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_homeScrollController.hasClients) return;
+      final position = _homeScrollController.position;
+      if (!position.hasPixels || !position.hasContentDimensions) return;
+      final current = position.pixels;
+      final min = position.minScrollExtent;
+      final max = position.maxScrollExtent;
+      if (!current.isFinite || !min.isFinite || !max.isFinite) return;
+      final clamped = current.clamp(min, max).toDouble();
+      if (clamped != current) {
+        _homeScrollController.jumpTo(clamped);
+      }
+    });
+  }
+
+  void _selectHabitStatusFilter(HomeHabitStatusFilter filter) {
+    if (filter == _habitStatusFilter) {
+      return;
+    }
+
+    _applyHomeState(() {
+      _revealedHomeSwipeHabitId = null;
+      _showCompleted = false;
+      _showSkipped = false;
+      _markVisibleHabitStatusTransitionsFinished();
+      _habitStatusFilter = filter;
+    });
+    _scrollHomeToTopOnNextFrame();
   }
 
   Future<void> _handleManualRefresh(UserStateStore store) async {
@@ -437,9 +546,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  // ignore: unused_element
   Widget _skippedHeader({required int count}) {
     final hasItems = count > 0;
 
+    // Obsoleto desde Fase 6C: se conserva temporalmente para facilitar retiro
+    // posterior, pero ya no se pasa al arbol de Habit Cards.
     // IOS-FIRST IMPROVEMENT START
     return _HomeSectionToggle(
       icon: CupertinoIcons.forward_end_alt_fill,
@@ -540,6 +652,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _confettiController.dispose();
+    _homeScrollController.dispose();
 
     for (final c in _countControllers.values) {
       c.dispose();
@@ -553,6 +666,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     super.dispose();
   }
+}
+
+enum HomeHabitStatusFilter {
+  pending,
+  completed,
+  skipped,
+}
+
+@visibleForTesting
+List<Map<String, dynamic>> habitsForFilter(
+  HomeViewData viewData,
+  HomeHabitStatusFilter filter,
+) {
+  return switch (filter) {
+    HomeHabitStatusFilter.pending => viewData.pendingHabits,
+    HomeHabitStatusFilter.completed => viewData.completedHabits,
+    HomeHabitStatusFilter.skipped => viewData.skippedHabits,
+  };
 }
 
 @visibleForTesting
