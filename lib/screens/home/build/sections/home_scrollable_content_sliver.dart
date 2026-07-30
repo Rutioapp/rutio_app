@@ -7,32 +7,20 @@ part of 'package:rutio/screens/home/home_screen.dart';
 class HomeScrollableContentSliver extends StatelessWidget {
   const HomeScrollableContentSliver({
     super.key,
-    required this.viewHabits,
-    required this.pendingHabits,
-    required this.completedHabits,
-    required this.skippedHabits,
+    required this.homeData,
+    required this.selectedFilter,
     required this.completionTransitions,
-    required this.showCompleted,
-    required this.showSkipped,
     required this.habitCardBuilder,
     required this.completionTransitionBuilder,
     required this.onCompletionTransitionDismissed,
-    required this.completedHeaderBuilder,
-    required this.skippedHeaderBuilder,
     required this.onPendingReorder,
-    required this.onCompletedReorder,
-    required this.onSkippedReorder,
     required this.onOpenAddHabit,
     required this.bottomPadding,
   });
 
-  final List<Map<String, dynamic>> viewHabits;
-  final List<Map<String, dynamic>> pendingHabits;
-  final List<Map<String, dynamic>> completedHabits;
-  final List<Map<String, dynamic>> skippedHabits;
+  final HomeViewData homeData;
+  final HomeHabitStatusFilter selectedFilter;
   final List<HomeHabitCompletionTransition> completionTransitions;
-  final bool showCompleted;
-  final bool showSkipped;
   final Widget Function(BuildContext ctx, Map<String, dynamic> habit,
       {bool compact}) habitCardBuilder;
   final Widget Function(
@@ -43,16 +31,14 @@ class HomeScrollableContentSliver extends StatelessWidget {
     required String habitId,
     required String transitionId,
   }) onCompletionTransitionDismissed;
-  final Widget Function(int count) completedHeaderBuilder;
-  final Widget Function(int count) skippedHeaderBuilder;
   final Future<void> Function(int oldIndex, int newIndex) onPendingReorder;
-  final Future<void> Function(int oldIndex, int newIndex) onCompletedReorder;
-  final Future<void> Function(int oldIndex, int newIndex) onSkippedReorder;
   final VoidCallback onOpenAddHabit;
   final double bottomPadding;
 
   @override
   Widget build(BuildContext context) {
+    final visibleHabits = habitsForFilter(homeData, selectedFilter);
+
     return SliverPadding(
       // IOS-FIRST IMPROVEMENT START
       padding: EdgeInsets.fromLTRB(
@@ -61,28 +47,20 @@ class HomeScrollableContentSliver extends StatelessWidget {
         IosSpacing.lg,
         bottomPadding,
       ),
-      sliver: viewHabits.isEmpty
+      sliver: homeData.viewHabits.isEmpty
           ? SliverToBoxAdapter(
               child: HomeEmptyStateCard(
                 onPrimaryAction: onOpenAddHabit,
               ),
             )
           : HomeHabitsSliver(
-              viewHabits: viewHabits,
-              pendingHabits: pendingHabits,
-              completedHabits: completedHabits,
-              skippedHabits: skippedHabits,
+              selectedFilter: selectedFilter,
+              visibleHabits: visibleHabits,
               completionTransitions: completionTransitions,
-              showCompleted: showCompleted,
-              showSkipped: showSkipped,
               habitCardBuilder: habitCardBuilder,
               completionTransitionBuilder: completionTransitionBuilder,
               onCompletionTransitionDismissed: onCompletionTransitionDismissed,
-              completedHeaderBuilder: completedHeaderBuilder,
-              skippedHeaderBuilder: skippedHeaderBuilder,
               onPendingReorder: onPendingReorder,
-              onCompletedReorder: onCompletedReorder,
-              onSkippedReorder: onSkippedReorder,
             ),
       // IOS-FIRST IMPROVEMENT END
     );

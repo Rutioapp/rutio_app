@@ -2,17 +2,12 @@ part of 'package:rutio/screens/home/home_screen.dart';
 
 /// HomeHabitsSliver pinta la lista principal de habitos de la Home.
 ///
-/// Separa pendientes, completados y skipeados, reutiliza el builder de tarjetas existente
-/// y mantiene el orden/keys de cada fila para evitar renders extranos.
+/// Desde Fase 6C renderiza una unica lista filtrada. Los builders antiguos de
+/// secciones desplegables quedan fuera del arbol y pendientes de retirada.
 class HomeHabitsSliver extends StatefulWidget {
-  final List<Map<String, dynamic>> viewHabits;
-  final List<Map<String, dynamic>> pendingHabits;
-  final List<Map<String, dynamic>> completedHabits;
-  final List<Map<String, dynamic>> skippedHabits;
+  final HomeHabitStatusFilter selectedFilter;
+  final List<Map<String, dynamic>> visibleHabits;
   final List<HomeHabitCompletionTransition> completionTransitions;
-
-  final bool showCompleted;
-  final bool showSkipped;
 
   final Widget Function(BuildContext ctx, Map<String, dynamic> habit,
       {bool compact}) habitCardBuilder;
@@ -24,29 +19,17 @@ class HomeHabitsSliver extends StatefulWidget {
     required String habitId,
     required String transitionId,
   }) onCompletionTransitionDismissed;
-  final Widget Function(int count) completedHeaderBuilder;
-  final Widget Function(int count) skippedHeaderBuilder;
   final Future<void> Function(int oldIndex, int newIndex) onPendingReorder;
-  final Future<void> Function(int oldIndex, int newIndex) onCompletedReorder;
-  final Future<void> Function(int oldIndex, int newIndex) onSkippedReorder;
 
   const HomeHabitsSliver({
     super.key,
-    required this.viewHabits,
-    required this.pendingHabits,
-    required this.completedHabits,
-    required this.skippedHabits,
+    required this.selectedFilter,
+    required this.visibleHabits,
     required this.completionTransitions,
-    required this.showCompleted,
-    required this.showSkipped,
     required this.habitCardBuilder,
     required this.completionTransitionBuilder,
     required this.onCompletionTransitionDismissed,
-    required this.completedHeaderBuilder,
-    required this.skippedHeaderBuilder,
     required this.onPendingReorder,
-    required this.onCompletedReorder,
-    required this.onSkippedReorder,
   });
 
   @override
@@ -298,7 +281,7 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
         sortedTransitions.map((transition) => transition.habitId).toSet();
     var transitionCursor = 0;
 
-    for (var index = 0; index < widget.pendingHabits.length; index += 1) {
+    for (var index = 0; index < widget.visibleHabits.length; index += 1) {
       while (transitionCursor < sortedTransitions.length &&
           sortedTransitions[transitionCursor].originalIndex <= index) {
         entries.add(
@@ -308,8 +291,8 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
         );
         transitionCursor += 1;
       }
-      final habitId = (widget.pendingHabits[index]['id'] ??
-              widget.pendingHabits[index]['habitId'] ??
+      final habitId = (widget.visibleHabits[index]['id'] ??
+              widget.visibleHabits[index]['habitId'] ??
               '')
           .toString();
       if (activeTransitionHabitIds.contains(habitId)) {
@@ -317,7 +300,7 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
       }
       entries.add(
         _PendingCompletionVisualEntry.habit(
-          habit: widget.pendingHabits[index],
+          habit: widget.visibleHabits[index],
           originalIndex: index,
         ),
       );
@@ -361,112 +344,47 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.viewHabits.isEmpty) {
-      return SliverToBoxAdapter(
-        child: SizedBox(
-          width: double.infinity,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-            ),
-            child: Text(
-              context.l10n.homeEmptyStateMultiline,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Colors.black.withValues(alpha: 0.65),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+    final isPending = widget.selectedFilter == HomeHabitStatusFilter.pending;
+    final hasPendingTransitions =
+        isPending && widget.completionTransitions.isNotEmpty;
+    final canReorder =
+        isPending && widget.visibleHabits.length >= 2 && !hasPendingTransitions;
 
     return SliverMainAxisGroup(
       slivers: [
-        widget.pendingHabits.length < 2
-            ? (widget.completionTransitions.isEmpty
-                ? _buildStaticHabitSection(
-                    habits: widget.pendingHabits,
-                    compact: false,
-                    keyPrefix: 'habit_pending',
-                    bottomPadding: IosSpacing.sm,
-                  )
-                : _buildPendingSectionWithCompletionTransitions(
-                    context: context,
-                  ))
-            : (widget.completionTransitions.isEmpty
-                ? _buildHabitSection(
-                    habits: widget.pendingHabits,
-                    compact: false,
-                    keyPrefix: 'habit_pending',
-                    onReorder: widget.onPendingReorder,
-                    bottomPadding: IosSpacing.sm,
-                  )
-                : _buildPendingSectionWithCompletionTransitions(
-                    context: context,
-                  )),
-        if (widget.completedHabits.isNotEmpty)
+        if (widget.visibleHabits.isEmpty && !hasPendingTransitions)
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(
-                top: IosSpacing.xs,
-                bottom: IosSpacing.xs,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: widget
-                    .completedHeaderBuilder(widget.completedHabits.length),
-              ),
+            child: HomeHabitFilterEmptyState(
+              selectedFilter: widget.selectedFilter,
             ),
+          )
+        else if (hasPendingTransitions)
+          _buildPendingSectionWithCompletionTransitions(context: context)
+        else if (canReorder)
+          _buildHabitSection(
+            habits: widget.visibleHabits,
+            compact: false,
+            keyPrefix: 'habit_pending',
+            onReorder: widget.onPendingReorder,
+            bottomPadding: IosSpacing.sm,
+          )
+        else
+          _buildStaticHabitSection(
+            habits: widget.visibleHabits,
+            compact: !isPending,
+            keyPrefix: _keyPrefixForFilter(widget.selectedFilter),
+            bottomPadding: isPending ? IosSpacing.sm : IosSpacing.xs,
           ),
-        if (widget.completedHabits.isNotEmpty && widget.showCompleted)
-          (widget.completedHabits.length < 2)
-              ? _buildStaticHabitSection(
-                  habits: widget.completedHabits,
-                  compact: true,
-                  keyPrefix: 'habit_done',
-                  bottomPadding: IosSpacing.xs,
-                )
-              : _buildHabitSection(
-                  habits: widget.completedHabits,
-                  compact: true,
-                  keyPrefix: 'habit_done',
-                  onReorder: widget.onCompletedReorder,
-                  bottomPadding: IosSpacing.xs,
-                ),
-        if (widget.skippedHabits.isNotEmpty)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(
-                top: IosSpacing.xs,
-                bottom: IosSpacing.xs,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: widget.skippedHeaderBuilder(widget.skippedHabits.length),
-              ),
-            ),
-          ),
-        if (widget.skippedHabits.isNotEmpty && widget.showSkipped)
-          (widget.skippedHabits.length < 2)
-              ? _buildStaticHabitSection(
-                  habits: widget.skippedHabits,
-                  compact: true,
-                  keyPrefix: 'habit_skipped',
-                  bottomPadding: IosSpacing.xs,
-                )
-              : _buildHabitSection(
-                  habits: widget.skippedHabits,
-                  compact: true,
-                  keyPrefix: 'habit_skipped',
-                  onReorder: widget.onSkippedReorder,
-                  bottomPadding: IosSpacing.xs,
-                ),
       ],
     );
+  }
+
+  String _keyPrefixForFilter(HomeHabitStatusFilter filter) {
+    return switch (filter) {
+      HomeHabitStatusFilter.pending => 'habit_pending',
+      HomeHabitStatusFilter.completed => 'habit_done',
+      HomeHabitStatusFilter.skipped => 'habit_skipped',
+    };
   }
 }
 

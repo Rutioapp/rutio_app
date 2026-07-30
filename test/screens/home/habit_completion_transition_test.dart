@@ -624,16 +624,9 @@ Widget _testApp({
       body: CustomScrollView(
         slivers: [
           HomeHabitsSliver(
-            viewHabits: [
-              ...pending,
-              for (final t in transitions) t.habitSnapshot
-            ],
-            pendingHabits: pending,
-            completedHabits: const [],
-            skippedHabits: const [],
+            selectedFilter: HomeHabitStatusFilter.pending,
+            visibleHabits: pending,
             completionTransitions: transitions,
-            showCompleted: false,
-            showSkipped: false,
             habitCardBuilder: (context, habit, {bool compact = false}) {
               final id = habit['id'].toString();
               return _box(
@@ -651,11 +644,7 @@ Widget _testApp({
             },
             onCompletionTransitionDismissed:
                 onDismissed ?? ({required habitId, required transitionId}) {},
-            completedHeaderBuilder: (count) => Text('Completed $count'),
-            skippedHeaderBuilder: (count) => Text('Skipped $count'),
             onPendingReorder: (_, __) async {},
-            onCompletedReorder: (_, __) async {},
-            onSkippedReorder: (_, __) async {},
           ),
         ],
       ),

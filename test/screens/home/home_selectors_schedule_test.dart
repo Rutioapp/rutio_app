@@ -2,6 +2,93 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/screens/home/home_screen.dart';
 
 void main() {
+  group('HomeHabitStatusFilter', () {
+    final viewData = HomeViewData(
+      visibleHabits: [
+        _habit(
+            id: 'visible',
+            createdAt: '2020-01-01',
+            schedule: const {'type': 'daily'})
+      ],
+      viewHabits: [
+        _habit(
+            id: 'pending',
+            createdAt: '2020-01-01',
+            schedule: const {'type': 'daily'}),
+        _habit(
+          id: 'completed',
+          createdAt: '2020-01-01',
+          schedule: const {'type': 'daily'},
+          doneToday: true,
+        ),
+        _habit(
+          id: 'skipped',
+          createdAt: '2020-01-01',
+          schedule: const {'type': 'daily'},
+          skippedToday: true,
+        ),
+      ],
+      pendingHabits: [
+        _habit(
+            id: 'pending',
+            createdAt: '2020-01-01',
+            schedule: const {'type': 'daily'}),
+      ],
+      completedHabits: [
+        _habit(
+          id: 'completed',
+          createdAt: '2020-01-01',
+          schedule: const {'type': 'daily'},
+          doneToday: true,
+        ),
+      ],
+      skippedHabits: [
+        _habit(
+          id: 'skipped',
+          createdAt: '2020-01-01',
+          schedule: const {'type': 'daily'},
+          skippedToday: true,
+        ),
+      ],
+      doneCount: 1,
+      totalCount: 3,
+      dayLabel: 'Hoy',
+      xpTotal: 0,
+      level: 1,
+      xpInLevel: 0,
+      xpToNext: 100,
+      xpProgress: 0,
+    );
+
+    test('initial filter is pending and there is no all value', () {
+      expect(HomeHabitStatusFilter.pending.index, 0);
+      expect(HomeHabitStatusFilter.values, [
+        HomeHabitStatusFilter.pending,
+        HomeHabitStatusFilter.completed,
+        HomeHabitStatusFilter.skipped,
+      ]);
+      expect(
+        HomeHabitStatusFilter.values.map((filter) => filter.name),
+        isNot(contains('all')),
+      );
+    });
+
+    test('habitsForFilter returns the authoritative HomeViewData lists', () {
+      expect(
+        habitsForFilter(viewData, HomeHabitStatusFilter.pending),
+        same(viewData.pendingHabits),
+      );
+      expect(
+        habitsForFilter(viewData, HomeHabitStatusFilter.completed),
+        same(viewData.completedHabits),
+      );
+      expect(
+        habitsForFilter(viewData, HomeHabitStatusFilter.skipped),
+        same(viewData.skippedHabits),
+      );
+    });
+  });
+
   group('isHabitExpectedForDate', () {
     final day = DateTime(2026, 5, 11);
 
@@ -60,7 +147,8 @@ void main() {
   });
 
   group('buildHomeViewData schedule filtering', () {
-    test('excludes unscheduled habits from pending/completed/skipped and totals',
+    test(
+        'excludes unscheduled habits from pending/completed/skipped and totals',
         () {
       final today = DateTime.now();
       final selectedDay = DateTime(today.year, today.month, today.day);
@@ -187,7 +275,9 @@ void main() {
               selectedKey: {'tpw-check': false},
             },
             'habitCountValues': {selectedKey: {}},
-            'habitSkips': {selectedKey: {'tpw-check': false}},
+            'habitSkips': {
+              selectedKey: {'tpw-check': false}
+            },
           },
         },
       };
@@ -227,7 +317,9 @@ void main() {
               selectedKey: {'tpw-check': true},
             },
             'habitCountValues': {selectedKey: {}},
-            'habitSkips': {selectedKey: {'tpw-check': false}},
+            'habitSkips': {
+              selectedKey: {'tpw-check': false}
+            },
           },
         },
       };
@@ -270,7 +362,9 @@ void main() {
               selectedKey: {'tpw-check': false},
             },
             'habitCountValues': {selectedKey: {}},
-            'habitSkips': {selectedKey: {'tpw-check': false}},
+            'habitSkips': {
+              selectedKey: {'tpw-check': false}
+            },
           },
         },
       };
@@ -289,7 +383,8 @@ void main() {
       expect(habit['doneToday'], isFalse);
     });
 
-    test('timesPerWeek weekly completed count ignores completions outside selected week',
+    test(
+        'timesPerWeek weekly completed count ignores completions outside selected week',
         () {
       final selectedDay = DateTime(2026, 5, 13);
       final selectedKey = _dateKey(selectedDay);
@@ -314,7 +409,9 @@ void main() {
               selectedKey: {'tpw-check': true},
             },
             'habitCountValues': {selectedKey: {}},
-            'habitSkips': {selectedKey: {'tpw-check': false}},
+            'habitSkips': {
+              selectedKey: {'tpw-check': false}
+            },
           },
         },
       };
@@ -350,7 +447,9 @@ void main() {
               selectedKey: {'tpw-check': true},
             },
             'habitCountValues': {selectedKey: {}},
-            'habitSkips': {selectedKey: {'tpw-check': false}},
+            'habitSkips': {
+              selectedKey: {'tpw-check': false}
+            },
           },
         },
       };
@@ -428,7 +527,9 @@ void main() {
               selectedKey: {'tpw-check': false},
             },
             'habitCountValues': {selectedKey: {}},
-            'habitSkips': {selectedKey: {'tpw-check': true}},
+            'habitSkips': {
+              selectedKey: {'tpw-check': true}
+            },
           },
         },
       };
@@ -467,7 +568,9 @@ void main() {
               selectedKey: {'tpw-check': false},
             },
             'habitCountValues': {selectedKey: {}},
-            'habitSkips': {selectedKey: {'tpw-check': true}},
+            'habitSkips': {
+              selectedKey: {'tpw-check': true}
+            },
           },
         },
       };
