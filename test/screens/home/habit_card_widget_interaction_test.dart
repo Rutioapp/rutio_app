@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/shop/domain/models/habit_card_content_tone.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
+import 'package:rutio/screens/home/widgets/habit/habit_card_swipe_shell.dart';
 import 'package:rutio/screens/home/widgets/habit/habit_card_widget.dart';
 
 Widget _testApp(Widget child) {
@@ -65,6 +68,90 @@ void main() {
     expect(openDetailCount, 0);
   });
 
+  testWidgets('emoji is left of title and check control stays right',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Hydrate',
+          description: 'A glass of water',
+          emoji: 'ðŸ’§',
+          familyColor: Colors.cyan,
+          progress: 0,
+          onCheckTap: () {},
+        ),
+      ),
+    );
+
+    expect(
+      tester.getCenter(find.byKey(const Key('habitCardEmoji'))).dx,
+      lessThan(tester.getCenter(find.byKey(const Key('habitCardTitle'))).dx),
+    );
+    expect(
+      tester.getCenter(find.byKey(const Key('habitCardTitle'))).dx,
+      lessThan(
+        tester.getCenter(find.byKey(const Key('habitCardCheckControl'))).dx,
+      ),
+    );
+  });
+
+  testWidgets('emoji is left of title and count controls stay right',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Read pages',
+          description: '',
+          emoji: 'ðŸ“š',
+          familyColor: Colors.indigo,
+          progress: 0.4,
+          isCounting: true,
+          currentCount: 2,
+          targetCount: 5,
+          onIncrement: () {},
+          onDecrement: () {},
+        ),
+      ),
+    );
+
+    final emojiX = tester.getCenter(find.byKey(const Key('habitCardEmoji'))).dx;
+    final titleX = tester.getCenter(find.byKey(const Key('habitCardTitle'))).dx;
+    final decrementX = tester
+        .getCenter(find.byKey(const Key('habitCardCountDecrementControl')))
+        .dx;
+    final valueX = tester
+        .getCenter(find.byKey(const Key('habitCardCountValueControl')))
+        .dx;
+    final incrementX = tester
+        .getCenter(find.byKey(const Key('habitCardCountIncrementControl')))
+        .dx;
+
+    expect(emojiX, lessThan(titleX));
+    expect(titleX, lessThan(decrementX));
+    expect(decrementX, lessThan(valueX));
+    expect(valueX, lessThan(incrementX));
+  });
+
+  testWidgets('long title with emoji and trailing check does not overflow',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        const SizedBox(
+          width: 260,
+          child: HabitCardWidget(
+            title: 'A very very long habit title that should ellipsize safely',
+            description: 'Small description',
+            emoji: 'ðŸ§˜',
+            familyColor: Colors.green,
+            progress: 0,
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
       'check control tap toggles check callback without opening details',
       (tester) async {
@@ -90,6 +177,181 @@ void main() {
 
     expect(checkTapCount, 1);
     expect(openDetailCount, 0);
+  });
+
+  testWidgets('check control guards double taps while callback is pending',
+      (tester) async {
+    var checkTapCount = 0;
+    final completer = Completer<void>();
+
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Stretch',
+          description: '5 min',
+          familyColor: Colors.green,
+          progress: 0,
+          isCompleted: true,
+          onCheckTap: () {
+            checkTapCount += 1;
+            return completer.future;
+          },
+        ),
+      ),
+    );
+
+    final cardRect = tester.getRect(find.byType(HabitCardWidget));
+    final checkPoint = Offset(cardRect.right - 28, cardRect.center.dy);
+    await tester.tapAt(checkPoint);
+    await tester.pump();
+    await tester.tapAt(checkPoint);
+    await tester.pump();
+
+    expect(checkTapCount, 1);
+
+    completer.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('uncomplete does not play completion burst while pending',
+      (tester) async {
+    final completer = Completer<void>();
+
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Stretch',
+          description: '5 min',
+          familyColor: Colors.green,
+          progress: 1,
+          isCompleted: true,
+          completionBurstText: '+10 XP',
+          onCheckTap: () => completer.future,
+        ),
+      ),
+    );
+
+    final cardRect = tester.getRect(find.byType(HabitCardWidget));
+    await tester.tapAt(Offset(cardRect.right - 28, cardRect.center.dy));
+    for (final delta in const [
+      Duration(milliseconds: 16),
+      Duration(milliseconds: 48),
+      Duration(milliseconds: 120),
+    ]) {
+      await tester.pump(delta);
+      expect(find.text('+10 XP'), findsNothing);
+    }
+
+    completer.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('completed card uncheck stays centered inside swipe shell',
+      (tester) async {
+    final completer = Completer<void>();
+    var uncompleteCalls = 0;
+    HabitCardRightCommitVisualState? rightCommitVisualState;
+
+    await tester.pumpWidget(
+      _testApp(
+        SizedBox(
+          width: 360,
+          child: HabitCardSwipeShell(
+            cardId: 'a',
+            isOpen: false,
+            compact: true,
+            canSwipeRightComplete: false,
+            skipLabel: 'Saltar',
+            editLabel: 'Editar',
+            deleteLabel: 'Eliminar',
+            onRequestCloseOtherCards: (_) {},
+            onRequestOpen: (_) {},
+            onRequestClose: () {},
+            onSwipeRightComplete: (visualState) async {
+              rightCommitVisualState = visualState;
+            },
+            onSkip: (_) async {},
+            onEdit: null,
+            onDelete: () async {},
+            child: HabitCardWidget(
+              title: 'Stretch',
+              description: '5 min',
+              familyColor: Colors.green,
+              progress: 1,
+              isCompleted: true,
+              compact: true,
+              completionBurstText: '+10 XP',
+              onCheckTap: () {
+                uncompleteCalls += 1;
+                return completer.future;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final cardRect = tester.getRect(find.byType(HabitCardWidget));
+    await tester.tapAt(Offset(cardRect.right - 28, cardRect.center.dy));
+    await tester.pump();
+
+    expect(uncompleteCalls, 1);
+    expect(rightCommitVisualState, isNull);
+    expect(find.byKey(const Key('habitCardRightCommitFeedback')), findsNothing);
+    expect(find.byIcon(CupertinoIcons.check_mark_circled_solid), findsNothing);
+    expect(find.byType(HabitCardWidget), findsOneWidget);
+    expect(_swipeShellCardOffsetX(tester), closeTo(0, 0.1));
+
+    for (final delta in const [
+      Duration(milliseconds: 16),
+      Duration(milliseconds: 48),
+      Duration(milliseconds: 120),
+    ]) {
+      await tester.pump(delta);
+      expect(uncompleteCalls, 1);
+      expect(rightCommitVisualState, isNull);
+      expect(
+        find.byKey(const Key('habitCardRightCommitFeedback')),
+        findsNothing,
+      );
+      expect(find.text('+10 XP'), findsNothing);
+      expect(_swipeShellCardOffsetX(tester), closeTo(0, 0.1));
+    }
+
+    completer.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('complete still plays the completion burst on false to true',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Stretch',
+          description: '5 min',
+          familyColor: Colors.green,
+          progress: 0,
+          isCompleted: false,
+          completionBurstText: '+10 XP',
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Stretch',
+          description: '5 min',
+          familyColor: Colors.green,
+          progress: 1,
+          isCompleted: true,
+          completionBurstText: '+10 XP',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('+10 XP'), findsOneWidget);
   });
 
   testWidgets(
@@ -289,4 +551,13 @@ Padding _habitCardBorderPadding(WidgetTester tester) {
   );
 
   return tester.widget<Padding>(paddingFinder.first);
+}
+
+double _swipeShellCardOffsetX(WidgetTester tester) {
+  final transformFinder = find.ancestor(
+    of: find.byType(HabitCardWidget),
+    matching: find.byType(Transform),
+  );
+  final transform = tester.widget<Transform>(transformFinder.first);
+  return transform.transform.getTranslation().x;
 }

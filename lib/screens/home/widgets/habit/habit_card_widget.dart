@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
@@ -15,6 +16,11 @@ import 'package:rutio/ui/foundations/ios_foundations.dart';
 const double _habitCardBorderWidth = 1.0;
 const Color _habitCardBorderColor = Color(0x57FFFFFF);
 
+enum HabitCompletionVisualIntent {
+  complete,
+  uncomplete,
+}
+
 class HabitCardWidget extends StatefulWidget {
   final String title;
   final String description;
@@ -26,7 +32,7 @@ class HabitCardWidget extends StatefulWidget {
 
   final bool isCompleted;
   final bool isSkipped;
-  final VoidCallback? onCheckTap;
+  final FutureOr<void> Function()? onCheckTap;
 
   final bool isCounting;
   final bool compact;
@@ -107,6 +113,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
   late final Animation<Offset> _burstOffset;
 
   bool _showBurst = false;
+  bool _isCheckTapInFlight = false;
   ImageProvider<Object>? _lastPrecachedBackgroundProvider;
 
   String _formatCountLabel(num value) {
@@ -124,6 +131,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     }
 
     final child = Padding(
+      key: const Key('habitCardEmoji'),
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Text(emoji, style: TextStyle(fontSize: fontSize)),
     );
@@ -211,6 +219,19 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
 
   void _playCompleteFx() {
     _fxController.forward(from: 0);
+  }
+
+  Future<void> _handleCheckTap() async {
+    final callback = widget.onCheckTap;
+    if (callback == null || _isCheckTapInFlight) return;
+    setState(() => _isCheckTapInFlight = true);
+    try {
+      await Future<void>.sync(callback);
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckTapInFlight = false);
+      }
+    }
   }
 
   void _precacheBackgroundIfNeeded() {
@@ -322,6 +343,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
               children: [
                 Text(
                   widget.title,
+                  key: const Key('habitCardTitle'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -351,8 +373,13 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
             opacity: controlOpacity,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: widget.onCheckTap,
+              onTap: widget.onCheckTap == null || _isCheckTapInFlight
+                  ? null
+                  : () {
+                      unawaited(_handleCheckTap());
+                    },
               child: SizedBox(
+                key: const Key('habitCardCheckControl'),
                 width: 44,
                 height: 44,
                 child: Center(
@@ -426,6 +453,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                           children: [
                             Text(
                               widget.title,
+                              key: const Key('habitCardTitle'),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -451,6 +479,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
           Opacity(
             opacity: controlOpacity,
             child: _CircleButton(
+              key: const Key('habitCardCountDecrementControl'),
               icon: CupertinoIcons.minus,
               onTap: widget.onDecrement,
               foregroundStyle: foregroundStyle,
@@ -463,6 +492,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
               behavior: HitTestBehavior.opaque,
               onTap: widget.onCountTap,
               child: SizedBox(
+                key: const Key('habitCardCountValueControl'),
                 width: 52,
                 height: 52,
                 child: CustomPaint(
@@ -490,6 +520,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
           Opacity(
             opacity: controlOpacity,
             child: _CircleButton(
+              key: const Key('habitCardCountIncrementControl'),
               icon: CupertinoIcons.add,
               onTap: widget.onIncrement,
               foregroundStyle: foregroundStyle,
@@ -670,6 +701,7 @@ class _CircleButton extends StatelessWidget {
   final HabitCardForegroundStyle foregroundStyle;
 
   const _CircleButton({
+    super.key,
     required this.icon,
     required this.onTap,
     required this.foregroundStyle,

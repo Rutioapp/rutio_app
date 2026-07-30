@@ -46,6 +46,8 @@ extension _HomeScreenBuild on _HomeScreenState {
       );
     }
 
+    _syncHomeUiScope(store);
+
     if (!_didSyncViewDate) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         final store = context.read<UserStateStore>();
@@ -56,6 +58,20 @@ extension _HomeScreenBuild on _HomeScreenState {
     }
 
     final homeData = buildHomeViewData(root, _selectedDay);
+    _keepHomeScrollPositionValidOnNextFrame();
+    final selectedDateKey = _dateKey(_selectedDay);
+    final pendingHabitIds = homeData.pendingHabits
+        .map((habit) => (habit['id'] ?? habit['habitId'] ?? '').toString())
+        .where((habitId) => habitId.trim().isNotEmpty)
+        .toSet();
+    _reconcileHabitCompletionTransitions(
+      pendingHabitIds: pendingHabitIds,
+      dateKey: selectedDateKey,
+    );
+    final completionTransitions = _habitCompletionTransitions.values
+        .where((transition) => transition.dateKey == selectedDateKey)
+        .toList(growable: false)
+      ..sort((a, b) => a.originalIndex.compareTo(b.originalIndex));
 
     final args = ModalRoute.of(context)?.settings.arguments;
     final argsMap = (args is Map) ? args : const <String, dynamic>{};
@@ -87,8 +103,9 @@ extension _HomeScreenBuild on _HomeScreenState {
       scaffoldKey: _scaffoldKey,
       username: username,
       homeData: homeData,
-      showCompleted: _showCompleted,
-      showSkipped: _showSkipped,
+      completionTransitions: completionTransitions,
+      scrollController: _homeScrollController,
+      selectedFilter: _habitStatusFilter,
       onOpenDrawer: () => _buildViewDrawer(context),
       onOpenAddHabit: () => showHomeAddHabitSheet(context),
       onManualRefresh: () => _handleManualRefresh(store),
@@ -105,8 +122,8 @@ extension _HomeScreenBuild on _HomeScreenState {
         label: MaterialLocalizations.of(context).formatMediumDate(
           _selectedDay,
         ),
-        done: homeData.doneCount,
-        total: homeData.totalCount,
+        onOpenHabitStatusFilter: (anchorContext) =>
+            _showHabitStatusFilterMenu(homeData, anchorContext),
       ),
       habitCardBuilder: (ctx, h, {bool compact = false}) => _habitCard(
         context: ctx,
@@ -114,25 +131,17 @@ extension _HomeScreenBuild on _HomeScreenState {
         compact: compact,
         backgroundAsset: habitCardBackgroundAsset,
       ),
-      completedHeaderBuilder: (count) => _completedHeader(count: count),
-      skippedHeaderBuilder: (count) => _skippedHeader(count: count),
+      completionTransitionBuilder: (ctx, transition) =>
+          _habitCompletionTransitionCard(
+        context: ctx,
+        transition: transition,
+        backgroundAsset: habitCardBackgroundAsset,
+      ),
+      onCompletionTransitionDismissed:
+          _markHabitCompletionTransitionVisualCompleted,
       onPendingReorder: (oldIndex, newIndex) => _reorderHabitSection(
         context,
         sectionHabits: homeData.pendingHabits,
-        viewHabits: homeData.viewHabits,
-        oldIndex: oldIndex,
-        newIndex: newIndex,
-      ),
-      onCompletedReorder: (oldIndex, newIndex) => _reorderHabitSection(
-        context,
-        sectionHabits: homeData.completedHabits,
-        viewHabits: homeData.viewHabits,
-        oldIndex: oldIndex,
-        newIndex: newIndex,
-      ),
-      onSkippedReorder: (oldIndex, newIndex) => _reorderHabitSection(
-        context,
-        sectionHabits: homeData.skippedHabits,
         viewHabits: homeData.viewHabits,
         oldIndex: oldIndex,
         newIndex: newIndex,
@@ -148,8 +157,9 @@ class _HomeLoadedView extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final String username;
   final HomeViewData homeData;
-  final bool showCompleted;
-  final bool showSkipped;
+  final List<HomeHabitCompletionTransition> completionTransitions;
+  final ScrollController scrollController;
+  final HomeHabitStatusFilter selectedFilter;
   final Widget Function() onOpenDrawer;
   final VoidCallback onOpenAddHabit;
   final Future<void> Function() onManualRefresh;
@@ -158,18 +168,23 @@ class _HomeLoadedView extends StatelessWidget {
   final Widget dayProgress;
   final Widget Function(BuildContext ctx, Map<String, dynamic> habit,
       {bool compact}) habitCardBuilder;
-  final Widget Function(int count) completedHeaderBuilder;
-  final Widget Function(int count) skippedHeaderBuilder;
+  final Widget Function(
+    BuildContext ctx,
+    HomeHabitCompletionTransition transition,
+  ) completionTransitionBuilder;
+  final void Function({
+    required String habitId,
+    required String transitionId,
+  }) onCompletionTransitionDismissed;
   final Future<void> Function(int oldIndex, int newIndex) onPendingReorder;
-  final Future<void> Function(int oldIndex, int newIndex) onCompletedReorder;
-  final Future<void> Function(int oldIndex, int newIndex) onSkippedReorder;
 
   const _HomeLoadedView({
     required this.scaffoldKey,
     required this.username,
     required this.homeData,
-    required this.showCompleted,
-    required this.showSkipped,
+    required this.completionTransitions,
+    required this.scrollController,
+    required this.selectedFilter,
     required this.onOpenDrawer,
     required this.onOpenAddHabit,
     required this.onManualRefresh,
@@ -177,11 +192,9 @@ class _HomeLoadedView extends StatelessWidget {
     required this.weekStrip,
     required this.dayProgress,
     required this.habitCardBuilder,
-    required this.completedHeaderBuilder,
-    required this.skippedHeaderBuilder,
+    required this.completionTransitionBuilder,
+    required this.onCompletionTransitionDismissed,
     required this.onPendingReorder,
-    required this.onCompletedReorder,
-    required this.onSkippedReorder,
   });
 
   @override
@@ -240,23 +253,21 @@ class _HomeLoadedView extends StatelessWidget {
                     child: RefreshIndicator.adaptive(
                       onRefresh: onManualRefresh,
                       child: CustomScrollView(
+                        controller: scrollController,
                         physics: const BouncingScrollPhysics(
                           parent: AlwaysScrollableScrollPhysics(),
                         ),
                         slivers: [
                           HomeScrollableContentSliver(
-                            viewHabits: homeData.viewHabits,
-                            pendingHabits: homeData.pendingHabits,
-                            completedHabits: homeData.completedHabits,
-                            skippedHabits: homeData.skippedHabits,
-                            showCompleted: showCompleted,
-                            showSkipped: showSkipped,
+                            homeData: homeData,
+                            selectedFilter: selectedFilter,
+                            completionTransitions: completionTransitions,
                             habitCardBuilder: habitCardBuilder,
-                            completedHeaderBuilder: completedHeaderBuilder,
-                            skippedHeaderBuilder: skippedHeaderBuilder,
+                            completionTransitionBuilder:
+                                completionTransitionBuilder,
+                            onCompletionTransitionDismissed:
+                                onCompletionTransitionDismissed,
                             onPendingReorder: onPendingReorder,
-                            onCompletedReorder: onCompletedReorder,
-                            onSkippedReorder: onSkippedReorder,
                             onOpenAddHabit: onOpenAddHabit,
                             bottomPadding: bottomInset + 112,
                           ),

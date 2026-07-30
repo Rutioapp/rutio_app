@@ -29,6 +29,16 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
   String _homeSwipeDeleteConfirmAction(BuildContext context) =>
       _isSpanishHomeSwipe(context) ? 'Eliminar' : 'Delete';
 
+  int _pendingHabitIndexForTransition(BuildContext context, String habitId) {
+    final root = context.read<UserStateStore>().state;
+    if (root == null) return 0;
+    final pending = buildHomeViewData(root, _selectedDay).pendingHabits;
+    final index = pending.indexWhere(
+      (habit) => (habit['id'] ?? habit['habitId'] ?? '').toString() == habitId,
+    );
+    return index < 0 ? pending.length : index;
+  }
+
   String _homeTimesPerWeekProgressLabel(
     BuildContext context, {
     required int completed,
@@ -205,6 +215,12 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     final progress01 = isCounting
         ? (target <= 0 ? 0.0 : (current / target).clamp(0.0, 1.0).toDouble())
         : (doneToday && !skippedToday ? 1.0 : 0.0);
+    final completionVisualIntent = (doneToday && !skippedToday)
+        ? HabitCompletionVisualIntent.uncomplete
+        : HabitCompletionVisualIntent.complete;
+    final canRightCommitComplete = !isCounting &&
+        completionVisualIntent == HabitCompletionVisualIntent.complete;
+    final canStatusExitSkip = !doneToday && !skippedToday;
 
     final unitLabel = _localizedUnitLabel(
       context,
@@ -289,6 +305,17 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     }
 
     final isTrayOpen = _revealedHomeSwipeHabitId == id;
+    double measuredCardWidth = 0;
+
+    double resolvedCardWidth() {
+      if (measuredCardWidth.isFinite && measuredCardWidth > 0) {
+        return measuredCardWidth;
+      }
+      final fallbackWidth =
+          MediaQuery.sizeOf(context).width - (IosSpacing.lg * 2);
+      return fallbackWidth.isFinite && fallbackWidth > 0 ? fallbackWidth : 360;
+    }
+
     void closeTrayIfOpen() {
       if (_revealedHomeSwipeHabitId != id) return;
       _applyHomeState(() => _revealedHomeSwipeHabitId = null);
@@ -339,15 +366,47 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       isCounting: isCounting,
       completionBurstText: completionBurstText,
       onCheckTap: () async {
+        HomeHabitCompletionTransition? transition;
+        final shouldUseTapCompletionTransition =
+            _habitStatusFilter == HomeHabitStatusFilter.pending &&
+                canRightCommitComplete;
+
+        if (shouldUseTapCompletionTransition) {
+          transition = _registerHabitCompletionTransition(
+            habitId: id,
+            habit: habit,
+            originalIndex: _pendingHabitIndexForTransition(context, id),
+            visualState: HabitCardRightCommitVisualState(
+              offsetX: 0,
+              velocityX: homeHabitTapCompletionVelocityX,
+              cardWidth: resolvedCardWidth(),
+              commitProgress: 0,
+              rightRevealProgress: 0,
+            ),
+            useTapCompletionMotion: true,
+          );
+          if (transition == null) return;
+        }
+
         // IOS-FIRST IMPROVEMENT START
         await IosFeedback.success();
         if (!context.mounted) return;
 
-        context.read<UserStateStore>().setHabitCompletionForKey(
-              habitId: id,
-              dateKey: _dateKey(_selectedDay),
-              done: !(doneToday && !skippedToday),
+        try {
+          await context.read<UserStateStore>().setHabitCompletionForKey(
+                habitId: id,
+                dateKey: _dateKey(_selectedDay),
+                done: !(doneToday && !skippedToday),
+              );
+        } catch (_) {
+          if (transition != null) {
+            _removeHabitCompletionTransition(
+              habitId: transition.habitId,
+              transitionId: transition.transitionId,
             );
+          }
+          rethrow;
+        }
       },
       currentCount: current,
       targetCount: target,
@@ -361,11 +420,23 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
                 fallback: 1,
               ).toDouble();
               final next = current + step;
-              context.read<UserStateStore>().setCountHabitValueForDate(
-                    habitId: id,
-                    date: _selectedDay,
-                    value: next,
-                  );
+              unawaited(
+                _applyCountUpdateFromHome(
+                  context: context,
+                  habitId: id,
+                  habit: habit,
+                  currentValue: current,
+                  nextValue: next,
+                  targetValue: target,
+                  cardWidth: resolvedCardWidth(),
+                  productiveCallback: () =>
+                      context.read<UserStateStore>().setCountHabitValueForDate(
+                            habitId: id,
+                            date: _selectedDay,
+                            value: next,
+                          ),
+                ),
+              );
             }
           : null,
       onDecrement: isCounting
@@ -385,9 +456,12 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       onCountTap: isCounting
           ? () => _editCountValueDialog(
                 context: context,
+                habit: habit,
                 habitId: id,
                 date: _selectedDay,
-                currentValue: current.toInt(),
+                currentValue: current,
+                targetValue: target,
+                cardWidth: resolvedCardWidth(),
                 unitLabel: unitLabel.isEmpty ? null : unitLabel,
               )
           : null,
@@ -404,41 +478,76 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       onTap: isTrayOpen ? closeTrayIfOpen : null,
     );
 
-    final revealCard = _HomeSwipeActionTray(
+    final revealCard = HabitCardSwipeShell(
+      cardId: id,
       isOpen: isTrayOpen,
       compact: compact,
-      canSwipeRightComplete: !isCounting,
+      canSwipeRightComplete: canRightCommitComplete,
       skipLabel: _homeSwipeSkipLabel(context),
       editLabel: _homeSwipeEditLabel(context),
       deleteLabel: _homeSwipeDeleteLabel(context),
-      onRequestCloseOthers: () {
+      onRequestCloseOtherCards: (cardId) {
         if (_revealedHomeSwipeHabitId == null ||
-            _revealedHomeSwipeHabitId == id) {
+            _revealedHomeSwipeHabitId == cardId) {
           return;
         }
         _applyHomeState(() => _revealedHomeSwipeHabitId = null);
       },
-      onOpen: () {
-        if (_revealedHomeSwipeHabitId == id) return;
-        _applyHomeState(() => _revealedHomeSwipeHabitId = id);
+      onRequestOpen: (cardId) {
+        if (_revealedHomeSwipeHabitId == cardId) return;
+        _applyHomeState(() => _revealedHomeSwipeHabitId = cardId);
       },
-      onClose: closeTrayIfOpen,
-      onSwipeRightComplete: !isCounting
-          ? () async {
+      onRequestClose: closeTrayIfOpen,
+      onSwipeRightComplete: canRightCommitComplete
+          ? (visualState) async {
+              final transition = _registerHabitCompletionTransition(
+                habitId: id,
+                habit: habit,
+                originalIndex: _pendingHabitIndexForTransition(context, id),
+                visualState: visualState,
+              );
               IosFeedback.lightImpact();
-              await context.read<UserStateStore>().setHabitCompletionForKey(
-                    habitId: id,
-                    dateKey: _dateKey(_selectedDay),
-                    done: !doneToday,
+              try {
+                await context.read<UserStateStore>().setHabitCompletionForKey(
+                      habitId: id,
+                      dateKey: _dateKey(_selectedDay),
+                      done: !doneToday,
+                    );
+              } catch (_) {
+                if (transition != null) {
+                  _removeHabitCompletionTransition(
+                    habitId: transition.habitId,
+                    transitionId: transition.transitionId,
                   );
+                }
+                rethrow;
+              }
             }
           : null,
-      onSkip: () async {
-        await context.read<UserStateStore>().setHabitSkipForKey(
-              habitId: id,
-              dateKey: _dateKey(_selectedDay),
-              skipped: !skippedToday,
+      onSkip: (visualState) async {
+        final transition = canStatusExitSkip
+            ? _registerHabitSkipTransition(
+                habitId: id,
+                habit: habit,
+                originalIndex: _pendingHabitIndexForTransition(context, id),
+                visualState: visualState,
+              )
+            : null;
+        try {
+          await context.read<UserStateStore>().setHabitSkipForKey(
+                habitId: id,
+                dateKey: _dateKey(_selectedDay),
+                skipped: !skippedToday,
+              );
+        } catch (_) {
+          if (transition != null) {
+            _removeHabitCompletionTransition(
+              habitId: transition.habitId,
+              transitionId: transition.transitionId,
             );
+          }
+          rethrow;
+        }
       },
       onEdit: () => openHabitDetails(mode: HabitDetailScreenMode.editOnly),
       onDelete: () async {
@@ -447,348 +556,129 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       child: card,
     );
 
-    return revealCard;
-  }
-}
-
-class _HomeSwipeActionTray extends StatefulWidget {
-  const _HomeSwipeActionTray({
-    required this.child,
-    required this.isOpen,
-    required this.compact,
-    required this.canSwipeRightComplete,
-    required this.skipLabel,
-    required this.editLabel,
-    required this.deleteLabel,
-    required this.onRequestCloseOthers,
-    required this.onOpen,
-    required this.onClose,
-    required this.onSwipeRightComplete,
-    required this.onSkip,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final Widget child;
-  final bool isOpen;
-  final bool compact;
-  final bool canSwipeRightComplete;
-  final String skipLabel;
-  final String editLabel;
-  final String deleteLabel;
-  final VoidCallback onRequestCloseOthers;
-  final VoidCallback onOpen;
-  final VoidCallback onClose;
-  final Future<void> Function()? onSwipeRightComplete;
-  final Future<void> Function() onSkip;
-  final VoidCallback? onEdit;
-  final Future<void> Function() onDelete;
-
-  static const double _actionWidth = 78;
-  static const double _openThresholdRatio = 0.30;
-  static const double _rightVisualLimit = 84;
-  static const double _rightCompleteThreshold = 54;
-  static const double _rightFlingMinOffset = 26;
-  static const double _rightFlingVelocity = 520;
-
-  @override
-  State<_HomeSwipeActionTray> createState() => _HomeSwipeActionTrayState();
-}
-
-class _HomeSwipeActionTrayState extends State<_HomeSwipeActionTray>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late Animation<double> _offsetAnimation;
-
-  double _offset = 0;
-  bool _isDragging = false;
-  bool _startedFromOpenTray = false;
-
-  double get _revealWidth => _HomeSwipeActionTray._actionWidth * 3;
-  double get _openOffset => -_revealWidth;
-
-  @override
-  void initState() {
-    super.initState();
-    _offset = widget.isOpen ? _openOffset : 0;
-    _offsetAnimation = AlwaysStoppedAnimation<double>(_offset);
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-    )..addListener(() {
-        setState(() {
-          _offset = _offsetAnimation.value;
-        });
-      });
-  }
-
-  @override
-  void didUpdateWidget(covariant _HomeSwipeActionTray oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_isDragging) return;
-
-    if (oldWidget.isOpen != widget.isOpen) {
-      _animateTo(widget.isOpen ? _openOffset : 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _animateTo(double target) {
-    final clampedTarget =
-        target.clamp(_openOffset, _HomeSwipeActionTray._rightVisualLimit);
-    if ((_offset - clampedTarget).abs() < 0.5) {
-      setState(() => _offset = clampedTarget);
-      return;
-    }
-
-    _controller.stop();
-    _offsetAnimation = Tween<double>(
-      begin: _offset,
-      end: clampedTarget,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-    _controller
-      ..value = 0
-      ..forward();
-  }
-
-  Future<void> _handleAction(Future<void> Function() callback) async {
-    widget.onClose();
-    await callback();
-  }
-
-  void _handleHorizontalStart(DragStartDetails details) {
-    _isDragging = true;
-    _startedFromOpenTray = widget.isOpen || _offset < -0.5;
-    widget.onRequestCloseOthers();
-    _controller.stop();
-  }
-
-  void _handleHorizontalUpdate(DragUpdateDetails details) {
-    final dx = details.delta.dx;
-    if (dx == 0) return;
-
-    if (dx > 0) {
-      if (_offset < 0) {
-        final nextOffset = (_offset + dx).clamp(_openOffset, 0.0);
-        if (nextOffset == _offset) return;
-        setState(() {
-          _offset = nextOffset;
-        });
-        return;
-      }
-
-      if (!widget.canSwipeRightComplete ||
-          widget.onSwipeRightComplete == null) {
-        return;
-      }
-
-      final dragFactor =
-          _offset > (_HomeSwipeActionTray._rightVisualLimit * 0.55)
-              ? 0.42
-              : 0.72;
-      final nextOffset = (_offset + (dx * dragFactor))
-          .clamp(0.0, _HomeSwipeActionTray._rightVisualLimit);
-      if (nextOffset == _offset) return;
-      setState(() {
-        _offset = nextOffset;
-      });
-      return;
-    }
-
-    final nextOffset = (_offset + dx).clamp(_openOffset, 0.0);
-    if (nextOffset == _offset) return;
-
-    setState(() {
-      _offset = nextOffset;
-      if (_offset < -2 && !widget.isOpen) {
-        widget.onOpen();
-      }
-    });
-  }
-
-  Future<void> _handleHorizontalEnd(DragEndDetails details) async {
-    _isDragging = false;
-    final rightVelocity = details.velocity.pixelsPerSecond.dx;
-    final canCompleteFromSwipe = !_startedFromOpenTray &&
-        widget.canSwipeRightComplete &&
-        widget.onSwipeRightComplete != null;
-    final passedRightThreshold =
-        _offset >= _HomeSwipeActionTray._rightCompleteThreshold;
-    final flingRight =
-        rightVelocity >= _HomeSwipeActionTray._rightFlingVelocity &&
-            _offset >= _HomeSwipeActionTray._rightFlingMinOffset;
-
-    if (canCompleteFromSwipe && (passedRightThreshold || flingRight)) {
-      _startedFromOpenTray = false;
-      _animateTo(0);
-      await widget.onSwipeRightComplete!.call();
-      return;
-    }
-    _startedFromOpenTray = false;
-
-    if (_offset > 0) {
-      _animateTo(0);
-      return;
-    }
-
-    final openThreshold =
-        _revealWidth * _HomeSwipeActionTray._openThresholdRatio;
-    final shouldOpen = _offset.abs() >= openThreshold ||
-        details.velocity.pixelsPerSecond.dx < -320;
-
-    if (shouldOpen) {
-      widget.onOpen();
-      _animateTo(_openOffset);
-      return;
-    }
-
-    widget.onClose();
-    _animateTo(0);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final revealWidth = _revealWidth;
-    final verticalInset = widget.compact ? 6.0 : 8.0;
-    final radius = widget.compact ? 18.0 : 20.0;
-    final revealProgress =
-        ((_offset < 0 ? _offset.abs() : 0.0) / revealWidth).clamp(0.0, 1.0);
-    final showTray = revealProgress > 0.001;
-    final rightProgress =
-        (_offset / _HomeSwipeActionTray._rightVisualLimit).clamp(0.0, 1.0);
-    final showRightCue = widget.canSwipeRightComplete && rightProgress > 0.001;
-
-    return Stack(
-      children: [
-        if (showRightCue)
-          Positioned.fill(
-            child: Container(
-              margin: EdgeInsets.symmetric(vertical: verticalInset),
-              decoration: BoxDecoration(
-                color: CupertinoColors.systemGreen
-                    .withValues(alpha: 0.04 + (0.06 * rightProgress)),
-                borderRadius: BorderRadius.circular(radius),
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Icon(
-                    CupertinoIcons.check_mark_circled_solid,
-                    size: 20,
-                    color: CupertinoColors.systemGreen
-                        .withValues(alpha: 0.34 + (0.22 * rightProgress)),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (showTray)
-          Positioned.fill(
-            child: Container(
-              margin: EdgeInsets.symmetric(vertical: verticalInset),
-              decoration: BoxDecoration(
-                color: CupertinoColors.systemGrey6.withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(radius),
-              ),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: revealWidth,
-                  child: Row(
-                    children: [
-                      _SwipeTrayActionButton(
-                        icon: CupertinoIcons.forward_end_fill,
-                        label: widget.skipLabel,
-                        onTap: () => _handleAction(widget.onSkip),
-                      ),
-                      _SwipeTrayActionButton(
-                        icon: CupertinoIcons.pencil,
-                        label: widget.editLabel,
-                        onTap: widget.onEdit == null
-                            ? null
-                            : () {
-                                widget.onClose();
-                                widget.onEdit!.call();
-                              },
-                      ),
-                      _SwipeTrayActionButton(
-                        icon: CupertinoIcons.delete,
-                        label: widget.deleteLabel,
-                        isDestructive: true,
-                        onTap: () => _handleAction(widget.onDelete),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(_offset, 0, 0),
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onHorizontalDragStart: _handleHorizontalStart,
-            onHorizontalDragUpdate: _handleHorizontalUpdate,
-            onHorizontalDragEnd: _handleHorizontalEnd,
-            onTap: widget.isOpen ? widget.onClose : null,
-            child: widget.child,
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        if (width.isFinite && width > 0) {
+          measuredCardWidth = width;
+        }
+        return revealCard;
+      },
     );
   }
-}
 
-class _SwipeTrayActionButton extends StatelessWidget {
-  const _SwipeTrayActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.isDestructive = false,
-  });
+  Widget _habitCompletionTransitionCard({
+    required BuildContext context,
+    required HomeHabitCompletionTransition transition,
+    ShopAsset? backgroundAsset,
+  }) {
+    final habit = transition.habitSnapshot;
+    final familyId =
+        (habit['familyId'] ?? habit['family'] ?? habit['familyKey'] ?? '')
+            .toString();
+    final familyColor = _familyColor(familyId);
+    final familyMeta = _catalogFamiliesById[familyId];
+    final familyEmoji = (familyMeta?['emoji'] ?? '').toString().trim();
+    final habitEmoji =
+        (habit['emoji'] ?? habit['habitEmoji'] ?? '').toString().trim();
+    final resolvedEmoji = habitEmoji.isNotEmpty ? habitEmoji : familyEmoji;
+    final rawTitle =
+        (habit['title'] ?? habit['name'] ?? habit['habitName'] ?? '')
+            .toString();
+    final description = (habit['description'] ??
+            habit['subtitle'] ??
+            habit['detail'] ??
+            habit['goalText'] ??
+            habit['note'] ??
+            '')
+        .toString();
+    final type = (habit['type'] ?? habit['kind'] ?? 'check').toString();
+    final isCounting = type != 'check';
 
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-  final bool isDestructive;
+    num toNum(dynamic v, {num fallback = 0}) {
+      if (v is num) {
+        if (v is double && !v.isFinite) return fallback;
+        return v;
+      }
+      final raw = (v ?? '').toString().trim();
+      if (raw.isEmpty) return fallback;
+      final parsed = num.tryParse(raw.replaceAll(',', '.'));
+      if (parsed == null) return fallback;
+      if (parsed is double && !parsed.isFinite) return fallback;
+      return parsed;
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final foreground = isDestructive
-        ? CupertinoColors.destructiveRed
-        : CupertinoColors.label.withValues(alpha: 0.82);
+    num toPositiveNum(dynamic v, {num fallback = 1}) {
+      final parsed = toNum(v, fallback: fallback);
+      return parsed > 0 ? parsed : fallback;
+    }
 
-    return Expanded(
-      child: CupertinoButton(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-        minimumSize: const Size(42, 42),
-        onPressed: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 17, color: foreground),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: foreground,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
+    final current = toNum(
+      habit['progress'] ?? habit['current'] ?? habit['value'],
+      fallback: 0,
+    );
+    final target =
+        toPositiveNum(habit['target'] ?? habit['goal'] ?? 1, fallback: 1);
+    final title = _localizedHabitTitle(
+      context,
+      habit: habit,
+      fallbackTitle: rawTitle,
+      target: target,
+    );
+    final unitLabel = _localizedUnitLabel(
+      context,
+      (habit['unit'] ?? habit['unitLabel'] ?? habit['units'] ?? '').toString(),
+    );
+    final reminderLabel = _habitReminderLabel(habit);
+    final isTimesPerWeekCheck = habit['isTimesPerWeekCheck'] == true;
+    final weeklyCompletedCount =
+        toNum(habit['weeklyCompletedCount'], fallback: 0).toInt();
+    final weeklyTargetCount =
+        toPositiveNum(habit['weeklyTargetCount'], fallback: 1).toInt();
+    final String? weeklyProgressLabel = isTimesPerWeekCheck
+        ? _homeTimesPerWeekProgressLabel(
+            context,
+            completed: weeklyCompletedCount,
+            target: weeklyTargetCount,
+          )
+        : null;
+
+    String completionBurstText = context.l10n.homeHabitCompletionBurstDefault;
+    final rawXpReward = habit['xpReward'] ??
+        habit['xp'] ??
+        habit['rewardXp'] ??
+        habit['habitXp'];
+    if (rawXpReward is num) {
+      completionBurstText = '+${rawXpReward.toInt()} XP';
+    } else {
+      final raw = (rawXpReward ?? '').toString().trim();
+      if (raw.isNotEmpty) completionBurstText = raw;
+    }
+
+    return HabitCardWidget(
+      title: title,
+      description: description,
+      backgroundImageAssetPath: backgroundAsset?.assetPath,
+      backgroundImageProvider: backgroundAsset?.imageProvider,
+      backgroundImageFit: backgroundAsset?.imageFit ?? BoxFit.cover,
+      backgroundImageAlignment:
+          backgroundAsset?.imageAlignment ?? Alignment.center,
+      backgroundOverlayColor: backgroundAsset?.overlayColor,
+      backgroundOverlayOpacity: backgroundAsset?.overlayOpacity ?? 0,
+      contentTone: backgroundAsset?.contentTone ?? HabitCardContentTone.dark,
+      useContentScrim: backgroundAsset?.useContentScrim ?? false,
+      emoji: resolvedEmoji.isEmpty ? null : resolvedEmoji,
+      familyColor: familyColor,
+      progress: isCounting ? (target <= 0 ? 0 : current / target) : 0,
+      isCompleted: false,
+      isSkipped: false,
+      isCounting: isCounting,
+      completionBurstText: completionBurstText,
+      currentCount: current,
+      targetCount: target,
+      unitLabel: unitLabel.isEmpty ? null : unitLabel,
+      reminderLabel: reminderLabel,
+      weeklyProgressLabel: weeklyProgressLabel,
     );
   }
 }

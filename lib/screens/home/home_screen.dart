@@ -5,6 +5,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:rutio/application/bootstrap/bootstrap_controller.dart';
 import 'package:rutio/features/notifications/application/notification_permission_controller.dart';
@@ -42,6 +43,8 @@ import 'package:rutio/widgets/home/home_add_fab.dart';
 import 'package:rutio/widgets/home/user_identity_row.dart';
 
 import 'package:rutio/screens/home/widgets/chips/home_day_chip.dart';
+import 'package:rutio/screens/home/widgets/habit/habit_card_status_feedback.dart';
+import 'package:rutio/screens/home/widgets/habit/habit_card_swipe_shell.dart';
 import 'package:rutio/screens/home/widgets/habit/habit_card_widget.dart';
 
 part 'state/home_state.dart';
