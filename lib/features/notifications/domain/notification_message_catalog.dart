@@ -3,6 +3,7 @@ import '../../../l10n/gen/app_localizations_en.dart';
 import '../../../l10n/gen/app_localizations_es.dart';
 import 'notification_template_content.dart';
 import 'personalized_notification_models.dart';
+import 'personalized_notification_ports.dart';
 
 class NotificationTemplateCatalogValidationError extends StateError {
   NotificationTemplateCatalogValidationError(super.message);
@@ -176,6 +177,28 @@ class NotificationTemplateCatalogValidator {
           'Template ${template.templateId} must have positive weight.',
         );
       }
+      if (template.eligibility.minProgressRatio != null &&
+          (template.eligibility.minProgressRatio! < 0 ||
+              template.eligibility.minProgressRatio! > 1)) {
+        throw NotificationTemplateCatalogValidationError(
+          'Template ${template.templateId} has invalid minProgressRatio.',
+        );
+      }
+      if (template.eligibility.maxProgressRatio != null &&
+          (template.eligibility.maxProgressRatio! < 0 ||
+              template.eligibility.maxProgressRatio! > 1)) {
+        throw NotificationTemplateCatalogValidationError(
+          'Template ${template.templateId} has invalid maxProgressRatio.',
+        );
+      }
+      if (template.eligibility.minProgressRatio != null &&
+          template.eligibility.maxProgressRatio != null &&
+          template.eligibility.minProgressRatio! >
+              template.eligibility.maxProgressRatio!) {
+        throw NotificationTemplateCatalogValidationError(
+          'Template ${template.templateId} has inverted progress ratio limits.',
+        );
+      }
       if (template.cooldown.isNegative) {
         throw NotificationTemplateCatalogValidationError(
           'Template ${template.templateId} cannot have negative cooldown.',
@@ -227,6 +250,38 @@ class NotificationTemplateCatalogValidator {
           'Template ${template.templateId} requires variables not used by copy.',
         );
       }
+      if (template.eligibility.requiresDisplayName &&
+          !declared.contains(NotificationTemplateVariable.displayName)) {
+        throw NotificationTemplateCatalogValidationError(
+          'Template ${template.templateId} requires displayName but does not declare it.',
+        );
+      }
+      if ((template.eligibility.requiresStreak ||
+              template.eligibility.minStreak != null) &&
+          !declared.contains(NotificationTemplateVariable.streak)) {
+        throw NotificationTemplateCatalogValidationError(
+          'Template ${template.templateId} requires streak but does not declare it.',
+        );
+      }
+      if ((template.eligibility.minPendingCount != null ||
+              template.eligibility.maxPendingCount != null) &&
+          !declared.contains(NotificationTemplateVariable.pendingCount)) {
+        throw NotificationTemplateCatalogValidationError(
+          'Template ${template.templateId} requires pendingCount but does not declare it.',
+        );
+      }
+      if (template.eligibility.minCompletedCount != null &&
+          !declared.contains(NotificationTemplateVariable.completedCount)) {
+        throw NotificationTemplateCatalogValidationError(
+          'Template ${template.templateId} requires completedCount but does not declare it.',
+        );
+      }
+      if (template.eligibility.minTotalCount != null &&
+          !declared.contains(NotificationTemplateVariable.totalCount)) {
+        throw NotificationTemplateCatalogValidationError(
+          'Template ${template.templateId} requires totalCount but does not declare it.',
+        );
+      }
 
       final sampleContext = _sampleContextFor(template);
       for (final locale
@@ -275,7 +330,8 @@ class NotificationTemplateCatalogValidator {
   }
 }
 
-class InMemoryNotificationTemplateCatalog {
+class InMemoryNotificationTemplateCatalog
+    implements NotificationTemplateCatalog {
   InMemoryNotificationTemplateCatalog({
     required Iterable<NotificationTemplateDescriptor> templates,
     NotificationTemplateCatalogValidator? validator,
@@ -286,7 +342,36 @@ class InMemoryNotificationTemplateCatalog {
 
   final List<NotificationTemplateDescriptor> _templates;
 
-  List<NotificationTemplateDescriptor> get templates => _templates;
+  @override
+  Future<NotificationTemplateDescriptor?> getById(String templateId) async {
+    for (final template in _templates) {
+      if (template.templateId == templateId) {
+        return template;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<List<NotificationTemplateDescriptor>> listAll() async => _templates;
+
+  @override
+  Future<List<NotificationTemplateDescriptor>> listByCategory(
+    NotificationTemplateCategory category,
+  ) async {
+    return _templates
+        .where((template) => template.category == category)
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<NotificationTemplateDescriptor>> listByKind(
+    NotificationKind kind,
+  ) async {
+    return _templates
+        .where((template) => template.supports(kind))
+        .toList(growable: false);
+  }
 }
 
 class NotificationRenderedTemplateCopy {

@@ -42,6 +42,60 @@ extension NotificationTemplateCategoryX on NotificationTemplateCategory {
   }
 }
 
+enum NotificationContextTimeOfDay {
+  morning,
+  afternoon,
+  evening,
+  night,
+}
+
+extension NotificationContextTimeOfDayX on NotificationContextTimeOfDay {
+  String get wireName {
+    switch (this) {
+      case NotificationContextTimeOfDay.morning:
+        return 'morning';
+      case NotificationContextTimeOfDay.afternoon:
+        return 'afternoon';
+      case NotificationContextTimeOfDay.evening:
+        return 'evening';
+      case NotificationContextTimeOfDay.night:
+        return 'night';
+    }
+  }
+}
+
+NotificationContextTimeOfDay notificationContextTimeOfDayFromWireName(
+  String wireName,
+) {
+  final normalized = wireName.trim();
+  for (final value in NotificationContextTimeOfDay.values) {
+    if (value.wireName == normalized) {
+      return value;
+    }
+  }
+  throw ArgumentError.value(
+    wireName,
+    'wireName',
+    'Unsupported NotificationContextTimeOfDay.',
+  );
+}
+
+NotificationContextTimeOfDay notificationContextTimeOfDayFromDateTime(
+  DateTime dateTime,
+) {
+  final hour = dateTime.hour;
+  if (hour >= 5 && hour < 12) {
+    return NotificationContextTimeOfDay.morning;
+  }
+  if (hour >= 12 && hour < 18) {
+    return NotificationContextTimeOfDay.afternoon;
+  }
+  if (hour >= 18 && hour < 23) {
+    return NotificationContextTimeOfDay.evening;
+  }
+  return NotificationContextTimeOfDay.night;
+}
+
 NotificationTemplateCategory notificationTemplateCategoryFromWireName(
   String wireName,
 ) {
@@ -109,6 +163,102 @@ NotificationTemplateVariable notificationTemplateVariableFromWireName(
     'wireName',
     'Unsupported NotificationTemplateVariable.',
   );
+}
+
+@immutable
+class NotificationTemplateEligibility {
+  NotificationTemplateEligibility({
+    List<NotificationContextTimeOfDay> allowedTimesOfDay =
+        const <NotificationContextTimeOfDay>[],
+    this.minProgressRatio,
+    this.maxProgressRatio,
+    this.minPendingCount,
+    this.maxPendingCount,
+    this.minCompletedCount,
+    this.minTotalCount,
+    required this.requiresCompletedDay,
+    required this.requiresStreak,
+    this.minStreak,
+    required this.requiresDisplayName,
+    required this.requiresInactivity,
+    this.minInactivityDays,
+  }) : allowedTimesOfDay = UnmodifiableListView<NotificationContextTimeOfDay>(
+          allowedTimesOfDay,
+        );
+
+  factory NotificationTemplateEligibility.none() {
+    return NotificationTemplateEligibility(
+      requiresCompletedDay: false,
+      requiresStreak: false,
+      requiresDisplayName: false,
+      requiresInactivity: false,
+    );
+  }
+
+  final List<NotificationContextTimeOfDay> allowedTimesOfDay;
+  final double? minProgressRatio;
+  final double? maxProgressRatio;
+  final int? minPendingCount;
+  final int? maxPendingCount;
+  final int? minCompletedCount;
+  final int? minTotalCount;
+  final bool requiresCompletedDay;
+  final bool requiresStreak;
+  final int? minStreak;
+  final bool requiresDisplayName;
+  final bool requiresInactivity;
+  final int? minInactivityDays;
+
+  bool get hasRules =>
+      allowedTimesOfDay.isNotEmpty ||
+      minProgressRatio != null ||
+      maxProgressRatio != null ||
+      minPendingCount != null ||
+      maxPendingCount != null ||
+      minCompletedCount != null ||
+      minTotalCount != null ||
+      requiresCompletedDay ||
+      requiresStreak ||
+      minStreak != null ||
+      requiresDisplayName ||
+      requiresInactivity ||
+      minInactivityDays != null;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is NotificationTemplateEligibility &&
+            listEquals(other.allowedTimesOfDay, allowedTimesOfDay) &&
+            other.minProgressRatio == minProgressRatio &&
+            other.maxProgressRatio == maxProgressRatio &&
+            other.minPendingCount == minPendingCount &&
+            other.maxPendingCount == maxPendingCount &&
+            other.minCompletedCount == minCompletedCount &&
+            other.minTotalCount == minTotalCount &&
+            other.requiresCompletedDay == requiresCompletedDay &&
+            other.requiresStreak == requiresStreak &&
+            other.minStreak == minStreak &&
+            other.requiresDisplayName == requiresDisplayName &&
+            other.requiresInactivity == requiresInactivity &&
+            other.minInactivityDays == minInactivityDays;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        Object.hashAll(allowedTimesOfDay),
+        minProgressRatio,
+        maxProgressRatio,
+        minPendingCount,
+        maxPendingCount,
+        minCompletedCount,
+        minTotalCount,
+        requiresCompletedDay,
+        requiresStreak,
+        minStreak,
+        requiresDisplayName,
+        requiresInactivity,
+        minInactivityDays,
+      );
 }
 
 @immutable

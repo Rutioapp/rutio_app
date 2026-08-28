@@ -89,6 +89,12 @@ class LocalNotificationTemplateCatalog implements NotificationTemplateCatalog {
     final category = notificationTemplateCategoryFromWireName(
       _readString(rawTemplate, 'category'),
     );
+    final eligibility = _readEligibility(rawTemplate['eligibility']);
+    final isFallbackCandidate = _readBool(
+      rawTemplate,
+      'isFallbackCandidate',
+      fallback: false,
+    );
     final variantTags = _readStringList(rawTemplate, 'variantTags');
     final declaredVariables =
         _readVariableList(rawTemplate, 'declaredVariables');
@@ -104,6 +110,8 @@ class LocalNotificationTemplateCatalog implements NotificationTemplateCatalog {
       templateKey: templateKey,
       localeNamespace: localeNamespace,
       category: category,
+      eligibility: eligibility,
+      isFallbackCandidate: isFallbackCandidate,
       variantTags: variantTags,
       declaredVariables: declaredVariables,
       requiredVariables: requiredVariables,
@@ -113,6 +121,49 @@ class LocalNotificationTemplateCatalog implements NotificationTemplateCatalog {
       compatibleKinds: compatibleKinds,
     );
   }
+}
+
+NotificationTemplateEligibility _readEligibility(Object? rawEligibility) {
+  if (rawEligibility == null) {
+    return NotificationTemplateEligibility.none();
+  }
+  if (rawEligibility is! Map<String, Object?>) {
+    throw NotificationTemplateCatalogValidationError(
+      'Invalid eligibility object in notification catalog.',
+    );
+  }
+
+  return NotificationTemplateEligibility(
+    allowedTimesOfDay: _readTimeOfDayList(rawEligibility, 'allowedTimesOfDay'),
+    minProgressRatio: _readDouble(rawEligibility, 'minProgressRatio'),
+    maxProgressRatio: _readDouble(rawEligibility, 'maxProgressRatio'),
+    minPendingCount: _readOptionalInt(rawEligibility, 'minPendingCount'),
+    maxPendingCount: _readOptionalInt(rawEligibility, 'maxPendingCount'),
+    minCompletedCount: _readOptionalInt(rawEligibility, 'minCompletedCount'),
+    minTotalCount: _readOptionalInt(rawEligibility, 'minTotalCount'),
+    requiresCompletedDay: _readBool(
+      rawEligibility,
+      'requiresCompletedDay',
+      fallback: false,
+    ),
+    requiresStreak: _readBool(
+      rawEligibility,
+      'requiresStreak',
+      fallback: false,
+    ),
+    minStreak: _readOptionalInt(rawEligibility, 'minStreak'),
+    requiresDisplayName: _readBool(
+      rawEligibility,
+      'requiresDisplayName',
+      fallback: false,
+    ),
+    requiresInactivity: _readBool(
+      rawEligibility,
+      'requiresInactivity',
+      fallback: false,
+    ),
+    minInactivityDays: _readOptionalInt(rawEligibility, 'minInactivityDays'),
+  );
 }
 
 String _readString(Map<String, Object?> raw, String key) {
@@ -132,6 +183,39 @@ int _readInt(Map<String, Object?> raw, String key) {
   }
   throw NotificationTemplateCatalogValidationError(
     'Missing or invalid int field "$key".',
+  );
+}
+
+int? _readOptionalInt(Map<String, Object?> raw, String key) {
+  final value = raw[key];
+  if (value == null) return null;
+  if (value is int) return value;
+  throw NotificationTemplateCatalogValidationError(
+    'Missing or invalid int field "$key".',
+  );
+}
+
+double? _readDouble(Map<String, Object?> raw, String key) {
+  final value = raw[key];
+  if (value == null) return null;
+  if (value is num) {
+    return value.toDouble();
+  }
+  throw NotificationTemplateCatalogValidationError(
+    'Missing or invalid numeric field "$key".',
+  );
+}
+
+bool _readBool(
+  Map<String, Object?> raw,
+  String key, {
+  required bool fallback,
+}) {
+  final value = raw[key];
+  if (value == null) return fallback;
+  if (value is bool) return value;
+  throw NotificationTemplateCatalogValidationError(
+    'Missing or invalid bool field "$key".',
   );
 }
 
@@ -162,6 +246,16 @@ List<NotificationKind> _readKindList(
 ) {
   final values = _readStringList(raw, key);
   return values.map(notificationKindFromWireName).toList(growable: false);
+}
+
+List<NotificationContextTimeOfDay> _readTimeOfDayList(
+  Map<String, Object?> raw,
+  String key,
+) {
+  final values = _readStringList(raw, key);
+  return values
+      .map(notificationContextTimeOfDayFromWireName)
+      .toList(growable: false);
 }
 
 String _asString(Object? value, String key) {

@@ -6,6 +6,10 @@
       "templateKey": "generalMorningGentle01",
       "localeNamespace": "personalizedNotifications",
       "category": "morning",
+      "eligibility": {
+        "allowedTimesOfDay": ["morning"]
+      },
+      "isFallbackCandidate": true,
       "variantTags": ["gentle", "neutral"],
       "declaredVariables": [],
       "requiredVariables": [],
@@ -19,6 +23,10 @@
       "templateKey": "generalMorningGentle02",
       "localeNamespace": "personalizedNotifications",
       "category": "morning",
+      "eligibility": {
+        "allowedTimesOfDay": ["morning"]
+      },
+      "isFallbackCandidate": true,
       "variantTags": ["gentle", "name_optional"],
       "declaredVariables": ["displayName"],
       "requiredVariables": [],
@@ -32,6 +40,10 @@
       "templateKey": "generalMorningFocus01",
       "localeNamespace": "personalizedNotifications",
       "category": "morning",
+      "eligibility": {
+        "allowedTimesOfDay": ["morning"]
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["focus", "weekday"],
       "declaredVariables": ["weekday"],
       "requiredVariables": ["weekday"],
@@ -45,6 +57,11 @@
       "templateKey": "generalMotivationGentle01",
       "localeNamespace": "personalizedNotifications",
       "category": "gentleMotivation",
+      "eligibility": {
+        "minProgressRatio": 0.0,
+        "maxProgressRatio": 0.99
+      },
+      "isFallbackCandidate": true,
       "variantTags": ["gentle", "neutral"],
       "declaredVariables": [],
       "requiredVariables": [],
@@ -58,6 +75,11 @@
       "templateKey": "generalMotivationGentle02",
       "localeNamespace": "personalizedNotifications",
       "category": "gentleMotivation",
+      "eligibility": {
+        "minProgressRatio": 0.0,
+        "maxProgressRatio": 0.99
+      },
+      "isFallbackCandidate": true,
       "variantTags": ["gentle", "name_optional"],
       "declaredVariables": ["displayName"],
       "requiredVariables": [],
@@ -71,6 +93,11 @@
       "templateKey": "generalPendingProgress01",
       "localeNamespace": "personalizedNotifications",
       "category": "pendingProgress",
+      "eligibility": {
+        "minPendingCount": 1,
+        "maxProgressRatio": 0.99
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["pending", "count"],
       "declaredVariables": ["pendingCount"],
       "requiredVariables": ["pendingCount"],
@@ -84,6 +111,12 @@
       "templateKey": "generalPendingProgress02",
       "localeNamespace": "personalizedNotifications",
       "category": "pendingProgress",
+      "eligibility": {
+        "minPendingCount": 1,
+        "minTotalCount": 1,
+        "maxProgressRatio": 0.99
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["pending", "count", "total"],
       "declaredVariables": ["pendingCount", "totalCount"],
       "requiredVariables": ["pendingCount", "totalCount"],
@@ -97,6 +130,11 @@
       "templateKey": "generalPendingProgress03",
       "localeNamespace": "personalizedNotifications",
       "category": "pendingProgress",
+      "eligibility": {
+        "minProgressRatio": 0.01,
+        "maxProgressRatio": 0.99
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["pending", "progress"],
       "declaredVariables": ["progress"],
       "requiredVariables": ["progress"],
@@ -110,6 +148,11 @@
       "templateKey": "generalStrongProgress01",
       "localeNamespace": "personalizedNotifications",
       "category": "strongProgress",
+      "eligibility": {
+        "minProgressRatio": 0.6,
+        "maxProgressRatio": 0.99
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["progress", "strong"],
       "declaredVariables": ["progress"],
       "requiredVariables": ["progress"],
@@ -123,6 +166,13 @@
       "templateKey": "generalStrongProgress02",
       "localeNamespace": "personalizedNotifications",
       "category": "strongProgress",
+      "eligibility": {
+        "minProgressRatio": 0.6,
+        "maxProgressRatio": 0.99,
+        "minCompletedCount": 1,
+        "minTotalCount": 1
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["progress", "count"],
       "declaredVariables": ["completedCount", "totalCount"],
       "requiredVariables": ["completedCount", "totalCount"],
@@ -136,6 +186,11 @@
       "templateKey": "generalCompletedDay01",
       "localeNamespace": "personalizedNotifications",
       "category": "completedDay",
+      "eligibility": {
+        "minCompletedCount": 1,
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["completed", "count"],
       "declaredVariables": ["completedCount"],
       "requiredVariables": ["completedCount"],
@@ -149,6 +204,12 @@
       "templateKey": "generalCompletedDay02",
       "localeNamespace": "personalizedNotifications",
       "category": "completedDay",
+      "eligibility": {
+        "allowedTimesOfDay": ["evening", "night"],
+        "minProgressRatio": 1.0,
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["completed", "progress", "time"],
       "declaredVariables": ["progress", "timeOfDay"],
       "requiredVariables": ["progress", "timeOfDay"],
@@ -162,6 +223,11 @@
       "templateKey": "generalStreakEncouragement01",
       "localeNamespace": "personalizedNotifications",
       "category": "streak",
+      "eligibility": {
+        "requiresStreak": true,
+        "minStreak": 3
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["streak", "encouragement"],
       "declaredVariables": ["streak"],
       "requiredVariables": ["streak"],
@@ -175,6 +241,12 @@
       "templateKey": "generalStreakEncouragement02",
       "localeNamespace": "personalizedNotifications",
       "category": "streak",
+      "eligibility": {
+        "requiresStreak": true,
+        "minStreak": 3,
+        "requiresDisplayName": true
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["streak", "encouragement", "name"],
       "declaredVariables": ["displayName", "streak"],
       "requiredVariables": ["displayName", "streak"],
@@ -188,6 +260,11 @@
       "templateKey": "generalComebackGentle01",
       "localeNamespace": "personalizedNotifications",
       "category": "comeback",
+      "eligibility": {
+        "requiresInactivity": true,
+        "minInactivityDays": 3
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["comeback", "gentle"],
       "declaredVariables": [],
       "requiredVariables": [],
@@ -201,6 +278,11 @@
       "templateKey": "generalComebackGentle02",
       "localeNamespace": "personalizedNotifications",
       "category": "comeback",
+      "eligibility": {
+        "requiresInactivity": true,
+        "minInactivityDays": 3
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["comeback", "gentle", "name_optional"],
       "declaredVariables": ["displayName"],
       "requiredVariables": [],
@@ -214,6 +296,10 @@
       "templateKey": "generalReflectionPrompt01",
       "localeNamespace": "personalizedNotifications",
       "category": "reflection",
+      "eligibility": {
+        "allowedTimesOfDay": ["evening", "night"]
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["reflection", "neutral"],
       "declaredVariables": [],
       "requiredVariables": [],
@@ -227,6 +313,10 @@
       "templateKey": "generalReflectionPrompt02",
       "localeNamespace": "personalizedNotifications",
       "category": "reflection",
+      "eligibility": {
+        "allowedTimesOfDay": ["evening", "night"]
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["reflection", "name_optional"],
       "declaredVariables": ["displayName"],
       "requiredVariables": [],
@@ -240,6 +330,11 @@
       "templateKey": "generalConsistencyGentle01",
       "localeNamespace": "personalizedNotifications",
       "category": "consistency",
+      "eligibility": {
+        "requiresStreak": true,
+        "minStreak": 2
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["consistency", "streak"],
       "declaredVariables": ["streak"],
       "requiredVariables": ["streak"],
@@ -253,6 +348,11 @@
       "templateKey": "generalConsistencyGentle02",
       "localeNamespace": "personalizedNotifications",
       "category": "consistency",
+      "eligibility": {
+        "minProgressRatio": 0.2,
+        "maxProgressRatio": 0.99
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["consistency", "progress"],
       "declaredVariables": ["progress"],
       "requiredVariables": ["progress"],
@@ -266,6 +366,8 @@
       "templateKey": "generalEncouragementNeutral01",
       "localeNamespace": "personalizedNotifications",
       "category": "encouragement",
+      "eligibility": {},
+      "isFallbackCandidate": true,
       "variantTags": ["encouragement", "neutral"],
       "declaredVariables": [],
       "requiredVariables": [],
@@ -279,6 +381,8 @@
       "templateKey": "generalEncouragementNeutral02",
       "localeNamespace": "personalizedNotifications",
       "category": "encouragement",
+      "eligibility": {},
+      "isFallbackCandidate": true,
       "variantTags": ["encouragement", "name_optional"],
       "declaredVariables": ["displayName"],
       "requiredVariables": [],
@@ -292,6 +396,11 @@
       "templateKey": "generalProgressHabit01",
       "localeNamespace": "personalizedNotifications",
       "category": "strongProgress",
+      "eligibility": {
+        "minProgressRatio": 0.2,
+        "maxProgressRatio": 0.99
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["progress", "habit"],
       "declaredVariables": ["habitName", "progress"],
       "requiredVariables": ["habitName", "progress"],
@@ -305,6 +414,10 @@
       "templateKey": "generalEncouragementWeekday01",
       "localeNamespace": "personalizedNotifications",
       "category": "encouragement",
+      "eligibility": {
+        "allowedTimesOfDay": ["afternoon", "evening"]
+      },
+      "isFallbackCandidate": true,
       "variantTags": ["encouragement", "weekday", "time"],
       "declaredVariables": ["weekday", "timeOfDay"],
       "requiredVariables": ["weekday", "timeOfDay"],
@@ -318,6 +431,12 @@
       "templateKey": "generalReflectionProgress01",
       "localeNamespace": "personalizedNotifications",
       "category": "reflection",
+      "eligibility": {
+        "allowedTimesOfDay": ["evening", "night"],
+        "minCompletedCount": 1,
+        "minTotalCount": 1
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["reflection", "progress", "count"],
       "declaredVariables": ["completedCount", "totalCount"],
       "requiredVariables": ["completedCount", "totalCount"],
@@ -331,6 +450,12 @@
       "templateKey": "generalConsistencyName01",
       "localeNamespace": "personalizedNotifications",
       "category": "consistency",
+      "eligibility": {
+        "minProgressRatio": 0.2,
+        "maxProgressRatio": 0.99,
+        "requiresDisplayName": true
+      },
+      "isFallbackCandidate": false,
       "variantTags": ["consistency", "name", "progress"],
       "declaredVariables": ["displayName", "progress"],
       "requiredVariables": ["displayName", "progress"],

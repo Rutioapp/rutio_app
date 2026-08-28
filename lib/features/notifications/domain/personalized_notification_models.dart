@@ -751,6 +751,8 @@ class NotificationTemplateDescriptor {
     required this.templateKey,
     required this.localeNamespace,
     required this.category,
+    NotificationTemplateEligibility? eligibility,
+    required this.isFallbackCandidate,
     List<String> variantTags = const <String>[],
     List<NotificationTemplateVariable> declaredVariables =
         const <NotificationTemplateVariable>[],
@@ -760,7 +762,8 @@ class NotificationTemplateDescriptor {
     required this.cooldown,
     required this.maxUsesPer7d,
     required List<NotificationKind> compatibleKinds,
-  })  : variantTags = UnmodifiableListView<String>(variantTags),
+  })  : eligibility = eligibility ?? NotificationTemplateEligibility.none(),
+        variantTags = UnmodifiableListView<String>(variantTags),
         declaredVariables = UnmodifiableListView<NotificationTemplateVariable>(
           declaredVariables,
         ),
@@ -774,6 +777,8 @@ class NotificationTemplateDescriptor {
   final String templateKey;
   final String localeNamespace;
   final NotificationTemplateCategory category;
+  final NotificationTemplateEligibility eligibility;
+  final bool isFallbackCandidate;
   final List<String> variantTags;
   final List<NotificationTemplateVariable> declaredVariables;
   final List<NotificationTemplateVariable> requiredVariables;
@@ -792,6 +797,8 @@ class NotificationTemplateDescriptor {
             other.templateKey == templateKey &&
             other.localeNamespace == localeNamespace &&
             other.category == category &&
+            other.eligibility == eligibility &&
+            other.isFallbackCandidate == isFallbackCandidate &&
             listEquals(other.variantTags, variantTags) &&
             listEquals(other.declaredVariables, declaredVariables) &&
             listEquals(other.requiredVariables, requiredVariables) &&
@@ -807,6 +814,8 @@ class NotificationTemplateDescriptor {
         templateKey,
         localeNamespace,
         category,
+        eligibility,
+        isFallbackCandidate,
         Object.hashAll(variantTags),
         Object.hashAll(declaredVariables),
         Object.hashAll(requiredVariables),

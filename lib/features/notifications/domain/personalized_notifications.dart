@@ -1,5 +1,9 @@
 export 'notification_clock.dart';
 export 'notification_message_catalog.dart';
+export 'notification_random_source.dart';
+export 'notification_selection_engine.dart';
+export 'notification_selection_models.dart';
+export 'notification_selection_policy.dart';
 export 'notification_template_content.dart';
 export 'personalized_notification_ids.dart';
 export 'personalized_notification_models.dart';

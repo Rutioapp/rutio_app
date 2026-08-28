@@ -27,6 +27,9 @@ void main() {
       expect(template, isNotNull);
       expect(template!.templateKey, 'generalStreakEncouragement02');
       expect(template.category, NotificationTemplateCategory.streak);
+      expect(template.isFallbackCandidate, isFalse);
+      expect(template.eligibility.requiresDisplayName, isTrue);
+      expect(template.eligibility.minStreak, 3);
       expect(
         template.requiredVariables,
         <NotificationTemplateVariable>[
@@ -58,6 +61,26 @@ void main() {
               template.category == NotificationTemplateCategory.reflection,
         ),
         isTrue,
+      );
+    });
+
+    test('reads selection metadata such as fallback and time windows',
+        () async {
+      final fallbackTemplate = await catalog.getById(
+        'general.encouragement.neutral_01',
+      );
+      final morningTemplate = await catalog.getById(
+        'general.morning.gentle_01',
+      );
+
+      expect(fallbackTemplate, isNotNull);
+      expect(fallbackTemplate!.isFallbackCandidate, isTrue);
+      expect(fallbackTemplate.eligibility.hasRules, isFalse);
+
+      expect(morningTemplate, isNotNull);
+      expect(
+        morningTemplate!.eligibility.allowedTimesOfDay,
+        <NotificationContextTimeOfDay>[NotificationContextTimeOfDay.morning],
       );
     });
   });

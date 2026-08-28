@@ -26,6 +26,7 @@ void main() {
       templateKey: templateKey,
       localeNamespace: 'personalizedNotifications',
       category: category,
+      isFallbackCandidate: false,
       variantTags: const <String>['seed'],
       declaredVariables: declaredVariables,
       requiredVariables: requiredVariables,
