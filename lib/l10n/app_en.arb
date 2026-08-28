@@ -1829,5 +1829,175 @@
       "count": { "type": "int" }
     }
   },
-  "shopCollectionViewCollection": "View collection"
+  "shopCollectionViewCollection": "View collection",
+  "pnGeneralMorningGentle01Title": "Rutio is still here",
+  "pnGeneralMorningGentle01Body": "Start at your own pace. A small step still counts.",
+  "pnGeneralMorningGentle02Title": "A calm beginning",
+  "pnGeneralMorningGentle02Body": "Today can start again without rushing.",
+  "pnGeneralMorningGentle02BodyWithName": "{displayName}, today can start again without rushing.",
+  "@pnGeneralMorningGentle02BodyWithName": {
+    "placeholders": {
+      "displayName": { "type": "String" }
+    }
+  },
+  "pnGeneralMorningFocus01Title": "One intention for today",
+  "pnGeneralMorningFocus01Body": "{weekday} can begin with something simple and meaningful.",
+  "@pnGeneralMorningFocus01Body": {
+    "placeholders": {
+      "weekday": { "type": "String" }
+    }
+  },
+  "pnGeneralMotivationGentle01Title": "Keep going your way",
+  "pnGeneralMotivationGentle01Body": "It does not need to be perfect to keep moving forward.",
+  "pnGeneralMotivationGentle02Title": "A gentle reminder",
+  "pnGeneralMotivationGentle02Body": "What matters today is staying connected to your rhythm.",
+  "pnGeneralMotivationGentle02BodyWithName": "{displayName}, what matters today is staying connected to your rhythm.",
+  "@pnGeneralMotivationGentle02BodyWithName": {
+    "placeholders": {
+      "displayName": { "type": "String" }
+    }
+  },
+  "pnGeneralPendingProgress01Title": "There is still room",
+  "pnGeneralPendingProgress01Body": "You still have {pendingCount} things to close today, no pressure.",
+  "@pnGeneralPendingProgress01Body": {
+    "placeholders": {
+      "pendingCount": { "type": "int" }
+    }
+  },
+  "pnGeneralPendingProgress02Title": "Your day is still open",
+  "pnGeneralPendingProgress02Body": "{pendingCount} of {totalCount} are still pending. If it fits, you can still add one more.",
+  "@pnGeneralPendingProgress02Body": {
+    "placeholders": {
+      "pendingCount": { "type": "int" },
+      "totalCount": { "type": "int" }
+    }
+  },
+  "pnGeneralPendingProgress03Title": "You are building momentum",
+  "pnGeneralPendingProgress03Body": "You are already at {progress} today. One more step would still be meaningful.",
+  "@pnGeneralPendingProgress03Body": {
+    "placeholders": {
+      "progress": { "type": "String" }
+    }
+  },
+  "pnGeneralStrongProgress01Title": "A steady rhythm",
+  "pnGeneralStrongProgress01Body": "That {progress} already says a lot about your consistency today.",
+  "@pnGeneralStrongProgress01Body": {
+    "placeholders": {
+      "progress": { "type": "String" }
+    }
+  },
+  "pnGeneralStrongProgress02Title": "Progress is showing",
+  "pnGeneralStrongProgress02Body": "You are at {completedCount} of {totalCount}. The day is taking shape.",
+  "@pnGeneralStrongProgress02Body": {
+    "placeholders": {
+      "completedCount": { "type": "int" },
+      "totalCount": { "type": "int" }
+    }
+  },
+  "pnGeneralCompletedDay01Title": "A well-kept day",
+  "pnGeneralCompletedDay01Body": "You have already completed {completedCount} today. That deserves a quiet moment of recognition.",
+  "@pnGeneralCompletedDay01Body": {
+    "placeholders": {
+      "completedCount": { "type": "int" }
+    }
+  },
+  "pnGeneralCompletedDay02Title": "A calm wrap-up",
+  "pnGeneralCompletedDay02Body": "With {progress} at {timeOfDay}, your day already has a shape of its own.",
+  "@pnGeneralCompletedDay02Body": {
+    "placeholders": {
+      "progress": { "type": "String" },
+      "timeOfDay": { "type": "String" }
+    }
+  },
+  "pnGeneralStreakEncouragement01Title": "Your streak matters",
+  "pnGeneralStreakEncouragement01Body": "You are on a {streak}-day streak. There is still time to take care of it today.",
+  "@pnGeneralStreakEncouragement01Body": {
+    "placeholders": {
+      "streak": { "type": "int" }
+    }
+  },
+  "pnGeneralStreakEncouragement02Title": "Consistency you can feel",
+  "pnGeneralStreakEncouragement02Body": "{displayName}, it is already {streak} days. Today can be another calm step.",
+  "@pnGeneralStreakEncouragement02Body": {
+    "placeholders": {
+      "displayName": { "type": "String" },
+      "streak": { "type": "int" }
+    }
+  },
+  "pnGeneralComebackGentle01Title": "Whenever you want to return",
+  "pnGeneralComebackGentle01Body": "Rutio is still right here. You can pick things up from where it feels natural.",
+  "pnGeneralComebackGentle02Title": "Without starting from zero",
+  "pnGeneralComebackGentle02Body": "There is still a calm place here whenever you want to come back.",
+  "pnGeneralComebackGentle02BodyWithName": "{displayName}, there is still a calm place here whenever you want to come back.",
+  "@pnGeneralComebackGentle02BodyWithName": {
+    "placeholders": {
+      "displayName": { "type": "String" }
+    }
+  },
+  "pnGeneralReflectionPrompt01Title": "A minute to look at the day",
+  "pnGeneralReflectionPrompt01Body": "It might feel good to leave a short note about how today went.",
+  "pnGeneralReflectionPrompt02Title": "Your day also deserves words",
+  "pnGeneralReflectionPrompt02Body": "If you feel like it, you can write down what today left with you.",
+  "pnGeneralReflectionPrompt02BodyWithName": "{displayName}, if you feel like it, you can write down what today left with you.",
+  "@pnGeneralReflectionPrompt02BodyWithName": {
+    "placeholders": {
+      "displayName": { "type": "String" }
+    }
+  },
+  "pnGeneralConsistencyGentle01Title": "Your consistency is showing",
+  "pnGeneralConsistencyGentle01Body": "{streak} days in a row do not happen by accident.",
+  "@pnGeneralConsistencyGentle01Body": {
+    "placeholders": {
+      "streak": { "type": "int" }
+    }
+  },
+  "pnGeneralConsistencyGentle02Title": "Step by step",
+  "pnGeneralConsistencyGentle02Body": "That {progress} fits a routine that is starting to feel real.",
+  "@pnGeneralConsistencyGentle02Body": {
+    "placeholders": {
+      "progress": { "type": "String" }
+    }
+  },
+  "pnGeneralEncouragementNeutral01Title": "Keep adding small steps",
+  "pnGeneralEncouragementNeutral01Body": "There is no need to rush. What matters is staying close to what matters to you.",
+  "pnGeneralEncouragementNeutral02Title": "It still counts",
+  "pnGeneralEncouragementNeutral02Body": "Even if the day is moving fast, you can still keep a small space for yourself.",
+  "pnGeneralEncouragementNeutral02BodyWithName": "{displayName}, even if the day is moving fast, you can still keep a small space for yourself.",
+  "@pnGeneralEncouragementNeutral02BodyWithName": {
+    "placeholders": {
+      "displayName": { "type": "String" }
+    }
+  },
+  "pnGeneralProgressHabit01Title": "A habit that is still alive",
+  "pnGeneralProgressHabit01Body": "{habitName} is already at {progress}. It is building continuity.",
+  "@pnGeneralProgressHabit01Body": {
+    "placeholders": {
+      "habitName": { "type": "String" },
+      "progress": { "type": "String" }
+    }
+  },
+  "pnGeneralEncouragementWeekday01Title": "There is still time in the day",
+  "pnGeneralEncouragementWeekday01Body": "If {weekday} gives you a moment around {timeOfDay}, it could be a good time to come back to yourself.",
+  "@pnGeneralEncouragementWeekday01Body": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "timeOfDay": { "type": "String" }
+    }
+  },
+  "pnGeneralReflectionProgress01Title": "The day already has a story",
+  "pnGeneralReflectionProgress01Body": "You have closed {completedCount} of {totalCount}. It might be a good moment to notice what helped today.",
+  "@pnGeneralReflectionProgress01Body": {
+    "placeholders": {
+      "completedCount": { "type": "int" },
+      "totalCount": { "type": "int" }
+    }
+  },
+  "pnGeneralConsistencyName01Title": "Your rhythm counts",
+  "pnGeneralConsistencyName01Body": "{displayName}, that {progress} says something very personal about your consistency.",
+  "@pnGeneralConsistencyName01Body": {
+    "placeholders": {
+      "displayName": { "type": "String" },
+      "progress": { "type": "String" }
+    }
+  }
 }

@@ -3654,4 +3654,229 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shopCollectionViewCollection => 'View collection';
+
+  @override
+  String get pnGeneralMorningGentle01Title => 'Rutio is still here';
+
+  @override
+  String get pnGeneralMorningGentle01Body =>
+      'Start at your own pace. A small step still counts.';
+
+  @override
+  String get pnGeneralMorningGentle02Title => 'A calm beginning';
+
+  @override
+  String get pnGeneralMorningGentle02Body =>
+      'Today can start again without rushing.';
+
+  @override
+  String pnGeneralMorningGentle02BodyWithName(String displayName) {
+    return '$displayName, today can start again without rushing.';
+  }
+
+  @override
+  String get pnGeneralMorningFocus01Title => 'One intention for today';
+
+  @override
+  String pnGeneralMorningFocus01Body(String weekday) {
+    return '$weekday can begin with something simple and meaningful.';
+  }
+
+  @override
+  String get pnGeneralMotivationGentle01Title => 'Keep going your way';
+
+  @override
+  String get pnGeneralMotivationGentle01Body =>
+      'It does not need to be perfect to keep moving forward.';
+
+  @override
+  String get pnGeneralMotivationGentle02Title => 'A gentle reminder';
+
+  @override
+  String get pnGeneralMotivationGentle02Body =>
+      'What matters today is staying connected to your rhythm.';
+
+  @override
+  String pnGeneralMotivationGentle02BodyWithName(String displayName) {
+    return '$displayName, what matters today is staying connected to your rhythm.';
+  }
+
+  @override
+  String get pnGeneralPendingProgress01Title => 'There is still room';
+
+  @override
+  String pnGeneralPendingProgress01Body(int pendingCount) {
+    return 'You still have $pendingCount things to close today, no pressure.';
+  }
+
+  @override
+  String get pnGeneralPendingProgress02Title => 'Your day is still open';
+
+  @override
+  String pnGeneralPendingProgress02Body(int pendingCount, int totalCount) {
+    return '$pendingCount of $totalCount are still pending. If it fits, you can still add one more.';
+  }
+
+  @override
+  String get pnGeneralPendingProgress03Title => 'You are building momentum';
+
+  @override
+  String pnGeneralPendingProgress03Body(String progress) {
+    return 'You are already at $progress today. One more step would still be meaningful.';
+  }
+
+  @override
+  String get pnGeneralStrongProgress01Title => 'A steady rhythm';
+
+  @override
+  String pnGeneralStrongProgress01Body(String progress) {
+    return 'That $progress already says a lot about your consistency today.';
+  }
+
+  @override
+  String get pnGeneralStrongProgress02Title => 'Progress is showing';
+
+  @override
+  String pnGeneralStrongProgress02Body(int completedCount, int totalCount) {
+    return 'You are at $completedCount of $totalCount. The day is taking shape.';
+  }
+
+  @override
+  String get pnGeneralCompletedDay01Title => 'A well-kept day';
+
+  @override
+  String pnGeneralCompletedDay01Body(int completedCount) {
+    return 'You have already completed $completedCount today. That deserves a quiet moment of recognition.';
+  }
+
+  @override
+  String get pnGeneralCompletedDay02Title => 'A calm wrap-up';
+
+  @override
+  String pnGeneralCompletedDay02Body(String progress, String timeOfDay) {
+    return 'With $progress at $timeOfDay, your day already has a shape of its own.';
+  }
+
+  @override
+  String get pnGeneralStreakEncouragement01Title => 'Your streak matters';
+
+  @override
+  String pnGeneralStreakEncouragement01Body(int streak) {
+    return 'You are on a $streak-day streak. There is still time to take care of it today.';
+  }
+
+  @override
+  String get pnGeneralStreakEncouragement02Title => 'Consistency you can feel';
+
+  @override
+  String pnGeneralStreakEncouragement02Body(String displayName, int streak) {
+    return '$displayName, it is already $streak days. Today can be another calm step.';
+  }
+
+  @override
+  String get pnGeneralComebackGentle01Title => 'Whenever you want to return';
+
+  @override
+  String get pnGeneralComebackGentle01Body =>
+      'Rutio is still right here. You can pick things up from where it feels natural.';
+
+  @override
+  String get pnGeneralComebackGentle02Title => 'Without starting from zero';
+
+  @override
+  String get pnGeneralComebackGentle02Body =>
+      'There is still a calm place here whenever you want to come back.';
+
+  @override
+  String pnGeneralComebackGentle02BodyWithName(String displayName) {
+    return '$displayName, there is still a calm place here whenever you want to come back.';
+  }
+
+  @override
+  String get pnGeneralReflectionPrompt01Title => 'A minute to look at the day';
+
+  @override
+  String get pnGeneralReflectionPrompt01Body =>
+      'It might feel good to leave a short note about how today went.';
+
+  @override
+  String get pnGeneralReflectionPrompt02Title => 'Your day also deserves words';
+
+  @override
+  String get pnGeneralReflectionPrompt02Body =>
+      'If you feel like it, you can write down what today left with you.';
+
+  @override
+  String pnGeneralReflectionPrompt02BodyWithName(String displayName) {
+    return '$displayName, if you feel like it, you can write down what today left with you.';
+  }
+
+  @override
+  String get pnGeneralConsistencyGentle01Title => 'Your consistency is showing';
+
+  @override
+  String pnGeneralConsistencyGentle01Body(int streak) {
+    return '$streak days in a row do not happen by accident.';
+  }
+
+  @override
+  String get pnGeneralConsistencyGentle02Title => 'Step by step';
+
+  @override
+  String pnGeneralConsistencyGentle02Body(String progress) {
+    return 'That $progress fits a routine that is starting to feel real.';
+  }
+
+  @override
+  String get pnGeneralEncouragementNeutral01Title => 'Keep adding small steps';
+
+  @override
+  String get pnGeneralEncouragementNeutral01Body =>
+      'There is no need to rush. What matters is staying close to what matters to you.';
+
+  @override
+  String get pnGeneralEncouragementNeutral02Title => 'It still counts';
+
+  @override
+  String get pnGeneralEncouragementNeutral02Body =>
+      'Even if the day is moving fast, you can still keep a small space for yourself.';
+
+  @override
+  String pnGeneralEncouragementNeutral02BodyWithName(String displayName) {
+    return '$displayName, even if the day is moving fast, you can still keep a small space for yourself.';
+  }
+
+  @override
+  String get pnGeneralProgressHabit01Title => 'A habit that is still alive';
+
+  @override
+  String pnGeneralProgressHabit01Body(String habitName, String progress) {
+    return '$habitName is already at $progress. It is building continuity.';
+  }
+
+  @override
+  String get pnGeneralEncouragementWeekday01Title =>
+      'There is still time in the day';
+
+  @override
+  String pnGeneralEncouragementWeekday01Body(String weekday, String timeOfDay) {
+    return 'If $weekday gives you a moment around $timeOfDay, it could be a good time to come back to yourself.';
+  }
+
+  @override
+  String get pnGeneralReflectionProgress01Title =>
+      'The day already has a story';
+
+  @override
+  String pnGeneralReflectionProgress01Body(int completedCount, int totalCount) {
+    return 'You have closed $completedCount of $totalCount. It might be a good moment to notice what helped today.';
+  }
+
+  @override
+  String get pnGeneralConsistencyName01Title => 'Your rhythm counts';
+
+  @override
+  String pnGeneralConsistencyName01Body(String displayName, String progress) {
+    return '$displayName, that $progress says something very personal about your consistency.';
+  }
 }

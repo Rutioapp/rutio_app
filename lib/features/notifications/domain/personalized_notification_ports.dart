@@ -1,7 +1,17 @@
+import 'notification_template_content.dart';
 import 'personalized_notification_models.dart';
 
 abstract class NotificationTemplateCatalog {
-  List<NotificationTemplateDescriptor> templatesForKind(NotificationKind kind);
+  Future<List<NotificationTemplateDescriptor>> listAll();
+
+  Future<NotificationTemplateDescriptor?> getById(String templateId);
+
+  Future<List<NotificationTemplateDescriptor>> listByKind(
+      NotificationKind kind);
+
+  Future<List<NotificationTemplateDescriptor>> listByCategory(
+    NotificationTemplateCategory category,
+  );
 }
 
 abstract class NotificationInstallIdProvider {

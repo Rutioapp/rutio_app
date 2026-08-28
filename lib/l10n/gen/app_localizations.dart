@@ -6532,6 +6532,348 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Ver colección'**
   String get shopCollectionViewCollection;
+
+  /// No description provided for @pnGeneralMorningGentle01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Rutio sigue aquí'**
+  String get pnGeneralMorningGentle01Title;
+
+  /// No description provided for @pnGeneralMorningGentle01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Empieza a tu ritmo. Un paso pequeño también cuenta.'**
+  String get pnGeneralMorningGentle01Body;
+
+  /// No description provided for @pnGeneralMorningGentle02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Un comienzo tranquilo'**
+  String get pnGeneralMorningGentle02Title;
+
+  /// No description provided for @pnGeneralMorningGentle02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy puedes volver a empezar sin prisa.'**
+  String get pnGeneralMorningGentle02Body;
+
+  /// No description provided for @pnGeneralMorningGentle02BodyWithName.
+  ///
+  /// In es, this message translates to:
+  /// **'{displayName}, hoy puedes volver a empezar sin prisa.'**
+  String pnGeneralMorningGentle02BodyWithName(String displayName);
+
+  /// No description provided for @pnGeneralMorningFocus01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Una intención para hoy'**
+  String get pnGeneralMorningFocus01Title;
+
+  /// No description provided for @pnGeneralMorningFocus01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'{weekday} puede empezar con algo sencillo y valioso.'**
+  String pnGeneralMorningFocus01Body(String weekday);
+
+  /// No description provided for @pnGeneralMotivationGentle01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Sigue a tu manera'**
+  String get pnGeneralMotivationGentle01Title;
+
+  /// No description provided for @pnGeneralMotivationGentle01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'No hace falta hacerlo perfecto para seguir avanzando.'**
+  String get pnGeneralMotivationGentle01Body;
+
+  /// No description provided for @pnGeneralMotivationGentle02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Un recordatorio amable'**
+  String get pnGeneralMotivationGentle02Title;
+
+  /// No description provided for @pnGeneralMotivationGentle02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo importante hoy es no perder el hilo.'**
+  String get pnGeneralMotivationGentle02Body;
+
+  /// No description provided for @pnGeneralMotivationGentle02BodyWithName.
+  ///
+  /// In es, this message translates to:
+  /// **'{displayName}, lo importante hoy es no perder el hilo.'**
+  String pnGeneralMotivationGentle02BodyWithName(String displayName);
+
+  /// No description provided for @pnGeneralPendingProgress01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún hay margen'**
+  String get pnGeneralPendingProgress01Title;
+
+  /// No description provided for @pnGeneralPendingProgress01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Te quedan {pendingCount} cosas por cerrar hoy, sin presión.'**
+  String pnGeneralPendingProgress01Body(int pendingCount);
+
+  /// No description provided for @pnGeneralPendingProgress02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu día sigue abierto'**
+  String get pnGeneralPendingProgress02Title;
+
+  /// No description provided for @pnGeneralPendingProgress02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Quedan {pendingCount} de {totalCount}. Si te encaja, todavía puedes sumar una más.'**
+  String pnGeneralPendingProgress02Body(int pendingCount, int totalCount);
+
+  /// No description provided for @pnGeneralPendingProgress03Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Vas construyendo'**
+  String get pnGeneralPendingProgress03Title;
+
+  /// No description provided for @pnGeneralPendingProgress03Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy ya llevas {progress}. Un paso más también sería una buena señal.'**
+  String pnGeneralPendingProgress03Body(String progress);
+
+  /// No description provided for @pnGeneralStrongProgress01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Buen ritmo'**
+  String get pnGeneralStrongProgress01Title;
+
+  /// No description provided for @pnGeneralStrongProgress01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese {progress} ya dice mucho de tu constancia de hoy.'**
+  String pnGeneralStrongProgress01Body(String progress);
+
+  /// No description provided for @pnGeneralStrongProgress02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Se nota el avance'**
+  String get pnGeneralStrongProgress02Title;
+
+  /// No description provided for @pnGeneralStrongProgress02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Llevas {completedCount} de {totalCount}. Vas dejando huella en el día.'**
+  String pnGeneralStrongProgress02Body(int completedCount, int totalCount);
+
+  /// No description provided for @pnGeneralCompletedDay01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Día bien cuidado'**
+  String get pnGeneralCompletedDay01Title;
+
+  /// No description provided for @pnGeneralCompletedDay01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy ya has completado {completedCount}. Eso también merece un momento de reconocimiento.'**
+  String pnGeneralCompletedDay01Body(int completedCount);
+
+  /// No description provided for @pnGeneralCompletedDay02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Cierre con calma'**
+  String get pnGeneralCompletedDay02Title;
+
+  /// No description provided for @pnGeneralCompletedDay02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Con {progress} a las {timeOfDay}, tu día ya tiene forma.'**
+  String pnGeneralCompletedDay02Body(String progress, String timeOfDay);
+
+  /// No description provided for @pnGeneralStreakEncouragement01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu racha importa'**
+  String get pnGeneralStreakEncouragement01Title;
+
+  /// No description provided for @pnGeneralStreakEncouragement01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Llevas {streak} días seguidos. Aún estás a tiempo de cuidarla hoy.'**
+  String pnGeneralStreakEncouragement01Body(int streak);
+
+  /// No description provided for @pnGeneralStreakEncouragement02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Constancia que se nota'**
+  String get pnGeneralStreakEncouragement02Title;
+
+  /// No description provided for @pnGeneralStreakEncouragement02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'{displayName}, ya son {streak} días. Hoy puede ser otro paso tranquilo.'**
+  String pnGeneralStreakEncouragement02Body(String displayName, int streak);
+
+  /// No description provided for @pnGeneralComebackGentle01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuando quieras volver'**
+  String get pnGeneralComebackGentle01Title;
+
+  /// No description provided for @pnGeneralComebackGentle01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Rutio sigue en el mismo sitio. Puedes retomar desde donde te nazca.'**
+  String get pnGeneralComebackGentle01Body;
+
+  /// No description provided for @pnGeneralComebackGentle02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin empezar de cero'**
+  String get pnGeneralComebackGentle02Title;
+
+  /// No description provided for @pnGeneralComebackGentle02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí sigues teniendo un lugar para volver con calma.'**
+  String get pnGeneralComebackGentle02Body;
+
+  /// No description provided for @pnGeneralComebackGentle02BodyWithName.
+  ///
+  /// In es, this message translates to:
+  /// **'{displayName}, aquí sigues teniendo un lugar para volver con calma.'**
+  String pnGeneralComebackGentle02BodyWithName(String displayName);
+
+  /// No description provided for @pnGeneralReflectionPrompt01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Un minuto para mirar el día'**
+  String get pnGeneralReflectionPrompt01Title;
+
+  /// No description provided for @pnGeneralReflectionPrompt01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Quizá te venga bien dejar una nota sobre cómo ha ido hoy.'**
+  String get pnGeneralReflectionPrompt01Body;
+
+  /// No description provided for @pnGeneralReflectionPrompt02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu día también merece palabras'**
+  String get pnGeneralReflectionPrompt02Title;
+
+  /// No description provided for @pnGeneralReflectionPrompt02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Si te apetece, puedes dejar por escrito lo que hoy te dejó.'**
+  String get pnGeneralReflectionPrompt02Body;
+
+  /// No description provided for @pnGeneralReflectionPrompt02BodyWithName.
+  ///
+  /// In es, this message translates to:
+  /// **'{displayName}, si te apetece, puedes dejar por escrito lo que hoy te dejó.'**
+  String pnGeneralReflectionPrompt02BodyWithName(String displayName);
+
+  /// No description provided for @pnGeneralConsistencyGentle01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'La constancia se está notando'**
+  String get pnGeneralConsistencyGentle01Title;
+
+  /// No description provided for @pnGeneralConsistencyGentle01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'{streak} días seguidos no aparecen por casualidad.'**
+  String pnGeneralConsistencyGentle01Body(int streak);
+
+  /// No description provided for @pnGeneralConsistencyGentle02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Paso a paso'**
+  String get pnGeneralConsistencyGentle02Title;
+
+  /// No description provided for @pnGeneralConsistencyGentle02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese {progress} encaja con una rutina que ya va tomando forma.'**
+  String pnGeneralConsistencyGentle02Body(String progress);
+
+  /// No description provided for @pnGeneralEncouragementNeutral01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Sigue sumando'**
+  String get pnGeneralEncouragementNeutral01Title;
+
+  /// No description provided for @pnGeneralEncouragementNeutral01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'No hace falta correr. Lo importante es seguir en contacto con lo que te importa.'**
+  String get pnGeneralEncouragementNeutral01Body;
+
+  /// No description provided for @pnGeneralEncouragementNeutral02Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía cuenta'**
+  String get pnGeneralEncouragementNeutral02Title;
+
+  /// No description provided for @pnGeneralEncouragementNeutral02Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Aunque el día vaya rápido, aún puedes guardar un pequeño espacio para ti.'**
+  String get pnGeneralEncouragementNeutral02Body;
+
+  /// No description provided for @pnGeneralEncouragementNeutral02BodyWithName.
+  ///
+  /// In es, this message translates to:
+  /// **'{displayName}, aunque el día vaya rápido, aún puedes guardar un pequeño espacio para ti.'**
+  String pnGeneralEncouragementNeutral02BodyWithName(String displayName);
+
+  /// No description provided for @pnGeneralProgressHabit01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Un hábito que sigue vivo'**
+  String get pnGeneralProgressHabit01Title;
+
+  /// No description provided for @pnGeneralProgressHabit01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'{habitName} ya va en {progress}. Va cogiendo continuidad.'**
+  String pnGeneralProgressHabit01Body(String habitName, String progress);
+
+  /// No description provided for @pnGeneralEncouragementWeekday01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún queda día'**
+  String get pnGeneralEncouragementWeekday01Title;
+
+  /// No description provided for @pnGeneralEncouragementWeekday01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Si {weekday} te deja un hueco hacia las {timeOfDay}, puede ser un buen momento para volver a ti.'**
+  String pnGeneralEncouragementWeekday01Body(String weekday, String timeOfDay);
+
+  /// No description provided for @pnGeneralReflectionProgress01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'El día ya tiene historia'**
+  String get pnGeneralReflectionProgress01Title;
+
+  /// No description provided for @pnGeneralReflectionProgress01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'Has cerrado {completedCount} de {totalCount}. Quizá apetezca mirar qué te ayudó hoy.'**
+  String pnGeneralReflectionProgress01Body(int completedCount, int totalCount);
+
+  /// No description provided for @pnGeneralConsistencyName01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu ritmo cuenta'**
+  String get pnGeneralConsistencyName01Title;
+
+  /// No description provided for @pnGeneralConsistencyName01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'{displayName}, ese {progress} habla de una constancia muy tuya.'**
+  String pnGeneralConsistencyName01Body(String displayName, String progress);
 }
 
 class _AppLocalizationsDelegate

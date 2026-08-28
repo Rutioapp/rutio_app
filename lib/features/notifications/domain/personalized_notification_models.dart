@@ -2,6 +2,8 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 
+import 'notification_template_content.dart';
+
 enum NotificationFamily {
   habitReminder,
   personalizedGeneral,
@@ -41,6 +43,43 @@ extension NotificationKindX on NotificationKind {
         return NotificationFamily.weeklyReport;
     }
   }
+
+  String get wireName {
+    switch (this) {
+      case NotificationKind.habitReminder:
+        return 'habitReminder';
+      case NotificationKind.generalDayClosure:
+        return 'generalDayClosure';
+      case NotificationKind.generalStreakRisk:
+        return 'generalStreakRisk';
+      case NotificationKind.generalDailyReflection:
+        return 'generalDailyReflection';
+      case NotificationKind.generalInactivity:
+        return 'generalInactivity';
+      case NotificationKind.generalProgressNudge:
+        return 'generalProgressNudge';
+      case NotificationKind.generalDiaryPrompt:
+        return 'generalDiaryPrompt';
+      case NotificationKind.celebrationStreak:
+        return 'celebrationStreak';
+      case NotificationKind.futureWeeklyReport:
+        return 'futureWeeklyReport';
+    }
+  }
+}
+
+NotificationKind notificationKindFromWireName(String wireName) {
+  final normalized = wireName.trim();
+  for (final value in NotificationKind.values) {
+    if (value.wireName == normalized) {
+      return value;
+    }
+  }
+  throw ArgumentError.value(
+    wireName,
+    'wireName',
+    'Unsupported NotificationKind.',
+  );
 }
 
 enum NotificationTriggerReason {
@@ -711,22 +750,33 @@ class NotificationTemplateDescriptor {
     required this.templateId,
     required this.templateKey,
     required this.localeNamespace,
-    List<String> requiredVariables = const <String>[],
-    List<String> categoryTags = const <String>[],
+    required this.category,
+    List<String> variantTags = const <String>[],
+    List<NotificationTemplateVariable> declaredVariables =
+        const <NotificationTemplateVariable>[],
+    List<NotificationTemplateVariable> requiredVariables =
+        const <NotificationTemplateVariable>[],
     required this.weight,
     required this.cooldown,
     required this.maxUsesPer7d,
     required List<NotificationKind> compatibleKinds,
-  })  : requiredVariables = UnmodifiableListView<String>(requiredVariables),
-        categoryTags = UnmodifiableListView<String>(categoryTags),
+  })  : variantTags = UnmodifiableListView<String>(variantTags),
+        declaredVariables = UnmodifiableListView<NotificationTemplateVariable>(
+          declaredVariables,
+        ),
+        requiredVariables = UnmodifiableListView<NotificationTemplateVariable>(
+          requiredVariables,
+        ),
         compatibleKinds =
             UnmodifiableListView<NotificationKind>(compatibleKinds);
 
   final String templateId;
   final String templateKey;
   final String localeNamespace;
-  final List<String> requiredVariables;
-  final List<String> categoryTags;
+  final NotificationTemplateCategory category;
+  final List<String> variantTags;
+  final List<NotificationTemplateVariable> declaredVariables;
+  final List<NotificationTemplateVariable> requiredVariables;
   final int weight;
   final Duration cooldown;
   final int maxUsesPer7d;
@@ -741,8 +791,10 @@ class NotificationTemplateDescriptor {
             other.templateId == templateId &&
             other.templateKey == templateKey &&
             other.localeNamespace == localeNamespace &&
+            other.category == category &&
+            listEquals(other.variantTags, variantTags) &&
+            listEquals(other.declaredVariables, declaredVariables) &&
             listEquals(other.requiredVariables, requiredVariables) &&
-            listEquals(other.categoryTags, categoryTags) &&
             other.weight == weight &&
             other.cooldown == cooldown &&
             other.maxUsesPer7d == maxUsesPer7d &&
@@ -754,8 +806,10 @@ class NotificationTemplateDescriptor {
         templateId,
         templateKey,
         localeNamespace,
+        category,
+        Object.hashAll(variantTags),
+        Object.hashAll(declaredVariables),
         Object.hashAll(requiredVariables),
-        Object.hashAll(categoryTags),
         weight,
         cooldown,
         maxUsesPer7d,

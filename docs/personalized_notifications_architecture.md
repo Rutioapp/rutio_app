@@ -468,15 +468,14 @@ Propuesta:
 
 - archivo local estructurado, por ejemplo JSON, con:
   - `templateId`
-  - `kind`
-  - `l10nKeyTitle`
-  - `l10nKeyBody`
+  - `kind` o `compatibleKinds`
+  - `templateKey`
   - `weight`
   - `cooldownHours`
   - `categoryTags`
   - `requiredVariables`
   - `maxUsesPer7d`
-- strings finales en ARB.
+- strings finales en ARB mediante un resolver explicito y tipado.
 
 Ventajas:
 
@@ -488,7 +487,8 @@ Ventajas:
 Problemas:
 
 - cambiar catalogo requiere release;
-- si el catalogo crece mucho, necesitara versionado interno cuidadoso.
+- si el catalogo crece mucho, necesitara versionado interno cuidadoso;
+- `AppLocalizations` real del repo no expone un mecanismo limpio para resolver getters/metodos por clave string dinamica, asi que conviene evitar reflexion.
 
 Veredicto:
 
