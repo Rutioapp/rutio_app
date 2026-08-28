@@ -483,6 +483,22 @@ class NotificationMessageHistorySnapshot {
   final Map<String, DateTime> lastSelectedAtByKind;
   final Map<String, DateTime> lastSelectedAtByCategoryTag;
 
+  NotificationMessageHistorySnapshot copyWith({
+    List<NotificationDeliveryRecord>? recentDeliveries,
+    Map<String, DateTime>? lastSelectedAtByTemplateId,
+    Map<String, DateTime>? lastSelectedAtByKind,
+    Map<String, DateTime>? lastSelectedAtByCategoryTag,
+  }) {
+    return NotificationMessageHistorySnapshot(
+      recentDeliveries: recentDeliveries ?? this.recentDeliveries,
+      lastSelectedAtByTemplateId:
+          lastSelectedAtByTemplateId ?? this.lastSelectedAtByTemplateId,
+      lastSelectedAtByKind: lastSelectedAtByKind ?? this.lastSelectedAtByKind,
+      lastSelectedAtByCategoryTag:
+          lastSelectedAtByCategoryTag ?? this.lastSelectedAtByCategoryTag,
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
@@ -1023,6 +1039,26 @@ class NotificationScheduleManifest {
   final DateTime lastReconciledDate;
   final List<NotificationManifestEntry> entries;
   final Map<String, int> platformIdIndex;
+
+  NotificationScheduleManifest copyWith({
+    NotificationScope? scope,
+    int? scopeEpochAtPlanTime,
+    String? timezoneId,
+    DateTime? lastReconciledAt,
+    DateTime? lastReconciledDate,
+    List<NotificationManifestEntry>? entries,
+    Map<String, int>? platformIdIndex,
+  }) {
+    return NotificationScheduleManifest(
+      scope: scope ?? this.scope,
+      scopeEpochAtPlanTime: scopeEpochAtPlanTime ?? this.scopeEpochAtPlanTime,
+      timezoneId: timezoneId ?? this.timezoneId,
+      lastReconciledAt: lastReconciledAt ?? this.lastReconciledAt,
+      lastReconciledDate: lastReconciledDate ?? this.lastReconciledDate,
+      entries: entries ?? this.entries,
+      platformIdIndex: platformIdIndex ?? this.platformIdIndex,
+    );
+  }
 
   @override
   bool operator ==(Object other) {

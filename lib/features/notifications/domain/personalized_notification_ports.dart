@@ -4,6 +4,26 @@ abstract class NotificationTemplateCatalog {
   List<NotificationTemplateDescriptor> templatesForKind(NotificationKind kind);
 }
 
+abstract class NotificationInstallIdProvider {
+  Future<String> getOrCreateInstallId();
+}
+
+abstract class NotificationPreferencesStore {
+  Future<NotificationPreferences> load(NotificationScope scope);
+
+  Future<void> save(
+    NotificationScope scope,
+    NotificationPreferences preferences,
+  );
+
+  Future<NotificationPreferences> update(
+    NotificationScope scope,
+    NotificationPreferences Function(NotificationPreferences current) update,
+  );
+
+  Future<void> reset(NotificationScope scope);
+}
+
 abstract class NotificationHistoryStore {
   Future<NotificationMessageHistorySnapshot?> load(NotificationScope scope);
 
