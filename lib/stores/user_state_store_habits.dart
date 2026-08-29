@@ -2197,6 +2197,7 @@ Future<void> _deleteHabitById(
   }
 
   await store.save(root);
+  store.notificationMutationObserver.onHabitDeleted(normalizedId);
   unawaited(
     store._habitSyncService.syncHabitDeleted(
       localHabitId: normalizedId,
@@ -2289,6 +2290,7 @@ Future<void> _addHabitFromCatalog(
   await store.save(root);
 
   final createdHabit = Map<String, dynamic>.from(activeHabits.last);
+  store.notificationMutationObserver.onHabitCreated(id);
   unawaited(
     store._habitSyncService.syncHabitCreated(
       localHabit: createdHabit,
@@ -2384,6 +2386,7 @@ Future<void> _addCustomHabit(
   await store.save(root);
 
   final createdHabit = Map<String, dynamic>.from(activeHabits.last);
+  store.notificationMutationObserver.onHabitCreated(id);
   unawaited(
     store._habitSyncService.syncHabitCreated(
       localHabit: createdHabit,
@@ -2495,6 +2498,7 @@ Future<void> _updateHabitPlan(
   activeHabits[index] = habit;
   userState['activeHabits'] = activeHabits;
   await store.save(root);
+  store.notificationMutationObserver.onHabitUpdated(habitId);
 }
 
 Future<void> _updateHabitDetailsFromEdit(
@@ -2692,6 +2696,14 @@ Future<void> _updateHabitDetailsFromEdit(
   final nowArchived =
       current['archived'] == true || current['isArchived'] == true;
   final syncedHabit = Map<String, dynamic>.from(current);
+  final reminderChanged = patch.containsKey('reminderEnabled') ||
+      patch.containsKey('remindersEnabled') ||
+      patch.containsKey('reminderTime');
+  store.notificationMutationObserver.onHabitUpdated(
+    id,
+    reminderChanged: reminderChanged,
+    archived: nowArchived != wasArchived && nowArchived,
+  );
   if (nowArchived != wasArchived) {
     unawaited(
       store._habitSyncService.syncHabitArchived(
@@ -2956,6 +2968,11 @@ Future<void> _setCountHabitValue(
     habitId: habitId,
     date: now,
   );
+  if (habit['doneToday'] == true) {
+    store.notificationMutationObserver.onHabitCompleted(habitId);
+  } else if (wasCompletedBeforeChange) {
+    store.notificationMutationObserver.onHabitUncompleted(habitId);
+  }
 }
 
 Future<void> _completeHabit(
@@ -3164,6 +3181,9 @@ Future<void> _completeHabit(
     habitId: habitId,
     date: now,
   );
+  if (habit['doneToday'] == true) {
+    store.notificationMutationObserver.onHabitCompleted(habitId);
+  }
 }
 
 Future<void> _toggleHabitDoneForDate(
@@ -3332,6 +3352,11 @@ Future<void> _setHabitCompletionForKey(
       isSkippedOverride: false,
     );
   }
+  if (done) {
+    store.notificationMutationObserver.onHabitCompleted(habitId);
+  } else {
+    store.notificationMutationObserver.onHabitUncompleted(habitId);
+  }
 }
 
 Future<void> _setHabitSkipForKey(
@@ -3463,6 +3488,11 @@ Future<void> _setHabitSkipForKey(
       countValueOverride: skipped ? 0 : null,
     );
   }
+  if (skipped) {
+    store.notificationMutationObserver.onHabitSkipped(habitId);
+  } else {
+    store.notificationMutationObserver.onHabitUpdated(habitId);
+  }
 }
 
 Future<void> _setCountHabitValueForDate(
@@ -3526,6 +3556,11 @@ Future<void> _setCountHabitValueForDate(
     isSkippedOverride: false,
     countValueOverride: safeValue,
   );
+  if (safeValue >= target) {
+    store.notificationMutationObserver.onHabitCompleted(habitId);
+  } else {
+    store.notificationMutationObserver.onHabitUpdated(habitId);
+  }
 }
 
 Map<String, dynamic>? _activeHabitSnapshotForSync(

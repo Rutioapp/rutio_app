@@ -202,6 +202,33 @@ class EssentialHabitsBootstrapResult {
   }
 }
 
+abstract class UserStateNotificationMutationObserver {
+  const UserStateNotificationMutationObserver();
+
+  void onHabitCreated(String habitId) {}
+
+  void onHabitUpdated(
+    String habitId, {
+    bool reminderChanged = false,
+    bool archived = false,
+  }) {}
+
+  void onHabitDeleted(String habitId) {}
+
+  void onHabitCompleted(String habitId) {}
+
+  void onHabitUncompleted(String habitId) {}
+
+  void onHabitSkipped(String habitId) {}
+
+  void onNotificationPreferencesChanged() {}
+}
+
+class NoopUserStateNotificationMutationObserver
+    extends UserStateNotificationMutationObserver {
+  const NoopUserStateNotificationMutationObserver();
+}
+
 class UserStateStore extends ChangeNotifier {
   static const Duration diaryV2AutoPullCooldown = Duration(minutes: 10);
   static const Duration habitsAutoPullCooldown = Duration(minutes: 10);
@@ -230,6 +257,7 @@ class UserStateStore extends ChangeNotifier {
   final LevelUpCelebrationController _levelUpCelebrationController;
   final CurrentUserIdProvider _currentSupabaseUserIdProvider;
   final DateTime Function() _nowProvider;
+  UserStateNotificationMutationObserver _notificationMutationObserver;
 
   UserStateStore(
     this._repo, {
@@ -257,6 +285,7 @@ class UserStateStore extends ChangeNotifier {
     AchievementLevelRewardCoordinator? achievementLevelRewardCoordinator,
     CurrentUserIdProvider? currentSupabaseUserIdProvider,
     DateTime Function()? nowProvider,
+    UserStateNotificationMutationObserver? notificationMutationObserver,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
         _habitSyncService = habitSyncService ?? HabitSyncService(),
@@ -319,7 +348,9 @@ class UserStateStore extends ChangeNotifier {
         _levelUpCelebrationController = const LevelUpCelebrationController(),
         _currentSupabaseUserIdProvider =
             currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId,
-        _nowProvider = nowProvider ?? DateTime.now;
+        _nowProvider = nowProvider ?? DateTime.now,
+        _notificationMutationObserver = notificationMutationObserver ??
+            const NoopUserStateNotificationMutationObserver();
 
   Map<String, dynamic>? _state;
   bool _loading = false;
@@ -395,6 +426,14 @@ class UserStateStore extends ChangeNotifier {
   DateTime? get lastHabitsRemotePullAttemptAt => _lastHabitsRemotePullAttemptAt;
   DateTime? get lastHabitsRemotePullSuccessAt => _lastHabitsRemotePullSuccessAt;
   Object? get accountDeletionError => _accountDeletionError;
+  UserStateNotificationMutationObserver get notificationMutationObserver =>
+      _notificationMutationObserver;
+
+  void setNotificationMutationObserver(
+    UserStateNotificationMutationObserver observer,
+  ) {
+    _notificationMutationObserver = observer;
+  }
 
   void _emitChanged() => notifyListeners();
 

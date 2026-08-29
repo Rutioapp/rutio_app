@@ -24,6 +24,9 @@ enum BootstrapRunMode {
 }
 
 typedef BootstrapDebugLogger = void Function(String message);
+typedef BootstrapHomeReadyCallback = Future<void> Function(
+  BootstrapHomeEssentialReady ready,
+);
 
 class _BootstrapRunTelemetry {
   _BootstrapRunTelemetry({
@@ -441,6 +444,7 @@ class BootstrapController extends ChangeNotifier {
     BootstrapEssentialHabitsPreparer? essentialHabitsPreparer,
     BootstrapEssentialCosmeticsPreparer? essentialCosmeticsPreparer,
     BootstrapEssentialAssetPreloader? essentialAssetPreloader,
+    BootstrapHomeReadyCallback? onHomeReady,
     BootstrapDebugLogger? debugLogger,
   })  : _authController = authController,
         _userStateStore = userStateStore,
@@ -458,6 +462,7 @@ class BootstrapController extends ChangeNotifier {
         _essentialCosmeticsPreparer = essentialCosmeticsPreparer,
         _essentialAssetPreloader =
             essentialAssetPreloader ?? RootBundleEssentialAssetPreloader(),
+        _onHomeReady = onHomeReady,
         _debugLogger = debugLogger ?? debugPrint {
     _trace(0, 'controller_created');
     _authController.addListener(_handleAuthChanged);
@@ -472,6 +477,7 @@ class BootstrapController extends ChangeNotifier {
   final BootstrapEssentialHabitsPreparer _essentialHabitsPreparer;
   final BootstrapEssentialCosmeticsPreparer? _essentialCosmeticsPreparer;
   final BootstrapEssentialAssetPreloader _essentialAssetPreloader;
+  final BootstrapHomeReadyCallback? _onHomeReady;
   final BootstrapDebugLogger _debugLogger;
 
   BootstrapState _state = BootstrapState.initial;
@@ -587,6 +593,7 @@ class BootstrapController extends ChangeNotifier {
         DateTime.now().difference(publishStartedAt),
       );
       _timeline(runId, 'home_published');
+      _fireAndForgetHomeReady(essentials);
       _finishRun(runId);
       _authController.startPostHomeBootstrapWork(
         bootstrapRunId: runId,
@@ -893,6 +900,7 @@ class BootstrapController extends ChangeNotifier {
           DateTime.now().difference(publishStartedAt),
         );
         _timeline(runId, 'home_published');
+        _fireAndForgetHomeReady(essentials);
         _finishRun(runId);
         _authController.startPostHomeBootstrapWork(
           bootstrapRunId: runId,
@@ -1317,11 +1325,12 @@ class BootstrapController extends ChangeNotifier {
 
     final cachedEntry = readResult.entry;
     if (cachedEntry != null) {
-      final age = readResult.status == AuthoritativeBootstrapCacheReadStatusV2.expired
-          ? readResult.entry == null
-              ? Duration.zero
-              : DateTime.now().toUtc().difference(cachedEntry.cachedAt)
-          : DateTime.now().toUtc().difference(cachedEntry.cachedAt);
+      final age =
+          readResult.status == AuthoritativeBootstrapCacheReadStatusV2.expired
+              ? readResult.entry == null
+                  ? Duration.zero
+                  : DateTime.now().toUtc().difference(cachedEntry.cachedAt)
+              : DateTime.now().toUtc().difference(cachedEntry.cachedAt);
       _metric(
         runId,
         'authoritative_cache_v2_age_ms',
@@ -1399,7 +1408,8 @@ class BootstrapController extends ChangeNotifier {
       startedAt: startedAt,
     );
     try {
-      final entry = AuthoritativeBootstrapCacheEntryV2.fromAuthoritativeDecision(
+      final entry =
+          AuthoritativeBootstrapCacheEntryV2.fromAuthoritativeDecision(
         decision: authoritativeDecision,
         environmentId: _authoritativeBootstrapEnvironmentId,
         scopeKey: scopeKey,
@@ -1656,6 +1666,28 @@ class BootstrapController extends ChangeNotifier {
       return RutioSupabaseConfig.supabaseUrl;
     }
     return normalized;
+  }
+
+  void _fireAndForgetHomeReady(BootstrapHomeEssentialReady ready) {
+    final callback = _onHomeReady;
+    if (callback == null) {
+      return;
+    }
+    unawaited(_guardHomeReadyCallback(callback, ready));
+  }
+
+  Future<void> _guardHomeReadyCallback(
+    BootstrapHomeReadyCallback callback,
+    BootstrapHomeEssentialReady ready,
+  ) async {
+    try {
+      await callback(ready);
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[bootstrap] home ready callback failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+    }
   }
 
   @override

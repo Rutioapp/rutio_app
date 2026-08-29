@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../features/notifications/application/personalized_notification_orchestrator.dart';
 import '../stores/user_state_store.dart';
 import 'notification_service.dart';
 import 'notification_types.dart';
@@ -63,6 +64,7 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
     if (state != AppLifecycleState.resumed) return;
     if (!_bootstrapped) return;
     _scheduleSync(recordAppOpen: true);
+    _schedulePersonalizedSync();
   }
 
   @override
@@ -123,6 +125,25 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
         logNotification('Notification sync error: $error');
       }
     });
+  }
+
+  void _schedulePersonalizedSync() {
+    final store = _store;
+    if (store == null || store.state == null) return;
+
+    unawaited(
+      () async {
+        try {
+          await context
+              .read<PersonalizedNotificationOrchestrator>()
+              .reconcileForForeground();
+        } catch (error) {
+          logNotification(
+            'Personalized notification foreground sync error: $error',
+          );
+        }
+      }(),
+    );
   }
 
   JsonMap _cloneState(Map<String, dynamic> state) {

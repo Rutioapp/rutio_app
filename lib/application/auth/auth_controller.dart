@@ -8,6 +8,7 @@ import '../../devtools/rutio_runtime_profile.dart';
 import '../../data/models/remote/remote_profile.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/profile_repository.dart';
+import '../../features/notifications/application/personalized_notification_orchestrator.dart';
 import '../../features/global_wallet/application/global_wallet_controller.dart';
 import '../../stores/user_state_store.dart';
 
@@ -70,12 +71,15 @@ class AuthController extends ChangeNotifier {
     ProfileRepository? profileRepository,
     bool enableBackgroundProfileSync = true,
     PostHomeBootstrapTaskRunner? postHomeBootstrapTaskRunner,
+    PersonalizedNotificationOrchestrator? personalizedNotificationOrchestrator,
     AuthDebugLogger? debugLogger,
   })  : _userStateStore = userStateStore,
         _globalWalletController = globalWalletController,
         _profileRepository = profileRepository,
         _enableBackgroundProfileSync = enableBackgroundProfileSync,
         _postHomeBootstrapTaskRunner = postHomeBootstrapTaskRunner,
+        _personalizedNotificationOrchestrator =
+            personalizedNotificationOrchestrator,
         _debugLogger = debugLogger ?? debugPrint {
     if (RutioRuntimeProfile.isDemo) {
       // Demo profile is intentionally local-only: avoid binding to any live
@@ -124,6 +128,8 @@ class AuthController extends ChangeNotifier {
   final ProfileRepository? _profileRepository;
   final bool _enableBackgroundProfileSync;
   final PostHomeBootstrapTaskRunner? _postHomeBootstrapTaskRunner;
+  final PersonalizedNotificationOrchestrator?
+      _personalizedNotificationOrchestrator;
   final AuthDebugLogger _debugLogger;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -346,6 +352,7 @@ class AuthController extends ChangeNotifier {
     _setError(null);
     _setNotice(null);
     final previousUserId = _currentUser?.id ?? _authRepository.currentUser?.id;
+    await _runPersonalizedLogoutCleanupBestEffort();
     _locallySignedOutUserId = previousUserId;
     _currentUser = null;
     _pendingLastLoginTouchUserId = null;
@@ -384,6 +391,23 @@ class AuthController extends ChangeNotifier {
       _setError('Could not finish remote sign-out. Please try again.');
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> _runPersonalizedLogoutCleanupBestEffort() async {
+    final orchestrator = _personalizedNotificationOrchestrator;
+    if (orchestrator == null) {
+      return;
+    }
+    try {
+      await orchestrator
+          .cleanupCurrentScopeForLogout()
+          .timeout(const Duration(seconds: 5));
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[auth] personalized notification logout cleanup failed');
+        debugPrint('[auth] cleanup error: $error');
+      }
     }
   }
 

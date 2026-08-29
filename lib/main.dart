@@ -18,6 +18,18 @@ import 'data/repositories/profile_repository.dart';
 import 'data/repositories/user_state_repository.dart';
 import 'data/local/user_state_storage.dart';
 import 'data/local/asset_json_loader.dart';
+import 'features/notifications/application/notification_context_builder.dart';
+import 'features/notifications/application/notification_os_reconciliation_coordinator.dart';
+import 'features/notifications/application/personalized_notification_orchestrator.dart';
+import 'features/notifications/application/personalized_notification_plan_builder.dart';
+import 'features/notifications/data/local/local_notification_template_catalog.dart';
+import 'features/notifications/data/local/notification_platform_id_repository.dart';
+import 'features/notifications/data/local/shared_preferences_notification_history_store.dart';
+import 'features/notifications/data/local/shared_preferences_notification_install_id_provider.dart';
+import 'features/notifications/data/local/shared_preferences_notification_preferences_store.dart';
+import 'features/notifications/data/local/shared_preferences_notification_schedule_store.dart';
+import 'features/notifications/data/native/flutter_local_notifications_native_gateway.dart';
+import 'features/notifications/data/native/native_notification_schedule_executor.dart';
 import 'features/shop/application/shop_cosmetics_controller.dart';
 import 'features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'features/global_wallet/application/global_wallet_controller.dart';
@@ -123,6 +135,60 @@ class MyApp extends StatelessWidget {
             )..load();
           },
         ),
+        Provider<PersonalizedNotificationOrchestrator>(
+          create: (context) {
+            final userStateStore = context.read<UserStateStore>();
+            final scheduleStore = SharedPreferencesNotificationScheduleStore();
+            final historyStore = SharedPreferencesNotificationHistoryStore();
+            final installIdProvider =
+                SharedPreferencesNotificationInstallIdProvider();
+            final gateway = FlutterLocalNotificationsNativeGateway();
+            final executor = NativeNotificationScheduleExecutor(
+              gateway: gateway,
+              isScopeActive: () async {
+                final activeUserId =
+                    userStateStore.activeLocalScopeUserId?.trim();
+                final storeUserId = userStateStore.userId?.trim();
+                return activeUserId != null &&
+                    activeUserId.isNotEmpty &&
+                    activeUserId == storeUserId;
+              },
+            );
+            final orchestrator = PersonalizedNotificationOrchestrator(
+              userStateStore: userStateStore,
+              installIdProvider: installIdProvider,
+              preferencesResolver:
+                  StoreBackedPersonalizedNotificationPreferencesResolver(
+                store: SharedPreferencesNotificationPreferencesStore(),
+                userStateStore: userStateStore,
+              ),
+              scheduleStore: scheduleStore,
+              scheduleExecutor: executor,
+              planBuilder: PersonalizedNotificationPlanBuilder(
+                contextBuilder: StoreBackedNotificationContextBuilder(
+                  store: UserStateStoreNotificationContextSource(
+                    userStateStore,
+                  ),
+                  installIdProvider: installIdProvider,
+                  historyStore: historyStore,
+                ),
+                templateCatalog: LocalNotificationTemplateCatalog(
+                  assetJsonLoader: context.read<AssetJsonLoader>(),
+                ),
+                platformIdProvider: NotificationPlatformIdRepository(
+                  scheduleStore: scheduleStore,
+                ),
+              ),
+              coordinator: NotificationOsReconciliationCoordinator(
+                scheduleStore: scheduleStore,
+                historyStore: historyStore,
+                executor: executor,
+              ),
+            );
+            userStateStore.setNotificationMutationObserver(orchestrator);
+            return orchestrator;
+          },
+        ),
         ChangeNotifierProvider<ShopCosmeticsController>(
           create: (context) => ShopCosmeticsController(
             userStateStore: context.read<UserStateStore>(),
@@ -137,6 +203,8 @@ class MyApp extends StatelessWidget {
             userStateStore: context.read<UserStateStore>(),
             profileRepository: context.read<ProfileRepository>(),
             globalWalletController: context.read<GlobalWalletController>(),
+            personalizedNotificationOrchestrator:
+                context.read<PersonalizedNotificationOrchestrator>(),
           ),
         ),
         ChangeNotifierProxyProvider4<AuthController, UserStateStore,
@@ -150,6 +218,9 @@ class MyApp extends StatelessWidget {
             essentialCosmeticsPreparer: ShopBootstrapEssentialCosmeticsPreparer(
               context.read<ShopCosmeticsController>(),
             ),
+            onHomeReady: (_) => context
+                .read<PersonalizedNotificationOrchestrator>()
+                .reconcileForBootstrapReady(),
           ),
           update: (_, __, ___, ____, _____, controller) => controller!,
         ),

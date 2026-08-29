@@ -293,6 +293,7 @@ Future<void> _updateNotificationSettings(
 
   userState['settings'] = _ensureSettingsRoot(userState);
   await store.save(root);
+  store.notificationMutationObserver.onNotificationPreferencesChanged();
 
   unawaited(
     _bestEffortSyncNotificationSettingsPatch(

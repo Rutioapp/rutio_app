@@ -3,6 +3,7 @@ export '../application/notification_reconciler.dart';
 export '../application/notification_schedule_policy.dart';
 export '../application/notification_os_reconciliation_coordinator.dart';
 export '../application/personalized_notification_plan_builder.dart';
+export '../application/personalized_notification_orchestrator.dart';
 export 'desired_notification.dart';
 export 'notification_clock.dart';
 export 'notification_message_catalog.dart';
