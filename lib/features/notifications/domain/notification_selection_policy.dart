@@ -311,7 +311,7 @@ class NotificationSelectionPolicy {
     var penalty = 1.0;
     final recentCategories = recent
         .take(3)
-        .map((record) => _categoryFromTemplateId(record.templateId))
+        .map((record) => record.categoryTag)
         .whereType<String>()
         .toList(growable: false);
     final sameCategoryCount = recentCategories
@@ -429,12 +429,6 @@ bool _isInQuietHours(DateTime now, NotificationPreferences preferences) {
     return minutesNow >= startMinutes && minutesNow < endMinutes;
   }
   return minutesNow >= startMinutes || minutesNow < endMinutes;
-}
-
-String? _categoryFromTemplateId(String templateId) {
-  final parts = templateId.split('.');
-  if (parts.length < 3) return null;
-  return parts[1] == 'day' ? 'completedDay' : parts[1];
 }
 
 bool _hasAnyRenderSignal(NotificationSelectionContext context) {

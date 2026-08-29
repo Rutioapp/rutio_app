@@ -453,6 +453,7 @@ class NotificationDeliveryRecord {
     required this.templateId,
     required this.kind,
     required this.scheduledAt,
+    this.categoryTag,
     this.openedAt,
     this.deliveredObservedAt,
     this.dismissedObservedAt,
@@ -464,6 +465,7 @@ class NotificationDeliveryRecord {
   final String templateId;
   final NotificationKind kind;
   final DateTime scheduledAt;
+  final String? categoryTag;
   final DateTime? openedAt;
   final DateTime? deliveredObservedAt;
   final DateTime? dismissedObservedAt;
@@ -478,6 +480,7 @@ class NotificationDeliveryRecord {
             other.templateId == templateId &&
             other.kind == kind &&
             other.scheduledAt == scheduledAt &&
+            other.categoryTag == categoryTag &&
             other.openedAt == openedAt &&
             other.deliveredObservedAt == deliveredObservedAt &&
             other.dismissedObservedAt == dismissedObservedAt &&
@@ -491,6 +494,7 @@ class NotificationDeliveryRecord {
         templateId,
         kind,
         scheduledAt,
+        categoryTag,
         openedAt,
         deliveredObservedAt,
         dismissedObservedAt,
@@ -579,7 +583,7 @@ class NotificationContextSnapshot {
     this.recentAppOpenCount7d = 0,
     this.latestDiaryEntryAt,
     this.latestMood,
-    this.progressTodayRatio = 0,
+    this.progressTodayRatio,
     NotificationMessageHistorySnapshot? recentMessageHistory,
     required this.schedulingCapabilities,
   })  : timezoneId = _requireNotBlank(timezoneId, 'timezoneId'),
@@ -607,7 +611,7 @@ class NotificationContextSnapshot {
   final int recentAppOpenCount7d;
   final DateTime? latestDiaryEntryAt;
   final String? latestMood;
-  final double progressTodayRatio;
+  final double? progressTodayRatio;
   final NotificationMessageHistorySnapshot recentMessageHistory;
   final NotificationSchedulingCapabilities schedulingCapabilities;
 

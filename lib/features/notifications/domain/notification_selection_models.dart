@@ -80,7 +80,6 @@ class NotificationSelectionContext {
     final pendingCount = snapshot.pendingHabitsToday.length;
     final completedCount = snapshot.completedHabitsToday.length;
     final totalCount = pendingCount + completedCount;
-    final progressRatio = totalCount == 0 ? 0.0 : completedCount / totalCount;
     final inactivityDays = snapshot.lastAppOpenAt == null
         ? null
         : snapshot.calendarDate
@@ -99,9 +98,7 @@ class NotificationSelectionContext {
       timezoneId: snapshot.timezoneId,
       locale: snapshot.scope.locale,
       displayName: displayName,
-      progressRatio: snapshot.progressTodayRatio > 0
-          ? snapshot.progressTodayRatio.clamp(0, 1).toDouble()
-          : progressRatio,
+      progressRatio: snapshot.progressTodayRatio?.clamp(0, 1).toDouble(),
       pendingCount: pendingCount,
       completedCount: completedCount,
       totalCount: totalCount,

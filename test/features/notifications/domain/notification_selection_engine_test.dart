@@ -51,6 +51,7 @@ void main() {
     required String templateId,
     required NotificationKind kind,
     required DateTime scheduledAt,
+    String? categoryTag,
   }) {
     return NotificationDeliveryRecord(
       notificationKey: 'key:$templateId:${scheduledAt.millisecondsSinceEpoch}',
@@ -58,6 +59,7 @@ void main() {
       templateId: templateId,
       kind: kind,
       scheduledAt: scheduledAt,
+      categoryTag: categoryTag,
     );
   }
 
@@ -280,6 +282,7 @@ void main() {
             templateId: 'general.streak.encouragement_01',
             kind: NotificationKind.generalStreakRisk,
             scheduledAt: now.subtract(const Duration(hours: 1)),
+            categoryTag: NotificationTemplateCategory.streak.wireName,
           ),
         ],
         lastByTemplate: <String, DateTime>{
@@ -370,6 +373,7 @@ void main() {
             templateId: 'general.encouragement.only_01',
             kind: NotificationKind.generalProgressNudge,
             scheduledAt: now.subtract(const Duration(hours: 1)),
+            categoryTag: NotificationTemplateCategory.encouragement.wireName,
           ),
         ],
         lastByTemplate: <String, DateTime>{
@@ -427,6 +431,7 @@ void main() {
             templateId: 'general.encouragement.capped_01',
             kind: NotificationKind.generalProgressNudge,
             scheduledAt: now.subtract(const Duration(days: 1)),
+            categoryTag: NotificationTemplateCategory.encouragement.wireName,
           ),
         ],
       );
@@ -533,6 +538,9 @@ void main() {
               : 'general.motivation.gentle_01',
           kind: NotificationKind.generalProgressNudge,
           scheduledAt: now.subtract(Duration(hours: index + 2)),
+          categoryTag: index.isEven
+              ? NotificationTemplateCategory.encouragement.wireName
+              : NotificationTemplateCategory.gentleMotivation.wireName,
         );
       });
       final history = buildHistory(

@@ -74,7 +74,11 @@ void main() {
     test('supports save/load round-trip and reload', () async {
       final history = NotificationMessageHistorySnapshot(
         recentDeliveries: <NotificationDeliveryRecord>[
-          _record('key-1', scheduledAt: DateTime.utc(2026, 8, 28, 18)),
+          _record(
+            'key-1',
+            scheduledAt: DateTime.utc(2026, 8, 28, 18),
+            categoryTag: 'encouragement',
+          ),
         ],
         lastSelectedAtByTemplateId: <String, DateTime>{
           'template-1': DateTime.utc(2026, 8, 28, 18),
@@ -126,6 +130,7 @@ NotificationScope _scope({
 NotificationDeliveryRecord _record(
   String key, {
   required DateTime scheduledAt,
+  String? categoryTag,
 }) {
   return NotificationDeliveryRecord(
     notificationKey: key,
@@ -133,5 +138,6 @@ NotificationDeliveryRecord _record(
     templateId: 'template-$key',
     kind: NotificationKind.generalDayClosure,
     scheduledAt: scheduledAt,
+    categoryTag: categoryTag,
   );
 }

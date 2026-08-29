@@ -78,11 +78,11 @@ class SharedPreferencesNotificationHistoryStore
         ...current.lastSelectedAtByKind,
         record.kind.name: record.scheduledAt,
       },
-      lastSelectedAtByCategoryTag: categoryTag == null
+      lastSelectedAtByCategoryTag: (categoryTag ?? record.categoryTag) == null
           ? current.lastSelectedAtByCategoryTag
           : <String, DateTime>{
               ...current.lastSelectedAtByCategoryTag,
-              categoryTag: record.scheduledAt,
+              (categoryTag ?? record.categoryTag)!: record.scheduledAt,
             },
     );
     final normalized = _normalized(next);
@@ -125,6 +125,7 @@ class SharedPreferencesNotificationHistoryStore
       'templateId': record.templateId,
       'kind': record.kind.name,
       'scheduledAt': record.scheduledAt.toIso8601String(),
+      'categoryTag': record.categoryTag,
       'openedAt': record.openedAt?.toIso8601String(),
       'deliveredObservedAt': record.deliveredObservedAt?.toIso8601String(),
       'dismissedObservedAt': record.dismissedObservedAt?.toIso8601String(),
@@ -189,6 +190,7 @@ class SharedPreferencesNotificationHistoryStore
       templateId: templateId,
       kind: kind,
       scheduledAt: scheduledAt,
+      categoryTag: _nullableString(json['categoryTag']),
       openedAt: _readDateTime(json['openedAt']),
       deliveredObservedAt: _readDateTime(json['deliveredObservedAt']),
       dismissedObservedAt: _readDateTime(json['dismissedObservedAt']),
