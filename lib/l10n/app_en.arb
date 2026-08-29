@@ -526,8 +526,46 @@
     "feedbackMineAction": "My submissions",
     "feedbackMineActionSubtitle": "Check the status of what you have already sent.",
     "feedbackNewTitle": "Send feedback",
+    "feedbackNewIntro": "Choose a category, describe what happened, and leave the submission ready.",
+    "feedbackCategorySectionTitle": "What kind of feedback do you want to send?",
+    "feedbackCategoryBugTitle": "I found a problem",
+    "feedbackCategoryBugHelp": "Tell us what happened, what you expected to happen, and, if you can, how to reproduce it.",
+    "feedbackCategorySuggestionTitle": "I have a suggestion",
+    "feedbackCategorySuggestionHelp": "Explain your idea and the need it would help solve.",
+    "feedbackCategoryImprovementTitle": "I want to improve something existing",
+    "feedbackCategoryImprovementHelp": "Tell us which part of Rutio you would change and how you would like it to work.",
+    "feedbackCategoryOtherTitle": "Other comment",
+    "feedbackCategoryOtherHelp": "Share any comment that could help us improve Rutio.",
+    "feedbackCategoryGeneralHelp": "Choose a category to see a more specific guide for what you can tell us.",
+    "feedbackDescriptionLabel": "Describe your feedback",
+    "feedbackDescriptionHint": "Tell us what happened, what you expected, and any useful details.",
+    "feedbackDescriptionRequirements": "Min. 20 and max. 5000 characters after trimming spaces.",
+    "feedbackDescriptionCounter": "{current}/{max}",
+    "@feedbackDescriptionCounter": {
+      "placeholders": {
+        "current": {
+          "type": "int"
+        },
+        "max": {
+          "type": "int"
+        }
+      }
+    },
+    "feedbackScreenshotTitle": "Screenshot (optional)",
+    "feedbackScreenshotPlaceholder": "Select image",
+    "feedbackContactTitle": "Can we contact you?",
+    "feedbackContactDescription": "If you turn this on, we can reply if we need to.",
+    "feedbackContactSwitchLabel": "Yes, you can contact me",
+    "feedbackTechnicalNote": "We will include basic technical information about the app and device to help us review your comment.",
+    "feedbackSubmitAction": "Send feedback",
     "feedbackMineTitle": "My submissions",
-    "feedbackSuccessTitle": "Feedback sent",
+    "feedbackSuccessTitle": "Feedback ready",
+    "feedbackSuccessBody": "The local preview is ready. The real submission will arrive in Phase 3.",
+    "feedbackSuccessReturnAction": "Back to Feedback",
+    "feedbackExitConfirmTitle": "Do you want to leave?",
+    "feedbackExitConfirmMessage": "You will lose the feedback you have not sent yet.",
+    "feedbackExitConfirmStay": "Keep editing",
+    "feedbackExitConfirmLeave": "Leave",
     "feedbackPlaceholderBody": "This part of the Feedback Center will arrive in a later phase.",
     "editProfileTitle": "Edit profile",
     "editProfileSave": "Save",

@@ -1080,10 +1080,110 @@ class AppLocalizationsEs extends AppLocalizations {
   String get feedbackNewTitle => 'Enviar feedback';
 
   @override
+  String get feedbackNewIntro =>
+      'Elige una categoría, describe lo ocurrido y deja listo el envío.';
+
+  @override
+  String get feedbackCategorySectionTitle =>
+      '¿Qué tipo de feedback quieres enviar?';
+
+  @override
+  String get feedbackCategoryBugTitle => 'He encontrado un problema';
+
+  @override
+  String get feedbackCategoryBugHelp =>
+      'Cuéntanos qué ocurrió, qué esperabas que pasara y, si puedes, cómo reproducirlo.';
+
+  @override
+  String get feedbackCategorySuggestionTitle => 'Tengo una sugerencia';
+
+  @override
+  String get feedbackCategorySuggestionHelp =>
+      'Explícanos tu idea y qué necesidad te ayudaría a resolver.';
+
+  @override
+  String get feedbackCategoryImprovementTitle =>
+      'Quiero mejorar algo existente';
+
+  @override
+  String get feedbackCategoryImprovementHelp =>
+      'Dinos qué parte de Rutio cambiarías y cómo te gustaría que funcionara.';
+
+  @override
+  String get feedbackCategoryOtherTitle => 'Otro comentario';
+
+  @override
+  String get feedbackCategoryOtherHelp =>
+      'Comparte cualquier comentario que pueda ayudarnos a mejorar Rutio.';
+
+  @override
+  String get feedbackCategoryGeneralHelp =>
+      'Elige una categoría para ver una guía más concreta sobre lo que puedes contarnos.';
+
+  @override
+  String get feedbackDescriptionLabel => 'Describe tu feedback';
+
+  @override
+  String get feedbackDescriptionHint =>
+      'Cuéntanos qué pasó, qué esperabas y cualquier detalle útil.';
+
+  @override
+  String get feedbackDescriptionRequirements =>
+      'Mín. 20 y máx. 5000 caracteres tras recortar espacios.';
+
+  @override
+  String feedbackDescriptionCounter(int current, int max) {
+    return '$current/$max';
+  }
+
+  @override
+  String get feedbackScreenshotTitle => 'Captura de pantalla (opcional)';
+
+  @override
+  String get feedbackScreenshotPlaceholder => 'Seleccionar imagen';
+
+  @override
+  String get feedbackContactTitle => '¿Podemos contactar contigo?';
+
+  @override
+  String get feedbackContactDescription =>
+      'Si activas esta opción, podremos responderte si lo necesitamos.';
+
+  @override
+  String get feedbackContactSwitchLabel => 'Sí, podéis contactarme';
+
+  @override
+  String get feedbackTechnicalNote =>
+      'Incluiremos información técnica básica de la app y del dispositivo para ayudarnos a revisar tu comentario.';
+
+  @override
+  String get feedbackSubmitAction => 'Enviar feedback';
+
+  @override
   String get feedbackMineTitle => 'Mis envíos';
 
   @override
-  String get feedbackSuccessTitle => 'Feedback enviado';
+  String get feedbackSuccessTitle => 'Feedback preparado';
+
+  @override
+  String get feedbackSuccessBody =>
+      'La vista previa local ya está lista. El envío real llegará en la Fase 3.';
+
+  @override
+  String get feedbackSuccessReturnAction => 'Volver a Feedback';
+
+  @override
+  String get feedbackExitConfirmTitle => '¿Quieres salir?';
+
+  @override
+  String get feedbackExitConfirmMessage =>
+      'Perderás el feedback que todavía no has enviado.';
+
+  @override
+  String get feedbackExitConfirmStay => 'Seguir editando';
+
+  @override
+  String get feedbackExitConfirmLeave => 'Salir';
 
   @override
   String get feedbackPlaceholderBody =>

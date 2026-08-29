@@ -1995,6 +1995,138 @@ abstract class AppLocalizations {
   /// **'Enviar feedback'**
   String get feedbackNewTitle;
 
+  /// No description provided for @feedbackNewIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige una categoría, describe lo ocurrido y deja listo el envío.'**
+  String get feedbackNewIntro;
+
+  /// No description provided for @feedbackCategorySectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué tipo de feedback quieres enviar?'**
+  String get feedbackCategorySectionTitle;
+
+  /// No description provided for @feedbackCategoryBugTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'He encontrado un problema'**
+  String get feedbackCategoryBugTitle;
+
+  /// No description provided for @feedbackCategoryBugHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuéntanos qué ocurrió, qué esperabas que pasara y, si puedes, cómo reproducirlo.'**
+  String get feedbackCategoryBugHelp;
+
+  /// No description provided for @feedbackCategorySuggestionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tengo una sugerencia'**
+  String get feedbackCategorySuggestionTitle;
+
+  /// No description provided for @feedbackCategorySuggestionHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Explícanos tu idea y qué necesidad te ayudaría a resolver.'**
+  String get feedbackCategorySuggestionHelp;
+
+  /// No description provided for @feedbackCategoryImprovementTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Quiero mejorar algo existente'**
+  String get feedbackCategoryImprovementTitle;
+
+  /// No description provided for @feedbackCategoryImprovementHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Dinos qué parte de Rutio cambiarías y cómo te gustaría que funcionara.'**
+  String get feedbackCategoryImprovementHelp;
+
+  /// No description provided for @feedbackCategoryOtherTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Otro comentario'**
+  String get feedbackCategoryOtherTitle;
+
+  /// No description provided for @feedbackCategoryOtherHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Comparte cualquier comentario que pueda ayudarnos a mejorar Rutio.'**
+  String get feedbackCategoryOtherHelp;
+
+  /// No description provided for @feedbackCategoryGeneralHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige una categoría para ver una guía más concreta sobre lo que puedes contarnos.'**
+  String get feedbackCategoryGeneralHelp;
+
+  /// No description provided for @feedbackDescriptionLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Describe tu feedback'**
+  String get feedbackDescriptionLabel;
+
+  /// No description provided for @feedbackDescriptionHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuéntanos qué pasó, qué esperabas y cualquier detalle útil.'**
+  String get feedbackDescriptionHint;
+
+  /// No description provided for @feedbackDescriptionRequirements.
+  ///
+  /// In es, this message translates to:
+  /// **'Mín. 20 y máx. 5000 caracteres tras recortar espacios.'**
+  String get feedbackDescriptionRequirements;
+
+  /// No description provided for @feedbackDescriptionCounter.
+  ///
+  /// In es, this message translates to:
+  /// **'{current}/{max}'**
+  String feedbackDescriptionCounter(int current, int max);
+
+  /// No description provided for @feedbackScreenshotTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Captura de pantalla (opcional)'**
+  String get feedbackScreenshotTitle;
+
+  /// No description provided for @feedbackScreenshotPlaceholder.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar imagen'**
+  String get feedbackScreenshotPlaceholder;
+
+  /// No description provided for @feedbackContactTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Podemos contactar contigo?'**
+  String get feedbackContactTitle;
+
+  /// No description provided for @feedbackContactDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Si activas esta opción, podremos responderte si lo necesitamos.'**
+  String get feedbackContactDescription;
+
+  /// No description provided for @feedbackContactSwitchLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Sí, podéis contactarme'**
+  String get feedbackContactSwitchLabel;
+
+  /// No description provided for @feedbackTechnicalNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Incluiremos información técnica básica de la app y del dispositivo para ayudarnos a revisar tu comentario.'**
+  String get feedbackTechnicalNote;
+
+  /// No description provided for @feedbackSubmitAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar feedback'**
+  String get feedbackSubmitAction;
+
   /// No description provided for @feedbackMineTitle.
   ///
   /// In es, this message translates to:
@@ -2004,8 +2136,44 @@ abstract class AppLocalizations {
   /// No description provided for @feedbackSuccessTitle.
   ///
   /// In es, this message translates to:
-  /// **'Feedback enviado'**
+  /// **'Feedback preparado'**
   String get feedbackSuccessTitle;
+
+  /// No description provided for @feedbackSuccessBody.
+  ///
+  /// In es, this message translates to:
+  /// **'La vista previa local ya está lista. El envío real llegará en la Fase 3.'**
+  String get feedbackSuccessBody;
+
+  /// No description provided for @feedbackSuccessReturnAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver a Feedback'**
+  String get feedbackSuccessReturnAction;
+
+  /// No description provided for @feedbackExitConfirmTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Quieres salir?'**
+  String get feedbackExitConfirmTitle;
+
+  /// No description provided for @feedbackExitConfirmMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Perderás el feedback que todavía no has enviado.'**
+  String get feedbackExitConfirmMessage;
+
+  /// No description provided for @feedbackExitConfirmStay.
+  ///
+  /// In es, this message translates to:
+  /// **'Seguir editando'**
+  String get feedbackExitConfirmStay;
+
+  /// No description provided for @feedbackExitConfirmLeave.
+  ///
+  /// In es, this message translates to:
+  /// **'Salir'**
+  String get feedbackExitConfirmLeave;
 
   /// No description provided for @feedbackPlaceholderBody.
   ///

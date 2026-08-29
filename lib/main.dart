@@ -30,8 +30,10 @@ import 'features/notifications/data/local/shared_preferences_notification_prefer
 import 'features/notifications/data/local/shared_preferences_notification_schedule_store.dart';
 import 'features/notifications/data/native/flutter_local_notifications_native_gateway.dart';
 import 'features/notifications/data/native/native_notification_schedule_executor.dart';
-import 'features/feedback/presentation/screens/feedback_future_screen.dart';
 import 'features/feedback/presentation/screens/feedback_home_screen.dart';
+import 'features/feedback/presentation/screens/feedback_form_screen.dart';
+import 'features/feedback/presentation/screens/feedback_success_screen.dart';
+import 'features/feedback/presentation/screens/feedback_future_screen.dart';
 import 'features/shop/application/shop_cosmetics_controller.dart';
 import 'features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'features/global_wallet/application/global_wallet_controller.dart';
@@ -171,16 +173,8 @@ class MyApp extends StatelessWidget {
             '/stats': (_) => const StatisticsV3Screen(),
             StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
             FeedbackHomeScreen.route: (_) => const FeedbackHomeScreen(),
-            '/feedback/new': (context) => FeedbackFutureScreen(
-                  title: context.l10n.feedbackNewTitle,
-                  body: context.l10n.feedbackPlaceholderBody,
-                  icon: Icons.edit_note_rounded,
-                ),
-            '/feedback/success': (context) => FeedbackFutureScreen(
-                  title: context.l10n.feedbackSuccessTitle,
-                  body: context.l10n.feedbackPlaceholderBody,
-                  icon: Icons.verified_outlined,
-                ),
+            FeedbackFormScreen.route: (_) => const FeedbackFormScreen(),
+            FeedbackSuccessScreen.route: (_) => const FeedbackSuccessScreen(),
             '/feedback/mine': (context) => FeedbackFutureScreen(
                   title: context.l10n.feedbackMineTitle,
                   body: context.l10n.feedbackPlaceholderBody,

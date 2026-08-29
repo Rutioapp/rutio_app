@@ -526,8 +526,46 @@
   "feedbackMineAction": "Mis envíos",
   "feedbackMineActionSubtitle": "Consulta el estado de lo que ya has enviado.",
   "feedbackNewTitle": "Enviar feedback",
+  "feedbackNewIntro": "Elige una categoría, describe lo ocurrido y deja listo el envío.",
+  "feedbackCategorySectionTitle": "¿Qué tipo de feedback quieres enviar?",
+  "feedbackCategoryBugTitle": "He encontrado un problema",
+  "feedbackCategoryBugHelp": "Cuéntanos qué ocurrió, qué esperabas que pasara y, si puedes, cómo reproducirlo.",
+  "feedbackCategorySuggestionTitle": "Tengo una sugerencia",
+  "feedbackCategorySuggestionHelp": "Explícanos tu idea y qué necesidad te ayudaría a resolver.",
+  "feedbackCategoryImprovementTitle": "Quiero mejorar algo existente",
+  "feedbackCategoryImprovementHelp": "Dinos qué parte de Rutio cambiarías y cómo te gustaría que funcionara.",
+  "feedbackCategoryOtherTitle": "Otro comentario",
+  "feedbackCategoryOtherHelp": "Comparte cualquier comentario que pueda ayudarnos a mejorar Rutio.",
+  "feedbackCategoryGeneralHelp": "Elige una categoría para ver una guía más concreta sobre lo que puedes contarnos.",
+  "feedbackDescriptionLabel": "Describe tu feedback",
+  "feedbackDescriptionHint": "Cuéntanos qué pasó, qué esperabas y cualquier detalle útil.",
+  "feedbackDescriptionRequirements": "Mín. 20 y máx. 5000 caracteres tras recortar espacios.",
+  "feedbackDescriptionCounter": "{current}/{max}",
+  "@feedbackDescriptionCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "feedbackScreenshotTitle": "Captura de pantalla (opcional)",
+  "feedbackScreenshotPlaceholder": "Seleccionar imagen",
+  "feedbackContactTitle": "¿Podemos contactar contigo?",
+  "feedbackContactDescription": "Si activas esta opción, podremos responderte si lo necesitamos.",
+  "feedbackContactSwitchLabel": "Sí, podéis contactarme",
+  "feedbackTechnicalNote": "Incluiremos información técnica básica de la app y del dispositivo para ayudarnos a revisar tu comentario.",
+  "feedbackSubmitAction": "Enviar feedback",
   "feedbackMineTitle": "Mis envíos",
-  "feedbackSuccessTitle": "Feedback enviado",
+  "feedbackSuccessTitle": "Feedback preparado",
+  "feedbackSuccessBody": "La vista previa local ya está lista. El envío real llegará en la Fase 3.",
+  "feedbackSuccessReturnAction": "Volver a Feedback",
+  "feedbackExitConfirmTitle": "¿Quieres salir?",
+  "feedbackExitConfirmMessage": "Perderás el feedback que todavía no has enviado.",
+  "feedbackExitConfirmStay": "Seguir editando",
+  "feedbackExitConfirmLeave": "Salir",
   "feedbackPlaceholderBody": "Esta sección del Centro de Feedback llegará en una fase posterior.",
   "editProfileTitle": "Editar perfil",
   "editProfileSave": "Guardar",
