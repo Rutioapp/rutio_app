@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'l10n/gen/app_localizations.dart';
+import 'package:provider/provider.dart';
 
 import 'application/auth/auth_controller.dart';
 import 'application/bootstrap/bootstrap_controller.dart';
@@ -31,6 +30,8 @@ import 'features/notifications/data/local/shared_preferences_notification_prefer
 import 'features/notifications/data/local/shared_preferences_notification_schedule_store.dart';
 import 'features/notifications/data/native/flutter_local_notifications_native_gateway.dart';
 import 'features/notifications/data/native/native_notification_schedule_executor.dart';
+import 'features/feedback/presentation/screens/feedback_future_screen.dart';
+import 'features/feedback/presentation/screens/feedback_home_screen.dart';
 import 'features/shop/application/shop_cosmetics_controller.dart';
 import 'features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'features/global_wallet/application/global_wallet_controller.dart';
@@ -39,6 +40,8 @@ import 'features/achievements/presentation/widgets/achievement_unlock_overlay_ho
 import 'stores/user_state_store.dart';
 
 import 'utils/app_theme.dart';
+import 'l10n/gen/app_localizations.dart';
+import 'l10n/l10n.dart';
 
 import 'screens/home/home_screen.dart';
 import 'screens/profile/profile_screen.dart';
@@ -167,6 +170,22 @@ class MyApp extends StatelessWidget {
             '/archived': (_) => ArchivedHabitsScreen(),
             '/stats': (_) => const StatisticsV3Screen(),
             StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
+            FeedbackHomeScreen.route: (_) => const FeedbackHomeScreen(),
+            '/feedback/new': (context) => FeedbackFutureScreen(
+                  title: context.l10n.feedbackNewTitle,
+                  body: context.l10n.feedbackPlaceholderBody,
+                  icon: Icons.edit_note_rounded,
+                ),
+            '/feedback/success': (context) => FeedbackFutureScreen(
+                  title: context.l10n.feedbackSuccessTitle,
+                  body: context.l10n.feedbackPlaceholderBody,
+                  icon: Icons.verified_outlined,
+                ),
+            '/feedback/mine': (context) => FeedbackFutureScreen(
+                  title: context.l10n.feedbackMineTitle,
+                  body: context.l10n.feedbackPlaceholderBody,
+                  icon: Icons.inbox_outlined,
+                ),
             '/shop': (_) => const AppStartupGate(
                   authenticatedBuilder: _authenticatedShopBuilder,
                 ),

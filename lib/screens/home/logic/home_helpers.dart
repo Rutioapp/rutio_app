@@ -41,18 +41,6 @@ int _readInt(
   return fallback;
 }
 
-/// Lectura segura de num (int/double/String)
-/// Evita errores tipo: "type 'String' is not a subtype of type 'num'"
-num _readNum(dynamic v, {num fallback = 0}) {
-  if (v is num) return v;
-
-  final s = (v ?? '').toString().trim();
-  if (s.isEmpty) return fallback;
-
-  // Soporta coma o punto decimal
-  return num.tryParse(s.replaceAll(',', '.')) ?? fallback;
-}
-
 String _dateKey(DateTime d) {
   final x = _onlyDate(d);
   final y = x.year.toString().padLeft(4, '0');

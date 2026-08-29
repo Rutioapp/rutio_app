@@ -1056,6 +1056,40 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notificationPermissionOpenSettings => 'Abrir ajustes';
 
   @override
+  String get feedbackTitle => 'Feedback';
+
+  @override
+  String get feedbackIntro =>
+      'Tu experiencia nos ayuda a mejorar Rutio. Puedes compartir una idea, avisarnos de un problema o consultar el estado de tus envíos.';
+
+  @override
+  String get feedbackSendAction => 'Enviar feedback';
+
+  @override
+  String get feedbackSendActionSubtitle =>
+      'Comparte una idea o avísanos de un problema.';
+
+  @override
+  String get feedbackMineAction => 'Mis envíos';
+
+  @override
+  String get feedbackMineActionSubtitle =>
+      'Consulta el estado de lo que ya has enviado.';
+
+  @override
+  String get feedbackNewTitle => 'Enviar feedback';
+
+  @override
+  String get feedbackMineTitle => 'Mis envíos';
+
+  @override
+  String get feedbackSuccessTitle => 'Feedback enviado';
+
+  @override
+  String get feedbackPlaceholderBody =>
+      'Esta sección del Centro de Feedback llegará en una fase posterior.';
+
+  @override
   String get editProfileTitle => 'Editar perfil';
 
   @override

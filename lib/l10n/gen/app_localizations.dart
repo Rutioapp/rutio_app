@@ -1953,6 +1953,66 @@ abstract class AppLocalizations {
   /// **'Abrir ajustes'**
   String get notificationPermissionOpenSettings;
 
+  /// No description provided for @feedbackTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Feedback'**
+  String get feedbackTitle;
+
+  /// No description provided for @feedbackIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu experiencia nos ayuda a mejorar Rutio. Puedes compartir una idea, avisarnos de un problema o consultar el estado de tus envíos.'**
+  String get feedbackIntro;
+
+  /// No description provided for @feedbackSendAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar feedback'**
+  String get feedbackSendAction;
+
+  /// No description provided for @feedbackSendActionSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Comparte una idea o avísanos de un problema.'**
+  String get feedbackSendActionSubtitle;
+
+  /// No description provided for @feedbackMineAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Mis envíos'**
+  String get feedbackMineAction;
+
+  /// No description provided for @feedbackMineActionSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Consulta el estado de lo que ya has enviado.'**
+  String get feedbackMineActionSubtitle;
+
+  /// No description provided for @feedbackNewTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar feedback'**
+  String get feedbackNewTitle;
+
+  /// No description provided for @feedbackMineTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mis envíos'**
+  String get feedbackMineTitle;
+
+  /// No description provided for @feedbackSuccessTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Feedback enviado'**
+  String get feedbackSuccessTitle;
+
+  /// No description provided for @feedbackPlaceholderBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta sección del Centro de Feedback llegará en una fase posterior.'**
+  String get feedbackPlaceholderBody;
+
   /// No description provided for @editProfileTitle.
   ///
   /// In es, this message translates to:

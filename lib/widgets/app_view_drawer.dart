@@ -1,10 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../core/services/feedback_form_service.dart';
 import '../l10n/l10n.dart';
-import '../stores/user_state_store.dart';
 import '../utils/app_theme.dart';
 
 /// Drawer unificado con look iOS-first inspirado en la referencia visual.
@@ -58,7 +55,6 @@ class AppViewDrawer extends StatelessWidget {
   static const Color _supportTileBg = Color(0x1AF05A5A);
   static const Color _supportIconBg = Color(0x26F05A5A);
   static const Color _supportIcon = Color(0xFFC44747);
-  static final FeedbackFormService _feedbackFormService = FeedbackFormService();
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +165,7 @@ class AppViewDrawer extends StatelessWidget {
                       backgroundColor: _supportTileBg,
                       iconBackgroundColor: _supportIconBg,
                       iconColor: _supportIcon,
-                      onTap: () => _handleReportIssueTap(context),
+                      onTap: () => _handleFeedbackTap(context),
                     ),
                     SizedBox(height: 18 + bottomInset),
                   ],
@@ -195,41 +191,9 @@ class AppViewDrawer extends StatelessWidget {
     onTap();
   }
 
-  Future<void> _handleReportIssueTap(BuildContext context) async {
-    final l10n = context.l10n;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    final store = _safeUserStateStore(context);
-    final reporterName = (store?.displayName ?? '').trim();
-    final userId = (store?.userId ?? '').trim();
-    final email = store?.authEmail ?? '';
-    final reportIdentity = reporterName.isNotEmpty ? reporterName : userId;
-
+  void _handleFeedbackTap(BuildContext context) {
     Navigator.of(context).pop();
-
-    bool didLaunch = false;
-    try {
-      didLaunch = await _feedbackFormService.launchReportIssueForm(
-        userId: reportIdentity,
-        email: email,
-      );
-    } catch (_) {
-      didLaunch = false;
-    }
-    if (!didLaunch && messenger != null) {
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text(l10n.drawerReportIssueLaunchError)),
-        );
-    }
-  }
-
-  UserStateStore? _safeUserStateStore(BuildContext context) {
-    try {
-      return context.read<UserStateStore>();
-    } catch (_) {
-      return null;
-    }
+    Navigator.of(context).pushNamed('/feedback');
   }
 }
 

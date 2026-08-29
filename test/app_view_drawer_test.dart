@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/achievements/domain/models/habit_streak_snapshot.dart';
+import 'package:rutio/features/feedback/presentation/screens/feedback_home_screen.dart';
 import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/l10n/l10n.dart';
@@ -20,6 +21,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('es'),
+        theme: ThemeData(splashFactory: NoSplash.splashFactory),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -65,6 +67,65 @@ void main() {
     expect(reportIssueFinder, findsOneWidget);
   });
 
+  testWidgets('AppViewDrawer opens the internal feedback feature', (
+    WidgetTester tester,
+  ) async {
+    final scaffoldKey = GlobalKey<ScaffoldState>();
+    final observer = _RecordingNavigatorObserver();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('es'),
+        theme: ThemeData(splashFactory: NoSplash.splashFactory),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        navigatorObservers: [observer],
+        routes: {
+          '/feedback': (_) => const FeedbackHomeScreen(),
+        },
+        home: Scaffold(
+          key: scaffoldKey,
+          drawer: AppViewDrawer(
+            onGoDaily: () {},
+            onGoWeekly: () {},
+            onGoMonthly: () {},
+            onGoTodo: () {},
+            onGoDiary: () {},
+            onGoDiaryV2: () {},
+            onGoArchived: () {},
+            onGoStats: () {},
+            onGoProfile: () {},
+          ),
+          body: const SizedBox.shrink(),
+        ),
+      ),
+    );
+
+    scaffoldKey.currentState!.openDrawer();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+
+    await tester.scrollUntilVisible(
+      find.text(l10n.drawerReportIssue),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    await tester.tap(find.text(l10n.drawerReportIssue));
+    await tester.pumpAndSettle();
+
+    expect(observer.lastPushedRouteName, '/feedback');
+    expect(find.byType(FeedbackHomeScreen), findsOneWidget);
+  });
+
   testWidgets('AppViewDrawer exposes a single visible statistics entry', (
     WidgetTester tester,
   ) async {
@@ -74,6 +135,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('es'),
+        theme: ThemeData(splashFactory: NoSplash.splashFactory),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -126,6 +188,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('es'),
+        theme: ThemeData(splashFactory: NoSplash.splashFactory),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -174,6 +237,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('es'),
+        theme: ThemeData(splashFactory: NoSplash.splashFactory),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -228,6 +292,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('es'),
+        theme: ThemeData(splashFactory: NoSplash.splashFactory),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
