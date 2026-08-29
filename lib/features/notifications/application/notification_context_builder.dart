@@ -90,6 +90,15 @@ class NotificationContextBuildResult {
   bool get isSuccess => snapshot != null && selectionContext != null;
 }
 
+abstract class NotificationPlanningContextBuilder {
+  Future<NotificationContextBuildResult> buildForScope({
+    required NotificationScope scope,
+    required NotificationTriggerReason trigger,
+    NotificationSchedulingCapabilities schedulingCapabilities =
+        NotificationSchedulingCapabilities.unsupported,
+  });
+}
+
 abstract class NotificationContextStateSource {
   Map<String, dynamic>? get state;
   String? get activeLocalScopeUserId;
@@ -150,7 +159,7 @@ class UserStateStoreNotificationContextSource
 }
 
 class StoreBackedNotificationContextBuilder
-    implements NotificationContextProvider {
+    implements NotificationContextProvider, NotificationPlanningContextBuilder {
   StoreBackedNotificationContextBuilder({
     required NotificationContextStateSource store,
     required NotificationInstallIdProvider installIdProvider,
@@ -326,6 +335,21 @@ class StoreBackedNotificationContextBuilder
       diagnostics: diagnostics,
       snapshot: snapshot,
       selectionContext: selectionContext,
+    );
+  }
+
+  @override
+  Future<NotificationContextBuildResult> buildForScope({
+    required NotificationScope scope,
+    required NotificationTriggerReason trigger,
+    NotificationSchedulingCapabilities schedulingCapabilities =
+        NotificationSchedulingCapabilities.unsupported,
+  }) {
+    return build(
+      trigger: trigger,
+      expectedUserId: scope.userId,
+      expectedScopeEpoch: scope.scopeEpoch,
+      schedulingCapabilities: schedulingCapabilities,
     );
   }
 

@@ -62,8 +62,10 @@ class _NotificationPermissionOnboardingSheetState
 
     final backgroundColor =
         isDark ? const Color(0xFF1D1E20) : const Color(0xFFF8F6F2);
-    final titleColor = isDark ? const Color(0xFFF3F4F5) : const Color(0xFF2D1E12);
-    final bodyColor = isDark ? const Color(0xFFD4D7DC) : const Color(0xFF6C5B4D);
+    final titleColor =
+        isDark ? const Color(0xFFF3F4F5) : const Color(0xFF2D1E12);
+    final bodyColor =
+        isDark ? const Color(0xFFD4D7DC) : const Color(0xFF6C5B4D);
     final iconBackground =
         isDark ? const Color(0xFF2A2D31) : const Color(0xFFF1E8DB);
 
@@ -176,7 +178,8 @@ class _NotificationPermissionOnboardingSheetState
     if (!mounted) return;
 
     if (granted) {
-      Navigator.of(context).pop(NotificationPermissionOnboardingOutcome.granted);
+      Navigator.of(context)
+          .pop(NotificationPermissionOnboardingOutcome.granted);
       return;
     }
 
@@ -196,6 +199,7 @@ class _NotificationPermissionOnboardingSheetState
   Future<void> _handleSecondaryAction() async {
     await widget.controller.markSoftDeclined();
     if (!mounted) return;
-    Navigator.of(context).pop(NotificationPermissionOnboardingOutcome.softDeclined);
+    Navigator.of(context)
+        .pop(NotificationPermissionOnboardingOutcome.softDeclined);
   }
 }

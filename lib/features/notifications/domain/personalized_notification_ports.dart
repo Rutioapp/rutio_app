@@ -1,3 +1,4 @@
+import 'desired_notification.dart';
 import 'notification_template_content.dart';
 import 'personalized_notification_models.dart';
 
@@ -56,6 +57,15 @@ abstract class NotificationScheduleStore {
   Future<void> clear(NotificationScope scope);
 }
 
+abstract class NotificationPlatformIdProvider {
+  Future<int> getOrAllocate(
+    NotificationScope scope, {
+    required NotificationFamily family,
+    required String notificationKey,
+    String timezoneId,
+  });
+}
+
 abstract class NotificationScheduler {
   Future<void> schedule(NotificationPlanEntry entry);
 
@@ -64,6 +74,21 @@ abstract class NotificationScheduler {
   Future<void> cancelMany(Iterable<int> platformIds);
 
   Future<List<NotificationManifestEntry>> pending();
+}
+
+abstract class NotificationScheduleExecutor {
+  Future<void> create(
+    DesiredNotification notification,
+  );
+
+  Future<void> replace(
+    NotificationManifestEntry existing,
+    DesiredNotification replacement,
+  );
+
+  Future<void> cancel(
+    NotificationManifestEntry existing,
+  );
 }
 
 abstract class NotificationContextProvider {

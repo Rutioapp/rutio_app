@@ -1,5 +1,11 @@
+export '../application/notification_reconciliation_models.dart';
+export '../application/notification_reconciler.dart';
+export '../application/notification_schedule_policy.dart';
+export '../application/personalized_notification_plan_builder.dart';
+export 'desired_notification.dart';
 export 'notification_clock.dart';
 export 'notification_message_catalog.dart';
+export 'notification_payload.dart';
 export 'notification_random_source.dart';
 export 'notification_selection_engine.dart';
 export 'notification_selection_models.dart';

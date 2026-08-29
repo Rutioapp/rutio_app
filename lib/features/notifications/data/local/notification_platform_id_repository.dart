@@ -1,14 +1,17 @@
 import '../../domain/personalized_notification_ids.dart';
 import '../../domain/personalized_notification_models.dart';
+import '../../domain/personalized_notification_ports.dart';
 import 'shared_preferences_notification_schedule_store.dart';
 
-class NotificationPlatformIdRepository {
+class NotificationPlatformIdRepository
+    implements NotificationPlatformIdProvider {
   NotificationPlatformIdRepository({
     required SharedPreferencesNotificationScheduleStore scheduleStore,
   }) : _scheduleStore = scheduleStore;
 
   final SharedPreferencesNotificationScheduleStore _scheduleStore;
 
+  @override
   Future<int> getOrAllocate(
     NotificationScope scope, {
     required NotificationFamily family,

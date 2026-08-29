@@ -11,7 +11,8 @@ class NotificationPermissionController {
     NotificationPermissionPreferences? preferences,
     NotificationService? notificationService,
   })  : _preferences = preferences ?? NotificationPermissionPreferences(),
-        _notificationService = notificationService ?? NotificationService.instance;
+        _notificationService =
+            notificationService ?? NotificationService.instance;
 
   final NotificationPermissionPreferences _preferences;
   final NotificationService _notificationService;
@@ -36,7 +37,8 @@ class NotificationPermissionController {
   Future<bool> areNotificationsAllowed() async {
     final systemResult = await getSystemPermissionResult();
     if (systemResult.isAuthorized) {
-      await _preferences.setInternalStatus(NotificationPermissionStatus.granted);
+      await _preferences
+          .setInternalStatus(NotificationPermissionStatus.granted);
     }
     _log('areNotificationsAllowed(): ${systemResult.isAuthorized}');
     return systemResult.isAuthorized;
@@ -53,7 +55,8 @@ class NotificationPermissionController {
     );
 
     if (systemStatus == NotificationPermissionStatus.granted) {
-      await _preferences.setInternalStatus(NotificationPermissionStatus.granted);
+      await _preferences
+          .setInternalStatus(NotificationPermissionStatus.granted);
       _log(
         'getEffectiveStatus(): effectiveStatus=granted (reason: system granted)',
       );
@@ -94,10 +97,10 @@ class NotificationPermissionController {
     final systemResult = await getSystemPermissionResult();
     final systemStatus = _mapSystemResult(systemResult);
 
-    final hasInternalFinalStatus = internalStatus ==
-            NotificationPermissionStatus.granted ||
-        internalStatus == NotificationPermissionStatus.denied ||
-        internalStatus == NotificationPermissionStatus.permanentlyDenied;
+    final hasInternalFinalStatus =
+        internalStatus == NotificationPermissionStatus.granted ||
+            internalStatus == NotificationPermissionStatus.denied ||
+            internalStatus == NotificationPermissionStatus.permanentlyDenied;
 
     var shouldShow = false;
     var reason = '';
@@ -129,7 +132,8 @@ class NotificationPermissionController {
 
   Future<void> markSoftDeclined() async {
     await _preferences.setPostLoginPromptShown(true);
-    await _preferences.setInternalStatus(NotificationPermissionStatus.softDeclined);
+    await _preferences
+        .setInternalStatus(NotificationPermissionStatus.softDeclined);
   }
 
   Future<bool> requestSystemPermission() async {
