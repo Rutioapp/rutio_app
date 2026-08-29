@@ -1,3 +1,5 @@
+import 'package:timezone/timezone.dart' as tz;
+
 abstract class NotificationClock {
   const NotificationClock();
 
@@ -30,8 +32,9 @@ class SystemNotificationClock extends NotificationClock {
   String timezoneId() => _timezoneIdProvider();
 
   static String _defaultTimezoneId() {
-    final name = DateTime.now().timeZoneName.trim();
-    return name.isEmpty ? 'unknown' : name;
+    final localName = tz.local.name.trim();
+    final resolved = resolveIanaTimezoneId(localName);
+    return resolved ?? 'unknown';
   }
 }
 
@@ -66,4 +69,26 @@ class FakeNotificationClock extends NotificationClock {
     }
     _timezoneId = normalized;
   }
+}
+
+bool isValidIanaTimezoneId(String? value) {
+  final normalized = value?.trim();
+  if (normalized == null || normalized.isEmpty) {
+    return false;
+  }
+
+  try {
+    tz.getLocation(normalized);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+String? resolveIanaTimezoneId(String? value) {
+  final normalized = value?.trim();
+  if (normalized == null || normalized.isEmpty) {
+    return null;
+  }
+  return isValidIanaTimezoneId(normalized) ? normalized : null;
 }

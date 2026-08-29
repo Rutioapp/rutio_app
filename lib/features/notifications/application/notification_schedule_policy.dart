@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../domain/desired_notification.dart';
 import '../domain/notification_selection_models.dart';
 import '../domain/notification_template_content.dart';
@@ -98,6 +100,16 @@ class NotificationSchedulePolicy {
     final wakeReference = fallbackWakeUpTime.onDate(horizonStart);
     final eveningTime = preferences.dailyAnchorTime;
     final preferredWindow = preferences.preferredGeneralWindow;
+    _notifV2Log(
+      'schedule policy input now=${horizonStart.toIso8601String()} '
+      'horizonEnd=${horizonEnd.toIso8601String()} '
+      'wakeReference=${wakeReference.toIso8601String()} '
+      'dailyAnchor=${eveningTime.formatHhMm()} '
+      'anchorSemantics=morning_midday_afternoon_use_fallbackWakeUpTime_evening_uses_dailyAnchor '
+      'quietStart=${quietHoursStart(preferences).formatHhMm()} '
+      'quietEnd=${quietHoursEnd(preferences).formatHhMm()} '
+      'intensity=${preferences.intensityPreset.name}',
+    );
 
     final definitions = <_OpportunityDefinition>[
       _OpportunityDefinition(
@@ -154,6 +166,10 @@ class NotificationSchedulePolicy {
         targetTime: definition.targetTime,
       );
       if (intendedAt == null) {
+        _notifV2Log(
+          'opportunity dropped slot=${definition.slotId} reason=outside_horizon '
+          'target=${definition.targetTime.formatHhMm()}',
+        );
         continue;
       }
 
@@ -163,6 +179,14 @@ class NotificationSchedulePolicy {
         intendedAt,
         quietHoursStart(preferences),
         quietHoursEnd(preferences),
+      );
+      _notifV2Log(
+        'opportunity built slot=${definition.slotId} '
+        'intended=${intendedAt.toIso8601String()} '
+        'target=${definition.targetTime.formatHhMm()} '
+        'eligible=$eligible '
+        'reason=${eligible ? "eligible" : "quiet_hours_policy_blocks_slot"} '
+        'usesWakeReference=${definition.slotId != "evening"}',
       );
       built.add(
         NotificationOpportunity(
@@ -183,6 +207,10 @@ class NotificationSchedulePolicy {
 
     built.sort(
       (left, right) => left.intendedAtLocal.compareTo(right.intendedAtLocal),
+    );
+    _notifV2Log(
+      'schedule policy output count=${built.length} '
+      'slots=${built.map((o) => o.opportunityId).join(",")}',
     );
     return built;
   }
@@ -286,4 +314,9 @@ String _formatHhMm(DateTime value) {
   final hh = value.hour.toString().padLeft(2, '0');
   final mm = value.minute.toString().padLeft(2, '0');
   return '$hh:$mm';
+}
+
+void _notifV2Log(String message) {
+  if (!kDebugMode) return;
+  debugPrint('[NOTIF_V2] $message');
 }

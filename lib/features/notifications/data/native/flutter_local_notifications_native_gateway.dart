@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../core/notifications/notification_permission_service.dart';
@@ -26,11 +27,18 @@ class FlutterLocalNotificationsNativeGateway
     final initialized =
         await _notificationService.ensureInitializedForFeature();
     if (!initialized) {
+      _notifV2Log(
+          'gateway capabilities unavailable: notification service not initialized');
       return NotificationSchedulingCapabilities.unsupported;
     }
 
     final result = await _permissionService.checkStatus();
     final status = _mapPermissionStatus(result.status);
+    _notifV2Log(
+      'gateway capabilities permission=${status.name} '
+      'authorized=${result.isAuthorized} '
+      'canRequest=${result.canRequest}',
+    );
     return NotificationSchedulingCapabilities(
       permissionStatus: status,
       canScheduleNewEntries: result.isAuthorized,
@@ -43,10 +51,13 @@ class FlutterLocalNotificationsNativeGateway
     final initialized =
         await _notificationService.ensureInitializedForFeature();
     if (!initialized) {
+      _notifV2Log(
+          'gateway pending unavailable: notification service not initialized');
       return const <NativePendingNotification>[];
     }
 
     final requests = await _scheduler.pendingRequests();
+    _notifV2Log('gateway pending count=${requests.length}');
     return requests.map(_mapPendingRequest).toList(growable: false);
   }
 
@@ -62,6 +73,8 @@ class FlutterLocalNotificationsNativeGateway
     final initialized =
         await _notificationService.ensureInitializedForFeature();
     if (!initialized) {
+      _notifV2Log(
+          'gateway schedule aborted: notification service not initialized');
       throw StateError('notification_service_unavailable');
     }
 
@@ -69,6 +82,12 @@ class FlutterLocalNotificationsNativeGateway
     final scheduledAt = _resolveScheduledAt(
       scheduleSpec: scheduleSpec,
       location: location,
+    );
+    _notifV2Log(
+      'gateway schedule platformId=$platformId '
+      'timezone=$effectiveTimezoneId '
+      'scheduled=${scheduledAt.toIso8601String()} '
+      'repeatDaily=${scheduleSpec.repeats}',
     );
     await _scheduler.scheduleZoned(
       id: platformId,
@@ -87,8 +106,11 @@ class FlutterLocalNotificationsNativeGateway
     final initialized =
         await _notificationService.ensureInitializedForFeature();
     if (!initialized) {
+      _notifV2Log(
+          'gateway cancel aborted: notification service not initialized platformId=$platformId');
       throw StateError('notification_service_unavailable');
     }
+    _notifV2Log('gateway cancel platformId=$platformId');
     await _scheduler.cancel(platformId);
   }
 
@@ -173,5 +195,10 @@ class FlutterLocalNotificationsNativeGateway
       case NotificationPermissionStatus.unknown:
         return NotificationSystemPermissionStatus.unknown;
     }
+  }
+
+  void _notifV2Log(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[NOTIF_V2] $message');
   }
 }

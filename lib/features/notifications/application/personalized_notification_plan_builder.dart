@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../domain/desired_notification.dart';
 import '../domain/notification_message_catalog.dart';
 import '../domain/notification_payload.dart';
@@ -47,6 +49,14 @@ class PersonalizedNotificationPlanBuilder {
     NotificationSchedulingCapabilities schedulingCapabilities =
         NotificationSchedulingCapabilities.unsupported,
   }) async {
+    _notifV2Log(
+      'plan build start trigger=${trigger.name} '
+      'master=${preferences.masterEnabled} '
+      'general=${preferences.generalNotificationsEnabled} '
+      'intensity=${preferences.intensityPreset.name} '
+      'wake=${preferences.dailyAnchorTime.formatHhMm()} '
+      'permission=${schedulingCapabilities.permissionStatus.name}',
+    );
     final buildResult = await _contextBuilder.buildForScope(
       scope: scope,
       trigger: trigger,
@@ -55,6 +65,10 @@ class PersonalizedNotificationPlanBuilder {
     final now = DateTime.now().toLocal();
     final horizonEnd = now.add(_schedulePolicy.horizon);
     if (!buildResult.isSuccess) {
+      _notifV2Log(
+        'context build failure reason=${buildResult.failureReason?.name ?? "unknown"} '
+        'quality=${buildResult.quality.name}',
+      );
       return DesiredNotificationPlan.contextFailure(
         generatedAt: now,
         horizonStart: now,
@@ -75,8 +89,20 @@ class PersonalizedNotificationPlanBuilder {
     final generatedAt = snapshot.now;
     final desiredScope = snapshot.scope;
     final planHorizonEnd = generatedAt.add(_schedulePolicy.horizon);
+    _notifV2Log(
+      'context build success quality=${buildResult.quality.name} '
+      'progress=${selectionContext.progressText ?? "n/a"} '
+      'pending=${selectionContext.pendingCount ?? 0} '
+      'completed=${selectionContext.completedCount ?? 0} '
+      'total=${selectionContext.totalCount ?? 0} '
+      'streak=${selectionContext.streak?.toString() ?? "n/a"} '
+      'timeOfDay=${selectionContext.timeOfDay.name} '
+      'timeOfDayLabel=${selectionContext.timeOfDayLabel ?? "n/a"} '
+      'wakeUpTime=${buildResult.diagnostics.hasWakeUpTime}',
+    );
     if (!preferences.masterEnabled ||
         !preferences.generalNotificationsEnabled) {
+      _notifV2Log('plan skipped: personalized disabled by preferences');
       return DesiredNotificationPlan.personalizedDisabled(
         scope: desiredScope,
         generatedAt: generatedAt,
@@ -103,9 +129,17 @@ class PersonalizedNotificationPlanBuilder {
       preferences: preferences,
       discoveredOpportunities: discovered,
     );
+    _notifV2Log(
+      'schedule policy opportunities=${opportunities.length} '
+      'quietStart=${_schedulePolicy.quietHoursStart(preferences).formatHhMm()} '
+      'quietEnd=${_schedulePolicy.quietHoursEnd(preferences).formatHhMm()}',
+    );
     var cap = _schedulePolicy.maxNotificationsPerDay(preferences);
     cap = _schedulePolicy.applyHabitReminderPressureAdjustment(
         cap, reminderCount);
+    _notifV2Log(
+      'schedule policy cap=$cap reminderCount=${reminderCount?.toString() ?? "unknown"}',
+    );
 
     final selectedTemplateIds = <String>[];
     final suppressedOpportunityIds = <String>[];
@@ -119,8 +153,21 @@ class PersonalizedNotificationPlanBuilder {
     final planned = <DesiredNotification>[];
     var rollingHistory = selectionContext.recentMessageHistory;
     for (final opportunity in opportunities) {
+      _notifV2Log(
+        'opportunity slot=${opportunity.opportunityId} '
+        'intended=${opportunity.intendedAtLocal.toIso8601String()} '
+        'eligible=${opportunity.isEligible} '
+        'reason=${opportunity.reason.name} '
+        'baseKind=${opportunity.kind.name} '
+        'wakeFallback=${opportunity.usesWakeUpFallback} '
+        'ineligibility=${opportunity.ineligibilityReason ?? "none"}',
+      );
       if (!opportunity.isEligible || planned.length >= cap) {
         suppressedOpportunityIds.add(opportunity.opportunityId);
+        _notifV2Log(
+          'opportunity suppressed slot=${opportunity.opportunityId} '
+          'reason=${!opportunity.isEligible ? "quiet_hours" : "cap_reached"}',
+        );
         continue;
       }
       final scopedContext = _schedulePolicy.contextForOpportunity(
@@ -143,10 +190,21 @@ class PersonalizedNotificationPlanBuilder {
       );
       if (!result.isSelected) {
         suppressedOpportunityIds.add(opportunity.opportunityId);
+        _notifV2Log(
+          'selection suppressed slot=${opportunity.opportunityId} '
+          'suppression=${result.suppressionReason?.name ?? "unknown"}',
+        );
         continue;
       }
 
       final selected = result.selected!;
+      _notifV2Log(
+        'selection selected slot=${opportunity.opportunityId} '
+        'template=${selected.template.templateId} '
+        'category=${selected.category.name} '
+        'kind=${selected.kind.name} '
+        'reason=${selected.reason.name}',
+      );
       final rendered = _copyResolver.renderForLocale(
         template: selected.template,
         context: selected.renderContext,
@@ -165,6 +223,11 @@ class PersonalizedNotificationPlanBuilder {
         family: selected.kind.family,
         notificationKey: logicalId,
         timezoneId: snapshot.timezoneId,
+      );
+      _notifV2Log(
+        'desired notification logicalId=$logicalId '
+        'platformId=$platformId '
+        'intended=${opportunity.intendedAtLocal.toIso8601String()}',
       );
       final payload = NotificationPayloadV2(
         schema: NotificationIdNamespace.payloadVersion,
@@ -245,6 +308,11 @@ class PersonalizedNotificationPlanBuilder {
         detectedHabitReminderCount: reminderCount,
       ),
     );
+  }
+
+  void _notifV2Log(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[NOTIF_V2] $message');
   }
 }
 

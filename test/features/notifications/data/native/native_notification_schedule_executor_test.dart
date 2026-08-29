@@ -107,18 +107,24 @@ void main() {
     });
 
     test('fails when timezone is invalid', () async {
-      final executor = NativeNotificationScheduleExecutor(
-        gateway: _FakeNativeGateway(),
-        isScopeActive: () async => true,
-        now: () => DateTime(2026, 8, 29, 9, 0),
-      );
+      for (final timezoneId in <String>[
+        'CEST',
+        'CET',
+        'Mars/Olympus_Mons',
+      ]) {
+        final executor = NativeNotificationScheduleExecutor(
+          gateway: _FakeNativeGateway(),
+          isScopeActive: () async => true,
+          now: () => DateTime(2026, 8, 29, 9, 0),
+        );
 
-      final result = await executor.create(
-        desired(timezoneId: 'Mars/Olympus_Mons'),
-      );
+        final result = await executor.create(
+          desired(timezoneId: timezoneId),
+        );
 
-      expect(result.isSuccess, isFalse);
-      expect(result.errorCode, NotificationNativeErrorCode.invalidTimezone);
+        expect(result.isSuccess, isFalse);
+        expect(result.errorCode, NotificationNativeErrorCode.invalidTimezone);
+      }
     });
 
     test('fails conservatively on iOS capacity exhaustion', () async {

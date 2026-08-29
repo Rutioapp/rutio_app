@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../../../stores/user_state_store.dart';
 import '../domain/desired_notification.dart';
 import '../domain/notification_clock.dart';
@@ -181,8 +183,10 @@ class PersonalizedNotificationOrchestrator
     NotificationReconciliationReason reason =
         NotificationReconciliationReason.manualDebug,
   }) async {
+    _notifV2Log('reconcile requested reason=${reason.name}');
     final scope = await _resolveActiveScope();
     if (scope == null) {
+      _notifV2Log('reconcile skipped: no active scope');
       return PersonalizedNotificationOrchestrationResult(
         status: PersonalizedNotificationOrchestrationStatus.skippedNoUser,
         reason: reason,
@@ -190,6 +194,9 @@ class PersonalizedNotificationOrchestrator
         diagnostics: const <String>['no_active_user_scope'],
       );
     }
+    _notifV2Log(
+      'active scope resolved epoch=${scope.scopeEpoch} locale=${scope.locale}',
+    );
     return _enqueue(scope, <NotificationReconciliationReason>{reason});
   }
 
@@ -361,7 +368,12 @@ class PersonalizedNotificationOrchestrator
     NotificationScope scope, {
     required Set<NotificationReconciliationReason> reasons,
   }) async {
+    _notifV2Log(
+      'execute start reason=${_selectPrimaryReason(reasons).name} '
+      'coalesced=${reasons.map((r) => r.name).join(",")}',
+    );
     if (!await _isScopeActive(scope)) {
+      _notifV2Log('execute stale scope before capabilities');
       return PersonalizedNotificationOrchestrationResult(
         status: PersonalizedNotificationOrchestrationStatus.staleScope,
         reason: _selectPrimaryReason(reasons),
@@ -372,7 +384,13 @@ class PersonalizedNotificationOrchestrator
     }
 
     final capabilities = await _scheduleExecutor.getSchedulingCapabilities();
+    _notifV2Log(
+      'capabilities permission=${capabilities.permissionStatus.name} '
+      'canSchedule=${capabilities.canScheduleNewEntries} '
+      'canCancel=${capabilities.canCancelExistingEntries}',
+    );
     if (!await _isScopeActive(scope)) {
+      _notifV2Log('execute stale scope after capabilities');
       return PersonalizedNotificationOrchestrationResult(
         status: PersonalizedNotificationOrchestrationStatus.staleScope,
         reason: _selectPrimaryReason(reasons),
@@ -384,8 +402,10 @@ class PersonalizedNotificationOrchestrator
     }
 
     final enabled = await _activationPolicy.isEnabledForScope(scope);
+    _notifV2Log('activation gate enabled=$enabled');
     if (!enabled) {
       final hadOwnedState = await _hasOwnedState(scope);
+      _notifV2Log('activation gate disabled hadOwnedState=$hadOwnedState');
       if (!hadOwnedState) {
         return PersonalizedNotificationOrchestrationResult(
           status: PersonalizedNotificationOrchestrationStatus.skippedDisabled,
@@ -407,7 +427,14 @@ class PersonalizedNotificationOrchestrator
     }
 
     final preferences = await _preferencesResolver.load(scope);
+    _notifV2Log(
+      'preferences master=${preferences.masterEnabled} '
+      'general=${preferences.generalNotificationsEnabled} '
+      'intensity=${preferences.intensityPreset.name} '
+      'dailyAnchor=${preferences.dailyAnchorTime.formatHhMm()}',
+    );
     if (!await _isScopeActive(scope)) {
+      _notifV2Log('execute stale scope after preferences');
       return PersonalizedNotificationOrchestrationResult(
         status: PersonalizedNotificationOrchestrationStatus.staleScope,
         reason: _selectPrimaryReason(reasons),
@@ -463,7 +490,13 @@ class PersonalizedNotificationOrchestrator
       preferences: preferences,
       schedulingCapabilities: capabilities,
     );
+    _notifV2Log(
+      'plan status=${plan.status.name} notifications=${plan.notifications.length} '
+      'opportunities=${plan.opportunities.length} '
+      'contextFailureReason=${plan.contextFailureReason ?? "none"}',
+    );
     if (!await _isScopeActive(scope)) {
+      _notifV2Log('execute stale scope after plan');
       return PersonalizedNotificationOrchestrationResult(
         status: PersonalizedNotificationOrchestrationStatus.staleScope,
         reason: _selectPrimaryReason(reasons),
@@ -489,6 +522,11 @@ class PersonalizedNotificationOrchestrator
     }
 
     final reconciliationResult = await _coordinator.reconcileDesiredPlan(plan);
+    _notifV2Log(
+      'reconcile complete planned=${reconciliationResult.operationsPlanned.length} '
+      'succeeded=${reconciliationResult.operationsSucceeded.length} '
+      'failed=${reconciliationResult.operationsFailed.length}',
+    );
     _lastForegroundAtByScopeKey[scope.scopeKey] = _clock.localNow();
     return PersonalizedNotificationOrchestrationResult(
       status: PersonalizedNotificationOrchestrationStatus.executed,
@@ -712,5 +750,10 @@ class PersonalizedNotificationOrchestrator
       return null;
     }
     return normalized;
+  }
+
+  void _notifV2Log(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[NOTIF_V2] $message');
   }
 }

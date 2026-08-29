@@ -130,6 +130,10 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
       _startupLog('[STARTUP] 26 NotificationRuntime phase-one sync fired');
       final queuedPreviousState = _queuedPreviousState;
       final queuedRecordOpen = _queuedRecordOpen;
+      _notifV2Log(
+        'runtime phase-one sync fired recordAppOpen=$queuedRecordOpen '
+        'hasPreviousState=${queuedPreviousState != null}',
+      );
       _queuedPreviousState = null;
       _queuedRecordOpen = false;
 
@@ -157,6 +161,7 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
           _startupLog(
             '[STARTUP] 29 before PersonalizedNotificationOrchestrator.reconcileForForeground()',
           );
+          _notifV2Log('runtime foreground reconcile requested');
           await context
               .read<PersonalizedNotificationOrchestrator>()
               .reconcileForForeground();
@@ -182,5 +187,10 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
       return decoded.cast<String, dynamic>();
     }
     return <String, dynamic>{};
+  }
+
+  void _notifV2Log(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[NOTIF_V2] $message');
   }
 }

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../domain/desired_notification.dart';
 import '../domain/personalized_notification_models.dart';
 import '../domain/personalized_notification_ports.dart';
@@ -28,6 +30,7 @@ class NotificationOsReconciliationCoordinator {
   ) async {
     final scope = desiredPlan.scope;
     if (scope == null) {
+      _notifV2Log('reconcile skipped: desired plan missing scope');
       final emptyManifest = _emptyManifest(
         NotificationScope(
           userId: 'unknown',
@@ -52,11 +55,40 @@ class NotificationOsReconciliationCoordinator {
           timezoneId: _manifestTimezone(desiredPlan),
         );
     final osPending = await _executor.pendingNotifications();
+    _notifV2Log(
+      'reconcile start planStatus=${desiredPlan.status.name} '
+      'desiredCount=${desiredPlan.notifications.length} '
+      'opportunities=${desiredPlan.opportunities.length} '
+      'osPending=${osPending.length} '
+      'manifestEntries=${manifest.entries.length} '
+      'platformIds=${manifest.platformIdIndex.length}',
+    );
+    for (final pending in osPending) {
+      _notifV2Log(
+        'pending os platformId=${pending.platformId} '
+        'ownedV2=${pending.isOwnedV2} '
+        'logicalId=${pending.logicalNotificationId ?? "none"} '
+        'kind=${pending.kind?.name ?? "none"}',
+      );
+    }
     final plan = _reconciler.reconcile(
       desiredPlan: desiredPlan,
       manifest: manifest,
       osPendingNotifications: osPending,
     );
+    _notifV2Log(
+      'reconciliation plan status=${plan.status.name} '
+      'operations=${plan.operations.length} '
+      'diagnostics=${plan.diagnostics.join(" | ")}',
+    );
+    for (final operation in plan.operations) {
+      _notifV2Log(
+        'operation planned type=${operation.type.name} '
+        'logicalId=${operation.logicalNotificationId} '
+        'platformId=${operation.platformId} '
+        'reason=${operation.reason ?? "none"}',
+      );
+    }
     final result = await _reconciler.execute(
       plan: plan,
       manifest: manifest,
@@ -64,8 +96,40 @@ class NotificationOsReconciliationCoordinator {
       reconciledAt: _now(),
       timezoneId: _manifestTimezone(desiredPlan),
     );
+    _notifV2Log(
+      'reconciliation result succeeded=${result.operationsSucceeded.length} '
+      'failed=${result.operationsFailed.length} '
+      'nextManifestEntries=${result.nextManifest.entries.length} '
+      'nextManifestPlatformIds=${result.nextManifest.platformIdIndex.length}',
+    );
+    for (final op in result.operationsSucceeded) {
+      _notifV2Log(
+        'operation result success type=${op.type.name} '
+        'logicalId=${op.logicalNotificationId} '
+        'platformId=${op.platformId ?? "none"} '
+        'accepted=${op.scheduleAccepted} '
+        'stateChange=${op.stateChange.name} '
+        'error=${op.errorCode?.name ?? "none"}',
+      );
+    }
+    for (final op in result.operationsFailed) {
+      _notifV2Log(
+        'operation result failure type=${op.type.name} '
+        'logicalId=${op.logicalNotificationId} '
+        'platformId=${op.platformId ?? "none"} '
+        'accepted=${op.scheduleAccepted} '
+        'stateChange=${op.stateChange.name} '
+        'error=${op.errorCode?.name ?? "none"} '
+        'diagnostics=${op.diagnostics.join(" | ")}',
+      );
+    }
     await _scheduleStore.save(scope, result.nextManifest);
     await _recordHistory(result, plan);
+    final reloadedPending = await _executor.pendingNotifications();
+    _notifV2Log(
+      'post execution pendingCount=${reloadedPending.length} '
+      'containsPlanned=${result.operationsSucceeded.any((op) => op.platformId != null && reloadedPending.any((p) => p.platformId == op.platformId))}',
+    );
     return result;
   }
 
@@ -169,5 +233,10 @@ class NotificationOsReconciliationCoordinator {
       );
     }
     await _historyStore.save(scope, history);
+  }
+
+  void _notifV2Log(String message) {
+    if (!kDebugMode) return;
+    debugPrint('[NOTIF_V2] $message');
   }
 }

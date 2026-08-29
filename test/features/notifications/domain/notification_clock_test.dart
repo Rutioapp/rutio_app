@@ -1,7 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/notifications/domain/personalized_notifications.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
+  setUpAll(() {
+    tzdata.initializeTimeZones();
+  });
+
+  group('IANA timezone ids', () {
+    test('accepts valid identifiers', () {
+      expect(isValidIanaTimezoneId('Europe/Madrid'), isTrue);
+      expect(isValidIanaTimezoneId('Asia/Tokyo'), isTrue);
+      expect(isValidIanaTimezoneId('America/New_York'), isTrue);
+      expect(isValidIanaTimezoneId('UTC'), isTrue);
+    });
+
+    test('rejects abbreviations and invalid identifiers', () {
+      expect(isValidIanaTimezoneId('CEST'), isFalse);
+      expect(isValidIanaTimezoneId('CET'), isFalse);
+      expect(isValidIanaTimezoneId('Mars/Olympus_Mons'), isFalse);
+      expect(isValidIanaTimezoneId(''), isFalse);
+    });
+  });
+
   group('FakeNotificationClock', () {
     test('returns and advances the configured time', () {
       final clock = FakeNotificationClock(
@@ -36,6 +58,16 @@ void main() {
         () => clock.setTimezoneId(' '),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('SystemNotificationClock', () {
+    test('reads the initialized local IANA timezone', () {
+      tz.setLocalLocation(tz.getLocation('Europe/Madrid'));
+
+      final clock = SystemNotificationClock();
+
+      expect(clock.timezoneId(), 'Europe/Madrid');
     });
   });
 }
