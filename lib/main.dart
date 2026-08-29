@@ -57,8 +57,15 @@ import 'screens/auth/auth_gate.dart';
 import 'screens/auth/sign_in_screen.dart';
 import 'screens/auth/sign_up_screen.dart';
 
+void _startupLog(String message) {
+  if (kDebugMode) debugPrint(message);
+}
+
 Future<void> main() async {
+  _startupLog('[STARTUP] 01 main() entered');
+  _startupLog('[STARTUP] 02 before WidgetsFlutterBinding.ensureInitialized()');
   WidgetsFlutterBinding.ensureInitialized();
+  _startupLog('[STARTUP] 03 after WidgetsFlutterBinding.ensureInitialized()');
   final shopCloudConfig = ShopCloudRuntimeConfig.compiled(
     isRelease: kReleaseMode,
   );
@@ -71,17 +78,23 @@ Future<void> main() async {
     'flags=${shopCloudConfig.flags}',
   );
   shopCloudConfig.validateForStartup(isRelease: kReleaseMode);
+  _startupLog('[STARTUP] 04 before RutioSupabaseClient.initialize()');
   await RutioSupabaseClient.initialize();
+  _startupLog('[STARTUP] 05 after RutioSupabaseClient.initialize()');
 
   final userStateStorage = UserStateStorage();
   final userStateRepository = UserStateRepository(storage: userStateStorage);
+  _startupLog('[STARTUP] 06 before DemoSeedRunner.prepare()');
   await DemoSeedRunner(
     repository: userStateRepository,
     storage: userStateStorage,
   ).prepare();
+  _startupLog('[STARTUP] 07 after DemoSeedRunner.prepare()');
 
   try {
+    _startupLog('[STARTUP] 08 before NotificationService.init()');
     await NotificationService.instance.init();
+    _startupLog('[STARTUP] 09 after NotificationService.init()');
   } catch (error, stackTrace) {
     debugPrint('[main] Notification init failed: $error');
     debugPrintStack(
@@ -89,7 +102,9 @@ Future<void> main() async {
       stackTrace: stackTrace,
     );
   }
+  _startupLog('[STARTUP] 10 before runApp()');
   runApp(MyApp(shopRuntimeConfig: shopCloudConfig));
+  _startupLog('[STARTUP] 11 after runApp()');
 }
 
 class MyApp extends StatelessWidget {
@@ -105,6 +120,61 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _startupLog('[STARTUP] 12 MyApp.build() entered');
+    _startupLog('[STARTUP] 13 composing NotificationRuntime wrapper');
+    final runtime = NotificationRuntime(
+      child: Consumer<UserStateStore>(
+        builder: (context, store, _) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Rutio',
+          theme: AppTheme.theme,
+          locale: store.preferredLocale,
+          navigatorKey: _navigatorKey,
+          builder: (context, child) => AchievementUnlockOverlayHost(
+            navigatorKey: _navigatorKey,
+            child: child ?? const SizedBox.shrink(),
+          ),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const AppStartupGate(),
+          routes: {
+            '/splash': (_) => const AppStartupGate(),
+            '/welcome': (_) => const WelcomeScreen(),
+            '/auth': (_) => const SignInScreen(),
+            '/auth-signup': (_) => const SignUpScreen(),
+            SignInScreen.route: (_) => const SignInScreen(),
+            SignUpScreen.route: (_) => const SignUpScreen(),
+            AuthGate.route: (_) => const AppStartupGate(
+                  authenticatedBuilder: _authenticatedRootBuilder,
+                ),
+            '/root': (_) => const AppStartupGate(
+                  authenticatedBuilder: _authenticatedRootBuilder,
+                ),
+            '/home': (_) => const AppStartupGate(
+                  authenticatedBuilder: _authenticatedHomeBuilder,
+                ),
+            TodoScreen.route: (_) => const TodoScreen(),
+            ProfileScreen.route: (_) => const ProfileScreen(),
+            AchievementsScreen.route: (_) => const AchievementsScreen(),
+            '/diary': (_) => const DiaryV2Screen(),
+            '/diary-legacy': (_) => const DiaryScreen(),
+            DiaryV2Screen.route: (_) => const DiaryV2Screen(),
+            '/archived': (_) => ArchivedHabitsScreen(),
+            '/stats': (_) => const StatisticsV3Screen(),
+            StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
+            '/shop': (_) => const AppStartupGate(
+                  authenticatedBuilder: _authenticatedShopBuilder,
+                ),
+          },
+        ),
+      ),
+    );
+    _startupLog('[STARTUP] 14 NotificationRuntime wrapper composed');
     return MultiProvider(
       providers: [
         Provider<ShopCloudRuntimeConfig>.value(value: shopRuntimeConfig),
@@ -234,58 +304,7 @@ class MyApp extends StatelessWidget {
           update: (_, __, ___, ____, _____, controller) => controller!,
         ),
       ],
-      child: NotificationRuntime(
-        child: Consumer<UserStateStore>(
-          builder: (context, store, _) => MaterialApp(
-            debugShowCheckedModeBanner: false,
-            title: 'Rutio',
-            theme: AppTheme.theme,
-            locale: store.preferredLocale,
-            navigatorKey: _navigatorKey,
-            builder: (context, child) => AchievementUnlockOverlayHost(
-              navigatorKey: _navigatorKey,
-              child: child ?? const SizedBox.shrink(),
-            ),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const AppStartupGate(),
-            routes: {
-              '/splash': (_) => const AppStartupGate(),
-              '/welcome': (_) => const WelcomeScreen(),
-              '/auth': (_) => const SignInScreen(),
-              '/auth-signup': (_) => const SignUpScreen(),
-              SignInScreen.route: (_) => const SignInScreen(),
-              SignUpScreen.route: (_) => const SignUpScreen(),
-              AuthGate.route: (_) => const AppStartupGate(
-                    authenticatedBuilder: _authenticatedRootBuilder,
-                  ),
-              '/root': (_) => const AppStartupGate(
-                    authenticatedBuilder: _authenticatedRootBuilder,
-                  ),
-              '/home': (_) => const AppStartupGate(
-                    authenticatedBuilder: _authenticatedHomeBuilder,
-                  ),
-              TodoScreen.route: (_) => const TodoScreen(),
-              ProfileScreen.route: (_) => const ProfileScreen(),
-              AchievementsScreen.route: (_) => const AchievementsScreen(),
-              '/diary': (_) => const DiaryV2Screen(),
-              '/diary-legacy': (_) => const DiaryScreen(),
-              DiaryV2Screen.route: (_) => const DiaryV2Screen(),
-              '/archived': (_) => ArchivedHabitsScreen(),
-              '/stats': (_) => const StatisticsV3Screen(),
-              StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
-              '/shop': (_) => const AppStartupGate(
-                    authenticatedBuilder: _authenticatedShopBuilder,
-                  ),
-            },
-          ),
-        ),
-      ),
+      child: runtime,
     );
   }
 }

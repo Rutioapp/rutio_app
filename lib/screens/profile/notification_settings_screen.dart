@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../features/notifications/application/notification_permission_controller.dart';
+import '../../features/notifications/application/personalized_notification_settings_controller.dart';
 import '../../features/notifications/presentation/notification_permission_recovery_sheet.dart';
+import '../../features/notifications/presentation/personalized_notifications_settings_section.dart';
 import '../../l10n/l10n.dart';
 import '../../services/notification_models.dart';
 import '../../services/notification_preferences.dart';
@@ -17,23 +19,31 @@ import 'widgets/section_card.dart';
 import 'widgets/switch_row.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
-  const NotificationSettingsScreen({super.key});
+  const NotificationSettingsScreen({
+    super.key,
+    this.permissionController,
+    this.syncPhaseOne,
+  });
+
+  final NotificationPermissionController? permissionController;
+  final Future<void> Function(UserStateStore store)? syncPhaseOne;
 
   @override
   State<NotificationSettingsScreen> createState() =>
       _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState
-    extends State<NotificationSettingsScreen> with WidgetsBindingObserver {
+class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
+    with WidgetsBindingObserver {
   static const int _notificationCategoryTotal = 5;
-  final NotificationPermissionController _notificationPermissionController =
-      NotificationPermissionController();
+  late final NotificationPermissionController _notificationPermissionController;
   bool _systemNotificationsAllowed = false;
 
   @override
   void initState() {
     super.initState();
+    _notificationPermissionController =
+        widget.permissionController ?? NotificationPermissionController();
     WidgetsBinding.instance.addObserver(this);
     _refreshNotificationPermissionState();
   }
@@ -59,7 +69,8 @@ class _NotificationSettingsScreenState
   }
 
   Future<bool> _ensureSystemPermissionForUserIntent() async {
-    final current = await _notificationPermissionController.getSystemPermissionResult();
+    final current =
+        await _notificationPermissionController.getSystemPermissionResult();
     if (current.isAuthorized) {
       await _refreshNotificationPermissionState();
       return true;
@@ -67,7 +78,8 @@ class _NotificationSettingsScreenState
 
     var granted = false;
     if (current.canRequest) {
-      granted = await _notificationPermissionController.requestSystemPermission();
+      granted =
+          await _notificationPermissionController.requestSystemPermission();
     }
     if (!granted) {
       final latest =
@@ -96,7 +108,7 @@ class _NotificationSettingsScreenState
     }
 
     await preferences.setMasterEnabled(enabled);
-    await NotificationService.instance.syncPhaseOne(store: store);
+    await _syncPhaseOne(store);
     await _refreshNotificationPermissionState();
   }
 
@@ -117,7 +129,7 @@ class _NotificationSettingsScreenState
     }
 
     await persist(preferences);
-    await NotificationService.instance.syncPhaseOne(store: store);
+    await _syncPhaseOne(store);
     await _refreshNotificationPermissionState();
   }
 
@@ -190,7 +202,12 @@ class _NotificationSettingsScreenState
     await preferences.setDayClosureTime(
       NotificationTime(hour: value.hour, minute: value.minute),
     );
-    await NotificationService.instance.syncPhaseOne(store: store);
+    await _syncPhaseOne(store);
+  }
+
+  Future<void> _syncPhaseOne(UserStateStore store) {
+    return widget.syncPhaseOne?.call(store) ??
+        NotificationService.instance.syncPhaseOne(store: store);
   }
 
   @override
@@ -233,6 +250,29 @@ class _NotificationSettingsScreenState
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
+          if (PersonalizedNotificationsFeatureGate.enabled) ...[
+            Text(
+              l10n.personalizedNotificationsSectionTitle,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                l10n.personalizedNotificationsSectionSubtitle,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: Color(0xFF7A7A7A),
+                  height: 1.35,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            const SectionCard(
+              child: PersonalizedNotificationsSettingsSection(),
+            ),
+            const SizedBox(height: 18),
+          ],
           SectionCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,9 +298,9 @@ class _NotificationSettingsScreenState
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
           Text(
-            l10n.profileNotificationsPhaseOneTitle,
+            l10n.notificationsRemindersSectionTitle,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 10),

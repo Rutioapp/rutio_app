@@ -1413,6 +1413,18 @@ abstract class AppLocalizations {
   /// **'Cuenta'**
   String get settingsAccountSectionTitle;
 
+  /// No description provided for @settingsNotificationsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones'**
+  String get settingsNotificationsTitle;
+
+  /// No description provided for @settingsNotificationsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Abre las notificaciones y recordatorios de Rutio'**
+  String get settingsNotificationsSubtitle;
+
   /// No description provided for @settingsLogOut.
   ///
   /// In es, this message translates to:
@@ -1820,6 +1832,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Fase 1'**
   String get profileNotificationsPhaseOneTitle;
+
+  /// No description provided for @notificationsRemindersSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorios'**
+  String get notificationsRemindersSectionTitle;
 
   /// No description provided for @profileNotificationHabitRemindersTitle.
   ///

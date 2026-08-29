@@ -3,17 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../application/auth/auth_controller.dart';
-import '../../features/notifications/application/personalized_notification_settings_controller.dart';
-import '../../features/notifications/presentation/personalized_notifications_settings_section.dart';
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
 import 'widgets/account_action_settings_row.dart';
 import 'widgets/destructive_settings_row.dart';
+import 'widgets/profile_option_tile.dart';
 import 'widgets/section_card.dart';
 import 'widgets/settings_language_section.dart';
+import 'notification_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({
+    super.key,
+    this.notificationSettingsScreenBuilder,
+  });
+
+  final WidgetBuilder? notificationSettingsScreenBuilder;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -44,29 +49,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
             selectedLanguageCode: activeLanguageCode,
             onLanguageSelected: store.setPreferredLanguageCode,
           ),
-          if (PersonalizedNotificationsFeatureGate.enabled) ...[
-            const SizedBox(height: 18),
-            Text(
-              context.l10n.personalizedNotificationsSectionTitle,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          const SizedBox(height: 18),
+          Text(
+            context.l10n.settingsNotificationsTitle,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          SectionCard(
+            child: ProfileOptionTile(
+              icon: Icons.notifications_outlined,
+              title: context.l10n.profileNotificationSettingsTitle,
+              subtitle: context.l10n.settingsNotificationsSubtitle,
+              onTap: () {
+                final builder = widget.notificationSettingsScreenBuilder ??
+                    (_) => const NotificationSettingsScreen();
+                Navigator.of(context).push(
+                  CupertinoPageRoute(
+                    builder: builder,
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                context.l10n.personalizedNotificationsSectionSubtitle,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: Color(0xFF7A7A7A),
-                  height: 1.35,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            const SectionCard(
-              child: PersonalizedNotificationsSettingsSection(),
-            ),
-          ],
+          ),
           const SizedBox(height: 18),
           Text(
             context.l10n.settingsAccountSectionTitle,

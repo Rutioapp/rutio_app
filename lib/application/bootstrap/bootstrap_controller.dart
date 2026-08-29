@@ -638,6 +638,8 @@ class BootstrapController extends ChangeNotifier {
   Future<void> _run({required BootstrapRunMode mode}) async {
     final runId = ++_nextRunId;
     final startedAt = DateTime.now();
+    _startupLog(
+        '[STARTUP] 40 BootstrapController._run entered runId=$runId mode=${mode.name}');
     _telemetryByRunId[runId] = _BootstrapRunTelemetry(
       runId: runId,
       mode: mode,
@@ -664,9 +666,13 @@ class BootstrapController extends ChangeNotifier {
 
     try {
       final sessionStartedAt = DateTime.now();
+      _startupLog(
+          '[STARTUP] 41 BootstrapController awaiting initial session resolution');
       final session = _authController.isSessionResolved
           ? _authController.sessionSnapshot
           : await _authController.initialSessionResolved;
+      _startupLog(
+          '[STARTUP] 42 BootstrapController initial session resolution completed');
       _metric(
         runId,
         'session_resolution',
@@ -699,10 +705,16 @@ class BootstrapController extends ChangeNotifier {
           user: user,
         ),
       );
+      _startupLog(
+          '[STARTUP] 43 BootstrapController published selectingUserScope');
       _log(runId, 'phase=selecting_user_scope', startedAt: startedAt);
       _trace(runId, 'scope_change_requested');
       final scopeStartedAt = DateTime.now();
+      _startupLog(
+          '[STARTUP] 44 BootstrapController awaiting switchLocalScope()');
       await _userStateStore.switchLocalScope(userId: user.id);
+      _startupLog(
+          '[STARTUP] 45 BootstrapController switchLocalScope() completed');
       if (!_isCurrentRun(runId) || _authController.currentUser?.id != user.id) {
         _recordStaleDiscard(runId, domain: 'scope');
         return;
@@ -717,7 +729,11 @@ class BootstrapController extends ChangeNotifier {
       _log(runId, 'phase=loading_local_state', startedAt: startedAt);
       final localStateStartedAt = DateTime.now();
       if (_userStateStore.state == null && !_userStateStore.isLoading) {
+        _startupLog(
+            '[STARTUP] 46 BootstrapController awaiting UserStateStore.load()');
         await _userStateStore.load();
+        _startupLog(
+            '[STARTUP] 47 BootstrapController UserStateStore.load() completed');
       }
       if (!_isCurrentRun(runId) || _authController.currentUser?.id != user.id) {
         _recordStaleDiscard(runId, domain: 'local_state');
@@ -747,12 +763,16 @@ class BootstrapController extends ChangeNotifier {
         expectedScopeKey: scopeKey,
       );
       _log(runId, 'authoritative_bootstrap_started', startedAt: startedAt);
+      _startupLog(
+          '[STARTUP] 48 BootstrapController awaiting authoritative bootstrap decision');
       final authoritativeDecisionResult =
           await _profileRepository.loadAuthoritativeBootstrapDecision(
         scopeUserId: scopeUserId,
         scopeEpoch: scopeEpoch,
         onboardingPolicyVersion: _onboardingPolicyVersion,
       );
+      _startupLog(
+          '[STARTUP] 49 BootstrapController authoritative bootstrap decision completed');
       _metric(
         runId,
         'authoritative_bootstrap_total',
@@ -872,17 +892,23 @@ class BootstrapController extends ChangeNotifier {
           );
           return;
         }
+        _startupLog(
+            '[STARTUP] 50 BootstrapController awaiting _prepareHomeEssentials()');
         final essentials = await _prepareHomeEssentials(
           runId: runId,
           userId: user.id,
           profile: profile,
           startedAt: startedAt,
         );
+        _startupLog(
+            '[STARTUP] 51 BootstrapController _prepareHomeEssentials() completed');
         if (essentials == null) return;
         final publishStartedAt = DateTime.now();
         final essentialDuration = DateTime.now().difference(startedAt);
         _metric(runId, 'time_to_home_ready', essentialDuration);
         _metric(runId, 'essential_total', essentialDuration);
+        _startupLog(
+            '[STARTUP] 52 BootstrapController publishing ready/home state');
         _setState(
           BootstrapState(
             phase: BootstrapPhase.ready,
@@ -900,6 +926,8 @@ class BootstrapController extends ChangeNotifier {
           DateTime.now().difference(publishStartedAt),
         );
         _timeline(runId, 'home_published');
+        _startupLog(
+            '[STARTUP] 53 BootstrapController published ready/home state');
         _fireAndForgetHomeReady(essentials);
         _finishRun(runId);
         _authController.startPostHomeBootstrapWork(
@@ -922,6 +950,8 @@ class BootstrapController extends ChangeNotifier {
           destination: destination,
         ),
       );
+      _startupLog(
+          '[STARTUP] 54 BootstrapController published non-home ready state');
       _finishRun(runId);
       _log(runId, 'destination=${destination.name}', startedAt: startedAt);
     } catch (error) {
@@ -1044,6 +1074,8 @@ class BootstrapController extends ChangeNotifier {
     required DateTime startedAt,
   }) async {
     final telemetry = _telemetryByRunId[runId];
+    _startupLog(
+        '[STARTUP] 55 BootstrapController._prepareHomeEssentials entered runId=$runId');
     _setState(_state.copyWith(phase: BootstrapPhase.loadingEssentialHabits));
     _log(runId, 'essential_habits_started', startedAt: startedAt);
     _timeline(runId, 'habits_started');
@@ -1060,10 +1092,14 @@ class BootstrapController extends ChangeNotifier {
             .prepare(userId: userId);
     telemetry?.habitsAndCosmeticsParallel = true;
 
+    _startupLog(
+        '[STARTUP] 56 BootstrapController awaiting essential habits + cosmetics');
     final results = await Future.wait<Object>(<Future<Object>>[
       habitsFuture,
       cosmeticsFuture,
     ]);
+    _startupLog(
+        '[STARTUP] 57 BootstrapController essential habits + cosmetics completed');
     if (!_isCurrentUserRun(runId, userId)) {
       _log(runId, 'stale_result_discarded domain=essentials');
       _recordStaleDiscard(runId, domain: 'essentials');
@@ -1189,7 +1225,11 @@ class BootstrapController extends ChangeNotifier {
     _setState(_state.copyWith(phase: BootstrapPhase.preloadingEssentialAssets));
     final assetStartedAt = DateTime.now();
     try {
+      _startupLog(
+          '[STARTUP] 58 BootstrapController awaiting essential asset preloading');
       await _essentialAssetPreloader.preload(cosmetics.visibleAssets);
+      _startupLog(
+          '[STARTUP] 59 BootstrapController essential asset preloading completed');
     } catch (error) {
       if (!_isCurrentUserRun(runId, userId)) {
         _log(runId, 'stale_result_discarded domain=assets');
@@ -1269,6 +1309,11 @@ class BootstrapController extends ChangeNotifier {
       visibleAssetsPreloaded: true,
       cosmeticsReadyToken: readyToken,
     );
+  }
+
+  void _startupLog(String message) {
+    if (!kDebugMode) return;
+    debugPrint(message);
   }
 
   Future<void> _runAuthoritativeBootstrapCacheShadow({

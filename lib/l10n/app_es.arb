@@ -405,6 +405,8 @@
   "settingsLanguageOptionSpanish": "Español",
   "settingsLanguageOptionEnglish": "Inglés",
   "settingsAccountSectionTitle": "Cuenta",
+  "settingsNotificationsTitle": "Notificaciones",
+  "settingsNotificationsSubtitle": "Abre las notificaciones y recordatorios de Rutio",
   "settingsLogOut": "Cerrar sesión",
   "settingsLogOutTitle": "¿Cerrar sesión?",
   "settingsLogOutMessage": "Podrás volver a entrar con tu email y contraseña cuando quieras.",
@@ -497,6 +499,7 @@
     }
   },
   "profileNotificationsPhaseOneTitle": "Fase 1",
+  "notificationsRemindersSectionTitle": "Recordatorios",
   "profileNotificationHabitRemindersTitle": "Recordatorios de hábitos",
   "profileNotificationHabitRemindersSubtitle": "Respeta la hora configurada en cada hábito",
   "profileNotificationDayClosureTitle": "Cierre del día",

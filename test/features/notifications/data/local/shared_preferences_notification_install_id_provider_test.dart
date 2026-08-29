@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/notifications/data/local/notification_local_storage_scope.dart';
 import 'package:rutio/features/notifications/data/local/shared_preferences_notification_install_id_provider.dart';
@@ -7,6 +9,17 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('SharedPreferencesNotificationInstallIdProvider', () {
+    test('does not touch the random source when constructed', () {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final random = _CountingRandom();
+
+      SharedPreferencesNotificationInstallIdProvider(
+        random: random,
+      );
+
+      expect(random.nextIntCalls, 0);
+    });
+
     test('generates an install id when missing', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final provider = SharedPreferencesNotificationInstallIdProvider();
@@ -51,4 +64,20 @@ void main() {
       expect(second, isNot(first));
     });
   });
+}
+
+class _CountingRandom implements Random {
+  int nextIntCalls = 0;
+
+  @override
+  int nextInt(int max) {
+    nextIntCalls += 1;
+    return 0;
+  }
+
+  @override
+  bool nextBool() => false;
+
+  @override
+  double nextDouble() => 0.0;
 }

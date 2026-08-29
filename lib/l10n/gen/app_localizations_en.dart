@@ -748,6 +748,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAccountSectionTitle => 'Account';
 
   @override
+  String get settingsNotificationsTitle => 'Notifications';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Open Rutio notifications and reminders';
+
+  @override
   String get settingsLogOut => 'Log out';
 
   @override
@@ -974,6 +981,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileNotificationsPhaseOneTitle => 'Phase 1';
+
+  @override
+  String get notificationsRemindersSectionTitle => 'Reminders';
 
   @override
   String get profileNotificationHabitRemindersTitle => 'Habit reminders';

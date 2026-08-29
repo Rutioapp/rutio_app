@@ -405,6 +405,8 @@
     "settingsLanguageOptionSpanish":  "Spanish",
     "settingsLanguageOptionEnglish":  "English",
     "settingsAccountSectionTitle": "Account",
+    "settingsNotificationsTitle": "Notifications",
+    "settingsNotificationsSubtitle": "Open Rutio notifications and reminders",
     "settingsLogOut": "Log out",
     "settingsLogOutTitle": "Log out?",
     "settingsLogOutMessage": "You can sign back in with your email and password anytime.",
@@ -497,6 +499,7 @@
         }
     },
     "profileNotificationsPhaseOneTitle": "Phase 1",
+    "notificationsRemindersSectionTitle": "Reminders",
     "profileNotificationHabitRemindersTitle": "Habit reminders",
     "profileNotificationHabitRemindersSubtitle": "Respect the time configured for each habit",
     "profileNotificationDayClosureTitle": "End of day",

@@ -12,10 +12,11 @@ class SharedPreferencesNotificationInstallIdProvider
     Random? random,
   })  : _sharedPreferencesProvider =
             sharedPreferencesProvider ?? SharedPreferences.getInstance,
-        _random = random ?? Random.secure();
+        _randomSource = random;
 
   final Future<SharedPreferences> Function() _sharedPreferencesProvider;
-  final Random _random;
+  final Random? _randomSource;
+  late final Random _random = _randomSource ?? Random.secure();
 
   @override
   Future<String> getOrCreateInstallId() async {

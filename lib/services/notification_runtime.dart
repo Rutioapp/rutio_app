@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -30,15 +31,21 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
   bool _queuedRecordOpen = false;
   bool _bootstrapped = false;
 
+  void _startupLog(String message) {
+    if (kDebugMode) debugPrint(message);
+  }
+
   @override
   void initState() {
     super.initState();
+    _startupLog('[STARTUP] 20 NotificationRuntime.initState()');
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _startupLog('[STARTUP] 21 NotificationRuntime.didChangeDependencies()');
     final store = context.read<UserStateStore>();
     if (identical(_store, store)) {
       _bootstrapIfPossible();
@@ -63,6 +70,7 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     if (!_bootstrapped) return;
+    _startupLog('[STARTUP] 22 NotificationRuntime lifecycle resumed');
     _scheduleSync(recordAppOpen: true);
     _schedulePersonalizedSync();
   }
@@ -76,12 +84,21 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
         store.isLoading ||
         store.state == null ||
         _bootstrapped) {
+      _startupLog(
+        '[STARTUP] 23 NotificationRuntime bootstrap skipped '
+        '(storeReady=${store != null && !store.isLoading && store.state != null}, '
+        'bootstrapped=$_bootstrapped)',
+      );
       return;
     }
 
+    _startupLog('[STARTUP] 24 NotificationRuntime bootstrap start');
     _bootstrapped = true;
     _previousState = _cloneState(store.state!);
     _scheduleSync(recordAppOpen: true);
+    _startupLog(
+      '[STARTUP] 25 NotificationRuntime bootstrap scheduled phase-one sync',
+    );
   }
 
   void _handleStoreChanged() {
@@ -110,17 +127,20 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
 
     _syncDebounce?.cancel();
     _syncDebounce = Timer(const Duration(milliseconds: 250), () async {
+      _startupLog('[STARTUP] 26 NotificationRuntime phase-one sync fired');
       final queuedPreviousState = _queuedPreviousState;
       final queuedRecordOpen = _queuedRecordOpen;
       _queuedPreviousState = null;
       _queuedRecordOpen = false;
 
       try {
+        _startupLog('[STARTUP] 27 before NotificationService.syncPhaseOne()');
         await NotificationService.instance.syncPhaseOne(
           store: store,
           previousState: queuedPreviousState,
           recordAppOpen: queuedRecordOpen,
         );
+        _startupLog('[STARTUP] 28 after NotificationService.syncPhaseOne()');
       } catch (error) {
         logNotification('Notification sync error: $error');
       }
@@ -134,9 +154,15 @@ class _NotificationRuntimeState extends State<NotificationRuntime>
     unawaited(
       () async {
         try {
+          _startupLog(
+            '[STARTUP] 29 before PersonalizedNotificationOrchestrator.reconcileForForeground()',
+          );
           await context
               .read<PersonalizedNotificationOrchestrator>()
               .reconcileForForeground();
+          _startupLog(
+            '[STARTUP] 30 after PersonalizedNotificationOrchestrator.reconcileForForeground()',
+          );
         } catch (error) {
           logNotification(
             'Personalized notification foreground sync error: $error',

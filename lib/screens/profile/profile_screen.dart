@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 
-import '../../features/notifications/application/notification_permission_controller.dart';
-import '../../features/notifications/presentation/notification_permission_recovery_sheet.dart';
 import '../../features/achievements/application/achievement_catalog.dart';
 import '../../features/achievements/application/achievement_progress_service.dart';
 import '../../features/achievements/domain/models/achievement.dart';
@@ -15,8 +13,6 @@ import '../../features/achievements/presentation/screens/achievements_screen.dar
 import '../../features/achievements/presentation/widgets/featured_achievement_picker_sheet.dart';
 import '../../features/achievements/presentation/widgets/featured_achievements_section.dart';
 import '../../l10n/l10n.dart';
-import '../../services/notification_preferences.dart';
-import '../../services/notification_service.dart';
 import '../../stores/user_state_store.dart';
 import '../../utils/family_theme.dart';
 import '../diary_v2/diary_v2_screen.dart';
@@ -26,14 +22,12 @@ import '../habit_monthly_screen.dart';
 import '../habit_weekly_screen.dart';
 import '../home/home_screen.dart';
 import 'models/family_color_ref.dart';
-import 'notification_settings_screen.dart';
 import 'settings_screen.dart';
 import 'utils/profile_levels_from_history.dart';
 import 'widgets/family_radar_section.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_option_tile.dart';
 import 'widgets/section_card.dart';
-import 'widgets/switch_row.dart';
 import 'package:rutio/widgets/app_view_drawer.dart';
 import 'package:rutio/widgets/app_header/app_header.dart';
 
@@ -79,40 +73,8 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen>
-    with WidgetsBindingObserver {
+class _ProfileScreenState extends State<ProfileScreen> {
   bool _didOpenInitialEdit = false;
-  static const int _notificationCategoryTotal = 5;
-  final NotificationPermissionController _notificationPermissionController =
-      NotificationPermissionController();
-  bool _systemNotificationsAllowed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _refreshNotificationPermissionState();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _refreshNotificationPermissionState();
-    }
-  }
-
-  Future<void> _refreshNotificationPermissionState() async {
-    final allowed =
-        await _notificationPermissionController.areNotificationsAllowed();
-    if (!mounted) return;
-    setState(() => _systemNotificationsAllowed = allowed);
-  }
 
   @override
   void didChangeDependencies() {
@@ -146,15 +108,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Future<void> _openNotificationSettings() async {
-    await Navigator.push(
-      context,
-      CupertinoPageRoute(builder: (_) => const NotificationSettingsScreen()),
-    );
-    if (!mounted) return;
-    await _refreshNotificationPermissionState();
-  }
-
   void _openAchievementsScreen() {
     Navigator.push(
       context,
@@ -179,36 +132,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         await store.setFeaturedAchievementIds(selectedIds);
       },
     );
-  }
-
-  Future<void> _setNotificationsEnabled(bool enabled) async {
-    final store = context.read<UserStateStore>();
-    final preferences = NotificationPreferences(store);
-
-    if (enabled) {
-      final systemResult =
-          await _notificationPermissionController.getSystemPermissionResult();
-      var granted = systemResult.isAuthorized;
-      if (!granted && systemResult.canRequest) {
-        granted = await _notificationPermissionController.requestSystemPermission();
-      }
-      if (!granted) {
-        final latest =
-            await _notificationPermissionController.getSystemPermissionResult();
-        if (!mounted) return;
-        await showNotificationPermissionRecoverySheet(
-          context,
-          controller: _notificationPermissionController,
-          permissionResult: latest,
-        );
-        await _refreshNotificationPermissionState();
-        return;
-      }
-    }
-
-    await preferences.setMasterEnabled(enabled);
-    await NotificationService.instance.syncPhaseOne(store: store);
-    await _refreshNotificationPermissionState();
   }
 
   @override
@@ -265,35 +188,22 @@ class _ProfileScreenState extends State<ProfileScreen>
           List<String>.from(widget.familyColors?.keys ?? const <String>[]),
     );
 
-    final notificationPreferences = NotificationPreferences(store).snapshot;
-    final effectiveNotificationsEnabled =
-        notificationPreferences.notificationsEnabled &&
-            _systemNotificationsAllowed;
-    final enabledCategories = effectiveNotificationsEnabled
-        ? <bool>[
-            notificationPreferences.habitRemindersEnabled,
-            notificationPreferences.dayClosureEnabled,
-            notificationPreferences.streakRiskEnabled,
-            notificationPreferences.streakCelebrationEnabled,
-            notificationPreferences.inactivityReengagementEnabled,
-          ].where((value) => value).length
-        : 0;
     final achievementData = _ProfileAchievementsData.fromStore(store);
 
     return Scaffold(
       drawer: AppViewDrawer(
-          selected: 'profile',
-          onGoDaily: () => _navReplace(context, const HomeScreen()),
-          onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
-          onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
-          onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-          onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
-          onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
-          onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
-          onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
-          onGoShop: () => Navigator.pushNamed(context, '/shop'),
-          onGoProfile: () => _navReplace(context, const ProfileScreen()),
-        ),
+        selected: 'profile',
+        onGoDaily: () => _navReplace(context, const HomeScreen()),
+        onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
+        onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
+        onGoTodo: () => Navigator.pushNamed(context, '/todo'),
+        onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
+        onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
+        onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
+        onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
+        onGoShop: () => Navigator.pushNamed(context, '/shop'),
+        onGoProfile: () => _navReplace(context, const ProfileScreen()),
+      ),
       backgroundColor: bg,
       appBar: AppBar(
         backgroundColor: bg,
@@ -330,34 +240,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           FeaturedAchievementsSection(
             featuredAchievements: achievementData.featuredItems,
             onTap: _handleFeaturedAchievementsTap,
-          ),
-          const SizedBox(height: 14),
-          Text(
-            l10n.profileNotificationsTitle,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          SectionCard(
-            child: Column(
-              children: [
-                SwitchRow(
-                  title: l10n.profileEnableNotificationsTitle,
-                  subtitle: l10n.profileEnableNotificationsSubtitle,
-                  value: effectiveNotificationsEnabled,
-                  onChanged: _setNotificationsEnabled,
-                ),
-                const SizedBox(height: 12),
-                ProfileOptionTile(
-                  icon: Icons.notifications_active_outlined,
-                  title: l10n.profileNotificationSettingsTitle,
-                  subtitle: l10n.profileNotificationCategoriesActive(
-                    enabledCategories,
-                    _notificationCategoryTotal,
-                  ),
-                  onTap: () => _openNotificationSettings(),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 14),
           Text(
