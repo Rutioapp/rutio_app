@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/feedback/application/feedback_form_controller.dart';
+import 'package:rutio/features/feedback/domain/feedback_category.dart';
+import 'package:rutio/features/feedback/domain/feedback_report.dart';
+import 'package:rutio/features/feedback/domain/feedback_status.dart';
 import 'package:rutio/features/feedback/presentation/widgets/feedback_category_card.dart';
 import 'package:rutio/features/feedback/presentation/screens/feedback_form_screen.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
@@ -173,12 +176,14 @@ void main() {
 
   testWidgets('submitting uses the temporary success callback', (tester) async {
     var submitted = false;
+    FeedbackReport? receivedReport;
 
     await _pumpApp(
       tester,
       FeedbackFormScreen(
-        onSubmitSuccess: (context) async {
+        onSubmitSuccess: (context, report) async {
           submitted = true;
+          receivedReport = report;
         },
       ),
     );
@@ -193,10 +198,14 @@ void main() {
     await tester.pumpAndSettle();
 
     await _scrollToText(tester, l10n.feedbackSubmitAction);
-    await tester.tap(find.widgetWithText(FilledButton, l10n.feedbackSubmitAction));
+    await tester
+        .tap(find.widgetWithText(FilledButton, l10n.feedbackSubmitAction));
     await tester.pumpAndSettle();
 
     expect(submitted, isTrue);
+    expect(receivedReport, isNotNull);
+    expect(receivedReport!.status, FeedbackStatus.submitted);
+    expect(receivedReport!.category, FeedbackCategory.bug);
   });
 }
 

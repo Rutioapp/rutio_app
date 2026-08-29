@@ -33,7 +33,11 @@ import 'features/notifications/data/native/native_notification_schedule_executor
 import 'features/feedback/presentation/screens/feedback_home_screen.dart';
 import 'features/feedback/presentation/screens/feedback_form_screen.dart';
 import 'features/feedback/presentation/screens/feedback_success_screen.dart';
-import 'features/feedback/presentation/screens/feedback_future_screen.dart';
+import 'features/feedback/presentation/screens/feedback_detail_screen.dart';
+import 'features/feedback/presentation/screens/my_feedback_screen.dart';
+import 'features/feedback/domain/feedback_category.dart';
+import 'features/feedback/domain/feedback_report.dart';
+import 'features/feedback/domain/feedback_status.dart';
 import 'features/shop/application/shop_cosmetics_controller.dart';
 import 'features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'features/global_wallet/application/global_wallet_controller.dart';
@@ -174,11 +178,20 @@ class MyApp extends StatelessWidget {
             StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
             FeedbackHomeScreen.route: (_) => const FeedbackHomeScreen(),
             FeedbackFormScreen.route: (_) => const FeedbackFormScreen(),
-            FeedbackSuccessScreen.route: (_) => const FeedbackSuccessScreen(),
-            '/feedback/mine': (context) => FeedbackFutureScreen(
-                  title: context.l10n.feedbackMineTitle,
-                  body: context.l10n.feedbackPlaceholderBody,
-                  icon: Icons.inbox_outlined,
+            FeedbackSuccessScreen.route: (context) =>
+                FeedbackSuccessScreen(report: _feedbackRouteReport(context)),
+            MyFeedbackScreen.route: (context) => MyFeedbackScreen(
+                submittedReport: _feedbackRouteReport(context)),
+            FeedbackDetailScreen.route: (context) => FeedbackDetailScreen(
+                  report: _feedbackRouteReport(context) ??
+                      FeedbackReport(
+                        id: 'feedback-fallback-detail',
+                        category: FeedbackCategory.bug,
+                        description: context.l10n.feedbackPlaceholderBody,
+                        contactAllowed: false,
+                        status: FeedbackStatus.submitted,
+                        createdAt: DateTime(2026, 8, 29, 12, 0),
+                      ),
                 ),
             '/shop': (_) => const AppStartupGate(
                   authenticatedBuilder: _authenticatedShopBuilder,
@@ -327,3 +340,11 @@ Widget _authenticatedRootBuilder(BuildContext context) => const RootGate();
 Widget _authenticatedHomeBuilder(BuildContext context) => const HomeScreen();
 
 Widget _authenticatedShopBuilder(BuildContext context) => const ShopScreen();
+
+FeedbackReport? _feedbackRouteReport(BuildContext context) {
+  final arguments = ModalRoute.of(context)?.settings.arguments;
+  if (arguments is FeedbackReport) {
+    return arguments;
+  }
+  return null;
+}

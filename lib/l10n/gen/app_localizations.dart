@@ -2133,23 +2133,227 @@ abstract class AppLocalizations {
   /// **'Mis envíos'**
   String get feedbackMineTitle;
 
+  /// No description provided for @feedbackMineHeading.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus envíos'**
+  String get feedbackMineHeading;
+
+  /// No description provided for @feedbackMineIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí tienes datos mock locales para comprobar todos los estados, filtros y accesos al detalle.'**
+  String get feedbackMineIntro;
+
+  /// No description provided for @feedbackMineEmptyState.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay envíos que coincidan con este filtro.'**
+  String get feedbackMineEmptyState;
+
+  /// No description provided for @feedbackFilterAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos'**
+  String get feedbackFilterAll;
+
+  /// No description provided for @feedbackFilterSubmitted.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviados'**
+  String get feedbackFilterSubmitted;
+
+  /// No description provided for @feedbackFilterInReview.
+  ///
+  /// In es, this message translates to:
+  /// **'En revisión'**
+  String get feedbackFilterInReview;
+
+  /// No description provided for @feedbackFilterClosed.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrados'**
+  String get feedbackFilterClosed;
+
+  /// No description provided for @feedbackResponseAvailableBadge.
+  ///
+  /// In es, this message translates to:
+  /// **'Respuesta disponible'**
+  String get feedbackResponseAvailableBadge;
+
+  /// No description provided for @feedbackStatusSubmitted.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviado'**
+  String get feedbackStatusSubmitted;
+
+  /// No description provided for @feedbackStatusInReview.
+  ///
+  /// In es, this message translates to:
+  /// **'En revisión'**
+  String get feedbackStatusInReview;
+
+  /// No description provided for @feedbackStatusResolved.
+  ///
+  /// In es, this message translates to:
+  /// **'Resuelto'**
+  String get feedbackStatusResolved;
+
+  /// No description provided for @feedbackStatusDismissed.
+  ///
+  /// In es, this message translates to:
+  /// **'Descartado'**
+  String get feedbackStatusDismissed;
+
+  /// No description provided for @feedbackProgressSubmitted.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviado'**
+  String get feedbackProgressSubmitted;
+
+  /// No description provided for @feedbackProgressSubmittedSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrada recibida en el flujo local.'**
+  String get feedbackProgressSubmittedSubtitle;
+
+  /// No description provided for @feedbackProgressInReview.
+  ///
+  /// In es, this message translates to:
+  /// **'En revisión'**
+  String get feedbackProgressInReview;
+
+  /// No description provided for @feedbackProgressInReviewSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'El equipo todavía no ha cerrado una decisión.'**
+  String get feedbackProgressInReviewSubtitle;
+
+  /// No description provided for @feedbackProgressTerminalLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Resuelto / Descartado'**
+  String get feedbackProgressTerminalLabel;
+
+  /// No description provided for @feedbackProgressTerminalSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Resultado final del feedback.'**
+  String get feedbackProgressTerminalSubtitle;
+
   /// No description provided for @feedbackSuccessTitle.
   ///
   /// In es, this message translates to:
-  /// **'Feedback preparado'**
+  /// **'¡Gracias!'**
   String get feedbackSuccessTitle;
 
   /// No description provided for @feedbackSuccessBody.
   ///
   /// In es, this message translates to:
-  /// **'La vista previa local ya está lista. El envío real llegará en la Fase 3.'**
+  /// **'Hemos recibido tu feedback correctamente.'**
   String get feedbackSuccessBody;
 
-  /// No description provided for @feedbackSuccessReturnAction.
+  /// No description provided for @feedbackSuccessSummaryLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen del envío'**
+  String get feedbackSuccessSummaryLabel;
+
+  /// No description provided for @feedbackSuccessCanEditDelete.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía puedes editar o eliminar este feedback hasta que el equipo empiece a revisarlo.'**
+  String get feedbackSuccessCanEditDelete;
+
+  /// No description provided for @feedbackSuccessProgressLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Proceso'**
+  String get feedbackSuccessProgressLabel;
+
+  /// No description provided for @feedbackSuccessMineAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver mis envíos'**
+  String get feedbackSuccessMineAction;
+
+  /// No description provided for @feedbackSuccessHomeAction.
   ///
   /// In es, this message translates to:
   /// **'Volver a Feedback'**
-  String get feedbackSuccessReturnAction;
+  String get feedbackSuccessHomeAction;
+
+  /// No description provided for @feedbackDetailTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalle'**
+  String get feedbackDetailTitle;
+
+  /// No description provided for @feedbackDetailDescriptionLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Descripción'**
+  String get feedbackDetailDescriptionLabel;
+
+  /// No description provided for @feedbackDetailSentDateLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de envío'**
+  String get feedbackDetailSentDateLabel;
+
+  /// No description provided for @feedbackDetailReviewDateLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de revisión'**
+  String get feedbackDetailReviewDateLabel;
+
+  /// No description provided for @feedbackDetailClosedDateLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha de cierre'**
+  String get feedbackDetailClosedDateLabel;
+
+  /// No description provided for @feedbackDetailScreenshotLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Captura mock'**
+  String get feedbackDetailScreenshotLabel;
+
+  /// No description provided for @feedbackDetailScreenshotPlaceholder.
+  ///
+  /// In es, this message translates to:
+  /// **'Vista previa mock de captura: {path}'**
+  String feedbackDetailScreenshotPlaceholder(String path);
+
+  /// No description provided for @feedbackDetailActionsLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Acciones disponibles'**
+  String get feedbackDetailActionsLabel;
+
+  /// No description provided for @feedbackEditAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar'**
+  String get feedbackEditAction;
+
+  /// No description provided for @feedbackDeleteAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar feedback'**
+  String get feedbackDeleteAction;
+
+  /// No description provided for @feedbackResponseTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Respuesta del equipo'**
+  String get feedbackResponseTitle;
+
+  /// No description provided for @feedbackResponseEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuestro equipo todavía no ha añadido una respuesta.'**
+  String get feedbackResponseEmpty;
 
   /// No description provided for @feedbackExitConfirmTitle.
   ///

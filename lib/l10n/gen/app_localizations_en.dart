@@ -1159,14 +1159,123 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedbackMineTitle => 'My submissions';
 
   @override
-  String get feedbackSuccessTitle => 'Feedback ready';
+  String get feedbackMineHeading => 'Your submissions';
+
+  @override
+  String get feedbackMineIntro =>
+      'These local mock records let us check every state, filter, and detail entry.';
+
+  @override
+  String get feedbackMineEmptyState => 'No submissions match this filter.';
+
+  @override
+  String get feedbackFilterAll => 'All';
+
+  @override
+  String get feedbackFilterSubmitted => 'Submitted';
+
+  @override
+  String get feedbackFilterInReview => 'In review';
+
+  @override
+  String get feedbackFilterClosed => 'Closed';
+
+  @override
+  String get feedbackResponseAvailableBadge => 'Response available';
+
+  @override
+  String get feedbackStatusSubmitted => 'Submitted';
+
+  @override
+  String get feedbackStatusInReview => 'In review';
+
+  @override
+  String get feedbackStatusResolved => 'Resolved';
+
+  @override
+  String get feedbackStatusDismissed => 'Dismissed';
+
+  @override
+  String get feedbackProgressSubmitted => 'Submitted';
+
+  @override
+  String get feedbackProgressSubmittedSubtitle =>
+      'Entry received in the local flow.';
+
+  @override
+  String get feedbackProgressInReview => 'In review';
+
+  @override
+  String get feedbackProgressInReviewSubtitle =>
+      'The team has not closed a decision yet.';
+
+  @override
+  String get feedbackProgressTerminalLabel => 'Resolved / dismissed';
+
+  @override
+  String get feedbackProgressTerminalSubtitle =>
+      'Final outcome for the feedback.';
+
+  @override
+  String get feedbackSuccessTitle => 'Thank you!';
 
   @override
   String get feedbackSuccessBody =>
-      'The local preview is ready. The real submission will arrive in Phase 3.';
+      'We have received your feedback successfully.';
 
   @override
-  String get feedbackSuccessReturnAction => 'Back to Feedback';
+  String get feedbackSuccessSummaryLabel => 'Submission summary';
+
+  @override
+  String get feedbackSuccessCanEditDelete =>
+      'You can still edit or delete this feedback until the team starts reviewing it.';
+
+  @override
+  String get feedbackSuccessProgressLabel => 'Process';
+
+  @override
+  String get feedbackSuccessMineAction => 'View my submissions';
+
+  @override
+  String get feedbackSuccessHomeAction => 'Back to Feedback';
+
+  @override
+  String get feedbackDetailTitle => 'Details';
+
+  @override
+  String get feedbackDetailDescriptionLabel => 'Description';
+
+  @override
+  String get feedbackDetailSentDateLabel => 'Sent date';
+
+  @override
+  String get feedbackDetailReviewDateLabel => 'Review date';
+
+  @override
+  String get feedbackDetailClosedDateLabel => 'Closed date';
+
+  @override
+  String get feedbackDetailScreenshotLabel => 'Mock capture';
+
+  @override
+  String feedbackDetailScreenshotPlaceholder(String path) {
+    return 'Mock capture preview: $path';
+  }
+
+  @override
+  String get feedbackDetailActionsLabel => 'Available actions';
+
+  @override
+  String get feedbackEditAction => 'Edit';
+
+  @override
+  String get feedbackDeleteAction => 'Delete feedback';
+
+  @override
+  String get feedbackResponseTitle => 'Team response';
+
+  @override
+  String get feedbackResponseEmpty => 'Our team has not added a response yet.';
 
   @override
   String get feedbackExitConfirmTitle => 'Do you want to leave?';

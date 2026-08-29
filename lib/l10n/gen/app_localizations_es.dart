@@ -1163,14 +1163,124 @@ class AppLocalizationsEs extends AppLocalizations {
   String get feedbackMineTitle => 'Mis envíos';
 
   @override
-  String get feedbackSuccessTitle => 'Feedback preparado';
+  String get feedbackMineHeading => 'Tus envíos';
 
   @override
-  String get feedbackSuccessBody =>
-      'La vista previa local ya está lista. El envío real llegará en la Fase 3.';
+  String get feedbackMineIntro =>
+      'Aquí tienes datos mock locales para comprobar todos los estados, filtros y accesos al detalle.';
 
   @override
-  String get feedbackSuccessReturnAction => 'Volver a Feedback';
+  String get feedbackMineEmptyState =>
+      'No hay envíos que coincidan con este filtro.';
+
+  @override
+  String get feedbackFilterAll => 'Todos';
+
+  @override
+  String get feedbackFilterSubmitted => 'Enviados';
+
+  @override
+  String get feedbackFilterInReview => 'En revisión';
+
+  @override
+  String get feedbackFilterClosed => 'Cerrados';
+
+  @override
+  String get feedbackResponseAvailableBadge => 'Respuesta disponible';
+
+  @override
+  String get feedbackStatusSubmitted => 'Enviado';
+
+  @override
+  String get feedbackStatusInReview => 'En revisión';
+
+  @override
+  String get feedbackStatusResolved => 'Resuelto';
+
+  @override
+  String get feedbackStatusDismissed => 'Descartado';
+
+  @override
+  String get feedbackProgressSubmitted => 'Enviado';
+
+  @override
+  String get feedbackProgressSubmittedSubtitle =>
+      'Entrada recibida en el flujo local.';
+
+  @override
+  String get feedbackProgressInReview => 'En revisión';
+
+  @override
+  String get feedbackProgressInReviewSubtitle =>
+      'El equipo todavía no ha cerrado una decisión.';
+
+  @override
+  String get feedbackProgressTerminalLabel => 'Resuelto / Descartado';
+
+  @override
+  String get feedbackProgressTerminalSubtitle =>
+      'Resultado final del feedback.';
+
+  @override
+  String get feedbackSuccessTitle => '¡Gracias!';
+
+  @override
+  String get feedbackSuccessBody => 'Hemos recibido tu feedback correctamente.';
+
+  @override
+  String get feedbackSuccessSummaryLabel => 'Resumen del envío';
+
+  @override
+  String get feedbackSuccessCanEditDelete =>
+      'Todavía puedes editar o eliminar este feedback hasta que el equipo empiece a revisarlo.';
+
+  @override
+  String get feedbackSuccessProgressLabel => 'Proceso';
+
+  @override
+  String get feedbackSuccessMineAction => 'Ver mis envíos';
+
+  @override
+  String get feedbackSuccessHomeAction => 'Volver a Feedback';
+
+  @override
+  String get feedbackDetailTitle => 'Detalle';
+
+  @override
+  String get feedbackDetailDescriptionLabel => 'Descripción';
+
+  @override
+  String get feedbackDetailSentDateLabel => 'Fecha de envío';
+
+  @override
+  String get feedbackDetailReviewDateLabel => 'Fecha de revisión';
+
+  @override
+  String get feedbackDetailClosedDateLabel => 'Fecha de cierre';
+
+  @override
+  String get feedbackDetailScreenshotLabel => 'Captura mock';
+
+  @override
+  String feedbackDetailScreenshotPlaceholder(String path) {
+    return 'Vista previa mock de captura: $path';
+  }
+
+  @override
+  String get feedbackDetailActionsLabel => 'Acciones disponibles';
+
+  @override
+  String get feedbackEditAction => 'Editar';
+
+  @override
+  String get feedbackDeleteAction => 'Eliminar feedback';
+
+  @override
+  String get feedbackResponseTitle => 'Respuesta del equipo';
+
+  @override
+  String get feedbackResponseEmpty =>
+      'Nuestro equipo todavía no ha añadido una respuesta.';
 
   @override
   String get feedbackExitConfirmTitle => '¿Quieres salir?';

@@ -8,6 +8,8 @@ import '../../../../l10n/gen/app_localizations.dart';
 import '../../../../utils/app_theme.dart';
 import '../../application/feedback_form_controller.dart';
 import '../../domain/feedback_category.dart';
+import '../../domain/feedback_report.dart';
+import '../mock/feedback_mock_reports.dart';
 import '../widgets/feedback_category_card.dart';
 import '../widgets/feedback_screenshot_field.dart';
 
@@ -21,7 +23,8 @@ class FeedbackFormScreen extends StatefulWidget {
   static const route = '/feedback/new';
 
   final FeedbackFormController? controller;
-  final FutureOr<void> Function(BuildContext context)? onSubmitSuccess;
+  final FutureOr<void> Function(BuildContext context, FeedbackReport report)?
+      onSubmitSuccess;
 
   @override
   State<FeedbackFormScreen> createState() => _FeedbackFormScreenState();
@@ -48,18 +51,23 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
 
   Future<void> _handleSubmit(BuildContext context) async {
     final submitted = await _controller.submit(() async {
+      final report = _buildSubmittedReport();
       final callback = widget.onSubmitSuccess ?? _defaultSubmitSuccess;
-      await callback(context);
+      await callback(context, report);
     });
 
     if (!submitted || !context.mounted) return;
   }
 
-  Future<void> _defaultSubmitSuccess(BuildContext context) {
+  Future<void> _defaultSubmitSuccess(
+    BuildContext context,
+    FeedbackReport report,
+  ) {
     // Temporal hasta que la Fase 3 conecte el envío real.
-    return Navigator.of(context)
-        .pushReplacementNamed('/feedback/success')
-        .then((_) {});
+    return Navigator.of(context).pushReplacementNamed(
+      '/feedback/success',
+      arguments: report,
+    );
   }
 
   Future<bool> _confirmDiscard(BuildContext context) async {
@@ -215,7 +223,8 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
                     childAspectRatio: 1.02,
                     children: [
                       FeedbackCategoryCard(
-                        key: ValueKey('feedback-category-${FeedbackCategory.bug.name}'),
+                        key: ValueKey(
+                            'feedback-category-${FeedbackCategory.bug.name}'),
                         title: l10n.feedbackCategoryBugTitle,
                         subtitle: l10n.feedbackCategoryBugHelp,
                         icon: Icons.bug_report_outlined,
@@ -230,7 +239,8 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
                         title: l10n.feedbackCategorySuggestionTitle,
                         subtitle: l10n.feedbackCategorySuggestionHelp,
                         icon: Icons.lightbulb_outline_rounded,
-                        selected: selectedCategory == FeedbackCategory.suggestion,
+                        selected:
+                            selectedCategory == FeedbackCategory.suggestion,
                         onTap: () => _controller
                             .selectCategory(FeedbackCategory.suggestion),
                       ),
@@ -241,7 +251,8 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
                         title: l10n.feedbackCategoryImprovementTitle,
                         subtitle: l10n.feedbackCategoryImprovementHelp,
                         icon: Icons.tune_rounded,
-                        selected: selectedCategory == FeedbackCategory.improvement,
+                        selected:
+                            selectedCategory == FeedbackCategory.improvement,
                         onTap: () => _controller
                             .selectCategory(FeedbackCategory.improvement),
                       ),
@@ -454,5 +465,14 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
       case null:
         return l10n.feedbackCategoryGeneralHelp;
     }
+  }
+
+  FeedbackReport _buildSubmittedReport() {
+    return FeedbackMockReports.buildSubmittedReport(
+      category: _controller.category!,
+      description: _controller.trimmedDescription,
+      contactAllowed: _controller.contactAllowed,
+      screenshotPath: null,
+    );
   }
 }
