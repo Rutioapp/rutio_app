@@ -816,6 +816,48 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account was deleted successfully.';
 
   @override
+  String get personalizedNotificationsSectionTitle => 'Rutio notifications';
+
+  @override
+  String get personalizedNotificationsSectionSubtitle =>
+      'Small reminders and messages adapted to your progress.';
+
+  @override
+  String get personalizedNotificationsEnableTitle =>
+      'Enable Rutio notifications';
+
+  @override
+  String get personalizedNotificationsEnableSubtitle =>
+      'Keeps Rutio messages separate from habit reminders.';
+
+  @override
+  String get personalizedNotificationsIntensityLabel => 'Intensity';
+
+  @override
+  String get personalizedNotificationsIntensitySubtitle =>
+      'Choose how often Rutio checks in.';
+
+  @override
+  String get personalizedNotificationsIntensitySoft => 'Soft';
+
+  @override
+  String get personalizedNotificationsIntensityBalanced => 'Balanced';
+
+  @override
+  String get personalizedNotificationsIntensityActive => 'Active';
+
+  @override
+  String get personalizedNotificationsReferenceTimeTitle => 'Reference time';
+
+  @override
+  String get personalizedNotificationsReferenceTimeSubtitle =>
+      'Used as the base for personalized messages.';
+
+  @override
+  String get personalizedNotificationsHabitReminderNote =>
+      'Habit reminders stay configured in their own screen.';
+
+  @override
   String get profileSettingsTitle => 'Settings';
 
   @override

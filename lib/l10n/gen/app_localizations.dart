@@ -1533,6 +1533,78 @@ abstract class AppLocalizations {
   /// **'Tu cuenta se ha eliminado correctamente.'**
   String get settingsDeleteAccountSuccess;
 
+  /// No description provided for @personalizedNotificationsSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones de Rutio'**
+  String get personalizedNotificationsSectionTitle;
+
+  /// No description provided for @personalizedNotificationsSectionSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Pequeños recordatorios y mensajes adaptados a tu progreso.'**
+  String get personalizedNotificationsSectionSubtitle;
+
+  /// No description provided for @personalizedNotificationsEnableTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Activar notificaciones de Rutio'**
+  String get personalizedNotificationsEnableTitle;
+
+  /// No description provided for @personalizedNotificationsEnableSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Separa los mensajes de Rutio de los recordatorios de hábitos.'**
+  String get personalizedNotificationsEnableSubtitle;
+
+  /// No description provided for @personalizedNotificationsIntensityLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Intensidad'**
+  String get personalizedNotificationsIntensityLabel;
+
+  /// No description provided for @personalizedNotificationsIntensitySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige con qué frecuencia aparece Rutio.'**
+  String get personalizedNotificationsIntensitySubtitle;
+
+  /// No description provided for @personalizedNotificationsIntensitySoft.
+  ///
+  /// In es, this message translates to:
+  /// **'Suave'**
+  String get personalizedNotificationsIntensitySoft;
+
+  /// No description provided for @personalizedNotificationsIntensityBalanced.
+  ///
+  /// In es, this message translates to:
+  /// **'Equilibrado'**
+  String get personalizedNotificationsIntensityBalanced;
+
+  /// No description provided for @personalizedNotificationsIntensityActive.
+  ///
+  /// In es, this message translates to:
+  /// **'Activo'**
+  String get personalizedNotificationsIntensityActive;
+
+  /// No description provided for @personalizedNotificationsReferenceTimeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora de referencia'**
+  String get personalizedNotificationsReferenceTimeTitle;
+
+  /// No description provided for @personalizedNotificationsReferenceTimeSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Se usa como base para los mensajes personalizados.'**
+  String get personalizedNotificationsReferenceTimeSubtitle;
+
+  /// No description provided for @personalizedNotificationsHabitReminderNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Los recordatorios de hábitos siguen configurándose en su propia pantalla.'**
+  String get personalizedNotificationsHabitReminderNote;
+
   /// No description provided for @profileSettingsTitle.
   ///
   /// In es, this message translates to:

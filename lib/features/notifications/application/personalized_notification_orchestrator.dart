@@ -93,18 +93,12 @@ class StoreBackedPersonalizedNotificationPreferencesResolver {
   StoreBackedPersonalizedNotificationPreferencesResolver({
     required NotificationPreferencesStore store,
     required UserStateStore userStateStore,
-  })  : _store = store,
-        _userStateStore = userStateStore;
+  }) : _store = store;
 
   final NotificationPreferencesStore _store;
-  final UserStateStore _userStateStore;
 
   Future<NotificationPreferences> load(NotificationScope scope) async {
-    final current = await _store.load(scope);
-    return current.copyWith(
-      masterEnabled: _userStateStore.notificationsEnabled,
-      habitRemindersEnabled: _userStateStore.habitRemindersEnabled,
-    );
+    return _store.load(scope);
   }
 }
 

@@ -817,6 +817,49 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu cuenta se ha eliminado correctamente.';
 
   @override
+  String get personalizedNotificationsSectionTitle => 'Notificaciones de Rutio';
+
+  @override
+  String get personalizedNotificationsSectionSubtitle =>
+      'Pequeños recordatorios y mensajes adaptados a tu progreso.';
+
+  @override
+  String get personalizedNotificationsEnableTitle =>
+      'Activar notificaciones de Rutio';
+
+  @override
+  String get personalizedNotificationsEnableSubtitle =>
+      'Separa los mensajes de Rutio de los recordatorios de hábitos.';
+
+  @override
+  String get personalizedNotificationsIntensityLabel => 'Intensidad';
+
+  @override
+  String get personalizedNotificationsIntensitySubtitle =>
+      'Elige con qué frecuencia aparece Rutio.';
+
+  @override
+  String get personalizedNotificationsIntensitySoft => 'Suave';
+
+  @override
+  String get personalizedNotificationsIntensityBalanced => 'Equilibrado';
+
+  @override
+  String get personalizedNotificationsIntensityActive => 'Activo';
+
+  @override
+  String get personalizedNotificationsReferenceTimeTitle =>
+      'Hora de referencia';
+
+  @override
+  String get personalizedNotificationsReferenceTimeSubtitle =>
+      'Se usa como base para los mensajes personalizados.';
+
+  @override
+  String get personalizedNotificationsHabitReminderNote =>
+      'Los recordatorios de hábitos siguen configurándose en su propia pantalla.';
+
+  @override
   String get profileSettingsTitle => 'Ajustes';
 
   @override

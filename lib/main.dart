@@ -22,6 +22,7 @@ import 'features/notifications/application/notification_context_builder.dart';
 import 'features/notifications/application/notification_os_reconciliation_coordinator.dart';
 import 'features/notifications/application/personalized_notification_orchestrator.dart';
 import 'features/notifications/application/personalized_notification_plan_builder.dart';
+import 'features/notifications/application/personalized_notification_settings_controller.dart';
 import 'features/notifications/data/local/local_notification_template_catalog.dart';
 import 'features/notifications/data/local/notification_platform_id_repository.dart';
 import 'features/notifications/data/local/shared_preferences_notification_history_store.dart';
@@ -188,6 +189,14 @@ class MyApp extends StatelessWidget {
             userStateStore.setNotificationMutationObserver(orchestrator);
             return orchestrator;
           },
+        ),
+        ChangeNotifierProvider<PersonalizedNotificationSettingsController>(
+          create: (context) => PersonalizedNotificationSettingsController(
+            userStateStore: context.read<UserStateStore>(),
+            preferencesStore: SharedPreferencesNotificationPreferencesStore(),
+            orchestrator: context.read<PersonalizedNotificationOrchestrator>(),
+            installIdProvider: SharedPreferencesNotificationInstallIdProvider(),
+          ),
         ),
         ChangeNotifierProvider<ShopCosmeticsController>(
           create: (context) => ShopCosmeticsController(
