@@ -118,6 +118,7 @@ void main() {
       platformIdIndex: const <String, int>{},
     );
     const reconciler = NotificationReconciler();
+    final executor = _StatefulExecutor();
 
     final firstPlan = reconciler.reconcile(
       desiredPlan: plan,
@@ -126,16 +127,17 @@ void main() {
     final firstExecution = await reconciler.execute(
       plan: firstPlan,
       manifest: manifest,
-      executor: InMemoryNotificationScheduleExecutor(),
+      executor: executor,
       reconciledAt: DateTime(2026, 8, 29, 9, 5),
     );
     final secondPlan = reconciler.reconcile(
       desiredPlan: plan,
       manifest: firstExecution.nextManifest,
+      osPendingNotifications: await executor.pendingNotifications(),
     );
 
     expect(
-      firstPlan.operations.any(
+      firstExecution.operationsSucceeded.any(
         (operation) =>
             operation.type == NotificationReconciliationOperationType.create,
       ),
@@ -149,6 +151,48 @@ void main() {
       isTrue,
     );
   });
+}
+
+class _StatefulExecutor extends InMemoryNotificationScheduleExecutor {
+  _StatefulExecutor();
+
+  final List<NativePendingNotification> _pending =
+      <NativePendingNotification>[];
+
+  @override
+  Future<NotificationNativeExecutionResult> create(
+    DesiredNotification notification,
+  ) async {
+    final result = await super.create(notification);
+    if (result.isSuccess) {
+      _pending
+        ..removeWhere(
+          (entry) =>
+              entry.logicalNotificationId == notification.logicalNotificationId,
+        )
+        ..add(
+          NativePendingNotification(
+            platformId: notification.platformId,
+            title: notification.renderedTitle,
+            body: notification.renderedBody,
+            payload: notification.payload.encode(),
+            logicalNotificationId: notification.logicalNotificationId,
+            templateId: notification.templateId,
+            scopeHash: notification.scope.scopeHash,
+            scopeEpoch: notification.scope.scopeEpoch,
+            family: notification.family,
+            kind: notification.kind,
+            isOwnedV2: true,
+          ),
+        );
+    }
+    return result;
+  }
+
+  @override
+  Future<List<NativePendingNotification>> pendingNotifications() async {
+    return List<NativePendingNotification>.from(_pending);
+  }
 }
 
 class _FixedContextBuilder implements NotificationPlanningContextBuilder {

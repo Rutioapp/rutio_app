@@ -3,13 +3,16 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 
 import '../domain/desired_notification.dart';
+import '../domain/notification_native_models.dart';
 import '../domain/personalized_notification_models.dart';
 
 enum NotificationReconciliationOperationType {
   keep,
   create,
   replace,
+  adopt,
   cancel,
+  dropManifest,
 }
 
 enum NotificationReconciliationPlanStatus {
@@ -25,7 +28,8 @@ class NotificationReconciliationOperation {
     required this.logicalNotificationId,
     required this.platformId,
     this.desired,
-    this.existing,
+    this.manifestEntry,
+    this.nativePending,
     this.reason,
   });
 
@@ -33,7 +37,8 @@ class NotificationReconciliationOperation {
   final String logicalNotificationId;
   final int platformId;
   final DesiredNotification? desired;
-  final NotificationManifestEntry? existing;
+  final NotificationManifestEntry? manifestEntry;
+  final NativePendingNotification? nativePending;
   final String? reason;
 }
 
@@ -62,13 +67,21 @@ class NotificationExecutorOperationResult {
     required this.type,
     required this.logicalNotificationId,
     required this.success,
-    this.error,
+    this.platformId,
+    this.scheduleAccepted = false,
+    this.errorCode,
+    this.stateChange = NotificationExecutionStateChange.none,
+    this.diagnostics = const <String>[],
   });
 
   final NotificationReconciliationOperationType type;
   final String logicalNotificationId;
   final bool success;
-  final String? error;
+  final int? platformId;
+  final bool scheduleAccepted;
+  final NotificationNativeErrorCode? errorCode;
+  final NotificationExecutionStateChange stateChange;
+  final List<String> diagnostics;
 }
 
 @immutable

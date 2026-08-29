@@ -1,4 +1,5 @@
 import 'desired_notification.dart';
+import 'notification_native_models.dart';
 import 'notification_template_content.dart';
 import 'personalized_notification_models.dart';
 
@@ -77,16 +78,33 @@ abstract class NotificationScheduler {
 }
 
 abstract class NotificationScheduleExecutor {
-  Future<void> create(
+  Future<NotificationNativeExecutionResult> create(
     DesiredNotification notification,
   );
 
-  Future<void> replace(
+  Future<List<NativePendingNotification>> pendingNotifications();
+
+  Future<NotificationSchedulingCapabilities> getSchedulingCapabilities();
+
+  Future<NotificationNativeExecutionResult> replace(
     NotificationManifestEntry existing,
     DesiredNotification replacement,
   );
 
-  Future<void> cancel(
+  Future<NotificationNativeExecutionResult> adopt(
+    NativePendingNotification pending,
+    DesiredNotification desired,
+  );
+
+  Future<NotificationNativeExecutionResult> cancel(
+    NotificationManifestEntry existing,
+  );
+
+  Future<NotificationNativeExecutionResult> cancelPending(
+    NativePendingNotification pending,
+  );
+
+  Future<NotificationNativeExecutionResult> dropManifestEntry(
     NotificationManifestEntry existing,
   );
 }

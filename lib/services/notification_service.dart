@@ -44,6 +44,10 @@ class NotificationService {
   bool _recoveringAndroidPluginCache = false;
   String _androidNotificationIcon = RutioNotificationChannel.androidSmallIcon;
 
+  NotificationScheduler get scheduler => _scheduler;
+
+  NotificationPermissionService get permissionService => _permissionService;
+
   Future<void> init() async {
     if (_initialized || _initializationFailed) return;
 
@@ -79,6 +83,8 @@ class NotificationService {
     final result = await requestPermissionFlow();
     return result.isAuthorized;
   }
+
+  Future<bool> ensureInitializedForFeature() => _ensureInitialized();
 
   Future<NotificationPermissionResult> checkPermissionStatus() async {
     if (!await _ensureInitialized()) {

@@ -158,6 +158,48 @@ class DesiredNotification {
   final String opportunityId;
   final int planVersion;
   final Map<String, String> metadata;
+
+  DesiredNotification copyWith({
+    String? logicalNotificationId,
+    int? platformId,
+    NotificationKind? kind,
+    NotificationFamily? family,
+    String? templateId,
+    String? renderedTitle,
+    String? renderedBody,
+    DateTime? intendedLocalDateTime,
+    NotificationTimezoneSemantics? timezoneSemantics,
+    String? timezoneIdAtPlanTime,
+    NotificationPayloadV2? payload,
+    String? fingerprint,
+    NotificationScope? scope,
+    String? categoryTag,
+    String? opportunityId,
+    int? planVersion,
+    Map<String, String>? metadata,
+  }) {
+    return DesiredNotification(
+      logicalNotificationId:
+          logicalNotificationId ?? this.logicalNotificationId,
+      platformId: platformId ?? this.platformId,
+      kind: kind ?? this.kind,
+      family: family ?? this.family,
+      templateId: templateId ?? this.templateId,
+      renderedTitle: renderedTitle ?? this.renderedTitle,
+      renderedBody: renderedBody ?? this.renderedBody,
+      intendedLocalDateTime:
+          intendedLocalDateTime ?? this.intendedLocalDateTime,
+      timezoneSemantics: timezoneSemantics ?? this.timezoneSemantics,
+      timezoneIdAtPlanTime: timezoneIdAtPlanTime ?? this.timezoneIdAtPlanTime,
+      payload: payload ?? this.payload,
+      fingerprint: fingerprint ?? this.fingerprint,
+      scope: scope ?? this.scope,
+      categoryTag: categoryTag ?? this.categoryTag,
+      opportunityId: opportunityId ?? this.opportunityId,
+      planVersion: planVersion ?? this.planVersion,
+      metadata: metadata ?? this.metadata,
+    );
+  }
 }
 
 @immutable

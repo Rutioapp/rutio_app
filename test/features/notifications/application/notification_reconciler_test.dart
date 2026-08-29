@@ -83,6 +83,23 @@ void main() {
   group('NotificationReconciler', () {
     const reconciler = NotificationReconciler();
 
+    NativePendingNotification pendingFor(DesiredNotification desired) {
+      final scope = buildScope();
+      return NativePendingNotification(
+        platformId: desired.platformId,
+        title: desired.renderedTitle,
+        body: desired.renderedBody,
+        payload: desired.payload.encode(),
+        logicalNotificationId: desired.logicalNotificationId,
+        templateId: desired.templateId,
+        scopeHash: scope.scopeHash,
+        scopeEpoch: scope.scopeEpoch,
+        family: desired.family,
+        kind: desired.kind,
+        isOwnedV2: true,
+      );
+    }
+
     test('creates when manifest is empty', () {
       final desired = buildDesired(
         logicalId: 'rutio:v2:general:generalProgressNudge:a:today:morning',
@@ -122,6 +139,9 @@ void main() {
             ),
           ],
         ),
+        osPendingNotifications: <NativePendingNotification>[
+          pendingFor(desired),
+        ],
       );
 
       expect(result.operations.single.type,
@@ -152,6 +172,15 @@ void main() {
             ),
           ],
         ),
+        osPendingNotifications: <NativePendingNotification>[
+          pendingFor(
+            desired.copyWith(
+              templateId: 'template-1',
+              fingerprint: 'fp-1',
+              intendedLocalDateTime: DateTime(2026, 8, 29, 9, 30),
+            ),
+          ),
+        ],
       );
 
       expect(result.operations.single.type,
@@ -187,6 +216,20 @@ void main() {
             ),
           ],
         ),
+        osPendingNotifications: <NativePendingNotification>[
+          NativePendingNotification(
+            platformId: 20001,
+            title: 'Rutio',
+            body: 'Body',
+            payload: '{}',
+            logicalNotificationId: 'rutio:v2:general:extra',
+            scopeHash: buildScope().scopeHash,
+            scopeEpoch: buildScope().scopeEpoch,
+            family: NotificationFamily.personalizedGeneral,
+            kind: NotificationKind.generalProgressNudge,
+            isOwnedV2: true,
+          ),
+        ],
       );
 
       expect(result.operations.length, 1);

@@ -98,12 +98,31 @@ class NotificationScheduler {
 
   Future<void> scheduleOneTime(ScheduledNotificationRequest request) async {
     await cancel(request.id);
-    await _safeZonedSchedule(
+    await scheduleZoned(
       id: request.id,
       title: request.copy.title,
       body: request.copy.body,
       when: tz.TZDateTime.from(request.scheduledFor, tz.local),
       payload: request.payload,
+    );
+  }
+
+  Future<void> scheduleZoned({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime when,
+    required String payload,
+    bool matchTime = false,
+  }) async {
+    await cancel(id);
+    await _safeZonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      when: when,
+      payload: payload,
+      matchTime: matchTime,
     );
   }
 

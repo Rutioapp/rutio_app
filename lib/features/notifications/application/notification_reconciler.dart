@@ -1,4 +1,5 @@
 import '../domain/desired_notification.dart';
+import '../domain/notification_native_models.dart';
 import '../domain/personalized_notification_models.dart';
 import '../domain/personalized_notification_ports.dart';
 import 'notification_reconciliation_models.dart';
@@ -9,6 +10,8 @@ class NotificationReconciler {
   NotificationReconciliationPlan reconcile({
     required DesiredNotificationPlan desiredPlan,
     required NotificationScheduleManifest manifest,
+    List<NativePendingNotification> osPendingNotifications =
+        const <NativePendingNotification>[],
   }) {
     if (desiredPlan.scope == null) {
       return NotificationReconciliationPlan(
@@ -52,11 +55,18 @@ class NotificationReconciler {
     final existingById = <String, NotificationManifestEntry>{
       for (final entry in manifest.entries) entry.notificationKey: entry,
     };
+    final nativeOwnedById = <String, NativePendingNotification>{
+      for (final entry in osPendingNotifications)
+        if (entry.logicalNotificationId != null &&
+            entry.belongsToScope(desiredPlan.scope!))
+          entry.logicalNotificationId!: entry,
+    };
     final operations = <NotificationReconciliationOperation>[];
 
     for (final desired in desiredPlan.notifications) {
       final existing = existingById[desired.logicalNotificationId];
-      if (existing == null) {
+      final nativePending = nativeOwnedById[desired.logicalNotificationId];
+      if (existing == null && nativePending == null) {
         operations.add(
           NotificationReconciliationOperation(
             type: NotificationReconciliationOperationType.create,
@@ -68,15 +78,54 @@ class NotificationReconciler {
         );
         continue;
       }
-      if (_matches(existing, desired)) {
+      if (existing == null && nativePending != null) {
+        final nativeMatchesDesired = _nativeMatchesDesired(
+          nativePending,
+          desired,
+        );
+        operations.add(
+          NotificationReconciliationOperation(
+            type: nativeMatchesDesired
+                ? NotificationReconciliationOperationType.adopt
+                : NotificationReconciliationOperationType.replace,
+            logicalNotificationId: desired.logicalNotificationId,
+            platformId: desired.platformId,
+            desired: desired,
+            nativePending: nativePending,
+            reason: nativeMatchesDesired
+                ? 'native_owned_recovered'
+                : 'native_owned_unverified',
+          ),
+        );
+        continue;
+      }
+
+      if (existing != null &&
+          _matches(existing, desired) &&
+          nativePending != null &&
+          _nativeMatchesDesired(nativePending, desired)) {
         operations.add(
           NotificationReconciliationOperation(
             type: NotificationReconciliationOperationType.keep,
             logicalNotificationId: desired.logicalNotificationId,
             platformId: desired.platformId,
             desired: desired,
-            existing: existing,
+            manifestEntry: existing,
+            nativePending: nativePending,
             reason: 'fingerprint_unchanged',
+          ),
+        );
+      } else if (nativePending == null) {
+        operations.add(
+          NotificationReconciliationOperation(
+            type: NotificationReconciliationOperationType.create,
+            logicalNotificationId: desired.logicalNotificationId,
+            platformId: desired.platformId,
+            desired: desired,
+            manifestEntry: existing,
+            reason: existing == null
+                ? 'missing_from_manifest'
+                : 'native_missing_recreate',
           ),
         );
       } else {
@@ -86,8 +135,11 @@ class NotificationReconciler {
             logicalNotificationId: desired.logicalNotificationId,
             platformId: desired.platformId,
             desired: desired,
-            existing: existing,
-            reason: 'fingerprint_changed',
+            manifestEntry: existing,
+            nativePending: nativePending,
+            reason: existing != null && _matches(existing, desired)
+                ? 'native_diverged'
+                : 'fingerprint_changed',
           ),
         );
       }
@@ -103,13 +155,42 @@ class NotificationReconciler {
       if (entry.family != NotificationFamily.personalizedGeneral) {
         continue;
       }
+      final nativePending = nativeOwnedById[entry.notificationKey];
+      operations.add(
+        NotificationReconciliationOperation(
+          type: nativePending == null
+              ? NotificationReconciliationOperationType.dropManifest
+              : NotificationReconciliationOperationType.cancel,
+          logicalNotificationId: entry.notificationKey,
+          platformId: entry.platformId,
+          manifestEntry: entry,
+          nativePending: nativePending,
+          reason: nativePending == null
+              ? 'manifest_stale_os_missing'
+              : 'absent_from_desired',
+        ),
+      );
+    }
+
+    for (final pending in osPendingNotifications) {
+      if (!pending.belongsToScope(desiredPlan.scope!)) {
+        continue;
+      }
+      final logicalId = pending.logicalNotificationId;
+      if (logicalId == null) {
+        continue;
+      }
+      if (desiredById.containsKey(logicalId) ||
+          existingById.containsKey(logicalId)) {
+        continue;
+      }
       operations.add(
         NotificationReconciliationOperation(
           type: NotificationReconciliationOperationType.cancel,
-          logicalNotificationId: entry.notificationKey,
-          platformId: entry.platformId,
-          existing: entry,
-          reason: 'absent_from_desired',
+          logicalNotificationId: logicalId,
+          platformId: pending.platformId,
+          nativePending: pending,
+          reason: 'orphan_native_owned_for_scope',
         ),
       );
     }
@@ -147,70 +228,70 @@ class NotificationReconciler {
         case NotificationReconciliationOperationType.keep:
           continue;
         case NotificationReconciliationOperationType.create:
-          try {
-            await executor.create(operation.desired!);
-            succeeded.add(
-              NotificationExecutorOperationResult(
-                type: operation.type,
-                logicalNotificationId: operation.logicalNotificationId,
-                success: true,
-              ),
-            );
-          } catch (error) {
-            failed.add(
-              NotificationExecutorOperationResult(
-                type: operation.type,
-                logicalNotificationId: operation.logicalNotificationId,
-                success: false,
-                error: '$error',
-              ),
-            );
-          }
+          final createResult = await executor.create(operation.desired!);
+          _collectOperationResult(
+            operation: operation,
+            result: createResult,
+            succeeded: succeeded,
+            failed: failed,
+          );
           break;
         case NotificationReconciliationOperationType.replace:
-          try {
-            await executor.replace(
-              operation.existing!,
-              operation.desired!,
-            );
-            succeeded.add(
-              NotificationExecutorOperationResult(
-                type: operation.type,
-                logicalNotificationId: operation.logicalNotificationId,
-                success: true,
-              ),
-            );
-          } catch (error) {
-            failed.add(
-              NotificationExecutorOperationResult(
-                type: operation.type,
-                logicalNotificationId: operation.logicalNotificationId,
-                success: false,
-                error: '$error',
-              ),
-            );
-          }
+          final replaceResult = await executor.replace(
+            operation.manifestEntry ??
+                NotificationManifestEntry(
+                  notificationKey: operation.logicalNotificationId,
+                  platformId: operation.platformId,
+                  family: operation.desired!.family,
+                  kind: operation.desired!.kind,
+                  payload: operation.nativePending?.payload ?? '',
+                  templateId: operation.nativePending?.templateId ?? '',
+                  scheduledAt: operation.desired!.intendedLocalDateTime.toUtc(),
+                  planVersion: operation.desired!.planVersion,
+                  sourceFingerprint: '',
+                ),
+            operation.desired!,
+          );
+          _collectOperationResult(
+            operation: operation,
+            result: replaceResult,
+            succeeded: succeeded,
+            failed: failed,
+          );
+          break;
+        case NotificationReconciliationOperationType.adopt:
+          final adoptResult = await executor.adopt(
+            operation.nativePending!,
+            operation.desired!,
+          );
+          _collectOperationResult(
+            operation: operation,
+            result: adoptResult,
+            succeeded: succeeded,
+            failed: failed,
+          );
           break;
         case NotificationReconciliationOperationType.cancel:
-          try {
-            await executor.cancel(operation.existing!);
-            succeeded.add(
-              NotificationExecutorOperationResult(
-                type: operation.type,
-                logicalNotificationId: operation.logicalNotificationId,
-                success: true,
-              ),
-            );
-          } catch (error) {
-            failed.add(
-              NotificationExecutorOperationResult(
-                type: operation.type,
-                logicalNotificationId: operation.logicalNotificationId,
-                success: false,
-                error: '$error',
-              ),
-            );
-          }
+          final cancelResult = operation.manifestEntry != null
+              ? await executor.cancel(operation.manifestEntry!)
+              : await executor.cancelPending(operation.nativePending!);
+          _collectOperationResult(
+            operation: operation,
+            result: cancelResult,
+            succeeded: succeeded,
+            failed: failed,
+          );
+          break;
+        case NotificationReconciliationOperationType.dropManifest:
+          final dropResult = await executor.dropManifestEntry(
+            operation.manifestEntry!,
+          );
+          _collectOperationResult(
+            operation: operation,
+            result: dropResult,
+            succeeded: succeeded,
+            failed: failed,
+          );
           break;
       }
     }
@@ -223,6 +304,7 @@ class NotificationReconciler {
         manifest: manifest,
         plan: plan,
         succeeded: succeeded,
+        failed: failed,
         reconciledAt: reconciledAt,
         timezoneId: timezoneId ?? manifest.timezoneId,
       ),
@@ -236,6 +318,8 @@ class NotificationReconciler {
     required NotificationScheduleManifest manifest,
     required NotificationReconciliationPlan plan,
     required List<NotificationExecutorOperationResult> succeeded,
+    List<NotificationExecutorOperationResult> failed =
+        const <NotificationExecutorOperationResult>[],
     required DateTime reconciledAt,
     required String timezoneId,
   }) {
@@ -259,6 +343,7 @@ class NotificationReconciler {
           break;
         case NotificationReconciliationOperationType.create:
         case NotificationReconciliationOperationType.replace:
+        case NotificationReconciliationOperationType.adopt:
           final desired = operation.desired!;
           nextById[operation.logicalNotificationId] = NotificationManifestEntry(
             notificationKey: desired.logicalNotificationId,
@@ -273,9 +358,20 @@ class NotificationReconciler {
           );
           break;
         case NotificationReconciliationOperationType.cancel:
+        case NotificationReconciliationOperationType.dropManifest:
           nextById.remove(operation.logicalNotificationId);
           break;
       }
+    }
+
+    for (final failure in failed) {
+      if (failure.type != NotificationReconciliationOperationType.replace) {
+        continue;
+      }
+      if (failure.stateChange != NotificationExecutionStateChange.cancelled) {
+        continue;
+      }
+      nextById.remove(failure.logicalNotificationId);
     }
 
     return manifest.copyWith(
@@ -301,18 +397,61 @@ class NotificationReconciler {
         existing.templateId == desired.templateId &&
         existing.kind == desired.kind;
   }
+
+  bool _nativeMatchesDesired(
+    NativePendingNotification pending,
+    DesiredNotification desired,
+  ) {
+    return pending.isOwnedV2 &&
+        pending.platformId == desired.platformId &&
+        pending.logicalNotificationId == desired.logicalNotificationId &&
+        pending.templateId == desired.templateId &&
+        pending.kind == desired.kind &&
+        pending.family == desired.family &&
+        pending.title == desired.renderedTitle &&
+        pending.body == desired.renderedBody &&
+        pending.scopeHash == desired.scope.scopeHash &&
+        pending.scopeEpoch == desired.scope.scopeEpoch;
+  }
+
+  void _collectOperationResult({
+    required NotificationReconciliationOperation operation,
+    required NotificationNativeExecutionResult result,
+    required List<NotificationExecutorOperationResult> succeeded,
+    required List<NotificationExecutorOperationResult> failed,
+  }) {
+    final projected = NotificationExecutorOperationResult(
+      type: operation.type,
+      logicalNotificationId: operation.logicalNotificationId,
+      success: result.isSuccess,
+      platformId: result.platformId,
+      scheduleAccepted: result.scheduleAccepted,
+      errorCode: result.errorCode,
+      stateChange: result.stateChange,
+      diagnostics: result.diagnostics,
+    );
+    if (result.isSuccess) {
+      succeeded.add(projected);
+    } else {
+      failed.add(projected);
+    }
+  }
 }
 
 int _operationRank(NotificationReconciliationOperationType type) {
   switch (type) {
     case NotificationReconciliationOperationType.keep:
       return 0;
-    case NotificationReconciliationOperationType.create:
+    case NotificationReconciliationOperationType.adopt:
       return 1;
-    case NotificationReconciliationOperationType.replace:
+    case NotificationReconciliationOperationType.dropManifest:
       return 2;
     case NotificationReconciliationOperationType.cancel:
       return 3;
+    case NotificationReconciliationOperationType.replace:
+      return 4;
+    case NotificationReconciliationOperationType.create:
+      return 5;
   }
 }
 
@@ -331,26 +470,104 @@ class InMemoryNotificationScheduleExecutor
   final Set<String> _cancelFailures;
 
   @override
-  Future<void> cancel(NotificationManifestEntry existing) async {
+  Future<NotificationNativeExecutionResult> cancel(
+    NotificationManifestEntry existing,
+  ) async {
     if (_cancelFailures.contains(existing.notificationKey)) {
-      throw StateError('cancel_failed');
+      return NotificationNativeExecutionResult.failure(
+        errorCode: NotificationNativeErrorCode.nativeFailure,
+        platformId: existing.platformId,
+      );
     }
+    return NotificationNativeExecutionResult.success(
+      stateChange: NotificationExecutionStateChange.cancelled,
+      platformId: existing.platformId,
+    );
   }
 
   @override
-  Future<void> create(DesiredNotification notification) async {
+  Future<NotificationNativeExecutionResult> create(
+    DesiredNotification notification,
+  ) async {
     if (_createFailures.contains(notification.logicalNotificationId)) {
-      throw StateError('create_failed');
+      return NotificationNativeExecutionResult.failure(
+        errorCode: NotificationNativeErrorCode.nativeFailure,
+        platformId: notification.platformId,
+      );
     }
+    return NotificationNativeExecutionResult.success(
+      stateChange: NotificationExecutionStateChange.scheduled,
+      platformId: notification.platformId,
+      scheduleAccepted: true,
+    );
   }
 
   @override
-  Future<void> replace(
+  Future<NotificationNativeExecutionResult> replace(
     NotificationManifestEntry existing,
     DesiredNotification replacement,
   ) async {
     if (_replaceFailures.contains(replacement.logicalNotificationId)) {
-      throw StateError('replace_failed');
+      return NotificationNativeExecutionResult.failure(
+        errorCode: NotificationNativeErrorCode.nativeFailure,
+        platformId: replacement.platformId,
+      );
     }
+    return NotificationNativeExecutionResult.success(
+      stateChange: NotificationExecutionStateChange.replaced,
+      platformId: replacement.platformId,
+      scheduleAccepted: true,
+    );
+  }
+
+  @override
+  Future<NotificationNativeExecutionResult> adopt(
+    NativePendingNotification pending,
+    DesiredNotification desired,
+  ) async {
+    return NotificationNativeExecutionResult.success(
+      stateChange: NotificationExecutionStateChange.adopted,
+      platformId: desired.platformId,
+    );
+  }
+
+  @override
+  Future<NotificationNativeExecutionResult> cancelPending(
+    NativePendingNotification pending,
+  ) async {
+    if (_cancelFailures.contains(pending.logicalNotificationId ?? '')) {
+      return NotificationNativeExecutionResult.failure(
+        errorCode: NotificationNativeErrorCode.nativeFailure,
+        platformId: pending.platformId,
+      );
+    }
+    return NotificationNativeExecutionResult.success(
+      stateChange: NotificationExecutionStateChange.cancelled,
+      platformId: pending.platformId,
+    );
+  }
+
+  @override
+  Future<NotificationNativeExecutionResult> dropManifestEntry(
+    NotificationManifestEntry existing,
+  ) async {
+    return NotificationNativeExecutionResult.success(
+      stateChange: NotificationExecutionStateChange.manifestOnly,
+      platformId: existing.platformId,
+    );
+  }
+
+  @override
+  Future<NotificationSchedulingCapabilities> getSchedulingCapabilities() async {
+    return const NotificationSchedulingCapabilities(
+      permissionStatus: NotificationSystemPermissionStatus.authorized,
+      canScheduleNewEntries: true,
+      canCancelExistingEntries: true,
+    );
+  }
+
+  @override
+  Future<List<NativePendingNotification>> pendingNotifications() async {
+    return const <NativePendingNotification>[];
   }
 }
