@@ -52,8 +52,8 @@ as $$
       and split_part(p_screenshot_path, '/', 1) = p_user_id::text
       and split_part(p_screenshot_path, '/', 2) = p_feedback_id::text
       and array_length(storage.foldername(p_screenshot_path), 1) = 2
-      and storage.foldername(p_screenshot_path)[1] = p_user_id::text
-      and storage.foldername(p_screenshot_path)[2] = p_feedback_id::text
+      and (storage.foldername(p_screenshot_path))[1] = p_user_id::text
+      and (storage.foldername(p_screenshot_path))[2] = p_feedback_id::text
       and storage.filename(p_screenshot_path) ~ '^screenshot_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp)$'
       and storage.extension(p_screenshot_path) in ('jpg', 'jpeg', 'png', 'webp')
     );
@@ -482,8 +482,6 @@ on conflict (id) do update
       file_size_limit = excluded.file_size_limit,
       allowed_mime_types = excluded.allowed_mime_types;
 
-alter table storage.objects enable row level security;
-
 drop policy if exists feedback_screenshots_select_own on storage.objects;
 create policy feedback_screenshots_select_own
   on storage.objects
@@ -504,8 +502,8 @@ create policy feedback_screenshots_insert_own
     bucket_id = 'feedback-screenshots'
     and owner_id = (select auth.uid()::text)
     and array_length(storage.foldername(name), 1) = 2
-    and storage.foldername(name)[1] = (select auth.uid()::text)
-    and storage.foldername(name)[2] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    and (storage.foldername(name))[1] = (select auth.uid()::text)
+    and (storage.foldername(name))[2] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
     and storage.filename(name) ~ '^screenshot_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp)$'
     and storage.extension(name) in ('jpg', 'jpeg', 'png', 'webp')
   );

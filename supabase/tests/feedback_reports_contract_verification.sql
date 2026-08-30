@@ -129,7 +129,7 @@ begin
   end if;
 
   if lower(v_feedback_contract) not like '%security definer%'
-     or lower(v_feedback_contract) not like '%set search_path = ''''%'
+     or lower(v_feedback_contract) not like '%set search_path to ''''%'
      or v_feedback_contract not like '%feedback reports are immutable after closure%'
      or v_feedback_contract not like '%submitted feedback cannot be closed directly%'
      or v_feedback_contract not like '%team response is required before closure%' then
@@ -137,7 +137,7 @@ begin
   end if;
 
   if lower(v_update_my_feedback) not like '%security definer%'
-     or lower(v_update_my_feedback) not like '%set search_path = ''''%'
+     or lower(v_update_my_feedback) not like '%set search_path to ''''%'
      or v_update_my_feedback not like '%for update%'
      or v_update_my_feedback not like '%feedback can only be edited while submitted%'
      or v_update_my_feedback not like '%feedback not found%' then
@@ -145,7 +145,7 @@ begin
   end if;
 
   if lower(v_delete_my_feedback) not like '%security definer%'
-     or lower(v_delete_my_feedback) not like '%set search_path = ''''%'
+     or lower(v_delete_my_feedback) not like '%set search_path to ''''%'
      or v_delete_my_feedback not like '%for update%'
      or lower(v_delete_my_feedback) not like '%feedback can only be deleted while submitted%'
      or lower(v_delete_my_feedback) not like '%return v_feedback.screenshot_path%' then
@@ -200,7 +200,7 @@ begin
       and tablename = 'objects'
       and policyname = 'feedback_screenshots_select_own'
       and cmd = 'SELECT'
-      and roles @> array['authenticated']
+      and roles @> array['authenticated'::name]
   ) then
     raise exception 'storage SELECT policy for feedback screenshots must exist';
   end if;
@@ -212,7 +212,7 @@ begin
       and tablename = 'objects'
       and policyname = 'feedback_screenshots_insert_own'
       and cmd = 'INSERT'
-      and roles @> array['authenticated']
+      and roles @> array['authenticated'::name]
   ) then
     raise exception 'storage INSERT policy for feedback screenshots must exist';
   end if;
@@ -224,7 +224,7 @@ begin
       and tablename = 'objects'
       and policyname = 'feedback_screenshots_delete_unreferenced'
       and cmd = 'DELETE'
-      and roles @> array['authenticated']
+      and roles @> array['authenticated'::name]
   ) then
     raise exception 'storage DELETE policy for feedback screenshots must exist';
   end if;
@@ -235,7 +235,7 @@ begin
     where schemaname = 'storage'
       and tablename = 'objects'
       and cmd = 'UPDATE'
-      and roles @> array['authenticated']
+      and roles @> array['authenticated'::name]
   ) then
     raise exception 'storage.objects must not have an authenticated UPDATE policy';
   end if;

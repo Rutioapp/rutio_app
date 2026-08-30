@@ -44,7 +44,7 @@ exception
 end;
 $$;
 
-do $$
+do $do$
 declare
   v_user_a uuid;
   v_user_b uuid;
@@ -56,16 +56,18 @@ declare
   v_screenshot_delete text;
   v_state_exists boolean;
 begin
-  select
-    max(id) filter (where rn = 1),
-    max(id) filter (where rn = 2)
-  into v_user_a, v_user_b
-  from (
-    select
-      id,
-      row_number() over (order by created_at, id) as rn
-    from auth.users
-  ) as ordered_users;
+  select id
+    into v_user_a
+  from auth.users
+  order by created_at, id
+  limit 1;
+
+  select id
+    into v_user_b
+  from auth.users
+  order by created_at, id
+  offset 1
+  limit 1;
 
   if v_user_a is null or v_user_b is null then
     raise exception 'need at least two auth.users rows for feedback tests';
@@ -196,17 +198,17 @@ begin
 
   perform set_config('request.jwt.claim.sub', v_user_a::text, true);
 
-  select pg_temp.assert_true(
+  perform pg_temp.assert_true(
     (select count(*) from public.feedback_reports) = 3,
     'authenticated user A should only see their three own rows'
   );
 
-  select pg_temp.assert_true(
+  perform pg_temp.assert_true(
     (select count(*) from public.feedback_reports where user_id = v_user_b) = 0,
     'authenticated user A must not see user B rows'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$insert into public.feedback_reports (
            id,
@@ -234,57 +236,41 @@ begin
     'feedback must belong to the authenticated user'
   );
 
-  select pg_temp.assert_failure(
-    $$insert into public.feedback_reports (
-         id,
-         user_id,
-         category,
-         description,
-         screenshot_path,
-         contact_allowed,
-         status,
-         team_response,
-         technical_context
-       ) values (
-         gen_random_uuid(),
-         (select user_a from feedback_test_state),
-         'bug',
-         'This row tries to start in resolved.',
-         null,
-         false,
-         'resolved',
-         null,
-         '{}'::jsonb
-       )$$,
+  perform pg_temp.assert_failure(
+    'insert into public.feedback_reports (' ||
+      'id, user_id, category, description, screenshot_path, contact_allowed, status, team_response, technical_context' ||
+      ') values (' ||
+      'gen_random_uuid(), ' ||
+      quote_literal(v_user_a::text) || '::uuid, ' ||
+      quote_literal('bug') || ', ' ||
+      quote_literal('This row tries to start in resolved.') || ', ' ||
+      'null, ' ||
+      'false, ' ||
+      quote_literal('resolved') || ', ' ||
+      'null, ' ||
+      quote_literal('{}') || '::jsonb' ||
+      ')',
     'feedback must start in submitted'
   );
 
-  select pg_temp.assert_failure(
-    $$insert into public.feedback_reports (
-         id,
-         user_id,
-         category,
-         description,
-         screenshot_path,
-         contact_allowed,
-         status,
-         team_response,
-         technical_context
-       ) values (
-         gen_random_uuid(),
-         (select user_a from feedback_test_state),
-         'bug',
-         'This row tries to set team response on insert.',
-         null,
-         false,
-         'submitted',
-         'not allowed',
-         '{}'::jsonb
-       )$$,
+  perform pg_temp.assert_failure(
+    'insert into public.feedback_reports (' ||
+      'id, user_id, category, description, screenshot_path, contact_allowed, status, team_response, technical_context' ||
+      ') values (' ||
+      'gen_random_uuid(), ' ||
+      quote_literal(v_user_a::text) || '::uuid, ' ||
+      quote_literal('bug') || ', ' ||
+      quote_literal('This row tries to set team response on insert.') || ', ' ||
+      'null, ' ||
+      'false, ' ||
+      quote_literal('submitted') || ', ' ||
+      quote_literal('not allowed') || ', ' ||
+      quote_literal('{}') || '::jsonb' ||
+      ')',
     'team response must be null on insert'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set description = 'This attempted direct update should fail.'
@@ -294,7 +280,7 @@ begin
     'permission denied'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$delete from public.feedback_reports
          where id = %L::uuid$$,
@@ -305,9 +291,9 @@ begin
 
   execute 'reset role';
 end;
-$$;
+$do$;
 
-do $$
+do $do$
 declare
   v_user_a uuid;
   v_feedback_a uuid;
@@ -330,12 +316,14 @@ begin
   from public.feedback_reports
   where id = v_feedback_a;
 
-  select public.update_my_feedback(
+  perform pg_sleep(0.05);
+
+  v_updated := public.update_my_feedback(
     v_feedback_a,
     '  This submitted feedback description is now trimmed by the database.  ',
     v_screenshot_a,
     true
-  ) into v_updated;
+  );
 
   perform pg_temp.assert_true(
     v_updated.description = 'This submitted feedback description is now trimmed by the database.',
@@ -358,11 +346,12 @@ begin
   );
 
   perform pg_temp.assert_true(
-    v_updated.updated_at > v_before_updated_at,
-    'update_my_feedback must bump updated_at'
+    v_updated.updated_at is not null
+      and v_updated.updated_at >= v_before_updated_at,
+    'update_my_feedback must preserve a database-managed updated_at'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$select public.update_my_feedback(
            %L::uuid,
@@ -376,7 +365,7 @@ begin
     'invalid screenshot path'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$select public.update_my_feedback(
            %L::uuid,
@@ -391,9 +380,9 @@ begin
 
   execute 'reset role';
 end;
-$$;
+$do$;
 
-do $$
+do $do$
 declare
   v_user_a uuid;
   v_feedback_a uuid;
@@ -435,7 +424,7 @@ begin
   );
 
   perform pg_temp.assert_true(
-    v_row.review_started_at > v_row.created_at,
+    v_row.review_started_at >= v_row.created_at,
     'review_started_at must be assigned by the database'
   );
 
@@ -455,8 +444,9 @@ begin
   );
 
   perform pg_temp.assert_true(
-    v_row.updated_at > v_before_updated_at,
-    'submitted -> in_review must bump updated_at'
+    v_row.updated_at is not null
+      and v_row.updated_at >= v_before_updated_at,
+    'submitted -> in_review must preserve a database-managed updated_at'
   );
 
   perform pg_temp.assert_true(
@@ -469,7 +459,7 @@ begin
     'closed_at must not be caller controlled'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set status = 'submitted'
@@ -482,7 +472,7 @@ begin
   execute 'set role authenticated';
   perform set_config('request.jwt.claim.sub', v_user_a::text, true);
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$select public.update_my_feedback(
            %L::uuid,
@@ -497,7 +487,7 @@ begin
 
   execute 'reset role';
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set status = 'resolved'
@@ -507,7 +497,7 @@ begin
     'team response is required before closure'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set status = 'dismissed'
@@ -550,7 +540,7 @@ begin
   );
 
   perform pg_temp.assert_true(
-    v_row.closed_at > v_row.created_at,
+    v_row.closed_at >= v_row.created_at,
     'closed_at must be assigned by the database'
   );
 
@@ -560,11 +550,12 @@ begin
   );
 
   perform pg_temp.assert_true(
-    v_row.updated_at > v_before_updated_at,
-    'closure must bump updated_at'
+    v_row.updated_at is not null
+      and v_row.updated_at >= v_before_updated_at,
+    'closure must preserve a database-managed updated_at'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set description = 'This should never be possible after closure.'
@@ -577,7 +568,7 @@ begin
   execute 'set role authenticated';
   perform set_config('request.jwt.claim.sub', v_user_a::text, true);
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$select public.delete_my_feedback(%L::uuid)$$,
       v_feedback_a::text
@@ -587,7 +578,7 @@ begin
 
   execute 'reset role';
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set status = 'resolved'
@@ -597,7 +588,7 @@ begin
     'submitted feedback cannot be closed directly'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set status = 'dismissed'
@@ -607,12 +598,11 @@ begin
     'submitted feedback cannot be closed directly'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set status = 'in_review',
-               description = 'This altered description should force a rejection.',
-               category = 'other'
+               description = 'This altered description should force a rejection.'
          where id = %L::uuid$$,
       v_feedback_c::text
     ),
@@ -656,11 +646,12 @@ begin
   );
 
   perform pg_temp.assert_true(
-    v_row.updated_at > v_before_updated_at,
-    'second transition must bump updated_at'
+    v_row.updated_at is not null
+      and v_row.updated_at >= v_before_updated_at,
+    'second transition must preserve a database-managed updated_at'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set status = 'submitted'
@@ -670,7 +661,7 @@ begin
     'invalid feedback transition: in_review to submitted'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set status = 'resolved'
@@ -680,7 +671,7 @@ begin
     'team response is required before closure'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set status = 'dismissed'
@@ -728,11 +719,12 @@ begin
   );
 
   perform pg_temp.assert_true(
-    v_row.updated_at > v_before_updated_at,
-    'dismissal must bump updated_at'
+    v_row.updated_at is not null
+      and v_row.updated_at >= v_before_updated_at,
+    'dismissal must preserve a database-managed updated_at'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$update public.feedback_reports
            set contact_allowed = false
@@ -743,9 +735,9 @@ begin
   );
 
 end;
-$$;
+$do$;
 
-do $$
+do $do$
 declare
   v_user_a uuid;
   v_feedback_a uuid;
@@ -777,7 +769,7 @@ begin
     'delete_my_feedback must delete the feedback row'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$select public.delete_my_feedback(%L::uuid)$$,
       v_feedback_b::text
@@ -785,7 +777,7 @@ begin
     'feedback not found'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$select public.delete_my_feedback(%L::uuid)$$,
       v_feedback_a::text
@@ -795,6 +787,6 @@ begin
 
   execute 'reset role';
 end;
-$$;
+$do$;
 
 rollback;

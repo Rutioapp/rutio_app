@@ -50,7 +50,7 @@ exception
 end;
 $$;
 
-do $$
+do $do$
 declare
   v_user_a uuid;
   v_user_b uuid;
@@ -67,16 +67,18 @@ declare
   v_object_b text;
   v_replacement_path text;
 begin
-  select
-    max(id) filter (where rn = 1),
-    max(id) filter (where rn = 2)
-  into v_user_a, v_user_b
-  from (
-    select
-      id,
-      row_number() over (order by created_at, id) as rn
-    from auth.users
-  ) as ordered_users;
+  select id
+    into v_user_a
+  from auth.users
+  order by created_at, id
+  limit 1;
+
+  select id
+    into v_user_b
+  from auth.users
+  order by created_at, id
+  offset 1
+  limit 1;
 
   if v_user_a is null or v_user_b is null then
     raise exception 'need at least two auth.users rows for storage tests';
@@ -335,9 +337,9 @@ begin
 
   execute 'reset role';
 end;
-$$;
+$do$;
 
-do $$
+do $do$
 declare
   v_user_a uuid;
   v_user_b uuid;
@@ -370,7 +372,7 @@ begin
     'user A must not see user B storage objects'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$insert into storage.objects (
            bucket_id,
@@ -389,7 +391,7 @@ begin
     null
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$insert into storage.objects (
            bucket_id,
@@ -410,7 +412,7 @@ begin
 
   execute 'set role anon';
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$select count(*) from storage.objects where name = %L::text$$,
       v_object_a
@@ -418,7 +420,7 @@ begin
     null
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$insert into storage.objects (
            bucket_id,
@@ -446,14 +448,14 @@ begin
       where schemaname = 'storage'
         and tablename = 'objects'
         and cmd = 'UPDATE'
-        and roles @> array['authenticated']
+        and roles @> array['authenticated'::name]
     ),
     'storage.objects must not expose an authenticated UPDATE policy'
   );
 end;
-$$;
+$do$;
 
-do $$
+do $do$
 declare
   v_user_a uuid;
   v_user_b uuid;
@@ -506,7 +508,7 @@ begin
   execute 'set role authenticated';
   perform set_config('request.jwt.claim.sub', v_user_a::text, true);
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$delete from storage.objects
          where bucket_id = 'feedback-screenshots'
@@ -516,7 +518,7 @@ begin
     null
   );
 
-  select public.update_my_feedback(
+  perform public.update_my_feedback(
     v_feedback_a,
     'This feedback owns the primary object for delete policy tests.',
     v_replacement_path,
@@ -569,7 +571,7 @@ begin
   execute 'set role authenticated';
   perform set_config('request.jwt.claim.sub', v_user_a::text, true);
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$delete from storage.objects
          where bucket_id = 'feedback-screenshots'
@@ -579,7 +581,7 @@ begin
     null
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$delete from storage.objects
          where bucket_id = 'feedback-screenshots'
@@ -605,7 +607,7 @@ begin
     'delete_my_feedback should unlock the old screenshot object'
   );
 
-  select pg_temp.assert_failure(
+  perform pg_temp.assert_failure(
     format(
       $$delete from storage.objects
          where bucket_id = 'feedback-screenshots'
@@ -622,6 +624,6 @@ begin
 
   execute 'reset role';
 end;
-$$;
+$do$;
 
 rollback;
