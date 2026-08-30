@@ -234,6 +234,212 @@ void main() {
     expect(client.requests, isEmpty);
   });
 
+  test('updateMyFeedback calls update_my_feedback with the exact payload',
+      () async {
+    final client = _RecordingHttpClient()
+      ..enqueueJson(
+        statusCode: 200,
+        body: _feedbackRow(
+          id: 'feedback-123',
+          userId: 'user-1',
+          category: 'bug',
+          description: 'Updated description text',
+          status: 'submitted',
+          createdAt: '2026-08-30T12:00:00.000Z',
+          updatedAt: '2026-08-30T12:10:00.000Z',
+          screenshotPath:
+              'user-1/feedback-123/screenshot_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg',
+          contactAllowed: true,
+        ),
+      );
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => 'user-1',
+    );
+
+    final result = await repository.updateMyFeedback(
+      feedbackId: ' feedback-123 ',
+      description: '  Updated description text  ',
+      screenshotPath:
+          'user-1/feedback-123/screenshot_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg',
+      contactAllowed: true,
+    );
+
+    expect(result.isSuccess, isTrue);
+    expect(result.data?.description, 'Updated description text');
+    expect(client.requests, hasLength(1));
+    expect(client.requests.single.method, 'POST');
+    expect(
+      client.requests.single.uri.path,
+      '/rest/v1/rpc/update_my_feedback',
+    );
+
+    final body =
+        jsonDecode(client.requests.single.body!) as Map<String, dynamic>;
+    expect(body.keys, containsAll(<String>[
+      'p_feedback_id',
+      'p_description',
+      'p_screenshot_path',
+      'p_contact_allowed',
+    ]));
+    expect(body['p_feedback_id'], 'feedback-123');
+    expect(body['p_description'], 'Updated description text');
+    expect(
+      body['p_screenshot_path'],
+      'user-1/feedback-123/screenshot_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg',
+    );
+    expect(body['p_contact_allowed'], isTrue);
+    expect(body.keys, isNot(contains('category')));
+    expect(body.keys, isNot(contains('status')));
+    expect(body.keys, isNot(contains('user_id')));
+  });
+
+  test('updateMyFeedback maps no editable, network and no auth errors',
+      () async {
+    final client = _RecordingHttpClient()
+      ..enqueueJson(
+        statusCode: 400,
+        body: <String, dynamic>{
+          'message': 'feedback can only be edited while submitted',
+        },
+      )
+      ..enqueueJson(
+        statusCode: 500,
+        body: <String, dynamic>{
+          'message': 'failed host lookup: example.com',
+        },
+      );
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => 'user-1',
+    );
+
+    final staleResult = await repository.updateMyFeedback(
+      feedbackId: 'feedback-123',
+      description: 'Updated description text',
+      screenshotPath: null,
+      contactAllowed: false,
+    );
+    final networkResult = await repository.updateMyFeedback(
+      feedbackId: 'feedback-123',
+      description: 'Updated description text',
+      screenshotPath: null,
+      contactAllowed: false,
+    );
+
+    expect(staleResult.isSuccess, isFalse);
+    expect(staleResult.error?.code, RepositoryErrorCode.permissionDenied);
+    expect(networkResult.isSuccess, isFalse);
+    expect(networkResult.error?.code, RepositoryErrorCode.network);
+
+    final unauthenticated = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: _RecordingHttpClient(),
+      ),
+      currentUserIdProvider: () => null,
+    );
+    final noAuthResult = await unauthenticated.updateMyFeedback(
+      feedbackId: 'feedback-123',
+      description: 'Updated description text',
+      screenshotPath: null,
+      contactAllowed: false,
+    );
+
+    expect(noAuthResult.isSuccess, isFalse);
+    expect(noAuthResult.error?.code, RepositoryErrorCode.notAuthenticated);
+  });
+
+  test('deleteMyFeedback returns the screenshot path and maps errors',
+      () async {
+    final client = _RecordingHttpClient()
+      ..enqueueJson(
+        statusCode: 200,
+        body: 'user-1/feedback-123/screenshot_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg',
+      )
+      ..enqueueJson(
+        statusCode: 200,
+        body: <String, dynamic>{
+          'screenshot_path': null,
+        },
+      )
+      ..enqueueJson(
+        statusCode: 400,
+        body: <String, dynamic>{
+          'message': 'feedback can only be deleted while submitted',
+        },
+      )
+      ..enqueueJson(
+        statusCode: 404,
+        body: <String, dynamic>{
+          'message': 'feedback not found',
+        },
+      );
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => 'user-1',
+    );
+
+    final withScreenshot = await repository.deleteMyFeedback(
+      feedbackId: ' feedback-123 ',
+    );
+    final withoutScreenshot = await repository.deleteMyFeedback(
+      feedbackId: 'feedback-456',
+    );
+    final staleResult = await repository.deleteMyFeedback(
+      feedbackId: 'feedback-789',
+    );
+    final notFoundResult = await repository.deleteMyFeedback(
+      feedbackId: 'feedback-999',
+    );
+
+    expect(withScreenshot.isSuccess, isTrue);
+    expect(
+      withScreenshot.data,
+      'user-1/feedback-123/screenshot_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg',
+    );
+    expect(withoutScreenshot.isSuccess, isTrue);
+    expect(withoutScreenshot.data, isNull);
+    expect(staleResult.isSuccess, isFalse);
+    expect(staleResult.error?.code, RepositoryErrorCode.permissionDenied);
+    expect(notFoundResult.isSuccess, isFalse);
+    expect(notFoundResult.error?.code, RepositoryErrorCode.notFound);
+  });
+
+  test('deleteMyFeedback fails safely without an authenticated user',
+      () async {
+    final client = _RecordingHttpClient();
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => null,
+    );
+
+    final result = await repository.deleteMyFeedback(
+      feedbackId: 'feedback-123',
+    );
+
+    expect(result.isSuccess, isFalse);
+    expect(result.error?.code, RepositoryErrorCode.notAuthenticated);
+    expect(client.requests, isEmpty);
+  });
+
   test('getMyFeedback queries feedback_reports ordered by created_at desc',
       () async {
     final client = _RecordingHttpClient()
@@ -576,7 +782,6 @@ void main() {
     expect(result.error?.code, RepositoryErrorCode.invalidResponse);
   });
 }
-
 Map<String, dynamic> _feedbackRow({
   required String id,
   required String userId,

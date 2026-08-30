@@ -301,7 +301,38 @@ class _FakeFeedbackRepository implements FeedbackRepository {
               contactAllowed: contactAllowed,
               technicalContext: technicalContext,
             ),
-          ),
+      ),
+    );
+  }
+
+  @override
+  Future<RepositoryResult<FeedbackReport>> updateMyFeedback({
+    required String feedbackId,
+    required String description,
+    required bool contactAllowed,
+    String? screenshotPath,
+  }) {
+    return Future<RepositoryResult<FeedbackReport>>.value(
+      const RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.notFound,
+          message: 'unused',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<RepositoryResult<String?>> deleteMyFeedback({
+    required String feedbackId,
+  }) {
+    return Future<RepositoryResult<String?>>.value(
+      const RepositoryResult<String?>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.notFound,
+          message: 'unused',
+        ),
+      ),
     );
   }
 

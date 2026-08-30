@@ -7,6 +7,7 @@ import '../../../../l10n/l10n.dart';
 import '../../../../l10n/gen/app_localizations.dart';
 import '../../../../utils/app_theme.dart';
 import '../../application/my_feedback_controller.dart';
+import '../../application/feedback_mutation_result.dart';
 import '../../data/feedback_repository.dart';
 import '../../domain/feedback_category.dart';
 import '../../domain/feedback_report.dart';
@@ -100,6 +101,7 @@ class _MyFeedbackScreenState extends State<MyFeedbackScreen> {
                     state: state,
                     visibleReports: visibleReports,
                     onRetry: _controller.retry,
+                    onReportTap: _openDetail,
                   ),
                 ],
               ),
@@ -108,6 +110,22 @@ class _MyFeedbackScreenState extends State<MyFeedbackScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openDetail(
+    BuildContext context,
+    FeedbackReport report,
+  ) async {
+    final result = await Navigator.of(context).pushNamed(
+      '/feedback/detail',
+      arguments: report,
+    );
+
+    if (!mounted) return;
+
+    if (result is FeedbackMutationResult && result.shouldRefreshMyFeedback) {
+      await _controller.refresh();
+    }
   }
 }
 
@@ -220,11 +238,14 @@ class _StateSection extends StatelessWidget {
     required this.state,
     required this.visibleReports,
     required this.onRetry,
+    required this.onReportTap,
   });
 
   final FeedbackMineState state;
   final List<FeedbackReport> visibleReports;
   final Future<void> Function() onRetry;
+  final Future<void> Function(BuildContext context, FeedbackReport report)
+      onReportTap;
 
   @override
   Widget build(BuildContext context) {
@@ -252,10 +273,7 @@ class _StateSection extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _FeedbackReportCard(
                   report: report,
-                  onTap: () => Navigator.of(context).pushNamed(
-                    '/feedback/detail',
-                    arguments: report,
-                  ),
+                  onTap: () => onReportTap(context, report),
                 ),
               ),
           ],

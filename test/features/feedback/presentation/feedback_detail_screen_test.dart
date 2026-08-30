@@ -12,7 +12,9 @@ import 'package:rutio/features/feedback/domain/feedback_category.dart';
 import 'package:rutio/features/feedback/domain/feedback_report.dart';
 import 'package:rutio/features/feedback/domain/feedback_status.dart';
 import 'package:rutio/features/feedback/domain/feedback_technical_context.dart';
+import 'package:rutio/features/feedback/presentation/screens/feedback_edit_screen.dart';
 import 'package:rutio/features/feedback/presentation/screens/feedback_detail_screen.dart';
+import 'package:rutio/features/feedback/application/feedback_mutation_result.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 
 void main() {
@@ -288,6 +290,213 @@ void main() {
     expect(find.text(l10n.feedbackStatusInReview), findsWidgets);
   });
 
+  testWidgets('tapping edit opens the edit route with the authoritative report',
+      (tester) async {
+    final expectedReport = _report(
+      id: feedbackId,
+      status: FeedbackStatus.submitted,
+      createdAt: DateTime(2026, 8, 30, 10, 0),
+      description: 'Editable report',
+    );
+    final controller = FeedbackDetailController(
+      repository: _FakeFeedbackRepository(detailResult: expectedReport),
+      storageService: _storageService(),
+    );
+    addTearDown(controller.dispose);
+    await controller.load(
+      feedbackId,
+      initialReport: expectedReport,
+    );
+    FeedbackReport? receivedReport;
+
+    await tester.pumpWidget(
+      _app(
+        FeedbackDetailScreen(
+          report: expectedReport,
+          controller: controller,
+        ),
+        routes: {
+          FeedbackEditScreen.route: (context) {
+            receivedReport =
+                ModalRoute.of(context)!.settings.arguments as FeedbackReport;
+            return FeedbackEditScreen(
+              report: receivedReport!,
+              repository: _FakeFeedbackRepository(
+                result: RepositoryResult<FeedbackReport>.success(
+                  data: receivedReport!,
+                ),
+              ),
+              storageService: _storageService(),
+            );
+          },
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('feedback-detail-edit-action')),
+      200,
+    );
+    await tester.tap(find.byKey(const ValueKey('feedback-detail-edit-action')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FeedbackEditScreen), findsOneWidget);
+    expect(receivedReport, same(expectedReport));
+  });
+
+  testWidgets('saving from edit refreshes detail and keeps it visible',
+      (tester) async {
+    final initialReport = _report(
+      id: feedbackId,
+      status: FeedbackStatus.submitted,
+      createdAt: DateTime(2026, 8, 30, 10, 0),
+      description: 'Before edit',
+    );
+    final updatedReport = _report(
+      id: feedbackId,
+      status: FeedbackStatus.submitted,
+      createdAt: DateTime(2026, 8, 30, 10, 0),
+      description: 'After edit',
+    );
+    final repository = _FakeFeedbackRepository(
+      queue: <RepositoryResult<FeedbackReport>>[
+        RepositoryResult<FeedbackReport>.success(data: initialReport),
+        RepositoryResult<FeedbackReport>.success(data: updatedReport),
+        ],
+      );
+    final controller = FeedbackDetailController(
+      repository: repository,
+      storageService: _storageService(),
+    );
+    addTearDown(controller.dispose);
+    await controller.load(
+      feedbackId,
+      initialReport: initialReport,
+    );
+
+    await tester.pumpWidget(
+      _app(
+        FeedbackDetailScreen(
+          report: initialReport,
+          controller: controller,
+        ),
+        routes: {
+          FeedbackEditScreen.route: (context) {
+            final report =
+                ModalRoute.of(context)!.settings.arguments as FeedbackReport;
+            return Scaffold(
+              body: Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(
+                      FeedbackMutationResult.saved(updatedReport),
+                    );
+                  },
+                  child: Text('save ${report.description}'),
+                ),
+              ),
+            );
+          },
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('feedback-detail-edit-action')),
+      200,
+    );
+    await tester.tap(find.byKey(const ValueKey('feedback-detail-edit-action')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('save Before edit'), findsOneWidget);
+
+    await tester.tap(find.text('save Before edit'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FeedbackEditScreen), findsNothing);
+    expect(find.text('After edit'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('feedback-detail-edit-action')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('in review and closed reports do not show edit', (tester) async {
+    await _pumpWidget(
+      tester,
+      FeedbackDetailScreen(
+        report: _report(
+          id: feedbackId,
+          status: FeedbackStatus.inReview,
+          createdAt: DateTime(2026, 8, 30, 10, 0),
+        ),
+        repository: _FakeFeedbackRepository(
+          result: RepositoryResult<FeedbackReport>.success(
+            data: _report(
+              id: feedbackId,
+              status: FeedbackStatus.inReview,
+              createdAt: DateTime(2026, 8, 30, 10, 0),
+            ),
+          ),
+        ),
+        storageService: _storageService(),
+      ),
+    );
+
+    expect(find.text(AppLocalizations.of(tester.element(find.byType(Scaffold)))
+        .feedbackEditAction), findsNothing);
+
+    await _pumpWidget(
+      tester,
+      FeedbackDetailScreen(
+        report: _report(
+          id: feedbackId,
+          status: FeedbackStatus.resolved,
+          createdAt: DateTime(2026, 8, 30, 10, 0),
+        ),
+        repository: _FakeFeedbackRepository(
+          result: RepositoryResult<FeedbackReport>.success(
+            data: _report(
+              id: feedbackId,
+              status: FeedbackStatus.resolved,
+              createdAt: DateTime(2026, 8, 30, 10, 0),
+            ),
+          ),
+        ),
+        storageService: _storageService(),
+      ),
+    );
+
+    expect(find.text(AppLocalizations.of(tester.element(find.byType(Scaffold)))
+        .feedbackEditAction), findsNothing);
+
+    await _pumpWidget(
+      tester,
+      FeedbackDetailScreen(
+        report: _report(
+          id: feedbackId,
+          status: FeedbackStatus.dismissed,
+          createdAt: DateTime(2026, 8, 30, 10, 0),
+        ),
+        repository: _FakeFeedbackRepository(
+          result: RepositoryResult<FeedbackReport>.success(
+            data: _report(
+              id: feedbackId,
+              status: FeedbackStatus.dismissed,
+              createdAt: DateTime(2026, 8, 30, 10, 0),
+            ),
+          ),
+        ),
+        storageService: _storageService(),
+      ),
+    );
+
+    expect(find.text(AppLocalizations.of(tester.element(find.byType(Scaffold)))
+        .feedbackEditAction), findsNothing);
+  });
+
   testWidgets('load failure is shown with controlled copy', (tester) async {
     await _pumpWidget(
       tester,
@@ -360,8 +569,10 @@ void main() {
     expect(notFoundCopyMatches, isTrue);
   });
 }
-
-Widget _app(Widget child) {
+Widget _app(
+  Widget child, {
+  Map<String, WidgetBuilder>? routes,
+}) {
   return MaterialApp(
     locale: const Locale('es'),
     theme: ThemeData(splashFactory: NoSplash.splashFactory),
@@ -372,6 +583,7 @@ Widget _app(Widget child) {
       GlobalCupertinoLocalizations.delegate,
     ],
     supportedLocales: AppLocalizations.supportedLocales,
+    routes: routes ?? const {},
     home: child,
   );
 }
@@ -393,6 +605,7 @@ FeedbackReport _report({
   required String id,
   required FeedbackStatus status,
   required DateTime createdAt,
+  String? description,
   String? screenshotPath,
   String? teamResponse,
   DateTime? reviewStartedAt,
@@ -401,7 +614,7 @@ FeedbackReport _report({
   return FeedbackReport(
     id: id,
     category: FeedbackCategory.bug,
-    description: 'Report $id',
+    description: description ?? 'Report $id',
     screenshotPath: screenshotPath,
     contactAllowed: false,
     status: status,
@@ -425,6 +638,7 @@ class _FakeFeedbackRepository implements FeedbackRepository {
   _FakeFeedbackRepository({
     this.result,
     this.pendingResult,
+    this.detailResult,
     List<RepositoryResult<FeedbackReport>>? queue,
   }) : _queue = queue != null
             ? List<RepositoryResult<FeedbackReport>>.from(queue)
@@ -432,6 +646,7 @@ class _FakeFeedbackRepository implements FeedbackRepository {
 
   final RepositoryResult<FeedbackReport>? result;
   final Completer<RepositoryResult<FeedbackReport>>? pendingResult;
+  final FeedbackReport? detailResult;
   final List<RepositoryResult<FeedbackReport>> _queue;
   int callCount = 0;
 
@@ -452,6 +667,10 @@ class _FakeFeedbackRepository implements FeedbackRepository {
     required String feedbackId,
   }) async {
     callCount += 1;
+    final report = detailResult;
+    if (report != null) {
+      return RepositoryResult<FeedbackReport>.success(data: report);
+    }
     if (pendingResult != null) {
       return pendingResult!.future;
     }
@@ -465,6 +684,23 @@ class _FakeFeedbackRepository implements FeedbackRepository {
             message: 'missing',
           ),
         );
+  }
+
+  @override
+  Future<RepositoryResult<FeedbackReport>> updateMyFeedback({
+    required String feedbackId,
+    required String description,
+    required bool contactAllowed,
+    String? screenshotPath,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<RepositoryResult<String?>> deleteMyFeedback({
+    required String feedbackId,
+  }) {
+    throw UnimplementedError();
   }
 
   @override

@@ -15,6 +15,17 @@ abstract interface class FeedbackRepository {
     String? screenshotPath,
   });
 
+  Future<RepositoryResult<FeedbackReport>> updateMyFeedback({
+    required String feedbackId,
+    required String description,
+    required bool contactAllowed,
+    String? screenshotPath,
+  });
+
+  Future<RepositoryResult<String?>> deleteMyFeedback({
+    required String feedbackId,
+  });
+
   Future<RepositoryResult<FeedbackReport>> getMyFeedbackById({
     required String feedbackId,
   });

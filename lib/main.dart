@@ -34,6 +34,7 @@ import 'features/feedback/presentation/screens/feedback_home_screen.dart';
 import 'features/feedback/presentation/screens/feedback_form_screen.dart';
 import 'features/feedback/presentation/screens/feedback_success_screen.dart';
 import 'features/feedback/presentation/screens/feedback_detail_screen.dart';
+import 'features/feedback/presentation/screens/feedback_edit_screen.dart';
 import 'features/feedback/presentation/screens/my_feedback_screen.dart';
 import 'features/feedback/domain/feedback_category.dart';
 import 'features/feedback/domain/feedback_report.dart';
@@ -185,6 +186,17 @@ class MyApp extends StatelessWidget {
                   report: _feedbackRouteReport(context) ??
                       FeedbackReport(
                         id: 'feedback-fallback-detail',
+                        category: FeedbackCategory.bug,
+                        description: context.l10n.feedbackPlaceholderBody,
+                        contactAllowed: false,
+                        status: FeedbackStatus.submitted,
+                        createdAt: DateTime(2026, 8, 29, 12, 0),
+                      ),
+                ),
+            FeedbackEditScreen.route: (context) => FeedbackEditScreen(
+                  report: _feedbackRouteReport(context) ??
+                      FeedbackReport(
+                        id: 'feedback-fallback-edit',
                         category: FeedbackCategory.bug,
                         description: context.l10n.feedbackPlaceholderBody,
                         contactAllowed: false,

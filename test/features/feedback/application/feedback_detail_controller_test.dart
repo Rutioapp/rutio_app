@@ -279,6 +279,23 @@ class _FakeFeedbackRepository implements FeedbackRepository {
   }
 
   @override
+  Future<RepositoryResult<FeedbackReport>> updateMyFeedback({
+    required String feedbackId,
+    required String description,
+    required bool contactAllowed,
+    String? screenshotPath,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<RepositoryResult<String?>> deleteMyFeedback({
+    required String feedbackId,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<RepositoryResult<List<FeedbackReport>>> getMyFeedback() async {
     return const RepositoryResult<List<FeedbackReport>>.success(
       data: <FeedbackReport>[],
@@ -331,7 +348,6 @@ FeedbackStorageService _storageService({
     currentUserIdProvider: () => 'user-1',
   );
 }
-
 FeedbackReport _report({
   required String id,
   required FeedbackStatus status,

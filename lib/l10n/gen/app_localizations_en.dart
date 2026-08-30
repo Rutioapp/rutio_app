@@ -1361,6 +1361,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedbackDeleteAction => 'Delete feedback';
 
   @override
+  String get feedbackEditTitle => 'Edit feedback';
+
+  @override
+  String get feedbackEditIntro =>
+      'You can adjust the description, the screenshot, and whether we may contact you.';
+
+  @override
+  String get feedbackEditCategoryLockedNote =>
+      'The category cannot be changed in this phase.';
+
+  @override
+  String get feedbackEditNoScreenshot =>
+      'No screenshot is attached. You can add one if needed.';
+
+  @override
+  String get feedbackEditSaveAction => 'Save changes';
+
+  @override
+  String get feedbackEditErrorNoLongerEditable =>
+      'This feedback is already under review and cannot be modified.';
+
+  @override
+  String get feedbackEditSaveErrorGeneric =>
+      'We could not save the changes. Please try again.';
+
+  @override
+  String get feedbackDeleteConfirmTitle => 'Delete this feedback?';
+
+  @override
+  String get feedbackDeleteConfirmMessage => 'This action cannot be undone.';
+
+  @override
+  String get feedbackDeleteConfirmCancel => 'Cancel';
+
+  @override
+  String get feedbackDeleteConfirmDelete => 'Delete';
+
+  @override
   String get feedbackResponseTitle => 'Team response';
 
   @override

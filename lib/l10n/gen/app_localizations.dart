@@ -2499,6 +2499,72 @@ abstract class AppLocalizations {
   /// **'Eliminar feedback'**
   String get feedbackDeleteAction;
 
+  /// No description provided for @feedbackEditTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar feedback'**
+  String get feedbackEditTitle;
+
+  /// No description provided for @feedbackEditIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes ajustar la descripción, la captura y si quieres que podamos contactarte.'**
+  String get feedbackEditIntro;
+
+  /// No description provided for @feedbackEditCategoryLockedNote.
+  ///
+  /// In es, this message translates to:
+  /// **'La categoría no se puede cambiar en esta fase.'**
+  String get feedbackEditCategoryLockedNote;
+
+  /// No description provided for @feedbackEditNoScreenshot.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay captura adjunta. Puedes añadir una nueva si lo necesitas.'**
+  String get feedbackEditNoScreenshot;
+
+  /// No description provided for @feedbackEditSaveAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar cambios'**
+  String get feedbackEditSaveAction;
+
+  /// No description provided for @feedbackEditErrorNoLongerEditable.
+  ///
+  /// In es, this message translates to:
+  /// **'Este feedback ya está en revisión y no puede modificarse.'**
+  String get feedbackEditErrorNoLongerEditable;
+
+  /// No description provided for @feedbackEditSaveErrorGeneric.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido guardar los cambios. Inténtalo de nuevo.'**
+  String get feedbackEditSaveErrorGeneric;
+
+  /// No description provided for @feedbackDeleteConfirmTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar este feedback?'**
+  String get feedbackDeleteConfirmTitle;
+
+  /// No description provided for @feedbackDeleteConfirmMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta acción no se puede deshacer.'**
+  String get feedbackDeleteConfirmMessage;
+
+  /// No description provided for @feedbackDeleteConfirmCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get feedbackDeleteConfirmCancel;
+
+  /// No description provided for @feedbackDeleteConfirmDelete.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get feedbackDeleteConfirmDelete;
+
   /// No description provided for @feedbackResponseTitle.
   ///
   /// In es, this message translates to:

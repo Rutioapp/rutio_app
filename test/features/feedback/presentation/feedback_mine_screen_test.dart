@@ -275,7 +275,6 @@ Widget _app(
     home: child,
   );
 }
-
 Future<void> _pumpWidget(
   WidgetTester tester,
   Widget child, {
@@ -314,6 +313,23 @@ class _FakeFeedbackRepository implements FeedbackRepository {
     required bool contactAllowed,
     required FeedbackTechnicalContext technicalContext,
     String? screenshotPath,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<RepositoryResult<FeedbackReport>> updateMyFeedback({
+    required String feedbackId,
+    required String description,
+    required bool contactAllowed,
+    String? screenshotPath,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<RepositoryResult<String?>> deleteMyFeedback({
+    required String feedbackId,
   }) {
     throw UnimplementedError();
   }

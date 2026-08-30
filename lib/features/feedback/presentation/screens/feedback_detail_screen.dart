@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../data/repositories/repository_result.dart';
@@ -7,10 +9,13 @@ import '../../../../l10n/l10n.dart';
 import '../../../../l10n/gen/app_localizations.dart';
 import '../../../../utils/app_theme.dart';
 import '../../application/feedback_detail_controller.dart';
+import '../../application/feedback_mutation_result.dart';
 import '../../data/feedback_repository.dart';
 import '../../data/feedback_storage_service.dart';
+import '../../data/supabase_feedback_repository.dart';
 import '../../domain/feedback_category.dart';
 import '../../domain/feedback_report.dart';
+import 'feedback_edit_screen.dart';
 import '../widgets/feedback_progress_indicator.dart';
 import '../widgets/feedback_response_card.dart';
 import '../widgets/feedback_status_chip.dart';
@@ -43,6 +48,10 @@ class FeedbackDetailScreen extends StatefulWidget {
 class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
   late final FeedbackDetailController _controller;
   late final bool _ownsController;
+  FeedbackRepository? _repositoryInstance;
+  FeedbackStorageService? _storageServiceInstance;
+  FeedbackMutationResult? _pendingMyFeedbackResult;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -50,8 +59,8 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     _ownsController = widget.controller == null;
     _controller = widget.controller ??
         FeedbackDetailController(
-          repository: widget.repository,
-          storageService: widget.storageService,
+          repository: _repository,
+          storageService: _storageService,
           currentUserIdProvider: widget.currentUserIdProvider,
         );
 
@@ -73,93 +82,127 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
     super.dispose();
   }
 
+  FeedbackRepository get _repository =>
+      _repositoryInstance ??=
+          widget.repository ??
+          SupabaseFeedbackRepository(
+            currentUserIdProvider: widget.currentUserIdProvider,
+          );
+
+  FeedbackStorageService get _storageService =>
+      _storageServiceInstance ??=
+          widget.storageService ??
+          FeedbackStorageService(
+            currentUserIdProvider: widget.currentUserIdProvider,
+          );
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || _isDeleting) return;
+        Navigator.of(context).pop(_pendingMyFeedbackResult);
+      },
+      child: Scaffold(
         backgroundColor: AppColors.cream,
-        surfaceTintColor: AppColors.cream,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(l10n.feedbackDetailTitle),
-      ),
-      body: SafeArea(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            final state = _controller.state;
-            final report = state.report;
+        appBar: AppBar(
+          backgroundColor: AppColors.cream,
+          surfaceTintColor: AppColors.cream,
+          elevation: 0,
+          centerTitle: true,
+          title: Text(l10n.feedbackDetailTitle),
+        ),
+        body: SafeArea(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final state = _controller.state;
+              final report = state.report;
 
-            return RefreshIndicator(
-              onRefresh: _controller.refresh,
-              color: AppColors.sage,
-              child: ListView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
-                children: [
-                  if (state.status == FeedbackDetailStatus.loading &&
-                      state.hasReport)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 10),
-                      child: LinearProgressIndicator(
-                        color: AppColors.sage,
-                        minHeight: 2,
+              return RefreshIndicator(
+                onRefresh: _controller.refresh,
+                color: AppColors.sage,
+                child: ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
+                  children: [
+                    if (_isDeleting)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 10),
+                        child: LinearProgressIndicator(
+                          color: AppColors.sage,
+                          minHeight: 2,
+                        ),
                       ),
-                    ),
-                  if (state.status == FeedbackDetailStatus.loading &&
-                      !state.hasReport)
-                    const _FeedbackDetailLoadingState(),
-                  if (state.status == FeedbackDetailStatus.error)
-                    _FeedbackDetailMessageState(
-                      title: l10n.feedbackDetailErrorTitle,
-                      message: _detailErrorMessage(l10n, state.error),
-                      actionLabel: l10n.feedbackDetailRetryAction,
-                      onAction: _controller.refresh,
-                    ),
-                  if (state.status == FeedbackDetailStatus.notFound)
-                    _FeedbackDetailMessageState(
-                      title: l10n.feedbackDetailNotAvailableTitle,
-                      message: l10n.feedbackDetailNotAvailableMessage,
-                      actionLabel: l10n.feedbackDetailRetryAction,
-                      onAction: _controller.refresh,
-                    ),
-                  if (report != null) ...[
-                    _FeedbackDetailHeader(report: report),
-                    const SizedBox(height: 18),
-                    _FeedbackDetailDates(report: report),
-                    const SizedBox(height: 16),
-                    _FeedbackDetailDescription(report: report),
-                    if (report.hasScreenshot) ...[
+                    if (state.status == FeedbackDetailStatus.loading &&
+                        state.hasReport)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 10),
+                        child: LinearProgressIndicator(
+                          color: AppColors.sage,
+                          minHeight: 2,
+                        ),
+                      ),
+                    if (state.status == FeedbackDetailStatus.loading &&
+                        !state.hasReport)
+                      const _FeedbackDetailLoadingState(),
+                    if (state.status == FeedbackDetailStatus.error)
+                      _FeedbackDetailMessageState(
+                        title: l10n.feedbackDetailErrorTitle,
+                        message: _detailErrorMessage(l10n, state.error),
+                        actionLabel: l10n.feedbackDetailRetryAction,
+                        onAction: _controller.refresh,
+                      ),
+                    if (state.status == FeedbackDetailStatus.notFound)
+                      _FeedbackDetailMessageState(
+                        title: l10n.feedbackDetailNotAvailableTitle,
+                        message: l10n.feedbackDetailNotAvailableMessage,
+                        actionLabel: l10n.feedbackDetailRetryAction,
+                        onAction: _controller.refresh,
+                      ),
+                    if (report != null) ...[
+                      _FeedbackDetailHeader(report: report),
+                      const SizedBox(height: 18),
+                      _FeedbackDetailDates(report: report),
                       const SizedBox(height: 16),
-                      _FeedbackDetailScreenshot(
-                        state: state,
-                        onRetry: _controller.retryScreenshot,
-                        screenshotPreviewBuilder: widget.screenshotPreviewBuilder,
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    FeedbackResponseCard(response: report.teamResponse),
-                    if (state.canEdit || state.canDelete) ...[
+                      _FeedbackDetailDescription(report: report),
+                      if (report.hasScreenshot) ...[
+                        const SizedBox(height: 16),
+                        _FeedbackDetailScreenshot(
+                          state: state,
+                          onRetry: _controller.retryScreenshot,
+                          screenshotPreviewBuilder:
+                              widget.screenshotPreviewBuilder,
+                        ),
+                      ],
                       const SizedBox(height: 16),
-                      _FeedbackDetailActions(
-                        showActions: state.canEdit && state.canDelete,
-                        onEdit: () {},
-                        onDelete: () {},
-                      ),
+                      FeedbackResponseCard(response: report.teamResponse),
+                      if (state.canEdit || state.canDelete) ...[
+                        const SizedBox(height: 16),
+                        _FeedbackDetailActions(
+                          showActions: state.canEdit && state.canDelete,
+                          isBusy: _isDeleting,
+                          onEdit:
+                              state.canEdit ? () => _handleEdit(context) : null,
+                          onDelete: state.canDelete
+                              ? () => _handleDelete(context)
+                              : null,
+                        ),
+                      ],
                     ],
+                    if (report == null &&
+                        state.status == FeedbackDetailStatus.initial)
+                      const _FeedbackDetailLoadingState(),
                   ],
-                  if (report == null &&
-                      state.status == FeedbackDetailStatus.initial)
-                    const _FeedbackDetailLoadingState(),
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -181,6 +224,214 @@ class _FeedbackDetailScreenState extends State<FeedbackDetailScreen> {
       case null:
         return l10n.feedbackDetailLoadErrorMessage;
     }
+  }
+
+  Future<void> _handleEdit(BuildContext context) async {
+    final report = _controller.state.report;
+    if (report == null || _isDeleting) return;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+
+    final result =
+        await navigator.pushNamed<Object?>(
+      FeedbackEditScreen.route,
+      arguments: report,
+    );
+
+    if (!mounted || result is! FeedbackMutationResult) return;
+    final mutationResult = result;
+
+    if (mutationResult.isSaved && mutationResult.report != null) {
+      await _controller.load(
+        mutationResult.report!.id,
+        initialReport: mutationResult.report,
+      );
+      if (!mounted) return;
+      _pendingMyFeedbackResult = mutationResult;
+      return;
+    }
+
+    if (mutationResult.isStale) {
+      await _controller.refresh();
+      if (!mounted) return;
+      _showMutationStaleMessage(
+        messenger: messenger,
+        l10n: l10n,
+        error: mutationResult.error,
+      );
+      return;
+    }
+  }
+
+  Future<void> _handleDelete(BuildContext context) async {
+    final report = _controller.state.report;
+    if (report == null || _isDeleting) return;
+    if (!report.canDelete) return;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+
+    final shouldDelete = await _confirmDelete(context);
+    if (!shouldDelete || !mounted) return;
+
+    _isDeleting = true;
+    setState(() {});
+
+    try {
+      final result = await _repository.deleteMyFeedback(
+        feedbackId: report.id,
+      );
+
+      if (!mounted) return;
+
+      if (result.isSuccess) {
+        final screenshotPath = result.data?.trim().isEmpty == true
+            ? null
+            : result.data?.trim();
+        if (screenshotPath != null) {
+          try {
+            await _storageService.removeScreenshot(path: screenshotPath);
+          } catch (error) {
+            if (kDebugMode) {
+              debugPrint(
+                '[feedback_detail_screen] screenshot cleanup after delete '
+                'failed: ${error.runtimeType}',
+              );
+            }
+          }
+        }
+
+        navigator.pop(
+          FeedbackMutationResult.deleted(screenshotPath: screenshotPath),
+        );
+        return;
+      }
+
+      final error = result.error;
+      if (_isNoLongerEditable(error)) {
+        await _controller.refresh();
+        if (!mounted) return;
+        _showMutationStaleMessage(
+          messenger: messenger,
+          l10n: l10n,
+          error: error,
+        );
+        return;
+      }
+
+      _showDeleteError(
+        messenger: messenger,
+        l10n: l10n,
+        error: error,
+      );
+    } finally {
+      if (mounted) {
+        _isDeleting = false;
+        setState(() {});
+      }
+    }
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final l10n = context.l10n;
+    final platform = Theme.of(context).platform;
+
+    if (platform == TargetPlatform.iOS || platform == TargetPlatform.macOS) {
+      final result = await showCupertinoDialog<bool>(
+        context: context,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: Text(l10n.feedbackDeleteConfirmTitle),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(l10n.feedbackDeleteConfirmMessage),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.feedbackDeleteConfirmCancel),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.feedbackDeleteConfirmDelete),
+            ),
+          ],
+        ),
+      );
+      return result == true;
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.feedbackDeleteConfirmTitle),
+        content: Text(l10n.feedbackDeleteConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.feedbackDeleteConfirmCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.feedbackDeleteConfirmDelete),
+          ),
+        ],
+      ),
+    );
+
+    return result == true;
+  }
+
+  bool _isNoLongerEditable(RepositoryError? error) {
+    return error?.code == RepositoryErrorCode.permissionDenied ||
+        error?.code == RepositoryErrorCode.notFound;
+  }
+
+  void _showMutationStaleMessage({
+    required ScaffoldMessengerState messenger,
+    required AppLocalizations l10n,
+    RepositoryError? error,
+  }) {
+    final message = error?.code == RepositoryErrorCode.notFound
+        ? l10n.feedbackDetailNotAvailableMessage
+        : l10n.feedbackEditErrorNoLongerEditable;
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
+  void _showDeleteError({
+    required ScaffoldMessengerState messenger,
+    required AppLocalizations l10n,
+    RepositoryError? error,
+  }) {
+    final message = switch (error?.code) {
+      RepositoryErrorCode.notAuthenticated =>
+        l10n.feedbackMineErrorSessionExpired,
+      RepositoryErrorCode.network => l10n.feedbackMineErrorNetwork,
+      RepositoryErrorCode.permissionDenied =>
+        l10n.feedbackEditSaveErrorGeneric,
+      RepositoryErrorCode.notFound => l10n.feedbackDetailNotAvailableMessage,
+      RepositoryErrorCode.invalidResponse => l10n.feedbackEditSaveErrorGeneric,
+      RepositoryErrorCode.unknown => l10n.feedbackEditSaveErrorGeneric,
+      null => l10n.feedbackEditSaveErrorGeneric,
+    };
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 }
 
@@ -566,13 +817,15 @@ class _ScreenshotPlaceholder extends StatelessWidget {
 class _FeedbackDetailActions extends StatelessWidget {
   const _FeedbackDetailActions({
     required this.showActions,
+    required this.isBusy,
     required this.onEdit,
     required this.onDelete,
   });
 
   final bool showActions;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final bool isBusy;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -605,7 +858,8 @@ class _FeedbackDetailActions extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: onEdit,
+                  key: const ValueKey('feedback-detail-edit-action'),
+                  onPressed: isBusy ? null : onEdit,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
@@ -615,7 +869,7 @@ class _FeedbackDetailActions extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.tonal(
-                  onPressed: onDelete,
+                  onPressed: isBusy ? null : onDelete,
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
@@ -629,7 +883,6 @@ class _FeedbackDetailActions extends StatelessWidget {
     );
   }
 }
-
 class _FeedbackDetailMessageState extends StatelessWidget {
   const _FeedbackDetailMessageState({
     required this.title,

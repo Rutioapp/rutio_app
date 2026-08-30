@@ -1364,6 +1364,45 @@ class AppLocalizationsEs extends AppLocalizations {
   String get feedbackDeleteAction => 'Eliminar feedback';
 
   @override
+  String get feedbackEditTitle => 'Editar feedback';
+
+  @override
+  String get feedbackEditIntro =>
+      'Puedes ajustar la descripción, la captura y si quieres que podamos contactarte.';
+
+  @override
+  String get feedbackEditCategoryLockedNote =>
+      'La categoría no se puede cambiar en esta fase.';
+
+  @override
+  String get feedbackEditNoScreenshot =>
+      'No hay captura adjunta. Puedes añadir una nueva si lo necesitas.';
+
+  @override
+  String get feedbackEditSaveAction => 'Guardar cambios';
+
+  @override
+  String get feedbackEditErrorNoLongerEditable =>
+      'Este feedback ya está en revisión y no puede modificarse.';
+
+  @override
+  String get feedbackEditSaveErrorGeneric =>
+      'No hemos podido guardar los cambios. Inténtalo de nuevo.';
+
+  @override
+  String get feedbackDeleteConfirmTitle => '¿Eliminar este feedback?';
+
+  @override
+  String get feedbackDeleteConfirmMessage =>
+      'Esta acción no se puede deshacer.';
+
+  @override
+  String get feedbackDeleteConfirmCancel => 'Cancelar';
+
+  @override
+  String get feedbackDeleteConfirmDelete => 'Eliminar';
+
+  @override
   String get feedbackResponseTitle => 'Respuesta del equipo';
 
   @override

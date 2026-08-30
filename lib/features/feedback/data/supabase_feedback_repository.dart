@@ -144,6 +144,195 @@ updated_at
   }
 
   @override
+  Future<RepositoryResult<FeedbackReport>> updateMyFeedback({
+    required String feedbackId,
+    required String description,
+    required bool contactAllowed,
+    String? screenshotPath,
+  }) async {
+    final userId = _currentUserId();
+    if (userId == null) {
+      return RepositoryResult<FeedbackReport>.failure(_notAuthenticated());
+    }
+
+    final normalizedFeedbackId = feedbackId.trim();
+    if (normalizedFeedbackId.isEmpty) {
+      return RepositoryResult<FeedbackReport>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Feedback id is required.',
+        ),
+      );
+    }
+
+    final normalizedDescription = description.trim();
+    if (normalizedDescription.isEmpty) {
+      return RepositoryResult<FeedbackReport>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Feedback description is required.',
+        ),
+      );
+    }
+
+    try {
+      final response = await _client.rpc(
+        'update_my_feedback',
+        params: <String, dynamic>{
+          'p_feedback_id': normalizedFeedbackId,
+          'p_description': normalizedDescription,
+          'p_screenshot_path':
+              screenshotPath?.trim().isEmpty == true ? null : screenshotPath?.trim(),
+          'p_contact_allowed': contactAllowed,
+        },
+      );
+      final row = _coerceRpcRow(response);
+      final mapped = FeedbackReport.fromSupabaseRow(row);
+      if (mapped.userId == null || mapped.userId != userId) {
+        return RepositoryResult<FeedbackReport>.failure(
+          const RepositoryError(
+            code: RepositoryErrorCode.invalidResponse,
+            message: 'Feedback update response did not match the session.',
+          ),
+        );
+      }
+
+      if (mapped.id != normalizedFeedbackId) {
+        return RepositoryResult<FeedbackReport>.failure(
+          const RepositoryError(
+            code: RepositoryErrorCode.invalidResponse,
+            message: 'Feedback update response did not match the request.',
+          ),
+        );
+      }
+
+      return RepositoryResult<FeedbackReport>.success(data: mapped);
+    } on FormatException catch (error) {
+      return RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message,
+          cause: error,
+        ),
+      );
+    } on ArgumentError catch (error) {
+      return RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message ?? 'Invalid feedback payload.',
+          cause: error,
+        ),
+      );
+    } on PostgrestException catch (error) {
+      return RepositoryResult<FeedbackReport>.failure(
+        _mapMutationPostgrestError(
+          error,
+          fallbackMessage: 'Could not update this feedback.',
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        _logger?.call(
+          '[feedback_repository] unexpected update error: ${error.runtimeType}',
+        );
+      }
+      return RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.unknown,
+          message: 'Could not update this feedback.',
+          cause: error,
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<RepositoryResult<String?>> deleteMyFeedback({
+    required String feedbackId,
+  }) async {
+    final userId = _currentUserId();
+    if (userId == null) {
+      return RepositoryResult<String?>.failure(_notAuthenticated());
+    }
+
+    final normalizedFeedbackId = feedbackId.trim();
+    if (normalizedFeedbackId.isEmpty) {
+      return RepositoryResult<String?>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Feedback id is required.',
+        ),
+      );
+    }
+
+    try {
+      final response = await _client.rpc(
+        'delete_my_feedback',
+        params: <String, dynamic>{
+          'p_feedback_id': normalizedFeedbackId,
+        },
+      );
+
+      if (response == null) {
+        return const RepositoryResult<String?>.success(data: null);
+      }
+
+      if (response is String) {
+        final trimmed = response.trim();
+        return RepositoryResult<String?>.success(
+          data: trimmed.isEmpty ? null : trimmed,
+        );
+      }
+
+      if (response is Map) {
+        final value = response['screenshot_path'];
+        final path = value?.toString().trim();
+        return RepositoryResult<String?>.success(
+          data: path == null || path.isEmpty ? null : path,
+        );
+      }
+
+      throw const FormatException('Unexpected delete RPC response.');
+    } on FormatException catch (error) {
+      return RepositoryResult<String?>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message,
+          cause: error,
+        ),
+      );
+    } on ArgumentError catch (error) {
+      return RepositoryResult<String?>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message ?? 'Invalid feedback payload.',
+          cause: error,
+        ),
+      );
+    } on PostgrestException catch (error) {
+      return RepositoryResult<String?>.failure(
+        _mapMutationPostgrestError(
+          error,
+          fallbackMessage: 'Could not delete this feedback.',
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        _logger?.call(
+          '[feedback_repository] unexpected delete error: ${error.runtimeType}',
+        );
+      }
+      return RepositoryResult<String?>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.unknown,
+          message: 'Could not delete this feedback.',
+          cause: error,
+        ),
+      );
+    }
+  }
+
+  @override
   Future<RepositoryResult<FeedbackReport>> getMyFeedbackById({
     required String feedbackId,
   }) async {
@@ -305,6 +494,16 @@ updated_at
     PostgrestException error, {
     required String fallbackMessage,
   }) {
+    return _mapMutationPostgrestError(
+      error,
+      fallbackMessage: fallbackMessage,
+    );
+  }
+
+  RepositoryError _mapMutationPostgrestError(
+    PostgrestException error, {
+    required String fallbackMessage,
+  }) {
     if (kDebugMode) {
       _logger?.call(
         '[feedback_repository] postgrest error code=${error.code}',
@@ -315,7 +514,7 @@ updated_at
     if (code == '42501') {
       return RepositoryError(
         code: RepositoryErrorCode.permissionDenied,
-        message: 'Permission denied while sending feedback.',
+        message: fallbackMessage,
         cause: error,
       );
     }
@@ -338,7 +537,46 @@ updated_at
       );
     }
 
-    final rawMessage = error.message.toLowerCase();
+    final rawMessage = '${error.code ?? ''} ${error.message}'.toLowerCase();
+    if (rawMessage.contains('authentication required') ||
+        rawMessage.contains('no authenticated user')) {
+      return RepositoryError(
+        code: RepositoryErrorCode.notAuthenticated,
+        message: 'No authenticated user session is available.',
+        cause: error,
+      );
+    }
+    if (rawMessage.contains('feedback not found')) {
+      return RepositoryError(
+        code: RepositoryErrorCode.notFound,
+        message: 'Feedback not found.',
+        cause: error,
+      );
+    }
+    if (rawMessage.contains('can only be edited while submitted') ||
+        rawMessage.contains('can only be deleted while submitted') ||
+        rawMessage.contains('feedback reports are immutable after closure') ||
+        rawMessage.contains('feedback cannot be closed directly') ||
+        rawMessage.contains('feedback content cannot change while') ||
+        rawMessage.contains('invalid feedback transition')) {
+      return RepositoryError(
+        code: RepositoryErrorCode.permissionDenied,
+        message: 'This feedback is no longer editable.',
+        cause: error,
+      );
+    }
+    if (rawMessage.contains('invalid screenshot path') ||
+        rawMessage.contains('description must be between') ||
+        rawMessage.contains('technical_context must be a json object') ||
+        rawMessage.contains('team response must') ||
+        rawMessage.contains('review_started_at is managed by the database') ||
+        rawMessage.contains('closed_at is managed by the database')) {
+      return RepositoryError(
+        code: RepositoryErrorCode.invalidResponse,
+        message: fallbackMessage,
+        cause: error,
+      );
+    }
     if (rawMessage.contains('network') ||
         rawMessage.contains('socket') ||
         rawMessage.contains('timeout') ||
@@ -346,7 +584,7 @@ updated_at
         rawMessage.contains('failed host lookup')) {
       return RepositoryError(
         code: RepositoryErrorCode.network,
-        message: 'Network error while sending feedback.',
+        message: fallbackMessage,
         cause: error,
       );
     }
@@ -356,6 +594,22 @@ updated_at
       message: fallbackMessage,
       cause: error,
     );
+  }
+
+  Map<String, dynamic> _coerceRpcRow(Object? response) {
+    if (response is Map) {
+      return Map<String, dynamic>.from(response.cast<String, dynamic>());
+    }
+
+    if (response is List) {
+      if (response.length == 1 && response.first is Map) {
+        return Map<String, dynamic>.from(
+          (response.first as Map).cast<String, dynamic>(),
+        );
+      }
+    }
+
+    throw const FormatException('Unexpected RPC response.');
   }
 
   List<FeedbackReport> _mapReports(
