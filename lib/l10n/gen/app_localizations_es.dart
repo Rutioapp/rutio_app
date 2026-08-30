@@ -1310,6 +1310,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get feedbackDetailTitle => 'Detalle';
 
   @override
+  String get feedbackDetailLoadingState => 'Cargando feedback...';
+
+  @override
+  String get feedbackDetailErrorTitle => 'No se ha podido cargar el feedback';
+
+  @override
+  String get feedbackDetailLoadErrorMessage =>
+      'No hemos podido cargar este feedback. Inténtalo de nuevo.';
+
+  @override
+  String get feedbackDetailNotAvailableTitle => 'Feedback no disponible';
+
+  @override
+  String get feedbackDetailNotAvailableMessage =>
+      'Este feedback ya no está disponible.';
+
+  @override
+  String get feedbackDetailRetryAction => 'Reintentar';
+
+  @override
   String get feedbackDetailDescriptionLabel => 'Descripción';
 
   @override
@@ -1323,6 +1343,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get feedbackDetailScreenshotLabel => 'Captura adjunta';
+
+  @override
+  String get feedbackDetailScreenshotLoading => 'Cargando captura...';
+
+  @override
+  String get feedbackDetailScreenshotError =>
+      'No hemos podido cargar la captura.';
 
   @override
   String get feedbackDetailScreenshotPlaceholder => 'Captura disponible';

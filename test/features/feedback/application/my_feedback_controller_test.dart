@@ -233,6 +233,18 @@ class _FakeFeedbackRepository implements FeedbackRepository {
           data: <FeedbackReport>[],
         );
   }
+
+  @override
+  Future<RepositoryResult<FeedbackReport>> getMyFeedbackById({
+    required String feedbackId,
+  }) async {
+    return const RepositoryResult<FeedbackReport>.failure(
+      RepositoryError(
+        code: RepositoryErrorCode.notFound,
+        message: 'Not implemented in my feedback controller tests.',
+      ),
+    );
+  }
 }
 
 FeedbackReport _report({

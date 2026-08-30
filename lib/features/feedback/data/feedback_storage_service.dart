@@ -6,12 +6,14 @@ import '../../../core/supabase/rutio_supabase_client.dart';
 import 'feedback_image_service.dart';
 
 const String feedbackScreenshotsBucket = 'feedback-screenshots';
+const int feedbackScreenshotSignedUrlExpirySeconds = 10 * 60;
 
 enum FeedbackStorageErrorType {
   notAuthenticated,
   invalidPath,
   uploadFailed,
   removeFailed,
+  signedUrlFailed,
 }
 
 class FeedbackStorageException implements Exception {
@@ -39,6 +41,12 @@ abstract interface class FeedbackStorageGateway {
   Future<void> remove({
     required String bucket,
     required String path,
+  });
+
+  Future<String> createSignedUrl({
+    required String bucket,
+    required String path,
+    required int expiresInSeconds,
   });
 }
 
@@ -76,6 +84,17 @@ class SupabaseFeedbackStorageGateway implements FeedbackStorageGateway {
     required String path,
   }) async {
     await _resolvedClient.storage.from(bucket).remove(<String>[path]);
+  }
+
+  @override
+  Future<String> createSignedUrl({
+    required String bucket,
+    required String path,
+    required int expiresInSeconds,
+  }) async {
+    return _resolvedClient.storage
+        .from(bucket)
+        .createSignedUrl(path, expiresInSeconds);
   }
 }
 
@@ -163,6 +182,32 @@ class FeedbackStorageService {
       }
       throw FeedbackStorageException(
         FeedbackStorageErrorType.removeFailed,
+        cause: error,
+      );
+    }
+  }
+
+  Future<String> createSignedScreenshotUrl({
+    required String path,
+  }) async {
+    if (!_isCanonicalPath(path)) {
+      throw const FeedbackStorageException(FeedbackStorageErrorType.invalidPath);
+    }
+
+    try {
+      return await _gateway.createSignedUrl(
+        bucket: bucketName,
+        path: path.trim(),
+        expiresInSeconds: feedbackScreenshotSignedUrlExpirySeconds,
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        _logger?.call(
+          '[feedback_storage_service] signed url failure: ${error.runtimeType}',
+        );
+      }
+      throw FeedbackStorageException(
+        FeedbackStorageErrorType.signedUrlFailed,
         cause: error,
       );
     }

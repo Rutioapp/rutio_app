@@ -59,6 +59,29 @@ void main() {
     );
   });
 
+  test('createSignedScreenshotUrl uses the private bucket and expiry', () async {
+    final gateway = _FakeFeedbackStorageGateway();
+    final service = FeedbackStorageService(
+      gateway: gateway,
+      currentUserIdProvider: () => userId,
+    );
+
+    final url = await service.createSignedScreenshotUrl(
+      path: '$userId/$feedbackId/screenshot_$screenshotId.jpg',
+    );
+
+    expect(url, contains('feedback-screenshots'));
+    expect(gateway.lastBucket, feedbackScreenshotsBucket);
+    expect(
+      gateway.lastPath,
+      '$userId/$feedbackId/screenshot_$screenshotId.jpg',
+    );
+    expect(
+      gateway.lastExpiresInSeconds,
+      feedbackScreenshotSignedUrlExpirySeconds,
+    );
+  });
+
   test('uploadScreenshot fails safely without an authenticated user', () async {
     final gateway = _FakeFeedbackStorageGateway();
     final service = FeedbackStorageService(
@@ -88,7 +111,8 @@ void main() {
   test('upload and remove failures are mapped to storage errors', () async {
     final gateway = _FakeFeedbackStorageGateway()
       ..failUpload = true
-      ..failRemove = true;
+      ..failRemove = true
+      ..failSignedUrl = true;
     final service = FeedbackStorageService(
       gateway: gateway,
       currentUserIdProvider: () => userId,
@@ -121,6 +145,19 @@ void main() {
           (error) => error.type,
           'type',
           FeedbackStorageErrorType.removeFailed,
+        ),
+      ),
+    );
+
+    expect(
+      () => service.createSignedScreenshotUrl(
+        path: '$userId/$feedbackId/screenshot_$screenshotId.jpg',
+      ),
+      throwsA(
+        isA<FeedbackStorageException>().having(
+          (error) => error.type,
+          'type',
+          FeedbackStorageErrorType.signedUrlFailed,
         ),
       ),
     );
@@ -178,6 +215,7 @@ class _FakeFeedbackStorageGateway implements FeedbackStorageGateway {
   bool? lastUpsert;
   bool failUpload = false;
   bool failRemove = false;
+  bool failSignedUrl = false;
 
   @override
   Future<void> uploadBinary({
@@ -210,4 +248,21 @@ class _FakeFeedbackStorageGateway implements FeedbackStorageGateway {
       throw StateError('remove failed');
     }
   }
+
+  @override
+  Future<String> createSignedUrl({
+    required String bucket,
+    required String path,
+    required int expiresInSeconds,
+  }) async {
+    lastBucket = bucket;
+    lastPath = path;
+    lastExpiresInSeconds = expiresInSeconds;
+    if (failSignedUrl) {
+      throw StateError('signed url failed');
+    }
+    return 'https://example.com/$bucket/$path?expires=$expiresInSeconds';
+  }
+
+  int? lastExpiresInSeconds;
 }

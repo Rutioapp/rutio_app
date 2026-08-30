@@ -321,6 +321,7 @@ class FeedbackFormController extends ChangeNotifier {
         RepositoryErrorCode.invalidResponse,
       FeedbackStorageErrorType.uploadFailed => RepositoryErrorCode.network,
       FeedbackStorageErrorType.removeFailed => RepositoryErrorCode.unknown,
+      FeedbackStorageErrorType.signedUrlFailed => RepositoryErrorCode.network,
     };
   }
 

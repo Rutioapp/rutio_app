@@ -232,6 +232,7 @@ void main() {
             result: RepositoryResult<List<FeedbackReport>>.success(
               data: <FeedbackReport>[expectedReport],
             ),
+            detailResult: expectedReport,
           ),
         ),
         routes: {
@@ -239,7 +240,10 @@ void main() {
             final report =
                 ModalRoute.of(context)!.settings.arguments as FeedbackReport;
             receivedReport = report;
-            return FeedbackDetailScreen(report: report);
+            return FeedbackDetailScreen(
+              report: report,
+              repository: _FakeFeedbackRepository(detailResult: report),
+            );
           },
         },
       ),
@@ -289,6 +293,7 @@ class _FakeFeedbackRepository implements FeedbackRepository {
   _FakeFeedbackRepository({
     this.result,
     this.pendingResult,
+    this.detailResult,
     List<RepositoryResult<List<FeedbackReport>>>? queue,
   }) : _queue = queue != null
             ? List<RepositoryResult<List<FeedbackReport>>>.from(queue)
@@ -296,6 +301,7 @@ class _FakeFeedbackRepository implements FeedbackRepository {
 
   final RepositoryResult<List<FeedbackReport>>? result;
   final Completer<RepositoryResult<List<FeedbackReport>>>? pendingResult;
+  final FeedbackReport? detailResult;
   final List<RepositoryResult<List<FeedbackReport>>> _queue;
 
   int callCount = 0;
@@ -325,6 +331,22 @@ class _FakeFeedbackRepository implements FeedbackRepository {
         const RepositoryResult<List<FeedbackReport>>.success(
           data: <FeedbackReport>[],
         );
+  }
+
+  @override
+  Future<RepositoryResult<FeedbackReport>> getMyFeedbackById({
+    required String feedbackId,
+  }) async {
+    final report = detailResult;
+    if (report == null) {
+      return const RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.notFound,
+          message: 'Not implemented in my feedback screen tests.',
+        ),
+      );
+    }
+    return RepositoryResult<FeedbackReport>.success(data: report);
   }
 }
 

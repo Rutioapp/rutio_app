@@ -144,6 +144,94 @@ updated_at
   }
 
   @override
+  Future<RepositoryResult<FeedbackReport>> getMyFeedbackById({
+    required String feedbackId,
+  }) async {
+    final userId = _currentUserId();
+    if (userId == null) {
+      return RepositoryResult<FeedbackReport>.failure(_notAuthenticated());
+    }
+
+    final normalizedFeedbackId = feedbackId.trim();
+    if (normalizedFeedbackId.isEmpty) {
+      return RepositoryResult<FeedbackReport>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Feedback id is required.',
+        ),
+      );
+    }
+
+    try {
+      final row = await _client
+          .from(_tableName)
+          .select(_columns)
+          .eq('id', normalizedFeedbackId)
+          .maybeSingle();
+
+      if (row == null) {
+        return RepositoryResult<FeedbackReport>.failure(
+          const RepositoryError(
+            code: RepositoryErrorCode.notFound,
+            message: 'Feedback not found.',
+          ),
+        );
+      }
+
+      final mapped = FeedbackReport.fromSupabaseRow(
+        Map<String, dynamic>.from(row),
+      );
+      if (mapped.userId == null || mapped.userId != userId) {
+        return RepositoryResult<FeedbackReport>.failure(
+          const RepositoryError(
+            code: RepositoryErrorCode.notFound,
+            message: 'Feedback not found.',
+          ),
+        );
+      }
+
+      return RepositoryResult<FeedbackReport>.success(data: mapped);
+    } on FormatException catch (error) {
+      return RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message,
+          cause: error,
+        ),
+      );
+    } on ArgumentError catch (error) {
+      return RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message ?? 'Invalid feedback payload.',
+          cause: error,
+        ),
+      );
+    } on PostgrestException catch (error) {
+      return RepositoryResult<FeedbackReport>.failure(
+        _mapPostgrestError(
+          error,
+          fallbackMessage: 'Could not load this feedback.',
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        _logger?.call(
+          '[feedback_repository] unexpected detail read error: '
+          '${error.runtimeType}',
+        );
+      }
+      return RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.unknown,
+          message: 'Could not load this feedback.',
+          cause: error,
+        ),
+      );
+    }
+  }
+
+  @override
   Future<RepositoryResult<List<FeedbackReport>>> getMyFeedback() async {
     final userId = _currentUserId();
     if (userId == null) {

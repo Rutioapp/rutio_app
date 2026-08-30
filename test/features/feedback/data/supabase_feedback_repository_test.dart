@@ -289,6 +289,221 @@ void main() {
     );
   });
 
+  test('getMyFeedbackById queries the expected feedback id', () async {
+    final client = _RecordingHttpClient()
+      ..enqueueJson(
+        statusCode: 200,
+        body: _feedbackRow(
+          id: 'feedback-123',
+          userId: 'user-1',
+          category: 'bug',
+          description: 'Single report',
+          status: 'submitted',
+          createdAt: '2026-08-30T12:00:00.000Z',
+          updatedAt: '2026-08-30T12:15:00.000Z',
+        ),
+      );
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => 'user-1',
+    );
+
+    final result = await repository.getMyFeedbackById(
+      feedbackId: ' feedback-123 ',
+    );
+
+    expect(result.isSuccess, isTrue);
+    expect(result.data?.id, 'feedback-123');
+    expect(client.requests, hasLength(1));
+    expect(client.requests.single.method, 'GET');
+    expect(client.requests.single.uri.path, '/rest/v1/feedback_reports');
+    expect(
+      client.requests.single.uri.toString(),
+      contains('id=eq.feedback-123'),
+    );
+    expect(
+      client.requests.single.uri.toString(),
+      contains('select='),
+    );
+  });
+
+  test('getMyFeedbackById fails safely without an authenticated user',
+      () async {
+    final client = _RecordingHttpClient();
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => null,
+    );
+
+    final result = await repository.getMyFeedbackById(
+      feedbackId: 'feedback-123',
+    );
+
+    expect(result.isSuccess, isFalse);
+    expect(result.error?.code, RepositoryErrorCode.notAuthenticated);
+    expect(client.requests, isEmpty);
+  });
+
+  test('getMyFeedbackById maps missing rows to notFound', () async {
+    final client = _RecordingHttpClient()
+      ..enqueueJson(
+        statusCode: 200,
+        body: <dynamic>[],
+      );
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => 'user-1',
+    );
+
+    final result = await repository.getMyFeedbackById(
+      feedbackId: 'feedback-123',
+    );
+
+    expect(result.isSuccess, isFalse);
+    expect(result.error?.code, RepositoryErrorCode.notFound);
+  });
+
+  test('getMyFeedbackById maps submitted, in_review, resolved and dismissed',
+      () async {
+    final client = _RecordingHttpClient()
+      ..enqueueJson(
+        statusCode: 200,
+        body: _feedbackRow(
+          id: 'submitted',
+          userId: 'user-1',
+          category: 'bug',
+          description: 'Submitted report',
+          status: 'submitted',
+          createdAt: '2026-08-30T10:00:00.000Z',
+          updatedAt: '2026-08-30T10:15:00.000Z',
+          teamResponse: null,
+        ),
+      )
+      ..enqueueJson(
+        statusCode: 200,
+        body: _feedbackRow(
+          id: 'in-review',
+          userId: 'user-1',
+          category: 'suggestion',
+          description: 'Review report',
+          status: 'in_review',
+          createdAt: '2026-08-30T11:00:00.000Z',
+          updatedAt: '2026-08-30T11:15:00.000Z',
+          reviewStartedAt: '2026-08-30T11:05:00.000Z',
+          teamResponse: 'We are checking it.',
+        ),
+      )
+      ..enqueueJson(
+        statusCode: 200,
+        body: _feedbackRow(
+          id: 'resolved',
+          userId: 'user-1',
+          category: 'improvement',
+          description: 'Resolved report',
+          status: 'resolved',
+          createdAt: '2026-08-30T12:00:00.000Z',
+          updatedAt: '2026-08-30T12:15:00.000Z',
+          reviewStartedAt: '2026-08-30T12:05:00.000Z',
+          closedAt: '2026-08-30T12:10:00.000Z',
+          teamResponse: 'Fixed.',
+          screenshotPath:
+              'user-1/resolved/screenshot_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg',
+        ),
+      )
+      ..enqueueJson(
+        statusCode: 200,
+        body: _feedbackRow(
+          id: 'dismissed',
+          userId: 'user-1',
+          category: 'other',
+          description: 'Dismissed report',
+          status: 'dismissed',
+          createdAt: '2026-08-30T13:00:00.000Z',
+          updatedAt: '2026-08-30T13:15:00.000Z',
+          reviewStartedAt: '2026-08-30T13:05:00.000Z',
+          closedAt: '2026-08-30T13:10:00.000Z',
+          teamResponse: 'Not planned.',
+        ),
+      );
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => 'user-1',
+    );
+
+    final submitted = await repository.getMyFeedbackById(feedbackId: 'submitted');
+    final inReview =
+        await repository.getMyFeedbackById(feedbackId: 'in-review');
+    final resolved = await repository.getMyFeedbackById(feedbackId: 'resolved');
+    final dismissed =
+        await repository.getMyFeedbackById(feedbackId: 'dismissed');
+
+    expect(submitted.data?.status, FeedbackStatus.submitted);
+    expect(inReview.data?.status, FeedbackStatus.inReview);
+    expect(resolved.data?.status, FeedbackStatus.resolved);
+    expect(dismissed.data?.status, FeedbackStatus.dismissed);
+    expect(inReview.data?.teamResponse, 'We are checking it.');
+    expect(resolved.data?.screenshotPath, isNotNull);
+    expect(resolved.data?.closedAt, isNotNull);
+    expect(dismissed.data?.closedAt, isNotNull);
+  });
+
+  test('getMyFeedbackById maps Supabase failures and unknown enums safely',
+      () async {
+    final client = _RecordingHttpClient()
+      ..enqueueJson(
+        statusCode: 500,
+        body: <String, dynamic>{
+          'message': 'failed host lookup: example.com',
+        },
+      )
+      ..enqueueJson(
+        statusCode: 200,
+        body: _feedbackRow(
+          id: 'feedback-1',
+          userId: 'user-1',
+          category: 'unexpected',
+          description: 'Broken row',
+          status: 'submitted',
+          createdAt: '2026-08-29T10:00:00.000Z',
+          updatedAt: '2026-08-29T10:05:00.000Z',
+        ),
+      );
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => 'user-1',
+    );
+
+    final networkResult =
+        await repository.getMyFeedbackById(feedbackId: 'feedback-1');
+    final enumResult =
+        await repository.getMyFeedbackById(feedbackId: 'feedback-1');
+
+    expect(networkResult.isSuccess, isFalse);
+    expect(networkResult.error?.code, RepositoryErrorCode.network);
+    expect(enumResult.isSuccess, isFalse);
+    expect(enumResult.error?.code, RepositoryErrorCode.invalidResponse);
+  });
+
   test('getMyFeedback fails safely without an authenticated user', () async {
     final client = _RecordingHttpClient();
     final repository = SupabaseFeedbackRepository(

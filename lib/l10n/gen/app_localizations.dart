@@ -2397,6 +2397,42 @@ abstract class AppLocalizations {
   /// **'Detalle'**
   String get feedbackDetailTitle;
 
+  /// No description provided for @feedbackDetailLoadingState.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando feedback...'**
+  String get feedbackDetailLoadingState;
+
+  /// No description provided for @feedbackDetailErrorTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido cargar el feedback'**
+  String get feedbackDetailErrorTitle;
+
+  /// No description provided for @feedbackDetailLoadErrorMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido cargar este feedback. Inténtalo de nuevo.'**
+  String get feedbackDetailLoadErrorMessage;
+
+  /// No description provided for @feedbackDetailNotAvailableTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Feedback no disponible'**
+  String get feedbackDetailNotAvailableTitle;
+
+  /// No description provided for @feedbackDetailNotAvailableMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Este feedback ya no está disponible.'**
+  String get feedbackDetailNotAvailableMessage;
+
+  /// No description provided for @feedbackDetailRetryAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get feedbackDetailRetryAction;
+
   /// No description provided for @feedbackDetailDescriptionLabel.
   ///
   /// In es, this message translates to:
@@ -2426,6 +2462,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Captura adjunta'**
   String get feedbackDetailScreenshotLabel;
+
+  /// No description provided for @feedbackDetailScreenshotLoading.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando captura...'**
+  String get feedbackDetailScreenshotLoading;
+
+  /// No description provided for @feedbackDetailScreenshotError.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido cargar la captura.'**
+  String get feedbackDetailScreenshotError;
 
   /// No description provided for @feedbackDetailScreenshotPlaceholder.
   ///

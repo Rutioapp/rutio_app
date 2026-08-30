@@ -375,6 +375,18 @@ class _FakeFeedbackRepository implements FeedbackRepository {
       ),
     );
   }
+
+  @override
+  Future<RepositoryResult<FeedbackReport>> getMyFeedbackById({
+    required String feedbackId,
+  }) async {
+    return const RepositoryResult<FeedbackReport>.failure(
+      RepositoryError(
+        code: RepositoryErrorCode.notFound,
+        message: 'Not implemented in image controller tests.',
+      ),
+    );
+  }
 }
 
 class _FakeFeedbackImageService extends FeedbackImageService {
@@ -552,6 +564,15 @@ class _NoopStorageGateway implements FeedbackStorageGateway {
     required String contentType,
     required bool upsert,
   }) async {}
+
+  @override
+  Future<String> createSignedUrl({
+    required String bucket,
+    required String path,
+    required int expiresInSeconds,
+  }) async {
+    return 'https://example.com/$bucket/$path?expires=$expiresInSeconds';
+  }
 }
 
 Future<Directory> _tempDirectoryProvider() async {
