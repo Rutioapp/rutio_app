@@ -171,7 +171,6 @@ class FeedbackSuccessScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context).pushNamed(
                   '/feedback/mine',
-                  arguments: resolvedReport,
                 );
               },
               style: FilledButton.styleFrom(

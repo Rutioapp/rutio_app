@@ -4174,4 +4174,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String pnGeneralConsistencyName01Body(String displayName, String progress) {
     return '$displayName, that $progress says something very personal about your consistency.';
   }
+
+  @override
+  String get feedbackSubmitErrorSessionExpired =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get feedbackSubmitErrorNetwork =>
+      'There was a connection problem while sending your feedback. Please try again.';
+
+  @override
+  String get feedbackSubmitErrorRejected =>
+      'We could not send your feedback. Please review it and try again.';
+
+  @override
+  String get feedbackSubmitErrorGeneric =>
+      'Something went wrong while sending your feedback. Please try again.';
 }

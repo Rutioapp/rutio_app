@@ -7396,6 +7396,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{displayName}, ese {progress} habla de una constancia muy tuya.'**
   String pnGeneralConsistencyName01Body(String displayName, String progress);
+
+  /// No description provided for @feedbackSubmitErrorSessionExpired.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu sesión ha caducado. Vuelve a iniciar sesión.'**
+  String get feedbackSubmitErrorSessionExpired;
+
+  /// No description provided for @feedbackSubmitErrorNetwork.
+  ///
+  /// In es, this message translates to:
+  /// **'Ha ocurrido un problema de conexión al enviar tu feedback. Inténtalo de nuevo.'**
+  String get feedbackSubmitErrorNetwork;
+
+  /// No description provided for @feedbackSubmitErrorRejected.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido enviar tu feedback. Revisa el contenido e inténtalo otra vez.'**
+  String get feedbackSubmitErrorRejected;
+
+  /// No description provided for @feedbackSubmitErrorGeneric.
+  ///
+  /// In es, this message translates to:
+  /// **'Ha ocurrido un problema al enviar tu feedback. Inténtalo de nuevo.'**
+  String get feedbackSubmitErrorGeneric;
 }
 
 class _AppLocalizationsDelegate

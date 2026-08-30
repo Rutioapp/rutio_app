@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -8,8 +6,7 @@ import '../../../../l10n/gen/app_localizations.dart';
 import '../../../../utils/app_theme.dart';
 import '../../application/feedback_form_controller.dart';
 import '../../domain/feedback_category.dart';
-import '../../domain/feedback_report.dart';
-import '../mock/feedback_mock_reports.dart';
+import '../../../../data/repositories/repository_result.dart';
 import '../widgets/feedback_category_card.dart';
 import '../widgets/feedback_screenshot_field.dart';
 
@@ -17,14 +14,11 @@ class FeedbackFormScreen extends StatefulWidget {
   const FeedbackFormScreen({
     super.key,
     this.controller,
-    this.onSubmitSuccess,
   });
 
   static const route = '/feedback/new';
 
   final FeedbackFormController? controller;
-  final FutureOr<void> Function(BuildContext context, FeedbackReport report)?
-      onSubmitSuccess;
 
   @override
   State<FeedbackFormScreen> createState() => _FeedbackFormScreenState();
@@ -50,24 +44,18 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
   }
 
   Future<void> _handleSubmit(BuildContext context) async {
-    final submitted = await _controller.submit(() async {
-      final report = _buildSubmittedReport();
-      final callback = widget.onSubmitSuccess ?? _defaultSubmitSuccess;
-      await callback(context, report);
-    });
+    final result = await _controller.submit();
+    if (!context.mounted || result == null) return;
 
-    if (!submitted || !context.mounted) return;
-  }
+    if (result.isSuccess && result.data != null) {
+      await Navigator.of(context).pushReplacementNamed(
+        '/feedback/success',
+        arguments: result.data,
+      );
+      return;
+    }
 
-  Future<void> _defaultSubmitSuccess(
-    BuildContext context,
-    FeedbackReport report,
-  ) {
-    // Temporal hasta que la Fase 3 conecte el envío real.
-    return Navigator.of(context).pushReplacementNamed(
-      '/feedback/success',
-      arguments: report,
-    );
+    _showSubmitError(context, result.error);
   }
 
   Future<bool> _confirmDiscard(BuildContext context) async {
@@ -467,12 +455,30 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
     }
   }
 
-  FeedbackReport _buildSubmittedReport() {
-    return FeedbackMockReports.buildSubmittedReport(
-      category: _controller.category!,
-      description: _controller.trimmedDescription,
-      contactAllowed: _controller.contactAllowed,
-      screenshotPath: null,
-    );
+  void _showSubmitError(
+    BuildContext context,
+    RepositoryError? error,
+  ) {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final message = switch (error?.code) {
+      RepositoryErrorCode.notAuthenticated =>
+        l10n.feedbackSubmitErrorSessionExpired,
+      RepositoryErrorCode.network => l10n.feedbackSubmitErrorNetwork,
+      RepositoryErrorCode.invalidResponse => l10n.feedbackSubmitErrorRejected,
+      RepositoryErrorCode.permissionDenied => l10n.feedbackSubmitErrorRejected,
+      RepositoryErrorCode.notFound => l10n.feedbackSubmitErrorGeneric,
+      RepositoryErrorCode.unknown => l10n.feedbackSubmitErrorGeneric,
+      null => l10n.feedbackSubmitErrorGeneric,
+    };
+
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 }

@@ -1,8 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../../data/repositories/repository_result.dart';
+import '../data/feedback_repository.dart';
+import '../data/feedback_technical_context_service.dart';
+import '../data/supabase_feedback_repository.dart';
 import '../domain/feedback_category.dart';
+import '../domain/feedback_report.dart';
 
 const int feedbackDescriptionMinLength = 20;
 const int feedbackDescriptionMaxLength = 5000;
@@ -17,12 +21,22 @@ int feedbackDescriptionTrimmedLength(String value) => value.trim().length;
 
 class FeedbackFormController extends ChangeNotifier {
   FeedbackFormController({
+    FeedbackRepository? repository,
+    FeedbackTechnicalContextService? technicalContextService,
+    String Function()? feedbackIdGenerator,
+    String sourceRoute = '/feedback/new',
     FeedbackCategory? initialCategory,
     String initialDescription = '',
     bool initialContactAllowed = false,
   })  : _initialCategory = initialCategory,
         _initialDescription = initialDescription,
         _initialContactAllowed = initialContactAllowed,
+        _repository = repository ?? SupabaseFeedbackRepository(),
+        _technicalContextService =
+            technicalContextService ?? FeedbackTechnicalContextService(),
+        _feedbackIdGenerator =
+            feedbackIdGenerator ?? _defaultFeedbackIdGenerator,
+        _sourceRoute = sourceRoute,
         _category = initialCategory,
         _contactAllowed = initialContactAllowed {
     _descriptionController = TextEditingController(text: initialDescription)
@@ -34,6 +48,10 @@ class FeedbackFormController extends ChangeNotifier {
   final FeedbackCategory? _initialCategory;
   final String _initialDescription;
   final bool _initialContactAllowed;
+  final FeedbackRepository _repository;
+  final FeedbackTechnicalContextService _technicalContextService;
+  final String Function() _feedbackIdGenerator;
+  final String _sourceRoute;
 
   FeedbackCategory? _category;
   String _description = '';
@@ -47,7 +65,8 @@ class FeedbackFormController extends ChangeNotifier {
   TextEditingController get descriptionController => _descriptionController;
 
   int get descriptionLength => _description.length;
-  int get trimmedDescriptionLength => feedbackDescriptionTrimmedLength(_description);
+  int get trimmedDescriptionLength =>
+      feedbackDescriptionTrimmedLength(_description);
   String get trimmedDescription => _description.trim();
 
   bool get isDescriptionValid => isFeedbackDescriptionValid(_description);
@@ -85,15 +104,40 @@ class FeedbackFormController extends ChangeNotifier {
     );
   }
 
-  Future<bool> submit(FutureOr<void> Function() onValidSubmit) async {
-    if (!canSubmit) return false;
+  Future<RepositoryResult<FeedbackReport>?> submit() async {
+    if (!canSubmit || _isSubmitting) return null;
 
     _isSubmitting = true;
     notifyListeners();
 
     try {
-      await onValidSubmit();
-      return true;
+      final feedbackId = _feedbackIdGenerator().trim();
+      final technicalContext = await _technicalContextService
+          .buildTechnicalContext(sourceRoute: _sourceRoute);
+      return await _repository.createFeedback(
+        id: feedbackId,
+        category: _category!,
+        description: trimmedDescription,
+        screenshotPath: null,
+        contactAllowed: _contactAllowed,
+        technicalContext: technicalContext,
+      );
+    } on FormatException catch (error) {
+      return RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message,
+          cause: error,
+        ),
+      );
+    } catch (error) {
+      return RepositoryResult<FeedbackReport>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.unknown,
+          message: 'Could not send feedback.',
+          cause: error,
+        ),
+      );
     } finally {
       if (_isSubmitting) {
         _isSubmitting = false;
@@ -101,6 +145,8 @@ class FeedbackFormController extends ChangeNotifier {
       }
     }
   }
+
+  static String _defaultFeedbackIdGenerator() => const Uuid().v4();
 
   void _handleDescriptionChanged() {
     final next = _descriptionController.text;

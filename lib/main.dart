@@ -180,8 +180,7 @@ class MyApp extends StatelessWidget {
             FeedbackFormScreen.route: (_) => const FeedbackFormScreen(),
             FeedbackSuccessScreen.route: (context) =>
                 FeedbackSuccessScreen(report: _feedbackRouteReport(context)),
-            MyFeedbackScreen.route: (context) => MyFeedbackScreen(
-                submittedReport: _feedbackRouteReport(context)),
+            MyFeedbackScreen.route: (_) => const MyFeedbackScreen(),
             FeedbackDetailScreen.route: (context) => FeedbackDetailScreen(
                   report: _feedbackRouteReport(context) ??
                       FeedbackReport(

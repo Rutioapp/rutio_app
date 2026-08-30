@@ -68,16 +68,9 @@ class FeedbackMockReports {
   static FeedbackReport get fallbackDetailReport =>
       examples.firstWhere((report) => report.status == FeedbackStatus.resolved);
 
-  static List<FeedbackReport> mineReports({
-    FeedbackReport? submittedReport,
-  }) {
-    final reports = <FeedbackReport>[
-      if (submittedReport != null) submittedReport,
-      ...examples,
-    ];
-
+  static List<FeedbackReport> mineReports() {
     final deduplicated = <String, FeedbackReport>{};
-    for (final report in reports) {
+    for (final report in examples) {
       deduplicated[report.id] = report;
     }
 

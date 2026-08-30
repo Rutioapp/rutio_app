@@ -4191,4 +4191,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String pnGeneralConsistencyName01Body(String displayName, String progress) {
     return '$displayName, ese $progress habla de una constancia muy tuya.';
   }
+
+  @override
+  String get feedbackSubmitErrorSessionExpired =>
+      'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+
+  @override
+  String get feedbackSubmitErrorNetwork =>
+      'Ha ocurrido un problema de conexión al enviar tu feedback. Inténtalo de nuevo.';
+
+  @override
+  String get feedbackSubmitErrorRejected =>
+      'No se ha podido enviar tu feedback. Revisa el contenido e inténtalo otra vez.';
+
+  @override
+  String get feedbackSubmitErrorGeneric =>
+      'Ha ocurrido un problema al enviar tu feedback. Inténtalo de nuevo.';
 }

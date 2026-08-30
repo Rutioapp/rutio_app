@@ -10,14 +10,9 @@ import '../mock/feedback_mock_reports.dart';
 import '../widgets/feedback_status_chip.dart';
 
 class MyFeedbackScreen extends StatefulWidget {
-  const MyFeedbackScreen({
-    super.key,
-    this.submittedReport,
-  });
+  const MyFeedbackScreen({super.key});
 
   static const route = '/feedback/mine';
-
-  final FeedbackReport? submittedReport;
 
   @override
   State<MyFeedbackScreen> createState() => _MyFeedbackScreenState();
@@ -146,9 +141,7 @@ class _MyFeedbackScreenState extends State<MyFeedbackScreen> {
   }
 
   List<FeedbackReport> _filteredReports() {
-    final reports = FeedbackMockReports.mineReports(
-      submittedReport: widget.submittedReport,
-    );
+    final reports = FeedbackMockReports.mineReports();
 
     return reports.where((report) {
       switch (_filter) {

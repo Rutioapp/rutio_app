@@ -2104,5 +2104,9 @@
       "displayName": { "type": "String" },
       "progress": { "type": "String" }
     }
-  }
+  },
+  "feedbackSubmitErrorSessionExpired": "Your session has expired. Please sign in again.",
+  "feedbackSubmitErrorNetwork": "There was a connection problem while sending your feedback. Please try again.",
+  "feedbackSubmitErrorRejected": "We could not send your feedback. Please review it and try again.",
+  "feedbackSubmitErrorGeneric": "Something went wrong while sending your feedback. Please try again."
 }
