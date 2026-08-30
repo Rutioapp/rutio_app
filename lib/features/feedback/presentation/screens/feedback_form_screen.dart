@@ -5,6 +5,7 @@ import '../../../../l10n/l10n.dart';
 import '../../../../l10n/gen/app_localizations.dart';
 import '../../../../utils/app_theme.dart';
 import '../../application/feedback_form_controller.dart';
+import '../../data/feedback_image_service.dart';
 import '../../domain/feedback_category.dart';
 import '../../../../data/repositories/repository_result.dart';
 import '../widgets/feedback_category_card.dart';
@@ -52,6 +53,10 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
         '/feedback/success',
         arguments: result.data,
       );
+      return;
+    }
+
+    if (_controller.imageIssue != null) {
       return;
     }
 
@@ -348,7 +353,29 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
                   const SizedBox(height: 18),
                   FeedbackScreenshotField(
                     title: l10n.feedbackScreenshotTitle,
-                    placeholderLabel: l10n.feedbackScreenshotPlaceholder,
+                    emptyLabel: l10n.feedbackScreenshotPlaceholder,
+                    selectedLabel: l10n.feedbackScreenshotSelectedLabel,
+                    selectActionLabel: l10n.feedbackScreenshotSelectAction,
+                    replaceActionLabel: l10n.feedbackScreenshotReplaceAction,
+                    removeActionLabel: l10n.feedbackScreenshotRemoveAction,
+                    previewBytes: _controller.screenshotPreviewBytes,
+                    isBusy: _controller.isSubmitting ||
+                        _controller.isSelectingScreenshot,
+                    busyLabel: l10n.feedbackScreenshotPreparing,
+                    errorText: _screenshotErrorText(
+                      l10n,
+                      _controller.imageIssue,
+                    ),
+                    onSelect: _controller.canEditScreenshot
+                        ? _controller.selectScreenshot
+                        : null,
+                    onReplace: _controller.canEditScreenshot
+                        ? _controller.selectScreenshot
+                        : null,
+                    onRemove: _controller.canEditScreenshot &&
+                            _controller.hasScreenshotSelection
+                        ? _controller.removeScreenshot
+                        : null,
                   ),
                   const SizedBox(height: 18),
                   Container(
@@ -480,5 +507,27 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+  }
+
+  String? _screenshotErrorText(
+    AppLocalizations l10n,
+    FeedbackImageErrorType? error,
+  ) {
+    if (error == null) return null;
+
+    return switch (error) {
+      FeedbackImageErrorType.unsupportedType =>
+        l10n.feedbackScreenshotErrorUnsupported,
+      FeedbackImageErrorType.notProcessable =>
+        l10n.feedbackScreenshotErrorNotProcessable,
+      FeedbackImageErrorType.compressionFailed =>
+        l10n.feedbackScreenshotErrorCompressionFailed,
+      FeedbackImageErrorType.tooLarge =>
+        l10n.feedbackScreenshotErrorTooLarge,
+      FeedbackImageErrorType.uploadFailed =>
+        l10n.feedbackScreenshotErrorUploadFailed,
+      FeedbackImageErrorType.cleanupFailed =>
+        l10n.feedbackScreenshotErrorCleanupFailed,
+    };
   }
 }

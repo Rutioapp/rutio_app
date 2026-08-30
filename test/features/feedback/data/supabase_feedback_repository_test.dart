@@ -102,6 +102,71 @@ void main() {
     );
   });
 
+  test('createFeedback forwards screenshotPath when provided', () async {
+    final client = _RecordingHttpClient()
+      ..enqueueJson(
+        statusCode: 201,
+        body: <String, dynamic>{
+          'id': 'feedback-123',
+          'user_id': 'user-1',
+          'category': 'bug',
+          'description': 'A' * 20,
+          'screenshot_path':
+              'user-1/feedback-123/screenshot_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg',
+          'contact_allowed': false,
+          'status': 'submitted',
+          'team_response': null,
+          'technical_context': <String, dynamic>{
+            'appVersion': '1.2.3',
+            'buildNumber': '456',
+            'platform': 'android',
+            'osVersion': '15',
+            'deviceModel': 'Pixel 8',
+            'appLocale': 'es_ES',
+            'sourceRoute': '/feedback/new',
+          },
+          'review_started_at': null,
+          'closed_at': null,
+          'created_at': '2026-08-30T12:00:00.000Z',
+          'updated_at': '2026-08-30T12:00:00.000Z',
+        },
+      );
+    final repository = SupabaseFeedbackRepository(
+      client: SupabaseClient(
+        'https://example.com',
+        'anon-key',
+        httpClient: client,
+      ),
+      currentUserIdProvider: () => 'user-1',
+    );
+
+    final result = await repository.createFeedback(
+      id: 'feedback-123',
+      category: FeedbackCategory.bug,
+      description: 'A' * 20,
+      screenshotPath:
+          'user-1/feedback-123/screenshot_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg',
+      contactAllowed: false,
+      technicalContext: const FeedbackTechnicalContext(
+        appVersion: '1.2.3',
+        buildNumber: '456',
+        platform: 'android',
+        osVersion: '15',
+        deviceModel: 'Pixel 8',
+        appLocale: 'es_ES',
+        sourceRoute: '/feedback/new',
+      ),
+    );
+
+    expect(result.isSuccess, isTrue);
+    final body =
+        jsonDecode(client.requests.single.body!) as Map<String, dynamic>;
+    expect(
+      body['screenshot_path'],
+      'user-1/feedback-123/screenshot_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg',
+    );
+  });
+
   test('createFeedback fails safely without an authenticated user', () async {
     final client = _RecordingHttpClient();
     final repository = SupabaseFeedbackRepository(

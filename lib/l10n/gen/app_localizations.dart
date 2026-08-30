@@ -2097,6 +2097,72 @@ abstract class AppLocalizations {
   /// **'Seleccionar imagen'**
   String get feedbackScreenshotPlaceholder;
 
+  /// No description provided for @feedbackScreenshotSelectedLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Captura lista'**
+  String get feedbackScreenshotSelectedLabel;
+
+  /// No description provided for @feedbackScreenshotSelectAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar imagen'**
+  String get feedbackScreenshotSelectAction;
+
+  /// No description provided for @feedbackScreenshotReplaceAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Sustituir'**
+  String get feedbackScreenshotReplaceAction;
+
+  /// No description provided for @feedbackScreenshotRemoveAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Retirar'**
+  String get feedbackScreenshotRemoveAction;
+
+  /// No description provided for @feedbackScreenshotPreparing.
+  ///
+  /// In es, this message translates to:
+  /// **'Preparando captura...'**
+  String get feedbackScreenshotPreparing;
+
+  /// No description provided for @feedbackScreenshotErrorUnsupported.
+  ///
+  /// In es, this message translates to:
+  /// **'No se admite ese tipo de imagen. Prueba con otra captura.'**
+  String get feedbackScreenshotErrorUnsupported;
+
+  /// No description provided for @feedbackScreenshotErrorNotProcessable.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido preparar esta imagen. Prueba con otra.'**
+  String get feedbackScreenshotErrorNotProcessable;
+
+  /// No description provided for @feedbackScreenshotErrorCompressionFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido comprimir esta imagen. Prueba con otra.'**
+  String get feedbackScreenshotErrorCompressionFailed;
+
+  /// No description provided for @feedbackScreenshotErrorTooLarge.
+  ///
+  /// In es, this message translates to:
+  /// **'La imagen sigue siendo demasiado grande. Prueba con otra más ligera.'**
+  String get feedbackScreenshotErrorTooLarge;
+
+  /// No description provided for @feedbackScreenshotErrorUploadFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido subir la captura. Comprueba tu conexión e inténtalo de nuevo.'**
+  String get feedbackScreenshotErrorUploadFailed;
+
+  /// No description provided for @feedbackScreenshotErrorCleanupFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'Ha habido un problema limpiando una captura temporal. Puedes volver a intentarlo.'**
+  String get feedbackScreenshotErrorCleanupFailed;
+
   /// No description provided for @feedbackContactTitle.
   ///
   /// In es, this message translates to:

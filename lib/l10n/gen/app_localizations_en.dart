@@ -1139,6 +1139,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedbackScreenshotPlaceholder => 'Select image';
 
   @override
+  String get feedbackScreenshotSelectedLabel => 'Screenshot ready';
+
+  @override
+  String get feedbackScreenshotSelectAction => 'Select image';
+
+  @override
+  String get feedbackScreenshotReplaceAction => 'Replace';
+
+  @override
+  String get feedbackScreenshotRemoveAction => 'Remove';
+
+  @override
+  String get feedbackScreenshotPreparing => 'Preparing screenshot...';
+
+  @override
+  String get feedbackScreenshotErrorUnsupported =>
+      'That image type is not supported. Please try another screenshot.';
+
+  @override
+  String get feedbackScreenshotErrorNotProcessable =>
+      'We could not prepare this image. Please try another one.';
+
+  @override
+  String get feedbackScreenshotErrorCompressionFailed =>
+      'We could not compress this image. Please try another one.';
+
+  @override
+  String get feedbackScreenshotErrorTooLarge =>
+      'The image is still too large. Please try a smaller one.';
+
+  @override
+  String get feedbackScreenshotErrorUploadFailed =>
+      'We could not upload the screenshot. Check your connection and try again.';
+
+  @override
+  String get feedbackScreenshotErrorCleanupFailed =>
+      'There was a problem cleaning up a temporary screenshot. You can try again.';
+
+  @override
   String get feedbackContactTitle => 'Can we contact you?';
 
   @override

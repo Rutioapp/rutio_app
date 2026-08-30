@@ -1,9 +1,17 @@
+import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:rutio/data/repositories/repository_result.dart';
 import 'package:rutio/features/feedback/application/feedback_form_controller.dart';
+import 'package:rutio/features/feedback/data/feedback_image_service.dart';
 import 'package:rutio/features/feedback/data/feedback_repository.dart';
+import 'package:rutio/features/feedback/data/feedback_storage_service.dart';
 import 'package:rutio/features/feedback/data/feedback_technical_context_service.dart';
 import 'package:rutio/features/feedback/domain/feedback_category.dart';
 import 'package:rutio/features/feedback/domain/feedback_report.dart';
@@ -13,6 +21,10 @@ import 'package:rutio/features/feedback/presentation/screens/feedback_form_scree
 import 'package:rutio/features/feedback/presentation/screens/feedback_success_screen.dart';
 import 'package:rutio/features/feedback/presentation/widgets/feedback_category_card.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
+
+const String _feedbackUserId = '11111111-1111-1111-1111-111111111111';
+const String _feedbackId = '22222222-2222-4222-8222-222222222222';
+const String _screenshotId = '33333333-3333-4333-8333-333333333333';
 
 void main() {
   testWidgets('renders the four categories', (tester) async {
@@ -126,7 +138,7 @@ void main() {
     final controller = FeedbackFormController(
       repository: _FakeFeedbackRepository(),
       technicalContextService: _FakeTechnicalContextService(),
-      feedbackIdGenerator: () => 'feedback-123',
+      feedbackIdGenerator: () => _feedbackId,
     );
     addTearDown(controller.dispose);
 
@@ -143,8 +155,15 @@ void main() {
     expect(controller.contactAllowed, isTrue);
   });
 
-  testWidgets('screenshot field shows the empty placeholder', (tester) async {
-    await _pumpApp(tester, FeedbackFormScreen(controller: _buildController()));
+  testWidgets('screenshot field supports preview replace and remove',
+      (tester) async {
+    final controller = _buildController(
+      imageService: _FakeFeedbackImageService(
+        selection: _selection(),
+      ),
+    );
+
+    await _pumpApp(tester, FeedbackFormScreen(controller: controller));
 
     final context = tester.element(find.byType(Scaffold));
     final l10n = AppLocalizations.of(context);
@@ -152,6 +171,95 @@ void main() {
     await _scrollToText(tester, l10n.feedbackScreenshotTitle);
     expect(find.text(l10n.feedbackScreenshotTitle), findsWidgets);
     expect(find.text(l10n.feedbackScreenshotPlaceholder), findsWidgets);
+
+    await tester.tap(
+      find.widgetWithText(FilledButton, l10n.feedbackScreenshotSelectAction),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.feedbackScreenshotSelectedLabel), findsOneWidget);
+    expect(find.text(l10n.feedbackScreenshotReplaceAction), findsOneWidget);
+    expect(find.text(l10n.feedbackScreenshotRemoveAction), findsOneWidget);
+    expect(controller.hasScreenshotSelection, isTrue);
+
+    await tester.tap(
+      find.widgetWithText(TextButton, l10n.feedbackScreenshotRemoveAction),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.feedbackScreenshotPlaceholder), findsWidgets);
+    expect(controller.hasScreenshotSelection, isFalse);
+  });
+
+  testWidgets('screenshot selection errors are localized', (tester) async {
+    final controller = _buildController(
+      imageService: _FakeFeedbackImageService(
+        pickError: const FeedbackImageException(
+          FeedbackImageErrorType.unsupportedType,
+        ),
+      ),
+    );
+
+    await _pumpApp(tester, FeedbackFormScreen(controller: controller));
+
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+
+    await _scrollToText(tester, l10n.feedbackScreenshotTitle);
+    await tester.tap(
+      find.widgetWithText(FilledButton, l10n.feedbackScreenshotSelectAction),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(l10n.feedbackScreenshotErrorUnsupported),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('submit disables screenshot actions while processing',
+      (tester) async {
+    final pending = Completer<RepositoryResult<FeedbackReport>>();
+    final controller = _buildController(
+      repository: _FakeFeedbackRepository(pendingResult: pending),
+    );
+
+    await _pumpApp(
+      tester,
+      FeedbackFormScreen(controller: controller),
+      routes: {
+        '/feedback/success': (_) => const SizedBox.shrink(),
+      },
+    );
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+
+    await tester.tap(find.text(l10n.feedbackCategoryBugTitle));
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, l10n.feedbackDescriptionHint);
+    await tester.enterText(find.byType(TextField), 'A' * 20);
+    await tester.pumpAndSettle();
+    await _scrollToText(tester, l10n.feedbackSubmitAction);
+    await tester.tap(find.widgetWithText(FilledButton, l10n.feedbackSubmitAction));
+    await tester.pump();
+
+    final buttons = tester.widgetList<FilledButton>(find.byType(FilledButton));
+
+    expect(buttons.every((button) => button.onPressed == null), isTrue);
+
+    pending.complete(
+      RepositoryResult<FeedbackReport>.success(
+        data: _submittedReport(
+          id: _feedbackId,
+          category: FeedbackCategory.bug,
+          description: 'A' * 20,
+          contactAllowed: false,
+          technicalContext: _FakeTechnicalContextService.defaultContext,
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
   });
 
   testWidgets('dirty back navigation opens a confirmation dialog',
@@ -201,7 +309,7 @@ void main() {
       sourceRoute: '/feedback/new',
     );
     final expectedReport = FeedbackReport(
-      id: 'feedback-123',
+      id: _feedbackId,
       category: FeedbackCategory.bug,
       description: 'A' * 20,
       contactAllowed: true,
@@ -216,7 +324,7 @@ void main() {
       technicalContextService: _FakeTechnicalContextService(
         context: technicalContext,
       ),
-      feedbackIdGenerator: () => 'feedback-123',
+      feedbackIdGenerator: () => _feedbackId,
     );
     addTearDown(controller.dispose);
 
@@ -252,6 +360,26 @@ void main() {
     expect(find.text(l10n.feedbackSuccessMineAction), findsOneWidget);
   });
 
+  testWidgets('preselected screenshot renders in the form', (tester) async {
+    final controller = _buildController(
+      imageService: _FakeFeedbackImageService(
+        selection: _selection(),
+      ),
+    );
+
+    await controller.selectScreenshot();
+
+    await _pumpApp(tester, FeedbackFormScreen(controller: controller));
+
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+
+    expect(controller.hasScreenshotSelection, isTrue);
+    expect(find.text(l10n.feedbackScreenshotSelectedLabel), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, l10n.feedbackScreenshotReplaceAction), findsOneWidget);
+    expect(find.widgetWithText(TextButton, l10n.feedbackScreenshotRemoveAction), findsOneWidget);
+  });
+
   testWidgets('failed submit shows a session-expired snackbar', (tester) async {
     final controller = FeedbackFormController(
       repository: _FakeFeedbackRepository(
@@ -263,7 +391,7 @@ void main() {
         ),
       ),
       technicalContextService: _FakeTechnicalContextService(),
-      feedbackIdGenerator: () => 'feedback-123',
+      feedbackIdGenerator: () => _feedbackId,
     );
     addTearDown(controller.dispose);
 
@@ -394,13 +522,19 @@ Future<void> _scrollToText(WidgetTester tester, String text) async {
 FeedbackFormController _buildController({
   RepositoryResult<FeedbackReport>? result,
   FeedbackTechnicalContext? technicalContext,
+  FeedbackImageService? imageService,
+  FeedbackStorageService? storageService,
+  FeedbackRepository? repository,
 }) {
   final controller = FeedbackFormController(
-    repository: _FakeFeedbackRepository(result: result),
+    repository: repository ?? _FakeFeedbackRepository(result: result),
     technicalContextService: _FakeTechnicalContextService(
       context: technicalContext ?? _FakeTechnicalContextService.defaultContext,
     ),
-    feedbackIdGenerator: () => 'feedback-123',
+    imageService: imageService ?? _FakeFeedbackImageService(),
+    storageService: storageService ?? _FakeFeedbackStorageService(),
+    feedbackIdGenerator: () => _feedbackId,
+    screenshotIdGenerator: () => _screenshotId,
   );
   addTearDown(controller.dispose);
   return controller;
@@ -409,10 +543,13 @@ FeedbackFormController _buildController({
 class _FakeFeedbackRepository implements FeedbackRepository {
   _FakeFeedbackRepository({
     this.result,
+    this.pendingResult,
   });
 
   final RepositoryResult<FeedbackReport>? result;
+  final Completer<RepositoryResult<FeedbackReport>>? pendingResult;
   _CreateFeedbackRequest? lastRequest;
+  int callCount = 0;
 
   @override
   Future<RepositoryResult<FeedbackReport>> createFeedback({
@@ -423,6 +560,7 @@ class _FakeFeedbackRepository implements FeedbackRepository {
     required FeedbackTechnicalContext technicalContext,
     String? screenshotPath,
   }) async {
+    callCount += 1;
     lastRequest = _CreateFeedbackRequest(
       id: id,
       category: category,
@@ -431,6 +569,10 @@ class _FakeFeedbackRepository implements FeedbackRepository {
       technicalContext: technicalContext,
       screenshotPath: screenshotPath,
     );
+
+    if (pendingResult != null) {
+      return pendingResult!.future;
+    }
     return result ??
         RepositoryResult<FeedbackReport>.success(
           data: FeedbackReport(
@@ -443,6 +585,79 @@ class _FakeFeedbackRepository implements FeedbackRepository {
             createdAt: DateTime(2026, 8, 30, 12, 0),
           ),
         );
+  }
+}
+
+class _FakeFeedbackImageService extends FeedbackImageService {
+  _FakeFeedbackImageService({
+    this.selection,
+    this.pickError,
+  }) : super(
+          picker: _NoopImagePicker(),
+          compressor: _NoopImageCompressor(),
+          tempDirectoryProvider: _temporaryImageDirectory,
+        );
+
+  final FeedbackScreenshotSelection? selection;
+  final FeedbackImageException? pickError;
+
+  @override
+  Future<FeedbackScreenshotSelection?> pickFromGallery() async {
+    if (pickError != null) throw pickError!;
+    return selection;
+  }
+
+  @override
+  Future<FeedbackPreparedImage> prepareForUpload(
+    FeedbackScreenshotSelection selection,
+  ) async {
+    final tempDir = await _temporaryImageDirectory();
+    final file = File('${tempDir.path}/prepared.jpg')
+      ..writeAsBytesSync(selection.previewBytes, flush: true);
+
+    return FeedbackPreparedImage(
+      file: file,
+      bytes: selection.previewBytes,
+      cleanup: () async {
+        if (await file.exists()) {
+          await file.delete();
+        }
+        if (await tempDir.exists()) {
+          await tempDir.delete(recursive: true);
+        }
+      },
+    );
+  }
+}
+
+class _FakeFeedbackStorageService extends FeedbackStorageService {
+  _FakeFeedbackStorageService() : super(
+          gateway: _NoopStorageGateway(),
+          currentUserIdProvider: () => _feedbackUserId,
+        );
+
+  int uploadCalls = 0;
+  int removeCalls = 0;
+
+  @override
+  Future<String> uploadScreenshot({
+    required String feedbackId,
+    required String screenshotId,
+    required FeedbackPreparedImage image,
+  }) async {
+    uploadCalls += 1;
+    return buildScreenshotPath(
+      userId: _feedbackUserId,
+      feedbackId: feedbackId,
+      screenshotId: screenshotId,
+    );
+  }
+
+  @override
+  Future<void> removeScreenshot({
+    required String path,
+  }) async {
+    removeCalls += 1;
   }
 }
 
@@ -496,4 +711,78 @@ class _CreateFeedbackRequest {
   final bool contactAllowed;
   final FeedbackTechnicalContext technicalContext;
   final String? screenshotPath;
+}
+
+FeedbackReport _submittedReport({
+  required String id,
+  required FeedbackCategory category,
+  required String description,
+  required bool contactAllowed,
+  required FeedbackTechnicalContext technicalContext,
+}) {
+  return FeedbackReport(
+    id: id,
+    category: category,
+    description: description,
+    contactAllowed: contactAllowed,
+    status: FeedbackStatus.submitted,
+    technicalContext: technicalContext,
+    createdAt: DateTime(2026, 8, 30, 12, 0),
+  );
+}
+
+class _NoopImagePicker implements FeedbackImagePicker {
+  @override
+  Future<XFile?> pickGalleryImage() async => null;
+}
+
+class _NoopImageCompressor implements FeedbackImageCompressor {
+  @override
+  Future<Uint8List?> compress({
+    required String sourcePath,
+    required int quality,
+    required int minWidth,
+    required int minHeight,
+  }) async {
+    return Uint8List.fromList(<int>[1, 2, 3]);
+  }
+}
+
+class _NoopStorageGateway implements FeedbackStorageGateway {
+  @override
+  Future<void> remove({
+    required String bucket,
+    required String path,
+  }) async {}
+
+  @override
+  Future<void> uploadBinary({
+    required String bucket,
+    required String path,
+    required Uint8List bytes,
+    required String contentType,
+    required bool upsert,
+  }) async {}
+}
+
+FeedbackScreenshotSelection _selection() {
+  final bytes = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAA'
+    'AAC0lEQVR42mP8/x8AAwMCAO6X0WQAAAAASUVORK5CYII=',
+  );
+  final file = XFile.fromData(
+    bytes,
+    name: 'capture.png',
+    mimeType: 'image/png',
+  );
+
+  return FeedbackScreenshotSelection(
+    file: file,
+    previewBytes: bytes,
+    mimeType: 'image/png',
+  );
+}
+
+Future<Directory> _temporaryImageDirectory() async {
+  return Directory.systemTemp.createTemp('feedback-form-image-test-');
 }
