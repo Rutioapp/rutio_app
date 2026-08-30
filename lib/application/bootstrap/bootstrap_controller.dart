@@ -830,6 +830,10 @@ class BootstrapController extends ChangeNotifier {
         if (authoritativeError?.code ==
             AuthoritativeBootstrapDecisionFailureCode.staleResult) {
           _recordStaleDiscard(runId, domain: 'authoritative_bootstrap');
+          if (_isCurrentRun(runId) &&
+              _authController.currentUser?.id == user.id) {
+            unawaited(_run(mode: BootstrapRunMode.inAppBootstrap));
+          }
           return;
         }
         _fail(
@@ -1313,7 +1317,6 @@ class BootstrapController extends ChangeNotifier {
 
   void _startupLog(String message) {
     if (!kDebugMode) return;
-    debugPrint(message);
   }
 
   Future<void> _runAuthoritativeBootstrapCacheShadow({
@@ -1330,11 +1333,7 @@ class BootstrapController extends ChangeNotifier {
     AuthoritativeBootstrapCacheReadResultV2 readResult;
     try {
       readResult = await cacheReadFuture;
-    } catch (error, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('[bootstrap] cache v2 read failed: $error');
-        debugPrintStack(stackTrace: stackTrace);
-      }
+    } catch (error) {
       readResult = const AuthoritativeBootstrapCacheReadResultV2(
         status: AuthoritativeBootstrapCacheReadStatusV2.storageError,
       );
@@ -1475,11 +1474,7 @@ class BootstrapController extends ChangeNotifier {
         'authoritative_cache_v2_write_result status=success '
         'destination=${authoritativeDecision.decision.name}',
       );
-    } catch (error, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('[bootstrap] cache v2 write failed: $error');
-        debugPrintStack(stackTrace: stackTrace);
-      }
+    } catch (error) {
       _metric(
         runId,
         'authoritative_cache_v2_write_total',
@@ -1727,12 +1722,7 @@ class BootstrapController extends ChangeNotifier {
   ) async {
     try {
       await callback(ready);
-    } catch (error, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('[bootstrap] home ready callback failed: $error');
-        debugPrintStack(stackTrace: stackTrace);
-      }
-    }
+    } catch (_) {}
   }
 
   @override

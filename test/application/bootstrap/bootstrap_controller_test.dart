@@ -96,6 +96,70 @@ void main() {
       expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
     });
 
+    test('same-user relogin recovers when an authoritative decision goes stale',
+        () async {
+      final firstAuth = Completer<AuthoritativeBootstrapDecisionLoadResult>();
+      final fixture = _Fixture(
+        profileResult: _ProfileResult.fromStatus,
+        authoritativeCompleters: <Completer<
+            AuthoritativeBootstrapDecisionLoadResult>>[
+          firstAuth,
+        ],
+        authoritativeResults: <AuthoritativeBootstrapDecisionLoadResult>[
+          _authoritativeHomeResult('user-1'),
+        ],
+      );
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+
+      fixture.resolveGuest();
+      await fixture.pump();
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.ready);
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
+
+      firstAuth.complete(_authoritativeStaleResult('user-1'));
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.ready);
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
+      expect(fixture.profile.authoritativeLoadCalls, 2);
+    });
+
+    test('duplicate signedIn events for the same user do not restart bootstrap',
+        () async {
+      final authoritative =
+          Completer<AuthoritativeBootstrapDecisionLoadResult>();
+      final fixture = _Fixture(
+        profileResult: _ProfileResult.fromStatus,
+        authoritativeCompleters: <Completer<
+            AuthoritativeBootstrapDecisionLoadResult>>[
+          authoritative,
+        ],
+      );
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+      expect(
+          fixture.bootstrap.state.phase, BootstrapPhase.loadingRemoteProfile);
+      expect(fixture.profile.authoritativeLoadCalls, 1);
+
+      fixture.authStream.add(
+        AuthState(AuthChangeEvent.signedIn, _session(_user('user-1'))),
+      );
+      await fixture.pump();
+
+      expect(fixture.profile.authoritativeLoadCalls, 1);
+      authoritative.complete(_authoritativeHomeResult('user-1'));
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.ready);
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
+    });
+
     test('authoritative suspended profile routes to suspended screen',
         () async {
       final fixture = _Fixture(
@@ -1019,7 +1083,7 @@ class _FakeAuthorityBootstrapController extends BootstrapController {
           mode: BootstrapRunMode.coldStart,
           destination: initialDestination,
         ),
-      super(
+        super(
           userStateStore: _FakeUserStateStore(localOnboardingDone: false),
           profileRepository: _NoopAuthorityBootstrapProfileRepository(),
           authoritativeBootstrapCache: InMemoryAuthoritativeBootstrapCacheV2(),
@@ -1191,6 +1255,50 @@ CosmeticsBootstrapResult _cosmeticsReady(String userId) {
   );
 }
 
+AuthoritativeBootstrapDecisionLoadResult _authoritativeHomeResult(
+  String userId,
+) {
+  return AuthoritativeBootstrapDecisionLoadResult(
+    decision: AuthoritativeBootstrapDecision(
+      userId: userId,
+      decision: AuthoritativeBootstrapDestination.home,
+      accountStatus: BootstrapAccountStatus.active,
+      profileState: BootstrapProfileState.ready,
+      onboardingStatus: OnboardingStatus.completed,
+      completedOnboardingVersion: 1,
+      requiredOnboardingVersion: 1,
+      onboardingEnforcement: BootstrapOnboardingEnforcement.required,
+      onboardingCompletedAt: DateTime.utc(2026, 7, 28),
+      profileRevision: 3,
+      policyRevision: 2,
+    ),
+    totalDuration: Duration.zero,
+    inflightWaitDuration: Duration.zero,
+    remoteQueryDuration: Duration.zero,
+    mapDuration: Duration.zero,
+    remoteCallCount: 1,
+    payloadColumnCount: 11,
+  );
+}
+
+AuthoritativeBootstrapDecisionLoadResult _authoritativeStaleResult(
+  String userId,
+) {
+  return AuthoritativeBootstrapDecisionLoadResult(
+    decision: null,
+    error: const AuthoritativeBootstrapDecisionReadException(
+      code: AuthoritativeBootstrapDecisionFailureCode.staleResult,
+      message: 'stale',
+    ),
+    totalDuration: Duration.zero,
+    inflightWaitDuration: Duration.zero,
+    remoteQueryDuration: Duration.zero,
+    mapDuration: Duration.zero,
+    remoteCallCount: 1,
+    payloadColumnCount: 11,
+  );
+}
+
 class _Fixture {
   _Fixture({
     String? restoredUserId,
@@ -1199,6 +1307,9 @@ class _Fixture {
     AuthoritativeBootstrapDecision? authoritativeDecision,
     _ProfileResult profileResult = _ProfileResult.fromStatus,
     Completer<BootstrapProfileDecisionLoadResult>? profileCompleter,
+    List<Completer<AuthoritativeBootstrapDecisionLoadResult>>?
+        authoritativeCompleters,
+    List<AuthoritativeBootstrapDecisionLoadResult>? authoritativeResults,
     _FakeEssentialHabitsPreparer? habitsPreparer,
     _FakeEssentialCosmeticsPreparer? cosmeticsPreparer,
     _FakeEssentialAssetPreloader? assetPreloader,
@@ -1215,6 +1326,8 @@ class _Fixture {
           authoritativeDecision: authoritativeDecision,
           result: profileResult,
           completer: profileCompleter,
+          authoritativeCompleters: authoritativeCompleters,
+          authoritativeResults: authoritativeResults,
         ) {
     authRepository = _FakeAuthRepository(
       authStateChangesProvider: () => authStream.stream,
@@ -1314,12 +1427,21 @@ class _FakeProfileRepository implements BootstrapProfileRepository {
     required this.status,
     required this.result,
     this.completer,
+    List<Completer<AuthoritativeBootstrapDecisionLoadResult>>?
+        authoritativeCompleters,
+    List<AuthoritativeBootstrapDecisionLoadResult>? authoritativeResults,
     this.authoritativeDecision,
-  });
+  })  : authoritativeCompleters = authoritativeCompleters ??
+            <Completer<AuthoritativeBootstrapDecisionLoadResult>>[],
+        authoritativeResults = authoritativeResults ??
+            <AuthoritativeBootstrapDecisionLoadResult>[];
 
   OnboardingStatus status;
   _ProfileResult result;
   Completer<BootstrapProfileDecisionLoadResult>? completer;
+  final List<Completer<AuthoritativeBootstrapDecisionLoadResult>>
+      authoritativeCompleters;
+  final List<AuthoritativeBootstrapDecisionLoadResult> authoritativeResults;
   Completer<RepositoryResult<RemoteProfile>>? completeCompleter;
   AuthoritativeBootstrapDecision? authoritativeDecision;
   int fetchCalls = 0;
@@ -1337,6 +1459,12 @@ class _FakeProfileRepository implements BootstrapProfileRepository {
         ProfileRepository.bootstrapOnboardingPolicyVersion,
   }) {
     authoritativeLoadCalls += 1;
+    if (authoritativeCompleters.isNotEmpty) {
+      return authoritativeCompleters.removeAt(0).future;
+    }
+    if (authoritativeResults.isNotEmpty) {
+      return Future.value(authoritativeResults.removeAt(0));
+    }
     final pending = completer;
     if (pending != null) {
       return pending.future.then(_authoritativeFromBootstrapResult);

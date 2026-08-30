@@ -950,6 +950,49 @@ void main() {
       );
     });
 
+    test('explicit invalidation during authoritative query returns stale',
+        () async {
+      final client = _BlockingHttpClient();
+      final repository = ProfileRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-1',
+      );
+
+      final pending = repository.loadAuthoritativeBootstrapDecision(
+        scopeUserId: 'user-1',
+        scopeEpoch: 1,
+      );
+      await Future<void>.delayed(Duration.zero);
+      await repository.invalidateBootstrapProfileDecisionMemory(
+        userId: 'user-1',
+        reason: BootstrapProfileDecisionMemoryInvalidationReason
+            .explicitInvalidation,
+        bumpSessionGeneration: true,
+      );
+      expect(client.callCount, 1);
+      client.completeNextJson(
+        <dynamic>[
+          _authoritativeRow(
+            decision: 'home',
+            onboardingStatus: 'completed',
+            completedVersion: 1,
+            completedAt: '2026-07-27T21:35:00.000Z',
+          ),
+        ],
+      );
+
+      final result = await pending;
+      expect(result.isSuccess, isFalse);
+      expect(
+        result.error?.code,
+        AuthoritativeBootstrapDecisionFailureCode.staleResult,
+      );
+    });
+
     test('authoritative fetch accepts a single-row map response', () async {
       final client = _QueueingHttpClient()
         ..enqueueJson(
