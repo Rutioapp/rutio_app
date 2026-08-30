@@ -52,9 +52,6 @@ class AppViewDrawer extends StatelessWidget {
   static const Color _divider = Color(0x1F6A5E4A);
   static const Color _activeTile = Color(0xFFF2F4F5);
   static const Color _icon = Color(0xFF7B6447);
-  static const Color _supportTileBg = Color(0x1AF05A5A);
-  static const Color _supportIconBg = Color(0x26F05A5A);
-  static const Color _supportIcon = Color(0xFFC44747);
 
   @override
   Widget build(BuildContext context) {
@@ -162,9 +159,6 @@ class AppViewDrawer extends StatelessWidget {
                     _DrawerTile(
                       icon: CupertinoIcons.exclamationmark_bubble,
                       label: context.l10n.drawerReportIssue,
-                      backgroundColor: _supportTileBg,
-                      iconBackgroundColor: _supportIconBg,
-                      iconColor: _supportIcon,
                       onTap: () => _handleFeedbackTap(context),
                     ),
                     SizedBox(height: 18 + bottomInset),
@@ -267,27 +261,17 @@ class _DrawerTile extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isSelected = false,
-    this.backgroundColor,
-    this.iconColor,
-    this.iconBackgroundColor,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool isSelected;
-  final Color? backgroundColor;
-  final Color? iconColor;
-  final Color? iconBackgroundColor;
 
   @override
   Widget build(BuildContext context) {
-    final resolvedBackgroundColor = isSelected
-        ? AppViewDrawer._activeTile
-        : backgroundColor ?? Colors.transparent;
-
     return Material(
-      color: resolvedBackgroundColor,
+      color: isSelected ? AppViewDrawer._activeTile : Colors.transparent,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -302,13 +286,12 @@ class _DrawerTile extends StatelessWidget {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: iconBackgroundColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     icon,
                     size: 20,
-                    color: iconColor ?? AppViewDrawer._icon,
+                    color: AppViewDrawer._icon,
                   ),
                 ),
                 const SizedBox(width: 14),

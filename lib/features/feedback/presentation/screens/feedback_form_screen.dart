@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -207,60 +209,48 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  GridView.count(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    childAspectRatio: 1.02,
-                    children: [
-                      FeedbackCategoryCard(
-                        key: ValueKey(
-                            'feedback-category-${FeedbackCategory.bug.name}'),
-                        title: l10n.feedbackCategoryBugTitle,
-                        subtitle: l10n.feedbackCategoryBugHelp,
-                        icon: Icons.bug_report_outlined,
-                        selected: selectedCategory == FeedbackCategory.bug,
-                        onTap: () =>
-                            _controller.selectCategory(FeedbackCategory.bug),
-                      ),
-                      FeedbackCategoryCard(
-                        key: ValueKey(
-                          'feedback-category-${FeedbackCategory.suggestion.name}',
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final textScaler = MediaQuery.textScalerOf(context);
+                      final useSingleColumn = textScaler.scale(14.0) > 16.0;
+                      final crossAxisCount = useSingleColumn ? 1 : 2;
+                      final crossAxisSpacing = useSingleColumn ? 0.0 : 12.0;
+                      final cardWidth = useSingleColumn
+                          ? constraints.maxWidth
+                          : (constraints.maxWidth - crossAxisSpacing) /
+                              crossAxisCount;
+                      final mainAxisExtent = _feedbackCategoryCardExtent(
+                        context: context,
+                        cardWidth: cardWidth,
+                        l10n: l10n,
+                      );
+
+                      return GridView.builder(
+                        itemCount: _feedbackCategoryCards.length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: crossAxisSpacing,
+                          mainAxisExtent: mainAxisExtent,
                         ),
-                        title: l10n.feedbackCategorySuggestionTitle,
-                        subtitle: l10n.feedbackCategorySuggestionHelp,
-                        icon: Icons.lightbulb_outline_rounded,
-                        selected:
-                            selectedCategory == FeedbackCategory.suggestion,
-                        onTap: () => _controller
-                            .selectCategory(FeedbackCategory.suggestion),
-                      ),
-                      FeedbackCategoryCard(
-                        key: ValueKey(
-                          'feedback-category-${FeedbackCategory.improvement.name}',
-                        ),
-                        title: l10n.feedbackCategoryImprovementTitle,
-                        subtitle: l10n.feedbackCategoryImprovementHelp,
-                        icon: Icons.tune_rounded,
-                        selected:
-                            selectedCategory == FeedbackCategory.improvement,
-                        onTap: () => _controller
-                            .selectCategory(FeedbackCategory.improvement),
-                      ),
-                      FeedbackCategoryCard(
-                        key: ValueKey(
-                          'feedback-category-${FeedbackCategory.other.name}',
-                        ),
-                        title: l10n.feedbackCategoryOtherTitle,
-                        subtitle: l10n.feedbackCategoryOtherHelp,
-                        icon: Icons.chat_bubble_outline_rounded,
-                        selected: selectedCategory == FeedbackCategory.other,
-                        onTap: () =>
-                            _controller.selectCategory(FeedbackCategory.other),
-                      ),
-                    ],
+                        itemBuilder: (context, index) {
+                          final card = _feedbackCategoryCards[index];
+                          return FeedbackCategoryCard(
+                            key: ValueKey(
+                              'feedback-category-${card.category.name}',
+                            ),
+                            title: card.title(l10n),
+                            subtitle: card.subtitle(l10n),
+                            icon: card.icon,
+                            selected: selectedCategory == card.category,
+                            onTap: () =>
+                                _controller.selectCategory(card.category),
+                          );
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 18),
                   Container(
@@ -522,12 +512,119 @@ class _FeedbackFormScreenState extends State<FeedbackFormScreen> {
         l10n.feedbackScreenshotErrorNotProcessable,
       FeedbackImageErrorType.compressionFailed =>
         l10n.feedbackScreenshotErrorCompressionFailed,
-      FeedbackImageErrorType.tooLarge =>
-        l10n.feedbackScreenshotErrorTooLarge,
+      FeedbackImageErrorType.tooLarge => l10n.feedbackScreenshotErrorTooLarge,
       FeedbackImageErrorType.uploadFailed =>
         l10n.feedbackScreenshotErrorUploadFailed,
       FeedbackImageErrorType.cleanupFailed =>
         l10n.feedbackScreenshotErrorCleanupFailed,
     };
   }
+}
+
+double _feedbackCategoryCardExtent({
+  required BuildContext context,
+  required double cardWidth,
+  required AppLocalizations l10n,
+}) {
+  final textDirection = Directionality.of(context);
+  final textScaler = MediaQuery.textScalerOf(context);
+  final titleStyle = AppTextStyles.authTitle.copyWith(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+  );
+  final subtitleStyle = AppTextStyles.welcomeSub.copyWith(
+    fontSize: 12.5,
+    height: 1.35,
+    color: AppColors.inkSoft,
+  );
+  final availableTextWidth = math.max(0.0, cardWidth - 28.0);
+
+  double measureHeight(
+    String text,
+    TextStyle style, {
+    int? maxLines,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: textDirection,
+      textScaler: textScaler,
+      maxLines: maxLines,
+    )..layout(maxWidth: availableTextWidth);
+    return painter.height;
+  }
+
+  final cards = <({String title, String subtitle})>[
+    (
+      title: l10n.feedbackCategoryBugTitle,
+      subtitle: l10n.feedbackCategoryBugHelp,
+    ),
+    (
+      title: l10n.feedbackCategorySuggestionTitle,
+      subtitle: l10n.feedbackCategorySuggestionHelp,
+    ),
+    (
+      title: l10n.feedbackCategoryImprovementTitle,
+      subtitle: l10n.feedbackCategoryImprovementHelp,
+    ),
+    (
+      title: l10n.feedbackCategoryOtherTitle,
+      subtitle: l10n.feedbackCategoryOtherHelp,
+    ),
+  ];
+
+  final contentHeight = cards.fold<double>(0.0, (maxHeight, card) {
+    final titleHeight = measureHeight(card.title, titleStyle);
+    final subtitleHeight = measureHeight(
+      card.subtitle,
+      subtitleStyle,
+      maxLines: 3,
+    );
+    final cardHeight = 44.0 + 12.0 + titleHeight + 6.0 + subtitleHeight;
+    return math.max(maxHeight, cardHeight);
+  });
+
+  final safetyMargin = 38.0 + math.max(0.0, 180.0 - cardWidth) * 0.33;
+
+  return math.max(128.0, contentHeight + 28.0 + safetyMargin);
+}
+
+final List<_FeedbackCategoryCardData> _feedbackCategoryCards = [
+  _FeedbackCategoryCardData(
+    category: FeedbackCategory.bug,
+    icon: Icons.bug_report_outlined,
+    title: (l10n) => l10n.feedbackCategoryBugTitle,
+    subtitle: (l10n) => l10n.feedbackCategoryBugHelp,
+  ),
+  _FeedbackCategoryCardData(
+    category: FeedbackCategory.suggestion,
+    icon: Icons.lightbulb_outline_rounded,
+    title: (l10n) => l10n.feedbackCategorySuggestionTitle,
+    subtitle: (l10n) => l10n.feedbackCategorySuggestionHelp,
+  ),
+  _FeedbackCategoryCardData(
+    category: FeedbackCategory.improvement,
+    icon: Icons.tune_rounded,
+    title: (l10n) => l10n.feedbackCategoryImprovementTitle,
+    subtitle: (l10n) => l10n.feedbackCategoryImprovementHelp,
+  ),
+  _FeedbackCategoryCardData(
+    category: FeedbackCategory.other,
+    icon: Icons.chat_bubble_outline_rounded,
+    title: (l10n) => l10n.feedbackCategoryOtherTitle,
+    subtitle: (l10n) => l10n.feedbackCategoryOtherHelp,
+  ),
+];
+
+class _FeedbackCategoryCardData {
+  const _FeedbackCategoryCardData({
+    required this.category,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final FeedbackCategory category;
+  final IconData icon;
+  final String Function(AppLocalizations) title;
+  final String Function(AppLocalizations) subtitle;
 }

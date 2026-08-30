@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -65,6 +66,15 @@ void main() {
 
     expect(supportSectionFinder, findsOneWidget);
     expect(reportIssueFinder, findsOneWidget);
+
+    final supportIcon = tester.widget<Icon>(
+      find.byIcon(CupertinoIcons.exclamationmark_bubble),
+    );
+    final normalIcon = tester.widget<Icon>(
+      find.byIcon(Icons.calendar_today_outlined),
+    );
+    expect(supportIcon.color, equals(normalIcon.color));
+    expect(supportIcon.color, isNot(const Color(0xFFC44747)));
   });
 
   testWidgets('AppViewDrawer opens the internal feedback feature', (

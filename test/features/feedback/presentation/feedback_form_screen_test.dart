@@ -60,6 +60,70 @@ void main() {
     );
   });
 
+  testWidgets('category grid fits a small Android-like width without overflow',
+      (tester) async {
+    await _pumpApp(
+      tester,
+      FeedbackFormScreen(controller: _buildController()),
+      surfaceSize: const Size(320, 640),
+    );
+
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+
+    expect(find.text(l10n.feedbackCategoryBugTitle), findsOneWidget);
+    expect(find.text(l10n.feedbackCategorySuggestionTitle), findsOneWidget);
+    expect(find.text(l10n.feedbackCategoryImprovementTitle), findsOneWidget);
+    expect(find.text(l10n.feedbackCategoryOtherTitle), findsOneWidget);
+
+    await _scrollToText(tester, l10n.feedbackCategoryBugTitle);
+    await tester.tap(find.text(l10n.feedbackCategoryBugTitle));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<FeedbackCategoryCard>(find.byKey(
+            const ValueKey('feedback-category-bug'),
+          ))
+          .selected,
+      isTrue,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('category grid stays safe with English copy and larger text',
+      (tester) async {
+    await _pumpApp(
+      tester,
+      FeedbackFormScreen(controller: _buildController()),
+      surfaceSize: const Size(320, 640),
+      locale: const Locale('en'),
+      textScaleFactor: 1.3,
+    );
+
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+
+    expect(find.text(l10n.feedbackCategoryBugTitle), findsOneWidget);
+    expect(find.text(l10n.feedbackCategorySuggestionTitle), findsOneWidget);
+    expect(find.text(l10n.feedbackCategoryImprovementTitle), findsOneWidget);
+    expect(find.text(l10n.feedbackCategoryOtherTitle), findsOneWidget);
+
+    await _scrollToText(tester, l10n.feedbackCategoryBugTitle);
+    await tester.tap(find.text(l10n.feedbackCategoryBugTitle));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<FeedbackCategoryCard>(find.byKey(
+            const ValueKey('feedback-category-bug'),
+          ))
+          .selected,
+      isTrue,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('category help copy changes immediately', (tester) async {
     await _pumpApp(tester, FeedbackFormScreen(controller: _buildController()));
 
@@ -423,9 +487,12 @@ Widget _app(
   Widget child, {
   Map<String, WidgetBuilder>? routes,
   List<NavigatorObserver>? navigatorObservers,
+  Locale locale = const Locale('es'),
+  Size surfaceSize = const Size(800, 2600),
+  double textScaleFactor = 1.0,
 }) {
   return MaterialApp(
-    locale: const Locale('es'),
+    locale: locale,
     theme: ThemeData(splashFactory: NoSplash.splashFactory),
     localizationsDelegates: const [
       AppLocalizations.delegate,
@@ -440,7 +507,8 @@ Widget _app(
       final mediaQuery = MediaQuery.of(context);
       return MediaQuery(
         data: mediaQuery.copyWith(
-          size: const Size(800, 2600),
+          size: surfaceSize,
+          textScaler: TextScaler.linear(textScaleFactor),
           padding: EdgeInsets.zero,
           viewInsets: EdgeInsets.zero,
         ),
@@ -456,14 +524,20 @@ Future<void> _pumpApp(
   Widget child, {
   Map<String, WidgetBuilder>? routes,
   List<NavigatorObserver>? navigatorObservers,
+  Locale locale = const Locale('es'),
+  Size surfaceSize = const Size(800, 2600),
+  double textScaleFactor = 1.0,
 }) async {
-  await tester.binding.setSurfaceSize(const Size(800, 2600));
+  await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     _app(
       child,
       routes: routes,
       navigatorObservers: navigatorObservers,
+      locale: locale,
+      surfaceSize: surfaceSize,
+      textScaleFactor: textScaleFactor,
     ),
   );
   await tester.pumpAndSettle();
@@ -476,9 +550,14 @@ Future<void> _pumpPushedApp(WidgetTester tester, Widget child) async {
   await tester.pumpAndSettle();
 }
 
-Widget _pushedApp(Widget child) {
+Widget _pushedApp(
+  Widget child, {
+  Locale locale = const Locale('es'),
+  Size surfaceSize = const Size(800, 2600),
+  double textScaleFactor = 1.0,
+}) {
   return MaterialApp(
-    locale: const Locale('es'),
+    locale: locale,
     theme: ThemeData(splashFactory: NoSplash.splashFactory),
     localizationsDelegates: const [
       AppLocalizations.delegate,
@@ -491,7 +570,8 @@ Widget _pushedApp(Widget child) {
       final mediaQuery = MediaQuery.of(context);
       return MediaQuery(
         data: mediaQuery.copyWith(
-          size: const Size(800, 2600),
+          size: surfaceSize,
+          textScaler: TextScaler.linear(textScaleFactor),
           padding: EdgeInsets.zero,
           viewInsets: EdgeInsets.zero,
         ),
