@@ -276,7 +276,8 @@ FeedbackFormController _buildController({
     repository: repository ?? _FakeFeedbackRepository(),
     imageService: imageService ?? _FakeFeedbackImageService(),
     storageService: storageService ?? _FakeFeedbackStorageService(),
-    technicalContextService: technicalContextService ?? _FakeTechnicalContextService(),
+    technicalContextService:
+        technicalContextService ?? _FakeTechnicalContextService(),
     feedbackIdGenerator: feedbackIdGenerator ?? () => 'feedback-123',
     screenshotIdGenerator: screenshotIdGenerator ?? () => 'screenshot-123',
   );
@@ -363,6 +364,16 @@ class _FakeFeedbackRepository implements FeedbackRepository {
             technicalContext: technicalContext,
           ),
         );
+  }
+
+  @override
+  Future<RepositoryResult<List<FeedbackReport>>> getMyFeedback() async {
+    return const RepositoryResult<List<FeedbackReport>>.failure(
+      RepositoryError(
+        code: RepositoryErrorCode.unknown,
+        message: 'Not implemented in image controller tests.',
+      ),
+    );
   }
 }
 

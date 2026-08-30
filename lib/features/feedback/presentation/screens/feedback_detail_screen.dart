@@ -218,9 +218,7 @@ class FeedbackDetailScreen extends StatelessWidget {
                           const SizedBox(width: 14),
                           Expanded(
                             child: Text(
-                              l10n.feedbackDetailScreenshotPlaceholder(
-                                resolvedReport.screenshotPath ?? '',
-                              ),
+                              l10n.feedbackDetailScreenshotPlaceholder,
                               style: AppTextStyles.welcomeSub.copyWith(
                                 fontSize: 13.5,
                                 height: 1.45,

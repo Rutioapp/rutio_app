@@ -143,6 +143,61 @@ updated_at
     }
   }
 
+  @override
+  Future<RepositoryResult<List<FeedbackReport>>> getMyFeedback() async {
+    final userId = _currentUserId();
+    if (userId == null) {
+      return RepositoryResult<List<FeedbackReport>>.failure(
+          _notAuthenticated());
+    }
+
+    try {
+      final rows = await _client
+          .from(_tableName)
+          .select(_columns)
+          .order('created_at', ascending: false);
+
+      final reports = _mapReports(rows, expectedUserId: userId);
+      return RepositoryResult<List<FeedbackReport>>.success(data: reports);
+    } on FormatException catch (error) {
+      return RepositoryResult<List<FeedbackReport>>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message,
+          cause: error,
+        ),
+      );
+    } on ArgumentError catch (error) {
+      return RepositoryResult<List<FeedbackReport>>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: error.message ?? 'Invalid feedback payload.',
+          cause: error,
+        ),
+      );
+    } on PostgrestException catch (error) {
+      return RepositoryResult<List<FeedbackReport>>.failure(
+        _mapPostgrestError(
+          error,
+          fallbackMessage: 'Could not load your feedback.',
+        ),
+      );
+    } catch (error) {
+      if (kDebugMode) {
+        _logger?.call(
+          '[feedback_repository] unexpected read error: ${error.runtimeType}',
+        );
+      }
+      return RepositoryResult<List<FeedbackReport>>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.unknown,
+          message: 'Could not load your feedback.',
+          cause: error,
+        ),
+      );
+    }
+  }
+
   String? _currentUserId() {
     final providedUserId = _currentUserIdProvider?.call();
     final current =
@@ -164,7 +219,7 @@ updated_at
   }) {
     if (kDebugMode) {
       _logger?.call(
-        '[feedback_repository] postgrest error (${error.code}): ${error.message}',
+        '[feedback_repository] postgrest error code=${error.code}',
       );
     }
 
@@ -213,5 +268,31 @@ updated_at
       message: fallbackMessage,
       cause: error,
     );
+  }
+
+  List<FeedbackReport> _mapReports(
+    Object? rows, {
+    required String expectedUserId,
+  }) {
+    if (rows is! List) {
+      throw FormatException('Expected a list of feedback rows.');
+    }
+
+    final reports = <FeedbackReport>[];
+    for (final row in rows) {
+      if (row is! Map) {
+        throw FormatException('Expected feedback rows as JSON objects.');
+      }
+
+      final mapped = FeedbackReport.fromSupabaseRow(
+        Map<String, dynamic>.from(row.cast<String, dynamic>()),
+      );
+      if (mapped.userId == null || mapped.userId != expectedUserId) {
+        throw FormatException('Feedback row user_id did not match session.');
+      }
+      reports.add(mapped);
+    }
+
+    return reports;
   }
 }

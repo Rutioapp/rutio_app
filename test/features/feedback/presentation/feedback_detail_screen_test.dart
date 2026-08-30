@@ -55,6 +55,7 @@ void main() {
     final l10n = AppLocalizations.of(context);
 
     expect(find.text(l10n.feedbackDetailScreenshotLabel), findsOneWidget);
+    expect(find.textContaining('mock://'), findsNothing);
     expect(find.text(l10n.feedbackDetailReviewDateLabel), findsOneWidget);
     expect(find.text(l10n.feedbackDetailClosedDateLabel), findsOneWidget);
   });

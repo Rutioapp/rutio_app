@@ -571,8 +571,15 @@
   "feedbackSubmitAction": "Enviar feedback",
   "feedbackMineTitle": "Mis envíos",
   "feedbackMineHeading": "Tus envíos",
-  "feedbackMineIntro": "Aquí tienes datos mock locales para comprobar todos los estados, filtros y accesos al detalle.",
-  "feedbackMineEmptyState": "No hay envíos que coincidan con este filtro.",
+  "feedbackMineIntro": "Aquí verás el historial real de feedback que has enviado.",
+  "feedbackMineEmptyState": "Todavía no has enviado feedback.",
+  "feedbackMineFilteredEmptyState": "No hay envíos que coincidan con este filtro.",
+  "feedbackMineLoadingState": "Cargando tus envíos...",
+  "feedbackMineErrorTitle": "No hemos podido cargar tus envíos",
+  "feedbackMineErrorSessionExpired": "Tu sesión no está disponible. Vuelve a iniciar sesión.",
+  "feedbackMineErrorNetwork": "No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
+  "feedbackMineErrorGeneric": "No hemos podido cargar tus envíos ahora mismo. Inténtalo de nuevo.",
+  "feedbackMineRetryAction": "Reintentar",
   "feedbackFilterAll": "Todos",
   "feedbackFilterSubmitted": "Enviados",
   "feedbackFilterInReview": "En revisión",
@@ -600,15 +607,8 @@
   "feedbackDetailSentDateLabel": "Fecha de envío",
   "feedbackDetailReviewDateLabel": "Fecha de revisión",
   "feedbackDetailClosedDateLabel": "Fecha de cierre",
-  "feedbackDetailScreenshotLabel": "Captura mock",
-  "feedbackDetailScreenshotPlaceholder": "Vista previa mock de captura: {path}",
-  "@feedbackDetailScreenshotPlaceholder": {
-    "placeholders": {
-      "path": {
-        "type": "String"
-      }
-    }
-  },
+  "feedbackDetailScreenshotLabel": "Captura adjunta",
+  "feedbackDetailScreenshotPlaceholder": "Captura disponible",
   "feedbackDetailActionsLabel": "Acciones disponibles",
   "feedbackEditAction": "Editar",
   "feedbackDeleteAction": "Eliminar feedback",

@@ -571,8 +571,15 @@
     "feedbackSubmitAction": "Send feedback",
     "feedbackMineTitle": "My submissions",
     "feedbackMineHeading": "Your submissions",
-    "feedbackMineIntro": "These local mock records let us check every state, filter, and detail entry.",
-    "feedbackMineEmptyState": "No submissions match this filter.",
+    "feedbackMineIntro": "You will see the real feedback history you have sent here.",
+    "feedbackMineEmptyState": "You have not sent any feedback yet.",
+    "feedbackMineFilteredEmptyState": "No submissions match this filter.",
+    "feedbackMineLoadingState": "Loading your submissions...",
+    "feedbackMineErrorTitle": "We could not load your submissions",
+    "feedbackMineErrorSessionExpired": "Your session is not available. Please sign in again.",
+    "feedbackMineErrorNetwork": "We could not connect to the server. Check your connection and try again.",
+    "feedbackMineErrorGeneric": "We could not load your submissions right now. Please try again.",
+    "feedbackMineRetryAction": "Retry",
     "feedbackFilterAll": "All",
     "feedbackFilterSubmitted": "Submitted",
     "feedbackFilterInReview": "In review",
@@ -600,15 +607,8 @@
     "feedbackDetailSentDateLabel": "Sent date",
     "feedbackDetailReviewDateLabel": "Review date",
     "feedbackDetailClosedDateLabel": "Closed date",
-    "feedbackDetailScreenshotLabel": "Mock capture",
-    "feedbackDetailScreenshotPlaceholder": "Mock capture preview: {path}",
-    "@feedbackDetailScreenshotPlaceholder": {
-      "placeholders": {
-        "path": {
-          "type": "String"
-        }
-      }
-    },
+    "feedbackDetailScreenshotLabel": "Attached screenshot",
+    "feedbackDetailScreenshotPlaceholder": "Screenshot available",
     "feedbackDetailActionsLabel": "Available actions",
     "feedbackEditAction": "Edit",
     "feedbackDeleteAction": "Delete feedback",

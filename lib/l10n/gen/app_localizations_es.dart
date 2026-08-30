@@ -1206,11 +1206,35 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get feedbackMineIntro =>
-      'Aquí tienes datos mock locales para comprobar todos los estados, filtros y accesos al detalle.';
+      'Aquí verás el historial real de feedback que has enviado.';
 
   @override
-  String get feedbackMineEmptyState =>
+  String get feedbackMineEmptyState => 'Todavía no has enviado feedback.';
+
+  @override
+  String get feedbackMineFilteredEmptyState =>
       'No hay envíos que coincidan con este filtro.';
+
+  @override
+  String get feedbackMineLoadingState => 'Cargando tus envíos...';
+
+  @override
+  String get feedbackMineErrorTitle => 'No hemos podido cargar tus envíos';
+
+  @override
+  String get feedbackMineErrorSessionExpired =>
+      'Tu sesión no está disponible. Vuelve a iniciar sesión.';
+
+  @override
+  String get feedbackMineErrorNetwork =>
+      'No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get feedbackMineErrorGeneric =>
+      'No hemos podido cargar tus envíos ahora mismo. Inténtalo de nuevo.';
+
+  @override
+  String get feedbackMineRetryAction => 'Reintentar';
 
   @override
   String get feedbackFilterAll => 'Todos';
@@ -1298,12 +1322,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get feedbackDetailClosedDateLabel => 'Fecha de cierre';
 
   @override
-  String get feedbackDetailScreenshotLabel => 'Captura mock';
+  String get feedbackDetailScreenshotLabel => 'Captura adjunta';
 
   @override
-  String feedbackDetailScreenshotPlaceholder(String path) {
-    return 'Vista previa mock de captura: $path';
-  }
+  String get feedbackDetailScreenshotPlaceholder => 'Captura disponible';
 
   @override
   String get feedbackDetailActionsLabel => 'Acciones disponibles';

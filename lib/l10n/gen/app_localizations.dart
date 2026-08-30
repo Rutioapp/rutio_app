@@ -2208,14 +2208,56 @@ abstract class AppLocalizations {
   /// No description provided for @feedbackMineIntro.
   ///
   /// In es, this message translates to:
-  /// **'Aquí tienes datos mock locales para comprobar todos los estados, filtros y accesos al detalle.'**
+  /// **'Aquí verás el historial real de feedback que has enviado.'**
   String get feedbackMineIntro;
 
   /// No description provided for @feedbackMineEmptyState.
   ///
   /// In es, this message translates to:
-  /// **'No hay envíos que coincidan con este filtro.'**
+  /// **'Todavía no has enviado feedback.'**
   String get feedbackMineEmptyState;
+
+  /// No description provided for @feedbackMineFilteredEmptyState.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay envíos que coincidan con este filtro.'**
+  String get feedbackMineFilteredEmptyState;
+
+  /// No description provided for @feedbackMineLoadingState.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando tus envíos...'**
+  String get feedbackMineLoadingState;
+
+  /// No description provided for @feedbackMineErrorTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido cargar tus envíos'**
+  String get feedbackMineErrorTitle;
+
+  /// No description provided for @feedbackMineErrorSessionExpired.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu sesión no está disponible. Vuelve a iniciar sesión.'**
+  String get feedbackMineErrorSessionExpired;
+
+  /// No description provided for @feedbackMineErrorNetwork.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.'**
+  String get feedbackMineErrorNetwork;
+
+  /// No description provided for @feedbackMineErrorGeneric.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido cargar tus envíos ahora mismo. Inténtalo de nuevo.'**
+  String get feedbackMineErrorGeneric;
+
+  /// No description provided for @feedbackMineRetryAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get feedbackMineRetryAction;
 
   /// No description provided for @feedbackFilterAll.
   ///
@@ -2382,14 +2424,14 @@ abstract class AppLocalizations {
   /// No description provided for @feedbackDetailScreenshotLabel.
   ///
   /// In es, this message translates to:
-  /// **'Captura mock'**
+  /// **'Captura adjunta'**
   String get feedbackDetailScreenshotLabel;
 
   /// No description provided for @feedbackDetailScreenshotPlaceholder.
   ///
   /// In es, this message translates to:
-  /// **'Vista previa mock de captura: {path}'**
-  String feedbackDetailScreenshotPlaceholder(String path);
+  /// **'Captura disponible'**
+  String get feedbackDetailScreenshotPlaceholder;
 
   /// No description provided for @feedbackDetailActionsLabel.
   ///

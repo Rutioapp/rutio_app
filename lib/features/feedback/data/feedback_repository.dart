@@ -14,4 +14,6 @@ abstract interface class FeedbackRepository {
     required FeedbackTechnicalContext technicalContext,
     String? screenshotPath,
   });
+
+  Future<RepositoryResult<List<FeedbackReport>>> getMyFeedback();
 }

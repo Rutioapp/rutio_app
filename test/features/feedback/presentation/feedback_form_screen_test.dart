@@ -240,7 +240,8 @@ void main() {
     await tester.enterText(find.byType(TextField), 'A' * 20);
     await tester.pumpAndSettle();
     await _scrollToText(tester, l10n.feedbackSubmitAction);
-    await tester.tap(find.widgetWithText(FilledButton, l10n.feedbackSubmitAction));
+    await tester
+        .tap(find.widgetWithText(FilledButton, l10n.feedbackSubmitAction));
     await tester.pump();
 
     final buttons = tester.widgetList<FilledButton>(find.byType(FilledButton));
@@ -376,8 +377,12 @@ void main() {
 
     expect(controller.hasScreenshotSelection, isTrue);
     expect(find.text(l10n.feedbackScreenshotSelectedLabel), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, l10n.feedbackScreenshotReplaceAction), findsOneWidget);
-    expect(find.widgetWithText(TextButton, l10n.feedbackScreenshotRemoveAction), findsOneWidget);
+    expect(
+        find.widgetWithText(
+            OutlinedButton, l10n.feedbackScreenshotReplaceAction),
+        findsOneWidget);
+    expect(find.widgetWithText(TextButton, l10n.feedbackScreenshotRemoveAction),
+        findsOneWidget);
   });
 
   testWidgets('failed submit shows a session-expired snackbar', (tester) async {
@@ -586,6 +591,16 @@ class _FakeFeedbackRepository implements FeedbackRepository {
           ),
         );
   }
+
+  @override
+  Future<RepositoryResult<List<FeedbackReport>>> getMyFeedback() async {
+    return const RepositoryResult<List<FeedbackReport>>.failure(
+      RepositoryError(
+        code: RepositoryErrorCode.unknown,
+        message: 'Not implemented in form screen tests.',
+      ),
+    );
+  }
 }
 
 class _FakeFeedbackImageService extends FeedbackImageService {
@@ -631,7 +646,8 @@ class _FakeFeedbackImageService extends FeedbackImageService {
 }
 
 class _FakeFeedbackStorageService extends FeedbackStorageService {
-  _FakeFeedbackStorageService() : super(
+  _FakeFeedbackStorageService()
+      : super(
           gateway: _NoopStorageGateway(),
           currentUserIdProvider: () => _feedbackUserId,
         );

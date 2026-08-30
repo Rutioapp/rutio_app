@@ -304,6 +304,16 @@ class _FakeFeedbackRepository implements FeedbackRepository {
           ),
     );
   }
+
+  @override
+  Future<RepositoryResult<List<FeedbackReport>>> getMyFeedback() async {
+    return const RepositoryResult<List<FeedbackReport>>.failure(
+      RepositoryError(
+        code: RepositoryErrorCode.unknown,
+        message: 'Not implemented in form controller tests.',
+      ),
+    );
+  }
 }
 
 class _FakeTechnicalContextService extends FeedbackTechnicalContextService {
