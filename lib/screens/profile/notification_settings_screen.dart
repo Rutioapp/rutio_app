@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 import '../../features/notifications/application/notification_permission_controller.dart';
 import '../../features/notifications/application/personalized_notification_settings_controller.dart';
@@ -239,11 +240,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F6FF),
+      backgroundColor: AppColors.cream,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F6FF),
+        backgroundColor: AppColors.cream,
         elevation: 0,
-        surfaceTintColor: const Color(0xFFF7F6FF),
+        surfaceTintColor: AppColors.cream,
         centerTitle: true,
         title: Text(l10n.profileNotificationsTitle),
       ),

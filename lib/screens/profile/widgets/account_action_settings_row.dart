@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 class AccountActionSettingsRow extends StatelessWidget {
   const AccountActionSettingsRow({
@@ -22,8 +23,8 @@ class AccountActionSettingsRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE6DFD0)),
-            color: const Color(0xFFFFFDF8),
+            border: Border.all(color: AppColors.earth.withValues(alpha: 0.12)),
+            color: AppColors.cream2,
           ),
           child: Row(
             children: [
@@ -31,14 +32,14 @@ class AccountActionSettingsRow extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3DD),
+                  color: AppColors.cream,
                   borderRadius: BorderRadius.circular(11),
                 ),
                 alignment: Alignment.center,
                 child: const Icon(
                   CupertinoIcons.square_arrow_right,
                   size: 18,
-                  color: Color(0xFF9A6B1E),
+                  color: AppColors.earth,
                 ),
               ),
               const SizedBox(width: 12),
@@ -48,14 +49,14 @@ class AccountActionSettingsRow extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF8E5B11),
+                    color: AppColors.earth,
                   ),
                 ),
               ),
               const Icon(
                 CupertinoIcons.chevron_forward,
                 size: 16,
-                color: Color(0xFFC9B38D),
+                color: AppColors.earthSoft,
               ),
             ],
           ),

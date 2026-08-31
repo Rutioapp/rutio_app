@@ -571,6 +571,7 @@ class UserStateStore extends ChangeNotifier {
   String? get bioText => profile['bio']?.toString();
   String? get goalText => profile['goal']?.toString();
   String? get avatarUrl => profile['avatarUrl']?.toString();
+  List<String> get pillarHabitIds => _pillarHabitIds(this);
   String? get userId {
     final root = _state;
     if (root == null) return null;
@@ -608,6 +609,12 @@ class UserStateStore extends ChangeNotifier {
         goal: goal,
         avatarUrl: avatarUrl,
       );
+
+  Future<void> setPillarHabitIds(List<String> habitIds) =>
+      _setPillarHabitIds(this, habitIds);
+
+  Future<void> setPillarHabits(List<String> habitIds) =>
+      _setPillarHabitIds(this, habitIds);
 
   Future<bool> buyItem({
     required String itemId,
@@ -914,6 +921,11 @@ class UserStateStore extends ChangeNotifier {
     DateTime? today,
   }) =>
       _habitStreakSnapshotForHabitId(this, habitId: habitId, today: today);
+
+  HabitStreakSnapshot get globalHabitStreakSnapshot =>
+      _globalHabitStreakSnapshot(this);
+
+  int get activeDaysCount => _activeDaysCount(this);
 
   Map<String, HabitStreakSnapshot> get habitStreakSnapshots =>
       _habitStreakSnapshots(this);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 class NotificationTimeTile extends StatelessWidget {
   const NotificationTimeTile({
@@ -19,10 +20,8 @@ class NotificationTimeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canTap = enabled && onTap != null;
-    final titleColor =
-        canTap ? const Color(0xFF1A1A1A) : const Color(0xFF9A9A9A);
-    final subtitleColor =
-        canTap ? const Color(0xFF7A7A7A) : const Color(0xFFB0B0B0);
+    final titleColor = canTap ? AppColors.ink : AppColors.inkSoft;
+    final subtitleColor = canTap ? AppColors.inkSoft : AppColors.inkFaint;
 
     return InkWell(
       onTap: canTap ? onTap : null,
@@ -33,7 +32,8 @@ class NotificationTimeTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFEFEFEF)),
+            border: Border.all(color: AppColors.earth.withValues(alpha: 0.10)),
+            color: AppColors.cream,
           ),
           child: Row(
             children: [
@@ -65,16 +65,13 @@ class NotificationTimeTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: canTap
-                      ? const Color(0xFF6C5CE7)
-                      : const Color(0xFFB0B0B0),
+                  color: canTap ? AppColors.earth : AppColors.inkFaint,
                 ),
               ),
               const SizedBox(width: 6),
               Icon(
                 Icons.chevron_right,
-                color:
-                    canTap ? const Color(0xFFB0B0B0) : const Color(0xFFD0D0D0),
+                color: canTap ? AppColors.earthSoft : AppColors.inkFaint,
               ),
             ],
           ),

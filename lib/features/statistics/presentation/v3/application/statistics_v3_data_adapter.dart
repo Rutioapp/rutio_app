@@ -231,6 +231,19 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
   );
 }
 
+int buildStatisticsV3WeeklyConsistencyPct({
+  required UserStateStore store,
+  required AppLocalizations l10n,
+  DateTime? now,
+}) {
+  return buildStatisticsV3ViewData(
+    store: store,
+    period: StatisticsV3Period.week,
+    l10n: l10n,
+    now: now,
+  ).consistencyPct;
+}
+
 List<StatisticsV3HabitListItem> buildStatisticsV3HabitListData({
   required UserStateStore store,
   required AppLocalizations l10n,
@@ -628,7 +641,8 @@ StatisticsV3RewardBreakdown _buildPeriodRewardBreakdown({
   required Map<String, Map<String, dynamic>> habitsById,
 }) {
   if (end.isBefore(start)) {
-    return const StatisticsV3RewardBreakdown(rows: <StatisticsV3RewardBreakdownRow>[]);
+    return const StatisticsV3RewardBreakdown(
+        rows: <StatisticsV3RewardBreakdownRow>[]);
   }
 
   final habitsRewards = _aggregateHabitRewardsForPeriod(
@@ -818,7 +832,8 @@ _PeriodRewardSummary _aggregateAchievementRewardsForPeriod({
     if (!assumeLegacyApplied && !rewardAppliedIds.contains(id)) continue;
 
     final explicitXp = _safeInt(entry['rewardXp'] ?? entry['xpReward']);
-    final explicitAmber = _safeInt(entry['rewardAmber'] ?? entry['ambarReward']);
+    final explicitAmber =
+        _safeInt(entry['rewardAmber'] ?? entry['ambarReward']);
     final tier = _safeAchievementTierForRewards(entry['tier']);
     final tierReward = AchievementRewards.getAchievementReward(tier);
     xp += explicitXp > 0 ? explicitXp : tierReward.rewardXp;
@@ -1265,7 +1280,8 @@ List<StatisticsV3YearlyConsistencyDay> _buildYearlyConsistencyMonthDays({
   required List<Map<String, dynamic>> habits,
   required Map<String, Map<String, dynamic>> habitsById,
 }) {
-  final daysInMonth = DateUtils.getDaysInMonth(monthStart.year, monthStart.month);
+  final daysInMonth =
+      DateUtils.getDaysInMonth(monthStart.year, monthStart.month);
 
   return List<StatisticsV3YearlyConsistencyDay>.generate(daysInMonth, (index) {
     final day = monthStart.add(Duration(days: index));

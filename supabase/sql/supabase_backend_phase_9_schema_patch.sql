@@ -14,6 +14,7 @@
 begin;
 
 create extension if not exists pgcrypto;
+create schema if not exists app_private;
 
 -- Shared updated_at trigger helper
 create or replace function public.set_updated_at()
@@ -35,6 +36,7 @@ create table if not exists public.profiles (
   display_name text,
   avatar_url text,
   preferred_language_code text,
+  pillar_habit_ids uuid[] not null default '{}'::uuid[],
   notifications_enabled boolean,
   daily_motivation_enabled boolean,
   marketing_notifications_enabled boolean,
@@ -50,6 +52,7 @@ alter table if exists public.profiles
   add column if not exists display_name text,
   add column if not exists avatar_url text,
   add column if not exists preferred_language_code text,
+  add column if not exists pillar_habit_ids uuid[],
   add column if not exists notifications_enabled boolean,
   add column if not exists daily_motivation_enabled boolean,
   add column if not exists marketing_notifications_enabled boolean,
@@ -61,6 +64,26 @@ alter table if exists public.profiles
 
 alter table public.profiles alter column created_at set default now();
 alter table public.profiles alter column updated_at set default now();
+update public.profiles
+set pillar_habit_ids = coalesce(pillar_habit_ids, '{}'::uuid[]);
+alter table public.profiles alter column pillar_habit_ids set default '{}'::uuid[];
+alter table public.profiles alter column pillar_habit_ids set not null;
+
+alter table if exists public.profiles
+  drop constraint if exists profiles_pillar_habit_ids_limit_check;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'profiles_pillar_habit_ids_limit_check'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_pillar_habit_ids_limit_check
+      check (cardinality(pillar_habit_ids) <= 3);
+  end if;
+end
+$$;
 
 drop trigger if exists trg_profiles_set_updated_at on public.profiles;
 create trigger trg_profiles_set_updated_at
@@ -92,6 +115,73 @@ begin
   end if;
 end
 $$;
+
+create or replace function app_private.validate_profile_pillar_habit_ids()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_total integer;
+  v_unique integer;
+begin
+  if tg_op = 'UPDATE'
+    and new.pillar_habit_ids is not distinct from old.pillar_habit_ids then
+    return new;
+  end if;
+
+  new.pillar_habit_ids := coalesce(new.pillar_habit_ids, '{}'::uuid[]);
+
+  if exists (
+    select 1
+    from unnest(new.pillar_habit_ids) as selected_habit_id(habit_id)
+    where habit_id is null
+  ) then
+    raise exception 'pillar habits must not contain null values';
+  end if;
+
+  select count(*), count(distinct habit_id)
+    into v_total, v_unique
+  from unnest(new.pillar_habit_ids) as selected_habit_id(habit_id);
+
+  if v_total > 3 then
+    raise exception 'pillar habits may contain at most 3 items';
+  end if;
+
+  if v_total <> v_unique then
+    raise exception 'pillar habits must be unique';
+  end if;
+
+  if exists (
+    select 1
+    from unnest(new.pillar_habit_ids) as selected_habit_id(habit_id)
+    where not exists (
+      select 1
+      from public.habits as habit
+      where habit.id = habit_id
+        and habit.user_id = new.id
+    )
+  ) then
+    raise exception 'pillar habits must belong to the profile owner';
+  end if;
+
+  return new;
+end;
+$$;
+
+alter function app_private.validate_profile_pillar_habit_ids()
+  owner to postgres;
+
+drop trigger if exists trg_profiles_validate_pillar_habit_ids
+  on public.profiles;
+create trigger trg_profiles_validate_pillar_habit_ids
+before insert or update of pillar_habit_ids on public.profiles
+for each row
+execute function app_private.validate_profile_pillar_habit_ids();
+
+revoke all on function app_private.validate_profile_pillar_habit_ids()
+from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- habits

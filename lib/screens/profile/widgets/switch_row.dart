@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 class SwitchRow extends StatelessWidget {
   final String title;
@@ -48,7 +49,11 @@ class SwitchRow extends StatelessWidget {
               ],
             ),
           ),
-          Switch(value: value, onChanged: enabled ? onChanged : null),
+          Switch(
+            value: value,
+            activeThumbColor: AppColors.earth,
+            onChanged: enabled ? onChanged : null,
+          ),
         ],
       ),
     );

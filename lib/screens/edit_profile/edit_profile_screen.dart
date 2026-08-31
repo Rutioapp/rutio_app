@@ -1,13 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
+import '../../utils/app_theme.dart';
 import 'edit_profile_controller.dart';
 import 'widgets/avatar_section.dart';
 import 'widgets/profile_fields.dart';
-import 'widgets/section_header.dart';
 import 'widgets/stats_row.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -90,6 +92,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  Future<void> _handleBack(BuildContext context) async {
+    final shouldPop = await _c.onWillPop(context);
+    if (shouldPop && context.mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<UserStateStore>(
@@ -102,123 +111,153 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           builder: (context, hasChanges, _) {
             return PopScope(
               canPop: !hasChanges,
-              onPopInvokedWithResult: (didPop, _) async {
+              onPopInvokedWithResult: (didPop, _) {
                 if (didPop) return;
-                final shouldPop = await _c.onWillPop(context);
-                if (shouldPop && context.mounted) Navigator.pop(context);
+                unawaited(_handleBack(context));
               },
               child: Scaffold(
-                appBar: AppBar(
-                  title: Text(l10n.editProfileTitle),
-                  actions: [
-                    if (hasChanges)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ValueListenableBuilder<bool>(
-                          valueListenable: _c.saving,
-                          builder: (_, saving, __) {
-                            return TextButton.icon(
-                              onPressed: saving
-                                  ? null
-                                  : () =>
-                                      _c.save(context: context, store: store),
-                              icon: saving
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(Icons.check),
-                              label: Text(l10n.editProfileSave),
-                            );
-                          },
-                        ),
-                      ),
-                  ],
-                ),
-                body: (store.isLoading && store.state == null)
+                backgroundColor: AppColors.cream,
+                body: store.isLoading && store.state == null
                     ? const Center(child: CircularProgressIndicator())
-                    : Form(
-                        key: _c.formKey,
-                        child: ListView(
-                          padding: const EdgeInsets.all(20),
+                    : SafeArea(
+                        child: Column(
                           children: [
-                            AvatarSection(
-                              avatarPath: _c.avatarPath,
-                              onTap: () => _showImageSourceSheet(store),
-                            ),
-                            const SizedBox(height: 24),
-                            StatsRow.fromStore(context, store),
-                            const SizedBox(height: 32),
-                            SectionHeader(
-                              icon: Icons.person_outline,
-                              title: l10n.editProfilePersonalInfoTitle,
-                            ),
-                            const SizedBox(height: 16),
-                            ProfileFields(
-                              nameCtrl: _c.nameCtrl,
-                              bioCtrl: _c.bioCtrl,
-                              onAnyFieldChanged: _c.markChanged,
-                            ),
-                            const SizedBox(height: 32),
-                            SectionHeader(
-                              icon: Icons.flag_outlined,
-                              title: l10n.editProfileGoalSectionTitle,
-                            ),
-                            const SizedBox(height: 16),
-                            ProfileGoalField(
-                              goalCtrl: _c.goalCtrl,
-                              onChanged: _c.markChanged,
-                            ),
-                            const SizedBox(height: 32),
-                            ValueListenableBuilder<bool>(
-                              valueListenable: _c.saving,
-                              builder: (_, saving, __) {
-                                return FilledButton.icon(
-                                  onPressed: (saving || !hasChanges)
-                                      ? null
-                                      : () => _c.save(
-                                            context: context,
-                                            store: store,
-                                          ),
-                                  icon: saving
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Icon(Icons.save_rounded),
-                                  label: Text(
-                                    saving
-                                        ? l10n.editProfileSaving
-                                        : l10n.editProfileSaveChanges,
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  _BackButton(
+                                    onTap: () => _handleBack(context),
                                   ),
-                                  style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    textStyle: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Text(
+                                      l10n.editProfileTitle,
+                                      style: const TextStyle(
+                                        fontFamily: AppTextStyles.serifFamily,
+                                        fontSize: 20,
+                                        height: 1.08,
+                                        color: AppColors.ink,
+                                        letterSpacing: -0.2,
+                                      ),
                                     ),
                                   ),
-                                );
-                              },
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 40),
+                            Expanded(
+                              child: Form(
+                                key: _c.formKey,
+                                child: ListView(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    6,
+                                    20,
+                                    20,
+                                  ),
+                                  children: [
+                                    AvatarSection(
+                                      avatarPath: _c.avatarPath,
+                                      nameCtrl: _c.nameCtrl,
+                                      goalCtrl: _c.goalCtrl,
+                                      onTap: () => _showImageSourceSheet(store),
+                                    ),
+                                    const SizedBox(height: 22),
+                                    StatsRow.fromStore(context, store),
+                                    const SizedBox(height: 22),
+                                    ProfileFields(
+                                      nameCtrl: _c.nameCtrl,
+                                      bioCtrl: _c.bioCtrl,
+                                      onAnyFieldChanged: _c.markChanged,
+                                    ),
+                                    const SizedBox(height: 22),
+                                    ProfileGoalField(
+                                      goalCtrl: _c.goalCtrl,
+                                      onChanged: _c.markChanged,
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
+                bottomNavigationBar: SafeArea(
+                  top: false,
+                  minimum: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: _c.saving,
+                    builder: (_, saving, __) {
+                      return FilledButton.icon(
+                        key: const Key('editProfileSaveButton'),
+                        onPressed: (saving || !hasChanges)
+                            ? null
+                            : () => _c.save(context: context, store: store),
+                        icon: saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.check_rounded),
+                        label: Text(
+                          saving
+                              ? l10n.editProfileSaving
+                              : l10n.editProfileSaveChanges,
+                        ),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(54),
+                          backgroundColor: AppColors.earth,
+                          foregroundColor: Colors.white,
+                          textStyle: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             );
           },
         );
       },
+    );
+  }
+}
+
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF3E8D8),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: const SizedBox(
+          width: 60,
+          height: 60,
+          child: Icon(
+            Icons.arrow_back_rounded,
+            size: 26,
+            color: AppColors.ink,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -144,6 +144,7 @@ class RemoteProfile {
     this.displayName,
     this.avatarUrl,
     this.preferredLanguageCode,
+    this.pillarHabitIds = const <String>[],
     this.notificationsEnabled,
     this.dailyMotivationEnabled,
     this.marketingNotificationsEnabled,
@@ -163,6 +164,7 @@ class RemoteProfile {
   final String? displayName;
   final String? avatarUrl;
   final String? preferredLanguageCode;
+  final List<String> pillarHabitIds;
   final bool? notificationsEnabled;
   final bool? dailyMotivationEnabled;
   final bool? marketingNotificationsEnabled;
@@ -200,6 +202,10 @@ class RemoteProfile {
       preferredLanguageCode: _nullableTrim(
         map['preferred_language_code'] ?? map['preferredLanguageCode'],
       ),
+      pillarHabitIds: _normalizeStringList(
+        map['pillar_habit_ids'] ?? map['pillarHabitIds'],
+        maxLength: 3,
+      ),
       notificationsEnabled: _nullableBool(
         map['notifications_enabled'] ?? map['notificationsEnabled'],
       ),
@@ -235,6 +241,7 @@ class RemoteProfile {
       if (avatarUrl != null) 'avatar_url': avatarUrl,
       if (preferredLanguageCode != null)
         'preferred_language_code': preferredLanguageCode,
+      'pillar_habit_ids': pillarHabitIds,
       if (notificationsEnabled != null)
         'notifications_enabled': notificationsEnabled,
       if (dailyMotivationEnabled != null)
@@ -264,6 +271,26 @@ class RemoteProfile {
   static String? _nullableTrim(dynamic value) {
     final normalized = (value ?? '').toString().trim();
     return normalized.isEmpty ? null : normalized;
+  }
+
+  static List<String> _normalizeStringList(
+    dynamic value, {
+    int? maxLength,
+  }) {
+    final output = <String>[];
+    final seen = <String>{};
+
+    if (value is Iterable) {
+      for (final entry in value) {
+        final normalized = (entry ?? '').toString().trim();
+        if (normalized.isEmpty) continue;
+        if (!seen.add(normalized)) continue;
+        output.add(normalized);
+        if (maxLength != null && output.length >= maxLength) break;
+      }
+    }
+
+    return List<String>.unmodifiable(output);
   }
 
   static String _requiredTrim(Map<String, dynamic> map, String key) {

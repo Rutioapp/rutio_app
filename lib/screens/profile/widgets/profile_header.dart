@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 import '../../../l10n/l10n.dart';
 import 'pill_button.dart';
@@ -7,8 +8,8 @@ import 'profile_avatar.dart';
 class ProfileHeader extends StatelessWidget {
   final Color accent;
   final String name;
-  final String subtitle;
-  final String? email;
+  final String? note;
+  final String? goal;
   final ImageProvider? avatarImage;
   final VoidCallback onEdit;
 
@@ -16,19 +17,28 @@ class ProfileHeader extends StatelessWidget {
     super.key,
     required this.accent,
     required this.name,
-    required this.subtitle,
-    required this.email,
+    required this.note,
+    required this.goal,
     required this.avatarImage,
     required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final noteText = (note ?? '').trim();
+    final goalText = (goal ?? '').trim();
+    final secondaryText = noteText.isNotEmpty
+        ? noteText
+        : goalText.isNotEmpty
+            ? goalText
+            : null;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cream2,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.earth.withValues(alpha: 0.12)),
         boxShadow: const [
           BoxShadow(
             blurRadius: 18,
@@ -51,27 +61,23 @@ class ProfileHeader extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF6B6B6B),
-                    height: 1.2,
-                  ),
-                ),
-                if (email != null && email!.trim().isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                if (secondaryText != null) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    email!.trim(),
+                    secondaryText,
                     style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF8D8D8D),
+                      fontSize: 13,
+                      color: AppColors.inkSoft,
+                      height: 1.25,
                     ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ],

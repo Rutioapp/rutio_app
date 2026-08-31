@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/l10n.dart';
@@ -151,16 +150,6 @@ class AppViewDrawer extends StatelessWidget {
                       isSelected: selected == 'archived',
                       onTap: () => _go(context, onGoArchived),
                     ),
-                    const SizedBox(height: 18),
-                    _DrawerSectionLabel(context.l10n.drawerSectionAccount),
-                    const SizedBox(height: 8),
-                    _DrawerSectionLabel(context.l10n.drawerSectionSupport),
-                    const SizedBox(height: 8),
-                    _DrawerTile(
-                      icon: CupertinoIcons.exclamationmark_bubble,
-                      label: context.l10n.drawerReportIssue,
-                      onTap: () => _handleFeedbackTap(context),
-                    ),
                     SizedBox(height: 18 + bottomInset),
                   ],
                 ),
@@ -183,11 +172,6 @@ class AppViewDrawer extends StatelessWidget {
   void _go(BuildContext context, VoidCallback onTap) {
     Navigator.of(context).pop();
     onTap();
-  }
-
-  void _handleFeedbackTap(BuildContext context) {
-    Navigator.of(context).pop();
-    Navigator.of(context).pushNamed('/feedback');
   }
 }
 

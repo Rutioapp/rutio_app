@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 import '../../../../l10n/l10n.dart';
 import '../../domain/models/achievement_progress.dart';
@@ -24,7 +25,11 @@ class FeaturedAchievementsSection extends StatelessWidget {
       children: [
         Text(
           l10n.profileFeaturedAchievementsTitle,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
         ),
         const SizedBox(height: 10),
         Material(
@@ -35,8 +40,10 @@ class FeaturedAchievementsSection extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.cream2,
                 borderRadius: BorderRadius.circular(20),
+                border:
+                    Border.all(color: AppColors.earth.withValues(alpha: 0.12)),
                 boxShadow: const [
                   BoxShadow(
                     blurRadius: 18,
@@ -58,7 +65,7 @@ class FeaturedAchievementsSection extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF211A14),
+                            color: AppColors.ink,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -68,7 +75,7 @@ class FeaturedAchievementsSection extends StatelessWidget {
                               : l10n.profileFeaturedAchievementsHint,
                           style: const TextStyle(
                             fontSize: 12.5,
-                            color: Color(0xFF736A61),
+                            color: AppColors.inkSoft,
                             height: 1.28,
                           ),
                         ),
@@ -100,7 +107,7 @@ class FeaturedAchievementsSection extends StatelessWidget {
                   const Icon(
                     CupertinoIcons.chevron_right,
                     size: 18,
-                    color: Color(0xFFB1A99E),
+                    color: AppColors.earthSoft,
                   ),
                 ],
               ),
@@ -123,9 +130,9 @@ class _PlaceholderBadge extends StatelessWidget {
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F1E8),
+        color: AppColors.cream,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5DED0)),
+        border: Border.all(color: AppColors.earth.withValues(alpha: 0.12)),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -133,7 +140,7 @@ class _PlaceholderBadge extends StatelessWidget {
         style: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w700,
-          color: Color(0xFFB1A697),
+          color: AppColors.earth,
         ),
       ),
     );

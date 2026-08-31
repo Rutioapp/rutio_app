@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../screens/profile/widgets/notification_time_tile.dart';
@@ -167,7 +168,7 @@ class _PersonalizedNotificationsSettingsSectionState
           style: const TextStyle(
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1A1A),
+            color: AppColors.ink,
           ),
         ),
         const SizedBox(height: 6),
@@ -175,7 +176,7 @@ class _PersonalizedNotificationsSettingsSectionState
           l10n.personalizedNotificationsIntensitySubtitle,
           style: const TextStyle(
             fontSize: 12.5,
-            color: Color(0xFF7A7A7A),
+            color: AppColors.inkSoft,
             height: 1.25,
           ),
         ),
@@ -186,10 +187,10 @@ class _PersonalizedNotificationsSettingsSectionState
             ignoring: !canEdit,
             child: CupertinoSegmentedControl<NotificationIntensityPreset>(
               groupValue: preferences.intensityPreset,
-              borderColor: const Color(0xFFE3E0F7),
-              selectedColor: const Color(0xFF6C5CE7),
-              unselectedColor: Colors.white,
-              pressedColor: const Color(0xFFEDEAFF),
+              borderColor: AppColors.earth.withValues(alpha: 0.16),
+              selectedColor: AppColors.earth,
+              unselectedColor: AppColors.cream,
+              pressedColor: AppColors.earth.withValues(alpha: 0.12),
               children: {
                 for (final preset in NotificationIntensityPreset.values)
                   preset: Padding(
@@ -205,7 +206,7 @@ class _PersonalizedNotificationsSettingsSectionState
                         fontWeight: FontWeight.w700,
                         color: preferences.intensityPreset == preset
                             ? Colors.white
-                            : const Color(0xFF4D4D4D),
+                            : AppColors.inkSoft,
                       ),
                     ),
                   ),

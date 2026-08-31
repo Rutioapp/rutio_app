@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 class ProfileOptionTile extends StatelessWidget {
   final IconData icon;
@@ -27,7 +28,8 @@ class ProfileOptionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFEFEFEF)),
+          border: Border.all(color: AppColors.earth.withValues(alpha: 0.12)),
+          color: AppColors.cream2,
         ),
         child: Row(
           children: [
@@ -35,12 +37,10 @@ class ProfileOptionTile extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: (iconColor ?? const Color(0xFF6C5CE7))
-                    .withValues(alpha: 0.12),
+                color: (iconColor ?? AppColors.earth).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon,
-                  color: iconColor ?? const Color(0xFF6C5CE7), size: 20),
+              child: Icon(icon, color: iconColor ?? AppColors.earth, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -52,9 +52,7 @@ class ProfileOptionTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w700,
-                      color: enabled
-                          ? const Color(0xFF1A1A1A)
-                          : const Color(0xFF9A9A9A),
+                      color: enabled ? AppColors.ink : AppColors.inkSoft,
                     ),
                   ),
                   if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
@@ -62,18 +60,19 @@ class ProfileOptionTile extends StatelessWidget {
                     Text(
                       subtitle!.trim(),
                       style: const TextStyle(
-                          fontSize: 12.5,
-                          color: Color(0xFF7A7A7A),
-                          height: 1.2),
+                        fontSize: 12.5,
+                        color: AppColors.inkSoft,
+                        height: 1.2,
+                      ),
                     ),
                   ],
                 ],
               ),
             ),
-            Icon(Icons.chevron_right,
-                color: enabled
-                    ? const Color(0xFFB0B0B0)
-                    : const Color(0xFFD0D0D0)),
+            Icon(
+              Icons.chevron_right,
+              color: enabled ? AppColors.earthSoft : AppColors.inkFaint,
+            ),
           ],
         ),
       ),

@@ -1408,6 +1408,16 @@ class ProfileRepository {
     );
   }
 
+  Future<RepositoryResult<RemoteProfile>> updatePillarHabitIds(
+    List<String> habitIds,
+  ) {
+    final sanitized = _normalizeStringList(habitIds, maxLength: 3);
+    return _upsertScopedProfilePatch(
+      patch: <String, dynamic>{'pillar_habit_ids': sanitized},
+      fallbackMessage: 'Could not update pillar habits.',
+    );
+  }
+
   Future<RepositoryResult<RemoteProfile>> touchLastLogin({
     DateTime? at,
   }) {
@@ -1869,6 +1879,24 @@ class ProfileRepository {
         );
       }
     }
+  }
+
+  List<String> _normalizeStringList(
+    Iterable<String> values, {
+    int? maxLength,
+  }) {
+    final output = <String>[];
+    final seen = <String>{};
+
+    for (final value in values) {
+      final normalized = value.trim();
+      if (normalized.isEmpty) continue;
+      if (!seen.add(normalized)) continue;
+      output.add(normalized);
+      if (maxLength != null && output.length >= maxLength) break;
+    }
+
+    return output;
   }
 
   Future<RepositoryResult<RemoteProfile>> _updateScopedProfilePatch({

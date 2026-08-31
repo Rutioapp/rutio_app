@@ -8,7 +8,6 @@ import '../models/family_level.dart';
 import '../models/radar_datum.dart';
 import '../painters/radar_painter.dart';
 import '../utils/profile_xp.dart';
-import 'progress_bar.dart';
 import 'section_card.dart';
 
 class FamilyRadarSection extends StatelessWidget {
@@ -16,6 +15,7 @@ class FamilyRadarSection extends StatelessWidget {
   final List<FamilyLevel> familyLevels;
   final Map<String, Color>? familyColors;
   final Color Function(FamilyColorRef ref)? familyColorResolver;
+  final VoidCallback? onTap;
 
   const FamilyRadarSection({
     super.key,
@@ -23,6 +23,7 @@ class FamilyRadarSection extends StatelessWidget {
     required this.familyLevels,
     required this.familyColors,
     this.familyColorResolver,
+    this.onTap,
   });
 
   String _norm(String? s) {
@@ -127,14 +128,17 @@ class FamilyRadarSection extends StatelessWidget {
   ) {
     return LayoutBuilder(
       builder: (ctx, constraints) {
-        const labelW = 100.0;
-        const labelH = 46.0;
-        const labelGap = 24.0;
+        final compact = constraints.maxWidth < 360;
+        final labelW = compact ? 74.0 : 86.0;
+        final labelH = compact ? 38.0 : 42.0;
+        final labelGap = compact ? 10.0 : 12.0;
 
-        final sidePadH = labelGap + labelW / 2 + 4;
-        final sidePadV = labelGap + labelH / 2 + 4;
-        final radarSize =
-            (constraints.maxWidth - sidePadH * 2).clamp(80.0, 220.0);
+        final sidePadH = labelGap + labelW / 2 + 2;
+        final sidePadV = labelGap + labelH / 2 + 2;
+        final maxRadarSize = math.max(0.0, constraints.maxWidth - sidePadH * 2);
+        final radarSize = maxRadarSize
+            .clamp(compact ? 112.0 : 124.0, compact ? 172.0 : 184.0)
+            .toDouble();
         final canvasW = radarSize + sidePadH * 2;
         final canvasH = radarSize + sidePadV * 2;
 
@@ -142,38 +146,44 @@ class FamilyRadarSection extends StatelessWidget {
         final labelRadius = radarSize / 2 + labelGap;
         const startAngle = -math.pi / 2;
 
-        return SizedBox(
-          width: canvasW,
-          height: canvasH,
-          child: Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              Positioned(
-                left: sidePadH,
-                top: sidePadV,
-                width: radarSize,
-                height: radarSize,
-                child: CustomPaint(
-                  painter: RadarPainter(
-                    data: data,
-                    gridColor: const Color(0xFFEAEAEA),
-                    borderColor: accent,
+        return Semantics(
+          label: _sectionSemanticsLabel(context, ordered, data),
+          button: onTap != null,
+          onTap: onTap,
+          child: SizedBox(
+            width: canvasW,
+            height: canvasH,
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned(
+                  left: sidePadH,
+                  top: sidePadV,
+                  width: radarSize,
+                  height: radarSize,
+                  child: CustomPaint(
+                    painter: RadarPainter(
+                      data: data,
+                      gridColor: const Color(0xFFE6DDD1),
+                      borderColor: const Color(0xFF7A6755),
+                    ),
+                    child: const SizedBox.expand(),
                   ),
-                  child: const SizedBox.expand(),
                 ),
-              ),
-              for (int i = 0; i < ordered.length; i++)
-                _vertexLabel(
-                  center: center,
-                  angle: startAngle + (2 * math.pi * i / ordered.length),
-                  radius: labelRadius,
-                  title: _familyTitle(ordered[i].id, name: ordered[i].name),
-                  levelLabel:
-                      context.l10n.profileFamilyLevelShort(ordered[i].level),
-                  w: labelW,
-                  h: labelH,
-                ),
-            ],
+                for (int i = 0; i < ordered.length; i++)
+                  _vertexLabel(
+                    center: center,
+                    angle: startAngle + (2 * math.pi * i / ordered.length),
+                    radius: labelRadius,
+                    title: _familyTitle(ordered[i].id, name: ordered[i].name),
+                    levelLabel:
+                        context.l10n.profileFamilyLevelShort(ordered[i].level),
+                    percentLabel: _percentLabel(data[i].value),
+                    w: labelW,
+                    h: labelH,
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -186,6 +196,7 @@ class FamilyRadarSection extends StatelessWidget {
     required double radius,
     required String title,
     required String levelLabel,
+    required String percentLabel,
     required double w,
     required double h,
   }) {
@@ -197,48 +208,73 @@ class FamilyRadarSection extends StatelessWidget {
       top: y - h / 2,
       width: w,
       height: h,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: accent.withValues(alpha: 0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: Semantics(
+        label: '$title: $percentLabel. $levelLabel.',
+        child: ExcludeSemantics(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFFFDFBF7).withValues(alpha: 0.96),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFBFAF9A)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    levelLabel,
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF7A6755),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 1),
-              Text(
-                levelLabel,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  color: accent,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  String _sectionSemanticsLabel(
+    BuildContext context,
+    List<FamilyLevel> ordered,
+    List<RadarDatum> data,
+  ) {
+    final parts = <String>[
+      context.l10n.profileFamiliesProgressTitle,
+      for (int i = 0; i < ordered.length; i++)
+        '${_familyTitle(ordered[i].id, name: ordered[i].name)}: '
+            '${_percentLabel(data[i].value)}. '
+            '${context.l10n.profileFamilyLevelLabel(ordered[i].level)}',
+    ];
+    return parts.join('. ');
+  }
+
+  String _percentLabel(double value) {
+    final percent = (value.clamp(0.0, 1.0) * 100).round();
+    return '$percent%';
   }
 
   @override
@@ -261,71 +297,50 @@ class FamilyRadarSection extends StatelessWidget {
       );
     }).toList();
 
-    return SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.l10n.profileFamiliesProgressTitle,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 12),
-          Center(child: _radarWithLabels(context, ordered, data)),
-          const SizedBox(height: 16),
-          ...ordered.map((f) {
-            final ld = LevelData(level: f.level, xpToNext: f.xpToNext);
-            final v = normalizedRadarValue(xp: f.xp, levelData: ld);
-            final col = _familyColor(f.id, name: f.name);
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: SectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: col,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _familyTitle(f.id, name: f.name),
-                                style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Text(
-                              context.l10n.profileFamilyLevelLabel(f.level),
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                color: Color(0xFF7A7A7A),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        ProgressBar(value: v, color: col),
-                      ],
+                    child: Text(
+                      context.l10n.profileFamiliesProgressTitle,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF2E241A),
+                      ),
                     ),
                   ),
+                  if (onTap != null) ...[
+                    Text(
+                      context.l10n.habitDetailStatsTab,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF7A6755),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: Color(0xFF7A6755),
+                    ),
+                  ],
                 ],
               ),
-            );
-          }),
-        ],
+              const SizedBox(height: 10),
+              Center(child: _radarWithLabels(context, ordered, data)),
+            ],
+          ),
+        ),
       ),
     );
   }
