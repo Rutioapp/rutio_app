@@ -7,6 +7,7 @@ import 'package:rutio/models/daily_mood.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_all_entries_screen.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_mood_visuals.dart';
+import 'package:rutio/screens/diary_v2/widgets/diary_v2_styles.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
 final DateTime _screenNow = DateTime(2026, 6, 17, 10, 0);
@@ -134,7 +135,8 @@ void main() {
       expect(find.text('Sleep entry'), findsOneWidget);
     });
 
-    testWidgets('filter button opens bottom sheet with date tag and mood options',
+    testWidgets(
+        'filter button opens bottom sheet with date tag type and mood options',
         (tester) async {
       await tester.pumpWidget(
         _app(
@@ -164,6 +166,23 @@ void main() {
       expect(_filterChip('energy'), findsOneWidget);
       expect(_filterChip('focus'), findsOneWidget);
       expect(_filterChip('sleep'), findsOneWidget);
+      expect(find.text('Tipo de entrada'), findsOneWidget);
+      expect(
+        _filtersSheetEntryTypeChip(DiaryEntryContentType.learning),
+        findsOneWidget,
+      );
+      expect(
+        _filtersSheetEntryTypeChip(DiaryEntryContentType.reflection),
+        findsOneWidget,
+      );
+      expect(
+        _filtersSheetEntryTypeChip(DiaryEntryContentType.moment),
+        findsOneWidget,
+      );
+      expect(
+        _filtersSheetEntryTypeChip(DiaryEntryContentType.gratitude),
+        findsOneWidget,
+      );
       expect(_filterChip('mood'), findsOneWidget);
       expect(_filterChip('idea'), findsOneWidget);
       expect(
@@ -348,6 +367,291 @@ void main() {
       expect(find.text('No mood entry'), findsOneWidget);
     });
 
+    testWidgets('initialEntryType null shows all entries', (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'learning-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Learning entry',
+                body: 'Body 1',
+                entryType: DiaryEntryContentType.learning,
+              ),
+              _entry(
+                id: 'reflection-entry',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Reflection entry',
+                body: 'Body 2',
+                entryType: DiaryEntryContentType.reflection,
+              ),
+              _entry(
+                id: 'plain-entry',
+                createdAt: DateTime(2026, 6, 11, 21, 30),
+                title: 'Plain entry',
+                body: 'Body 3',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Learning entry'), findsOneWidget);
+      expect(find.text('Reflection entry'), findsOneWidget);
+      expect(find.text('Plain entry'), findsOneWidget);
+    });
+
+    testWidgets('initialEntryType learning starts filtered and visible',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            initialEntryType: DiaryEntryContentType.learning,
+            entries: [
+              _entry(
+                id: 'learning-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Learning entry',
+                body: 'Body 1',
+                entryType: DiaryEntryContentType.learning,
+              ),
+              _entry(
+                id: 'reflection-entry',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Reflection entry',
+                body: 'Body 2',
+                entryType: DiaryEntryContentType.reflection,
+              ),
+              _entry(
+                id: 'plain-entry',
+                createdAt: DateTime(2026, 6, 11, 21, 30),
+                title: 'Plain entry',
+                body: 'Body 3',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Learning entry'), findsOneWidget);
+      expect(find.text('Reflection entry'), findsNothing);
+      expect(find.text('Plain entry'), findsNothing);
+
+      await _openFiltersSheet(tester);
+      final selectedChip = tester.widget<AnimatedContainer>(
+        find.descendant(
+          of: _filtersSheetEntryTypeChip(DiaryEntryContentType.learning),
+          matching: find.byType(AnimatedContainer),
+        ),
+      );
+      expect(
+        (selectedChip.decoration as BoxDecoration).color,
+        DiaryV2Styles.accentSoftMuted,
+      );
+      expect(find.text('1 activo'), findsOneWidget);
+    });
+
+    testWidgets('clearing an initialEntryType shows all entries again',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            initialEntryType: DiaryEntryContentType.learning,
+            entries: [
+              _entry(
+                id: 'learning-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Learning entry',
+                body: 'Body 1',
+                entryType: DiaryEntryContentType.learning,
+              ),
+              _entry(
+                id: 'reflection-entry',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Reflection entry',
+                body: 'Body 2',
+                entryType: DiaryEntryContentType.reflection,
+              ),
+              _entry(
+                id: 'plain-entry',
+                createdAt: DateTime(2026, 6, 11, 21, 30),
+                title: 'Plain entry',
+                body: 'Body 3',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Learning entry'), findsOneWidget);
+      expect(find.text('Reflection entry'), findsNothing);
+      expect(find.text('Plain entry'), findsNothing);
+
+      await _clearFiltersFromSheet(tester);
+
+      expect(find.text('Learning entry'), findsOneWidget);
+      expect(find.text('Reflection entry'), findsOneWidget);
+      expect(find.text('Plain entry'), findsOneWidget);
+    });
+
+    testWidgets(
+        'shows entries with and without type when no type filter is set',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'learning-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Learning entry',
+                body: 'Body 1',
+                entryType: DiaryEntryContentType.learning,
+              ),
+              _entry(
+                id: 'null-entry',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Null entry',
+                body: 'Body 2',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.text('Learning entry'), findsOneWidget);
+      expect(find.text('Null entry'), findsOneWidget);
+    });
+
+    testWidgets(
+        'entry type filters learning reflection moment and gratitude while excluding null',
+        (tester) async {
+      final entries = <DiaryEntry>[
+        _entry(
+          id: 'learning-entry',
+          createdAt: DateTime(2026, 6, 13, 20, 15),
+          title: 'Learning entry',
+          body: 'Body 1',
+          entryType: DiaryEntryContentType.learning,
+        ),
+        _entry(
+          id: 'reflection-entry',
+          createdAt: DateTime(2026, 6, 12, 21, 30),
+          title: 'Reflection entry',
+          body: 'Body 2',
+          entryType: DiaryEntryContentType.reflection,
+        ),
+        _entry(
+          id: 'moment-entry',
+          createdAt: DateTime(2026, 6, 11, 21, 30),
+          title: 'Moment entry',
+          body: 'Body 3',
+          entryType: DiaryEntryContentType.moment,
+        ),
+        _entry(
+          id: 'gratitude-entry',
+          createdAt: DateTime(2026, 6, 10, 21, 30),
+          title: 'Gratitude entry',
+          body: 'Body 4',
+          entryType: DiaryEntryContentType.gratitude,
+        ),
+        _entry(
+          id: 'null-entry',
+          createdAt: DateTime(2026, 6, 9, 21, 30),
+          title: 'Null entry',
+          body: 'Body 5',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(entries: entries),
+        ),
+      );
+
+      for (final type in DiaryEntryContentType.values) {
+        await _applyEntryTypeFilter(tester, type);
+        expect(find.text(_entryTypeTitle(type)), findsOneWidget);
+        expect(find.text('Null entry'), findsNothing);
+      }
+    });
+
+    testWidgets('clearing filters resets the selected type too',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'learning-entry',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Learning entry',
+                body: 'Body 1',
+                entryType: DiaryEntryContentType.learning,
+              ),
+              _entry(
+                id: 'null-entry',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Null entry',
+                body: 'Body 2',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await _applyEntryTypeFilter(tester, DiaryEntryContentType.learning);
+      expect(find.text('Learning entry'), findsOneWidget);
+      expect(find.text('Null entry'), findsNothing);
+
+      await _clearFiltersFromSheet(tester);
+      expect(find.text('Learning entry'), findsOneWidget);
+      expect(find.text('Null entry'), findsOneWidget);
+    });
+
+    testWidgets('entry type filter combines with an existing tag filter',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(
+          child: DiaryV2AllEntriesScreen(
+            entries: [
+              _entry(
+                id: 'learning-gratitude',
+                createdAt: DateTime(2026, 6, 13, 20, 15),
+                title: 'Learning gratitude',
+                body: 'Body 1',
+                tags: const <String>['gratitude'],
+                entryType: DiaryEntryContentType.learning,
+              ),
+              _entry(
+                id: 'gratitude-only',
+                createdAt: DateTime(2026, 6, 12, 21, 30),
+                title: 'Gratitude only',
+                body: 'Body 2',
+                tags: const <String>['gratitude'],
+                entryType: DiaryEntryContentType.reflection,
+              ),
+              _entry(
+                id: 'learning-only',
+                createdAt: DateTime(2026, 6, 11, 21, 30),
+                title: 'Learning only',
+                body: 'Body 3',
+                entryType: DiaryEntryContentType.learning,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await _applyTagFilter(tester, 'gratitude');
+      await _applyEntryTypeFilter(tester, DiaryEntryContentType.learning);
+
+      expect(find.text('Learning gratitude'), findsOneWidget);
+      expect(find.text('Gratitude only'), findsNothing);
+      expect(find.text('Learning only'), findsNothing);
+    });
+
     testWidgets('search remains visible while filters move into the sheet',
         (tester) async {
       await tester.pumpWidget(
@@ -369,6 +673,7 @@ void main() {
       expect(_filtersButton(), findsOneWidget);
       expect(find.text('Fecha'), findsNothing);
       expect(find.text('Etiqueta'), findsNothing);
+      expect(find.text('Tipo de entrada'), findsNothing);
       expect(find.text('Mood'), findsNothing);
     });
 
@@ -904,7 +1209,7 @@ void main() {
 
       expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
       expect(
-        find.text('Prueba con otro periodo, mood o etiqueta.'),
+        find.text('Prueba con otro periodo, mood, etiqueta o tipo.'),
         findsOneWidget,
       );
     });
@@ -931,7 +1236,7 @@ void main() {
 
       expect(find.text('No hay entradas con estos filtros'), findsOneWidget);
       expect(
-        find.text('Prueba con otro periodo, mood o etiqueta.'),
+        find.text('Prueba con otro periodo, mood, etiqueta o tipo.'),
         findsOneWidget,
       );
     });
@@ -964,7 +1269,8 @@ void main() {
       );
     });
 
-    testWidgets('shows combined empty state when search and filters have no matches',
+    testWidgets(
+        'shows combined empty state when search and filters have no matches',
         (tester) async {
       await tester.pumpWidget(
         _app(
@@ -1612,6 +1918,12 @@ Finder _moodFilterChip(int mood) {
   return find.byKey(ValueKey<String>('diary-all-entries-mood-filter-$mood'));
 }
 
+Finder _filtersSheetEntryTypeChip(DiaryEntryContentType type) {
+  return find.byKey(
+    ValueKey<String>('diary-all-entries-entry-type-${type.name}'),
+  );
+}
+
 Finder _searchField() {
   return find.byKey(const ValueKey<String>('diary-all-entries-search-field'));
 }
@@ -1677,12 +1989,37 @@ Future<void> _applyMoodFilter(WidgetTester tester, int mood) async {
   await _applyFilters(tester);
 }
 
+Future<void> _applyEntryTypeFilter(
+  WidgetTester tester,
+  DiaryEntryContentType type,
+) async {
+  await _openFiltersSheet(tester);
+  await tester.ensureVisible(_filtersSheetEntryTypeChip(type));
+  await tester.tap(_filtersSheetEntryTypeChip(type));
+  await tester.pumpAndSettle();
+  await _applyFilters(tester);
+}
+
+String _entryTypeTitle(DiaryEntryContentType type) {
+  switch (type) {
+    case DiaryEntryContentType.learning:
+      return 'Learning entry';
+    case DiaryEntryContentType.reflection:
+      return 'Reflection entry';
+    case DiaryEntryContentType.moment:
+      return 'Moment entry';
+    case DiaryEntryContentType.gratitude:
+      return 'Gratitude entry';
+  }
+}
+
 DiaryEntry _entry({
   required String id,
   required DateTime createdAt,
   required String title,
   required String body,
   int? mood,
+  DiaryEntryContentType? entryType,
   List<String> tags = const <String>[],
 }) {
   return DiaryEntry(
@@ -1692,6 +2029,7 @@ DiaryEntry _entry({
     title: title,
     body: body,
     mood: mood,
+    entryType: entryType,
     tags: tags,
   );
 }

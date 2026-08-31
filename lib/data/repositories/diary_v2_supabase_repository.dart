@@ -32,6 +32,7 @@ title,
 body,
 legacy_text,
 mood,
+entry_type,
 tags,
 is_pinned,
 habit_id,
@@ -612,6 +613,9 @@ metadata
       habitId: _nullableTrim(row['habit_id']),
       familyId: _nullableTrim(row['family_id']),
       mood: _safeInt(row['mood']),
+      entryType: diaryEntryContentTypeFromJsonValue(
+        row['entry_type'] ?? row['entryType'],
+      ),
       tags: _normalizeSupportedTags(row['tags']),
       isPinned: row['is_pinned'] == true,
     );
@@ -630,6 +634,7 @@ metadata
       'body': _nullableTrim(entry.body),
       'legacy_text': _nullableTrim(entry.legacyText),
       'mood': entry.mood,
+      'entry_type': entry.entryType?.name,
       'tags': entry.tags
           .map((tag) => tag.trim().toLowerCase())
           .where(DiaryEntry.supportedTags.contains)
@@ -642,6 +647,9 @@ metadata
     };
 
     payload.removeWhere((_, value) => value == null);
+    if (!payload.containsKey('entry_type')) {
+      payload['entry_type'] = null;
+    }
     return payload;
   }
 

@@ -23,10 +23,12 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'Fresh title');
       await tester.enterText(find.byType(TextField).last, 'Fresh body');
       final createSaveButton = tester.widget<InkWell>(
-        find.ancestor(
-          of: find.text('Guardar'),
-          matching: find.byType(InkWell),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('Guardar'),
+              matching: find.byType(InkWell),
+            )
+            .first,
       );
       createSaveButton.onTap!.call();
       await tester.pumpAndSettle();
@@ -52,22 +54,125 @@ void main() {
 
       await tester.enterText(find.byType(TextField).first, 'Fresh title');
       await tester.enterText(find.byType(TextField).last, 'Fresh body');
-      await tester.ensureVisible(find.widgetWithText(FilterChip, 'Gratitud'));
-      await tester.tap(find.widgetWithText(FilterChip, 'Gratitud'));
-      await tester.tap(find.widgetWithText(FilterChip, 'Energía'));
+      await tester.ensureVisible(_tagChip('gratitude'));
+      await tester.tap(_tagChip('gratitude'));
+      await tester.tap(_tagChip('energy'));
       await tester.pumpAndSettle();
 
       final createSaveButton = tester.widget<InkWell>(
-        find.ancestor(
-          of: find.text('Guardar'),
-          matching: find.byType(InkWell),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('Guardar'),
+              matching: find.byType(InkWell),
+            )
+            .first,
       );
       createSaveButton.onTap!.call();
       await tester.pumpAndSettle();
 
       expect(store.addedEntries, hasLength(1));
       expect(store.addedEntries.single.tags, <String>['gratitude', 'energy']);
+    });
+
+    testWidgets('entry type chips render and start unselected', (tester) async {
+      final store = _FakeDiaryEditorStore();
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: const DiaryV2EntryEditorScreen(),
+        ),
+      );
+
+      expect(_typeChip('Aprendizaje'), findsOneWidget);
+      expect(_typeChip('Reflexión'), findsOneWidget);
+      expect(_typeChip('Momento'), findsOneWidget);
+      expect(_typeChip('Gratitud'), findsOneWidget);
+      expect(tester.widget<FilterChip>(_typeChip('Aprendizaje')).selected,
+          isFalse);
+      expect(
+          tester.widget<FilterChip>(_typeChip('Reflexión')).selected, isFalse);
+      expect(tester.widget<FilterChip>(_typeChip('Momento')).selected, isFalse);
+      expect(
+          tester.widget<FilterChip>(_typeChip('Gratitud')).selected, isFalse);
+    });
+
+    testWidgets('selecting a type saves learning', (tester) async {
+      final store = _FakeDiaryEditorStore();
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: const DiaryV2EntryEditorScreen(),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField).first, 'Fresh title');
+      await tester.enterText(find.byType(TextField).last, 'Fresh body');
+      await tester.ensureVisible(_typeChip('Aprendizaje'));
+      await tester.tap(_typeChip('Aprendizaje'));
+      await tester.pumpAndSettle();
+
+      final createSaveButton = tester.widget<InkWell>(
+        find
+            .ancestor(
+              of: find.text('Guardar'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
+      createSaveButton.onTap!.call();
+      await tester.pumpAndSettle();
+
+      expect(store.addedEntries, hasLength(1));
+      expect(
+          store.addedEntries.single.entryType, DiaryEntryContentType.learning);
+    });
+
+    testWidgets('changing a type leaves a single selection and saves it',
+        (tester) async {
+      final store = _FakeDiaryEditorStore();
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: const DiaryV2EntryEditorScreen(),
+        ),
+      );
+
+      await tester.ensureVisible(_typeChip('Aprendizaje'));
+      await tester.tap(_typeChip('Aprendizaje'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(_typeChip('Reflexión'));
+      await tester.tap(_typeChip('Reflexión'));
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<FilterChip>(_typeChip('Aprendizaje')).selected,
+          isFalse);
+      expect(
+          tester.widget<FilterChip>(_typeChip('Reflexión')).selected, isTrue);
+      expect(tester.widget<FilterChip>(_typeChip('Momento')).selected, isFalse);
+      expect(
+          tester.widget<FilterChip>(_typeChip('Gratitud')).selected, isFalse);
+
+      await tester.enterText(find.byType(TextField).first, 'Fresh title');
+      await tester.enterText(find.byType(TextField).last, 'Fresh body');
+      final createSaveButton = tester.widget<InkWell>(
+        find
+            .ancestor(
+              of: find.text('Guardar'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
+      createSaveButton.onTap!.call();
+      await tester.pumpAndSettle();
+
+      expect(store.addedEntries, hasLength(1));
+      expect(
+        store.addedEntries.single.entryType,
+        DiaryEntryContentType.reflection,
+      );
     });
 
     testWidgets('renders standardized mood icons in the selector',
@@ -117,25 +222,27 @@ void main() {
       expect(find.text('Old title'), findsOneWidget);
       expect(find.text('Old body'), findsOneWidget);
       expect(
-        tester.widget<FilterChip>(find.widgetWithText(FilterChip, 'Gratitud')).selected,
+        tester.widget<FilterChip>(_tagChip('gratitude')).selected,
         isTrue,
       );
       expect(
-        tester.widget<FilterChip>(find.widgetWithText(FilterChip, 'Energía')).selected,
+        tester.widget<FilterChip>(_tagChip('energy')).selected,
         isTrue,
       );
 
       await tester.enterText(find.byType(TextField).first, 'Updated title');
       await tester.enterText(find.byType(TextField).last, 'Updated body');
-      await tester.ensureVisible(find.widgetWithText(FilterChip, 'Gratitud'));
-      await tester.tap(find.widgetWithText(FilterChip, 'Gratitud'));
-      await tester.tap(find.widgetWithText(FilterChip, 'Sueño'));
+      await tester.ensureVisible(_tagChip('gratitude'));
+      await tester.tap(_tagChip('gratitude'));
+      await tester.tap(_tagChip('sleep'));
       await tester.pumpAndSettle();
       final editSaveButton = tester.widget<InkWell>(
-        find.ancestor(
-          of: find.text('Guardar cambios'),
-          matching: find.byType(InkWell),
-        ).first,
+        find
+            .ancestor(
+              of: find.text('Guardar cambios'),
+              matching: find.byType(InkWell),
+            )
+            .first,
       );
       editSaveButton.onTap!.call();
       await tester.pumpAndSettle();
@@ -155,7 +262,55 @@ void main() {
       expect(updated.tags, <String>['energy', 'sleep']);
     });
 
-    testWidgets('delete action opens confirmation dialog and cancel keeps entry',
+    testWidgets('edit mode preloads and can clear an existing type',
+        (tester) async {
+      final store = _FakeDiaryEditorStore();
+      final existing = DiaryEntry(
+        id: 'entry-type-1',
+        createdAt: DateTime(2026, 6, 13, 8, 30).millisecondsSinceEpoch,
+        text: 'Old title\n\nOld body',
+        title: 'Old title',
+        body: 'Old body',
+        entryType: DiaryEntryContentType.moment,
+      );
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: DiaryV2EntryEditorScreen(editing: existing),
+        ),
+      );
+
+      expect(tester.widget<FilterChip>(_typeChip('Aprendizaje')).selected,
+          isFalse);
+      expect(
+          tester.widget<FilterChip>(_typeChip('Reflexión')).selected, isFalse);
+      expect(tester.widget<FilterChip>(_typeChip('Momento')).selected, isTrue);
+      expect(
+          tester.widget<FilterChip>(_typeChip('Gratitud')).selected, isFalse);
+
+      await tester.ensureVisible(_typeChip('Momento'));
+      await tester.tap(_typeChip('Momento'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilterChip>(_typeChip('Momento')).selected, isFalse);
+
+      final editSaveButton = tester.widget<InkWell>(
+        find
+            .ancestor(
+              of: find.text('Guardar cambios'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
+      editSaveButton.onTap!.call();
+      await tester.pumpAndSettle();
+
+      expect(store.updatedEntries, hasLength(1));
+      expect(store.updatedEntries.single.entryType, isNull);
+    });
+
+    testWidgets(
+        'delete action opens confirmation dialog and cancel keeps entry',
         (tester) async {
       final store = _FakeDiaryEditorStore();
       final existing = DiaryEntry(
@@ -211,6 +366,29 @@ void main() {
       expect(store.deletedEntryIds, <String>['entry-1']);
     });
   });
+}
+
+Finder _typeChip(String label) {
+  return find.byKey(ValueKey<String>('diary-entry-type-${_typeName(label)}'));
+}
+
+Finder _tagChip(String tag) {
+  return find.byKey(ValueKey<String>('diary-entry-tag-$tag'));
+}
+
+String _typeName(String label) {
+  switch (label) {
+    case 'Aprendizaje':
+      return 'learning';
+    case 'Reflexión':
+      return 'reflection';
+    case 'Momento':
+      return 'moment';
+    case 'Gratitud':
+      return 'gratitude';
+    default:
+      return label.toLowerCase();
+  }
 }
 
 Widget _app({

@@ -218,7 +218,6 @@ class _HabitWeeklyScreenState extends State<HabitWeeklyScreen>
             onGoMonthly: () => _replaceWith(
               const HabitMonthlyScreen(initialMode: MonthlyFilterMode.all),
             ),
-            onGoTodo: () => Navigator.pushNamed(context, '/todo'),
             onGoDiary: () => _replaceNamedAny(const ['/diary']),
             onGoDiaryV2: () => _replaceNamed('/diary'),
             onGoArchived: () => _replaceNamedAny(const ['/archived']),
