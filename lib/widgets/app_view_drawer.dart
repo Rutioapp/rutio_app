@@ -15,7 +15,6 @@ class AppViewDrawer extends StatelessWidget {
     required this.onGoDaily,
     required this.onGoWeekly,
     required this.onGoMonthly,
-    required this.onGoTodo,
     required this.onGoDiary,
     required this.onGoDiaryV2,
     required this.onGoArchived,
@@ -28,7 +27,6 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoDaily;
   final VoidCallback onGoWeekly;
   final VoidCallback onGoMonthly;
-  final VoidCallback onGoTodo;
   final VoidCallback onGoDiary;
   final VoidCallback onGoDiaryV2;
   final VoidCallback onGoArchived;
@@ -37,7 +35,7 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoProfile;
 
   /// Valores sugeridos:
-  /// 'daily'|'weekly'|'monthly'|'todo'|'diary'|'archived'|'stats'|'shop'|'profile'
+  /// 'daily'|'weekly'|'monthly'|'diary'|'archived'|'stats'|'shop'|'profile'
   final String? selected;
 
   static const Color _skyTop = Color(0xFFEAF3FB);
@@ -112,13 +110,6 @@ class AppViewDrawer extends StatelessWidget {
                     const SizedBox(height: 18),
                     _DrawerSectionLabel(context.l10n.drawerSectionTracking),
                     const SizedBox(height: 8),
-                    _DrawerTile(
-                      icon: Icons.checklist_rounded,
-                      label: context.l10n.drawerTodo,
-                      isSelected: selected == 'todo',
-                      onTap: () => _go(context, onGoTodo),
-                    ),
-                    const _DrawerDivider(),
                     _DrawerTile(
                       icon: Icons.show_chart_rounded,
                       label: context.l10n.drawerStatistics,

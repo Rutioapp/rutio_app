@@ -39,7 +39,6 @@ extension _HomeScreenNavigation on _HomeScreenState {
         );
       },
       onGoMonthly: () => _openMonthlyOverview(context),
-      onGoTodo: () => Navigator.pushNamed(context, '/todo'),
       onGoDiary: () {
         Navigator.push(
           context,

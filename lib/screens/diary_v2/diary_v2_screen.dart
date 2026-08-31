@@ -139,6 +139,21 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen>
     );
   }
 
+  Future<void> _openFilteredAllEntries(
+    BuildContext context,
+    UserStateStore store,
+    DiaryEntryContentType entryType,
+  ) async {
+    await Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (_) => DiaryV2AllEntriesScreen(
+          entries: store.diaryEntries,
+          initialEntryType: entryType,
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleManualRefresh(UserStateStore store) async {
     try {
       await store.syncDiaryV2FromRemoteBestEffort();
@@ -167,19 +182,18 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen>
         : 'Your space to remember the day.';
 
     return Scaffold(
-          drawer: AppViewDrawer(
-              selected: 'diary',
-              onGoDaily: () => _navReplace(context, const HomeScreen()),
-              onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
-              onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
-              onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-              onGoDiary: () {},
-              onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
-              onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
-              onGoStats: () => Navigator.pushNamed(context, '/stats'),
-              onGoShop: () => Navigator.pushNamed(context, '/shop'),
-              onGoProfile: () => _navReplace(context, const ProfileScreen()),
-        ),
+      drawer: AppViewDrawer(
+        selected: 'diary',
+        onGoDaily: () => _navReplace(context, const HomeScreen()),
+        onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
+        onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
+        onGoDiary: () {},
+        onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
+        onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
+        onGoStats: () => Navigator.pushNamed(context, '/stats'),
+        onGoShop: () => Navigator.pushNamed(context, '/shop'),
+        onGoProfile: () => _navReplace(context, const ProfileScreen()),
+      ),
       backgroundColor: Colors.transparent,
       body: DiaryScreenBackground(
         child: SafeArea(
@@ -192,64 +206,73 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen>
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(14, 10, 14, bottomInset + 114),
                   children: [
-                  Builder(
-                    builder: (ctx) => DiaryV2Header(
-                      title: context.l10n.diaryTitle,
-                      subtitle: subtitle,
-                      onMenuTap: () => Scaffold.of(ctx).openDrawer(),
-                      onAllEntriesTap: () => _openAllEntries(context, store),
-                      allEntriesTooltip: context.l10n.diaryAllEntriesTooltip,
+                    Builder(
+                      builder: (ctx) => DiaryV2Header(
+                        title: context.l10n.diaryTitle,
+                        subtitle: subtitle,
+                        onMenuTap: () => Scaffold.of(ctx).openDrawer(),
+                        onAllEntriesTap: () => _openAllEntries(context, store),
+                        allEntriesTooltip: context.l10n.diaryAllEntriesTooltip,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  DiaryV2WeekStrip(
-                    days: viewData.weekDays,
-                    onDaySelected: (day) {
-                      setState(() => _selectedDay = day.date);
-                    },
-                  ),
-                  const SizedBox(height: 18),
-                  DiaryV2DailyMoodCard(
-                    title: isSpanish ? 'Estado del día' : 'Day state',
-                    helperText: isSpanish
-                        ? 'Marca cómo ha ido tu día en general.'
-                        : 'Mark how your day felt overall.',
-                    selectedMood: selectedDailyMood?.mood,
-                    onMoodSelected: (mood) =>
-                        _setSelectedDayDailyMood(store, mood),
-                  ),
-                  const SizedBox(height: 14),
-                  DiaryV2TodayEntryCard(
-                    title: viewData.previewTitle,
-                    dateLabel: viewData.selectedDayLabel,
-                    excerpt: viewData.todayExcerpt,
-                    emptyTitle: viewData.emptyStateTitle,
-                    emptyBody: viewData.emptyStateBody,
-                    selectedMood: viewData.selectedMood,
-                    metadataLabels: viewData.metadataLabels,
-                    isEmpty: viewData.selectedEntry == null,
-                    extraEntriesLabel: viewData.extraEntriesLabel,
-                    onViewAllTap: viewData.selectedDayEntries.length > 1
-                        ? () => _openSelectedDayEntries(context, viewData)
-                        : null,
-                  ),
-                  const SizedBox(height: 14),
-                  DiaryV2StatsSummaryCard(items: viewData.stats),
-                  const SizedBox(height: 18),
-                  Text(
-                    isSpanish ? 'Explora tu diario' : 'Explore your diary',
-                    style: DiaryV2Styles.sectionTitle(context),
-                  ),
-                  const SizedBox(height: 12),
-                  const DiaryV2ExploreGrid(items: _exploreItems),
-                  const SizedBox(height: 14),
-                  DiaryV2MonthPreviewCard(
-                    title: isSpanish ? 'Tu mes' : 'Your month',
-                    summary: viewData.monthSummary,
-                    moodLabel: viewData.monthMoodLabel,
-                    dominantMood: viewData.monthDominantMood,
-                    dots: viewData.monthDots,
-                  ),
+                    const SizedBox(height: 18),
+                    DiaryV2WeekStrip(
+                      days: viewData.weekDays,
+                      onDaySelected: (day) {
+                        setState(() => _selectedDay = day.date);
+                      },
+                    ),
+                    const SizedBox(height: 18),
+                    DiaryV2DailyMoodCard(
+                      title: isSpanish ? 'Estado del día' : 'Day state',
+                      helperText: isSpanish
+                          ? 'Marca cómo ha ido tu día en general.'
+                          : 'Mark how your day felt overall.',
+                      selectedMood: selectedDailyMood?.mood,
+                      onMoodSelected: (mood) =>
+                          _setSelectedDayDailyMood(store, mood),
+                    ),
+                    const SizedBox(height: 14),
+                    DiaryV2TodayEntryCard(
+                      title: viewData.previewTitle,
+                      dateLabel: viewData.selectedDayLabel,
+                      excerpt: viewData.todayExcerpt,
+                      emptyTitle: viewData.emptyStateTitle,
+                      emptyBody: viewData.emptyStateBody,
+                      selectedMood: viewData.selectedMood,
+                      metadataLabels: viewData.metadataLabels,
+                      isEmpty: viewData.selectedEntry == null,
+                      extraEntriesLabel: viewData.extraEntriesLabel,
+                      onViewAllTap: viewData.selectedDayEntries.length > 1
+                          ? () => _openSelectedDayEntries(context, viewData)
+                          : null,
+                    ),
+                    const SizedBox(height: 14),
+                    DiaryV2StatsSummaryCard(items: viewData.stats),
+                    const SizedBox(height: 18),
+                    Text(
+                      isSpanish ? 'Explora tu diario' : 'Explore your diary',
+                      style: DiaryV2Styles.sectionTitle(context),
+                    ),
+                    const SizedBox(height: 12),
+                    DiaryV2ExploreGrid(
+                      items: _exploreItems,
+                      onItemTap: (item) {
+                        final entryType = item.entryType;
+                        if (entryType == null) return;
+                        unawaited(
+                          _openFilteredAllEntries(context, store, entryType),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    DiaryV2MonthPreviewCard(
+                      title: isSpanish ? 'Tu mes' : 'Your month',
+                      summary: viewData.monthSummary,
+                      moodLabel: viewData.monthMoodLabel,
+                      dominantMood: viewData.monthDominantMood,
+                      dots: viewData.monthDots,
+                    ),
                   ],
                 ),
               ),
@@ -425,21 +448,25 @@ const _exploreItems = [
     icon: CupertinoIcons.heart,
     title: 'Gratitud',
     subtitle: 'Enf\u00f3cate en lo que te suma',
+    entryType: DiaryEntryContentType.gratitude,
   ),
   DiaryV2ExploreItem(
     icon: CupertinoIcons.chat_bubble_2,
     title: 'Reflexiones',
     subtitle: 'Explora tus ideas y emociones',
+    entryType: DiaryEntryContentType.reflection,
   ),
   DiaryV2ExploreItem(
     icon: CupertinoIcons.leaf_arrow_circlepath,
     title: 'Aprendizajes',
     subtitle: 'Lo que hoy te dej\u00f3 una ense\u00f1anza',
+    entryType: DiaryEntryContentType.learning,
   ),
   DiaryV2ExploreItem(
     icon: CupertinoIcons.bookmark,
-    title: 'Momentos guardados',
+    title: 'Momentos',
     subtitle: 'Tus recuerdos m\u00e1s valiosos',
+    entryType: DiaryEntryContentType.moment,
   ),
 ];
 

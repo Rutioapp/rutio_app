@@ -16,6 +16,16 @@ void main() {
       expect(entry.legacyText, 'Deporte\n\nHoy sali a caminar.');
     });
 
+    test('loads legacy json without entryType as null', () {
+      final entry = DiaryEntry.fromJson({
+        'id': 'legacy-null-type',
+        'createdAt': 123,
+        'text': 'Entrada sin clasificacion',
+      });
+
+      expect(entry.entryType, isNull);
+    });
+
     test('loads new json with title and body safely', () {
       final entry = DiaryEntry.fromJson({
         'id': 'new',
@@ -43,6 +53,73 @@ void main() {
       expect(json['title'], 'Deporte');
       expect(json['body'], 'Hoy sali a caminar.');
       expect(json['text'], 'Deporte\n\nHoy sali a caminar.');
+    });
+
+    test('serializes and deserializes learning entryType', () {
+      const entry = DiaryEntry(
+        id: 'learning',
+        createdAt: 123,
+        text: 'Aprendizaje del dia',
+        entryType: DiaryEntryContentType.learning,
+      );
+
+      final restored = DiaryEntry.fromJson(entry.toJson());
+
+      expect(restored.entryType, DiaryEntryContentType.learning);
+      expect(restored.toJson()['entryType'], 'learning');
+    });
+
+    test('serializes and deserializes reflection entryType', () {
+      const entry = DiaryEntry(
+        id: 'reflection',
+        createdAt: 123,
+        text: 'Reflexion del dia',
+        entryType: DiaryEntryContentType.reflection,
+      );
+
+      final restored = DiaryEntry.fromJson(entry.toJson());
+
+      expect(restored.entryType, DiaryEntryContentType.reflection);
+      expect(restored.toJson()['entryType'], 'reflection');
+    });
+
+    test('serializes and deserializes moment entryType', () {
+      const entry = DiaryEntry(
+        id: 'moment',
+        createdAt: 123,
+        text: 'Momento del dia',
+        entryType: DiaryEntryContentType.moment,
+      );
+
+      final restored = DiaryEntry.fromJson(entry.toJson());
+
+      expect(restored.entryType, DiaryEntryContentType.moment);
+      expect(restored.toJson()['entryType'], 'moment');
+    });
+
+    test('serializes and deserializes gratitude entryType', () {
+      const entry = DiaryEntry(
+        id: 'gratitude',
+        createdAt: 123,
+        text: 'Gratitud del dia',
+        entryType: DiaryEntryContentType.gratitude,
+      );
+
+      final restored = DiaryEntry.fromJson(entry.toJson());
+
+      expect(restored.entryType, DiaryEntryContentType.gratitude);
+      expect(restored.toJson()['entryType'], 'gratitude');
+    });
+
+    test('unknown entryType values are ignored safely', () {
+      final entry = DiaryEntry.fromJson({
+        'id': 'unknown',
+        'createdAt': 123,
+        'text': 'Texto',
+        'entryType': 'legacy-unknown',
+      });
+
+      expect(entry.entryType, isNull);
     });
 
     test('fromJson without tags defaults to empty list', () {
@@ -132,6 +209,7 @@ void main() {
         habitId: 'habit-1',
         familyId: 'body',
         mood: 1,
+        entryType: DiaryEntryContentType.moment,
         tags: <String>['focus', 'sleep'],
         isPinned: true,
       );
@@ -147,8 +225,28 @@ void main() {
       expect(restored.habitId, 'habit-1');
       expect(restored.familyId, 'body');
       expect(restored.mood, 1);
+      expect(restored.entryType, DiaryEntryContentType.moment);
       expect(restored.tags, <String>['focus', 'sleep']);
       expect(restored.isPinned, isTrue);
+    });
+
+    test('copyWith preserves, changes and clears entryType', () {
+      const entry = DiaryEntry(
+        id: 'copy-with',
+        createdAt: 123,
+        text: 'Texto',
+        entryType: DiaryEntryContentType.learning,
+      );
+
+      final preserved = entry.copyWith();
+      final changed = entry.copyWith(
+        entryType: DiaryEntryContentType.gratitude,
+      );
+      final cleared = entry.copyWith(entryType: null);
+
+      expect(preserved.entryType, DiaryEntryContentType.learning);
+      expect(changed.entryType, DiaryEntryContentType.gratitude);
+      expect(cleared.entryType, isNull);
     });
   });
 

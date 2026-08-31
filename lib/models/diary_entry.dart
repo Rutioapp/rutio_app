@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+const Object _diaryEntryUnset = Object();
+
 @immutable
 class DiaryEntry {
   static const List<String> supportedTags = <String>[
@@ -27,6 +29,8 @@ class DiaryEntry {
   /// Optional mood value: -2..+2
   final int? mood;
 
+  final DiaryEntryContentType? entryType;
+
   final List<String> tags;
 
   final bool isPinned;
@@ -41,6 +45,7 @@ class DiaryEntry {
     this.habitId,
     this.familyId,
     this.mood,
+    this.entryType,
     this.tags = const <String>[],
     this.isPinned = false,
   });
@@ -76,6 +81,7 @@ class DiaryEntry {
     String? habitId,
     String? familyId,
     int? mood,
+    Object? entryType = _diaryEntryUnset,
     List<String>? tags,
     bool? isPinned,
   }) {
@@ -89,6 +95,9 @@ class DiaryEntry {
       habitId: habitId ?? this.habitId,
       familyId: familyId ?? this.familyId,
       mood: mood ?? this.mood,
+      entryType: identical(entryType, _diaryEntryUnset)
+          ? this.entryType
+          : entryType as DiaryEntryContentType?,
       tags: tags ?? this.tags,
       isPinned: isPinned ?? this.isPinned,
     );
@@ -104,6 +113,7 @@ class DiaryEntry {
         'habitId': habitId,
         'familyId': familyId,
         'mood': mood,
+        'entryType': entryType?.name,
         'tags': _normalizedTags(tags),
         'isPinned': isPinned,
       };
@@ -124,6 +134,9 @@ class DiaryEntry {
         habitId: (json['habitId'] as Object?)?.toString(),
         familyId: (json['familyId'] as Object?)?.toString(),
         mood: (json['mood'] is int) ? json['mood'] as int : int.tryParse((json['mood'] ?? '').toString()),
+        entryType: diaryEntryContentTypeFromJsonValue(
+          json['entryType'] ?? json['entry_type'],
+        ),
         tags: _jsonTags(json['tags']),
         isPinned: (json['isPinned'] as bool?) ?? false,
       );
@@ -157,6 +170,24 @@ class DiaryEntryTextParts {
 
   final String title;
   final String body;
+}
+
+enum DiaryEntryContentType { learning, reflection, moment, gratitude }
+
+DiaryEntryContentType? diaryEntryContentTypeFromJsonValue(Object? value) {
+  final normalized = (value ?? '').toString().trim().toLowerCase();
+  switch (normalized) {
+    case 'learning':
+      return DiaryEntryContentType.learning;
+    case 'reflection':
+      return DiaryEntryContentType.reflection;
+    case 'moment':
+      return DiaryEntryContentType.moment;
+    case 'gratitude':
+      return DiaryEntryContentType.gratitude;
+    default:
+      return null;
+  }
 }
 
 String composeLegacyDiaryText({

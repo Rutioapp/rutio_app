@@ -34,7 +34,6 @@ void main() {
             onGoDaily: () {},
             onGoWeekly: () {},
             onGoMonthly: () {},
-            onGoTodo: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
             onGoArchived: () {},
@@ -61,6 +60,50 @@ void main() {
     expect(reportIssueFinder, findsNothing);
   });
 
+  testWidgets('AppViewDrawer does not render Todo entry', (
+    WidgetTester tester,
+  ) async {
+    final scaffoldKey = GlobalKey<ScaffoldState>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('es'),
+        theme: ThemeData(splashFactory: NoSplash.splashFactory),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          key: scaffoldKey,
+          drawer: AppViewDrawer(
+            onGoDaily: () {},
+            onGoWeekly: () {},
+            onGoMonthly: () {},
+            onGoDiary: () {},
+            onGoDiaryV2: () {},
+            onGoArchived: () {},
+            onGoStats: () {},
+            onGoProfile: () {},
+          ),
+          body: const SizedBox.shrink(),
+        ),
+      ),
+    );
+
+    scaffoldKey.currentState!.openDrawer();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final context = tester.element(find.byType(Scaffold));
+    final l10n = AppLocalizations.of(context);
+
+    expect(find.text(l10n.drawerTodo), findsNothing);
+    expect(find.byIcon(Icons.checklist_rounded), findsNothing);
+  });
+
   testWidgets('AppViewDrawer exposes a single visible statistics entry', (
     WidgetTester tester,
   ) async {
@@ -84,7 +127,6 @@ void main() {
             onGoDaily: () {},
             onGoWeekly: () {},
             onGoMonthly: () {},
-            onGoTodo: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
             onGoArchived: () {},
@@ -137,7 +179,6 @@ void main() {
             onGoDaily: () {},
             onGoWeekly: () {},
             onGoMonthly: () {},
-            onGoTodo: () {},
             onGoDiary: () => diaryTapCount++,
             onGoDiaryV2: () {},
             onGoArchived: () {},
@@ -192,7 +233,6 @@ void main() {
             onGoDaily: () {},
             onGoWeekly: () {},
             onGoMonthly: () {},
-            onGoTodo: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
             onGoArchived: () {},
@@ -241,7 +281,6 @@ void main() {
             onGoDaily: () {},
             onGoWeekly: () {},
             onGoMonthly: () {},
-            onGoTodo: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
             onGoArchived: () {},
@@ -288,7 +327,6 @@ void main() {
             onGoDaily: () {},
             onGoWeekly: () {},
             onGoMonthly: () {},
-            onGoTodo: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
             onGoArchived: () {},
@@ -333,6 +371,15 @@ class _DrawerStatsFakeStore implements UserStateStore {
   @override
   Map<String, HabitStreakSnapshot> get achievementMetricSnapshots =>
       const <String, HabitStreakSnapshot>{};
+
+  @override
+  HabitStreakSnapshot get globalHabitStreakSnapshot =>
+      const HabitStreakSnapshot(
+        habitId: '',
+        currentStreak: 0,
+        bestStreak: 0,
+        totalCompletedDays: 0,
+      );
 
   @override
   dynamic getActiveHabitById(String id) => null;

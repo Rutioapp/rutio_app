@@ -72,24 +72,11 @@ class ShopUtilitiesCatalogResolver {
 
     final local = localUtilitiesById[remote.id];
     if (local == null) return null;
-    final rarity = remote.rarity;
-    if (rarity == null || rarity == RemoteShopItemRarity.unknown) return null;
 
     return local.copyWith(
       priceCoins: remote.priceCoins,
-      rarity: _mapRarity(rarity),
+      rarity: local.rarity,
       isEnabled: remote.isActive,
     );
-  }
-
-  ShopItemRarity _mapRarity(RemoteShopItemRarity rarity) {
-    return switch (rarity) {
-      RemoteShopItemRarity.common => ShopItemRarity.common,
-      RemoteShopItemRarity.uncommon => ShopItemRarity.uncommon,
-      RemoteShopItemRarity.rare => ShopItemRarity.rare,
-      RemoteShopItemRarity.epic => ShopItemRarity.epic,
-      RemoteShopItemRarity.legendary => ShopItemRarity.legendary,
-      RemoteShopItemRarity.unknown => ShopItemRarity.common,
-    };
   }
 }

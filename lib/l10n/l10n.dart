@@ -1830,6 +1830,24 @@ extension AppLocalizationsDiaryX on AppLocalizations {
   }
 }
 
+extension AppLocalizationsDiaryV2X on AppLocalizations {
+  bool get _isSpanishDiaryV2 => localeName.toLowerCase().startsWith('es');
+
+  String get diaryEntryTypeTitle =>
+      _isSpanishDiaryV2 ? 'Tipo de entrada' : 'Entry type';
+
+  String get diaryEntryTypeLearning =>
+      _isSpanishDiaryV2 ? 'Aprendizaje' : 'Learning';
+
+  String get diaryEntryTypeReflection =>
+      _isSpanishDiaryV2 ? 'Reflexión' : 'Reflection';
+
+  String get diaryEntryTypeMoment => _isSpanishDiaryV2 ? 'Momento' : 'Moment';
+
+  String get diaryEntryTypeGratitude =>
+      _isSpanishDiaryV2 ? 'Gratitud' : 'Gratitude';
+}
+
 extension AppLocalizationsCatalogX on AppLocalizations {
   String familyName(String familyId) {
     switch (familyId) {

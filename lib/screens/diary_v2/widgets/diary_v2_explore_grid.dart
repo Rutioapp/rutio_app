@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/models/diary_entry.dart';
 
 import 'diary_v2_styles.dart';
 
@@ -7,11 +8,13 @@ class DiaryV2ExploreItem {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.entryType,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final DiaryEntryContentType? entryType;
 }
 
 class DiaryV2ExploreGrid extends StatelessWidget {

@@ -48,32 +48,40 @@ class ShopHomeHero extends StatelessWidget {
             const SizedBox(height: 14),
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
-                final bool isCompact = constraints.maxWidth < 460;
-                final Widget artwork = const _HeroArtwork();
-                final Widget actions = _HeroActions(
-                  isCompact: isCompact,
-                  onOpenBackpack: onOpenBackpack,
-                  onOpenCustomization: onOpenCustomization,
-                );
+                final bool isCompact = constraints.maxWidth < 340;
+                final double aspectRatio = isCompact ? 0.92 : 1.0;
+                const double gap = 12;
+                final double cardWidth = ((constraints.maxWidth - gap) / 2)
+                    .clamp(0.0, double.infinity);
+                final double cardHeight =
+                    cardWidth > 0 ? cardWidth / aspectRatio : 0;
 
-                if (isCompact) {
-                  return Column(
+                return SizedBox(
+                  height: cardHeight,
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      SizedBox(height: 152, child: artwork),
-                      const SizedBox(height: 12),
-                      actions,
+                      Expanded(
+                        child: _HeroActionCard(
+                          key: const Key('shopHomeHeroBackpack'),
+                          title: l10n.shopHomeHeroBackpackTitle,
+                          subtitle: l10n.shopHomeHeroBackpackSubtitle,
+                          icon: Icons.inventory_2_outlined,
+                          onTap: onOpenBackpack,
+                        ),
+                      ),
+                      const SizedBox(width: gap),
+                      Expanded(
+                        child: _HeroActionCard(
+                          key: const Key('shopHomeHeroCustomization'),
+                          title: l10n.shopHomeHeroCustomizationTitle,
+                          subtitle: l10n.shopHomeHeroCustomizationSubtitle,
+                          icon: Icons.tune_rounded,
+                          onTap: onOpenCustomization,
+                        ),
+                      ),
                     ],
-                  );
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    SizedBox(height: 148, child: artwork),
-                    const SizedBox(height: 12),
-                    actions,
-                  ],
+                  ),
                 );
               },
             ),
@@ -84,155 +92,8 @@ class ShopHomeHero extends StatelessWidget {
   }
 }
 
-class _HeroArtwork extends StatelessWidget {
-  const _HeroArtwork();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: ShopUiTokens.radiusLgShape,
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: <Color>[
-            Color(0xFFF8F2E6),
-            Color(0xFFE9DBC4),
-          ],
-        ),
-      ),
-      child: Stack(
-        children: <Widget>[
-          Positioned(
-            top: 14,
-            left: 14,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            right: 16,
-            top: 18,
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: ShopUiTokens.accentSoft,
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: <Widget>[
-                    Container(
-                      width: 66,
-                      height: 66,
-                      decoration: const BoxDecoration(
-                        color: ShopUiTokens.surfaceRaised,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.face_retouching_natural_rounded,
-                        size: 30,
-                        color: ShopUiTokens.accent,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      height: 34,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        color: ShopUiTokens.placeholderCamel,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroActions extends StatelessWidget {
-  const _HeroActions({
-    required this.isCompact,
-    this.onOpenBackpack,
-    this.onOpenCustomization,
-  });
-
-  final bool isCompact;
-  final VoidCallback? onOpenBackpack;
-  final VoidCallback? onOpenCustomization;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-
-    if (isCompact) {
-      return Column(
-        children: <Widget>[
-          _QuickLink(
-            key: const Key('shopHomeHeroBackpack'),
-            title: l10n.shopHomeHeroBackpackTitle,
-            subtitle: l10n.shopHomeHeroBackpackSubtitle,
-            icon: Icons.inventory_2_outlined,
-            onTap: onOpenBackpack,
-          ),
-          const SizedBox(height: 10),
-          _QuickLink(
-            key: const Key('shopHomeHeroCustomization'),
-            title: l10n.shopHomeHeroCustomizationTitle,
-            subtitle: l10n.shopHomeHeroCustomizationSubtitle,
-            icon: Icons.tune_rounded,
-            onTap: onOpenCustomization,
-          ),
-        ],
-      );
-    }
-
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: _QuickLink(
-            key: const Key('shopHomeHeroBackpack'),
-            title: l10n.shopHomeHeroBackpackTitle,
-            subtitle: l10n.shopHomeHeroBackpackSubtitle,
-            icon: Icons.inventory_2_outlined,
-            onTap: onOpenBackpack,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _QuickLink(
-            key: const Key('shopHomeHeroCustomization'),
-            title: l10n.shopHomeHeroCustomizationTitle,
-            subtitle: l10n.shopHomeHeroCustomizationSubtitle,
-            icon: Icons.tune_rounded,
-            onTap: onOpenCustomization,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _QuickLink extends StatelessWidget {
-  const _QuickLink({
+class _HeroActionCard extends StatelessWidget {
+  const _HeroActionCard({
     super.key,
     required this.title,
     required this.subtitle,
@@ -247,55 +108,66 @@ class _QuickLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isEnabled = onTap != null;
+
     return Opacity(
-      opacity: onTap == null ? 0.72 : 1,
+      opacity: isEnabled ? 1 : 0.72,
       child: Material(
         color: ShopUiTokens.surfaceRaised,
-        borderRadius: ShopUiTokens.radiusMdShape,
+        borderRadius: ShopUiTokens.radiusLgShape,
         child: InkWell(
           onTap: onTap,
-          borderRadius: ShopUiTokens.radiusMdShape,
+          borderRadius: ShopUiTokens.radiusLgShape,
           child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              borderRadius: ShopUiTokens.radiusMdShape,
+              color: ShopUiTokens.surfaceRaised,
+              borderRadius: ShopUiTokens.radiusLgShape,
               border: Border.all(color: ShopUiTokens.stroke),
             ),
-            child: Row(
-              children: <Widget>[
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: const BoxDecoration(
-                    color: ShopUiTokens.backgroundAlt,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(icon, size: 18, color: ShopUiTokens.textPrimary),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 128),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: const BoxDecoration(
+                          color: ShopUiTokens.backgroundAlt,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          icon,
+                          size: 19,
+                          color: ShopUiTokens.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Text(
                         title,
-                        style: ShopUiTextStyles.label.copyWith(fontSize: 12),
+                        textAlign: TextAlign.center,
+                        style: ShopUiTextStyles.label.copyWith(fontSize: 14),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: ShopUiTextStyles.bodySmall,
-                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        style:
+                            ShopUiTextStyles.bodySmall.copyWith(fontSize: 12.5),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),

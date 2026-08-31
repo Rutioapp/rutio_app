@@ -17,10 +17,12 @@ class DiaryV2AllEntriesScreen extends StatefulWidget {
     super.key,
     required this.entries,
     this.now,
+    this.initialEntryType,
   });
 
   final List<DiaryEntry> entries;
   final DateTime? now;
+  final DiaryEntryContentType? initialEntryType;
 
   @override
   State<DiaryV2AllEntriesScreen> createState() =>
@@ -33,8 +35,15 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
   _AllEntriesDateFilter _selectedDateFilter = _AllEntriesDateFilter.all;
   String _selectedTag = _allFilter;
   int? _selectedEntryMood;
+  DiaryEntryContentType? _selectedEntryType;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedEntryType = widget.initialEntryType;
+  }
 
   @override
   void dispose() {
@@ -52,10 +61,12 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     }
   }
 
-  _AllEntriesFiltersSelection get _currentFilters => _AllEntriesFiltersSelection(
+  _AllEntriesFiltersSelection get _currentFilters =>
+      _AllEntriesFiltersSelection(
         dateFilter: _selectedDateFilter,
         tag: _selectedTag,
         entryMood: _selectedEntryMood,
+        entryType: _selectedEntryType,
       );
 
   void _applyFilters(_AllEntriesFiltersSelection selection) {
@@ -63,6 +74,7 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
       _selectedDateFilter = selection.dateFilter;
       _selectedTag = selection.tag;
       _selectedEntryMood = selection.entryMood;
+      _selectedEntryType = selection.entryType;
     });
   }
 
@@ -93,6 +105,7 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
       selectedDateFilter: _selectedDateFilter,
       selectedTag: _selectedTag,
       selectedEntryMood: _selectedEntryMood,
+      selectedEntryType: _selectedEntryType,
       searchQuery: _searchQuery,
       now: widget.now ?? DateTime.now(),
     );
@@ -100,9 +113,11 @@ class _DiaryV2AllEntriesScreenState extends State<DiaryV2AllEntriesScreen> {
     final isDateFiltered = _selectedDateFilter != _AllEntriesDateFilter.all;
     final isTagFiltered = _selectedTag != _allFilter;
     final isMoodFiltered = _selectedEntryMood != null;
+    final isTypeFiltered = _selectedEntryType != null;
     final hasSearchQuery = _normalizedSearchQuery(_searchQuery).isNotEmpty;
     final hasAnyEntries = effectiveEntries.isNotEmpty;
-    final hasActiveFilters = isDateFiltered || isTagFiltered || isMoodFiltered;
+    final hasActiveFilters =
+        isDateFiltered || isTagFiltered || isMoodFiltered || isTypeFiltered;
     final activeFilterCount = _currentFilters.activeCount;
     final emptyState = _resolveEmptyState(
       locale: locale,
@@ -159,17 +174,20 @@ class _AllEntriesFiltersSelection {
     required this.dateFilter,
     required this.tag,
     required this.entryMood,
+    required this.entryType,
   });
 
   final _AllEntriesDateFilter dateFilter;
   final String tag;
   final int? entryMood;
+  final DiaryEntryContentType? entryType;
 
   int get activeCount {
     var count = 0;
     if (dateFilter != _AllEntriesDateFilter.all) count++;
     if (tag != _DiaryV2AllEntriesScreenState._allFilter) count++;
     if (entryMood != null) count++;
+    if (entryType != null) count++;
     return count;
   }
 
@@ -177,6 +195,7 @@ class _AllEntriesFiltersSelection {
     _AllEntriesDateFilter? dateFilter,
     String? tag,
     Object? entryMood = _allEntriesFiltersSelectionNoChange,
+    Object? entryType = _allEntriesFiltersSelectionNoChange,
   }) {
     return _AllEntriesFiltersSelection(
       dateFilter: dateFilter ?? this.dateFilter,
@@ -184,6 +203,9 @@ class _AllEntriesFiltersSelection {
       entryMood: identical(entryMood, _allEntriesFiltersSelectionNoChange)
           ? this.entryMood
           : entryMood as int?,
+      entryType: identical(entryType, _allEntriesFiltersSelectionNoChange)
+          ? this.entryType
+          : entryType as DiaryEntryContentType?,
     );
   }
 }
@@ -368,7 +390,8 @@ class _AllEntriesFiltersSheet extends StatefulWidget {
   final _AllEntriesFiltersSelection initialSelection;
 
   @override
-  State<_AllEntriesFiltersSheet> createState() => _AllEntriesFiltersSheetState();
+  State<_AllEntriesFiltersSheet> createState() =>
+      _AllEntriesFiltersSheetState();
 }
 
 class _AllEntriesFiltersSheetState extends State<_AllEntriesFiltersSheet> {
@@ -380,6 +403,7 @@ class _AllEntriesFiltersSheetState extends State<_AllEntriesFiltersSheet> {
         dateFilter: _AllEntriesDateFilter.all,
         tag: _DiaryV2AllEntriesScreenState._allFilter,
         entryMood: null,
+        entryType: null,
       );
     });
   }
@@ -428,7 +452,8 @@ class _AllEntriesFiltersSheetState extends State<_AllEntriesFiltersSheet> {
                     ),
                     if (_draftSelection.activeCount > 0)
                       Text(
-                        _activeFiltersSummary(locale, _draftSelection.activeCount),
+                        _activeFiltersSummary(
+                            locale, _draftSelection.activeCount),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: DiaryV2Styles.mutedTextStrong,
                               fontWeight: FontWeight.w700,
@@ -461,6 +486,18 @@ class _AllEntriesFiltersSheetState extends State<_AllEntriesFiltersSheet> {
                             onTagSelected: (tag) => setState(() {
                               _draftSelection = _draftSelection.copyWith(
                                 tag: tag,
+                              );
+                            }),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _FilterSection(
+                          label: context.l10n.diaryEntryTypeTitle,
+                          child: _EntryTypeFilterRow(
+                            selectedEntryType: _draftSelection.entryType,
+                            onEntryTypeSelected: (entryType) => setState(() {
+                              _draftSelection = _draftSelection.copyWith(
+                                entryType: entryType,
                               );
                             }),
                           ),
@@ -626,6 +663,36 @@ class _TagFilterRow extends StatelessWidget {
               ),
               isSelected: selectedTag == tag,
               onTap: () => onTagSelected(tag),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _EntryTypeFilterRow extends StatelessWidget {
+  const _EntryTypeFilterRow({
+    required this.selectedEntryType,
+    required this.onEntryTypeSelected,
+  });
+
+  final DiaryEntryContentType? selectedEntryType;
+  final ValueChanged<DiaryEntryContentType?> onEntryTypeSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return _FilterChipScrollView(
+      children: DiaryEntryContentType.values
+          .map(
+            (type) => _FilterChipButton(
+              key: ValueKey<String>(
+                'diary-all-entries-entry-type-${type.name}',
+              ),
+              label: _entryTypeFilterLabel(context, type),
+              isSelected: selectedEntryType == type,
+              onTap: () => onEntryTypeSelected(
+                selectedEntryType == type ? null : type,
+              ),
             ),
           )
           .toList(growable: false),
@@ -1096,6 +1163,7 @@ List<DiaryEntry> _filterEntries({
   required _AllEntriesDateFilter selectedDateFilter,
   required String selectedTag,
   required int? selectedEntryMood,
+  required DiaryEntryContentType? selectedEntryType,
   required String searchQuery,
   required DateTime now,
 }) {
@@ -1116,6 +1184,9 @@ List<DiaryEntry> _filterEntries({
     final matchesMood =
         selectedEntryMood == null ? true : entry.mood == selectedEntryMood;
     if (!matchesMood) return false;
+    final matchesEntryType =
+        selectedEntryType == null ? true : entry.entryType == selectedEntryType;
+    if (!matchesEntryType) return false;
     if (normalizedQuery.isEmpty) return true;
     return _entryMatchesSearch(entry, normalizedQuery);
   }).toList(growable: false);
@@ -1195,6 +1266,20 @@ String _entryMoodFilterLabel(Locale locale) {
   return locale.languageCode == 'es' ? 'Mood' : 'Mood';
 }
 
+String _entryTypeFilterLabel(BuildContext context, DiaryEntryContentType type) {
+  final l10n = context.l10n;
+  switch (type) {
+    case DiaryEntryContentType.learning:
+      return l10n.diaryEntryTypeLearning;
+    case DiaryEntryContentType.reflection:
+      return l10n.diaryEntryTypeReflection;
+    case DiaryEntryContentType.moment:
+      return l10n.diaryEntryTypeMoment;
+    case DiaryEntryContentType.gratitude:
+      return l10n.diaryEntryTypeGratitude;
+  }
+}
+
 String _dateFilterSectionLabel(Locale locale) {
   return locale.languageCode == 'es' ? 'Fecha' : 'Date';
 }
@@ -1234,8 +1319,8 @@ String _filterEmptyTitle(Locale locale) {
 
 String _filterEmptyBody(Locale locale) {
   return locale.languageCode == 'es'
-      ? 'Prueba con otro periodo, mood o etiqueta.'
-      : 'Try another period, mood or tag.';
+      ? 'Prueba con otro periodo, mood, etiqueta o tipo.'
+      : 'Try another period, mood, tag or type.';
 }
 
 _AllEntriesEmptyCopy _resolveEmptyState({
@@ -1283,7 +1368,8 @@ _AllEntriesEmptyCopy _resolveEmptyState({
   }
 
   return _AllEntriesEmptyCopy(
-    title: locale.languageCode == 'es' ? 'Aún no hay entradas' : 'No entries yet',
+    title:
+        locale.languageCode == 'es' ? 'Aún no hay entradas' : 'No entries yet',
     body: locale.languageCode == 'es'
         ? 'Cuando escribas en tu diario, tus entradas aparecerán aquí.'
         : 'When you start writing, your entries will appear here.',

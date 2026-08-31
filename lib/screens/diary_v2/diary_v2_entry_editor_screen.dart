@@ -58,6 +58,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
   final GlobalKey _titleFieldKey = GlobalKey();
   final GlobalKey _writeCardKey = GlobalKey();
   int? _selectedMood;
+  DiaryEntryContentType? _selectedEntryType;
   late List<String> _selectedTags;
 
   bool get _isEditing => widget.editing != null;
@@ -65,7 +66,8 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
   @override
   void initState() {
     super.initState();
-    final splitText = widget.editing?.textParts ?? const DiaryEntryTextParts(title: '', body: '');
+    final splitText = widget.editing?.textParts ??
+        const DiaryEntryTextParts(title: '', body: '');
     _scrollController = ScrollController();
     _titleFocusNode = FocusNode()
       ..addListener(() => _handleFocusChanged(_titleFocusNode, _titleFieldKey));
@@ -76,6 +78,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
     _bodyController = TextEditingController(text: splitText.body)
       ..addListener(_handleTextChanged);
     _selectedMood = widget.editing?.mood;
+    _selectedEntryType = widget.editing?.entryType;
     _selectedTags = List<String>.from(widget.editing?.tags ?? const <String>[]);
     _entryDate = DateUtils.dateOnly(
       widget.initialDate ??
@@ -156,6 +159,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
           title: _titleController.text,
           body: _bodyController.text,
           mood: _selectedMood,
+          entryType: _selectedEntryType,
           tags: _selectedTags,
         ) ??
         DiaryEntry(
@@ -174,6 +178,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
           title: _titleController.text,
           body: _bodyController.text,
           mood: _selectedMood,
+          entryType: _selectedEntryType,
           tags: _selectedTags,
         );
 
@@ -187,7 +192,8 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
     final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop(true);
     messenger.showSnackBar(
-      SnackBar(content: Text(_copy(context, isEditing: _isEditing).savedMessage)),
+      SnackBar(
+          content: Text(_copy(context, isEditing: _isEditing).savedMessage)),
     );
   }
 
@@ -210,9 +216,8 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final bodyCount = _bodyController.text.characters.length;
-    final contentBottomPadding = bottomInset > 0
-        ? bottomInset + 24
-        : bottomPadding + 28;
+    final contentBottomPadding =
+        bottomInset > 0 ? bottomInset + 24 : bottomPadding + 28;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -227,7 +232,8 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 10),
+                  constraints:
+                      BoxConstraints(minHeight: constraints.maxHeight - 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -250,6 +256,14 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
                         selectedMood: _selectedMood,
                         onMoodSelected: (value) {
                           setState(() => _selectedMood = value);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _EntryTypeSelectorCard(
+                        title: context.l10n.diaryEntryTypeTitle,
+                        selectedEntryType: _selectedEntryType,
+                        onTypeSelected: (type) {
+                          setState(() => _selectedEntryType = type);
                         },
                       ),
                       const SizedBox(height: 12),
@@ -276,8 +290,9 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
                         onToggle: (tag) {
                           setState(() {
                             if (_selectedTags.contains(tag)) {
-                              _selectedTags =
-                                  _selectedTags.where((value) => value != tag).toList(growable: false);
+                              _selectedTags = _selectedTags
+                                  .where((value) => value != tag)
+                                  .toList(growable: false);
                             } else {
                               _selectedTags = <String>[..._selectedTags, tag];
                             }
@@ -426,7 +441,8 @@ class _DiaryV2EditorCopy {
         titleHint = 'T\u00edtulo opcional',
         promptTitle = '\u00bfQu\u00e9 quieres recordar de hoy?',
         tagsTitle = 'Etiquetas',
-        tagsHelper = 'A\u00f1ade una pista sobre lo que est\u00e1s registrando.',
+        tagsHelper =
+            'A\u00f1ade una pista sobre lo que est\u00e1s registrando.',
         writeSomethingError = 'Escribe algo antes de guardar.';
 
   const _DiaryV2EditorCopy.editSpanish()
@@ -440,7 +456,8 @@ class _DiaryV2EditorCopy {
         titleHint = 'T\u00edtulo opcional',
         promptTitle = '\u00bfQu\u00e9 quieres recordar de hoy?',
         tagsTitle = 'Etiquetas',
-        tagsHelper = 'A\u00f1ade una pista sobre lo que est\u00e1s registrando.',
+        tagsHelper =
+            'A\u00f1ade una pista sobre lo que est\u00e1s registrando.',
         writeSomethingError = 'Escribe algo antes de guardar.';
 
   const _DiaryV2EditorCopy.english()
@@ -511,9 +528,8 @@ String _composeDiaryText({
 }
 
 String _formatDateLabel(DateTime date, String localeTag) {
-  final pattern = localeTag.startsWith('es')
-      ? "EEEE, d 'de' MMMM"
-      : 'EEEE, MMMM d';
+  final pattern =
+      localeTag.startsWith('es') ? "EEEE, d 'de' MMMM" : 'EEEE, MMMM d';
   final formatted = DateFormat(pattern, localeTag).format(date);
   if (formatted.isEmpty) return formatted;
   return '${formatted[0].toUpperCase()}${formatted.substring(1)}';
@@ -563,12 +579,14 @@ class _TagSelectorCard extends StatelessWidget {
             children: diaryV2PredefinedTags.map((tag) {
               final selected = selectedTags.contains(tag);
               return FilterChip(
+                key: ValueKey<String>('diary-entry-tag-$tag'),
                 label: Text(diaryTagLabel(tag, locale)),
                 selected: selected,
                 onSelected: (_) => onToggle(tag),
                 selectedColor: DiaryV2Styles.accentSoftMuted,
                 checkmarkColor: DiaryV2Styles.accentDeep,
-                backgroundColor: DiaryV2Styles.creamStrong.withValues(alpha: 0.94),
+                backgroundColor:
+                    DiaryV2Styles.creamStrong.withValues(alpha: 0.94),
                 side: BorderSide(
                   color: selected
                       ? DiaryV2Styles.accentDeep.withValues(alpha: 0.28)
@@ -584,7 +602,8 @@ class _TagSelectorCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+                visualDensity:
+                    const VisualDensity(horizontal: -1, vertical: -1),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               );
             }).toList(growable: false),
@@ -592,5 +611,129 @@ class _TagSelectorCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _EntryTypeSelectorCard extends StatelessWidget {
+  const _EntryTypeSelectorCard({
+    required this.title,
+    required this.selectedEntryType,
+    required this.onTypeSelected,
+  });
+
+  final String title;
+  final DiaryEntryContentType? selectedEntryType;
+  final ValueChanged<DiaryEntryContentType?> onTypeSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = <_EntryTypeOption>[
+      _EntryTypeOption(
+        type: DiaryEntryContentType.learning,
+        label: _entryTypeLabel(context, DiaryEntryContentType.learning),
+      ),
+      _EntryTypeOption(
+        type: DiaryEntryContentType.reflection,
+        label: _entryTypeLabel(context, DiaryEntryContentType.reflection),
+      ),
+      _EntryTypeOption(
+        type: DiaryEntryContentType.moment,
+        label: _entryTypeLabel(context, DiaryEntryContentType.moment),
+      ),
+      _EntryTypeOption(
+        type: DiaryEntryContentType.gratitude,
+        label: _entryTypeLabel(context, DiaryEntryContentType.gratitude),
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: DiaryV2Styles.compactCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: DiaryV2Styles.textStrong,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: entries
+                .map(
+                  (option) => FilterChip(
+                    key: ValueKey<String>(
+                      'diary-entry-type-${option.type.name}',
+                    ),
+                    label: Text(option.label),
+                    selected: selectedEntryType == option.type,
+                    onSelected: (isSelected) {
+                      onTypeSelected(
+                        isSelected ? option.type : null,
+                      );
+                    },
+                    selectedColor: DiaryV2Styles.accentSoftMuted,
+                    checkmarkColor: DiaryV2Styles.accentDeep,
+                    backgroundColor:
+                        DiaryV2Styles.creamStrong.withValues(alpha: 0.94),
+                    side: BorderSide(
+                      color: selectedEntryType == option.type
+                          ? DiaryV2Styles.accentDeep.withValues(alpha: 0.28)
+                          : DiaryV2Styles.border.withValues(alpha: 0.9),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: selectedEntryType == option.type
+                              ? DiaryV2Styles.accentDeep
+                              : DiaryV2Styles.mutedTextStrong,
+                          fontWeight: FontWeight.w600,
+                        ),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity:
+                        const VisualDensity(horizontal: -1, vertical: -1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                  ),
+                )
+                .toList(growable: false),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EntryTypeOption {
+  const _EntryTypeOption({
+    required this.type,
+    required this.label,
+  });
+
+  final DiaryEntryContentType type;
+  final String label;
+}
+
+String _entryTypeLabel(
+  BuildContext context,
+  DiaryEntryContentType type,
+) {
+  final l10n = context.l10n;
+  switch (type) {
+    case DiaryEntryContentType.learning:
+      return l10n.diaryEntryTypeLearning;
+    case DiaryEntryContentType.reflection:
+      return l10n.diaryEntryTypeReflection;
+    case DiaryEntryContentType.moment:
+      return l10n.diaryEntryTypeMoment;
+    case DiaryEntryContentType.gratitude:
+      return l10n.diaryEntryTypeGratitude;
   }
 }

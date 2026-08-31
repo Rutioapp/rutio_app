@@ -128,6 +128,57 @@ void main() {
       expect(paragraph.didExceedMaxLines, isFalse);
     });
 
+    testWidgets('ShopHomeHero renders two equal cards without preview on narrow width',
+        (WidgetTester tester) async {
+      var backpackTapCount = 0;
+      var customizationTapCount = 0;
+
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 640);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _app(
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: ShopHomeHero(
+                onOpenBackpack: () => backpackTapCount++,
+                onOpenCustomization: () => customizationTapCount++,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ShopPreviewPlaceholder), findsNothing);
+
+      final backpackFinder = find.byKey(const Key('shopHomeHeroBackpack'));
+      final customizationFinder =
+          find.byKey(const Key('shopHomeHeroCustomization'));
+
+      expect(backpackFinder, findsOneWidget);
+      expect(customizationFinder, findsOneWidget);
+
+      final Size backpackSize = tester.getSize(backpackFinder);
+      final Size customizationSize = tester.getSize(customizationFinder);
+
+      expect(backpackSize, equals(customizationSize));
+      expect(backpackSize.width, greaterThan(0));
+      expect(backpackSize.height, greaterThan(0));
+
+      await tester.tap(backpackFinder);
+      await tester.pump();
+      await tester.tap(customizationFinder);
+      await tester.pump();
+
+      expect(backpackTapCount, 1);
+      expect(customizationTapCount, 1);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('ShopItemCard shows title and price',
         (WidgetTester tester) async {
       await tester.pumpWidget(
