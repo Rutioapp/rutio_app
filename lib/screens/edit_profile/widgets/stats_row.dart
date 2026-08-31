@@ -6,6 +6,7 @@ import 'package:rutio/features/global_wallet/presentation/global_wallet_ui_state
 
 import '../../../l10n/l10n.dart';
 import '../../../stores/user_state_store.dart';
+import '../../../utils/app_theme.dart';
 
 class StatsRow extends StatelessWidget {
   final int level;
@@ -31,81 +32,129 @@ class StatsRow extends StatelessWidget {
 
     final xp = ((progression['xp'] as num?) ?? 0).toInt();
     final level = LevelProgression.fromTotalXp(xp).level;
-    final walletController = context.watch<GlobalWalletController>();
-    final coins = walletController.resolveCoinsForUi(
-      legacyCoinsBuilder: () => ((wallet['coins'] as num?) ?? 0).toInt(),
-    );
+    final coins = _resolveCoinsForUi(context, wallet);
 
     return StatsRow(level: level, xp: xp, coins: coins);
   }
 
+  static int _resolveCoinsForUi(
+    BuildContext context,
+    Map<String, dynamic> wallet,
+  ) {
+    try {
+      final walletController = context.watch<GlobalWalletController>();
+      return walletController.resolveCoinsForUi(
+        legacyCoinsBuilder: () => ((wallet['coins'] as num?) ?? 0).toInt(),
+      );
+    } catch (_) {
+      return ((wallet['coins'] as num?) ?? 0).toInt();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _Stat(
-              label: context.l10n.editProfileStatLevel,
-              value: '$level',
-              icon: Icons.emoji_events_rounded,
-            ),
+    return Row(
+      children: [
+        Expanded(
+          child: _StatCard(
+            icon: Icons.emoji_events_outlined,
+            iconColor: AppColors.earth,
+            label: context.l10n.editProfileStatLevel,
+            value: '$level',
           ),
-          Container(
-              width: 1, height: 40, color: Colors.white.withValues(alpha: 0.1)),
-          Expanded(
-            child: _Stat(
-              label: context.l10n.editProfileStatXp,
-              value: '$xp',
-              icon: Icons.bolt_rounded,
-            ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.bolt_rounded,
+            iconColor: const Color(0xFFC27A39),
+            label: context.l10n.editProfileStatXp,
+            value: '$xp',
           ),
-          Container(
-              width: 1, height: 40, color: Colors.white.withValues(alpha: 0.1)),
-          Expanded(
-            child: _Stat(
-              label: context.l10n.editProfileStatCoins,
-              value: '$coins',
-              icon: Icons.paid_rounded,
-            ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.monetization_on_outlined,
+            iconColor: const Color(0xFFAA8130),
+            label: context.l10n.editProfileStatCoins,
+            value: '$coins',
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _Stat extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _Stat({
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.icon,
+    required this.iconColor,
     required this.label,
     required this.value,
-    required this.icon,
   });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, size: 22),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 2),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDFBF7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.earth.withValues(alpha: 0.12)),
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 12,
+            offset: Offset(0, 6),
+            color: Color(0x0F000000),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 12, color: iconColor),
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(
+                fontFamily: AppTextStyles.serifFamily,
+                fontSize: 22,
+                height: 1,
+                color: AppColors.ink,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.inkSoft,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

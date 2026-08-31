@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/constants/reward_constants.dart';
 import 'package:rutio/devtools/demo_seed/demo_seed_data.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
@@ -92,6 +92,43 @@ void main() {
         expect(result.families, isEmpty);
       });
 
+      test('weekly consistency helper matches the week view data source',
+          () async {
+        final fixedNow = DateTime(2026, 8, 30, 10);
+        final history = _emptyHistory();
+        for (final day in <int>[24, 25, 26, 27, 28, 29, 30]) {
+          _setCheckCompletion(history, DateTime(2026, 8, day, 8), 'habit-1');
+        }
+
+        final root = _rootState(
+          activeHabits: [
+            _habit(
+                id: 'habit-1', title: 'Habit 1', doneToday: true, progress: 1),
+          ],
+          history: history,
+          daily: const <String, dynamic>{},
+          meta: const <String, dynamic>{},
+          profile: const <String, dynamic>{},
+          activeViewDateKey: _dateKey(fixedNow),
+        );
+        final store = _FakeStatisticsV3Store(root);
+
+        final viewData = buildStatisticsV3ViewData(
+          store: store,
+          period: StatisticsV3Period.week,
+          l10n: l10n,
+          now: fixedNow,
+        );
+        final helperPct = buildStatisticsV3WeeklyConsistencyPct(
+          store: store,
+          l10n: l10n,
+          now: fixedNow,
+        );
+
+        expect(viewData.consistencyPct, 100);
+        expect(helperPct, viewData.consistencyPct);
+      });
+
       test(
           'excludes skipped scheduled habits from denominator (10 scheduled, 8 completed, 2 skipped)',
           () async {
@@ -114,7 +151,8 @@ void main() {
           history: _historyForDay(
             now,
             completions: <String, dynamic>{
-              for (var index = 0; index < 8; index++) 'habit-${index + 1}': true,
+              for (var index = 0; index < 8; index++)
+                'habit-${index + 1}': true,
               'habit-9': true,
               'habit-10': true,
             },
@@ -328,7 +366,8 @@ void main() {
         expect(result.rewardBreakdown.visibleRows, isEmpty);
       });
 
-      test('week summary aggregates rewards inside current week only', () async {
+      test('week summary aggregates rewards inside current week only',
+          () async {
         final fixedNow = DateTime(2026, 5, 20, 10);
         final history = _emptyHistory();
         _setCheckCompletion(history, DateTime(2026, 5, 18, 8), 'check-week');
@@ -425,8 +464,7 @@ void main() {
         expect(result.amberGained, 100);
 
         final achievementRow = result.rewardBreakdown.rows.firstWhere(
-          (row) =>
-              row.source == StatisticsV3RewardBreakdownSource.achievements,
+          (row) => row.source == StatisticsV3RewardBreakdownSource.achievements,
         );
         expect(achievementRow.xp, 200);
         expect(achievementRow.amber, 100);
@@ -723,7 +761,8 @@ void main() {
         expect(result.consistencyPct, 25);
       });
 
-      test('day period does not penalize flexible weekly habits as daily expected',
+      test(
+          'day period does not penalize flexible weekly habits as daily expected',
           () async {
         final dayNow = DateTime(2026, 5, 6, 10);
 
@@ -1282,8 +1321,8 @@ void main() {
           ],
         );
 
-        final mayTenth =
-            result.monthlyCalendarDays.firstWhere((item) => item.date.day == 10);
+        final mayTenth = result.monthlyCalendarDays
+            .firstWhere((item) => item.date.day == 10);
         final maySixteenth = result.monthlyCalendarDays
             .firstWhere((item) => item.date.day == 16);
 
@@ -1337,7 +1376,8 @@ void main() {
         final userState = payload.state['userState'] as Map<String, dynamic>;
         final activeHabits = (userState['activeHabits'] as List)
             .whereType<Map>()
-            .map((entry) => Map<String, dynamic>.from(entry.cast<String, dynamic>()))
+            .map((entry) =>
+                Map<String, dynamic>.from(entry.cast<String, dynamic>()))
             .toList(growable: false);
         final history = Map<String, dynamic>.from(userState['history'] as Map);
 
@@ -1359,7 +1399,8 @@ void main() {
           isTrue,
         );
         expect(
-          result.yearlyConsistencyMonths.any((month) => month.completedCount > 0),
+          result.yearlyConsistencyMonths
+              .any((month) => month.completedCount > 0),
           isTrue,
         );
         final monthsWithData = result.yearlyConsistencyMonths
@@ -1389,7 +1430,8 @@ void main() {
           isTrue,
         );
         expect(
-          result.yearlyConsistencyMonths.every((month) => month.days.isNotEmpty),
+          result.yearlyConsistencyMonths
+              .every((month) => month.days.isNotEmpty),
           isTrue,
         );
       });
@@ -2388,8 +2430,8 @@ void _setSkip(
   String habitId,
 ) {
   final dayKey = _dateKey(day);
-  final skipsRoot = history['habitSkips'] as Map<String, dynamic>? ??
-      <String, dynamic>{};
+  final skipsRoot =
+      history['habitSkips'] as Map<String, dynamic>? ?? <String, dynamic>{};
   history['habitSkips'] = skipsRoot;
 
   final skips = _ensureDayMap(skipsRoot, dayKey);

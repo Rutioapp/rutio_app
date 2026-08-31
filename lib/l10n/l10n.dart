@@ -60,6 +60,20 @@ extension AppLocalizationsProfileX on AppLocalizations {
   String get profileAccountSectionTitle =>
       _isSpanish ? 'Cuenta y ajustes' : 'Account and settings';
 
+  String get settingsAccountEmailTitle => _isSpanish ? 'Correo' : 'Email';
+
+  String get settingsPreferencesSectionTitle =>
+      _isSpanish ? 'Preferencias' : 'Preferences';
+
+  String get settingsInformationSectionTitle =>
+      _isSpanish ? 'Información' : 'Information';
+
+  String get settingsAppVersionTitle =>
+      _isSpanish ? 'Versión de la app' : 'App version';
+
+  String get settingsAppVersionUnknown =>
+      _isSpanish ? 'Desconocida' : 'Unknown';
+
   String get profileThemeTitle => _isSpanish ? 'Tema' : 'Theme';
 
   String get profileThemeSubtitle => _isSpanish
@@ -134,6 +148,45 @@ extension AppLocalizationsProfileX on AppLocalizations {
   }
 
   String get profileEditButton => _isSpanish ? 'Editar' : 'Edit';
+
+  String get profilePillarHabitsTitle =>
+      _isSpanish ? 'H\u00e1bitos pilar' : 'Pillar habits';
+
+  String get profilePillarHabitsSubtitle => _isSpanish
+      ? 'Tus 3 h\u00e1bitos ancla m\u00e1s importantes'
+      : 'Your 3 most important anchor habits';
+
+  String get profilePillarHabitsHint => _isSpanish
+      ? 'Toca para elegir hasta 3 h\u00e1bitos pilar'
+      : 'Tap to choose up to 3 pillar habits';
+
+  String get profilePillarHabitsEmptyTitle => _isSpanish
+      ? 'A\u00fan no hay h\u00e1bitos pilar'
+      : 'You have no pillar habits yet';
+
+  String get profilePillarHabitsEmptySubtitle => _isSpanish
+      ? 'Fija hasta 3 h\u00e1bitos para tenerlos siempre a mano'
+      : 'Pin up to 3 habits so they are always within reach';
+
+  String get profilePillarHabitsAddAction => _isSpanish ? 'Añadir' : 'Add';
+
+  String get profilePillarHabitsEditAction => _isSpanish ? 'Editar' : 'Edit';
+
+  String get profilePillarHabitsPickerTitle =>
+      _isSpanish ? 'Elegir h\u00e1bitos pilar' : 'Choose pillar habits';
+
+  String profilePillarHabitsPickerSubtitle(int selectedCount) => _isSpanish
+      ? '$selectedCount de 3 seleccionados'
+      : '$selectedCount of 3 selected';
+
+  String get profilePillarHabitArchivedLabel =>
+      _isSpanish ? 'Archivado' : 'Archived';
+
+  String get profilePillarHabitPausedLabel => _isSpanish ? 'Pausado' : 'Paused';
+
+  String get profilePillarHabitStreakLabel => _isSpanish ? 'Racha' : 'Streak';
+
+  String get profilePillarHabitDaysUnit => _isSpanish ? 'd\u00edas' : 'days';
 
   String get profileDangerZoneTitle =>
       _isSpanish ? 'Zona de peligro' : 'Danger zone';
@@ -439,6 +492,35 @@ extension AppLocalizationsEditProfileX on AppLocalizations {
 
   String get editProfileGoalSectionTitle =>
       _isSpanishEditProfile ? 'Tu objetivo' : 'Your goal';
+
+  String get editProfilePersonalGoalSectionTitle =>
+      _isSpanishEditProfile ? 'Meta personal' : 'Personal goal';
+
+  String get editProfilePreviewSectionLabel =>
+      _isSpanishEditProfile ? 'Vista previa del perfil' : 'Profile preview';
+
+  String get editProfileHeaderNameFallback =>
+      _isSpanishEditProfile ? 'Tu nombre' : 'Your name';
+
+  String get editProfileHeaderGoalFallback =>
+      _isSpanishEditProfile ? 'Define tu objetivo' : 'Define your goal';
+
+  String get editProfileNamePlaceholder => _isSpanishEditProfile
+      ? 'Escribe aquí tu nombre de usuario'
+      : 'Write your username here';
+
+  String get profileGoalEmptyTitle => _isSpanishEditProfile
+      ? 'Define qué quieres conseguir'
+      : 'Define what you want to achieve';
+
+  String get profileGoalAddAction =>
+      _isSpanishEditProfile ? 'Añadir objetivo' : 'Add goal';
+
+  String get profileGoalWeeklyProgressLabel =>
+      _isSpanishEditProfile ? 'Progreso esta semana' : 'Weekly progress';
+
+  String get profileStatsMetricPending =>
+      _isSpanishEditProfile ? 'Pendiente' : 'Pending';
 
   String editProfileImageSelectionError(String error) => _isSpanishEditProfile
       ? 'Error al seleccionar imagen: $error'

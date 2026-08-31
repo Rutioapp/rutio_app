@@ -130,8 +130,7 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
       wallet['coins'] = currentCoins + reward.rewardAmber;
       userState['wallet'] = wallet;
       daily['coinsEarnedToday'] =
-          _safeInt(daily['coinsEarnedToday'], fallback: 0) +
-              reward.rewardAmber;
+          _safeInt(daily['coinsEarnedToday'], fallback: 0) + reward.rewardAmber;
     }
     userState['daily'] = daily;
 
@@ -151,8 +150,7 @@ List<_AppliedAchievementReward> _applyAchievementRewardsForRecords(
   achievements['rewardAppliedAchievementIds'] =
       rewardAppliedIds.toList(growable: false);
   final claims = _ensureClaimsRoot(userState);
-  claims['achievementRewardsClaimed'] =
-      confirmedIds.toList(growable: false);
+  claims['achievementRewardsClaimed'] = confirmedIds.toList(growable: false);
   userState['claims'] = claims;
   return appliedRewards;
 }
@@ -242,8 +240,8 @@ Future<void> _claimCloudAchievementAndLevelRewardsBestEffort(
   var changed = false;
 
   if (resolvePendingFirst) {
-    final pendingResults =
-        await store._achievementLevelRewardCoordinator.resolvePendingForCurrentUser();
+    final pendingResults = await store._achievementLevelRewardCoordinator
+        .resolvePendingForCurrentUser();
     for (final result in pendingResults) {
       final ledger = result.data;
       if (!result.isSuccess || ledger == null) continue;
@@ -448,7 +446,10 @@ Map<String, HabitStreakSnapshot> _achievementMetricSnapshots(
   final userState = _ensureUserStateRoot(root);
   return {
     ..._familyConsistencySnapshotsFromUserState(userState),
-    ..._specialAchievementSnapshotsFromUserState(userState),
+    ..._specialAchievementSnapshotsFromUserState(
+      userState,
+      store._nowProvider(),
+    ),
   };
 }
 
@@ -641,6 +642,7 @@ bool _habitCompletedOnDate(
 
 Map<String, HabitStreakSnapshot> _specialAchievementSnapshotsFromUserState(
   Map<String, dynamic> userState,
+  DateTime now,
 ) {
   final stats = _buildAchievementHistoryStats(userState);
   final output = <String, HabitStreakSnapshot>{};
@@ -726,10 +728,9 @@ Map<String, HabitStreakSnapshot> _specialAchievementSnapshotsFromUserState(
         );
         break;
       case 'special:imparable':
-        output[achievement.id] = _snapshotFromMetricValue(
-          achievement.id,
-          value: stats.currentGlobalStreak,
-          bestValue: stats.bestGlobalStreak,
+        output[achievement.id] = _globalHabitStreakSnapshotFromUserState(
+          userState,
+          now,
         );
         break;
       case 'special:leyenda_viva':
@@ -762,6 +763,24 @@ Map<String, HabitStreakSnapshot> _specialAchievementSnapshotsFromUserState(
   return output;
 }
 
+HabitStreakSnapshot _globalHabitStreakSnapshot(UserStateStore store) {
+  final root = store._state;
+  if (root == null) {
+    return const HabitStreakSnapshot(
+      habitId: 'special:imparable',
+      currentStreak: 0,
+      bestStreak: 0,
+      totalCompletedDays: 0,
+    );
+  }
+
+  final userState = _ensureUserStateRoot(root);
+  return _globalHabitStreakSnapshotFromUserState(
+    userState,
+    store._nowProvider(),
+  );
+}
+
 _AchievementHistoryStats _buildAchievementHistoryStats(
   Map<String, dynamic> userState,
 ) {
@@ -769,18 +788,8 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
       .map((habit) => Map<String, dynamic>.from(habit))
       .toList(growable: false);
   final activeFamilyIds = activeHabits.map(_habitFamilyId).toSet();
-  final history = _ensureHistoryRoot(userState);
-  final completions = _map(history['habitCompletions']);
-  final countValues = _map(history['habitCountValues']);
-  final completionTimes = _map(history['habitCompletionTimes']);
-  final allDayKeys = <String>{
-    ...completions.keys.map((key) => key.toString()),
-    ...countValues.keys.map((key) => key.toString()),
-    ...completionTimes.keys.map((key) => key.toString()),
-  }.where((key) => key.trim().isNotEmpty).toList()
-    ..sort();
+  final globalCountsByDay = _globalHabitCountsByDay(userState);
 
-  final globalCountsByDay = <DateTime, int>{};
   final completedFamiliesByDay = <DateTime, Set<String>>{};
   final completedFamilyIds = <String>{};
   final socialDays = <DateTime>{};
@@ -795,9 +804,13 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
   var bestDailyCompletions = 0;
   var totalCompletions = 0;
 
-  for (final dayKey in allDayKeys) {
-    final date = _dateFromKey(dayKey);
-    final day = DateTime(date.year, date.month, date.day);
+  final history = _ensureHistoryRoot(userState);
+  final completions = _map(history['habitCompletions']);
+  final countValues = _map(history['habitCountValues']);
+  final completionTimes = _map(history['habitCompletionTimes']);
+
+  for (final day in globalCountsByDay.keys.toList()..sort()) {
+    final dayKey = _dateKey(day);
     final completionMap = _map(completions[dayKey]);
     final countValueMap = _map(countValues[dayKey]);
     final timeMap = _map(completionTimes[dayKey]);
@@ -936,6 +949,98 @@ _AchievementHistoryStats _buildAchievementHistoryStats(
     socialCompletionCount: socialCompletionCount,
     unlockedAchievementCount: unlockedAchievementCount,
   );
+}
+
+Map<DateTime, int> _globalHabitCountsByDay(Map<String, dynamic> userState) {
+  final history = _ensureHistoryRoot(userState);
+  final completions = _map(history['habitCompletions']);
+  final countValues = _map(history['habitCountValues']);
+  final completionTimes = _map(history['habitCompletionTimes']);
+  final allDayKeys = <String>{
+    ...completions.keys.map((key) => key.toString()),
+    ...countValues.keys.map((key) => key.toString()),
+    ...completionTimes.keys.map((key) => key.toString()),
+  }.where((key) => key.trim().isNotEmpty).toList()
+    ..sort();
+
+  final activeHabits = _mutableActiveHabits(userState)
+      .map((habit) => Map<String, dynamic>.from(habit))
+      .toList(growable: false);
+  final globalCountsByDay = <DateTime, int>{};
+
+  for (final dayKey in allDayKeys) {
+    final date = _dateFromKey(dayKey);
+    final day = DateTime(date.year, date.month, date.day);
+    final completionMap = _map(completions[dayKey]);
+    final countValueMap = _map(countValues[dayKey]);
+
+    var scheduledCount = 0;
+    final completedToday = <String>{};
+
+    for (final habit in activeHabits) {
+      if (!_isScheduledForDate(habit, day)) continue;
+      scheduledCount += 1;
+
+      if (!_habitCompletedOnDate(
+        habit,
+        completionMap: completionMap,
+        countValueMap: countValueMap,
+      )) {
+        continue;
+      }
+
+      final habitId = _habitIdValue(habit);
+      if (habitId == null || habitId.isEmpty) continue;
+
+      completedToday.add(habitId);
+    }
+
+    if (scheduledCount > 0) {
+      globalCountsByDay[day] = completedToday.isNotEmpty ? 1 : 0;
+    } else if (completedToday.isNotEmpty) {
+      globalCountsByDay[day] = 1;
+    }
+  }
+
+  return globalCountsByDay;
+}
+
+HabitStreakSnapshot _globalHabitStreakSnapshotFromUserState(
+  Map<String, dynamic> userState,
+  DateTime now,
+) {
+  final countsByDay = _globalHabitCountsByDay(userState);
+  return HabitStreakSnapshot(
+    habitId: 'special:imparable',
+    currentStreak: _computeCurrentStreak(countsByDay, now),
+    bestStreak: _computeBestStreak(countsByDay),
+    totalCompletedDays: countsByDay.values
+        .fold<int>(0, (sum, value) => sum + (value > 0 ? 1 : 0)),
+  );
+}
+
+int _activeDaysCount(UserStateStore store) {
+  final root = store._state;
+  if (root == null) return 0;
+
+  final userState = _ensureUserStateRoot(root);
+  final history = _ensureHistoryRoot(userState);
+  final completions = _map(history['habitCompletions']);
+  final countValues = _map(history['habitCountValues']);
+  final completionTimes = _map(history['habitCompletionTimes']);
+  final activeDays = <String>{
+    ...completions.keys.map((key) => key.toString()),
+    ...countValues.keys.map((key) => key.toString()),
+    ...completionTimes.keys.map((key) => key.toString()),
+  };
+
+  for (final entry in _diaryEntries(store)) {
+    if (entry.text.trim().isEmpty) continue;
+    final createdAt = DateTime.fromMillisecondsSinceEpoch(entry.createdAt);
+    activeDays.add(_dateKey(createdAt.toLocal()));
+  }
+
+  return activeDays.where((key) => key.trim().isNotEmpty).length;
 }
 
 int _computeMaxDistinctFamiliesInWindow(
@@ -1212,7 +1317,10 @@ _AchievementSyncOutcome _syncAchievementsFromCurrentHabits(
   }
 
   final snapshotsByFamily = _familyConsistencySnapshotsFromUserState(userState);
-  final specialSnapshots = _specialAchievementSnapshotsFromUserState(userState);
+  final specialSnapshots = _specialAchievementSnapshotsFromUserState(
+    userState,
+    store._nowProvider(),
+  );
 
   for (final familyId in FamilyTheme.order) {
     final snapshot = snapshotsByFamily[familyId] ??

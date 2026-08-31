@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
+import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 import '../../features/achievements/application/achievement_catalog.dart';
 import '../../features/achievements/application/achievement_progress_service.dart';
@@ -12,6 +14,7 @@ import '../../features/achievements/domain/models/achievement_progress.dart';
 import '../../features/achievements/presentation/screens/achievements_screen.dart';
 import '../../features/achievements/presentation/widgets/featured_achievement_picker_sheet.dart';
 import '../../features/achievements/presentation/widgets/featured_achievements_section.dart';
+import '../../features/gamification/domain/level_progression.dart';
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
 import '../../utils/family_theme.dart';
@@ -24,10 +27,12 @@ import '../home/home_screen.dart';
 import 'models/family_color_ref.dart';
 import 'settings_screen.dart';
 import 'utils/profile_levels_from_history.dart';
+import 'widgets/profile_goal_card.dart';
+import 'widgets/profile_pillar_habits_section.dart';
+import 'widgets/profile_stats_summary_card.dart';
+import 'widgets/profile_progress_card.dart';
 import 'widgets/family_radar_section.dart';
 import 'widgets/profile_header.dart';
-import 'widgets/profile_option_tile.dart';
-import 'widgets/section_card.dart';
 import 'package:rutio/widgets/app_view_drawer.dart';
 import 'package:rutio/widgets/app_header/app_header.dart';
 
@@ -44,27 +49,15 @@ void _navReplace(BuildContext context, Widget screen) {
 class ProfileScreen extends StatefulWidget {
   static const route = '/profile';
 
-  final String? userName;
-  final String? subtitle;
-  final String? email;
-  final ImageProvider? avatarImage;
-  final List<dynamic>? habits;
   final Map<String, Color>? familyColors;
   final Color Function(FamilyColorRef ref)? familyColorResolver;
-  final String Function(FamilyColorRef ref)? titleResolver;
   final VoidCallback? onEditProfile;
   final bool openEditProfileOnLoad;
 
   const ProfileScreen({
     super.key,
-    this.userName,
-    this.subtitle,
-    this.email,
-    this.avatarImage,
-    this.habits,
     this.familyColors,
     this.familyColorResolver,
-    this.titleResolver,
     this.onEditProfile,
     this.openEditProfileOnLoad = false,
   });
@@ -108,6 +101,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _openStatistics() {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(builder: (_) => const StatisticsV3Screen()),
+    );
+  }
+
   void _openAchievementsScreen() {
     Navigator.push(
       context,
@@ -134,6 +134,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _handlePillarHabitsTap() async {
+    final store = context.read<UserStateStore>();
+    await showPillarHabitPickerSheet(
+      context,
+      store: store,
+      selectedIds: store.pillarHabitIds,
+      onSave: (selectedIds) async {
+        await store.setPillarHabitIds(selectedIds);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -141,9 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final root = store.state;
     final userState = (root?['userState'] as Map?)?.cast<String, dynamic>() ??
         <String, dynamic>{};
-    final profile = (userState['profile'] as Map?)?.cast<String, dynamic>() ??
-        <String, dynamic>{};
-    final avatarUrl = (profile['avatarUrl'] ?? '').toString().trim();
+    final avatarUrl = (store.avatarUrl ?? '').trim();
 
     ImageProvider? resolvedAvatar;
     if (avatarUrl.isNotEmpty) {
@@ -156,24 +166,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         resolvedAvatar = FileImage(File(path));
       }
     }
-    resolvedAvatar ??= widget.avatarImage;
 
-    const accent = Color(0xFF6C5CE7);
-    const bg = Color(0xFFF7F6FF);
+    const accent = AppColors.earth;
+    const bg = AppColors.cream;
 
-    final name = (widget.userName?.trim().isNotEmpty ?? false)
-        ? widget.userName!.trim()
+    final name = (store.displayName ?? '').trim().isNotEmpty
+        ? store.displayName!.trim()
         : l10n.profileDefaultName;
-    final subtitle = (widget.subtitle?.trim().isNotEmpty ?? false)
-        ? widget.subtitle!.trim()
-        : l10n.profileDefaultSubtitle;
-    final email = widget.email;
+    final note = (store.bioText ?? '').trim();
+    final goal = (store.goalText ?? '').trim();
+
+    final progression =
+        (userState['progression'] as Map?)?.cast<String, dynamic>() ??
+            <String, dynamic>{};
+    final xp = ((progression['xp'] as num?) ?? 0).toInt();
+    final levelProgression = LevelProgression.fromTotalXp(xp);
+    final weeklyConsistencyPct = buildStatisticsV3WeeklyConsistencyPct(
+      store: store,
+      l10n: l10n,
+    );
+    final pillarHabits = buildProfilePillarHabitCards(store);
+    final streakSnapshot = store.globalHabitStreakSnapshot;
+    final currentStreakDays = streakSnapshot.currentStreak;
+    final bestStreakDays = streakSnapshot.bestStreak;
+    final activeDaysCount = store.activeDaysCount;
 
     final habitsDyn = (userState['activeHabits'] as List?) ??
         (userState['habits'] as List?) ??
         (root?['activeHabits'] as List?) ??
         (root?['habits'] as List?) ??
-        (widget.habits ?? const <dynamic>[]);
+        const <dynamic>[];
 
     final activeHabits = habitsDyn
         .whereType<Map>()
@@ -217,6 +239,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         title: Text(l10n.profileTitle),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: l10n.settingsTitle,
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: _openSettings,
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
@@ -224,10 +253,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ProfileHeader(
             accent: accent,
             name: name,
-            subtitle: subtitle,
-            email: email,
+            note: note.isNotEmpty ? note : null,
+            goal: goal.isNotEmpty ? goal : null,
             avatarImage: resolvedAvatar,
             onEdit: _openEditProfile,
+          ),
+          const SizedBox(height: 14),
+          ProfileProgressCard(
+            accent: accent,
+            progression: levelProgression,
+          ),
+          const SizedBox(height: 14),
+          ProfileStatsSummaryCard(
+            title: l10n.statisticsV3SummaryCardTitle,
+            currentStreakDays: currentStreakDays,
+            bestStreakDays: bestStreakDays,
+            weeklyConsistencyPct: weeklyConsistencyPct,
+            activeDaysLabel: l10n.statisticsV3ConsistencyActiveDays,
+            activeDaysCount: activeDaysCount,
+            onTap: _openStatistics,
+          ),
+          const SizedBox(height: 14),
+          ProfileGoalCard(
+            accent: accent,
+            goalText: goal.isNotEmpty ? goal : null,
+            weeklyConsistencyPct: weeklyConsistencyPct,
+            onEdit: _openEditProfile,
+          ),
+          const SizedBox(height: 14),
+          ProfilePillarHabitsSection(
+            accent: accent,
+            pillarHabits: pillarHabits,
+            onTap: _handlePillarHabitsTap,
           ),
           const SizedBox(height: 14),
           FamilyRadarSection(
@@ -235,37 +292,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             familyLevels: familyLevels,
             familyColors: widget.familyColors ?? FamilyTheme.colors,
             familyColorResolver: widget.familyColorResolver,
+            onTap: _openStatistics,
           ),
           const SizedBox(height: 14),
           FeaturedAchievementsSection(
             featuredAchievements: achievementData.featuredItems,
             onTap: _handleFeaturedAchievementsTap,
-          ),
-          const SizedBox(height: 14),
-          Text(
-            l10n.profileAccountSectionTitle,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          SectionCard(
-            child: Column(
-              children: [
-                ProfileOptionTile(
-                  icon: Icons.settings_outlined,
-                  title: context.l10n.profileSettingsTitle,
-                  subtitle: context.l10n.profileSettingsSubtitle,
-                  onTap: _openSettings,
-                ),
-                const SizedBox(height: 12),
-                ProfileOptionTile(
-                  icon: CupertinoIcons.rosette,
-                  title: l10n.profileAchievementsTitle,
-                  subtitle: l10n.profileAchievementsSubtitle,
-                  onTap: _openAchievementsScreen,
-                  iconColor: const Color(0xFFB48842),
-                ),
-              ],
-            ),
           ),
         ],
       ),

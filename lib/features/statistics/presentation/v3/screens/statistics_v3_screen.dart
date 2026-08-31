@@ -72,7 +72,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       l10n: l10n,
     );
     final globalInsight = resolveStatisticsV3GlobalInsight(viewData);
-    final currentStreakDays = _currentGlobalStreak(store);
+    final currentStreakDays = store.globalHabitStreakSnapshot.currentStreak;
     final highlightedHabitStreakDays =
         _highlightedHabitStreak(store, viewData.highlightedHabits);
 
@@ -82,20 +82,20 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
         Scaffold(
           backgroundColor: Colors.transparent,
           drawer: AppViewDrawer(
-              selected: 'stats',
-              onGoDaily: () => _navReplace(context, const HomeScreen()),
-              onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
-              onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
-              onGoTodo: () => Navigator.pushNamed(context, '/todo'),
-              onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
-              onGoDiaryV2: () =>
-                  Navigator.of(context).pushReplacementNamed('/diary'),
-              onGoArchived: () =>
-                  _navReplace(context, const ArchivedHabitsScreen()),
-              onGoStats: () {},
-              onGoShop: () => Navigator.pushNamed(context, '/shop'),
-              onGoProfile: () => _navReplace(context, const ProfileScreen()),
-            ),
+            selected: 'stats',
+            onGoDaily: () => _navReplace(context, const HomeScreen()),
+            onGoWeekly: () => _navReplace(context, const HabitWeeklyScreen()),
+            onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
+            onGoTodo: () => Navigator.pushNamed(context, '/todo'),
+            onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
+            onGoDiaryV2: () =>
+                Navigator.of(context).pushReplacementNamed('/diary'),
+            onGoArchived: () =>
+                _navReplace(context, const ArchivedHabitsScreen()),
+            onGoStats: () {},
+            onGoShop: () => Navigator.pushNamed(context, '/shop'),
+            onGoProfile: () => _navReplace(context, const ProfileScreen()),
+          ),
           body: SafeArea(
             bottom: false,
             child: ListView(
@@ -300,11 +300,6 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       totalXp: viewData.xpGained,
       totalAmber: viewData.amberGained,
     );
-  }
-
-  int _currentGlobalStreak(UserStateStore store) {
-    final snapshot = store.achievementMetricSnapshots['special:imparable'];
-    return snapshot?.currentStreak ?? 0;
   }
 
   int _highlightedHabitStreak(

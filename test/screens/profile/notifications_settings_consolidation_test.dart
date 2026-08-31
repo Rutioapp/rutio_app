@@ -13,9 +13,11 @@ import 'package:rutio/features/notifications/presentation/personalized_notificat
 import 'package:rutio/features/notifications/domain/personalized_notification_models.dart';
 import 'package:rutio/features/notifications/domain/personalized_notification_ports.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
+import 'package:rutio/screens/profile/profile_screen.dart';
 import 'package:rutio/screens/profile/notification_settings_screen.dart';
 import 'package:rutio/screens/profile/settings_screen.dart';
 import 'package:rutio/stores/user_state_store.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -27,6 +29,13 @@ void main() {
     previousFeatureGateState = PersonalizedNotificationsFeatureGate.enabled;
     PersonalizedNotificationsFeatureGate.enabled = false;
     SharedPreferences.setMockInitialValues(<String, Object>{});
+    PackageInfo.setMockInitialValues(
+      appName: 'Rutio',
+      packageName: 'com.example.rutio',
+      version: '1.0.1',
+      buildNumber: '7',
+      buildSignature: '',
+    );
   });
 
   tearDown(() {
@@ -60,6 +69,77 @@ void main() {
     expect(find.byType(NotificationSettingsScreen), findsOneWidget);
     expect(find.text('Notifications'), findsWidgets);
     expect(syncCalls, 0);
+  });
+
+  testWidgets('Profile gear opens Settings', (tester) async {
+    final store = await _createStore();
+
+    await tester.pumpWidget(
+      _app(
+        store,
+        child: const ProfileScreen(),
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+  });
+
+  testWidgets('Settings opens Edit Profile', (tester) async {
+    final store = await _createStore();
+
+    await tester.pumpWidget(
+      _app(
+        store,
+        child: SettingsScreen(
+          editProfileScreenBuilder: (_) => const _TestDestinationScreen(
+            label: 'Edit profile destination',
+          ),
+          notificationSettingsScreenBuilder: (_) => NotificationSettingsScreen(
+            permissionController: _FakePermissionController(),
+            syncPhaseOne: (_) async {},
+          ),
+          feedbackScreenBuilder: (_) => const _TestDestinationScreen(
+            label: 'Feedback destination',
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Edit profile'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit profile destination'), findsOneWidget);
+  });
+
+  testWidgets('Settings opens Feedback', (tester) async {
+    final store = await _createStore();
+
+    await tester.pumpWidget(
+      _app(
+        store,
+        child: SettingsScreen(
+          editProfileScreenBuilder: (_) => const _TestDestinationScreen(
+            label: 'Edit profile destination',
+          ),
+          notificationSettingsScreenBuilder: (_) => NotificationSettingsScreen(
+            permissionController: _FakePermissionController(),
+            syncPhaseOne: (_) async {},
+          ),
+          feedbackScreenBuilder: (_) => const _TestDestinationScreen(
+            label: 'Feedback destination',
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Send feedback'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Feedback destination'), findsOneWidget);
   });
 
   testWidgets('gate off hides personalized settings and keeps legacy visible', (
@@ -233,6 +313,19 @@ class _MemoryNotificationPreferencesStore
   }
 }
 
+class _TestDestinationScreen extends StatelessWidget {
+  const _TestDestinationScreen({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(child: Text(label)),
+    );
+  }
+}
+
 Future<UserStateStore> _createStore() async {
   final repository = UserStateRepository(storage: UserStateStorage())
     ..setActiveUserScope('user-123');
@@ -298,6 +391,7 @@ Map<String, dynamic> _baseState() {
       'meta': <String, dynamic>{
         'schemaVersion': 1,
         'lastSavedAt': today.toUtc().toIso8601String(),
+        'authEmail': 'user@example.com',
         'activeViewDateKey': '2026-08-29',
         'diaryRewardAppliedDateKeys': <dynamic>[],
       },
@@ -312,6 +406,7 @@ Map<String, dynamic> _baseState() {
       'wallet': <String, dynamic>{'coins': 0},
       'inventory': <String, dynamic>{'items': <dynamic>[]},
       'profile': <String, dynamic>{
+        'email': 'user@example.com',
         'equipped': <String, dynamic>{
           'avatar_skin': null,
           'aura': null,

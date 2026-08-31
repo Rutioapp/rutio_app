@@ -161,6 +161,38 @@ Future<void> _applySupabaseIdentity(
 
   store._emitChanged();
   await store._repo.save(root);
+  unawaited(_bestEffortHydratePillarHabitIds(store));
+}
+
+Future<void> _bestEffortHydratePillarHabitIds(UserStateStore store) async {
+  final repository = store._profileRepository;
+  if (repository == null) return;
+
+  try {
+    final result = await repository.fetchCurrentProfile();
+    if (!result.isSuccess || result.data == null) return;
+
+    final remoteIds = result.data!.pillarHabitIds;
+    final root = store._state;
+    if (root == null) return;
+
+    final userState = _ensureUserStateRoot(root);
+    final profile = _map(userState['profile']);
+    final localIds = _pillarHabitIdsFromCurrentHabits(
+      store,
+      remoteIds,
+    );
+    profile['pillarHabitIds'] = localIds;
+    userState['profile'] = profile;
+    root['userState'] = userState;
+    store._state = root;
+    await store._repo.save(root);
+    store._emitChanged();
+  } catch (error) {
+    _debugProfileWriteThroughWarning(
+      'pillar habits hydration failed: $error',
+    );
+  }
 }
 
 Future<void> _clearSupabaseIdentity(UserStateStore store) async {
@@ -408,6 +440,103 @@ Future<void> _updateProfileFields(
       ),
     );
   }
+}
+
+List<String> _pillarHabitIds(UserStateStore store) {
+  if (store._state == null) return const <String>[];
+
+  final userState = _ensureUserStateRoot(store._state!);
+  final profile = _map(userState['profile']);
+  final activeHabitIds = _currentHabitIds(store);
+  return _pillarHabitIdsFromCurrentHabits(
+    store,
+    _list(profile['pillarHabitIds'])
+        .map((entry) => entry.toString())
+        .toList(growable: false),
+    allowedIds: activeHabitIds,
+  );
+}
+
+Future<void> _setPillarHabitIds(
+  UserStateStore store,
+  List<String> habitIds,
+) async {
+  final root = store._state;
+  if (root == null) return;
+
+  final userState = _ensureUserStateRoot(root);
+  final profile = _map(userState['profile']);
+  final sanitized = _pillarHabitIdsFromCurrentHabits(
+    store,
+    habitIds,
+  );
+
+  profile['pillarHabitIds'] = sanitized;
+  userState['profile'] = profile;
+  _touchLastSavedAt(userState);
+
+  root['userState'] = userState;
+  store._state = root;
+  store._emitChanged();
+  await store._repo.save(root);
+
+  unawaited(_bestEffortSyncPillarHabitIds(store, sanitized));
+}
+
+Future<void> _bestEffortSyncPillarHabitIds(
+  UserStateStore store,
+  List<String> habitIds,
+) async {
+  final repository = store._profileRepository;
+  if (repository == null) return;
+
+  try {
+    final result = await repository.updatePillarHabitIds(habitIds);
+    if (!result.isSuccess && kDebugMode) {
+      debugPrint(
+        '[user_state_store] pillar habits write-through skipped: ${result.error?.message}',
+      );
+    }
+  } catch (error) {
+    _debugProfileWriteThroughWarning(
+      'pillar habits write-through failed: $error',
+    );
+  }
+}
+
+List<String> _pillarHabitIdsFromCurrentHabits(
+  UserStateStore store,
+  Iterable<String> habitIds, {
+  Set<String>? allowedIds,
+}) {
+  final knownIds = allowedIds ?? _currentHabitIds(store);
+  final output = <String>[];
+  final seen = <String>{};
+
+  for (final rawId in habitIds) {
+    final normalized = rawId.trim();
+    if (normalized.isEmpty) continue;
+    if (!knownIds.contains(normalized)) continue;
+    if (!seen.add(normalized)) continue;
+    output.add(normalized);
+    if (output.length == 3) break;
+  }
+
+  return output;
+}
+
+Set<String> _currentHabitIds(UserStateStore store) {
+  final root = store._state;
+  if (root == null) return <String>{};
+
+  final userState = _ensureUserStateRoot(root);
+  final activeHabits = _list(userState['activeHabits']).whereType<Map>();
+  final ids = <String>{};
+  for (final habit in activeHabits) {
+    final id = (habit['id'] ?? '').toString().trim();
+    if (id.isNotEmpty) ids.add(id);
+  }
+  return ids;
 }
 
 Future<void> _bestEffortSyncProfileBasics(

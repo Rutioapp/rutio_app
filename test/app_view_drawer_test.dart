@@ -1,10 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/achievements/domain/models/habit_streak_snapshot.dart';
-import 'package:rutio/features/feedback/presentation/screens/feedback_home_screen.dart';
 import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/l10n/l10n.dart';
@@ -14,7 +12,7 @@ import 'package:rutio/widgets/app_view_drawer.dart';
 void main() {
   Provider.debugCheckInvalidValueType = null;
 
-  testWidgets('AppViewDrawer renders support action in Spanish', (
+  testWidgets('AppViewDrawer no longer renders feedback support in Spanish', (
     WidgetTester tester,
   ) async {
     final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -56,84 +54,11 @@ void main() {
     final l10n = AppLocalizations.of(context);
     final supportSectionFinder = find.text(l10n.drawerSectionSupport);
     final reportIssueFinder = find.text(l10n.drawerReportIssue);
-
-    await tester.scrollUntilVisible(
-      supportSectionFinder,
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pump();
-
-    expect(supportSectionFinder, findsOneWidget);
-    expect(reportIssueFinder, findsOneWidget);
-
-    final supportIcon = tester.widget<Icon>(
-      find.byIcon(CupertinoIcons.exclamationmark_bubble),
-    );
-    final normalIcon = tester.widget<Icon>(
-      find.byIcon(Icons.calendar_today_outlined),
-    );
-    expect(supportIcon.color, equals(normalIcon.color));
-    expect(supportIcon.color, isNot(const Color(0xFFC44747)));
-  });
-
-  testWidgets('AppViewDrawer opens the internal feedback feature', (
-    WidgetTester tester,
-  ) async {
-    final scaffoldKey = GlobalKey<ScaffoldState>();
-    final observer = _RecordingNavigatorObserver();
-
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('es'),
-        theme: ThemeData(splashFactory: NoSplash.splashFactory),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        navigatorObservers: [observer],
-        routes: {
-          '/feedback': (_) => const FeedbackHomeScreen(),
-        },
-        home: Scaffold(
-          key: scaffoldKey,
-          drawer: AppViewDrawer(
-            onGoDaily: () {},
-            onGoWeekly: () {},
-            onGoMonthly: () {},
-            onGoTodo: () {},
-            onGoDiary: () {},
-            onGoDiaryV2: () {},
-            onGoArchived: () {},
-            onGoStats: () {},
-            onGoProfile: () {},
-          ),
-          body: const SizedBox.shrink(),
-        ),
-      ),
-    );
-
-    scaffoldKey.currentState!.openDrawer();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    final context = tester.element(find.byType(Scaffold));
-    final l10n = AppLocalizations.of(context);
-
-    await tester.scrollUntilVisible(
-      find.text(l10n.drawerReportIssue),
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-
-    await tester.tap(find.text(l10n.drawerReportIssue));
-    await tester.pumpAndSettle();
-
-    expect(observer.lastPushedRouteName, '/feedback');
-    expect(find.byType(FeedbackHomeScreen), findsOneWidget);
+    expect(supportSectionFinder, findsNothing);
+    expect(reportIssueFinder, findsNothing);
   });
 
   testWidgets('AppViewDrawer exposes a single visible statistics entry', (
@@ -297,7 +222,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final scaffoldKey = GlobalKey<ScaffoldState>();
-    final observer = _RecordingNavigatorObserver();
+    var shopTapCount = 0;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -310,10 +235,6 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        navigatorObservers: [observer],
-        routes: {
-          '/shop': (_) => const SizedBox.shrink(),
-        },
         home: Scaffold(
           key: scaffoldKey,
           drawer: AppViewDrawer(
@@ -325,8 +246,7 @@ void main() {
             onGoDiaryV2: () {},
             onGoArchived: () {},
             onGoStats: () {},
-            onGoShop: () =>
-                Navigator.of(scaffoldKey.currentContext!).pushNamed('/shop'),
+            onGoShop: () => shopTapCount++,
             onGoProfile: () {},
           ),
           body: const SizedBox.shrink(),
@@ -344,8 +264,7 @@ void main() {
     await tester.tap(find.text(l10n.shopTitle));
     await tester.pump(const Duration(milliseconds: 600));
 
-    expect(observer.lastPushedRouteName, '/shop');
-    expect(find.text(l10n.shopTitle), findsOneWidget);
+    expect(shopTapCount, 1);
   });
 
   testWidgets('AppViewDrawer Shop entry is localized in English', (
@@ -390,16 +309,6 @@ void main() {
     final l10n = AppLocalizations.of(context);
     expect(find.text(l10n.shopTitle), findsOneWidget);
   });
-}
-
-class _RecordingNavigatorObserver extends NavigatorObserver {
-  String? lastPushedRouteName;
-
-  @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    lastPushedRouteName = route.settings.name;
-    super.didPush(route, previousRoute);
-  }
 }
 
 class _DrawerStatsFakeStore implements UserStateStore {

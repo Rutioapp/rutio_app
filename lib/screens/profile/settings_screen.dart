@@ -1,10 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 import '../../application/auth/auth_controller.dart';
+import '../../features/feedback/presentation/screens/feedback_home_screen.dart';
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
+import '../edit_profile/edit_profile_screen.dart';
 import 'widgets/account_action_settings_row.dart';
 import 'widgets/destructive_settings_row.dart';
 import 'widgets/profile_option_tile.dart';
@@ -15,10 +19,14 @@ import 'notification_settings_screen.dart';
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
+    this.editProfileScreenBuilder,
     this.notificationSettingsScreenBuilder,
+    this.feedbackScreenBuilder,
   });
 
+  final WidgetBuilder? editProfileScreenBuilder;
   final WidgetBuilder? notificationSettingsScreenBuilder;
+  final WidgetBuilder? feedbackScreenBuilder;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -30,31 +38,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<UserStateStore>();
+    final email = store.authEmail?.trim();
     final activeLanguageCode = store.preferredLanguageCode ??
         _supportedLanguageCode(Localizations.localeOf(context));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F6FF),
+      backgroundColor: AppColors.cream,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F6FF),
+        backgroundColor: AppColors.cream,
         elevation: 0,
-        surfaceTintColor: const Color(0xFFF7F6FF),
+        surfaceTintColor: AppColors.cream,
         title: Text(context.l10n.settingsTitle),
         centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
+          _SettingsSectionLabel(context.l10n.profileTitle),
+          const SizedBox(height: 10),
+          SectionCard(
+            child: ProfileOptionTile(
+              icon: Icons.edit_outlined,
+              title: context.l10n.editProfileTitle,
+              onTap: () => _openEditProfile(context),
+            ),
+          ),
+          const SizedBox(height: 18),
+          _SettingsSectionLabel(context.l10n.settingsPreferencesSectionTitle),
+          const SizedBox(height: 10),
           SettingsLanguageSection(
             selectedLanguageCode: activeLanguageCode,
             onLanguageSelected: store.setPreferredLanguageCode,
           ),
-          const SizedBox(height: 18),
-          Text(
-            context.l10n.settingsNotificationsTitle,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           SectionCard(
             child: ProfileOptionTile(
               icon: Icons.notifications_outlined,
@@ -72,14 +88,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          Text(
-            context.l10n.settingsAccountSectionTitle,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          _SettingsSectionLabel(context.l10n.profileHelpTitle),
+          const SizedBox(height: 10),
+          SectionCard(
+            child: ProfileOptionTile(
+              icon: CupertinoIcons.exclamationmark_bubble,
+              title: context.l10n.feedbackSendAction,
+              subtitle: context.l10n.feedbackSendActionSubtitle,
+              onTap: () => _openFeedback(context),
+            ),
           ),
+          const SizedBox(height: 18),
+          _SettingsSectionLabel(context.l10n.settingsAccountSectionTitle),
           const SizedBox(height: 10),
           SectionCard(
             child: Column(
               children: [
+                if (email != null && email.isNotEmpty) ...[
+                  ProfileOptionTile(
+                    icon: Icons.alternate_email_rounded,
+                    title: context.l10n.settingsAccountEmailTitle,
+                    subtitle: email,
+                    onTap: null,
+                    iconColor: AppColors.earth,
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 AccountActionSettingsRow(
                   title: context.l10n.settingsLogoutTitle,
                   onTap: () => _handleLogOut(context),
@@ -104,6 +138,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 18),
+          _SettingsSectionLabel(context.l10n.settingsInformationSectionTitle),
+          const SizedBox(height: 10),
+          const _AppVersionCard(),
         ],
       ),
     );
@@ -198,6 +236,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } finally {
       closeLoadingDialog();
     }
+  }
+
+  void _openEditProfile(BuildContext context) {
+    final builder =
+        widget.editProfileScreenBuilder ?? (_) => const EditProfileScreen();
+    Navigator.of(context).push(
+      CupertinoPageRoute(builder: builder),
+    );
+  }
+
+  void _openFeedback(BuildContext context) {
+    final builder =
+        widget.feedbackScreenBuilder ?? (_) => const FeedbackHomeScreen();
+    Navigator.of(context).push(
+      CupertinoPageRoute(builder: builder),
+    );
   }
 
   Future<bool> _showDeleteAccountConfirmation(BuildContext context) async {
@@ -356,5 +410,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
       default:
         return 'es';
     }
+  }
+}
+
+class _AppVersionCard extends StatefulWidget {
+  const _AppVersionCard();
+
+  @override
+  State<_AppVersionCard> createState() => _AppVersionCardState();
+}
+
+class _AppVersionCardState extends State<_AppVersionCard> {
+  late final Future<PackageInfo> _packageInfoFuture =
+      PackageInfo.fromPlatform();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<PackageInfo>(
+      future: _packageInfoFuture,
+      builder: (context, snapshot) {
+        final versionLabel = snapshot.hasData
+            ? _formatVersionLabel(snapshot.data!)
+            : context.l10n.settingsAppVersionUnknown;
+
+        return SectionCard(
+          child: ProfileOptionTile(
+            icon: Icons.info_outline_rounded,
+            title: context.l10n.settingsAppVersionTitle,
+            subtitle: versionLabel,
+            onTap: null,
+            iconColor: const Color(0xFF4A5568),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatVersionLabel(PackageInfo packageInfo) {
+    final version = packageInfo.version.trim();
+    final buildNumber = packageInfo.buildNumber.trim();
+    if (version.isEmpty && buildNumber.isEmpty) return '';
+    if (version.isEmpty) return buildNumber;
+    if (buildNumber.isEmpty) return 'v$version';
+    return 'v$version+$buildNumber';
+  }
+}
+
+class _SettingsSectionLabel extends StatelessWidget {
+  const _SettingsSectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+    );
   }
 }

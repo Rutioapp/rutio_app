@@ -2198,6 +2198,7 @@ Future<void> _deleteHabitById(
 
   await store.save(root);
   store.notificationMutationObserver.onHabitDeleted(normalizedId);
+  unawaited(store.setPillarHabitIds(store.pillarHabitIds));
   unawaited(
     store._habitSyncService.syncHabitDeleted(
       localHabitId: normalizedId,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/utils/app_theme.dart';
 
 import '../../../l10n/l10n.dart';
 import 'section_card.dart';
@@ -20,7 +21,11 @@ class SettingsLanguageSection extends StatelessWidget {
       children: [
         Text(
           context.l10n.settingsLanguageSectionTitle,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
         ),
         const SizedBox(height: 10),
         SectionCard(
@@ -67,11 +72,12 @@ class _LanguageOptionTile extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color:
-                isSelected ? const Color(0xFF6C5CE7) : const Color(0xFFEFEFEF),
+            color: isSelected
+                ? AppColors.earth.withValues(alpha: 0.18)
+                : AppColors.earth.withValues(alpha: 0.10),
             width: isSelected ? 1.4 : 1,
           ),
-          color: isSelected ? const Color(0xFFF1EEFF) : Colors.white,
+          color: isSelected ? AppColors.cream2 : AppColors.cream,
         ),
         child: Row(
           children: [
@@ -81,17 +87,13 @@ class _LanguageOptionTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14.5,
                   fontWeight: FontWeight.w700,
-                  color: isSelected
-                      ? const Color(0xFF2E236C)
-                      : const Color(0xFF1A1A1A),
+                  color: isSelected ? AppColors.ink : AppColors.inkSoft,
                 ),
               ),
             ),
             Icon(
               isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: isSelected
-                  ? const Color(0xFF6C5CE7)
-                  : const Color(0xFFB8B8B8),
+              color: isSelected ? AppColors.earth : AppColors.inkFaint,
               size: 20,
             ),
           ],
