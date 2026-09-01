@@ -9,6 +9,7 @@ class RemoteHabitLog {
     required this.logDate,
     required this.value,
     required this.isCompleted,
+    this.isSkipped = false,
     this.note,
     required this.source,
     this.createdAt,
@@ -22,6 +23,7 @@ class RemoteHabitLog {
   final DateTime logDate;
   final int value;
   final bool isCompleted;
+  final bool isSkipped;
   final String? note;
   final String source;
   final DateTime? createdAt;
@@ -29,8 +31,8 @@ class RemoteHabitLog {
   final Map<String, dynamic> raw;
 
   factory RemoteHabitLog.fromMap(Map<String, dynamic> map) {
-    final parsedDate =
-        _nullableDateTime(map['log_date']) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final parsedDate = _nullableDateTime(map['log_date']) ??
+        DateTime.fromMillisecondsSinceEpoch(0);
 
     return RemoteHabitLog(
       id: (map['id'] ?? '').toString().trim(),
@@ -39,6 +41,7 @@ class RemoteHabitLog {
       logDate: DateTime(parsedDate.year, parsedDate.month, parsedDate.day),
       value: _safeInt(map['value'], fallback: 0),
       isCompleted: map['is_completed'] == true,
+      isSkipped: map['is_skipped'] == true,
       note: _nullableTrim(map['note']),
       source: _normalizeSource(map['source']),
       createdAt: _nullableDateTime(map['created_at']),
@@ -54,6 +57,7 @@ class RemoteHabitLog {
       'log_date': _dateOnlyIso(logDate),
       'value': value,
       'is_completed': isCompleted,
+      'is_skipped': isSkipped,
       'note': note,
       'source': _normalizeSource(source),
     };

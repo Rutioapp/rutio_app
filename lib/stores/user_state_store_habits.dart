@@ -2287,6 +2287,7 @@ Future<void> _addHabitFromCatalog(
     if (initialRemoteId != null) 'remoteId': initialRemoteId,
   });
 
+  await _stampWeeklyReportConfigMutation(store, activeHabits.last);
   userState['activeHabits'] = activeHabits;
   await store.save(root);
 
@@ -2383,6 +2384,7 @@ Future<void> _addCustomHabit(
     if (initialRemoteId != null) 'remoteId': initialRemoteId,
   });
 
+  await _stampWeeklyReportConfigMutation(store, activeHabits.last);
   userState['activeHabits'] = activeHabits;
   await store.save(root);
 
@@ -2496,10 +2498,32 @@ Future<void> _updateHabitPlan(
     habit['routine'] = routine.trim().isEmpty ? null : routine.trim();
   }
 
+  await _stampWeeklyReportConfigMutation(store, habit);
+
   activeHabits[index] = habit;
   userState['activeHabits'] = activeHabits;
   await store.save(root);
   store.notificationMutationObserver.onHabitUpdated(habitId);
+  unawaited(
+    store._habitSyncService.syncHabitUpdated(
+      localHabit: Map<String, dynamic>.from(habit),
+      sortOrder: index,
+      expectedLocalUserId: store.userId,
+    ),
+  );
+}
+
+Future<void> _stampWeeklyReportConfigMutation(
+  UserStateStore store,
+  Map<String, dynamic> habit,
+) async {
+  final now = store._nowProvider().toUtc();
+  final timeZone = await _currentDeviceTimeZoneBestEffort(store);
+  habit['sourceMutationId'] = const Uuid().v4();
+  habit['effectiveFrom'] = now.toIso8601String();
+  if (timeZone != null && timeZone.isNotEmpty) {
+    habit['effectiveTimezoneName'] = timeZone;
+  }
 }
 
 Future<void> _updateHabitDetailsFromEdit(
@@ -2560,6 +2584,8 @@ Future<void> _updateHabitDetailsFromEdit(
   final current = Map<String, dynamic>.from(activeHabits[index]);
   final wasArchived =
       current['archived'] == true || current['isArchived'] == true;
+
+  await _stampWeeklyReportConfigMutation(store, current);
 
   final newName = (patch['name'] ?? patch['title'])?.toString();
   if (newName != null && newName.trim().isNotEmpty) {

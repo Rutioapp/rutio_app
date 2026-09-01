@@ -4,6 +4,7 @@ import 'dart:ui' show Locale;
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../core/services/account_deletion_service.dart';
 import '../constants/reward_constants.dart';

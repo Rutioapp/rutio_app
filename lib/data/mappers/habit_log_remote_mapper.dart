@@ -44,6 +44,7 @@ class HabitLogRemoteMapper {
         logDate: normalizedDate,
         value: value,
         isCompleted: completed,
+        isSkipped: skipped,
         note: _nullableTrim(note),
         source: _normalizeSource(source),
         raw: Map<String, dynamic>.from(localHabit),
@@ -58,6 +59,7 @@ class HabitLogRemoteMapper {
       logDate: normalizedDate,
       value: completed ? 1 : 0,
       isCompleted: completed,
+      isSkipped: skipped,
       note: _nullableTrim(note),
       source: _normalizeSource(source),
       raw: Map<String, dynamic>.from(localHabit),
@@ -76,7 +78,9 @@ class HabitLogRemoteMapper {
 
   static String _normalizeHabitType(dynamic value) {
     final normalized = (value ?? '').toString().trim().toLowerCase();
-    return normalized == 'count' || normalized == 'counter' || normalized == 'number'
+    return normalized == 'count' ||
+            normalized == 'counter' ||
+            normalized == 'number'
         ? 'count'
         : 'check';
   }
