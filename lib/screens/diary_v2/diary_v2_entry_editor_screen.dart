@@ -19,6 +19,10 @@ Future<bool?> openDiaryV2EntryEditor(
   BuildContext context, {
   DiaryEntry? editing,
   DateTime? initialDate,
+  String? reflectionPrompt,
+  String? source,
+  String? templateId,
+  String? journalNudgeContext,
 }) {
   return Navigator.of(context).push(
     CupertinoPageRoute<bool>(
@@ -26,6 +30,10 @@ Future<bool?> openDiaryV2EntryEditor(
       builder: (_) => DiaryV2EntryEditorScreen(
         editing: editing,
         initialDate: initialDate,
+        reflectionPrompt: reflectionPrompt,
+        source: source,
+        templateId: templateId,
+        journalNudgeContext: journalNudgeContext,
       ),
     ),
   );
@@ -36,10 +44,18 @@ class DiaryV2EntryEditorScreen extends StatefulWidget {
     super.key,
     this.editing,
     this.initialDate,
+    this.reflectionPrompt,
+    this.source,
+    this.templateId,
+    this.journalNudgeContext,
   });
 
   final DiaryEntry? editing;
   final DateTime? initialDate;
+  final String? reflectionPrompt;
+  final String? source;
+  final String? templateId;
+  final String? journalNudgeContext;
 
   @override
   State<DiaryV2EntryEditorScreen> createState() =>
@@ -62,6 +78,7 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
   late List<String> _selectedTags;
 
   bool get _isEditing => widget.editing != null;
+  bool _showReflectionPrompt = true;
 
   @override
   void initState() {
@@ -250,6 +267,16 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
                         dateLabel: _formatDateLabel(_entryDate, copy.localeTag),
                         statusLabel: copy.autoSaveLabel,
                       ),
+                      if (widget.reflectionPrompt != null &&
+                          _showReflectionPrompt) ...[
+                        const SizedBox(height: 12),
+                        _ReflectionPromptCard(
+                          prompt: widget.reflectionPrompt!,
+                          onDismiss: () {
+                            setState(() => _showReflectionPrompt = false);
+                          },
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       DiaryV2EditorMoodSelector(
                         title: copy.moodTitle,
@@ -313,6 +340,47 @@ class _DiaryV2EntryEditorScreenState extends State<DiaryV2EntryEditorScreen> {
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ReflectionPromptCard extends StatelessWidget {
+  const _ReflectionPromptCard({
+    required this.prompt,
+    required this.onDismiss,
+  });
+
+  final String prompt;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+      decoration: DiaryV2Styles.compactCardDecoration(),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              prompt,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: DiaryV2Styles.textStrong,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+            ),
+          ),
+          IconButton(
+            onPressed: onDismiss,
+            icon: const Icon(CupertinoIcons.xmark, size: 16),
+            color: DiaryV2Styles.mutedText,
+            tooltip: 'Ocultar sugerencia',
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
       ),
     );
   }

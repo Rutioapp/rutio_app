@@ -4303,6 +4303,442 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pnJournalNudgeMilestone7Insight01Title => 'Early signs';
+
+  @override
+  String get pnJournalNudgeMilestone7Insight01Body =>
+      'What helped you start and come back this week?';
+
+  @override
+  String get pnJournalNudgeMilestone7Change01Title =>
+      'A beginning taking shape';
+
+  @override
+  String get pnJournalNudgeMilestone7Change01Body =>
+      'What feels different after these first days?';
+
+  @override
+  String get pnJournalNudgeMilestone7Ease01Title => 'Your way back';
+
+  @override
+  String get pnJournalNudgeMilestone7Ease01Body =>
+      'What made it easier to return to the habit?';
+
+  @override
+  String get pnJournalNudgeMilestone7Return01Title =>
+      'Something is starting to work';
+
+  @override
+  String get pnJournalNudgeMilestone7Return01Body =>
+      'What seems to be working for you?';
+
+  @override
+  String get pnJournalNudgeMilestone7Memory01Title => 'Keep this beginning';
+
+  @override
+  String get pnJournalNudgeMilestone7Memory01Body =>
+      'What would you like to remember from this first week?';
+
+  @override
+  String get pnJournalNudgeMilestone14Insight01Title => 'Patterns are emerging';
+
+  @override
+  String get pnJournalNudgeMilestone14Insight01Body =>
+      'What pattern are you starting to notice after two weeks?';
+
+  @override
+  String get pnJournalNudgeMilestone14Change01Title => 'Feeling more natural';
+
+  @override
+  String get pnJournalNudgeMilestone14Change01Body =>
+      'What part of the habit is starting to feel more natural?';
+
+  @override
+  String get pnJournalNudgeMilestone14Ease01Title => 'What keeps you going';
+
+  @override
+  String get pnJournalNudgeMilestone14Ease01Body =>
+      'What has helped you keep the habit these days?';
+
+  @override
+  String get pnJournalNudgeMilestone14Return01Title => 'A pattern taking hold';
+
+  @override
+  String get pnJournalNudgeMilestone14Return01Body =>
+      'What have you learned about the way you return?';
+
+  @override
+  String get pnJournalNudgeMilestone14Memory01Title =>
+      'Two weeks in perspective';
+
+  @override
+  String get pnJournalNudgeMilestone14Memory01Body =>
+      'What is starting to settle into your routine?';
+
+  @override
+  String get pnJournalNudgeMilestone30Insight01Title =>
+      'A month in perspective';
+
+  @override
+  String get pnJournalNudgeMilestone30Insight01Body =>
+      'What change do you see looking back over a month?';
+
+  @override
+  String get pnJournalNudgeMilestone30Change01Title => 'Part of your days';
+
+  @override
+  String get pnJournalNudgeMilestone30Change01Body =>
+      'What is starting to become part of your routine?';
+
+  @override
+  String get pnJournalNudgeMilestone30Ease01Title => 'What you have learned';
+
+  @override
+  String get pnJournalNudgeMilestone30Ease01Body =>
+      'What have you learned about what helps you keep it going?';
+
+  @override
+  String get pnJournalNudgeMilestone30Return01Title =>
+      'Looking to the next month';
+
+  @override
+  String get pnJournalNudgeMilestone30Return01Body =>
+      'What do you want to carry into the next month?';
+
+  @override
+  String get pnJournalNudgeMilestone30Memory01Title => 'What you want to keep';
+
+  @override
+  String get pnJournalNudgeMilestone30Memory01Body =>
+      'What from this month is worth keeping?';
+
+  @override
+  String get pnJournalNudgePerfectDayInsight01Title => 'A clue from today';
+
+  @override
+  String get pnJournalNudgePerfectDayInsight01Body =>
+      'What do you think helped you complete your habits?';
+
+  @override
+  String get pnJournalNudgePerfectDayDifference01Title => 'Something to repeat';
+
+  @override
+  String get pnJournalNudgePerfectDayDifference01Body =>
+      'What did you do today that you would like to repeat?';
+
+  @override
+  String get pnJournalNudgePerfectDayDecision01Title => 'A useful decision';
+
+  @override
+  String get pnJournalNudgePerfectDayDecision01Body =>
+      'What decision made it easier to complete your habits?';
+
+  @override
+  String get pnJournalNudgePerfectDayEnergy01Title =>
+      'What carried you through';
+
+  @override
+  String get pnJournalNudgePerfectDayEnergy01Body =>
+      'What moment gave you energy while you did your habits?';
+
+  @override
+  String get pnJournalNudgePerfectDayEase01Title => 'What made today easier';
+
+  @override
+  String get pnJournalNudgePerfectDayEase01Body =>
+      'What made it easier to complete your habits today?';
+
+  @override
+  String get pnJournalNudgePerfectDayTomorrow01Title => 'An idea for tomorrow';
+
+  @override
+  String get pnJournalNudgePerfectDayTomorrow01Body =>
+      'What would you like to try tomorrow based on today?';
+
+  @override
+  String get pnJournalNudgePerfectDayMoment01Title => 'A moment in the process';
+
+  @override
+  String get pnJournalNudgePerfectDayMoment01Body =>
+      'What moment from today would you like to remember from your habits?';
+
+  @override
+  String get pnJournalNudgePerfectDayLearning01Title => 'What you discovered';
+
+  @override
+  String get pnJournalNudgePerfectDayLearning01Body =>
+      'What did you discover about yourself by completing your habits?';
+
+  @override
+  String get pnJournalNudgePerfectDayFeeling01Title => 'How it felt for you';
+
+  @override
+  String get pnJournalNudgePerfectDayFeeling01Body =>
+      'How did it feel to finish your habits today?';
+
+  @override
+  String get pnJournalNudgePerfectDayMarker01Title =>
+      'A sign from your process';
+
+  @override
+  String get pnJournalNudgePerfectDayMarker01Body =>
+      'What tells you that today’s approach worked for you?';
+
+  @override
+  String get pnJournalNudgePerfectDayMeaning01Title => 'What felt meaningful';
+
+  @override
+  String get pnJournalNudgePerfectDayMeaning01Body =>
+      'What part of completing your habits felt most meaningful to you?';
+
+  @override
+  String get pnJournalNudgePerfectDayNote01Title => 'A note for tomorrow';
+
+  @override
+  String get pnJournalNudgePerfectDayNote01Body =>
+      'What do you want to write down before the day ends?';
+
+  @override
+  String get pnJournalNudgeEndOfDayReflection01Title => 'A moment to notice';
+
+  @override
+  String get pnJournalNudgeEndOfDayReflection01Body =>
+      'What would you like to notice about your day as it was?';
+
+  @override
+  String get pnJournalNudgeEndOfDayEnergy01Title => 'Your energy today';
+
+  @override
+  String get pnJournalNudgeEndOfDayEnergy01Body =>
+      'When did your energy shift during the day?';
+
+  @override
+  String get pnJournalNudgeEndOfDayDrain01Title => 'What felt heavy today';
+
+  @override
+  String get pnJournalNudgeEndOfDayDrain01Body =>
+      'Which part of the day felt heaviest?';
+
+  @override
+  String get pnJournalNudgeEndOfDayMemory01Title => 'Something that stays';
+
+  @override
+  String get pnJournalNudgeEndOfDayMemory01Body =>
+      'What detail from today would you like to remember?';
+
+  @override
+  String get pnJournalNudgeEndOfDayDifference01Title => 'A small difference';
+
+  @override
+  String get pnJournalNudgeEndOfDayDifference01Body =>
+      'What was different today, even in a small way?';
+
+  @override
+  String get pnJournalNudgeEndOfDayLearning01Title => 'Something you noticed';
+
+  @override
+  String get pnJournalNudgeEndOfDayLearning01Body =>
+      'What did you learn today about how your day unfolded?';
+
+  @override
+  String get pnJournalNudgeEndOfDayDescribe01Title => 'Put the day into words';
+
+  @override
+  String get pnJournalNudgeEndOfDayDescribe01Body =>
+      'How would you describe your day in one sentence?';
+
+  @override
+  String get pnJournalNudgeEndOfDayKeep01Title => 'Something to keep';
+
+  @override
+  String get pnJournalNudgeEndOfDayKeep01Body =>
+      'What would you like to keep from today?';
+
+  @override
+  String get pnJournalNudgeEndOfDaySurprise01Title => 'A surprise from today';
+
+  @override
+  String get pnJournalNudgeEndOfDaySurprise01Body =>
+      'What surprised you today?';
+
+  @override
+  String get pnJournalNudgeEndOfDayRelease01Title => 'Make some room';
+
+  @override
+  String get pnJournalNudgeEndOfDayRelease01Body =>
+      'What would you like to leave behind at the end of the day?';
+
+  @override
+  String get pnJournalNudgeEndOfDayNotice01Title => 'Something you noticed';
+
+  @override
+  String get pnJournalNudgeEndOfDayNotice01Body =>
+      'What did you notice today that deserves a moment of attention?';
+
+  @override
+  String get pnJournalNudgeEndOfDayQuestion01Title => 'A question to close';
+
+  @override
+  String get pnJournalNudgeEndOfDayQuestion01Body =>
+      'What question does the day leave you with?';
+
+  @override
+  String get pnJournalNudgePromptMilestone7Insight01 =>
+      'Looking back at these first days, what helped you start and come back?';
+
+  @override
+  String get pnJournalNudgePromptMilestone7Change01 =>
+      'After this first week, what feels different?';
+
+  @override
+  String get pnJournalNudgePromptMilestone7Ease01 =>
+      'What made it easier to return to the habit this week?';
+
+  @override
+  String get pnJournalNudgePromptMilestone7Return01 =>
+      'What seems to be working for you so far?';
+
+  @override
+  String get pnJournalNudgePromptMilestone7Memory01 =>
+      'What would you like to remember from this first week?';
+
+  @override
+  String get pnJournalNudgePromptMilestone14Insight01 =>
+      'What pattern are you starting to notice after two weeks?';
+
+  @override
+  String get pnJournalNudgePromptMilestone14Change01 =>
+      'What part of the habit is starting to feel more natural?';
+
+  @override
+  String get pnJournalNudgePromptMilestone14Ease01 =>
+      'What has helped you keep the habit these days?';
+
+  @override
+  String get pnJournalNudgePromptMilestone14Return01 =>
+      'What are you learning about the way you return?';
+
+  @override
+  String get pnJournalNudgePromptMilestone14Memory01 =>
+      'What is starting to settle into your routine?';
+
+  @override
+  String get pnJournalNudgePromptMilestone30Insight01 =>
+      'Looking back over a month, what change do you see?';
+
+  @override
+  String get pnJournalNudgePromptMilestone30Change01 =>
+      'What is starting to become part of your routine?';
+
+  @override
+  String get pnJournalNudgePromptMilestone30Ease01 =>
+      'What have you learned about what helps you keep it going?';
+
+  @override
+  String get pnJournalNudgePromptMilestone30Return01 =>
+      'What do you want to carry into the next month?';
+
+  @override
+  String get pnJournalNudgePromptMilestone30Memory01 =>
+      'What from this month is worth keeping?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayInsight01 =>
+      'What do you think helped you complete your habits today?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayDifference01 =>
+      'What did you do today that you would like to repeat?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayDecision01 =>
+      'What decision made it easier to complete your habits?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayEnergy01 =>
+      'What moment gave you energy while you did your habits?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayEase01 =>
+      'What made it easier to complete your habits today?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayTomorrow01 =>
+      'What would you like to try tomorrow based on today?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayMoment01 =>
+      'What moment from today would you like to remember from your habits?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayLearning01 =>
+      'What did you discover about yourself by completing your habits?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayFeeling01 =>
+      'How did it feel to finish your habits today?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayMarker01 =>
+      'What tells you that today’s approach worked for you?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayMeaning01 =>
+      'What part of completing your habits felt most meaningful to you?';
+
+  @override
+  String get pnJournalNudgePromptPerfectDayNote01 =>
+      'What do you want to write down before the day ends?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayReflection01 =>
+      'What would you like to notice about your day as it was?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayEnergy01 =>
+      'When did your energy shift during the day?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayDrain01 =>
+      'Which part of the day felt heaviest?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayMemory01 =>
+      'What detail from today would you like to remember?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayDifference01 =>
+      'What was different today, even in a small way?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayLearning01 =>
+      'What did you learn today about how your day unfolded?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayDescribe01 =>
+      'How would you describe your day in one sentence?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayKeep01 =>
+      'What would you like to keep from today?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDaySurprise01 =>
+      'What surprised you today?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayRelease01 =>
+      'What would you like to leave behind at the end of the day?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayNotice01 =>
+      'What did you notice today that deserves a moment of attention?';
+
+  @override
+  String get pnJournalNudgePromptEndOfDayQuestion01 =>
+      'What question does the day leave you with?';
+
+  @override
   String get feedbackSubmitErrorSessionExpired =>
       'Your session has expired. Please sign in again.';
 

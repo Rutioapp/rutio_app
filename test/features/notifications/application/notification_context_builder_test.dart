@@ -44,6 +44,113 @@ void main() {
       );
     });
 
+    test('exposes logical journal signals in both context models', () async {
+      final source = FakeNotificationContextStateSource(
+        userId: 'user-a',
+        state: _rootState(
+          userId: 'user-a',
+          diaryEntries: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'journal-1',
+              'createdAt': clock
+                  .now()
+                  .subtract(const Duration(days: 1))
+                  .millisecondsSinceEpoch,
+              'dateKey': '2026-08-28',
+              'text': 'Yesterday',
+            },
+            <String, dynamic>{
+              'id': 'journal-2',
+              'createdAt': clock.now().millisecondsSinceEpoch,
+              'dateKey': '2026-08-29',
+              'text': 'Today',
+            },
+          ],
+        ),
+      );
+      final builder = StoreBackedNotificationContextBuilder(
+        store: source,
+        installIdProvider: installIdProvider,
+        historyStore: historyStore,
+        clock: clock,
+      );
+
+      final result = await builder.build(
+        trigger: NotificationTriggerReason.appBootstrap,
+        expectedUserId: 'user-a',
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(result.snapshot!.journalWrittenToday, isTrue);
+      expect(result.snapshot!.journalWrittenLast24h, isTrue);
+      expect(result.snapshot!.journalEntriesLast7Days, 2);
+      expect(result.selectionContext!.journalWrittenToday, isTrue);
+      expect(result.selectionContext!.journalEntriesLast7Days, 2);
+    });
+
+    test('bridges a valid Phase 1 streak marker into context', () async {
+      final source = FakeNotificationContextStateSource(
+        userId: 'user-a',
+        state: _rootState(
+          userId: 'user-a',
+          notificationMetadata: <String, dynamic>{
+            'streakMilestoneDailySent': <String, dynamic>{
+              'dateKey': '2026-08-29',
+              'habitId': 'habit-1',
+              'milestone': 7,
+              'sentAt': '2026-08-29T08:00:00.000Z',
+            },
+          },
+        ),
+      );
+      final builder = StoreBackedNotificationContextBuilder(
+        store: source,
+        installIdProvider: installIdProvider,
+        historyStore: historyStore,
+        clock: clock,
+      );
+
+      final result = await builder.build(
+        trigger: NotificationTriggerReason.appBootstrap,
+        expectedUserId: 'user-a',
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(result.snapshot!.journalMilestoneSignal, isNotNull);
+      expect(result.snapshot!.journalMilestoneSignal!.eventId,
+          'habit-1:7:2026-08-29');
+      expect(result.selectionContext!.journalMilestoneSignal, isNotNull);
+    });
+
+    test('ignores legacy streak markers without sentAt', () async {
+      final source = FakeNotificationContextStateSource(
+        userId: 'user-a',
+        state: _rootState(
+          userId: 'user-a',
+          notificationMetadata: <String, dynamic>{
+            'streakMilestoneDailySent': <String, dynamic>{
+              'dateKey': '2026-08-29',
+              'habitId': 'habit-1',
+              'milestone': 7,
+            },
+          },
+        ),
+      );
+      final builder = StoreBackedNotificationContextBuilder(
+        store: source,
+        installIdProvider: installIdProvider,
+        historyStore: historyStore,
+        clock: clock,
+      );
+
+      final result = await builder.build(
+        trigger: NotificationTriggerReason.appBootstrap,
+        expectedUserId: 'user-a',
+      );
+
+      expect(result.snapshot!.journalMilestoneSignal, isNull);
+    });
+
     test('fails closed on expected user mismatch', () async {
       final source = FakeNotificationContextStateSource(
         userId: 'user-a',

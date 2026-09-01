@@ -304,6 +304,11 @@ class PersonalizedNotificationOrchestrator
     _fireAndForget(NotificationReconciliationReason.preferencesChanged);
   }
 
+  @override
+  void onDiaryChanged() {
+    _fireAndForget(NotificationReconciliationReason.foreground);
+  }
+
   Future<PersonalizedNotificationOrchestrationResult> _enqueue(
     NotificationScope scope,
     Set<NotificationReconciliationReason> reasons,

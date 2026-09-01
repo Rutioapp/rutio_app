@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/notifications/application/notification_context_builder.dart';
 import 'package:rutio/features/notifications/domain/personalized_notifications.dart';
+import 'package:rutio/services/phase1_notification_timing_registry.dart';
 
 void main() {
   NotificationScope buildScope() {
@@ -177,7 +178,61 @@ void main() {
       expect(plan.notifications.length, lessThanOrEqualTo(2));
       expect(plan.diagnostics.detectedHabitReminderCount, 6);
     });
+
+    test('drops a conflicting Phase 1 opportunity without consuming the cap',
+        () async {
+      final builder = PersonalizedNotificationPlanBuilder(
+        contextBuilder: _FakePlanningContextBuilder(
+          buildContextResult(now: DateTime(2026, 8, 29, 8, 0)),
+        ),
+        templateCatalog: InMemoryNotificationTemplateCatalog(
+          templates: <NotificationTemplateDescriptor>[
+            _fallbackTemplate('general.encouragement.neutral_01'),
+            _streakTemplate('general.streak.encouragement_01'),
+            _morningTemplate('general.morning.gentle_01'),
+          ],
+        ),
+        platformIdProvider: _FakePlatformIdProvider(),
+        phase1TimingSource: _FixedPhase1TimingSource(
+          <Phase1NotificationScheduleIntent>[
+            Phase1NotificationScheduleIntent(
+              logicalId: 'habit_reminder:habit-1',
+              platformId: 10001,
+              kind: Phase1NotificationTimingKind.habitReminder,
+              scheduledFor: DateTime(2026, 8, 29, 9, 45),
+              isUserConfigured: true,
+            ),
+          ],
+        ),
+      );
+
+      final plan = await builder.build(
+        scope: buildScope(),
+        trigger: NotificationTriggerReason.appBootstrap,
+        preferences: NotificationPreferences.defaults().copyWith(
+          intensityPreset: NotificationIntensityPreset.balanced,
+        ),
+      );
+
+      expect(plan.notifications, hasLength(2));
+      expect(plan.opportunities.first.selectedLogicalNotificationId, isNull);
+      expect(plan.diagnostics.suppressedOpportunityIds, contains('morning'));
+    });
   });
+}
+
+class _FixedPhase1TimingSource implements Phase1NotificationTimingSource {
+  const _FixedPhase1TimingSource(this.entries);
+
+  final List<Phase1NotificationScheduleIntent> entries;
+
+  @override
+  Future<List<Phase1NotificationScheduleIntent>> upcomingForScope({
+    String? scopeKey,
+    DateTime? now,
+    DateTime? horizonEnd,
+  }) async =>
+      entries;
 }
 
 class _FakePlanningContextBuilder

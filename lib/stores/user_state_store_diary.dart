@@ -196,6 +196,7 @@ Future<void> _addDiaryEntry(UserStateStore store, DiaryEntry entry) async {
     );
   }
   store._emitChanged();
+  store.notificationMutationObserver.onDiaryChanged();
 
   final activeHabits = _activeHabitsSnapshotForDiarySync(userState);
   unawaited(() async {
@@ -270,6 +271,7 @@ Future<void> _updateDiaryEntry(UserStateStore store, DiaryEntry entry) async {
     );
   }
   store._emitChanged();
+  store.notificationMutationObserver.onDiaryChanged();
 
   final syncedDiaryV2Entry = DiaryEntry.fromJson(updatedEntryMap);
   unawaited(
@@ -349,6 +351,7 @@ Future<void> _deleteDiaryEntry(UserStateStore store, String id) async {
 
   await store._repo.save(root);
   store._emitChanged();
+  store.notificationMutationObserver.onDiaryChanged();
 
   unawaited(
     _syncDiaryV2EntryDeleteBestEffort(

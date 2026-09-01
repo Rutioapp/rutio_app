@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -9,6 +10,22 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('UserStateStore notification mutation observer', () {
+    test('forwards diary mutations as notification changes', () async {
+      final observer = _RecordingObserver();
+      final store = await _seedStore(observer: observer);
+      final entry = DiaryEntry(
+        id: 'entry-1',
+        createdAt: DateTime(2026, 8, 29, 10).millisecondsSinceEpoch,
+        text: 'Hoy avancé',
+      );
+
+      await store.addDiaryEntry(entry);
+      await store.updateDiaryEntry(entry.copyWith(text: 'Hoy avancé mucho'));
+      await store.deleteDiaryEntry(entry.id);
+
+      expect(observer.events, <String>['diary', 'diary', 'diary']);
+    });
+
     test('forwards habit creation and notification setting changes', () async {
       final observer = _RecordingObserver();
       final store = await _seedStore(observer: observer);
@@ -44,6 +61,11 @@ class _RecordingObserver extends UserStateNotificationMutationObserver {
   @override
   void onNotificationPreferencesChanged() {
     events.add('preferences');
+  }
+
+  @override
+  void onDiaryChanged() {
+    events.add('diary');
   }
 }
 

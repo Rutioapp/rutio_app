@@ -222,6 +222,8 @@ abstract class UserStateNotificationMutationObserver {
   void onHabitSkipped(String habitId) {}
 
   void onNotificationPreferencesChanged() {}
+
+  void onDiaryChanged() {}
 }
 
 class NoopUserStateNotificationMutationObserver

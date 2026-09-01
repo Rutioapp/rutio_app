@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,7 +17,8 @@ import 'notification_scheduler.dart';
 import 'notification_types.dart';
 
 class NotificationService {
-  NotificationService._();
+  NotificationService._({NotificationScheduler? scheduler})
+      : _schedulerOverride = scheduler;
 
   static final NotificationService instance = NotificationService._();
   static const MethodChannel _platformNotificationChannel =
@@ -28,25 +30,44 @@ class NotificationService {
     status: NotificationPermissionStatus.unknown,
   );
 
+  final NotificationScheduler? _schedulerOverride;
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   late final NotificationPermissionService _permissionService =
       NotificationPermissionService(plugin: _plugin);
 
-  late final NotificationScheduler _scheduler = NotificationScheduler(
-    _plugin,
-    androidSmallIcon: () => _androidNotificationIcon,
-    onRecoverablePluginError: _recoverFromAndroidPluginCacheError,
-  );
+  late final NotificationScheduler _scheduler = _schedulerOverride ??
+      NotificationScheduler(
+        _plugin,
+        androidSmallIcon: () => _androidNotificationIcon,
+        onRecoverablePluginError: _recoverFromAndroidPluginCacheError,
+      );
 
   bool _initialized = false;
   bool _initializationFailed = false;
   bool _recoveringAndroidPluginCache = false;
   String _androidNotificationIcon = RutioNotificationChannel.androidSmallIcon;
+  String? _launchPayload;
+  void Function(String? payload)? _notificationInteractionHandler;
 
   NotificationScheduler get scheduler => _scheduler;
 
   NotificationPermissionService get permissionService => _permissionService;
+
+  factory NotificationService.forTesting(NotificationScheduler scheduler) {
+    return NotificationService._(scheduler: scheduler);
+  }
+
+  void setNotificationInteractionHandler(
+      void Function(String? payload) handler) {
+    _notificationInteractionHandler = handler;
+  }
+
+  String? takeLaunchPayload() {
+    final payload = _launchPayload;
+    _launchPayload = null;
+    return payload;
+  }
 
   Future<void> init() async {
     if (_initialized || _initializationFailed) return;
@@ -58,6 +79,10 @@ class NotificationService {
       logNotification('Timezone initialized: ${localLocation.name}');
 
       await _initializePlugin();
+      final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+      if (launchDetails?.didNotificationLaunchApp == true) {
+        _launchPayload = launchDetails?.notificationResponse?.payload;
+      }
       await _scheduler.createChannel();
       await _runOneTimeProductionCleanup();
       _initialized = true;
@@ -202,6 +227,9 @@ class NotificationService {
     if (!Platform.isAndroid) {
       await _plugin.initialize(
         const InitializationSettings(iOS: iosInit),
+        onDidReceiveNotificationResponse: _handleNotificationResponse,
+        onDidReceiveBackgroundNotificationResponse:
+            _handleBackgroundNotificationResponse,
       );
       return;
     }
@@ -222,6 +250,9 @@ class NotificationService {
             android: AndroidInitializationSettings(icon),
             iOS: iosInit,
           ),
+          onDidReceiveNotificationResponse: _handleNotificationResponse,
+          onDidReceiveBackgroundNotificationResponse:
+              _handleBackgroundNotificationResponse,
         );
         _androidNotificationIcon = icon;
 
@@ -323,6 +354,23 @@ class NotificationService {
     logNotification(
       'Notification sync complete. habits=${currentHabitIds.length} '
       'removed=${removedHabitIds.length}',
+    );
+  }
+
+  @visibleForTesting
+  Future<void> triggerCelebrationsForTesting({
+    required UserStateStore store,
+    required JsonMap? previousState,
+    required JsonMap currentState,
+    required DateTime now,
+  }) async {
+    final preferences = NotificationPreferences(store);
+    await _triggerCelebrations(
+      preferences: preferences,
+      snapshot: preferences.snapshot,
+      previousState: previousState,
+      currentState: currentState,
+      now: now,
     );
   }
 
@@ -515,19 +563,23 @@ class NotificationService {
     required NotificationPreferencesSnapshot snapshot,
     required JsonMap? previousState,
     required JsonMap currentState,
+    DateTime? now,
   }) async {
     if (!snapshot.streakCelebrationEnabled) return;
 
-    final now = DateTime.now();
+    final effectiveNow = now ?? DateTime.now();
     final events = NotificationRules.detectCelebrations(
       previousState: previousState,
       currentState: currentState,
       preferences: snapshot,
-      now: now,
+      now: effectiveNow,
     );
 
+    if (preferences.wasStreakMilestoneSentToday(effectiveNow)) return;
+
     for (final event in events) {
-      if (preferences.wasCelebrationSentToday(event.metadataKey, now)) {
+      if (preferences.wasCelebrationSentToday(
+          event.metadataKey, effectiveNow)) {
         continue;
       }
 
@@ -545,7 +597,13 @@ class NotificationService {
           event.milestone,
         ),
       );
-      await preferences.markCelebrationSent(event.metadataKey, now);
+      await preferences.markCelebrationSent(event.metadataKey, effectiveNow);
+      await preferences.markStreakMilestoneSent(
+        when: effectiveNow,
+        habitId: event.habitId,
+        milestone: event.milestone,
+      );
+      break;
     }
   }
 
@@ -589,3 +647,12 @@ class NotificationService {
     }
   }
 }
+
+void _handleNotificationResponse(NotificationResponse response) {
+  NotificationService.instance._notificationInteractionHandler?.call(
+    response.payload,
+  );
+}
+
+@pragma('vm:entry-point')
+void _handleBackgroundNotificationResponse(NotificationResponse response) {}

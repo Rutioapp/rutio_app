@@ -6,6 +6,8 @@ class NotificationSelectionPolicy {
   const NotificationSelectionPolicy();
 
   static const Duration categoryCooldown = Duration(hours: 24);
+  static const Duration journalNudgeCooldown = Duration(hours: 48);
+  static const int journalNudgeMaxUsesPer7d = 2;
   static const Duration recentSelectionWindow = Duration(hours: 6);
 
   NotificationSelectionSuppressionReason? upfrontSuppressionReason({
@@ -29,6 +31,52 @@ class NotificationSelectionPolicy {
     NotificationPreferences preferences,
   ) {
     final opportunities = <NotificationSelectionOpportunity>[];
+
+    // Emit at most one journal opportunity. A completed day is the stronger
+    // signal and therefore suppresses the more general end-of-day prompt.
+    if (!context.journalWrittenToday) {
+      final milestone = context.journalMilestoneSignal;
+      if (milestone != null &&
+          _isSupportedMilestone(milestone.milestone) &&
+          _isMilestoneWindowOpen(milestone, context.now)) {
+        opportunities.add(
+          NotificationSelectionOpportunity(
+            kind: NotificationKind.journalNudge,
+            journalNudgeContext: JournalNudgeContext.habitMilestone,
+            reason: NotificationSelectionReason.journalHabitMilestonePriority,
+            priority: 96,
+            primaryCategories: const <NotificationTemplateCategory>[
+              NotificationTemplateCategory.journalNudge,
+            ],
+          ),
+        );
+      } else if (context.hasCompletedDay) {
+        opportunities.add(
+          NotificationSelectionOpportunity(
+            kind: NotificationKind.journalNudge,
+            journalNudgeContext: JournalNudgeContext.perfectDay,
+            reason: NotificationSelectionReason.journalPerfectDayPriority,
+            priority: 94,
+            primaryCategories: const <NotificationTemplateCategory>[
+              NotificationTemplateCategory.journalNudge,
+            ],
+          ),
+        );
+      } else if ((context.totalCount ?? 0) > 0 &&
+          (context.completedCount ?? 0) > 0) {
+        opportunities.add(
+          NotificationSelectionOpportunity(
+            kind: NotificationKind.journalNudge,
+            journalNudgeContext: JournalNudgeContext.endOfDay,
+            reason: NotificationSelectionReason.journalEndOfDayPriority,
+            priority: 72,
+            primaryCategories: const <NotificationTemplateCategory>[
+              NotificationTemplateCategory.journalNudge,
+            ],
+          ),
+        );
+      }
+    }
 
     if ((context.inactivityDays ?? -1) >= 3) {
       opportunities.add(
@@ -188,6 +236,18 @@ class NotificationSelectionPolicy {
     return opportunities;
   }
 
+  static bool _isMilestoneWindowOpen(
+    JournalMilestoneSignal signal,
+    DateTime now,
+  ) {
+    final earliest = signal.sentAt.add(const Duration(hours: 1));
+    final latest = signal.sentAt.add(const Duration(hours: 3));
+    return !now.isBefore(earliest) && !now.isAfter(latest);
+  }
+
+  static bool _isSupportedMilestone(int milestone) =>
+      const <int>[7, 14, 30].contains(milestone);
+
   bool isTemplateEligible({
     required NotificationTemplateDescriptor template,
     required NotificationSelectionContext context,
@@ -235,6 +295,10 @@ class NotificationSelectionPolicy {
     }
     if (eligibility.minStreak != null &&
         (context.streak == null || context.streak! < eligibility.minStreak!)) {
+      return false;
+    }
+    if (eligibility.maxStreak != null &&
+        (context.streak == null || context.streak! > eligibility.maxStreak!)) {
       return false;
     }
     if (eligibility.requiresDisplayName && !_hasText(context.displayName)) {
@@ -346,6 +410,11 @@ class NotificationSelectionPolicy {
     required bool ignoreTemplateCooldown,
     required bool allowLastTemplateFallback,
   }) {
+    if (template.category == NotificationTemplateCategory.journalNudge &&
+        _isJournalNudgeFrequencyBlocked(context)) {
+      return true;
+    }
+
     final lastTemplateAt = context
         .recentMessageHistory.lastSelectedAtByTemplateId[template.templateId];
     if (!ignoreTemplateCooldown &&
@@ -368,9 +437,13 @@ class NotificationSelectionPolicy {
     final categoryKey = template.category.wireName;
     final lastCategoryAt =
         context.recentMessageHistory.lastSelectedAtByCategoryTag[categoryKey];
+    final effectiveCategoryCooldown =
+        template.category == NotificationTemplateCategory.journalNudge
+            ? journalNudgeCooldown
+            : categoryCooldown;
     if (!ignoreCategoryCooldown &&
         lastCategoryAt != null &&
-        context.now.difference(lastCategoryAt) < categoryCooldown) {
+        context.now.difference(lastCategoryAt) < effectiveCategoryCooldown) {
       return true;
     }
 
@@ -384,6 +457,51 @@ class NotificationSelectionPolicy {
     }
 
     return false;
+  }
+
+  bool _isJournalNudgeFrequencyBlocked(
+    NotificationSelectionContext context,
+  ) {
+    final now = context.now;
+    final categoryKey = NotificationTemplateCategory.journalNudge.wireName;
+    final journalRecords =
+        context.recentMessageHistory.recentDeliveries.where((record) {
+      return record.categoryTag == categoryKey ||
+          record.kind == NotificationKind.journalNudge;
+    }).where((record) {
+      return !record.scheduledAt.isAfter(now);
+    }).toList(growable: false);
+    final lastRecordedAt = journalRecords.isEmpty
+        ? null
+        : journalRecords
+            .map((record) => record.scheduledAt)
+            .reduce((a, b) => a.isAfter(b) ? a : b);
+    final lastCategoryAt =
+        context.recentMessageHistory.lastSelectedAtByCategoryTag[categoryKey];
+    final lastAt = _latestDateTime(lastRecordedAt, lastCategoryAt);
+
+    if (lastAt != null && now.difference(lastAt) < journalNudgeCooldown) {
+      return true;
+    }
+
+    final cutoff = now.subtract(const Duration(days: 7));
+    final usesInRollingWindow = journalRecords.where((record) {
+      return !record.scheduledAt.isBefore(cutoff);
+    }).length;
+    if (usesInRollingWindow >= journalNudgeMaxUsesPer7d) {
+      return true;
+    }
+
+    final yesterday = _dateKey(now.toLocal().subtract(const Duration(days: 1)));
+    return journalRecords.any(
+      (record) => _dateKey(record.scheduledAt.toLocal()) == yesterday,
+    );
+  }
+
+  static DateTime? _latestDateTime(DateTime? first, DateTime? second) {
+    if (first == null) return second;
+    if (second == null) return first;
+    return first.isAfter(second) ? first : second;
   }
 
   NotificationSelectionSuppressionReason suppressionReasonForEmptyCatalog({
@@ -445,3 +563,7 @@ bool _hasAnyRenderSignal(NotificationSelectionContext context) {
 }
 
 bool _hasText(String? value) => value != null && value.trim().isNotEmpty;
+
+String _dateKey(DateTime date) => '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';

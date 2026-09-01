@@ -7,16 +7,23 @@
       "localeNamespace": "personalizedNotifications",
       "category": "morning",
       "eligibility": {
-        "allowedTimesOfDay": ["morning"]
+        "allowedTimesOfDay": [
+          "morning"
+        ]
       },
       "isFallbackCandidate": true,
-      "variantTags": ["gentle", "neutral"],
+      "variantTags": [
+        "gentle",
+        "neutral"
+      ],
       "declaredVariables": [],
       "requiredVariables": [],
       "weight": 10,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.morning.gentle_02",
@@ -24,16 +31,25 @@
       "localeNamespace": "personalizedNotifications",
       "category": "morning",
       "eligibility": {
-        "allowedTimesOfDay": ["morning"]
+        "allowedTimesOfDay": [
+          "morning"
+        ]
       },
       "isFallbackCandidate": true,
-      "variantTags": ["gentle", "name_optional"],
-      "declaredVariables": ["displayName"],
+      "variantTags": [
+        "gentle",
+        "name_optional"
+      ],
+      "declaredVariables": [
+        "displayName"
+      ],
       "requiredVariables": [],
       "weight": 10,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.morning.focus_01",
@@ -41,16 +57,27 @@
       "localeNamespace": "personalizedNotifications",
       "category": "morning",
       "eligibility": {
-        "allowedTimesOfDay": ["morning"]
+        "allowedTimesOfDay": [
+          "morning"
+        ]
       },
       "isFallbackCandidate": false,
-      "variantTags": ["focus", "weekday"],
-      "declaredVariables": ["weekday"],
-      "requiredVariables": ["weekday"],
+      "variantTags": [
+        "focus",
+        "weekday"
+      ],
+      "declaredVariables": [
+        "weekday"
+      ],
+      "requiredVariables": [
+        "weekday"
+      ],
       "weight": 9,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.motivation.gentle_01",
@@ -62,13 +89,18 @@
         "maxProgressRatio": 0.99
       },
       "isFallbackCandidate": true,
-      "variantTags": ["gentle", "neutral"],
+      "variantTags": [
+        "gentle",
+        "neutral"
+      ],
       "declaredVariables": [],
       "requiredVariables": [],
       "weight": 10,
       "cooldownHours": 48,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.motivation.gentle_02",
@@ -80,13 +112,20 @@
         "maxProgressRatio": 0.99
       },
       "isFallbackCandidate": true,
-      "variantTags": ["gentle", "name_optional"],
-      "declaredVariables": ["displayName"],
+      "variantTags": [
+        "gentle",
+        "name_optional"
+      ],
+      "declaredVariables": [
+        "displayName"
+      ],
       "requiredVariables": [],
       "weight": 10,
       "cooldownHours": 48,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.progress.pending_01",
@@ -98,13 +137,22 @@
         "maxProgressRatio": 0.99
       },
       "isFallbackCandidate": false,
-      "variantTags": ["pending", "count"],
-      "declaredVariables": ["pendingCount"],
-      "requiredVariables": ["pendingCount"],
+      "variantTags": [
+        "pending",
+        "count"
+      ],
+      "declaredVariables": [
+        "pendingCount"
+      ],
+      "requiredVariables": [
+        "pendingCount"
+      ],
       "weight": 11,
       "cooldownHours": 36,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalDayClosure"]
+      "compatibleKinds": [
+        "generalDayClosure"
+      ]
     },
     {
       "templateId": "general.progress.pending_02",
@@ -117,13 +165,25 @@
         "maxProgressRatio": 0.99
       },
       "isFallbackCandidate": false,
-      "variantTags": ["pending", "count", "total"],
-      "declaredVariables": ["pendingCount", "totalCount"],
-      "requiredVariables": ["pendingCount", "totalCount"],
+      "variantTags": [
+        "pending",
+        "count",
+        "total"
+      ],
+      "declaredVariables": [
+        "pendingCount",
+        "totalCount"
+      ],
+      "requiredVariables": [
+        "pendingCount",
+        "totalCount"
+      ],
       "weight": 11,
       "cooldownHours": 36,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalDayClosure"]
+      "compatibleKinds": [
+        "generalDayClosure"
+      ]
     },
     {
       "templateId": "general.progress.pending_03",
@@ -135,13 +195,23 @@
         "maxProgressRatio": 0.99
       },
       "isFallbackCandidate": false,
-      "variantTags": ["pending", "progress"],
-      "declaredVariables": ["progress"],
-      "requiredVariables": ["progress"],
+      "variantTags": [
+        "pending",
+        "progress"
+      ],
+      "declaredVariables": [
+        "progress"
+      ],
+      "requiredVariables": [
+        "progress"
+      ],
       "weight": 10,
       "cooldownHours": 36,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalDayClosure", "generalProgressNudge"]
+      "compatibleKinds": [
+        "generalDayClosure",
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.progress.strong_01",
@@ -153,13 +223,22 @@
         "maxProgressRatio": 0.99
       },
       "isFallbackCandidate": false,
-      "variantTags": ["progress", "strong"],
-      "declaredVariables": ["progress"],
-      "requiredVariables": ["progress"],
+      "variantTags": [
+        "progress",
+        "strong"
+      ],
+      "declaredVariables": [
+        "progress"
+      ],
+      "requiredVariables": [
+        "progress"
+      ],
       "weight": 12,
       "cooldownHours": 36,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.progress.strong_02",
@@ -173,13 +252,24 @@
         "minTotalCount": 1
       },
       "isFallbackCandidate": false,
-      "variantTags": ["progress", "count"],
-      "declaredVariables": ["completedCount", "totalCount"],
-      "requiredVariables": ["completedCount", "totalCount"],
+      "variantTags": [
+        "progress",
+        "count"
+      ],
+      "declaredVariables": [
+        "completedCount",
+        "totalCount"
+      ],
+      "requiredVariables": [
+        "completedCount",
+        "totalCount"
+      ],
       "weight": 12,
       "cooldownHours": 36,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.day.completed_01",
@@ -191,13 +281,22 @@
         "requiresCompletedDay": true
       },
       "isFallbackCandidate": false,
-      "variantTags": ["completed", "count"],
-      "declaredVariables": ["completedCount"],
-      "requiredVariables": ["completedCount"],
+      "variantTags": [
+        "completed",
+        "count"
+      ],
+      "declaredVariables": [
+        "completedCount"
+      ],
+      "requiredVariables": [
+        "completedCount"
+      ],
       "weight": 10,
       "cooldownHours": 24,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalDayClosure"]
+      "compatibleKinds": [
+        "generalDayClosure"
+      ]
     },
     {
       "templateId": "general.day.completed_02",
@@ -205,18 +304,33 @@
       "localeNamespace": "personalizedNotifications",
       "category": "completedDay",
       "eligibility": {
-        "allowedTimesOfDay": ["evening", "night"],
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
         "minProgressRatio": 1.0,
         "requiresCompletedDay": true
       },
       "isFallbackCandidate": false,
-      "variantTags": ["completed", "progress", "time"],
-      "declaredVariables": ["progress", "timeOfDay"],
-      "requiredVariables": ["progress", "timeOfDay"],
+      "variantTags": [
+        "completed",
+        "progress",
+        "time"
+      ],
+      "declaredVariables": [
+        "progress",
+        "timeOfDay"
+      ],
+      "requiredVariables": [
+        "progress",
+        "timeOfDay"
+      ],
       "weight": 10,
       "cooldownHours": 24,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalDayClosure"]
+      "compatibleKinds": [
+        "generalDayClosure"
+      ]
     },
     {
       "templateId": "general.streak.encouragement_01",
@@ -228,13 +342,22 @@
         "minStreak": 3
       },
       "isFallbackCandidate": false,
-      "variantTags": ["streak", "encouragement"],
-      "declaredVariables": ["streak"],
-      "requiredVariables": ["streak"],
+      "variantTags": [
+        "streak",
+        "encouragement"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [
+        "streak"
+      ],
       "weight": 12,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalStreakRisk"]
+      "compatibleKinds": [
+        "generalStreakRisk"
+      ]
     },
     {
       "templateId": "general.streak.encouragement_02",
@@ -247,13 +370,25 @@
         "requiresDisplayName": true
       },
       "isFallbackCandidate": false,
-      "variantTags": ["streak", "encouragement", "name"],
-      "declaredVariables": ["displayName", "streak"],
-      "requiredVariables": ["displayName", "streak"],
+      "variantTags": [
+        "streak",
+        "encouragement",
+        "name"
+      ],
+      "declaredVariables": [
+        "displayName",
+        "streak"
+      ],
+      "requiredVariables": [
+        "displayName",
+        "streak"
+      ],
       "weight": 12,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalStreakRisk"]
+      "compatibleKinds": [
+        "generalStreakRisk"
+      ]
     },
     {
       "templateId": "general.comeback.gentle_01",
@@ -265,13 +400,18 @@
         "minInactivityDays": 3
       },
       "isFallbackCandidate": false,
-      "variantTags": ["comeback", "gentle"],
+      "variantTags": [
+        "comeback",
+        "gentle"
+      ],
       "declaredVariables": [],
       "requiredVariables": [],
       "weight": 9,
       "cooldownHours": 72,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalInactivity"]
+      "compatibleKinds": [
+        "generalInactivity"
+      ]
     },
     {
       "templateId": "general.comeback.gentle_02",
@@ -283,13 +423,21 @@
         "minInactivityDays": 3
       },
       "isFallbackCandidate": false,
-      "variantTags": ["comeback", "gentle", "name_optional"],
-      "declaredVariables": ["displayName"],
+      "variantTags": [
+        "comeback",
+        "gentle",
+        "name_optional"
+      ],
+      "declaredVariables": [
+        "displayName"
+      ],
       "requiredVariables": [],
       "weight": 9,
       "cooldownHours": 72,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalInactivity"]
+      "compatibleKinds": [
+        "generalInactivity"
+      ]
     },
     {
       "templateId": "general.reflection.prompt_01",
@@ -297,16 +445,25 @@
       "localeNamespace": "personalizedNotifications",
       "category": "reflection",
       "eligibility": {
-        "allowedTimesOfDay": ["evening", "night"]
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
       },
       "isFallbackCandidate": false,
-      "variantTags": ["reflection", "neutral"],
+      "variantTags": [
+        "reflection",
+        "neutral"
+      ],
       "declaredVariables": [],
       "requiredVariables": [],
       "weight": 10,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalDailyReflection", "generalDiaryPrompt"]
+      "compatibleKinds": [
+        "generalDailyReflection",
+        "generalDiaryPrompt"
+      ]
     },
     {
       "templateId": "general.reflection.prompt_02",
@@ -314,16 +471,27 @@
       "localeNamespace": "personalizedNotifications",
       "category": "reflection",
       "eligibility": {
-        "allowedTimesOfDay": ["evening", "night"]
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
       },
       "isFallbackCandidate": false,
-      "variantTags": ["reflection", "name_optional"],
-      "declaredVariables": ["displayName"],
+      "variantTags": [
+        "reflection",
+        "name_optional"
+      ],
+      "declaredVariables": [
+        "displayName"
+      ],
       "requiredVariables": [],
       "weight": 10,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalDailyReflection", "generalDiaryPrompt"]
+      "compatibleKinds": [
+        "generalDailyReflection",
+        "generalDiaryPrompt"
+      ]
     },
     {
       "templateId": "general.consistency.gentle_01",
@@ -335,13 +503,23 @@
         "minStreak": 2
       },
       "isFallbackCandidate": false,
-      "variantTags": ["consistency", "streak"],
-      "declaredVariables": ["streak"],
-      "requiredVariables": ["streak"],
+      "variantTags": [
+        "consistency",
+        "streak"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [
+        "streak"
+      ],
       "weight": 11,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalStreakRisk", "generalProgressNudge"]
+      "compatibleKinds": [
+        "generalStreakRisk",
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.consistency.gentle_02",
@@ -353,13 +531,22 @@
         "maxProgressRatio": 0.99
       },
       "isFallbackCandidate": false,
-      "variantTags": ["consistency", "progress"],
-      "declaredVariables": ["progress"],
-      "requiredVariables": ["progress"],
+      "variantTags": [
+        "consistency",
+        "progress"
+      ],
+      "declaredVariables": [
+        "progress"
+      ],
+      "requiredVariables": [
+        "progress"
+      ],
       "weight": 11,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.encouragement.neutral_01",
@@ -368,13 +555,18 @@
       "category": "encouragement",
       "eligibility": {},
       "isFallbackCandidate": true,
-      "variantTags": ["encouragement", "neutral"],
+      "variantTags": [
+        "encouragement",
+        "neutral"
+      ],
       "declaredVariables": [],
       "requiredVariables": [],
       "weight": 10,
       "cooldownHours": 36,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.encouragement.neutral_02",
@@ -383,13 +575,20 @@
       "category": "encouragement",
       "eligibility": {},
       "isFallbackCandidate": true,
-      "variantTags": ["encouragement", "name_optional"],
-      "declaredVariables": ["displayName"],
+      "variantTags": [
+        "encouragement",
+        "name_optional"
+      ],
+      "declaredVariables": [
+        "displayName"
+      ],
       "requiredVariables": [],
       "weight": 10,
       "cooldownHours": 36,
       "maxUsesPer7d": 3,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.progress.habit_01",
@@ -401,13 +600,24 @@
         "maxProgressRatio": 0.99
       },
       "isFallbackCandidate": false,
-      "variantTags": ["progress", "habit"],
-      "declaredVariables": ["habitName", "progress"],
-      "requiredVariables": ["habitName", "progress"],
+      "variantTags": [
+        "progress",
+        "habit"
+      ],
+      "declaredVariables": [
+        "habitName",
+        "progress"
+      ],
+      "requiredVariables": [
+        "habitName",
+        "progress"
+      ],
       "weight": 12,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
     },
     {
       "templateId": "general.encouragement.weekday_01",
@@ -415,16 +625,32 @@
       "localeNamespace": "personalizedNotifications",
       "category": "encouragement",
       "eligibility": {
-        "allowedTimesOfDay": ["afternoon", "evening"]
+        "allowedTimesOfDay": [
+          "afternoon",
+          "evening"
+        ]
       },
       "isFallbackCandidate": true,
-      "variantTags": ["encouragement", "weekday", "time"],
-      "declaredVariables": ["weekday", "timeOfDay"],
-      "requiredVariables": ["weekday", "timeOfDay"],
+      "variantTags": [
+        "encouragement",
+        "weekday",
+        "time"
+      ],
+      "declaredVariables": [
+        "weekday",
+        "timeOfDay"
+      ],
+      "requiredVariables": [
+        "weekday",
+        "timeOfDay"
+      ],
       "weight": 9,
       "cooldownHours": 36,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalProgressNudge", "generalDailyReflection"]
+      "compatibleKinds": [
+        "generalProgressNudge",
+        "generalDailyReflection"
+      ]
     },
     {
       "templateId": "general.reflection.progress_01",
@@ -432,18 +658,34 @@
       "localeNamespace": "personalizedNotifications",
       "category": "reflection",
       "eligibility": {
-        "allowedTimesOfDay": ["evening", "night"],
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
         "minCompletedCount": 1,
         "minTotalCount": 1
       },
       "isFallbackCandidate": false,
-      "variantTags": ["reflection", "progress", "count"],
-      "declaredVariables": ["completedCount", "totalCount"],
-      "requiredVariables": ["completedCount", "totalCount"],
+      "variantTags": [
+        "reflection",
+        "progress",
+        "count"
+      ],
+      "declaredVariables": [
+        "completedCount",
+        "totalCount"
+      ],
+      "requiredVariables": [
+        "completedCount",
+        "totalCount"
+      ],
       "weight": 10,
       "cooldownHours": 36,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalDailyReflection", "generalDayClosure"]
+      "compatibleKinds": [
+        "generalDailyReflection",
+        "generalDayClosure"
+      ]
     },
     {
       "templateId": "general.consistency.name_01",
@@ -456,13 +698,1111 @@
         "requiresDisplayName": true
       },
       "isFallbackCandidate": false,
-      "variantTags": ["consistency", "name", "progress"],
-      "declaredVariables": ["displayName", "progress"],
-      "requiredVariables": ["displayName", "progress"],
+      "variantTags": [
+        "consistency",
+        "name",
+        "progress"
+      ],
+      "declaredVariables": [
+        "displayName",
+        "progress"
+      ],
+      "requiredVariables": [
+        "displayName",
+        "progress"
+      ],
       "weight": 11,
       "cooldownHours": 48,
       "maxUsesPer7d": 2,
-      "compatibleKinds": ["generalProgressNudge"]
+      "compatibleKinds": [
+        "generalProgressNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.7.insight_01",
+      "templateKey": "journalNudgeMilestone7Insight01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 7,
+        "maxStreak": 7
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "insight"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.7.change_01",
+      "templateKey": "journalNudgeMilestone7Change01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 7,
+        "maxStreak": 7
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "change"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.7.ease_01",
+      "templateKey": "journalNudgeMilestone7Ease01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 7,
+        "maxStreak": 7
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "ease"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.7.return_01",
+      "templateKey": "journalNudgeMilestone7Return01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 7,
+        "maxStreak": 7
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "return"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.7.memory_01",
+      "templateKey": "journalNudgeMilestone7Memory01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 7,
+        "maxStreak": 7
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "memory"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.14.insight_01",
+      "templateKey": "journalNudgeMilestone14Insight01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 14,
+        "maxStreak": 14
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "insight"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.14.change_01",
+      "templateKey": "journalNudgeMilestone14Change01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 14,
+        "maxStreak": 14
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "change"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.14.ease_01",
+      "templateKey": "journalNudgeMilestone14Ease01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 14,
+        "maxStreak": 14
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "ease"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.14.return_01",
+      "templateKey": "journalNudgeMilestone14Return01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 14,
+        "maxStreak": 14
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "return"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.14.memory_01",
+      "templateKey": "journalNudgeMilestone14Memory01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 14,
+        "maxStreak": 14
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "memory"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.30.insight_01",
+      "templateKey": "journalNudgeMilestone30Insight01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 30,
+        "maxStreak": 30
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "insight"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.30.change_01",
+      "templateKey": "journalNudgeMilestone30Change01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 30,
+        "maxStreak": 30
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "change"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.30.ease_01",
+      "templateKey": "journalNudgeMilestone30Ease01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 30,
+        "maxStreak": 30
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "ease"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.30.return_01",
+      "templateKey": "journalNudgeMilestone30Return01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 30,
+        "maxStreak": 30
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "return"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.milestone.30.memory_01",
+      "templateKey": "journalNudgeMilestone30Memory01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "minStreak": 30,
+        "maxStreak": 30
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "milestone",
+        "memory"
+      ],
+      "declaredVariables": [
+        "streak"
+      ],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.insight_01",
+      "templateKey": "journalNudgePerfectDayInsight01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "insight"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.difference_01",
+      "templateKey": "journalNudgePerfectDayDifference01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "difference"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.decision_01",
+      "templateKey": "journalNudgePerfectDayDecision01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "decision"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.energy_01",
+      "templateKey": "journalNudgePerfectDayEnergy01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "energy"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.ease_01",
+      "templateKey": "journalNudgePerfectDayEase01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "ease"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.tomorrow_01",
+      "templateKey": "journalNudgePerfectDayTomorrow01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "tomorrow"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.moment_01",
+      "templateKey": "journalNudgePerfectDayMoment01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "moment"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.learning_01",
+      "templateKey": "journalNudgePerfectDayLearning01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "learning"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.feeling_01",
+      "templateKey": "journalNudgePerfectDayFeeling01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "feeling"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.marker_01",
+      "templateKey": "journalNudgePerfectDayMarker01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "marker"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.meaning_01",
+      "templateKey": "journalNudgePerfectDayMeaning01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "meaning"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.perfect_day.note_01",
+      "templateKey": "journalNudgePerfectDayNote01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ],
+        "requiresCompletedDay": true
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "perfectDay",
+        "note"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.reflection_01",
+      "templateKey": "journalNudgeEndOfDayReflection01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "reflection"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.energy_01",
+      "templateKey": "journalNudgeEndOfDayEnergy01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "energy"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.drain_01",
+      "templateKey": "journalNudgeEndOfDayDrain01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "drain"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.memory_01",
+      "templateKey": "journalNudgeEndOfDayMemory01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "memory"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.difference_01",
+      "templateKey": "journalNudgeEndOfDayDifference01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "difference"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.learning_01",
+      "templateKey": "journalNudgeEndOfDayLearning01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "learning"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.describe_01",
+      "templateKey": "journalNudgeEndOfDayDescribe01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "describe"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.keep_01",
+      "templateKey": "journalNudgeEndOfDayKeep01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "keep"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.surprise_01",
+      "templateKey": "journalNudgeEndOfDaySurprise01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "surprise"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.release_01",
+      "templateKey": "journalNudgeEndOfDayRelease01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "release"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.notice_01",
+      "templateKey": "journalNudgeEndOfDayNotice01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "notice"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
+    },
+    {
+      "templateId": "journal.nudge.end_of_day.question_01",
+      "templateKey": "journalNudgeEndOfDayQuestion01",
+      "localeNamespace": "personalizedNotifications",
+      "category": "journalNudge",
+      "eligibility": {
+        "allowedTimesOfDay": [
+          "evening",
+          "night"
+        ]
+      },
+      "isFallbackCandidate": false,
+      "variantTags": [
+        "journal",
+        "endOfDay",
+        "question"
+      ],
+      "declaredVariables": [],
+      "requiredVariables": [],
+      "weight": 10,
+      "cooldownHours": 48,
+      "maxUsesPer7d": 2,
+      "compatibleKinds": [
+        "journalNudge"
+      ]
     }
   ]
 }

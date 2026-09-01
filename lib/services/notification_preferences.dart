@@ -81,6 +81,26 @@ class NotificationPreferences {
     return celebrations[metadataKey] == _dateKey(now);
   }
 
+  bool wasStreakMilestoneSentToday(DateTime now) {
+    final marker = mapCast(snapshot.metadata['streakMilestoneDailySent']);
+    return marker['dateKey'] == _dateKey(now);
+  }
+
+  Future<void> markStreakMilestoneSent({
+    required DateTime when,
+    required String habitId,
+    required int milestone,
+  }) {
+    return _store.updateNotificationMetadata(<String, dynamic>{
+      'streakMilestoneDailySent': <String, dynamic>{
+        'dateKey': _dateKey(when),
+        'habitId': habitId,
+        'milestone': milestone,
+        'sentAt': when.toUtc().toIso8601String(),
+      },
+    });
+  }
+
   Future<void> markCelebrationSent(String metadataKey, DateTime when) async {
     final metadata = Map<String, dynamic>.from(_store.notificationMetadata);
     final celebrations = mapCast(metadata['celebrationMilestones']);

@@ -8,6 +8,7 @@ import 'application/bootstrap/bootstrap_controller.dart';
 import 'core/supabase/rutio_supabase_client.dart';
 import 'services/notification_runtime.dart';
 import 'services/notification_service.dart';
+import 'services/phase1_notification_timing_registry.dart';
 import 'devtools/demo_seed/demo_seed_models.dart';
 import 'devtools/demo_seed/demo_seed_runner.dart';
 import 'devtools/rutio_runtime_profile.dart';
@@ -18,6 +19,7 @@ import 'data/repositories/user_state_repository.dart';
 import 'data/local/user_state_storage.dart';
 import 'data/local/asset_json_loader.dart';
 import 'features/notifications/application/notification_context_builder.dart';
+import 'features/notifications/application/notification_interaction_router.dart';
 import 'features/notifications/application/notification_os_reconciliation_coordinator.dart';
 import 'features/notifications/application/personalized_notification_orchestrator.dart';
 import 'features/notifications/application/personalized_notification_plan_builder.dart';
@@ -71,10 +73,16 @@ void _startupLog(String message) {
   if (kDebugMode) debugPrint(message);
 }
 
+final NotificationInteractionRouter _notificationInteractionRouter =
+    NotificationInteractionRouter();
+
 Future<void> main() async {
   _startupLog('[STARTUP] 01 main() entered');
   _startupLog('[STARTUP] 02 before WidgetsFlutterBinding.ensureInitialized()');
   WidgetsFlutterBinding.ensureInitialized();
+  NotificationService.instance.setNotificationInteractionHandler(
+    _notificationInteractionRouter.receiveRawPayload,
+  );
   _startupLog('[STARTUP] 03 after WidgetsFlutterBinding.ensureInitialized()');
   final shopCloudConfig = ShopCloudRuntimeConfig.compiled(
     isRelease: kReleaseMode,
@@ -104,6 +112,9 @@ Future<void> main() async {
   try {
     _startupLog('[STARTUP] 08 before NotificationService.init()');
     await NotificationService.instance.init();
+    _notificationInteractionRouter.receiveRawPayload(
+      NotificationService.instance.takeLaunchPayload(),
+    );
     _startupLog('[STARTUP] 09 after NotificationService.init()');
   } catch (error, stackTrace) {
     debugPrint('[main] Notification init failed: $error');
@@ -140,10 +151,13 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.theme,
           locale: store.preferredLocale,
           navigatorKey: _navigatorKey,
-          builder: (context, child) => AchievementUnlockOverlayHost(
-            navigatorKey: _navigatorKey,
-            child: child ?? const SizedBox.shrink(),
-          ),
+          builder: (context, child) {
+            _notificationInteractionRouter.attach(context, _navigatorKey);
+            return AchievementUnlockOverlayHost(
+              navigatorKey: _navigatorKey,
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -273,6 +287,8 @@ class MyApp extends StatelessWidget {
               scheduleStore: scheduleStore,
               scheduleExecutor: executor,
               planBuilder: PersonalizedNotificationPlanBuilder(
+                phase1TimingSource:
+                    const SharedPreferencesPhase1NotificationTimingSource(),
                 contextBuilder: StoreBackedNotificationContextBuilder(
                   store: UserStateStoreNotificationContextSource(
                     userStateStore,

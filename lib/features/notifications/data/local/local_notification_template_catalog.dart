@@ -141,6 +141,7 @@ NotificationTemplateEligibility _readEligibility(Object? rawEligibility) {
     maxPendingCount: _readOptionalInt(rawEligibility, 'maxPendingCount'),
     minCompletedCount: _readOptionalInt(rawEligibility, 'minCompletedCount'),
     minTotalCount: _readOptionalInt(rawEligibility, 'minTotalCount'),
+    maxStreak: _readOptionalInt(rawEligibility, 'maxStreak'),
     requiresCompletedDay: _readBool(
       rawEligibility,
       'requiresCompletedDay',

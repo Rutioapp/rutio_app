@@ -14,11 +14,54 @@ void main() {
     test('loads the seeded notification catalog', () async {
       final templates = await catalog.listAll();
 
-      expect(templates, hasLength(26));
+      expect(templates, hasLength(65));
       expect(
         templates.map((template) => template.templateId).toSet(),
-        hasLength(26),
+        hasLength(65),
       );
+
+      final journalTemplates = templates
+          .where(
+            (template) =>
+                template.category == NotificationTemplateCategory.journalNudge,
+          )
+          .toList();
+      expect(journalTemplates, hasLength(39));
+      expect(
+        journalTemplates
+            .where((template) => template.templateId.contains('.milestone.'))
+            .length,
+        15,
+      );
+      expect(
+        journalTemplates
+            .where((template) => template.templateId.contains('.perfect_day.'))
+            .length,
+        12,
+      );
+      expect(
+        journalTemplates
+            .where((template) => template.templateId.contains('.end_of_day.'))
+            .length,
+        12,
+      );
+      for (final milestone in <int>[7, 14, 30]) {
+        final milestoneTemplates = journalTemplates
+            .where(
+              (template) =>
+                  template.templateId.contains('.milestone.$milestone.'),
+            )
+            .toList();
+        expect(milestoneTemplates, hasLength(5));
+        expect(
+          milestoneTemplates.every(
+            (template) =>
+                template.eligibility.minStreak == milestone &&
+                template.eligibility.maxStreak == milestone,
+          ),
+          isTrue,
+        );
+      }
     });
 
     test('returns a template by id with its metadata', () async {

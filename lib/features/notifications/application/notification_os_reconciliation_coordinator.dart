@@ -204,6 +204,12 @@ class NotificationOsReconciliationCoordinator {
       if (desired == null) {
         continue;
       }
+      if (desired.kind == NotificationKind.journalNudge &&
+          history.recentDeliveries.any(
+            (record) => record.notificationKey == desired.logicalNotificationId,
+          )) {
+        continue;
+      }
       final record = NotificationDeliveryRecord(
         notificationKey: desired.logicalNotificationId,
         userId: scope.userId,

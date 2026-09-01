@@ -16,6 +16,7 @@ class NotificationPayloadV2 {
     required this.scopeEpoch,
     required this.categoryTag,
     this.route = 'home',
+    this.dateKey,
   });
 
   final int schema;
@@ -27,6 +28,7 @@ class NotificationPayloadV2 {
   final int scopeEpoch;
   final String categoryTag;
   final String route;
+  final String? dateKey;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -39,6 +41,7 @@ class NotificationPayloadV2 {
       'scopeEpoch': scopeEpoch,
       'categoryTag': categoryTag,
       'route': route,
+      if (dateKey != null) 'dateKey': dateKey,
     };
   }
 
@@ -107,6 +110,7 @@ class NotificationPayloadV2 {
       scopeEpoch: scopeEpoch,
       categoryTag: categoryTag,
       route: _readString(json['route']) ?? 'home',
+      dateKey: _readString(json['dateKey']),
     );
   }
 
@@ -122,7 +126,8 @@ class NotificationPayloadV2 {
             other.scopeHash == scopeHash &&
             other.scopeEpoch == scopeEpoch &&
             other.categoryTag == categoryTag &&
-            other.route == route;
+            other.route == route &&
+            other.dateKey == dateKey;
   }
 
   @override
@@ -136,6 +141,7 @@ class NotificationPayloadV2 {
         scopeEpoch,
         categoryTag,
         route,
+        dateKey,
       );
 }
 

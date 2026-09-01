@@ -7619,6 +7619,708 @@ abstract class AppLocalizations {
   /// **'{displayName}, ese {progress} habla de una constancia muy tuya.'**
   String pnGeneralConsistencyName01Body(String displayName, String progress);
 
+  /// No description provided for @pnJournalNudgeMilestone7Insight01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Primeras señales'**
+  String get pnJournalNudgeMilestone7Insight01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone7Insight01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te ayudó a empezar y volver esta semana?'**
+  String get pnJournalNudgeMilestone7Insight01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone7Change01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Un comienzo que cambia'**
+  String get pnJournalNudgeMilestone7Change01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone7Change01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué notas distinto después de estos primeros días?'**
+  String get pnJournalNudgeMilestone7Change01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone7Ease01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu forma de volver'**
+  String get pnJournalNudgeMilestone7Ease01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone7Ease01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué hizo más fácil retomar el hábito?'**
+  String get pnJournalNudgeMilestone7Ease01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone7Return01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Algo empieza a funcionar'**
+  String get pnJournalNudgeMilestone7Return01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone7Return01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué parece estar funcionando para ti?'**
+  String get pnJournalNudgeMilestone7Return01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone7Memory01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Guarda este comienzo'**
+  String get pnJournalNudgeMilestone7Memory01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone7Memory01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría recordar de esta primera semana?'**
+  String get pnJournalNudgeMilestone7Memory01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone14Insight01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Patrones que aparecen'**
+  String get pnJournalNudgeMilestone14Insight01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone14Insight01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué patrón empiezas a reconocer en estas dos semanas?'**
+  String get pnJournalNudgeMilestone14Insight01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone14Change01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada vez más natural'**
+  String get pnJournalNudgeMilestone14Change01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone14Change01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué parte del hábito empieza a salirte sin pensarlo tanto?'**
+  String get pnJournalNudgeMilestone14Change01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone14Ease01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo que te sostiene'**
+  String get pnJournalNudgeMilestone14Ease01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone14Ease01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te ha ayudado a mantener el hábito estos días?'**
+  String get pnJournalNudgeMilestone14Ease01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone14Return01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Una forma que se consolida'**
+  String get pnJournalNudgeMilestone14Return01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone14Return01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué has aprendido sobre tu manera de volver?'**
+  String get pnJournalNudgeMilestone14Return01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone14Memory01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Dos semanas en perspectiva'**
+  String get pnJournalNudgeMilestone14Memory01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone14Memory01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué empieza a consolidarse en tu rutina?'**
+  String get pnJournalNudgeMilestone14Memory01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone30Insight01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Un mes de perspectiva'**
+  String get pnJournalNudgeMilestone30Insight01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone30Insight01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué cambio ves al mirar atrás un mes?'**
+  String get pnJournalNudgeMilestone30Insight01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone30Change01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya forma parte de tus días'**
+  String get pnJournalNudgeMilestone30Change01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone30Change01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué empieza a formar parte de tu rutina?'**
+  String get pnJournalNudgeMilestone30Change01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone30Ease01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo que has aprendido'**
+  String get pnJournalNudgeMilestone30Ease01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone30Ease01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué has aprendido sobre lo que te ayuda a mantenerlo?'**
+  String get pnJournalNudgeMilestone30Ease01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone30Return01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Mirar hacia el próximo mes'**
+  String get pnJournalNudgeMilestone30Return01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone30Return01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué quieres llevar contigo al próximo mes?'**
+  String get pnJournalNudgeMilestone30Return01Body;
+
+  /// No description provided for @pnJournalNudgeMilestone30Memory01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo que quieres conservar'**
+  String get pnJournalNudgeMilestone30Memory01Title;
+
+  /// No description provided for @pnJournalNudgeMilestone30Memory01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué merece quedarse de este mes?'**
+  String get pnJournalNudgeMilestone30Memory01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayInsight01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Una pista de hoy'**
+  String get pnJournalNudgePerfectDayInsight01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayInsight01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué crees que te ayudó a completar tus hábitos?'**
+  String get pnJournalNudgePerfectDayInsight01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayDifference01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Algo que repetirías'**
+  String get pnJournalNudgePerfectDayDifference01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayDifference01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué hiciste hoy que te gustaría repetir?'**
+  String get pnJournalNudgePerfectDayDifference01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayDecision01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Una decisión útil'**
+  String get pnJournalNudgePerfectDayDecision01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayDecision01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué decisión facilitó completar tus hábitos?'**
+  String get pnJournalNudgePerfectDayDecision01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayEnergy01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo que te acompañó'**
+  String get pnJournalNudgePerfectDayEnergy01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayEnergy01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué momento te dio energía mientras hacías tus hábitos?'**
+  String get pnJournalNudgePerfectDayEnergy01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayEase01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo que facilitó el día'**
+  String get pnJournalNudgePerfectDayEase01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayEase01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué hizo más sencillo completar tus hábitos hoy?'**
+  String get pnJournalNudgePerfectDayEase01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayTomorrow01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Una idea para mañana'**
+  String get pnJournalNudgePerfectDayTomorrow01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayTomorrow01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría probar mañana a partir de lo de hoy?'**
+  String get pnJournalNudgePerfectDayTomorrow01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayMoment01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Un momento del proceso'**
+  String get pnJournalNudgePerfectDayMoment01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayMoment01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué momento de hoy te gustaría recordar de tus hábitos?'**
+  String get pnJournalNudgePerfectDayMoment01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayLearning01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo que descubriste'**
+  String get pnJournalNudgePerfectDayLearning01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayLearning01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué descubriste sobre ti al completar tus hábitos?'**
+  String get pnJournalNudgePerfectDayLearning01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayFeeling01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Cómo fue para ti'**
+  String get pnJournalNudgePerfectDayFeeling01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayFeeling01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo te sentiste al terminar tus hábitos hoy?'**
+  String get pnJournalNudgePerfectDayFeeling01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayMarker01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Una señal de tu proceso'**
+  String get pnJournalNudgePerfectDayMarker01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayMarker01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué señal te indica que la forma de hoy te funcionó?'**
+  String get pnJournalNudgePerfectDayMarker01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayMeaning01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo que tuvo sentido'**
+  String get pnJournalNudgePerfectDayMeaning01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayMeaning01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué parte de completar tus hábitos tuvo más sentido para ti?'**
+  String get pnJournalNudgePerfectDayMeaning01Body;
+
+  /// No description provided for @pnJournalNudgePerfectDayNote01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Una nota para mañana'**
+  String get pnJournalNudgePerfectDayNote01Title;
+
+  /// No description provided for @pnJournalNudgePerfectDayNote01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué quieres dejar apuntado antes de cerrar el día?'**
+  String get pnJournalNudgePerfectDayNote01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayReflection01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Un momento para observar'**
+  String get pnJournalNudgeEndOfDayReflection01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayReflection01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría observar de tu día, tal como fue?'**
+  String get pnJournalNudgeEndOfDayReflection01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayEnergy01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu energía hoy'**
+  String get pnJournalNudgeEndOfDayEnergy01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayEnergy01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿En qué momento cambió tu energía durante el día?'**
+  String get pnJournalNudgeEndOfDayEnergy01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayDrain01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Lo que pesó hoy'**
+  String get pnJournalNudgeEndOfDayDrain01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayDrain01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué parte del día se sintió más pesada?'**
+  String get pnJournalNudgeEndOfDayDrain01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayMemory01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Algo que queda'**
+  String get pnJournalNudgeEndOfDayMemory01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayMemory01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué detalle de hoy te gustaría recordar?'**
+  String get pnJournalNudgeEndOfDayMemory01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayDifference01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Un detalle distinto'**
+  String get pnJournalNudgeEndOfDayDifference01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayDifference01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué fue diferente hoy, aunque fuera pequeño?'**
+  String get pnJournalNudgeEndOfDayDifference01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayLearning01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Algo que observaste'**
+  String get pnJournalNudgeEndOfDayLearning01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayLearning01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué aprendiste hoy sobre cómo transcurrió tu día?'**
+  String get pnJournalNudgeEndOfDayLearning01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayDescribe01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Ponle palabras al día'**
+  String get pnJournalNudgeEndOfDayDescribe01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayDescribe01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo describirías tu día en una frase?'**
+  String get pnJournalNudgeEndOfDayDescribe01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayKeep01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Algo para guardar'**
+  String get pnJournalNudgeEndOfDayKeep01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayKeep01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría conservar de hoy?'**
+  String get pnJournalNudgeEndOfDayKeep01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDaySurprise01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Una sorpresa del día'**
+  String get pnJournalNudgeEndOfDaySurprise01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDaySurprise01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te sorprendió hoy?'**
+  String get pnJournalNudgeEndOfDaySurprise01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayRelease01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Dejar espacio'**
+  String get pnJournalNudgeEndOfDayRelease01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayRelease01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría dejar atrás al terminar el día?'**
+  String get pnJournalNudgeEndOfDayRelease01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayNotice01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Algo que notaste'**
+  String get pnJournalNudgeEndOfDayNotice01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayNotice01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué notaste hoy que merece un momento de atención?'**
+  String get pnJournalNudgeEndOfDayNotice01Body;
+
+  /// No description provided for @pnJournalNudgeEndOfDayQuestion01Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Una pregunta para cerrar'**
+  String get pnJournalNudgeEndOfDayQuestion01Title;
+
+  /// No description provided for @pnJournalNudgeEndOfDayQuestion01Body.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué pregunta te deja el día?'**
+  String get pnJournalNudgeEndOfDayQuestion01Body;
+
+  /// No description provided for @pnJournalNudgePromptMilestone7Insight01.
+  ///
+  /// In es, this message translates to:
+  /// **'Al mirar estos primeros días, ¿qué te ayudó a empezar y volver?'**
+  String get pnJournalNudgePromptMilestone7Insight01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone7Change01.
+  ///
+  /// In es, this message translates to:
+  /// **'Después de esta primera semana, ¿qué notas diferente?'**
+  String get pnJournalNudgePromptMilestone7Change01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone7Ease01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué hizo más fácil retomar el hábito esta semana?'**
+  String get pnJournalNudgePromptMilestone7Ease01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone7Return01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué parece estar funcionando para ti en este comienzo?'**
+  String get pnJournalNudgePromptMilestone7Return01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone7Memory01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría recordar de esta primera semana?'**
+  String get pnJournalNudgePromptMilestone7Memory01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone14Insight01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué patrón empiezas a reconocer después de estas dos semanas?'**
+  String get pnJournalNudgePromptMilestone14Insight01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone14Change01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué parte del hábito empieza a sentirse más natural?'**
+  String get pnJournalNudgePromptMilestone14Change01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone14Ease01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te ha ayudado a mantener el hábito estos días?'**
+  String get pnJournalNudgePromptMilestone14Ease01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone14Return01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué estás aprendiendo sobre tu manera de volver?'**
+  String get pnJournalNudgePromptMilestone14Return01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone14Memory01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué empieza a consolidarse en tu rutina?'**
+  String get pnJournalNudgePromptMilestone14Memory01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone30Insight01.
+  ///
+  /// In es, this message translates to:
+  /// **'Al mirar atrás un mes, ¿qué cambio ves?'**
+  String get pnJournalNudgePromptMilestone30Insight01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone30Change01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué empieza a formar parte de tu rutina?'**
+  String get pnJournalNudgePromptMilestone30Change01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone30Ease01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué has aprendido sobre lo que te ayuda a mantenerlo?'**
+  String get pnJournalNudgePromptMilestone30Ease01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone30Return01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué quieres llevar contigo al próximo mes?'**
+  String get pnJournalNudgePromptMilestone30Return01;
+
+  /// No description provided for @pnJournalNudgePromptMilestone30Memory01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué merece quedarse de este mes?'**
+  String get pnJournalNudgePromptMilestone30Memory01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayInsight01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué crees que te ayudó a completar tus hábitos hoy?'**
+  String get pnJournalNudgePromptPerfectDayInsight01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayDifference01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué hiciste hoy que te gustaría repetir?'**
+  String get pnJournalNudgePromptPerfectDayDifference01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayDecision01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué decisión facilitó completar tus hábitos?'**
+  String get pnJournalNudgePromptPerfectDayDecision01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayEnergy01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué momento te dio energía mientras hacías tus hábitos?'**
+  String get pnJournalNudgePromptPerfectDayEnergy01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayEase01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué hizo más sencillo completar tus hábitos hoy?'**
+  String get pnJournalNudgePromptPerfectDayEase01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayTomorrow01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría probar mañana a partir de lo de hoy?'**
+  String get pnJournalNudgePromptPerfectDayTomorrow01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayMoment01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué momento de hoy te gustaría recordar de tus hábitos?'**
+  String get pnJournalNudgePromptPerfectDayMoment01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayLearning01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué descubriste sobre ti al completar tus hábitos?'**
+  String get pnJournalNudgePromptPerfectDayLearning01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayFeeling01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo te sentiste al terminar tus hábitos hoy?'**
+  String get pnJournalNudgePromptPerfectDayFeeling01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayMarker01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te indica que la forma de hoy te funcionó?'**
+  String get pnJournalNudgePromptPerfectDayMarker01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayMeaning01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué parte de completar tus hábitos tuvo más sentido para ti?'**
+  String get pnJournalNudgePromptPerfectDayMeaning01;
+
+  /// No description provided for @pnJournalNudgePromptPerfectDayNote01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué quieres dejar apuntado antes de cerrar el día?'**
+  String get pnJournalNudgePromptPerfectDayNote01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayReflection01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría observar de tu día, tal como fue?'**
+  String get pnJournalNudgePromptEndOfDayReflection01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayEnergy01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿En qué momento cambió tu energía durante el día?'**
+  String get pnJournalNudgePromptEndOfDayEnergy01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayDrain01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué parte del día se sintió más pesada?'**
+  String get pnJournalNudgePromptEndOfDayDrain01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayMemory01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué detalle de hoy te gustaría recordar?'**
+  String get pnJournalNudgePromptEndOfDayMemory01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayDifference01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué fue diferente hoy, aunque fuera pequeño?'**
+  String get pnJournalNudgePromptEndOfDayDifference01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayLearning01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué aprendiste hoy sobre cómo transcurrió tu día?'**
+  String get pnJournalNudgePromptEndOfDayLearning01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayDescribe01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo describirías tu día en una frase?'**
+  String get pnJournalNudgePromptEndOfDayDescribe01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayKeep01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría conservar de hoy?'**
+  String get pnJournalNudgePromptEndOfDayKeep01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDaySurprise01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te sorprendió hoy?'**
+  String get pnJournalNudgePromptEndOfDaySurprise01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayRelease01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría dejar atrás al terminar el día?'**
+  String get pnJournalNudgePromptEndOfDayRelease01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayNotice01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué notaste hoy que merece un momento de atención?'**
+  String get pnJournalNudgePromptEndOfDayNotice01;
+
+  /// No description provided for @pnJournalNudgePromptEndOfDayQuestion01.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué pregunta te deja el día?'**
+  String get pnJournalNudgePromptEndOfDayQuestion01;
+
   /// No description provided for @feedbackSubmitErrorSessionExpired.
   ///
   /// In es, this message translates to:

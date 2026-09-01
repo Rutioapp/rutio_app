@@ -25,6 +25,9 @@ enum NotificationSelectionReason {
   reflectionPriority,
   morningPriority,
   consistencyPriority,
+  journalPerfectDayPriority,
+  journalEndOfDayPriority,
+  journalHabitMilestonePriority,
   safeFallback,
 }
 
@@ -46,6 +49,10 @@ class NotificationSelectionContext {
     this.habitName,
     this.weekdayLabel,
     this.timeOfDayLabel,
+    this.journalWrittenToday = false,
+    this.journalWrittenLast24h = false,
+    this.journalEntriesLast7Days = 0,
+    this.journalMilestoneSignal,
     this.latestDiaryEntryAt,
     this.latestMood,
     NotificationMessageHistorySnapshot? recentMessageHistory,
@@ -107,6 +114,10 @@ class NotificationSelectionContext {
       habitName: habitName ?? snapshot.bestStreakRisk?.habitName,
       weekdayLabel: weekdayLabel,
       timeOfDayLabel: timeOfDayLabel,
+      journalWrittenToday: snapshot.journalWrittenToday,
+      journalWrittenLast24h: snapshot.journalWrittenLast24h,
+      journalEntriesLast7Days: snapshot.journalEntriesLast7Days,
+      journalMilestoneSignal: snapshot.journalMilestoneSignal,
       latestDiaryEntryAt: snapshot.latestDiaryEntryAt,
       latestMood: snapshot.latestMood,
       recentMessageHistory: snapshot.recentMessageHistory,
@@ -128,6 +139,10 @@ class NotificationSelectionContext {
   final String? habitName;
   final String? weekdayLabel;
   final String? timeOfDayLabel;
+  final bool journalWrittenToday;
+  final bool journalWrittenLast24h;
+  final int journalEntriesLast7Days;
+  final JournalMilestoneSignal? journalMilestoneSignal;
   final DateTime? latestDiaryEntryAt;
   final String? latestMood;
   final NotificationMessageHistorySnapshot recentMessageHistory;
@@ -184,6 +199,10 @@ class NotificationSelectionContext {
     Object? habitName = _selectionSentinel,
     Object? weekdayLabel = _selectionSentinel,
     Object? timeOfDayLabel = _selectionSentinel,
+    Object? journalWrittenToday = _selectionSentinel,
+    Object? journalWrittenLast24h = _selectionSentinel,
+    Object? journalEntriesLast7Days = _selectionSentinel,
+    Object? journalMilestoneSignal = _selectionSentinel,
     Object? latestDiaryEntryAt = _selectionSentinel,
     Object? latestMood = _selectionSentinel,
     NotificationMessageHistorySnapshot? recentMessageHistory,
@@ -224,6 +243,27 @@ class NotificationSelectionContext {
       timeOfDayLabel: identical(timeOfDayLabel, _selectionSentinel)
           ? this.timeOfDayLabel
           : timeOfDayLabel as String?,
+      journalWrittenToday: identical(journalWrittenToday, _selectionSentinel)
+          ? this.journalWrittenToday
+          : journalWrittenToday as bool,
+      journalWrittenLast24h: identical(
+        journalWrittenLast24h,
+        _selectionSentinel,
+      )
+          ? this.journalWrittenLast24h
+          : journalWrittenLast24h as bool,
+      journalEntriesLast7Days: identical(
+        journalEntriesLast7Days,
+        _selectionSentinel,
+      )
+          ? this.journalEntriesLast7Days
+          : journalEntriesLast7Days as int,
+      journalMilestoneSignal: identical(
+        journalMilestoneSignal,
+        _selectionSentinel,
+      )
+          ? this.journalMilestoneSignal
+          : journalMilestoneSignal as JournalMilestoneSignal?,
       latestDiaryEntryAt: identical(latestDiaryEntryAt, _selectionSentinel)
           ? this.latestDiaryEntryAt
           : latestDiaryEntryAt as DateTime?,
@@ -263,6 +303,10 @@ class NotificationSelectionContext {
             other.habitName == habitName &&
             other.weekdayLabel == weekdayLabel &&
             other.timeOfDayLabel == timeOfDayLabel &&
+            other.journalWrittenToday == journalWrittenToday &&
+            other.journalWrittenLast24h == journalWrittenLast24h &&
+            other.journalEntriesLast7Days == journalEntriesLast7Days &&
+            other.journalMilestoneSignal == journalMilestoneSignal &&
             other.latestDiaryEntryAt == latestDiaryEntryAt &&
             other.latestMood == latestMood &&
             other.recentMessageHistory == recentMessageHistory &&
@@ -271,25 +315,33 @@ class NotificationSelectionContext {
 
   @override
   int get hashCode => Object.hash(
-        scope,
-        now,
-        timezoneId,
-        locale,
-        timeOfDay,
-        displayName,
-        progressRatio,
-        pendingCount,
-        completedCount,
-        totalCount,
-        streak,
-        inactivityDays,
-        habitName,
-        weekdayLabel,
-        timeOfDayLabel,
-        latestDiaryEntryAt,
-        latestMood,
-        recentMessageHistory,
-        progressText,
+        Object.hash(
+          scope,
+          now,
+          timezoneId,
+          locale,
+          timeOfDay,
+          displayName,
+          progressRatio,
+          pendingCount,
+          completedCount,
+          totalCount,
+          streak,
+        ),
+        Object.hash(
+          inactivityDays,
+          habitName,
+          weekdayLabel,
+          timeOfDayLabel,
+          journalWrittenToday,
+          journalWrittenLast24h,
+          journalEntriesLast7Days,
+          journalMilestoneSignal,
+          latestDiaryEntryAt,
+          latestMood,
+          recentMessageHistory,
+          progressText,
+        ),
       );
 }
 
@@ -314,6 +366,10 @@ class _NotificationSelectionContextWithOverride
           habitName: base.habitName,
           weekdayLabel: base.weekdayLabel,
           timeOfDayLabel: base.timeOfDayLabel,
+          journalWrittenToday: base.journalWrittenToday,
+          journalWrittenLast24h: base.journalWrittenLast24h,
+          journalEntriesLast7Days: base.journalEntriesLast7Days,
+          journalMilestoneSignal: base.journalMilestoneSignal,
           latestDiaryEntryAt: base.latestDiaryEntryAt,
           latestMood: base.latestMood,
           recentMessageHistory: base.recentMessageHistory,
@@ -339,6 +395,7 @@ class NotificationSelectionOpportunity {
     required List<NotificationTemplateCategory> primaryCategories,
     List<NotificationTemplateCategory> fallbackCategories =
         const <NotificationTemplateCategory>[],
+    this.journalNudgeContext,
   })  : primaryCategories = UnmodifiableListView<NotificationTemplateCategory>(
           primaryCategories,
         ),
@@ -351,6 +408,7 @@ class NotificationSelectionOpportunity {
   final double priority;
   final List<NotificationTemplateCategory> primaryCategories;
   final List<NotificationTemplateCategory> fallbackCategories;
+  final JournalNudgeContext? journalNudgeContext;
 
   bool matchesCategory(NotificationTemplateCategory category) {
     return primaryCategories.contains(category) ||
@@ -367,6 +425,7 @@ class NotificationSelectionOpportunity {
             other.kind == kind &&
             other.reason == reason &&
             other.priority == priority &&
+            other.journalNudgeContext == journalNudgeContext &&
             listEquals(other.primaryCategories, primaryCategories) &&
             listEquals(other.fallbackCategories, fallbackCategories);
   }
@@ -374,6 +433,7 @@ class NotificationSelectionOpportunity {
   @override
   int get hashCode => Object.hash(
         kind,
+        journalNudgeContext,
         reason,
         priority,
         Object.hashAll(primaryCategories),

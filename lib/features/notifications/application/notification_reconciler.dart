@@ -152,7 +152,7 @@ class NotificationReconciler {
       if (desiredById.containsKey(entry.notificationKey)) {
         continue;
       }
-      if (entry.family != NotificationFamily.personalizedGeneral) {
+      if (!entry.family.isPersonalizedV2Owned) {
         continue;
       }
       final nativePending = nativeOwnedById[entry.notificationKey];

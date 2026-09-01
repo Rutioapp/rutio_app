@@ -160,11 +160,40 @@ class NotificationSchedulePolicy {
 
     final built = <NotificationOpportunity>[];
     for (final definition in definitions) {
-      final intendedAt = _nextWithinHorizon(
-        now: horizonStart,
-        horizonEnd: horizonEnd,
-        targetTime: definition.targetTime,
-      );
+      final effectiveSelection = definition.slotId == 'evening'
+          ? byKind[NotificationKind.journalNudge] ??
+              byKind[definition.baseKind] ??
+              _fallbackSelectionOpportunity(context)
+          : byKind[definition.baseKind] ??
+              _fallbackSelectionOpportunity(context);
+      final milestone = effectiveSelection.journalNudgeContext ==
+              JournalNudgeContext.habitMilestone
+          ? context.journalMilestoneSignal
+          : null;
+      final sameDayJournal =
+          effectiveSelection.kind == NotificationKind.journalNudge &&
+              (effectiveSelection.journalNudgeContext ==
+                      JournalNudgeContext.perfectDay ||
+                  effectiveSelection.journalNudgeContext ==
+                      JournalNudgeContext.endOfDay);
+      final intendedAt = milestone == null
+          ? sameDayJournal
+              ? _sameDayTargetWithinHorizon(
+                  now: horizonStart,
+                  horizonEnd: horizonEnd,
+                  targetTime: definition.targetTime,
+                )
+              : _nextWithinHorizon(
+                  now: horizonStart,
+                  horizonEnd: horizonEnd,
+                  targetTime: definition.targetTime,
+                )
+          : _milestoneTargetWithinWindow(
+              signal: milestone,
+              now: horizonStart,
+              horizonEnd: horizonEnd,
+              preferredWindow: preferredWindow,
+            );
       if (intendedAt == null) {
         _notifV2Log(
           'opportunity dropped slot=${definition.slotId} reason=outside_horizon '
@@ -173,8 +202,6 @@ class NotificationSchedulePolicy {
         continue;
       }
 
-      final effectiveSelection =
-          byKind[definition.baseKind] ?? _fallbackSelectionOpportunity(context);
       final eligible = !_isInQuietHours(
         intendedAt,
         quietHoursStart(preferences),
@@ -251,6 +278,33 @@ class NotificationSchedulePolicy {
   }
 }
 
+DateTime? _milestoneTargetWithinWindow({
+  required JournalMilestoneSignal signal,
+  required DateTime now,
+  required DateTime horizonEnd,
+  required NotificationTimeWindow preferredWindow,
+}) {
+  final earliest = signal.sentAt.add(const Duration(hours: 1));
+  final latest = signal.sentAt.add(const Duration(hours: 3));
+  if (now.isAfter(latest)) return null;
+
+  final target = signal.sentAt.add(const Duration(hours: 2));
+  final scheduled = target.isBefore(now) ? now : target;
+  if (scheduled.isBefore(earliest) || scheduled.isAfter(latest)) return null;
+  if (scheduled.isBefore(now) || scheduled.isAfter(horizonEnd)) return null;
+  if (!_isWithinClockWindow(scheduled, preferredWindow)) return null;
+  return scheduled;
+}
+
+bool _isWithinClockWindow(DateTime value, NotificationTimeWindow window) {
+  final minutes = value.hour * 60 + value.minute;
+  final start = window.start.hour * 60 + window.start.minute;
+  final end = window.end.hour * 60 + window.end.minute;
+  if (start == end) return true;
+  if (start < end) return minutes >= start && minutes <= end;
+  return minutes >= start || minutes <= end;
+}
+
 class _OpportunityDefinition {
   const _OpportunityDefinition({
     required this.slotId,
@@ -288,6 +342,18 @@ DateTime? _nextWithinHorizon({
     candidate = candidate.add(const Duration(days: 1));
   }
   if (candidate.isAfter(horizonEnd)) {
+    return null;
+  }
+  return candidate;
+}
+
+DateTime? _sameDayTargetWithinHorizon({
+  required DateTime now,
+  required DateTime horizonEnd,
+  required NotificationClockTime targetTime,
+}) {
+  final candidate = targetTime.onDate(now);
+  if (candidate.isBefore(now) || candidate.isAfter(horizonEnd)) {
     return null;
   }
   return candidate;

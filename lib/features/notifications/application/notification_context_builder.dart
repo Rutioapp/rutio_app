@@ -5,6 +5,8 @@ import 'package:rutio/features/notifications/domain/personalized_notifications.d
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/stores/user_state_store.dart';
 
+import 'journal_notification_signals.dart';
+
 enum NotificationContextBuildFailureReason {
   unauthenticatedUser,
   scopeMismatch,
@@ -274,7 +276,13 @@ class StoreBackedNotificationContextBuilder
         : summary.completedCount / summary.totalCount;
     final lastAppOpenAt =
         _parseDateTime(_store.notificationMetadata['lastAppOpenAt']);
-    final latestDiaryEntryAt = _latestDiaryEntryAt(_store.diaryEntries);
+    final journalSignals = JournalNotificationSignals.fromEntries(
+      entries: _store.diaryEntries,
+      now: now,
+    );
+    final journalMilestoneSignal = _readJournalMilestoneSignal(
+      _store.notificationMetadata,
+    );
 
     final snapshot = NotificationContextSnapshot(
       scope: scope,
@@ -295,7 +303,11 @@ class StoreBackedNotificationContextBuilder
           .toList(growable: false),
       bestStreakRisk: bestStreakRisk,
       lastAppOpenAt: lastAppOpenAt,
-      latestDiaryEntryAt: latestDiaryEntryAt,
+      journalWrittenToday: journalSignals.journalWrittenToday,
+      journalWrittenLast24h: journalSignals.journalWrittenLast24h,
+      journalEntriesLast7Days: journalSignals.journalEntriesLast7Days,
+      journalMilestoneSignal: journalMilestoneSignal,
+      latestDiaryEntryAt: journalSignals.latestJournalEntryAt,
       progressTodayRatio: progressRatio,
       recentMessageHistory: history,
       schedulingCapabilities: schedulingCapabilities,
@@ -316,7 +328,11 @@ class StoreBackedNotificationContextBuilder
       habitName: bestStreakRisk?.habitName,
       weekdayLabel: _weekdayLabel(today, locale),
       timeOfDayLabel: _formatHhMm(now),
-      latestDiaryEntryAt: latestDiaryEntryAt,
+      journalWrittenToday: journalSignals.journalWrittenToday,
+      journalWrittenLast24h: journalSignals.journalWrittenLast24h,
+      journalEntriesLast7Days: journalSignals.journalEntriesLast7Days,
+      journalMilestoneSignal: journalMilestoneSignal,
+      latestDiaryEntryAt: journalSignals.latestJournalEntryAt,
       recentMessageHistory: history,
     );
 
@@ -327,7 +343,7 @@ class StoreBackedNotificationContextBuilder
       progressRatio: progressRatio,
       streak: bestStreakRisk?.streakLength,
       lastAppOpenAt: lastAppOpenAt,
-      latestDiaryEntryAt: latestDiaryEntryAt,
+      latestDiaryEntryAt: journalSignals.latestJournalEntryAt,
     );
 
     return NotificationContextBuildResult.success(
@@ -556,12 +572,27 @@ DateTime? _parseDateTime(Object? value) {
   return DateTime.tryParse(normalized)?.toLocal();
 }
 
-DateTime? _latestDiaryEntryAt(List<DiaryEntry> entries) {
-  if (entries.isEmpty) {
+JournalMilestoneSignal? _readJournalMilestoneSignal(
+  Map<String, dynamic> metadata,
+) {
+  final marker = _map(metadata['streakMilestoneDailySent']);
+  final habitId = _normalizedText(marker['habitId']);
+  final dateKey = _normalizedText(marker['dateKey']);
+  final milestone = marker['milestone'] is num
+      ? (marker['milestone'] as num).toInt()
+      : int.tryParse((marker['milestone'] ?? '').toString());
+  final sentAt = _parseDateTime(marker['sentAt']);
+  if (habitId == null || dateKey == null || sentAt == null) return null;
+  if (dateKey.length != 10 || DateTime.tryParse(dateKey) == null) return null;
+  if (milestone == null || !const <int>[7, 14, 30].contains(milestone)) {
     return null;
   }
-  final latest = entries.first;
-  return DateTime.fromMillisecondsSinceEpoch(latest.createdAt).toLocal();
+  return JournalMilestoneSignal(
+    habitId: habitId,
+    milestone: milestone,
+    dateKey: dateKey,
+    sentAt: sentAt,
+  );
 }
 
 int? _inactivityDays(DateTime? lastAppOpenAt, DateTime today) {

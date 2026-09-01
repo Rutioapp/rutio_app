@@ -13,6 +13,48 @@ enum NotificationFamily {
   system,
 }
 
+extension NotificationFamilyOwnership on NotificationFamily {
+  bool get isPersonalizedV2Owned =>
+      this == NotificationFamily.personalizedGeneral ||
+      this == NotificationFamily.diary;
+}
+
+enum JournalNudgeContext {
+  perfectDay,
+  endOfDay,
+  habitMilestone,
+}
+
+@immutable
+class JournalMilestoneSignal {
+  const JournalMilestoneSignal({
+    required this.habitId,
+    required this.milestone,
+    required this.dateKey,
+    required this.sentAt,
+  });
+
+  final String habitId;
+  final int milestone;
+  final String dateKey;
+  final DateTime sentAt;
+
+  String get eventId => '$habitId:$milestone:$dateKey';
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is JournalMilestoneSignal &&
+            other.habitId == habitId &&
+            other.milestone == milestone &&
+            other.dateKey == dateKey &&
+            other.sentAt == sentAt;
+  }
+
+  @override
+  int get hashCode => Object.hash(habitId, milestone, dateKey, sentAt);
+}
+
 enum NotificationKind {
   habitReminder,
   generalDayClosure,
@@ -21,6 +63,7 @@ enum NotificationKind {
   generalInactivity,
   generalProgressNudge,
   generalDiaryPrompt,
+  journalNudge,
   celebrationStreak,
   futureWeeklyReport,
 }
@@ -37,6 +80,8 @@ extension NotificationKindX on NotificationKind {
       case NotificationKind.generalProgressNudge:
       case NotificationKind.generalDiaryPrompt:
         return NotificationFamily.personalizedGeneral;
+      case NotificationKind.journalNudge:
+        return NotificationFamily.diary;
       case NotificationKind.celebrationStreak:
         return NotificationFamily.celebration;
       case NotificationKind.futureWeeklyReport:
@@ -60,6 +105,8 @@ extension NotificationKindX on NotificationKind {
         return 'generalProgressNudge';
       case NotificationKind.generalDiaryPrompt:
         return 'generalDiaryPrompt';
+      case NotificationKind.journalNudge:
+        return 'journalNudge';
       case NotificationKind.celebrationStreak:
         return 'celebrationStreak';
       case NotificationKind.futureWeeklyReport:
@@ -581,6 +628,10 @@ class NotificationContextSnapshot {
     List<int> streakMilestonesTriggered = const <int>[],
     this.lastAppOpenAt,
     this.recentAppOpenCount7d = 0,
+    this.journalWrittenToday = false,
+    this.journalWrittenLast24h = false,
+    this.journalEntriesLast7Days = 0,
+    this.journalMilestoneSignal,
     this.latestDiaryEntryAt,
     this.latestMood,
     this.progressTodayRatio,
@@ -609,6 +660,10 @@ class NotificationContextSnapshot {
   final List<int> streakMilestonesTriggered;
   final DateTime? lastAppOpenAt;
   final int recentAppOpenCount7d;
+  final bool journalWrittenToday;
+  final bool journalWrittenLast24h;
+  final int journalEntriesLast7Days;
+  final JournalMilestoneSignal? journalMilestoneSignal;
   final DateTime? latestDiaryEntryAt;
   final String? latestMood;
   final double? progressTodayRatio;
@@ -633,6 +688,10 @@ class NotificationContextSnapshot {
             ) &&
             other.lastAppOpenAt == lastAppOpenAt &&
             other.recentAppOpenCount7d == recentAppOpenCount7d &&
+            other.journalWrittenToday == journalWrittenToday &&
+            other.journalWrittenLast24h == journalWrittenLast24h &&
+            other.journalEntriesLast7Days == journalEntriesLast7Days &&
+            other.journalMilestoneSignal == journalMilestoneSignal &&
             other.latestDiaryEntryAt == latestDiaryEntryAt &&
             other.latestMood == latestMood &&
             other.progressTodayRatio == progressTodayRatio &&
@@ -653,6 +712,10 @@ class NotificationContextSnapshot {
         Object.hashAll(streakMilestonesTriggered),
         lastAppOpenAt,
         recentAppOpenCount7d,
+        journalWrittenToday,
+        journalWrittenLast24h,
+        journalEntriesLast7Days,
+        journalMilestoneSignal,
         latestDiaryEntryAt,
         latestMood,
         progressTodayRatio,

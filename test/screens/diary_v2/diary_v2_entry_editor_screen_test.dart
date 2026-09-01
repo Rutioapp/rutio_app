@@ -10,6 +10,33 @@ void main() {
   Provider.debugCheckInvalidValueType = null;
 
   group('DiaryV2EntryEditorScreen', () {
+    testWidgets('shows a reflection prompt without pre-filling the body',
+        (tester) async {
+      final store = _FakeDiaryEditorStore();
+
+      await tester.pumpWidget(
+        _app(
+          store: store,
+          child: const DiaryV2EntryEditorScreen(
+            reflectionPrompt: '¿Qué te gustaría observar de hoy?',
+            source: 'journalNudge',
+            templateId: 'journal.nudge.end_of_day.reflection_01',
+            journalNudgeContext: 'endOfDay',
+          ),
+        ),
+      );
+
+      expect(find.text('¿Qué te gustaría observar de hoy?'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField).last).controller!.text,
+        isEmpty,
+      );
+
+      await tester.tap(find.byTooltip('Ocultar sugerencia'));
+      await tester.pump();
+      expect(find.text('¿Qué te gustaría observar de hoy?'), findsNothing);
+    });
+
     testWidgets('create mode still adds a new entry', (tester) async {
       final store = _FakeDiaryEditorStore();
 

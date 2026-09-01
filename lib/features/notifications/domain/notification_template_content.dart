@@ -13,6 +13,7 @@ enum NotificationTemplateCategory {
   reflection,
   consistency,
   encouragement,
+  journalNudge,
 }
 
 extension NotificationTemplateCategoryX on NotificationTemplateCategory {
@@ -38,6 +39,8 @@ extension NotificationTemplateCategoryX on NotificationTemplateCategory {
         return 'consistency';
       case NotificationTemplateCategory.encouragement:
         return 'encouragement';
+      case NotificationTemplateCategory.journalNudge:
+        return 'journalNudge';
     }
   }
 }
@@ -176,6 +179,7 @@ class NotificationTemplateEligibility {
     this.maxPendingCount,
     this.minCompletedCount,
     this.minTotalCount,
+    this.maxStreak,
     required this.requiresCompletedDay,
     required this.requiresStreak,
     this.minStreak,
@@ -202,6 +206,7 @@ class NotificationTemplateEligibility {
   final int? maxPendingCount;
   final int? minCompletedCount;
   final int? minTotalCount;
+  final int? maxStreak;
   final bool requiresCompletedDay;
   final bool requiresStreak;
   final int? minStreak;
@@ -217,6 +222,7 @@ class NotificationTemplateEligibility {
       maxPendingCount != null ||
       minCompletedCount != null ||
       minTotalCount != null ||
+      maxStreak != null ||
       requiresCompletedDay ||
       requiresStreak ||
       minStreak != null ||
@@ -235,6 +241,7 @@ class NotificationTemplateEligibility {
             other.maxPendingCount == maxPendingCount &&
             other.minCompletedCount == minCompletedCount &&
             other.minTotalCount == minTotalCount &&
+            other.maxStreak == maxStreak &&
             other.requiresCompletedDay == requiresCompletedDay &&
             other.requiresStreak == requiresStreak &&
             other.minStreak == minStreak &&
@@ -252,6 +259,7 @@ class NotificationTemplateEligibility {
         maxPendingCount,
         minCompletedCount,
         minTotalCount,
+        maxStreak,
         requiresCompletedDay,
         requiresStreak,
         minStreak,

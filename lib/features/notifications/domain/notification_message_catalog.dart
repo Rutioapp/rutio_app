@@ -184,6 +184,12 @@ class NotificationTemplateCatalogValidator {
           'Template ${template.templateId} has invalid minProgressRatio.',
         );
       }
+      if (template.eligibility.maxStreak != null &&
+          template.eligibility.maxStreak! < 0) {
+        throw NotificationTemplateCatalogValidationError(
+          'Template ${template.templateId} has invalid maxStreak.',
+        );
+      }
       if (template.eligibility.maxProgressRatio != null &&
           (template.eligibility.maxProgressRatio! < 0 ||
               template.eligibility.maxProgressRatio! > 1)) {
@@ -873,6 +879,279 @@ final Map<String, NotificationTemplateCopyDefinition>
         },
       );
     },
+  ),
+  'journalNudgeMilestone7Insight01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone7Insight01Title,
+      body: l10n.pnJournalNudgeMilestone7Insight01Body,
+    ),
+  ),
+  'journalNudgeMilestone7Change01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone7Change01Title,
+      body: l10n.pnJournalNudgeMilestone7Change01Body,
+    ),
+  ),
+  'journalNudgeMilestone7Ease01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone7Ease01Title,
+      body: l10n.pnJournalNudgeMilestone7Ease01Body,
+    ),
+  ),
+  'journalNudgeMilestone7Return01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone7Return01Title,
+      body: l10n.pnJournalNudgeMilestone7Return01Body,
+    ),
+  ),
+  'journalNudgeMilestone7Memory01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone7Memory01Title,
+      body: l10n.pnJournalNudgeMilestone7Memory01Body,
+    ),
+  ),
+  'journalNudgeMilestone14Insight01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone14Insight01Title,
+      body: l10n.pnJournalNudgeMilestone14Insight01Body,
+    ),
+  ),
+  'journalNudgeMilestone14Change01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone14Change01Title,
+      body: l10n.pnJournalNudgeMilestone14Change01Body,
+    ),
+  ),
+  'journalNudgeMilestone14Ease01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone14Ease01Title,
+      body: l10n.pnJournalNudgeMilestone14Ease01Body,
+    ),
+  ),
+  'journalNudgeMilestone14Return01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone14Return01Title,
+      body: l10n.pnJournalNudgeMilestone14Return01Body,
+    ),
+  ),
+  'journalNudgeMilestone14Memory01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone14Memory01Title,
+      body: l10n.pnJournalNudgeMilestone14Memory01Body,
+    ),
+  ),
+  'journalNudgeMilestone30Insight01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone30Insight01Title,
+      body: l10n.pnJournalNudgeMilestone30Insight01Body,
+    ),
+  ),
+  'journalNudgeMilestone30Change01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone30Change01Title,
+      body: l10n.pnJournalNudgeMilestone30Change01Body,
+    ),
+  ),
+  'journalNudgeMilestone30Ease01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone30Ease01Title,
+      body: l10n.pnJournalNudgeMilestone30Ease01Body,
+    ),
+  ),
+  'journalNudgeMilestone30Return01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone30Return01Title,
+      body: l10n.pnJournalNudgeMilestone30Return01Body,
+    ),
+  ),
+  'journalNudgeMilestone30Memory01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeMilestone30Memory01Title,
+      body: l10n.pnJournalNudgeMilestone30Memory01Body,
+    ),
+  ),
+  'journalNudgePerfectDayInsight01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayInsight01Title,
+      body: l10n.pnJournalNudgePerfectDayInsight01Body,
+    ),
+  ),
+  'journalNudgePerfectDayDifference01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayDifference01Title,
+      body: l10n.pnJournalNudgePerfectDayDifference01Body,
+    ),
+  ),
+  'journalNudgePerfectDayDecision01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayDecision01Title,
+      body: l10n.pnJournalNudgePerfectDayDecision01Body,
+    ),
+  ),
+  'journalNudgePerfectDayEnergy01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayEnergy01Title,
+      body: l10n.pnJournalNudgePerfectDayEnergy01Body,
+    ),
+  ),
+  'journalNudgePerfectDayEase01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayEase01Title,
+      body: l10n.pnJournalNudgePerfectDayEase01Body,
+    ),
+  ),
+  'journalNudgePerfectDayTomorrow01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayTomorrow01Title,
+      body: l10n.pnJournalNudgePerfectDayTomorrow01Body,
+    ),
+  ),
+  'journalNudgePerfectDayMoment01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayMoment01Title,
+      body: l10n.pnJournalNudgePerfectDayMoment01Body,
+    ),
+  ),
+  'journalNudgePerfectDayLearning01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayLearning01Title,
+      body: l10n.pnJournalNudgePerfectDayLearning01Body,
+    ),
+  ),
+  'journalNudgePerfectDayFeeling01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayFeeling01Title,
+      body: l10n.pnJournalNudgePerfectDayFeeling01Body,
+    ),
+  ),
+  'journalNudgePerfectDayMarker01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayMarker01Title,
+      body: l10n.pnJournalNudgePerfectDayMarker01Body,
+    ),
+  ),
+  'journalNudgePerfectDayMeaning01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayMeaning01Title,
+      body: l10n.pnJournalNudgePerfectDayMeaning01Body,
+    ),
+  ),
+  'journalNudgePerfectDayNote01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgePerfectDayNote01Title,
+      body: l10n.pnJournalNudgePerfectDayNote01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayReflection01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayReflection01Title,
+      body: l10n.pnJournalNudgeEndOfDayReflection01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayEnergy01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayEnergy01Title,
+      body: l10n.pnJournalNudgeEndOfDayEnergy01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayDrain01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayDrain01Title,
+      body: l10n.pnJournalNudgeEndOfDayDrain01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayMemory01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayMemory01Title,
+      body: l10n.pnJournalNudgeEndOfDayMemory01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayDifference01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayDifference01Title,
+      body: l10n.pnJournalNudgeEndOfDayDifference01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayLearning01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayLearning01Title,
+      body: l10n.pnJournalNudgeEndOfDayLearning01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayDescribe01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayDescribe01Title,
+      body: l10n.pnJournalNudgeEndOfDayDescribe01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayKeep01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayKeep01Title,
+      body: l10n.pnJournalNudgeEndOfDayKeep01Body,
+    ),
+  ),
+  'journalNudgeEndOfDaySurprise01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDaySurprise01Title,
+      body: l10n.pnJournalNudgeEndOfDaySurprise01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayRelease01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayRelease01Title,
+      body: l10n.pnJournalNudgeEndOfDayRelease01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayNotice01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayNotice01Title,
+      body: l10n.pnJournalNudgeEndOfDayNotice01Body,
+    ),
+  ),
+  'journalNudgeEndOfDayQuestion01': NotificationTemplateCopyDefinition(
+    referencedVariables: const <NotificationTemplateVariable>{},
+    render: (l10n, context) => NotificationRenderedTemplateCopy(
+      title: l10n.pnJournalNudgeEndOfDayQuestion01Title,
+      body: l10n.pnJournalNudgeEndOfDayQuestion01Body,
+    ),
   ),
 };
 

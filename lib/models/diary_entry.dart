@@ -15,6 +15,7 @@ class DiaryEntry {
 
   final String id;
   final int createdAt; // epoch ms
+  final String? dateKey;
   final String text;
   final String? title;
   final String? body;
@@ -38,6 +39,7 @@ class DiaryEntry {
   const DiaryEntry({
     required this.id,
     required this.createdAt,
+    this.dateKey,
     required this.text,
     this.title,
     this.body,
@@ -74,6 +76,7 @@ class DiaryEntry {
   DiaryEntry copyWith({
     String? id,
     int? createdAt,
+    String? dateKey,
     String? text,
     String? title,
     String? body,
@@ -88,6 +91,7 @@ class DiaryEntry {
     return DiaryEntry(
       id: id ?? this.id,
       createdAt: createdAt ?? this.createdAt,
+      dateKey: dateKey ?? this.dateKey,
       text: text ?? this.text,
       title: title ?? this.title,
       body: body ?? this.body,
@@ -106,6 +110,7 @@ class DiaryEntry {
   Map<String, dynamic> toJson() => {
         'id': id,
         'createdAt': createdAt,
+        'dateKey': dateKey,
         'text': legacyText,
         'title': normalizedTitle,
         'body': normalizedBody,
@@ -123,6 +128,7 @@ class DiaryEntry {
         createdAt: (json['createdAt'] is int)
             ? json['createdAt'] as int
             : int.tryParse((json['createdAt'] ?? '0').toString()) ?? 0,
+        dateKey: (json['dateKey'] as Object?)?.toString(),
         text: composeLegacyDiaryText(
           title: json['title'],
           body: json['body'],
@@ -133,7 +139,9 @@ class DiaryEntry {
         remoteId: (json['remoteId'] as Object?)?.toString(),
         habitId: (json['habitId'] as Object?)?.toString(),
         familyId: (json['familyId'] as Object?)?.toString(),
-        mood: (json['mood'] is int) ? json['mood'] as int : int.tryParse((json['mood'] ?? '').toString()),
+        mood: (json['mood'] is int)
+            ? json['mood'] as int
+            : int.tryParse((json['mood'] ?? '').toString()),
         entryType: diaryEntryContentTypeFromJsonValue(
           json['entryType'] ?? json['entry_type'],
         ),

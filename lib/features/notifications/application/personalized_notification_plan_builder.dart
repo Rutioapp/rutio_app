@@ -12,6 +12,8 @@ import '../domain/personalized_notification_models.dart';
 import '../domain/personalized_notification_ports.dart';
 import 'notification_context_builder.dart';
 import 'notification_schedule_policy.dart';
+import 'phase1_spacing_policy.dart';
+import '../../../services/phase1_notification_timing_registry.dart';
 
 class PersonalizedNotificationPlanBuilder {
   PersonalizedNotificationPlanBuilder({
@@ -22,6 +24,8 @@ class PersonalizedNotificationPlanBuilder {
     NotificationSelectionPolicy? selectionPolicy,
     NotificationSchedulePolicy? schedulePolicy,
     NotificationHabitReminderLoadProvider? habitReminderLoadProvider,
+    Phase1NotificationTimingSource? phase1TimingSource,
+    Phase1SpacingPolicy? phase1SpacingPolicy,
   })  : _contextBuilder = contextBuilder,
         _templateCatalog = templateCatalog,
         _platformIdProvider = platformIdProvider,
@@ -30,7 +34,11 @@ class PersonalizedNotificationPlanBuilder {
             selectionPolicy ?? const NotificationSelectionPolicy(),
         _schedulePolicy = schedulePolicy ?? const NotificationSchedulePolicy(),
         _habitReminderLoadProvider = habitReminderLoadProvider ??
-            const NullNotificationHabitReminderLoadProvider();
+            const NullNotificationHabitReminderLoadProvider(),
+        _phase1TimingSource = phase1TimingSource ??
+            const SharedPreferencesPhase1NotificationTimingSource(),
+        _phase1SpacingPolicy =
+            phase1SpacingPolicy ?? const Phase1SpacingPolicy();
 
   static const int _planVersion = 1;
 
@@ -41,6 +49,8 @@ class PersonalizedNotificationPlanBuilder {
   final NotificationSelectionPolicy _selectionPolicy;
   final NotificationSchedulePolicy _schedulePolicy;
   final NotificationHabitReminderLoadProvider _habitReminderLoadProvider;
+  final Phase1NotificationTimingSource _phase1TimingSource;
+  final Phase1SpacingPolicy _phase1SpacingPolicy;
 
   Future<DesiredNotificationPlan> build({
     required NotificationScope scope,
@@ -152,6 +162,21 @@ class PersonalizedNotificationPlanBuilder {
 
     final planned = <DesiredNotification>[];
     var rollingHistory = selectionContext.recentMessageHistory;
+    List<Phase1NotificationScheduleIntent> phase1Schedules;
+    try {
+      phase1Schedules = await _phase1TimingSource.upcomingForScope(
+        // Phase 1 persists by authenticated user scope; v2's epoch/install
+        // suffix is intentionally not part of this cross-system lookup.
+        scopeKey: desiredScope.userId,
+        now: generatedAt,
+        horizonEnd: planHorizonEnd,
+      );
+    } catch (error) {
+      phase1Schedules = const <Phase1NotificationScheduleIntent>[];
+      notes.add('phase1_timing_unavailable');
+      _notifV2Log(
+          'phase1 timing read failed; continuing without spacing: $error');
+    }
     for (final opportunity in opportunities) {
       _notifV2Log(
         'opportunity slot=${opportunity.opportunityId} '
@@ -167,6 +192,17 @@ class PersonalizedNotificationPlanBuilder {
         _notifV2Log(
           'opportunity suppressed slot=${opportunity.opportunityId} '
           'reason=${!opportunity.isEligible ? "quiet_hours" : "cap_reached"}',
+        );
+        continue;
+      }
+      if (_phase1SpacingPolicy.conflictsWithPhase1(
+        personalizedAt: opportunity.intendedAtLocal,
+        phase1Schedules: phase1Schedules,
+      )) {
+        suppressedOpportunityIds.add(opportunity.opportunityId);
+        _notifV2Log(
+          'opportunity suppressed slot=${opportunity.opportunityId} '
+          'reason=phase1_spacing_conflict',
         );
         continue;
       }
@@ -210,12 +246,19 @@ class PersonalizedNotificationPlanBuilder {
         context: selected.renderContext,
         localeCode: scopedContext.locale,
       );
+      final milestone = selected.opportunity.journalNudgeContext ==
+              JournalNudgeContext.habitMilestone
+          ? scopedContext.journalMilestoneSignal
+          : null;
+      final contextualDateKey = milestone?.dateKey ??
+          snapshot.calendarDate.toIso8601String().split('T').first;
       final logicalId = NotificationIdNamespace.buildNotificationKey(
         family: selected.kind.family,
         kind: selected.kind,
         scope: desiredScope,
-        entityRef:
-            'day_${snapshot.calendarDate.toIso8601String().split('T').first}',
+        entityRef: milestone == null
+            ? 'day_${snapshot.calendarDate.toIso8601String().split('T').first}'
+            : 'milestone_${milestone.eventId}',
         slot: opportunity.opportunityId,
       );
       final platformId = await _platformIdProvider.getOrAllocate(
@@ -238,6 +281,7 @@ class PersonalizedNotificationPlanBuilder {
         scopeHash: desiredScope.scopeHash,
         scopeEpoch: desiredScope.scopeEpoch,
         categoryTag: selected.category.wireName,
+        dateKey: contextualDateKey,
       );
       final fingerprint = _fingerprintFor(
         logicalId: logicalId,

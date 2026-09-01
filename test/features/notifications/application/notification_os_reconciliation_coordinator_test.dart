@@ -9,13 +9,20 @@ void main() {
     locale: 'es',
   );
 
-  DesiredNotification buildDesired({String fingerprint = 'fp-1'}) {
+  DesiredNotification buildDesired({
+    String fingerprint = 'fp-1',
+    NotificationKind kind = NotificationKind.generalProgressNudge,
+    NotificationFamily family = NotificationFamily.personalizedGeneral,
+    String? logicalId,
+    String categoryTag = 'encouragement',
+  }) {
+    final resolvedLogicalId = logicalId ??
+        'rutio:v2:general:generalProgressNudge:scope:today:morning';
     return DesiredNotification(
-      logicalNotificationId:
-          'rutio:v2:general:generalProgressNudge:scope:today:morning',
+      logicalNotificationId: resolvedLogicalId,
       platformId: 20010,
-      kind: NotificationKind.generalProgressNudge,
-      family: NotificationFamily.personalizedGeneral,
+      kind: kind,
+      family: family,
       templateId: 'template-1',
       renderedTitle: 'Rutio',
       renderedBody: 'Body',
@@ -24,17 +31,17 @@ void main() {
       timezoneIdAtPlanTime: 'Europe/Madrid',
       payload: NotificationPayloadV2(
         schema: 2,
-        family: NotificationFamily.personalizedGeneral,
-        kind: NotificationKind.generalProgressNudge,
-        logicalId: 'rutio:v2:general:generalProgressNudge:scope:today:morning',
+        family: family,
+        kind: kind,
+        logicalId: resolvedLogicalId,
         templateId: 'template-1',
         scopeHash: scope.scopeHash,
         scopeEpoch: scope.scopeEpoch,
-        categoryTag: 'encouragement',
+        categoryTag: categoryTag,
       ),
       fingerprint: fingerprint,
       scope: scope,
-      categoryTag: 'encouragement',
+      categoryTag: categoryTag,
       opportunityId: 'morning',
       planVersion: 1,
       metadata: const <String, String>{},
@@ -98,6 +105,41 @@ void main() {
     );
     expect((await historyStore.load(scope))?.recentDeliveries.length, 2);
     expect((await scheduleStore.load(scope))?.entries.length, 1);
+  });
+
+  test('cancels a stale diary journal notification and is idempotent',
+      () async {
+    final scheduleStore = _InMemoryScheduleStore();
+    final historyStore = _InMemoryHistoryStore();
+    final executor = InMemoryNotificationScheduleExecutorWithPending();
+    final coordinator = NotificationOsReconciliationCoordinator(
+      scheduleStore: scheduleStore,
+      historyStore: historyStore,
+      executor: executor,
+      now: () => DateTime(2026, 8, 29, 20),
+    );
+    final journal = buildDesired(
+      kind: NotificationKind.journalNudge,
+      family: NotificationFamily.diary,
+      logicalId: 'rutio:v2:diary:journalNudge:scope:milestone:event:evening',
+      categoryTag: 'journalNudge',
+    );
+
+    await coordinator.reconcileDesiredPlan(
+      buildPlan(<DesiredNotification>[journal]),
+    );
+    final cancelled = await coordinator.reconcileDesiredPlan(buildPlan([]));
+    final repeated = await coordinator.reconcileDesiredPlan(buildPlan([]));
+
+    expect(
+      cancelled.operationsSucceeded.any(
+        (item) => item.type == NotificationReconciliationOperationType.cancel,
+      ),
+      isTrue,
+    );
+    expect(executor.pending, isEmpty);
+    expect((await scheduleStore.load(scope))?.entries, isEmpty);
+    expect(repeated.operationsPlanned, isEmpty);
   });
 }
 
@@ -180,5 +222,29 @@ class InMemoryNotificationScheduleExecutorWithPending
   @override
   Future<List<NativePendingNotification>> pendingNotifications() async {
     return List<NativePendingNotification>.from(pending);
+  }
+
+  @override
+  Future<NotificationNativeExecutionResult> cancel(
+    NotificationManifestEntry existing,
+  ) async {
+    pending.removeWhere((item) => item.platformId == existing.platformId);
+    return NotificationNativeExecutionResult.success(
+      stateChange: NotificationExecutionStateChange.cancelled,
+      platformId: existing.platformId,
+    );
+  }
+
+  @override
+  Future<NotificationNativeExecutionResult> cancelPending(
+    NativePendingNotification pendingNotification,
+  ) async {
+    pending.removeWhere(
+      (item) => item.platformId == pendingNotification.platformId,
+    );
+    return NotificationNativeExecutionResult.success(
+      stateChange: NotificationExecutionStateChange.cancelled,
+      platformId: pendingNotification.platformId,
+    );
   }
 }

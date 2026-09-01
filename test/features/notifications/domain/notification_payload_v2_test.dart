@@ -18,6 +18,24 @@ void main() {
     expect(NotificationPayloadV2.tryParse(payload.encode()), payload);
   });
 
+  test('preserves the contextual date key when present', () {
+    const payload = NotificationPayloadV2(
+      schema: 2,
+      family: NotificationFamily.diary,
+      kind: NotificationKind.journalNudge,
+      logicalId: 'rutio:v2:diary:journalNudge:abc:today:evening',
+      templateId: 'journal.nudge.end_of_day.reflection_01',
+      scopeHash: 'abc123',
+      scopeEpoch: 4,
+      categoryTag: 'journalNudge',
+      dateKey: '2026-08-29',
+    );
+
+    final decoded = NotificationPayloadV2.tryParse(payload.encode());
+    expect(decoded, payload);
+    expect(decoded?.dateKey, '2026-08-29');
+  });
+
   test('returns null for malformed payload', () {
     expect(NotificationPayloadV2.tryParse('{bad json'), isNull);
   });
