@@ -169,6 +169,63 @@ class WeeklyReport {
   bool get isProvisional => status == WeeklyReportStatus.provisional;
 }
 
+class WeeklyReportHistoryItem {
+  const WeeklyReportHistoryItem({
+    required this.reportId,
+    required this.week,
+    required this.status,
+    required this.completionRate,
+    required this.completedCount,
+    required this.scheduledCount,
+    required this.firstPartialWeek,
+    this.refreshedAt,
+    this.finalizedAt,
+  });
+
+  final String reportId;
+  final WeeklyReportWeek week;
+  final WeeklyReportStatus status;
+  final double? completionRate;
+  final int completedCount;
+  final int scheduledCount;
+  final bool firstPartialWeek;
+  final DateTime? refreshedAt;
+  final DateTime? finalizedAt;
+}
+
+class WeeklyReportHistoryPage {
+  const WeeklyReportHistoryPage(
+      {required this.items, this.nextBeforeWeekStart});
+
+  final List<WeeklyReportHistoryItem> items;
+  final DateTime? nextBeforeWeekStart;
+  bool get hasMore => nextBeforeWeekStart != null;
+}
+
+enum WeeklyReportDataSource { remoteFresh, cachedFinal, cachedProvisional }
+
+class WeeklyReportSnapshot {
+  const WeeklyReportSnapshot({
+    required this.report,
+    required this.source,
+    required this.cachedAt,
+    required this.isStale,
+  });
+
+  final WeeklyReport report;
+  final WeeklyReportDataSource source;
+  final DateTime? cachedAt;
+  final bool isStale;
+}
+
+abstract interface class WeeklyReportRepository {
+  Future<WeeklyReportSnapshot?> getLatest();
+  Future<WeeklyReportSnapshot> getById(String reportId);
+  Future<WeeklyReportHistoryPage> getHistory(
+      {DateTime? beforeWeekStart, int limit = 20});
+  Future<WeeklyReportSnapshot> refreshProvisional(DateTime weekStartDate);
+}
+
 WeeklyReportHabit weeklyReportHabitFromMetrics({
   required HabitSnapshot habit,
   required WeeklyHabitMetrics metrics,
