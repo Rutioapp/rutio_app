@@ -22,6 +22,9 @@ class RemoteHabit {
     required this.sortOrder,
     this.createdAt,
     this.updatedAt,
+    this.sourceMutationId,
+    this.effectiveFrom,
+    this.effectiveTimezoneName,
     this.raw = const <String, dynamic>{},
   });
 
@@ -42,6 +45,9 @@ class RemoteHabit {
   final int sortOrder;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? sourceMutationId;
+  final DateTime? effectiveFrom;
+  final String? effectiveTimezoneName;
   final Map<String, dynamic> raw;
 
   factory RemoteHabit.fromMap(Map<String, dynamic> map) {
@@ -68,6 +74,9 @@ class RemoteHabit {
       sortOrder: _safeInt(map['sort_order'], fallback: 0),
       createdAt: _nullableDateTime(map['created_at']),
       updatedAt: _nullableDateTime(map['updated_at']),
+      sourceMutationId: _nullableTrim(map['source_mutation_id']),
+      effectiveFrom: _nullableDateTime(map['effective_from']),
+      effectiveTimezoneName: _nullableTrim(map['effective_timezone_name']),
       raw: Map<String, dynamic>.from(map),
     );
   }
@@ -88,6 +97,9 @@ class RemoteHabit {
       'sort_order': sortOrder,
       'family_id': familyId,
       'emoji': emoji,
+      'source_mutation_id': sourceMutationId,
+      'effective_from': effectiveFrom?.toUtc().toIso8601String(),
+      'effective_timezone_name': effectiveTimezoneName,
     };
 
     final remoteId = _nullableTrim(id);
@@ -139,6 +151,12 @@ class RemoteHabit {
       sortOrder: _safeInt(local['sortOrder'], fallback: 0),
       createdAt: _nullableDateTime(local['createdAt']),
       updatedAt: _nullableDateTime(local['updatedAt']),
+      sourceMutationId: _nullableTrim(
+          local['sourceMutationId'] ?? local['source_mutation_id']),
+      effectiveFrom:
+          _nullableDateTime(local['effectiveFrom'] ?? local['effective_from']),
+      effectiveTimezoneName: _nullableTrim(
+          local['effectiveTimezoneName'] ?? local['effective_timezone_name']),
       raw: Map<String, dynamic>.from(local),
     );
   }

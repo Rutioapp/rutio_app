@@ -34,7 +34,10 @@ schedule,
 is_archived,
 sort_order,
 created_at,
-updated_at
+updated_at,
+source_mutation_id,
+effective_from,
+effective_timezone_name
 ''';
 
   Future<RepositoryResult<List<RemoteHabit>>>
