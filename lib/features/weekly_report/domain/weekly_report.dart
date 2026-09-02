@@ -224,6 +224,10 @@ abstract interface class WeeklyReportRepository {
   Future<WeeklyReportHistoryPage> getHistory(
       {DateTime? beforeWeekStart, int limit = 20});
   Future<WeeklyReportSnapshot> refreshProvisional(DateTime weekStartDate);
+  Future<void> activate({
+    required DateTime activationLocalDate,
+    required String timezoneName,
+  });
 }
 
 WeeklyReportHabit weeklyReportHabitFromMetrics({

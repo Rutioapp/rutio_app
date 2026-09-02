@@ -98,6 +98,120 @@ abstract class AppLocalizations {
     Locale('es')
   ];
 
+  /// No description provided for @weeklyReportTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu semana'**
+  String get weeklyReportTitle;
+
+  /// No description provided for @weeklyReportFinalLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrado'**
+  String get weeklyReportFinalLabel;
+
+  /// No description provided for @weeklyReportSummary.
+  ///
+  /// In es, this message translates to:
+  /// **'Resumen semanal'**
+  String get weeklyReportSummary;
+
+  /// No description provided for @weeklyReportCompleted.
+  ///
+  /// In es, this message translates to:
+  /// **'completados'**
+  String get weeklyReportCompleted;
+
+  /// No description provided for @weeklyReportCompletion.
+  ///
+  /// In es, this message translates to:
+  /// **'cumplimiento'**
+  String get weeklyReportCompletion;
+
+  /// No description provided for @weeklyReportBestDay.
+  ///
+  /// In es, this message translates to:
+  /// **'mejor día'**
+  String get weeklyReportBestDay;
+
+  /// No description provided for @weeklyReportDaily.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu semana día a día'**
+  String get weeklyReportDaily;
+
+  /// No description provided for @weeklyReportNoScheduled.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin hábitos programados'**
+  String get weeklyReportNoScheduled;
+
+  /// No description provided for @weeklyReportProvisionalMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Reporte provisional · Se actualizará durante el domingo'**
+  String get weeklyReportProvisionalMessage;
+
+  /// No description provided for @weeklyReportFirstWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu primera semana en Rutio'**
+  String get weeklyReportFirstWeek;
+
+  /// No description provided for @weeklyReportOffline.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin conexión · mostrando datos guardados'**
+  String get weeklyReportOffline;
+
+  /// No description provided for @weeklyReportTrendStable.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin cambios respecto a la semana anterior'**
+  String get weeklyReportTrendStable;
+
+  /// No description provided for @weeklyReportTrendCompared.
+  ///
+  /// In es, this message translates to:
+  /// **'respecto a la semana anterior'**
+  String get weeklyReportTrendCompared;
+
+  /// No description provided for @weeklyReportOf.
+  ///
+  /// In es, this message translates to:
+  /// **'de'**
+  String get weeklyReportOf;
+
+  /// No description provided for @weeklyReportEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu reporte todavía no está disponible.'**
+  String get weeklyReportEmpty;
+
+  /// No description provided for @weeklyReportError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido cargar tu reporte.'**
+  String get weeklyReportError;
+
+  /// No description provided for @weeklyReportRetry.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get weeklyReportRetry;
+
+  /// No description provided for @weeklyReportDebugGenerate.
+  ///
+  /// In es, this message translates to:
+  /// **'Generar reporte provisional · Debug'**
+  String get weeklyReportDebugGenerate;
+
+  /// No description provided for @weeklyReportDebugRefresh.
+  ///
+  /// In es, this message translates to:
+  /// **'Refrescar reporte · Debug'**
+  String get weeklyReportDebugRefresh;
+
   /// No description provided for @splashTagline.
   ///
   /// In es, this message translates to:

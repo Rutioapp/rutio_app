@@ -409,6 +409,8 @@ class UserStateStore extends ChangeNotifier {
       ((userId ?? '').trim().isNotEmpty);
   String? get activeLocalScopeUserId => _activeLocalScopeUserId;
   int get scopeEpoch => _scopeEpoch;
+  Future<String?> getLocalIanaTimeZone() =>
+      _deviceTimeZoneProvider.getLocalIanaTimeZone();
   bool get isSupabaseAchievementsBackfillRunning =>
       _isSupabaseAchievementsBackfillRunning;
   bool get isSupabaseHabitsBackfillRunning => _isSupabaseHabitsBackfillRunning;

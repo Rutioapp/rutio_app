@@ -226,6 +226,8 @@ class _FakeRemote implements WeeklyReportRemoteDataSource {
   RemoteWeeklyReport? refreshValue;
   Object? latestError;
   Object? refreshError;
+  Object? activationError;
+  int activationCalls = 0;
   Completer<RemoteWeeklyReport?>? latestCompleter;
   Completer<RemoteWeeklyReport?>? refreshCompleter;
   List<List<RemoteWeeklyReportHistoryItem>> historyPages = [];
@@ -251,5 +253,14 @@ class _FakeRemote implements WeeklyReportRemoteDataSource {
     if (refreshCompleter != null) return refreshCompleter!.future;
     if (refreshError != null) throw refreshError!;
     return refreshValue ?? latestValue;
+  }
+
+  @override
+  Future<void> activate({
+    required DateTime activationLocalDate,
+    required String timezoneName,
+  }) async {
+    activationCalls++;
+    if (activationError != null) throw activationError!;
   }
 }

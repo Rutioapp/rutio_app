@@ -9,6 +9,65 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
+  String get weeklyReportTitle => 'Tu semana';
+
+  @override
+  String get weeklyReportFinalLabel => 'Cerrado';
+
+  @override
+  String get weeklyReportSummary => 'Resumen semanal';
+
+  @override
+  String get weeklyReportCompleted => 'completados';
+
+  @override
+  String get weeklyReportCompletion => 'cumplimiento';
+
+  @override
+  String get weeklyReportBestDay => 'mejor día';
+
+  @override
+  String get weeklyReportDaily => 'Tu semana día a día';
+
+  @override
+  String get weeklyReportNoScheduled => 'Sin hábitos programados';
+
+  @override
+  String get weeklyReportProvisionalMessage =>
+      'Reporte provisional · Se actualizará durante el domingo';
+
+  @override
+  String get weeklyReportFirstWeek => 'Tu primera semana en Rutio';
+
+  @override
+  String get weeklyReportOffline => 'Sin conexión · mostrando datos guardados';
+
+  @override
+  String get weeklyReportTrendStable =>
+      'Sin cambios respecto a la semana anterior';
+
+  @override
+  String get weeklyReportTrendCompared => 'respecto a la semana anterior';
+
+  @override
+  String get weeklyReportOf => 'de';
+
+  @override
+  String get weeklyReportEmpty => 'Tu reporte todavía no está disponible.';
+
+  @override
+  String get weeklyReportError => 'No se ha podido cargar tu reporte.';
+
+  @override
+  String get weeklyReportRetry => 'Reintentar';
+
+  @override
+  String get weeklyReportDebugGenerate => 'Generar reporte provisional · Debug';
+
+  @override
+  String get weeklyReportDebugRefresh => 'Refrescar reporte · Debug';
+
+  @override
   String get splashTagline => 'CONSTRUYE TU CAMINO';
 
   @override

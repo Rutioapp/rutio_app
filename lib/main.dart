@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'application/auth/auth_controller.dart';
 import 'application/bootstrap/bootstrap_controller.dart';
@@ -62,6 +63,9 @@ import 'screens/diary_v2/diary_v2_screen.dart';
 import 'screens/habit_archived_screen.dart';
 import 'screens/todo/todo_screen.dart';
 import 'features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
+import 'features/weekly_report/data/weekly_report_repository.dart';
+import 'features/weekly_report/domain/weekly_report.dart';
+import 'features/weekly_report/presentation/screens/weekly_report_screen.dart';
 
 import 'screens/app_startup_gate.dart';
 import 'screens/welcome_screen.dart';
@@ -98,6 +102,7 @@ Future<void> main() async {
   shopCloudConfig.validateForStartup(isRelease: kReleaseMode);
   _startupLog('[STARTUP] 04 before RutioSupabaseClient.initialize()');
   await RutioSupabaseClient.initialize();
+  final weeklyReportPreferences = await SharedPreferences.getInstance();
   _startupLog('[STARTUP] 05 after RutioSupabaseClient.initialize()');
 
   final userStateStorage = UserStateStorage();
@@ -124,7 +129,10 @@ Future<void> main() async {
     );
   }
   _startupLog('[STARTUP] 10 before runApp()');
-  runApp(MyApp(shopRuntimeConfig: shopCloudConfig));
+  runApp(MyApp(
+    shopRuntimeConfig: shopCloudConfig,
+    weeklyReportPreferences: weeklyReportPreferences,
+  ));
   _startupLog('[STARTUP] 11 after runApp()');
 }
 
@@ -132,9 +140,11 @@ class MyApp extends StatelessWidget {
   const MyApp({
     super.key,
     required this.shopRuntimeConfig,
+    required this.weeklyReportPreferences,
   });
 
   final ShopCloudRuntimeConfig shopRuntimeConfig;
+  final SharedPreferences weeklyReportPreferences;
 
   static final GlobalKey<NavigatorState> _navigatorKey =
       GlobalKey<NavigatorState>();
@@ -191,6 +201,7 @@ class MyApp extends StatelessWidget {
             '/archived': (_) => ArchivedHabitsScreen(),
             '/stats': (_) => const StatisticsV3Screen(),
             StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
+            WeeklyReportScreen.route: (_) => const WeeklyReportScreen(),
             FeedbackHomeScreen.route: (_) => const FeedbackHomeScreen(),
             FeedbackFormScreen.route: (_) => const FeedbackFormScreen(),
             FeedbackSuccessScreen.route: (context) =>
@@ -255,6 +266,21 @@ class MyApp extends StatelessWidget {
               globalWalletController: context.read<GlobalWalletController>(),
               profileRepository: context.read<ProfileRepository>(),
             )..load();
+          },
+        ),
+        Provider<WeeklyReportRepository>(
+          create: (context) {
+            final store = context.read<UserStateStore>();
+            return SupabaseWeeklyReportRepository(
+              remote: SupabaseWeeklyReportRemoteDataSource(),
+              cache:
+                  SharedPreferencesWeeklyReportCache(weeklyReportPreferences),
+              scopeProvider: () {
+                final userId = store.activeLocalScopeUserId ?? store.userId;
+                if (userId == null || userId.trim().isEmpty) return null;
+                return (userId: userId, epoch: store.scopeEpoch);
+              },
+            );
           },
         ),
         Provider<PersonalizedNotificationOrchestrator>(
