@@ -33,6 +33,13 @@ enum WeeklyReportDayState {
   skipped,
 }
 
+enum WeeklyReportHabitClassification {
+  highlighted,
+  stable,
+  needsAttention,
+  unavailable,
+}
+
 class WeeklyReportDay {
   const WeeklyReportDay({
     required this.date,
@@ -64,6 +71,7 @@ class WeeklyReportHabit {
     required this.skippedCount,
     required this.completionRate,
     required this.occurrences,
+    required this.classification,
     this.emoji,
     this.target,
     this.familyId,
@@ -81,6 +89,7 @@ class WeeklyReportHabit {
   final int completedCount;
   final int skippedCount;
   final double? completionRate;
+  final WeeklyReportHabitClassification classification;
   final List<HabitOccurrenceResult> occurrences;
   final HabitStreakSnapshot? streakSnapshot;
 
@@ -233,6 +242,8 @@ abstract interface class WeeklyReportRepository {
 WeeklyReportHabit weeklyReportHabitFromMetrics({
   required HabitSnapshot habit,
   required WeeklyHabitMetrics metrics,
+  WeeklyReportHabitClassification classification =
+      WeeklyReportHabitClassification.unavailable,
   HabitStreakSnapshot? streakSnapshot,
 }) {
   return WeeklyReportHabit(
@@ -247,6 +258,7 @@ WeeklyReportHabit weeklyReportHabitFromMetrics({
     completedCount: metrics.completedCount,
     skippedCount: metrics.skippedCount,
     completionRate: metrics.completionRate,
+    classification: classification,
     occurrences: metrics.occurrences,
     streakSnapshot: streakSnapshot,
   );

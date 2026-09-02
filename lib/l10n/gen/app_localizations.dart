@@ -212,6 +212,174 @@ abstract class AppLocalizations {
   /// **'Refrescar reporte · Debug'**
   String get weeklyReportDebugRefresh;
 
+  /// No description provided for @weeklyReportHabitsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Hábitos de la semana'**
+  String get weeklyReportHabitsTitle;
+
+  /// No description provided for @weeklyReportHabitFeatured.
+  ///
+  /// In es, this message translates to:
+  /// **'Destacado'**
+  String get weeklyReportHabitFeatured;
+
+  /// No description provided for @weeklyReportHabitStable.
+  ///
+  /// In es, this message translates to:
+  /// **'Estable'**
+  String get weeklyReportHabitStable;
+
+  /// No description provided for @weeklyReportHabitNeedsAttention.
+  ///
+  /// In es, this message translates to:
+  /// **'Necesita atención'**
+  String get weeklyReportHabitNeedsAttention;
+
+  /// No description provided for @weeklyReportHabitNoSchedule.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin programación'**
+  String get weeklyReportHabitNoSchedule;
+
+  /// No description provided for @weeklyReportHabitCompleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Completado'**
+  String get weeklyReportHabitCompleted;
+
+  /// No description provided for @weeklyReportHabitSkipped.
+  ///
+  /// In es, this message translates to:
+  /// **'Omitido'**
+  String get weeklyReportHabitSkipped;
+
+  /// No description provided for @weeklyReportHabitPartial.
+  ///
+  /// In es, this message translates to:
+  /// **'Parcial'**
+  String get weeklyReportHabitPartial;
+
+  /// No description provided for @weeklyReportHabitNoActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin actividad'**
+  String get weeklyReportHabitNoActivity;
+
+  /// No description provided for @weeklyReportHabitStreak.
+  ///
+  /// In es, this message translates to:
+  /// **'racha'**
+  String get weeklyReportHabitStreak;
+
+  /// No description provided for @weeklyReportHabitGroupFeatured.
+  ///
+  /// In es, this message translates to:
+  /// **'Destacados'**
+  String get weeklyReportHabitGroupFeatured;
+
+  /// No description provided for @weeklyReportHabitGroupFeaturedSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus hábitos con mejor semana'**
+  String get weeklyReportHabitGroupFeaturedSubtitle;
+
+  /// No description provided for @weeklyReportHabitGroupStable.
+  ///
+  /// In es, this message translates to:
+  /// **'Estables'**
+  String get weeklyReportHabitGroupStable;
+
+  /// No description provided for @weeklyReportHabitGroupStableSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mantuvieron un buen ritmo'**
+  String get weeklyReportHabitGroupStableSubtitle;
+
+  /// No description provided for @weeklyReportHabitGroupNeedsAttention.
+  ///
+  /// In es, this message translates to:
+  /// **'Necesitan atención'**
+  String get weeklyReportHabitGroupNeedsAttention;
+
+  /// No description provided for @weeklyReportHabitGroupNeedsAttentionSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Los que más pueden mejorar'**
+  String get weeklyReportHabitGroupNeedsAttentionSubtitle;
+
+  /// No description provided for @weeklyReportHabitUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin programación esta semana'**
+  String get weeklyReportHabitUnavailable;
+
+  /// No description provided for @weeklyReportHabitCountUnit.
+  ///
+  /// In es, this message translates to:
+  /// **'hábitos'**
+  String get weeklyReportHabitCountUnit;
+
+  /// No description provided for @weeklyReportHabitExpanded.
+  ///
+  /// In es, this message translates to:
+  /// **'Expandido'**
+  String get weeklyReportHabitExpanded;
+
+  /// No description provided for @weeklyReportHabitCollapsed.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraído'**
+  String get weeklyReportHabitCollapsed;
+
+  /// No description provided for @weeklyReportHabitExpand.
+  ///
+  /// In es, this message translates to:
+  /// **'Expandir'**
+  String get weeklyReportHabitExpand;
+
+  /// No description provided for @weeklyReportHabitCollapse.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraer'**
+  String get weeklyReportHabitCollapse;
+
+  /// No description provided for @weeklyReportHabitDayCompleted.
+  ///
+  /// In es, this message translates to:
+  /// **'{day}: completado'**
+  String weeklyReportHabitDayCompleted(Object day);
+
+  /// No description provided for @weeklyReportHabitDayIncomplete.
+  ///
+  /// In es, this message translates to:
+  /// **'{day}: pendiente'**
+  String weeklyReportHabitDayIncomplete(Object day);
+
+  /// No description provided for @weeklyReportHabitDaySkipped.
+  ///
+  /// In es, this message translates to:
+  /// **'{day}: omitido'**
+  String weeklyReportHabitDaySkipped(Object day);
+
+  /// No description provided for @weeklyReportHabitDayPartial.
+  ///
+  /// In es, this message translates to:
+  /// **'{day}: parcial'**
+  String weeklyReportHabitDayPartial(Object day);
+
+  /// No description provided for @weeklyReportHabitDayNoSchedule.
+  ///
+  /// In es, this message translates to:
+  /// **'{day}: sin programación'**
+  String weeklyReportHabitDayNoSchedule(Object day);
+
+  /// No description provided for @weeklyReportHabitDayNoActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'{day}: sin actividad'**
+  String weeklyReportHabitDayNoActivity(Object day);
+
   /// No description provided for @splashTagline.
   ///
   /// In es, this message translates to:

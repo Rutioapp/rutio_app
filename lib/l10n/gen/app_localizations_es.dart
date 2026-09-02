@@ -68,6 +68,105 @@ class AppLocalizationsEs extends AppLocalizations {
   String get weeklyReportDebugRefresh => 'Refrescar reporte · Debug';
 
   @override
+  String get weeklyReportHabitsTitle => 'Hábitos de la semana';
+
+  @override
+  String get weeklyReportHabitFeatured => 'Destacado';
+
+  @override
+  String get weeklyReportHabitStable => 'Estable';
+
+  @override
+  String get weeklyReportHabitNeedsAttention => 'Necesita atención';
+
+  @override
+  String get weeklyReportHabitNoSchedule => 'Sin programación';
+
+  @override
+  String get weeklyReportHabitCompleted => 'Completado';
+
+  @override
+  String get weeklyReportHabitSkipped => 'Omitido';
+
+  @override
+  String get weeklyReportHabitPartial => 'Parcial';
+
+  @override
+  String get weeklyReportHabitNoActivity => 'Sin actividad';
+
+  @override
+  String get weeklyReportHabitStreak => 'racha';
+
+  @override
+  String get weeklyReportHabitGroupFeatured => 'Destacados';
+
+  @override
+  String get weeklyReportHabitGroupFeaturedSubtitle =>
+      'Tus hábitos con mejor semana';
+
+  @override
+  String get weeklyReportHabitGroupStable => 'Estables';
+
+  @override
+  String get weeklyReportHabitGroupStableSubtitle =>
+      'Mantuvieron un buen ritmo';
+
+  @override
+  String get weeklyReportHabitGroupNeedsAttention => 'Necesitan atención';
+
+  @override
+  String get weeklyReportHabitGroupNeedsAttentionSubtitle =>
+      'Los que más pueden mejorar';
+
+  @override
+  String get weeklyReportHabitUnavailable => 'Sin programación esta semana';
+
+  @override
+  String get weeklyReportHabitCountUnit => 'hábitos';
+
+  @override
+  String get weeklyReportHabitExpanded => 'Expandido';
+
+  @override
+  String get weeklyReportHabitCollapsed => 'Contraído';
+
+  @override
+  String get weeklyReportHabitExpand => 'Expandir';
+
+  @override
+  String get weeklyReportHabitCollapse => 'Contraer';
+
+  @override
+  String weeklyReportHabitDayCompleted(Object day) {
+    return '$day: completado';
+  }
+
+  @override
+  String weeklyReportHabitDayIncomplete(Object day) {
+    return '$day: pendiente';
+  }
+
+  @override
+  String weeklyReportHabitDaySkipped(Object day) {
+    return '$day: omitido';
+  }
+
+  @override
+  String weeklyReportHabitDayPartial(Object day) {
+    return '$day: parcial';
+  }
+
+  @override
+  String weeklyReportHabitDayNoSchedule(Object day) {
+    return '$day: sin programación';
+  }
+
+  @override
+  String weeklyReportHabitDayNoActivity(Object day) {
+    return '$day: sin actividad';
+  }
+
+  @override
   String get splashTagline => 'CONSTRUYE TU CAMINO';
 
   @override
