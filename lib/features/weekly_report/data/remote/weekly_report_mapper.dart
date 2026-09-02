@@ -1,4 +1,5 @@
 import '../../domain/weekly_report.dart';
+import '../../../achievements/domain/models/habit_streak_snapshot.dart';
 import '../../../habits/domain/metrics/habit_occurrence_result.dart';
 import '../../../habits/domain/metrics/habit_snapshot.dart';
 import '../../../habits/domain/metrics/weekly_report_week.dart';
@@ -59,8 +60,37 @@ WeeklyReportHabit _habit(RemoteWeeklyReportHabit h) => WeeklyReportHabit(
       completedCount: h.completedCount,
       skippedCount: h.skippedCount,
       completionRate: h.completionRate,
+      classification: _classification(h.classification),
       occurrences: h.occurrences.map(_occurrence).toList(growable: false),
+      streakSnapshot:
+          h.streakSnapshot == null ? null : _streakSnapshot(h.streakSnapshot!),
     );
+
+HabitStreakSnapshot _streakSnapshot(Map<String, dynamic> value) =>
+    HabitStreakSnapshot(
+      habitId: _streakString(value, 'habitId'),
+      currentStreak: _streakInt(value, 'currentStreak'),
+      bestStreak: _streakInt(value, 'bestStreak'),
+      totalCompletedDays: _streakInt(value, 'totalCompletedDays'),
+    );
+
+String _streakString(Map<String, dynamic> value, String camelKey) =>
+    (value[camelKey] ?? value[_snake(camelKey)]) as String;
+
+int _streakInt(Map<String, dynamic> value, String camelKey) =>
+    ((value[camelKey] ?? value[_snake(camelKey)]) as num).toInt();
+
+String _snake(String value) => value.replaceAllMapped(
+    RegExp(r'[A-Z]'), (match) => '_${match.group(0)!.toLowerCase()}');
+
+WeeklyReportHabitClassification _classification(String? value) =>
+    switch (value) {
+      'highlighted' => WeeklyReportHabitClassification.highlighted,
+      'stable' => WeeklyReportHabitClassification.stable,
+      'needs_attention' => WeeklyReportHabitClassification.needsAttention,
+      'unavailable' => WeeklyReportHabitClassification.unavailable,
+      _ => WeeklyReportHabitClassification.unavailable,
+    };
 
 HabitOccurrenceResult _occurrence(Map<String, dynamic> o) =>
     HabitOccurrenceResult(

@@ -67,6 +67,103 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weeklyReportDebugRefresh => 'Refresh report · Debug';
 
   @override
+  String get weeklyReportHabitsTitle => 'Habits of the week';
+
+  @override
+  String get weeklyReportHabitFeatured => 'Featured';
+
+  @override
+  String get weeklyReportHabitStable => 'Stable';
+
+  @override
+  String get weeklyReportHabitNeedsAttention => 'Needs attention';
+
+  @override
+  String get weeklyReportHabitNoSchedule => 'No schedule';
+
+  @override
+  String get weeklyReportHabitCompleted => 'Completed';
+
+  @override
+  String get weeklyReportHabitSkipped => 'Skipped';
+
+  @override
+  String get weeklyReportHabitPartial => 'Partial';
+
+  @override
+  String get weeklyReportHabitNoActivity => 'No activity';
+
+  @override
+  String get weeklyReportHabitStreak => 'streak';
+
+  @override
+  String get weeklyReportHabitGroupFeatured => 'Featured';
+
+  @override
+  String get weeklyReportHabitGroupFeaturedSubtitle => 'Your best week so far';
+
+  @override
+  String get weeklyReportHabitGroupStable => 'Stable';
+
+  @override
+  String get weeklyReportHabitGroupStableSubtitle => 'Kept a good rhythm';
+
+  @override
+  String get weeklyReportHabitGroupNeedsAttention => 'Needs attention';
+
+  @override
+  String get weeklyReportHabitGroupNeedsAttentionSubtitle =>
+      'The ones with room to improve';
+
+  @override
+  String get weeklyReportHabitUnavailable => 'No schedule this week';
+
+  @override
+  String get weeklyReportHabitCountUnit => 'habits';
+
+  @override
+  String get weeklyReportHabitExpanded => 'Expanded';
+
+  @override
+  String get weeklyReportHabitCollapsed => 'Collapsed';
+
+  @override
+  String get weeklyReportHabitExpand => 'Expand';
+
+  @override
+  String get weeklyReportHabitCollapse => 'Collapse';
+
+  @override
+  String weeklyReportHabitDayCompleted(Object day) {
+    return '$day: completed';
+  }
+
+  @override
+  String weeklyReportHabitDayIncomplete(Object day) {
+    return '$day: pending';
+  }
+
+  @override
+  String weeklyReportHabitDaySkipped(Object day) {
+    return '$day: skipped';
+  }
+
+  @override
+  String weeklyReportHabitDayPartial(Object day) {
+    return '$day: partial';
+  }
+
+  @override
+  String weeklyReportHabitDayNoSchedule(Object day) {
+    return '$day: no schedule';
+  }
+
+  @override
+  String weeklyReportHabitDayNoActivity(Object day) {
+    return '$day: no activity';
+  }
+
+  @override
   String get splashTagline => 'BUILD YOUR PATH';
 
   @override

@@ -180,6 +180,7 @@ class RemoteWeeklyReportHabit {
       required this.completedCount,
       required this.skippedCount,
       required this.completionRate,
+      required this.classification,
       required this.occurrences,
       required this.streakSnapshot});
   final String habitId, name, type;
@@ -188,6 +189,7 @@ class RemoteWeeklyReportHabit {
   final Map<String, dynamic> schedule;
   final int scheduledCount, completedCount, skippedCount;
   final double? completionRate;
+  final String? classification;
   final List<Map<String, dynamic>> occurrences;
   final Map<String, dynamic>? streakSnapshot;
   factory RemoteWeeklyReportHabit.fromJson(Object? value) {
@@ -221,6 +223,17 @@ class RemoteWeeklyReportHabit {
             _nonNegativeInt(m['completedCount'], 'habit.completedCount'),
         skippedCount: _nonNegativeInt(m['skippedCount'], 'habit.skippedCount'),
         completionRate: _rate(m['completionRate'], 'habit.completionRate'),
+        classification: m['classification'] == null
+            ? null
+            : _enum(
+                m['classification'],
+                const [
+                  'highlighted',
+                  'stable',
+                  'needs_attention',
+                  'unavailable'
+                ],
+                'habit.classification'),
         occurrences: occurrences,
         streakSnapshot: m['streakSnapshot'] == null
             ? null

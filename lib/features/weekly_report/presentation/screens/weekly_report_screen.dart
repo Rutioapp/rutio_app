@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../../l10n/l10n.dart';
 import '../../application/weekly_report_controller.dart';
 import '../../domain/weekly_report.dart';
+import '../widgets/weekly_report_habits_section.dart';
 import '../../../../stores/user_state_store.dart';
 
 class WeeklyReportScreen extends StatelessWidget {
@@ -103,6 +104,10 @@ class _ReportContent extends StatelessWidget {
           _SummaryCard(report: report),
           const SizedBox(height: 8),
           _ChartsCard(report: report),
+          if (report.habits.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            WeeklyReportHabitsSection(habits: report.habits),
+          ],
           if (!report.summary.hasScheduledCount)
             Padding(
               padding: const EdgeInsets.only(top: 10),
