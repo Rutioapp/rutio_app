@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_improvement_chip.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_summary_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_yearly_consistency_shell.dart';
+import 'package:rutio/features/weekly_report/presentation/screens/weekly_report_screen.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_screen.dart';
@@ -234,6 +236,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                       l10n: l10n,
                     ),
                   ),
+                  if (kDebugMode) const WeeklyReportDebugEntry(),
                 ],
               ],
             ),
@@ -352,6 +355,29 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
     return locale == 'es'
         ? 'Consistencia por mes en el año actual'
         : 'Month-by-month consistency for the current year';
+  }
+}
+
+/// Temporary QA-only entry point. It is compiled out of the visible tree in
+/// profile/release builds and intentionally uses the app's named route.
+class WeeklyReportDebugEntry extends StatelessWidget {
+  const WeeklyReportDebugEntry({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Align(
+        alignment: Alignment.center,
+        child: TextButton(
+          key: const Key('weeklyReportDebugEntry'),
+          onPressed: () => Navigator.of(context).pushNamed(
+            WeeklyReportScreen.route,
+          ),
+          child: const Text('Weekly Report · Debug'),
+        ),
+      ),
+    );
   }
 }
 

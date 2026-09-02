@@ -9,6 +9,64 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get weeklyReportTitle => 'Your week';
+
+  @override
+  String get weeklyReportFinalLabel => 'Closed';
+
+  @override
+  String get weeklyReportSummary => 'Weekly summary';
+
+  @override
+  String get weeklyReportCompleted => 'completed';
+
+  @override
+  String get weeklyReportCompletion => 'completion';
+
+  @override
+  String get weeklyReportBestDay => 'best day';
+
+  @override
+  String get weeklyReportDaily => 'Your week day by day';
+
+  @override
+  String get weeklyReportNoScheduled => 'No habits scheduled';
+
+  @override
+  String get weeklyReportProvisionalMessage =>
+      'Provisional report · It will update during Sunday';
+
+  @override
+  String get weeklyReportFirstWeek => 'Your first week in Rutio';
+
+  @override
+  String get weeklyReportOffline => 'Offline · showing saved data';
+
+  @override
+  String get weeklyReportTrendStable => 'No change from the previous week';
+
+  @override
+  String get weeklyReportTrendCompared => 'from the previous week';
+
+  @override
+  String get weeklyReportOf => 'of';
+
+  @override
+  String get weeklyReportEmpty => 'Your report is not available yet.';
+
+  @override
+  String get weeklyReportError => 'Your report could not be loaded.';
+
+  @override
+  String get weeklyReportRetry => 'Retry';
+
+  @override
+  String get weeklyReportDebugGenerate => 'Generate provisional report · Debug';
+
+  @override
+  String get weeklyReportDebugRefresh => 'Refresh report · Debug';
+
+  @override
   String get splashTagline => 'BUILD YOUR PATH';
 
   @override

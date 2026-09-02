@@ -53,6 +53,11 @@ class WeeklyReportRefreshRejected extends WeeklyReportError {
       : super('Weekly Report refresh was rejected.', cause: cause);
 }
 
+class WeeklyReportActivationFailure extends WeeklyReportError {
+  const WeeklyReportActivationFailure([Object? cause])
+      : super('Weekly Report activation failed.', cause: cause);
+}
+
 class WeeklyReportStaleScope extends WeeklyReportError {
   const WeeklyReportStaleScope()
       : super('Discarded stale Weekly Report result.');
@@ -64,6 +69,10 @@ abstract interface class WeeklyReportRemoteDataSource {
   Future<List<RemoteWeeklyReportHistoryItem>> getHistory(
       {DateTime? beforeWeekStart, required int limit});
   Future<RemoteWeeklyReport?> refresh(DateTime weekStartDate);
+  Future<void> activate({
+    required DateTime activationLocalDate,
+    required String timezoneName,
+  });
 }
 
 class RemoteWeeklyReportHistoryItem {
@@ -146,6 +155,20 @@ class SupabaseWeeklyReportRemoteDataSource
   Future<RemoteWeeklyReport?> refresh(DateTime weekStartDate) async =>
       _parse(await _client.rpc('refresh_my_weekly_report',
           params: {'p_week_start_date': _isoDate(weekStartDate)}));
+
+  @override
+  Future<void> activate({
+    required DateTime activationLocalDate,
+    required String timezoneName,
+  }) async {
+    await _client.rpc(
+      'activate_weekly_report',
+      params: {
+        'p_activation_local_date': _isoDate(activationLocalDate),
+        'p_timezone_name': timezoneName,
+      },
+    );
+  }
 }
 
 abstract interface class WeeklyReportCache {
@@ -324,6 +347,25 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
       rethrow;
     } catch (e) {
       throw WeeklyReportRefreshRejected(e);
+    }
+  }
+
+  @override
+  Future<void> activate({
+    required DateTime activationLocalDate,
+    required String timezoneName,
+  }) async {
+    final scope = _scope();
+    try {
+      await remote.activate(
+        activationLocalDate: activationLocalDate,
+        timezoneName: timezoneName,
+      );
+      if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
+    } on WeeklyReportError {
+      rethrow;
+    } catch (error) {
+      throw WeeklyReportActivationFailure(error);
     }
   }
 
