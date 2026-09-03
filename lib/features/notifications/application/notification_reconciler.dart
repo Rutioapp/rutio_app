@@ -52,6 +52,7 @@ class NotificationReconciler {
       for (final notification in desiredPlan.notifications)
         notification.logicalNotificationId: notification,
     };
+    final weeklyOnly = desiredPlan.diagnostics.notes.contains('weekly_only');
     final existingById = <String, NotificationManifestEntry>{
       for (final entry in manifest.entries) entry.notificationKey: entry,
     };
@@ -152,7 +153,9 @@ class NotificationReconciler {
       if (desiredById.containsKey(entry.notificationKey)) {
         continue;
       }
-      if (!entry.family.isPersonalizedV2Owned) {
+      if (weeklyOnly
+          ? entry.family != NotificationFamily.weeklyReport
+          : !entry.family.isPersonalizedV2Owned) {
         continue;
       }
       final nativePending = nativeOwnedById[entry.notificationKey];
@@ -173,7 +176,8 @@ class NotificationReconciler {
     }
 
     for (final pending in osPendingNotifications) {
-      if (!pending.belongsToScope(desiredPlan.scope!)) {
+      if (!pending.belongsToScope(desiredPlan.scope!) ||
+          (weeklyOnly && pending.family != NotificationFamily.weeklyReport)) {
         continue;
       }
       final logicalId = pending.logicalNotificationId;

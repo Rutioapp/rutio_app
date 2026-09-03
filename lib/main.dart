@@ -67,6 +67,7 @@ import 'features/weekly_report/data/weekly_report_repository.dart';
 import 'features/weekly_report/domain/weekly_report.dart';
 import 'features/weekly_report/presentation/screens/weekly_report_screen.dart';
 import 'features/weekly_report/presentation/screens/weekly_report_history_screen.dart';
+import 'features/weekly_report/application/weekly_report_activation_service.dart';
 
 import 'screens/app_startup_gate.dart';
 import 'screens/welcome_screen.dart';
@@ -87,6 +88,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   NotificationService.instance.setNotificationInteractionHandler(
     _notificationInteractionRouter.receiveRawPayload,
+  );
+  NotificationService.instance.setNotificationResponseHandler(
+    _notificationInteractionRouter.receiveNotificationResponse,
   );
   _startupLog('[STARTUP] 03 after WidgetsFlutterBinding.ensureInitialized()');
   final shopCloudConfig = ShopCloudRuntimeConfig.compiled(
@@ -118,9 +122,13 @@ Future<void> main() async {
   try {
     _startupLog('[STARTUP] 08 before NotificationService.init()');
     await NotificationService.instance.init();
-    _notificationInteractionRouter.receiveRawPayload(
-      NotificationService.instance.takeLaunchPayload(),
-    );
+    final launchResponse = NotificationService.instance.takeLaunchResponse();
+    if (launchResponse != null) {
+      _notificationInteractionRouter.receiveNotificationResponse(
+        launchResponse,
+        source: 'coldStart',
+      );
+    }
     _startupLog('[STARTUP] 09 after NotificationService.init()');
   } catch (error, stackTrace) {
     debugPrint('[main] Notification init failed: $error');
@@ -301,6 +309,11 @@ class MyApp extends StatelessWidget {
             );
           },
         ),
+        Provider<WeeklyReportActivationService>(
+          create: (context) => WeeklyReportActivationService(
+            repository: context.read<WeeklyReportRepository>(),
+          ),
+        ),
         Provider<PersonalizedNotificationOrchestrator>(
           create: (context) {
             final userStateStore = context.read<UserStateStore>();
@@ -352,6 +365,7 @@ class MyApp extends StatelessWidget {
                 historyStore: historyStore,
                 executor: executor,
               ),
+              enableWeeklyReportProduct: true,
             );
             userStateStore.setNotificationMutationObserver(orchestrator);
             return orchestrator;
@@ -394,9 +408,19 @@ class MyApp extends StatelessWidget {
             essentialCosmeticsPreparer: ShopBootstrapEssentialCosmeticsPreparer(
               context.read<ShopCosmeticsController>(),
             ),
-            onHomeReady: (_) => context
-                .read<PersonalizedNotificationOrchestrator>()
-                .reconcileForBootstrapReady(),
+            onHomeReady: (ready) async {
+              final store = context.read<UserStateStore>();
+              await context
+                  .read<WeeklyReportActivationService>()
+                  .ensureActivated(
+                    userId: ready.userId,
+                    scopeEpoch: ready.scopeEpoch,
+                    timezoneResolver: store.getLocalIanaTimeZone,
+                  );
+              await context
+                  .read<PersonalizedNotificationOrchestrator>()
+                  .reconcileForBootstrapReady();
+            },
           ),
           update: (_, __, ___, ____, _____, controller) => controller!,
         ),

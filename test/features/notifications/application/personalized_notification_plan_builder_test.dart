@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:rutio/features/notifications/application/notification_context_builder.dart';
 import 'package:rutio/features/notifications/domain/personalized_notifications.dart';
 import 'package:rutio/services/phase1_notification_timing_registry.dart';
@@ -72,6 +74,78 @@ void main() {
   }
 
   group('PersonalizedNotificationPlanBuilder', () {
+    test('builds an owned debug weekly report entry outside product IDs',
+        () async {
+      final builder = PersonalizedNotificationPlanBuilder(
+        contextBuilder: _FakePlanningContextBuilder(buildContextResult()),
+        templateCatalog: InMemoryNotificationTemplateCatalog(
+          templates: <NotificationTemplateDescriptor>[],
+        ),
+        platformIdProvider: _FakePlatformIdProvider(),
+      );
+
+      final plan = await builder.buildWeeklyReportDebugOnly(
+        scope: buildScope(),
+        timezoneId: 'Europe/Madrid',
+        locale: 'es',
+        weekStart: DateTime(2026, 8, 31),
+        now: () => DateTime(2026, 9, 3, 20, 49),
+      );
+      final entry = plan.notifications.single;
+
+      expect(entry.logicalNotificationId,
+          'rutio:v2:debug:weekly_report_test:2026-08-31');
+      expect(entry.platformId, inInclusiveRange(60000, 60999));
+      expect(entry.payload.schema, 2);
+      expect(entry.payload.route, 'weekly-report');
+      expect(entry.payload.dateKey, '2026-08-31');
+      expect(entry.intendedLocalDateTime, DateTime(2026, 9, 3, 20, 50));
+    });
+
+    test('keeps the supplied IANA timezone for debug scheduling', () async {
+      final builder = PersonalizedNotificationPlanBuilder(
+        contextBuilder: _FakePlanningContextBuilder(buildContextResult()),
+        templateCatalog: InMemoryNotificationTemplateCatalog(
+          templates: <NotificationTemplateDescriptor>[],
+        ),
+        platformIdProvider: _FakePlatformIdProvider(),
+      );
+      final plan = await builder.buildWeeklyReportDebugOnly(
+        scope: buildScope(),
+        timezoneId: 'America/New_York',
+        locale: 'en',
+        weekStart: DateTime(2026, 11, 2),
+        now: () => DateTime(2026, 11, 1, 1, 59),
+      );
+
+      expect(
+          plan.notifications.single.timezoneIdAtPlanTime, 'America/New_York');
+      expect(plan.notifications.single.intendedLocalDateTime,
+          DateTime(2026, 11, 1, 2, 0));
+    });
+
+    test('resolves debug local wall-clock to the correct UTC instant', () {
+      tzdata.initializeTimeZones();
+      final madrid = tz.TZDateTime(
+        tz.getLocation('Europe/Madrid'),
+        2026,
+        9,
+        3,
+        21,
+        9,
+      );
+      final newYork = tz.TZDateTime(
+        tz.getLocation('America/New_York'),
+        2026,
+        11,
+        1,
+        20,
+      );
+
+      expect(madrid.toUtc(), DateTime.utc(2026, 9, 3, 19, 9));
+      expect(newYork.toUtc(), DateTime.utc(2026, 11, 2, 1));
+    });
+
     test('returns personalizedDisabled plan without creating desired entries',
         () async {
       final builder = PersonalizedNotificationPlanBuilder(

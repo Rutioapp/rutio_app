@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:rutio/features/notifications/application/notification_interaction_router.dart';
 import 'package:rutio/features/notifications/domain/notification_payload.dart';
 import 'package:rutio/features/notifications/domain/personalized_notification_models.dart';
@@ -95,6 +96,48 @@ void main() {
     await tester.pump();
 
     expect(drainCount, 0);
+  });
+
+  testWidgets(
+      'distinct notification ids with the same destination are processed',
+      (tester) async {
+    final drained = <NotificationPayloadV2>[];
+    final router = NotificationInteractionRouter(
+      drainForTesting: (payload) async => drained.add(payload),
+    );
+    final navigatorKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        home: Builder(
+          builder: (context) {
+            router.attach(context, navigatorKey);
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    final payload = _payload();
+    NotificationResponse response(int id) => NotificationResponse(
+          notificationResponseType:
+              NotificationResponseType.selectedNotification,
+          id: id,
+          payload: payload.encode(),
+        );
+
+    router.receiveNotificationResponse(response(60025));
+    await tester.pump();
+    await tester.pump();
+    router.receiveNotificationResponse(response(60026));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    router.receiveNotificationResponse(response(60026));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(drained, <NotificationPayloadV2>[payload, payload]);
   });
 }
 

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../l10n/l10n.dart';
 import '../../application/weekly_report_controller.dart';
+import '../../application/weekly_report_debug_notification_service.dart';
 import '../../domain/weekly_report.dart';
 import '../widgets/weekly_report_habits_section.dart';
 import '../weekly_report_copy_resolver.dart';
@@ -14,6 +15,9 @@ import 'weekly_report_history_screen.dart';
 import '../../../../stores/user_state_store.dart';
 import '../../../../screens/habit_detail/habit_detail_screen.dart';
 import '../../../../utils/family_theme.dart';
+import '../../../notifications/data/local/shared_preferences_notification_install_id_provider.dart';
+import '../../../notifications/application/personalized_notification_orchestrator.dart';
+import '../../../notifications/domain/personalized_notification_models.dart';
 
 class WeeklyReportScreen extends StatelessWidget {
   const WeeklyReportScreen({
@@ -37,6 +41,7 @@ class WeeklyReportScreen extends StatelessWidget {
         return WeeklyReportController(
           context.read<WeeklyReportRepository>(),
           timeZoneResolver: store.getLocalIanaTimeZone,
+          refreshCurrentOnLoad: true,
           isScopeCurrent: () =>
               store.scopeEpoch == initialEpoch &&
               (store.activeLocalScopeUserId ?? store.userId) == initialUser,
@@ -58,6 +63,7 @@ class _WeeklyReportView extends StatefulWidget {
 class _WeeklyReportViewState extends State<_WeeklyReportView> {
   bool _debugPreviewingRecommendation = false;
   bool _debugPreviewingReflection = false;
+  bool _debugNotificationScheduling = false;
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +126,10 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
               onExitDebugReflection: kDebugMode && _debugPreviewingReflection
                   ? () => setState(() => _debugPreviewingReflection = false)
                   : null,
+              onScheduleDebugNotification: kDebugMode
+                  ? () => _scheduleDebugNotification(state.snapshot.report)
+                  : null,
+              debugNotificationBusy: _debugNotificationScheduling,
             ),
         },
       ),
@@ -181,6 +191,54 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
       },
     );
   }
+
+  Future<void> _scheduleDebugNotification(WeeklyReport report) async {
+    if (_debugNotificationScheduling) return;
+    setState(() => _debugNotificationScheduling = true);
+    try {
+      final store = context.read<UserStateStore>();
+      final notificationOrchestrator =
+          context.read<PersonalizedNotificationOrchestrator>();
+      final userId = store.activeLocalScopeUserId ?? store.userId;
+      if (userId == null || userId.isEmpty) return;
+      final installId = await SharedPreferencesNotificationInstallIdProvider()
+          .getOrCreateInstallId();
+      if (!mounted) return;
+      final scope = NotificationScope(
+        userId: userId,
+        scopeEpoch: store.scopeEpoch,
+        installId: installId,
+        locale: store.preferredLocale?.languageCode ?? 'es',
+      );
+      final timezoneId = await store.getLocalIanaTimeZone();
+      if (timezoneId == null || timezoneId.isEmpty) {
+        throw StateError('device_timezone_unavailable');
+      }
+      await const WeeklyReportDebugNotificationService().scheduleFor(
+        report,
+        scope: scope,
+        orchestrator: notificationOrchestrator,
+        timezoneId: timezoneId,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              context.l10n.weeklyReportDebugNotificationScheduled,
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[WEEKLY_REPORT_NOTIFICATION_TEST] schedule failed type=${error.runtimeType}',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _debugNotificationScheduling = false);
+    }
+  }
 }
 
 class _ReportContent extends StatelessWidget {
@@ -192,6 +250,8 @@ class _ReportContent extends StatelessWidget {
     this.onExitDebugPreview,
     this.onEnterDebugReflection,
     this.onExitDebugReflection,
+    this.onScheduleDebugNotification,
+    this.debugNotificationBusy = false,
   });
   final WeeklyReportSnapshot snapshot;
   final bool debugReflection;
@@ -200,6 +260,8 @@ class _ReportContent extends StatelessWidget {
   final VoidCallback? onExitDebugPreview;
   final VoidCallback? onEnterDebugReflection;
   final VoidCallback? onExitDebugReflection;
+  final VoidCallback? onScheduleDebugNotification;
+  final bool debugNotificationBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -223,6 +285,12 @@ class _ReportContent extends StatelessWidget {
                   .refreshProvisionalDebug,
               busy:
                   context.watch<WeeklyReportController>().debugActionInProgress,
+            ),
+          if (kDebugMode && onScheduleDebugNotification != null)
+            WeeklyReportDebugAction(
+              label: context.l10n.weeklyReportDebugNotificationSchedule,
+              onPressed: onScheduleDebugNotification!,
+              busy: debugNotificationBusy,
             ),
           if (kDebugMode &&
               debugRecommendation == null &&

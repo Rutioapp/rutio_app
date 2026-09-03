@@ -10,10 +10,13 @@ import '../domain/notification_template_content.dart';
 import '../domain/personalized_notification_ids.dart';
 import '../domain/personalized_notification_models.dart';
 import '../domain/personalized_notification_ports.dart';
+import '../domain/weekly_report_notification_copy.dart';
 import 'notification_context_builder.dart';
 import 'notification_schedule_policy.dart';
 import 'phase1_spacing_policy.dart';
 import '../../../services/phase1_notification_timing_registry.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 class PersonalizedNotificationPlanBuilder {
   PersonalizedNotificationPlanBuilder({
@@ -51,6 +54,176 @@ class PersonalizedNotificationPlanBuilder {
   final NotificationHabitReminderLoadProvider _habitReminderLoadProvider;
   final Phase1NotificationTimingSource _phase1TimingSource;
   final Phase1SpacingPolicy _phase1SpacingPolicy;
+
+  Future<DesiredNotificationPlan> buildWeeklyReportOnly({
+    required NotificationScope scope,
+    required NotificationSchedulingCapabilities capabilities,
+    required String timezoneId,
+    required String locale,
+    bool masterEnabled = true,
+    DateTime Function()? now,
+  }) async {
+    final generatedAt = (now ?? DateTime.now)();
+    if (!masterEnabled || !capabilities.isAuthorized) {
+      return DesiredNotificationPlan.ready(
+        scope: scope,
+        generatedAt: generatedAt,
+        horizonStart: generatedAt,
+        horizonEnd: generatedAt.add(const Duration(days: 56)),
+        notifications: const <DesiredNotification>[],
+        opportunities: const <NotificationOpportunity>[],
+        diagnostics: DesiredNotificationPlanDiagnostics(
+          notes: <String>[
+            'weekly_only',
+            if (!masterEnabled) 'master_disabled' else 'permission_denied'
+          ],
+          usedWakeUpFallback: false,
+          habitReminderLoadUnavailable: false,
+        ),
+      );
+    }
+    tzdata.initializeTimeZones();
+    final location = tz.getLocation(timezoneId);
+    final localNow = tz.TZDateTime.from(generatedAt.toUtc(), location);
+    var monday = DateTime(localNow.year, localNow.month, localNow.day)
+        .subtract(Duration(days: localNow.weekday - 1));
+    final notifications = <DesiredNotification>[];
+    for (var i = 0; i < 8; i += 1) {
+      final weekStart = monday.add(Duration(days: i * 7));
+      final sunday = weekStart.add(const Duration(days: 6));
+      final scheduled = DateTime(sunday.year, sunday.month, sunday.day, 20);
+      final occurrence = tz.TZDateTime(
+          location, scheduled.year, scheduled.month, scheduled.day, 20);
+      if (!occurrence.isAfter(localNow)) continue;
+      final dateKey = _dateOnly(weekStart);
+      final logicalId = NotificationIdNamespace.buildNotificationKey(
+        family: NotificationFamily.weeklyReport,
+        kind: NotificationKind.futureWeeklyReport,
+        scope: scope,
+        entityRef: dateKey,
+        slot: 'weekly_report',
+      );
+      final platformId = await _platformIdProvider.getOrAllocate(
+        scope,
+        family: NotificationFamily.weeklyReport,
+        notificationKey: logicalId,
+        timezoneId: timezoneId,
+      );
+      final payload = NotificationPayloadV2(
+        schema: NotificationIdNamespace.payloadVersion,
+        family: NotificationFamily.weeklyReport,
+        kind: NotificationKind.futureWeeklyReport,
+        logicalId: logicalId,
+        templateId: 'weekly_report.review',
+        scopeHash: scope.scopeHash,
+        scopeEpoch: scope.scopeEpoch,
+        categoryTag: 'weeklyReport',
+        route: 'weekly-report',
+        dateKey: dateKey,
+      );
+      final title = WeeklyReportNotificationCopy.title(locale);
+      final body = WeeklyReportNotificationCopy.body(locale);
+      notifications.add(DesiredNotification(
+        logicalNotificationId: logicalId,
+        platformId: platformId,
+        kind: NotificationKind.futureWeeklyReport,
+        family: NotificationFamily.weeklyReport,
+        templateId: 'weekly_report.review',
+        renderedTitle: title,
+        renderedBody: body,
+        intendedLocalDateTime: scheduled,
+        timezoneSemantics: NotificationTimezoneSemantics.localCalendarDay,
+        timezoneIdAtPlanTime: timezoneId,
+        payload: payload,
+        fingerprint: '$logicalId|$timezoneId|$dateKey|$locale',
+        scope: scope,
+        categoryTag: 'weeklyReport',
+        opportunityId: 'weekly_report_$dateKey',
+        planVersion: 1,
+        metadata: const <String, String>{'source': 'weekly_report_product'},
+      ));
+    }
+    return DesiredNotificationPlan.ready(
+      scope: scope,
+      generatedAt: generatedAt,
+      horizonStart: generatedAt,
+      horizonEnd: generatedAt.add(const Duration(days: 56)),
+      notifications: notifications,
+      opportunities: const <NotificationOpportunity>[],
+      diagnostics: DesiredNotificationPlanDiagnostics(
+        notes: const <String>['weekly_only'],
+        usedWakeUpFallback: false,
+        habitReminderLoadUnavailable: false,
+      ),
+    );
+  }
+
+  Future<DesiredNotificationPlan> buildWeeklyReportDebugOnly({
+    required NotificationScope scope,
+    required String timezoneId,
+    required String locale,
+    required DateTime weekStart,
+    DateTime Function()? now,
+  }) async {
+    final generatedAt = (now ?? DateTime.now)();
+    final scheduledAt = generatedAt.add(const Duration(minutes: 1));
+    final dateKey = _dateOnly(weekStart);
+    final logicalId = 'rutio:v2:debug:weekly_report_test:$dateKey';
+    final payload = NotificationPayloadV2(
+      schema: NotificationIdNamespace.payloadVersion,
+      family: NotificationFamily.weeklyReport,
+      kind: NotificationKind.futureWeeklyReport,
+      logicalId: logicalId,
+      templateId: 'weekly_report.review',
+      scopeHash: scope.scopeHash,
+      scopeEpoch: scope.scopeEpoch,
+      categoryTag: 'weeklyReport',
+      route: 'weekly-report',
+      dateKey: dateKey,
+    );
+    final platformId = 60000 + _stableHash(dateKey) % 1000;
+    final notification = DesiredNotification(
+      logicalNotificationId: logicalId,
+      platformId: platformId,
+      kind: NotificationKind.futureWeeklyReport,
+      family: NotificationFamily.weeklyReport,
+      templateId: 'weekly_report.review',
+      renderedTitle: WeeklyReportNotificationCopy.title(locale),
+      renderedBody: WeeklyReportNotificationCopy.body(locale),
+      intendedLocalDateTime: scheduledAt,
+      timezoneSemantics: NotificationTimezoneSemantics.localCalendarDay,
+      timezoneIdAtPlanTime: timezoneId,
+      payload: payload,
+      fingerprint: '$logicalId|$timezoneId|$dateKey|$locale|$scheduledAt',
+      scope: scope,
+      categoryTag: 'weeklyReport',
+      opportunityId: 'weekly_report_debug_$dateKey',
+      planVersion: _planVersion,
+      metadata: const <String, String>{'source': 'weekly_report_debug'},
+    );
+    return DesiredNotificationPlan.ready(
+      scope: scope,
+      generatedAt: generatedAt,
+      horizonStart: generatedAt,
+      horizonEnd: scheduledAt,
+      notifications: <DesiredNotification>[notification],
+      opportunities: const <NotificationOpportunity>[],
+      diagnostics: DesiredNotificationPlanDiagnostics(
+        notes: const <String>['weekly_debug_only'],
+        usedWakeUpFallback: false,
+        habitReminderLoadUnavailable: false,
+      ),
+    );
+  }
+
+  static int _stableHash(String value) {
+    var hash = 0x811c9dc5;
+    for (final codeUnit in value.codeUnits) {
+      hash ^= codeUnit;
+      hash = (hash * 0x01000193) & 0x7fffffff;
+    }
+    return hash & 0x7fffffff;
+  }
 
   Future<DesiredNotificationPlan> build({
     required NotificationScope scope,
@@ -359,6 +532,9 @@ class PersonalizedNotificationPlanBuilder {
     debugPrint('[NOTIF_V2] $message');
   }
 }
+
+String _dateOnly(DateTime value) =>
+    '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 
 NotificationMessageHistorySnapshot _appendSyntheticHistory(
   NotificationMessageHistorySnapshot history,
