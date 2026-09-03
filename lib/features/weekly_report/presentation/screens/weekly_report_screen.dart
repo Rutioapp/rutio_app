@@ -7,6 +7,7 @@ import '../../../../l10n/l10n.dart';
 import '../../application/weekly_report_controller.dart';
 import '../../domain/weekly_report.dart';
 import '../widgets/weekly_report_habits_section.dart';
+import '../weekly_report_copy_resolver.dart';
 import '../widgets/weekly_report_recommendation.dart';
 import '../widgets/weekly_report_reflection.dart';
 import '../../../../stores/user_state_store.dart';
@@ -370,6 +371,11 @@ class _SummaryCard extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF2F251C))),
         const SizedBox(height: 6),
+        Text(WeeklyReportCopyResolver.summary(l10n, report),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Color(0xFF5F554A))),
+        const SizedBox(height: 8),
         Row(children: [
           Expanded(
               child: _Metric(

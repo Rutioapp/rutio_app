@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../l10n/l10n.dart';
 import '../../../habits/domain/metrics/habit_occurrence_result.dart';
 import '../../domain/weekly_report.dart';
+import '../weekly_report_copy_resolver.dart';
 
 /// Compact, snapshot-only rendering of the habits part of a weekly report.
 class WeeklyReportHabitsSection extends StatefulWidget {
@@ -258,6 +259,16 @@ class _WeeklyReportHabitRow extends StatelessWidget {
                           color: Color(0xFF5F554A))),
                   const SizedBox(height: 4),
                   _HabitDayDots(habit: habit),
+                  if (WeeklyReportCopyResolver.observation(context.l10n, habit)
+                      case final observation?)
+                    Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(observation,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                                fontSize: 10, color: Color(0xFF746A60)))),
                   if (streakText != null)
                     Align(
                         alignment: Alignment.centerRight,

@@ -8626,6 +8626,618 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Ha ocurrido un problema al enviar tu feedback. Inténtalo de nuevo.'**
   String get feedbackSubmitErrorGeneric;
+
+  /// No description provided for @weeklyReportSummaryFirstPartial01.
+  ///
+  /// In es, this message translates to:
+  /// **'Es tu primera lectura semanal; aún queda tiempo para ver cómo evoluciona.'**
+  String get weeklyReportSummaryFirstPartial01;
+
+  /// No description provided for @weeklyReportSummaryProvisional01.
+  ///
+  /// In es, this message translates to:
+  /// **'Por ahora, tu semana va tomando forma.'**
+  String get weeklyReportSummaryProvisional01;
+
+  /// No description provided for @weeklyReportSummaryNoSchedule01.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana no había hábitos programados para comparar.'**
+  String get weeklyReportSummaryNoSchedule01;
+
+  /// No description provided for @weeklyReportSummaryStrong01.
+  ///
+  /// In es, this message translates to:
+  /// **'Has mantenido un ritmo muy sólido esta semana.'**
+  String get weeklyReportSummaryStrong01;
+
+  /// No description provided for @weeklyReportSummaryGood01.
+  ///
+  /// In es, this message translates to:
+  /// **'Hubo una buena continuidad esta semana.'**
+  String get weeklyReportSummaryGood01;
+
+  /// No description provided for @weeklyReportSummaryMixed01.
+  ///
+  /// In es, this message translates to:
+  /// **'Hubo avances esta semana, aunque aún queda margen para ganar consistencia.'**
+  String get weeklyReportSummaryMixed01;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery01.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana tuvo más altibajos. La próxima empieza con una nueva oportunidad.'**
+  String get weeklyReportSummaryNeedsRecovery01;
+
+  /// No description provided for @weeklyReportSummaryImproved01.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu ritmo mejoró respecto a la semana anterior.'**
+  String get weeklyReportSummaryImproved01;
+
+  /// No description provided for @weeklyReportSummaryDeclined01.
+  ///
+  /// In es, this message translates to:
+  /// **'El ritmo fue algo menor que la semana anterior, sin perder la perspectiva.'**
+  String get weeklyReportSummaryDeclined01;
+
+  /// No description provided for @weeklyReportHabitHighlighted01.
+  ///
+  /// In es, this message translates to:
+  /// **'Has mantenido un ritmo muy sólido.'**
+  String get weeklyReportHabitHighlighted01;
+
+  /// No description provided for @weeklyReportHabitStable01.
+  ///
+  /// In es, this message translates to:
+  /// **'El ritmo se mantuvo bastante estable.'**
+  String get weeklyReportHabitStable01;
+
+  /// No description provided for @weeklyReportHabitNeedsAttention01.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana costó mantener el ritmo.'**
+  String get weeklyReportHabitNeedsAttention01;
+
+  /// No description provided for @weeklyReportSummaryFirstPartial02.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu primer reporte empieza a tomar forma. Esta semana todavía recoge solo una parte del camino.'**
+  String get weeklyReportSummaryFirstPartial02;
+
+  /// No description provided for @weeklyReportSummaryFirstPartial03.
+  ///
+  /// In es, this message translates to:
+  /// **'Un primer vistazo a tu ritmo. La próxima semana nos dará una imagen mucho más completa.'**
+  String get weeklyReportSummaryFirstPartial03;
+
+  /// No description provided for @weeklyReportSummaryFirstPartial04.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tenemos una primera referencia. Tómala como un punto de partida, no como una semana completa.'**
+  String get weeklyReportSummaryFirstPartial04;
+
+  /// No description provided for @weeklyReportSummaryFirstPartial05.
+  ///
+  /// In es, this message translates to:
+  /// **'Este primer reporte cubre solo parte de la semana, pero ya empieza a mostrar cómo se mueve tu rutina.'**
+  String get weeklyReportSummaryFirstPartial05;
+
+  /// No description provided for @weeklyReportSummaryFirstPartial06.
+  ///
+  /// In es, this message translates to:
+  /// **'Primeros datos, primera perspectiva. Con una semana completa podremos comparar mejor tu ritmo.'**
+  String get weeklyReportSummaryFirstPartial06;
+
+  /// No description provided for @weeklyReportSummaryFirstPartial07.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu reporte semanal ya está en marcha. Por ahora, quédate con él como una primera fotografía de tus hábitos.'**
+  String get weeklyReportSummaryFirstPartial07;
+
+  /// No description provided for @weeklyReportSummaryFirstPartial08.
+  ///
+  /// In es, this message translates to:
+  /// **'Esto acaba de empezar. Los próximos reportes tendrán más contexto para enseñarte cómo evoluciona tu semana.'**
+  String get weeklyReportSummaryFirstPartial08;
+
+  /// No description provided for @weeklyReportSummaryProvisional02.
+  ///
+  /// In es, this message translates to:
+  /// **'Este es solo un vistazo provisional. La semana aún tiene margen para cambiar.'**
+  String get weeklyReportSummaryProvisional02;
+
+  /// No description provided for @weeklyReportSummaryProvisional03.
+  ///
+  /// In es, this message translates to:
+  /// **'De momento, este es el ritmo de tu semana. El reporte seguirá actualizándose hasta el cierre.'**
+  String get weeklyReportSummaryProvisional03;
+
+  /// No description provided for @weeklyReportSummaryProvisional04.
+  ///
+  /// In es, this message translates to:
+  /// **'La semana sigue abierta. Estos datos muestran dónde estás ahora, no dónde terminarás.'**
+  String get weeklyReportSummaryProvisional04;
+
+  /// No description provided for @weeklyReportSummaryProvisional05.
+  ///
+  /// In es, this message translates to:
+  /// **'Así va tu semana por el momento. Lo que hagas en los próximos días todavía contará.'**
+  String get weeklyReportSummaryProvisional05;
+
+  /// No description provided for @weeklyReportSummaryProvisional06.
+  ///
+  /// In es, this message translates to:
+  /// **'Una fotografía del momento, no el resultado final. El reporte seguirá evolucionando contigo.'**
+  String get weeklyReportSummaryProvisional06;
+
+  /// No description provided for @weeklyReportSummaryProvisional07.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu semana todavía está en movimiento. Este resumen se irá completando a medida que avances.'**
+  String get weeklyReportSummaryProvisional07;
+
+  /// No description provided for @weeklyReportSummaryProvisional08.
+  ///
+  /// In es, this message translates to:
+  /// **'Por ahora ya se empieza a ver un patrón, aunque la semana todavía no ha dicho su última palabra.'**
+  String get weeklyReportSummaryProvisional08;
+
+  /// No description provided for @weeklyReportSummaryNoSchedule02.
+  ///
+  /// In es, this message translates to:
+  /// **'No hubo hábitos previstos esta semana. El reporte queda como una semana sin programación.'**
+  String get weeklyReportSummaryNoSchedule02;
+
+  /// No description provided for @weeklyReportSummaryNoSchedule03.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana no tenía objetivos programados. La próxima empezará con una nueva referencia.'**
+  String get weeklyReportSummaryNoSchedule03;
+
+  /// No description provided for @weeklyReportSummaryNoSchedule04.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin hábitos programados, no tendría sentido valorar tu cumplimiento. Esta semana queda neutral.'**
+  String get weeklyReportSummaryNoSchedule04;
+
+  /// No description provided for @weeklyReportSummaryNoSchedule05.
+  ///
+  /// In es, this message translates to:
+  /// **'No había nada programado para esta semana. Aquí no hay buenos ni malos resultados que interpretar.'**
+  String get weeklyReportSummaryNoSchedule05;
+
+  /// No description provided for @weeklyReportSummaryNoSchedule06.
+  ///
+  /// In es, this message translates to:
+  /// **'Una semana sin programación también forma parte del camino. El reporte volverá a tomar forma cuando haya hábitos previstos.'**
+  String get weeklyReportSummaryNoSchedule06;
+
+  /// No description provided for @weeklyReportSummaryStrong02.
+  ///
+  /// In es, this message translates to:
+  /// **'Una semana consistente, con muchos de tus planes convertidos en hechos.'**
+  String get weeklyReportSummaryStrong02;
+
+  /// No description provided for @weeklyReportSummaryStrong03.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana deja una base muy sólida sobre la que seguir construyendo.'**
+  String get weeklyReportSummaryStrong03;
+
+  /// No description provided for @weeklyReportSummaryStrong04.
+  ///
+  /// In es, this message translates to:
+  /// **'Buen ritmo y mucha continuidad. La semana ha sido especialmente consistente.'**
+  String get weeklyReportSummaryStrong04;
+
+  /// No description provided for @weeklyReportSummaryStrong05.
+  ///
+  /// In es, this message translates to:
+  /// **'Tus hábitos han tenido una semana muy estable. Mantener este ritmo ya es un gran resultado.'**
+  String get weeklyReportSummaryStrong05;
+
+  /// No description provided for @weeklyReportSummaryStrong06.
+  ///
+  /// In es, this message translates to:
+  /// **'Has estado cerca de lo que te habías propuesto durante buena parte de la semana.'**
+  String get weeklyReportSummaryStrong06;
+
+  /// No description provided for @weeklyReportSummaryStrong07.
+  ///
+  /// In es, this message translates to:
+  /// **'Una semana con mucha continuidad. No hace falta complicarlo más: sigue construyendo desde aquí.'**
+  String get weeklyReportSummaryStrong07;
+
+  /// No description provided for @weeklyReportSummaryStrong08.
+  ///
+  /// In es, this message translates to:
+  /// **'La constancia ha tenido bastante peso esta semana. Llegas a la próxima con una buena base.'**
+  String get weeklyReportSummaryStrong08;
+
+  /// No description provided for @weeklyReportSummaryStrong09.
+  ///
+  /// In es, this message translates to:
+  /// **'Muchos pequeños cumplimientos han terminado formando una semana muy sólida.'**
+  String get weeklyReportSummaryStrong09;
+
+  /// No description provided for @weeklyReportSummaryStrong10.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana muestra un ritmo difícil de conseguir por casualidad. Hay consistencia detrás de estos números.'**
+  String get weeklyReportSummaryStrong10;
+
+  /// No description provided for @weeklyReportSummaryGood02.
+  ///
+  /// In es, this message translates to:
+  /// **'La mayor parte de la semana estuvo bien encaminada. Hay una base clara para seguir avanzando.'**
+  String get weeklyReportSummaryGood02;
+
+  /// No description provided for @weeklyReportSummaryGood03.
+  ///
+  /// In es, this message translates to:
+  /// **'Has mantenido un buen ritmo general, aunque todavía queda algo de margen para hacerlo más estable.'**
+  String get weeklyReportSummaryGood03;
+
+  /// No description provided for @weeklyReportSummaryGood04.
+  ///
+  /// In es, this message translates to:
+  /// **'Una semana positiva y bastante consistente. No todo tiene que salir perfecto para avanzar.'**
+  String get weeklyReportSummaryGood04;
+
+  /// No description provided for @weeklyReportSummaryGood05.
+  ///
+  /// In es, this message translates to:
+  /// **'El balance de la semana es bueno. Has mantenido presentes muchos de tus hábitos.'**
+  String get weeklyReportSummaryGood05;
+
+  /// No description provided for @weeklyReportSummaryGood06.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana tuvo más continuidad que interrupciones. Es una buena base para la siguiente.'**
+  String get weeklyReportSummaryGood06;
+
+  /// No description provided for @weeklyReportSummaryGood07.
+  ///
+  /// In es, this message translates to:
+  /// **'Vas construyendo un ritmo sólido sin necesidad de que cada día sea perfecto.'**
+  String get weeklyReportSummaryGood07;
+
+  /// No description provided for @weeklyReportSummaryGood08.
+  ///
+  /// In es, this message translates to:
+  /// **'La semana deja buenas señales de continuidad. Ahora se trata de hacerlas cada vez más habituales.'**
+  String get weeklyReportSummaryGood08;
+
+  /// No description provided for @weeklyReportSummaryGood09.
+  ///
+  /// In es, this message translates to:
+  /// **'Has completado una parte importante de lo que tenías previsto. Buen punto de partida para seguir afinando.'**
+  String get weeklyReportSummaryGood09;
+
+  /// No description provided for @weeklyReportSummaryGood10.
+  ///
+  /// In es, this message translates to:
+  /// **'El ritmo general ha sido bueno. La siguiente semana puede servir para consolidar lo que ya está funcionando.'**
+  String get weeklyReportSummaryGood10;
+
+  /// No description provided for @weeklyReportSummaryMixed02.
+  ///
+  /// In es, this message translates to:
+  /// **'Hubo avances, aunque la continuidad fue cambiando a lo largo de la semana.'**
+  String get weeklyReportSummaryMixed02;
+
+  /// No description provided for @weeklyReportSummaryMixed03.
+  ///
+  /// In es, this message translates to:
+  /// **'Una semana con luces y sombras. Hay hábitos que ya tienen buena base y otros que todavía buscan su sitio.'**
+  String get weeklyReportSummaryMixed03;
+
+  /// No description provided for @weeklyReportSummaryMixed04.
+  ///
+  /// In es, this message translates to:
+  /// **'El ritmo fue irregular, pero hubo suficientes avances como para saber por dónde seguir.'**
+  String get weeklyReportSummaryMixed04;
+
+  /// No description provided for @weeklyReportSummaryMixed05.
+  ///
+  /// In es, this message translates to:
+  /// **'No fue una semana lineal, y está bien. El reporte ya empieza a mostrar dónde resulta más fácil mantener el ritmo.'**
+  String get weeklyReportSummaryMixed05;
+
+  /// No description provided for @weeklyReportSummaryMixed06.
+  ///
+  /// In es, this message translates to:
+  /// **'Algunas partes de la semana funcionaron mejor que otras. La próxima puede servir para simplificar y ajustar.'**
+  String get weeklyReportSummaryMixed06;
+
+  /// No description provided for @weeklyReportSummaryMixed07.
+  ///
+  /// In es, this message translates to:
+  /// **'Hubo constancia en algunos momentos y más dificultad en otros. Una semana útil para observar patrones.'**
+  String get weeklyReportSummaryMixed07;
+
+  /// No description provided for @weeklyReportSummaryMixed08.
+  ///
+  /// In es, this message translates to:
+  /// **'El balance queda a medio camino. Hay progreso, pero también espacio para encontrar más continuidad.'**
+  String get weeklyReportSummaryMixed08;
+
+  /// No description provided for @weeklyReportSummaryMixed09.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana no siguió un único ritmo. Quédate con lo que funcionó y construye desde ahí.'**
+  String get weeklyReportSummaryMixed09;
+
+  /// No description provided for @weeklyReportSummaryMixed10.
+  ///
+  /// In es, this message translates to:
+  /// **'Una semana irregular también aporta información. Ya tienes una referencia para decidir dónde poner el foco después.'**
+  String get weeklyReportSummaryMixed10;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery02.
+  ///
+  /// In es, this message translates to:
+  /// **'No ha sido la semana más constante, pero sigue siendo información útil para ajustar el rumbo.'**
+  String get weeklyReportSummaryNeedsRecovery02;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery03.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana tuvo más interrupciones de lo habitual. Quizá la siguiente sea un buen momento para simplificar.'**
+  String get weeklyReportSummaryNeedsRecovery03;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery04.
+  ///
+  /// In es, this message translates to:
+  /// **'El ritmo quedó por debajo de lo previsto. No hace falta compensarlo todo de golpe.'**
+  String get weeklyReportSummaryNeedsRecovery04;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery05.
+  ///
+  /// In es, this message translates to:
+  /// **'Hubo menos continuidad esta semana. Volver a una base sencilla puede ser suficiente para empezar de nuevo.'**
+  String get weeklyReportSummaryNeedsRecovery05;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery06.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana fue más difícil de sostener. La próxima no necesita ser perfecta, solo un poco más llevadera.'**
+  String get weeklyReportSummaryNeedsRecovery06;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery07.
+  ///
+  /// In es, this message translates to:
+  /// **'Los hábitos encontraron más obstáculos esta semana. El siguiente paso puede ser simplemente recuperar el ritmo.'**
+  String get weeklyReportSummaryNeedsRecovery07;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery08.
+  ///
+  /// In es, this message translates to:
+  /// **'No todas las semanas encajan igual. Esta deja pistas sobre qué hábitos quizá necesiten un pequeño ajuste.'**
+  String get weeklyReportSummaryNeedsRecovery08;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery09.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana avanzó más despacio. A veces reducir fricción es más útil que intentar hacer más.'**
+  String get weeklyReportSummaryNeedsRecovery09;
+
+  /// No description provided for @weeklyReportSummaryNeedsRecovery10.
+  ///
+  /// In es, this message translates to:
+  /// **'El balance ha sido más irregular de lo previsto. La próxima semana ofrece una nueva oportunidad para reorganizar el ritmo.'**
+  String get weeklyReportSummaryNeedsRecovery10;
+
+  /// No description provided for @weeklyReportSummaryImproved02.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu ritmo ha mejorado esta semana. Una señal pequeña, pero importante.'**
+  String get weeklyReportSummaryImproved02;
+
+  /// No description provided for @weeklyReportSummaryImproved03.
+  ///
+  /// In es, this message translates to:
+  /// **'Hay una evolución positiva respecto al último reporte.'**
+  String get weeklyReportSummaryImproved03;
+
+  /// No description provided for @weeklyReportSummaryImproved04.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana muestra más continuidad que la anterior. Buen momento para consolidarla.'**
+  String get weeklyReportSummaryImproved04;
+
+  /// No description provided for @weeklyReportSummaryImproved05.
+  ///
+  /// In es, this message translates to:
+  /// **'Has conseguido mover la semana en una dirección positiva respecto a la anterior.'**
+  String get weeklyReportSummaryImproved05;
+
+  /// No description provided for @weeklyReportSummaryImproved06.
+  ///
+  /// In es, this message translates to:
+  /// **'El progreso respecto a la semana pasada ya se empieza a notar en tus números.'**
+  String get weeklyReportSummaryImproved06;
+
+  /// No description provided for @weeklyReportSummaryImproved07.
+  ///
+  /// In es, this message translates to:
+  /// **'Un poco más de constancia que la semana anterior. Ese tipo de cambio es el que termina acumulándose.'**
+  String get weeklyReportSummaryImproved07;
+
+  /// No description provided for @weeklyReportSummaryImproved08.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana ha funcionado mejor que la anterior. Quédate con lo que te ayudó a mantener el ritmo.'**
+  String get weeklyReportSummaryImproved08;
+
+  /// No description provided for @weeklyReportSummaryDeclined02.
+  ///
+  /// In es, this message translates to:
+  /// **'El ritmo bajó respecto al último reporte. Puede ser un buen momento para revisar qué merece simplificarse.'**
+  String get weeklyReportSummaryDeclined02;
+
+  /// No description provided for @weeklyReportSummaryDeclined03.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana quedó algo por debajo de la anterior. La siguiente puede empezar con objetivos más fáciles de sostener.'**
+  String get weeklyReportSummaryDeclined03;
+
+  /// No description provided for @weeklyReportSummaryDeclined04.
+  ///
+  /// In es, this message translates to:
+  /// **'Hubo menos constancia que la semana pasada. Tómalo como una señal para observar, no como un paso atrás definitivo.'**
+  String get weeklyReportSummaryDeclined04;
+
+  /// No description provided for @weeklyReportSummaryDeclined05.
+  ///
+  /// In es, this message translates to:
+  /// **'Los números bajaron un poco esta semana. Una variación puntual no define tu progreso.'**
+  String get weeklyReportSummaryDeclined05;
+
+  /// No description provided for @weeklyReportSummaryDeclined06.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana perdió algo de ritmo respecto a la anterior. La próxima puede servir para recuperar una base sencilla.'**
+  String get weeklyReportSummaryDeclined06;
+
+  /// No description provided for @weeklyReportSummaryDeclined07.
+  ///
+  /// In es, this message translates to:
+  /// **'La continuidad fue menor que la semana pasada. Quizá sea suficiente con volver a lo esencial.'**
+  String get weeklyReportSummaryDeclined07;
+
+  /// No description provided for @weeklyReportSummaryDeclined08.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta semana ha sido algo más irregular que la anterior. El siguiente reporte será otra oportunidad para cambiar la tendencia.'**
+  String get weeklyReportSummaryDeclined08;
+
+  /// No description provided for @weeklyReportHabitHighlighted02.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito tuvo una semana especialmente consistente.'**
+  String get weeklyReportHabitHighlighted02;
+
+  /// No description provided for @weeklyReportHabitHighlighted03.
+  ///
+  /// In es, this message translates to:
+  /// **'La continuidad ha sido una de las fortalezas de este hábito esta semana.'**
+  String get weeklyReportHabitHighlighted03;
+
+  /// No description provided for @weeklyReportHabitHighlighted04.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito se mantuvo muy cerca de lo que tenías previsto.'**
+  String get weeklyReportHabitHighlighted04;
+
+  /// No description provided for @weeklyReportHabitHighlighted05.
+  ///
+  /// In es, this message translates to:
+  /// **'Una semana muy estable para este hábito. Buena base para seguir.'**
+  String get weeklyReportHabitHighlighted05;
+
+  /// No description provided for @weeklyReportHabitHighlighted06.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí la constancia ha tenido bastante peso esta semana.'**
+  String get weeklyReportHabitHighlighted06;
+
+  /// No description provided for @weeklyReportHabitHighlighted07.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito encontró un ritmo que parece estar funcionando bien.'**
+  String get weeklyReportHabitHighlighted07;
+
+  /// No description provided for @weeklyReportHabitHighlighted08.
+  ///
+  /// In es, this message translates to:
+  /// **'Muchos de los momentos previstos terminaron convirtiéndose en cumplimientos.'**
+  String get weeklyReportHabitHighlighted08;
+
+  /// No description provided for @weeklyReportHabitStable02.
+  ///
+  /// In es, this message translates to:
+  /// **'Hay una buena base de continuidad sobre la que seguir construyendo.'**
+  String get weeklyReportHabitStable02;
+
+  /// No description provided for @weeklyReportHabitStable03.
+  ///
+  /// In es, this message translates to:
+  /// **'El hábito estuvo presente durante buena parte de la semana.'**
+  String get weeklyReportHabitStable03;
+
+  /// No description provided for @weeklyReportHabitStable04.
+  ///
+  /// In es, this message translates to:
+  /// **'Una semana razonablemente constante para este hábito.'**
+  String get weeklyReportHabitStable04;
+
+  /// No description provided for @weeklyReportHabitStable05.
+  ///
+  /// In es, this message translates to:
+  /// **'El ritmo está ahí; ahora se trata de hacerlo cada vez más natural.'**
+  String get weeklyReportHabitStable05;
+
+  /// No description provided for @weeklyReportHabitStable06.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito avanzó con bastante regularidad, aunque todavía tiene margen para consolidarse.'**
+  String get weeklyReportHabitStable06;
+
+  /// No description provided for @weeklyReportHabitStable07.
+  ///
+  /// In es, this message translates to:
+  /// **'La semana deja una base suficientemente estable para seguir ajustando poco a poco.'**
+  String get weeklyReportHabitStable07;
+
+  /// No description provided for @weeklyReportHabitStable08.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí hubo más continuidad que interrupciones. Un buen punto desde el que seguir.'**
+  String get weeklyReportHabitStable08;
+
+  /// No description provided for @weeklyReportHabitNeedsAttention02.
+  ///
+  /// In es, this message translates to:
+  /// **'El ritmo quedó algo por debajo de lo que tenías previsto.'**
+  String get weeklyReportHabitNeedsAttention02;
+
+  /// No description provided for @weeklyReportHabitNeedsAttention03.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito tuvo una semana más irregular. Quizá un pequeño ajuste ayude a hacerlo más llevadero.'**
+  String get weeklyReportHabitNeedsAttention03;
+
+  /// No description provided for @weeklyReportHabitNeedsAttention04.
+  ///
+  /// In es, this message translates to:
+  /// **'Hubo menos oportunidades completadas esta semana. La próxima puede servir para recuperar una base sencilla.'**
+  String get weeklyReportHabitNeedsAttention04;
+
+  /// No description provided for @weeklyReportHabitNeedsAttention05.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito encontró más fricción esta semana. Simplificar puede ser un buen siguiente paso.'**
+  String get weeklyReportHabitNeedsAttention05;
+
+  /// No description provided for @weeklyReportHabitNeedsAttention06.
+  ///
+  /// In es, this message translates to:
+  /// **'La continuidad fue limitada esta semana, pero ya tienes una referencia para ajustar el ritmo.'**
+  String get weeklyReportHabitNeedsAttention06;
+
+  /// No description provided for @weeklyReportHabitNeedsAttention07.
+  ///
+  /// In es, this message translates to:
+  /// **'No terminó de asentarse esta semana. La siguiente puede ser una oportunidad para probar un enfoque más fácil de sostener.'**
+  String get weeklyReportHabitNeedsAttention07;
+
+  /// No description provided for @weeklyReportHabitNeedsAttention08.
+  ///
+  /// In es, this message translates to:
+  /// **'Este hábito necesita algo más de espacio para encontrar un ritmo estable.'**
+  String get weeklyReportHabitNeedsAttention08;
 }
 
 class _AppLocalizationsDelegate

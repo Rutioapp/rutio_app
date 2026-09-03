@@ -52,6 +52,7 @@ WeeklyReport mapRemoteWeeklyReport(RemoteWeeklyReport remote) {
             proposedPatch: r.proposedPatch,
             policyVersion: r.policyVersion))
         .toList(growable: false),
+    summaryMessageKey: h.messageKeys.isEmpty ? null : h.messageKeys.first,
   );
 }
 
@@ -71,6 +72,7 @@ WeeklyReportHabit _habit(RemoteWeeklyReportHabit h) => WeeklyReportHabit(
       occurrences: h.occurrences.map(_occurrence).toList(growable: false),
       streakSnapshot:
           h.streakSnapshot == null ? null : _streakSnapshot(h.streakSnapshot!),
+      observationKey: h.observationKey,
     );
 
 HabitStreakSnapshot _streakSnapshot(Map<String, dynamic> value) =>
