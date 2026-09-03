@@ -31,7 +31,8 @@ class HabitStatsLast7DaysCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 7),
                 _DayCircle(
-                  key: Key('habit_stats_day_circle_${index}_${days[index].state.name}'),
+                  key: Key(
+                      'habit_stats_day_circle_${index}_${days[index].state.name}'),
                   state: days[index].state,
                 ),
               ],

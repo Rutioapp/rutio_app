@@ -39,6 +39,7 @@ class HabitDetailScreen extends StatefulWidget {
   final Color familyColor;
   final int initialTab; // 0=Editar, 1=Stats
   final HabitDetailScreenMode mode;
+  final Map<String, dynamic>? proposedPatch;
 
   final void Function(dynamic updatedHabit)? onSaveHabit;
   final void Function(BuildContext context)? onOpenStats;
@@ -49,6 +50,7 @@ class HabitDetailScreen extends StatefulWidget {
     required this.familyColor,
     this.initialTab = 0,
     this.mode = HabitDetailScreenMode.full,
+    this.proposedPatch,
     this.onSaveHabit,
     this.onOpenStats,
   });
@@ -540,6 +542,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
                     setState(() => _title = t.trim());
                   },
                   onSaved: _handleSaved,
+                  proposedPatch: widget.proposedPatch,
                 )
               : TabBarView(
                   controller: _tabController,
@@ -556,6 +559,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
                         setState(() => _title = t.trim());
                       },
                       onSaved: _handleSaved,
+                      proposedPatch: widget.proposedPatch,
                     ),
                     HabitStatsTab(
                       key: ValueKey(

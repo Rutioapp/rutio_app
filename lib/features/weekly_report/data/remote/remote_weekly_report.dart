@@ -243,13 +243,36 @@ class RemoteWeeklyReportHabit {
 
 class RemoteWeeklyReportRecommendation {
   const RemoteWeeklyReportRecommendation(
-      {required this.type, required this.reason});
+      {required this.type,
+      required this.reason,
+      required this.habitId,
+      required this.habitName,
+      required this.emoji,
+      required this.currentConfig,
+      required this.proposedPatch,
+      required this.policyVersion});
   final String type, reason;
+  final String? habitId, habitName, emoji;
+  final Map<String, dynamic> currentConfig, proposedPatch;
+  final int policyVersion;
   factory RemoteWeeklyReportRecommendation.fromJson(Object? v) {
     final m = _object(v, 'recommendation');
     return RemoteWeeklyReportRecommendation(
         type: _string(m['type'], 'recommendation.type'),
-        reason: _string(m['reason'], 'recommendation.reason'));
+        reason: _string(m['reason'], 'recommendation.reason'),
+        habitId: m['habitId'] == null
+            ? null
+            : _id(m['habitId'], 'recommendation.habitId'),
+        habitName: m['habitName'] == null
+            ? null
+            : _string(m['habitName'], 'recommendation.habitName'),
+        emoji: m['emoji'] as String?,
+        currentConfig: _object(
+            m['currentConfig'] ?? const {}, 'recommendation.currentConfig'),
+        proposedPatch: _object(
+            m['proposedPatch'] ?? const {}, 'recommendation.proposedPatch'),
+        policyVersion: _positiveInt(
+            m['policyVersion'] ?? 1, 'recommendation.policyVersion'));
   }
 }
 

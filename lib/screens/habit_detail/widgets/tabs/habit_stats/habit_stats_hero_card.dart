@@ -288,4 +288,5 @@ String _daysUnit(AppLocalizations l10n, int value) {
   return value == 1 ? 'day' : 'days';
 }
 
-String _daysLabel(AppLocalizations l10n, int value) => '$value ${_daysUnit(l10n, value)}';
+String _daysLabel(AppLocalizations l10n, int value) =>
+    '$value ${_daysUnit(l10n, value)}';

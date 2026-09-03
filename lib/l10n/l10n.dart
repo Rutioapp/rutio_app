@@ -4,6 +4,38 @@ import '../core/notifications/notification_permission_service.dart';
 import '../core/permissions/app_permission.dart';
 import 'gen/app_localizations.dart';
 
+extension WeeklyReportRecommendationL10n on AppLocalizations {
+  bool get _weeklyRecommendationEs => localeName.toLowerCase().startsWith('es');
+  String get weeklyReportRecommendationTitle => _weeklyRecommendationEs
+      ? 'Un pequeño ajuste para la próxima semana'
+      : 'A small adjustment for next week';
+  String get weeklyReportRecommendationCta =>
+      _weeklyRecommendationEs ? 'Revisar ajuste' : 'Review adjustment';
+  String get weeklyReportRecommendationUnavailable => _weeklyRecommendationEs
+      ? 'Este hábito ya no está disponible.'
+      : 'This habit is no longer available.';
+  String get weeklyReportRecommendationUnavailableHabit =>
+      _weeklyRecommendationEs ? 'Hábito' : 'Habit';
+  String weeklyReportRecommendationReason(
+          String name, int completed, int scheduled) =>
+      _weeklyRecommendationEs
+          ? 'Esta semana completaste $completed de $scheduled.'
+          : 'This week you completed $completed of $scheduled.';
+  String weeklyReportRecommendationAdjustment(int current, int proposed) =>
+      _weeklyRecommendationEs
+          ? 'Probar con $proposed días puede ayudarte a mantener el ritmo.'
+          : 'Trying $proposed days may help you keep your rhythm.';
+  String get weeklyReportRecommendationStale => _weeklyRecommendationEs
+      ? 'Este hábito cambió desde el reporte. Revisa los valores actuales antes de guardar.'
+      : 'This habit changed since the report. Review the current values before saving.';
+  String get weeklyReportRecommendationDebugPreview => _weeklyRecommendationEs
+      ? 'Previsualizar recomendación · Debug'
+      : 'Preview recommendation · Debug';
+  String get weeklyReportRecommendationDebugExit => _weeklyRecommendationEs
+      ? 'Salir de previsualización · Debug'
+      : 'Exit preview · Debug';
+}
+
 extension L10nX on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 }

@@ -479,6 +479,15 @@ Map<String, dynamic> _payloadJson(RemoteWeeklyReport p) => {
               })
           .toList(),
       'recommendations': p.recommendations
-          .map((r) => {'type': r.type, 'reason': r.reason})
+          .map((r) => {
+                'type': r.type,
+                'reason': r.reason,
+                'habitId': r.habitId,
+                'habitName': r.habitName,
+                'emoji': r.emoji,
+                'currentConfig': r.currentConfig,
+                'proposedPatch': r.proposedPatch,
+                'policyVersion': r.policyVersion,
+              })
           .toList(),
     };

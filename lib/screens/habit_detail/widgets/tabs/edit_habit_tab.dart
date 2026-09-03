@@ -28,6 +28,7 @@ class EditHabitTab extends StatefulWidget {
     this.onFamilyIdLiveChanged,
     this.onEmojiPickerRequested,
     this.saveButtonLabel = '',
+    this.proposedPatch,
   });
 
   final dynamic habit;
@@ -41,6 +42,7 @@ class EditHabitTab extends StatefulWidget {
   )? onEmojiPickerRequested;
   final void Function(dynamic updatedHabit) onSaved;
   final String saveButtonLabel;
+  final Map<String, dynamic>? proposedPatch;
 
   @override
   State<EditHabitTab> createState() => _EditHabitTabState();
@@ -56,11 +58,15 @@ class _EditHabitTabState extends State<EditHabitTab> {
 
   bool _isSaving = false;
   bool _showTitleError = false;
+  bool _proposalStale = false;
 
   @override
   void initState() {
     super.initState();
     _formData = EditHabitTabFormData.fromHabit(widget.habit);
+    if (widget.proposedPatch != null) {
+      _proposalStale = !_formData.applyPreviewPatch(widget.proposedPatch!);
+    }
     _titleCtrl = TextEditingController(
       text: getHabitString(
               widget.habit, ['title', 'name', 'habitTitle', 'label']) ??
@@ -110,12 +116,12 @@ class _EditHabitTabState extends State<EditHabitTab> {
           await picker(context, _formData.emoji, _formData.currentFamilyColor);
     } else {
       // ignore: use_build_context_synchronously
-        selected = await showEmojiPickerBottomSheet(
-          context,
-          currentEmoji: _formData.emoji,
-          currentHabitName: _titleCtrl.text,
-          accentColor: _formData.currentFamilyColor,
-        );
+      selected = await showEmojiPickerBottomSheet(
+        context,
+        currentEmoji: _formData.emoji,
+        currentHabitName: _titleCtrl.text,
+        accentColor: _formData.currentFamilyColor,
+      );
     }
 
     if (!mounted || selected == null) {
@@ -212,16 +218,17 @@ class _EditHabitTabState extends State<EditHabitTab> {
         final canSchedule =
             await permissionController.ensureCanScheduleFromReminderFlow();
         if (!canSchedule) {
-          final effectiveStatus = await permissionController.getEffectiveStatus();
-          final shouldShowPermissionSnack =
-              effectiveStatus == NotificationPermissionStatus.denied ||
-                  effectiveStatus ==
-                      NotificationPermissionStatus.permanentlyDenied;
+          final effectiveStatus =
+              await permissionController.getEffectiveStatus();
+          final shouldShowPermissionSnack = effectiveStatus ==
+                  NotificationPermissionStatus.denied ||
+              effectiveStatus == NotificationPermissionStatus.permanentlyDenied;
           if (!shouldShowPermissionSnack || !mounted) {
             return;
           }
 
-          final result = await NotificationService.instance.checkPermissionStatus();
+          final result =
+              await NotificationService.instance.checkPermissionStatus();
           if (!mounted) return;
           await showNotificationPermissionRecoverySheet(
             context,
@@ -455,6 +462,7 @@ class _EditHabitTabState extends State<EditHabitTab> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -465,6 +473,12 @@ class _EditHabitTabState extends State<EditHabitTab> {
         SafeArea(
           child: Column(
             children: [
+              if (_proposalStale)
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                    child: Text(context.l10n.weeklyReportRecommendationStale,
+                        style: const TextStyle(
+                            fontSize: 11, color: Colors.brown))),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),

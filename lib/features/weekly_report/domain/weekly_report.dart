@@ -129,10 +129,22 @@ class WeeklyReportRecommendation {
   const WeeklyReportRecommendation({
     required this.type,
     required this.reason,
+    this.habitId,
+    this.habitName,
+    this.emoji,
+    this.currentConfig = const <String, dynamic>{},
+    this.proposedPatch = const <String, dynamic>{},
+    this.policyVersion = 1,
   });
 
   final WeeklyReportRecommendationType type;
   final String reason;
+  final String? habitId;
+  final String? habitName;
+  final String? emoji;
+  final Map<String, dynamic> currentConfig;
+  final Map<String, dynamic> proposedPatch;
+  final int policyVersion;
 }
 
 class WeeklyReport {
