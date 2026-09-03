@@ -76,6 +76,7 @@ class WeeklyReportHabit {
     this.target,
     this.familyId,
     this.streakSnapshot,
+    this.observationKey,
   });
 
   final String habitId;
@@ -92,6 +93,7 @@ class WeeklyReportHabit {
   final WeeklyReportHabitClassification classification;
   final List<HabitOccurrenceResult> occurrences;
   final HabitStreakSnapshot? streakSnapshot;
+  final String? observationKey;
 
   bool get isComparable => scheduledCount > 0;
 }
@@ -166,6 +168,7 @@ class WeeklyReport {
     this.refreshedAt,
     this.finalizedAt,
     this.recommendations = const <WeeklyReportRecommendation>[],
+    this.summaryMessageKey,
   });
 
   final String id;
@@ -185,6 +188,7 @@ class WeeklyReport {
   final DateTime? refreshedAt;
   final DateTime? finalizedAt;
   final List<WeeklyReportRecommendation> recommendations;
+  final String? summaryMessageKey;
 
   bool get isFinal => status == WeeklyReportStatus.finalized;
   bool get isProvisional => status == WeeklyReportStatus.provisional;

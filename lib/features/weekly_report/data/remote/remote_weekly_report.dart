@@ -127,7 +127,10 @@ class RemoteWeeklyReportHeader {
               m['metricsPolicyVersion'], 'report.metricsPolicyVersion'),
           contentVersion:
               _positiveInt(m['contentVersion'], 'report.contentVersion'),
-          messageKeys: _stringArray(m['messageKeys'], 'messageKeys'),
+          // Older payloads predate contextual copy; absence is safe and means
+          // the Flutter resolver will use its neutral fallback.
+          messageKeys:
+              _stringArray(m['messageKeys'] ?? const [], 'messageKeys'),
           generatedAt: _instant(m['generatedAt'], 'generatedAt'),
           refreshedAt: _instant(m['refreshedAt'], 'refreshedAt'),
           finalizedAt: _instant(m['finalizedAt'], 'finalizedAt'));
@@ -181,6 +184,7 @@ class RemoteWeeklyReportHabit {
       required this.skippedCount,
       required this.completionRate,
       required this.classification,
+      this.observationKey,
       required this.occurrences,
       required this.streakSnapshot});
   final String habitId, name, type;
@@ -190,6 +194,7 @@ class RemoteWeeklyReportHabit {
   final int scheduledCount, completedCount, skippedCount;
   final double? completionRate;
   final String? classification;
+  final String? observationKey;
   final List<Map<String, dynamic>> occurrences;
   final Map<String, dynamic>? streakSnapshot;
   factory RemoteWeeklyReportHabit.fromJson(Object? value) {
@@ -234,6 +239,7 @@ class RemoteWeeklyReportHabit {
                   'unavailable'
                 ],
                 'habit.classification'),
+        observationKey: m['observationKey'] as String?,
         occurrences: occurrences,
         streakSnapshot: m['streakSnapshot'] == null
             ? null

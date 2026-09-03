@@ -4928,4 +4928,412 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get feedbackSubmitErrorGeneric =>
       'Ha ocurrido un problema al enviar tu feedback. Inténtalo de nuevo.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial01 =>
+      'Es tu primera lectura semanal; aún queda tiempo para ver cómo evoluciona.';
+
+  @override
+  String get weeklyReportSummaryProvisional01 =>
+      'Por ahora, tu semana va tomando forma.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule01 =>
+      'Esta semana no había hábitos programados para comparar.';
+
+  @override
+  String get weeklyReportSummaryStrong01 =>
+      'Has mantenido un ritmo muy sólido esta semana.';
+
+  @override
+  String get weeklyReportSummaryGood01 =>
+      'Hubo una buena continuidad esta semana.';
+
+  @override
+  String get weeklyReportSummaryMixed01 =>
+      'Hubo avances esta semana, aunque aún queda margen para ganar consistencia.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery01 =>
+      'Esta semana tuvo más altibajos. La próxima empieza con una nueva oportunidad.';
+
+  @override
+  String get weeklyReportSummaryImproved01 =>
+      'Tu ritmo mejoró respecto a la semana anterior.';
+
+  @override
+  String get weeklyReportSummaryDeclined01 =>
+      'El ritmo fue algo menor que la semana anterior, sin perder la perspectiva.';
+
+  @override
+  String get weeklyReportHabitHighlighted01 =>
+      'Has mantenido un ritmo muy sólido.';
+
+  @override
+  String get weeklyReportHabitStable01 =>
+      'El ritmo se mantuvo bastante estable.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention01 =>
+      'Esta semana costó mantener el ritmo.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial02 =>
+      'Tu primer reporte empieza a tomar forma. Esta semana todavía recoge solo una parte del camino.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial03 =>
+      'Un primer vistazo a tu ritmo. La próxima semana nos dará una imagen mucho más completa.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial04 =>
+      'Ya tenemos una primera referencia. Tómala como un punto de partida, no como una semana completa.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial05 =>
+      'Este primer reporte cubre solo parte de la semana, pero ya empieza a mostrar cómo se mueve tu rutina.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial06 =>
+      'Primeros datos, primera perspectiva. Con una semana completa podremos comparar mejor tu ritmo.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial07 =>
+      'Tu reporte semanal ya está en marcha. Por ahora, quédate con él como una primera fotografía de tus hábitos.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial08 =>
+      'Esto acaba de empezar. Los próximos reportes tendrán más contexto para enseñarte cómo evoluciona tu semana.';
+
+  @override
+  String get weeklyReportSummaryProvisional02 =>
+      'Este es solo un vistazo provisional. La semana aún tiene margen para cambiar.';
+
+  @override
+  String get weeklyReportSummaryProvisional03 =>
+      'De momento, este es el ritmo de tu semana. El reporte seguirá actualizándose hasta el cierre.';
+
+  @override
+  String get weeklyReportSummaryProvisional04 =>
+      'La semana sigue abierta. Estos datos muestran dónde estás ahora, no dónde terminarás.';
+
+  @override
+  String get weeklyReportSummaryProvisional05 =>
+      'Así va tu semana por el momento. Lo que hagas en los próximos días todavía contará.';
+
+  @override
+  String get weeklyReportSummaryProvisional06 =>
+      'Una fotografía del momento, no el resultado final. El reporte seguirá evolucionando contigo.';
+
+  @override
+  String get weeklyReportSummaryProvisional07 =>
+      'Tu semana todavía está en movimiento. Este resumen se irá completando a medida que avances.';
+
+  @override
+  String get weeklyReportSummaryProvisional08 =>
+      'Por ahora ya se empieza a ver un patrón, aunque la semana todavía no ha dicho su última palabra.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule02 =>
+      'No hubo hábitos previstos esta semana. El reporte queda como una semana sin programación.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule03 =>
+      'Esta semana no tenía objetivos programados. La próxima empezará con una nueva referencia.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule04 =>
+      'Sin hábitos programados, no tendría sentido valorar tu cumplimiento. Esta semana queda neutral.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule05 =>
+      'No había nada programado para esta semana. Aquí no hay buenos ni malos resultados que interpretar.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule06 =>
+      'Una semana sin programación también forma parte del camino. El reporte volverá a tomar forma cuando haya hábitos previstos.';
+
+  @override
+  String get weeklyReportSummaryStrong02 =>
+      'Una semana consistente, con muchos de tus planes convertidos en hechos.';
+
+  @override
+  String get weeklyReportSummaryStrong03 =>
+      'Esta semana deja una base muy sólida sobre la que seguir construyendo.';
+
+  @override
+  String get weeklyReportSummaryStrong04 =>
+      'Buen ritmo y mucha continuidad. La semana ha sido especialmente consistente.';
+
+  @override
+  String get weeklyReportSummaryStrong05 =>
+      'Tus hábitos han tenido una semana muy estable. Mantener este ritmo ya es un gran resultado.';
+
+  @override
+  String get weeklyReportSummaryStrong06 =>
+      'Has estado cerca de lo que te habías propuesto durante buena parte de la semana.';
+
+  @override
+  String get weeklyReportSummaryStrong07 =>
+      'Una semana con mucha continuidad. No hace falta complicarlo más: sigue construyendo desde aquí.';
+
+  @override
+  String get weeklyReportSummaryStrong08 =>
+      'La constancia ha tenido bastante peso esta semana. Llegas a la próxima con una buena base.';
+
+  @override
+  String get weeklyReportSummaryStrong09 =>
+      'Muchos pequeños cumplimientos han terminado formando una semana muy sólida.';
+
+  @override
+  String get weeklyReportSummaryStrong10 =>
+      'Esta semana muestra un ritmo difícil de conseguir por casualidad. Hay consistencia detrás de estos números.';
+
+  @override
+  String get weeklyReportSummaryGood02 =>
+      'La mayor parte de la semana estuvo bien encaminada. Hay una base clara para seguir avanzando.';
+
+  @override
+  String get weeklyReportSummaryGood03 =>
+      'Has mantenido un buen ritmo general, aunque todavía queda algo de margen para hacerlo más estable.';
+
+  @override
+  String get weeklyReportSummaryGood04 =>
+      'Una semana positiva y bastante consistente. No todo tiene que salir perfecto para avanzar.';
+
+  @override
+  String get weeklyReportSummaryGood05 =>
+      'El balance de la semana es bueno. Has mantenido presentes muchos de tus hábitos.';
+
+  @override
+  String get weeklyReportSummaryGood06 =>
+      'Esta semana tuvo más continuidad que interrupciones. Es una buena base para la siguiente.';
+
+  @override
+  String get weeklyReportSummaryGood07 =>
+      'Vas construyendo un ritmo sólido sin necesidad de que cada día sea perfecto.';
+
+  @override
+  String get weeklyReportSummaryGood08 =>
+      'La semana deja buenas señales de continuidad. Ahora se trata de hacerlas cada vez más habituales.';
+
+  @override
+  String get weeklyReportSummaryGood09 =>
+      'Has completado una parte importante de lo que tenías previsto. Buen punto de partida para seguir afinando.';
+
+  @override
+  String get weeklyReportSummaryGood10 =>
+      'El ritmo general ha sido bueno. La siguiente semana puede servir para consolidar lo que ya está funcionando.';
+
+  @override
+  String get weeklyReportSummaryMixed02 =>
+      'Hubo avances, aunque la continuidad fue cambiando a lo largo de la semana.';
+
+  @override
+  String get weeklyReportSummaryMixed03 =>
+      'Una semana con luces y sombras. Hay hábitos que ya tienen buena base y otros que todavía buscan su sitio.';
+
+  @override
+  String get weeklyReportSummaryMixed04 =>
+      'El ritmo fue irregular, pero hubo suficientes avances como para saber por dónde seguir.';
+
+  @override
+  String get weeklyReportSummaryMixed05 =>
+      'No fue una semana lineal, y está bien. El reporte ya empieza a mostrar dónde resulta más fácil mantener el ritmo.';
+
+  @override
+  String get weeklyReportSummaryMixed06 =>
+      'Algunas partes de la semana funcionaron mejor que otras. La próxima puede servir para simplificar y ajustar.';
+
+  @override
+  String get weeklyReportSummaryMixed07 =>
+      'Hubo constancia en algunos momentos y más dificultad en otros. Una semana útil para observar patrones.';
+
+  @override
+  String get weeklyReportSummaryMixed08 =>
+      'El balance queda a medio camino. Hay progreso, pero también espacio para encontrar más continuidad.';
+
+  @override
+  String get weeklyReportSummaryMixed09 =>
+      'Esta semana no siguió un único ritmo. Quédate con lo que funcionó y construye desde ahí.';
+
+  @override
+  String get weeklyReportSummaryMixed10 =>
+      'Una semana irregular también aporta información. Ya tienes una referencia para decidir dónde poner el foco después.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery02 =>
+      'No ha sido la semana más constante, pero sigue siendo información útil para ajustar el rumbo.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery03 =>
+      'Esta semana tuvo más interrupciones de lo habitual. Quizá la siguiente sea un buen momento para simplificar.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery04 =>
+      'El ritmo quedó por debajo de lo previsto. No hace falta compensarlo todo de golpe.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery05 =>
+      'Hubo menos continuidad esta semana. Volver a una base sencilla puede ser suficiente para empezar de nuevo.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery06 =>
+      'Esta semana fue más difícil de sostener. La próxima no necesita ser perfecta, solo un poco más llevadera.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery07 =>
+      'Los hábitos encontraron más obstáculos esta semana. El siguiente paso puede ser simplemente recuperar el ritmo.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery08 =>
+      'No todas las semanas encajan igual. Esta deja pistas sobre qué hábitos quizá necesiten un pequeño ajuste.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery09 =>
+      'Esta semana avanzó más despacio. A veces reducir fricción es más útil que intentar hacer más.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery10 =>
+      'El balance ha sido más irregular de lo previsto. La próxima semana ofrece una nueva oportunidad para reorganizar el ritmo.';
+
+  @override
+  String get weeklyReportSummaryImproved02 =>
+      'Tu ritmo ha mejorado esta semana. Una señal pequeña, pero importante.';
+
+  @override
+  String get weeklyReportSummaryImproved03 =>
+      'Hay una evolución positiva respecto al último reporte.';
+
+  @override
+  String get weeklyReportSummaryImproved04 =>
+      'Esta semana muestra más continuidad que la anterior. Buen momento para consolidarla.';
+
+  @override
+  String get weeklyReportSummaryImproved05 =>
+      'Has conseguido mover la semana en una dirección positiva respecto a la anterior.';
+
+  @override
+  String get weeklyReportSummaryImproved06 =>
+      'El progreso respecto a la semana pasada ya se empieza a notar en tus números.';
+
+  @override
+  String get weeklyReportSummaryImproved07 =>
+      'Un poco más de constancia que la semana anterior. Ese tipo de cambio es el que termina acumulándose.';
+
+  @override
+  String get weeklyReportSummaryImproved08 =>
+      'Esta semana ha funcionado mejor que la anterior. Quédate con lo que te ayudó a mantener el ritmo.';
+
+  @override
+  String get weeklyReportSummaryDeclined02 =>
+      'El ritmo bajó respecto al último reporte. Puede ser un buen momento para revisar qué merece simplificarse.';
+
+  @override
+  String get weeklyReportSummaryDeclined03 =>
+      'Esta semana quedó algo por debajo de la anterior. La siguiente puede empezar con objetivos más fáciles de sostener.';
+
+  @override
+  String get weeklyReportSummaryDeclined04 =>
+      'Hubo menos constancia que la semana pasada. Tómalo como una señal para observar, no como un paso atrás definitivo.';
+
+  @override
+  String get weeklyReportSummaryDeclined05 =>
+      'Los números bajaron un poco esta semana. Una variación puntual no define tu progreso.';
+
+  @override
+  String get weeklyReportSummaryDeclined06 =>
+      'Esta semana perdió algo de ritmo respecto a la anterior. La próxima puede servir para recuperar una base sencilla.';
+
+  @override
+  String get weeklyReportSummaryDeclined07 =>
+      'La continuidad fue menor que la semana pasada. Quizá sea suficiente con volver a lo esencial.';
+
+  @override
+  String get weeklyReportSummaryDeclined08 =>
+      'Esta semana ha sido algo más irregular que la anterior. El siguiente reporte será otra oportunidad para cambiar la tendencia.';
+
+  @override
+  String get weeklyReportHabitHighlighted02 =>
+      'Este hábito tuvo una semana especialmente consistente.';
+
+  @override
+  String get weeklyReportHabitHighlighted03 =>
+      'La continuidad ha sido una de las fortalezas de este hábito esta semana.';
+
+  @override
+  String get weeklyReportHabitHighlighted04 =>
+      'Este hábito se mantuvo muy cerca de lo que tenías previsto.';
+
+  @override
+  String get weeklyReportHabitHighlighted05 =>
+      'Una semana muy estable para este hábito. Buena base para seguir.';
+
+  @override
+  String get weeklyReportHabitHighlighted06 =>
+      'Aquí la constancia ha tenido bastante peso esta semana.';
+
+  @override
+  String get weeklyReportHabitHighlighted07 =>
+      'Este hábito encontró un ritmo que parece estar funcionando bien.';
+
+  @override
+  String get weeklyReportHabitHighlighted08 =>
+      'Muchos de los momentos previstos terminaron convirtiéndose en cumplimientos.';
+
+  @override
+  String get weeklyReportHabitStable02 =>
+      'Hay una buena base de continuidad sobre la que seguir construyendo.';
+
+  @override
+  String get weeklyReportHabitStable03 =>
+      'El hábito estuvo presente durante buena parte de la semana.';
+
+  @override
+  String get weeklyReportHabitStable04 =>
+      'Una semana razonablemente constante para este hábito.';
+
+  @override
+  String get weeklyReportHabitStable05 =>
+      'El ritmo está ahí; ahora se trata de hacerlo cada vez más natural.';
+
+  @override
+  String get weeklyReportHabitStable06 =>
+      'Este hábito avanzó con bastante regularidad, aunque todavía tiene margen para consolidarse.';
+
+  @override
+  String get weeklyReportHabitStable07 =>
+      'La semana deja una base suficientemente estable para seguir ajustando poco a poco.';
+
+  @override
+  String get weeklyReportHabitStable08 =>
+      'Aquí hubo más continuidad que interrupciones. Un buen punto desde el que seguir.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention02 =>
+      'El ritmo quedó algo por debajo de lo que tenías previsto.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention03 =>
+      'Este hábito tuvo una semana más irregular. Quizá un pequeño ajuste ayude a hacerlo más llevadero.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention04 =>
+      'Hubo menos oportunidades completadas esta semana. La próxima puede servir para recuperar una base sencilla.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention05 =>
+      'Este hábito encontró más fricción esta semana. Simplificar puede ser un buen siguiente paso.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention06 =>
+      'La continuidad fue limitada esta semana, pero ya tienes una referencia para ajustar el ritmo.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention07 =>
+      'No terminó de asentarse esta semana. La siguiente puede ser una oportunidad para probar un enfoque más fácil de sostener.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention08 =>
+      'Este hábito necesita algo más de espacio para encontrar un ritmo estable.';
 }
