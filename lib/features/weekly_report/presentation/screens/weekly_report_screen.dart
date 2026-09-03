@@ -8,6 +8,7 @@ import '../../application/weekly_report_controller.dart';
 import '../../domain/weekly_report.dart';
 import '../widgets/weekly_report_habits_section.dart';
 import '../widgets/weekly_report_recommendation.dart';
+import '../widgets/weekly_report_reflection.dart';
 import '../../../../stores/user_state_store.dart';
 import '../../../../screens/habit_detail/habit_detail_screen.dart';
 import '../../../../utils/family_theme.dart';
@@ -45,6 +46,7 @@ class _WeeklyReportView extends StatefulWidget {
 
 class _WeeklyReportViewState extends State<_WeeklyReportView> {
   bool _debugPreviewingRecommendation = false;
+  bool _debugPreviewingReflection = false;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +80,7 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
             ),
           WeeklyReportDataState() => _ReportContent(
               snapshot: state.snapshot,
+              debugReflection: _debugPreviewingReflection,
               debugRecommendation: _debugPreviewingRecommendation
                   ? _buildDebugRecommendation(context, state.snapshot.report)
                   : null,
@@ -86,6 +89,13 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
                   : null,
               onExitDebugPreview: kDebugMode && _debugPreviewingRecommendation
                   ? () => setState(() => _debugPreviewingRecommendation = false)
+                  : null,
+              onEnterDebugReflection:
+                  kDebugMode && state.snapshot.report.isProvisional
+                      ? () => setState(() => _debugPreviewingReflection = true)
+                      : null,
+              onExitDebugReflection: kDebugMode && _debugPreviewingReflection
+                  ? () => setState(() => _debugPreviewingReflection = false)
                   : null,
             ),
         },
@@ -153,14 +163,20 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
 class _ReportContent extends StatelessWidget {
   const _ReportContent({
     required this.snapshot,
+    this.debugReflection = false,
     this.debugRecommendation,
     this.onEnterDebugPreview,
     this.onExitDebugPreview,
+    this.onEnterDebugReflection,
+    this.onExitDebugReflection,
   });
   final WeeklyReportSnapshot snapshot;
+  final bool debugReflection;
   final WeeklyReportRecommendation? debugRecommendation;
   final VoidCallback? onEnterDebugPreview;
   final VoidCallback? onExitDebugPreview;
+  final VoidCallback? onEnterDebugReflection;
+  final VoidCallback? onExitDebugReflection;
 
   @override
   Widget build(BuildContext context) {
@@ -199,6 +215,19 @@ class _ReportContent extends StatelessWidget {
               label: context.l10n.weeklyReportRecommendationDebugExit,
               onPressed: onExitDebugPreview!,
             ),
+          if (kDebugMode && debugReflection && onExitDebugReflection != null)
+            WeeklyReportDebugAction(
+              label: context.l10n.weeklyReflectionDebugExit,
+              onPressed: onExitDebugReflection!,
+            ),
+          if (kDebugMode &&
+              !debugReflection &&
+              report.isProvisional &&
+              onEnterDebugReflection != null)
+            WeeklyReportDebugAction(
+              label: context.l10n.weeklyReflectionDebugPreview,
+              onPressed: onEnterDebugReflection!,
+            ),
           const SizedBox(height: 8),
           _SummaryCard(report: report),
           const SizedBox(height: 8),
@@ -220,6 +249,15 @@ class _ReportContent extends StatelessWidget {
               onReview: () => _openRecommendation(
                   context, debugRecommendation ?? report.recommendations.first),
             ),
+          ],
+          if (report.isFinal || (kDebugMode && debugReflection)) ...[
+            const SizedBox(height: 8),
+            WeeklyReportReflection(
+              reportId: report.id,
+              weekEnd: report.week.weekEndDate,
+            ),
+            if (kDebugMode && debugReflection)
+              DebugReflectionCleanup(reportId: report.id),
           ],
           if (!report.summary.hasScheduledCount)
             Padding(
