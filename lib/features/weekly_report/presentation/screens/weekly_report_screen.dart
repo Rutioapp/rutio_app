@@ -7,7 +7,10 @@ import '../../../../l10n/l10n.dart';
 import '../../application/weekly_report_controller.dart';
 import '../../domain/weekly_report.dart';
 import '../widgets/weekly_report_habits_section.dart';
+import '../widgets/weekly_report_recommendation.dart';
 import '../../../../stores/user_state_store.dart';
+import '../../../../screens/habit_detail/habit_detail_screen.dart';
+import '../../../../utils/family_theme.dart';
 
 class WeeklyReportScreen extends StatelessWidget {
   const WeeklyReportScreen({super.key});
@@ -33,8 +36,15 @@ class WeeklyReportScreen extends StatelessWidget {
   }
 }
 
-class _WeeklyReportView extends StatelessWidget {
+class _WeeklyReportView extends StatefulWidget {
   const _WeeklyReportView();
+
+  @override
+  State<_WeeklyReportView> createState() => _WeeklyReportViewState();
+}
+
+class _WeeklyReportViewState extends State<_WeeklyReportView> {
+  bool _debugPreviewingRecommendation = false;
 
   @override
   Widget build(BuildContext context) {
@@ -66,16 +76,91 @@ class _WeeklyReportView extends StatelessWidget {
               onGenerate: kDebugMode ? controller.generateCurrentDebug : null,
               busy: controller.debugActionInProgress,
             ),
-          WeeklyReportDataState() => _ReportContent(snapshot: state.snapshot),
+          WeeklyReportDataState() => _ReportContent(
+              snapshot: state.snapshot,
+              debugRecommendation: _debugPreviewingRecommendation
+                  ? _buildDebugRecommendation(context, state.snapshot.report)
+                  : null,
+              onEnterDebugPreview: kDebugMode
+                  ? () => setState(() => _debugPreviewingRecommendation = true)
+                  : null,
+              onExitDebugPreview: kDebugMode && _debugPreviewingRecommendation
+                  ? () => setState(() => _debugPreviewingRecommendation = false)
+                  : null,
+            ),
         },
       ),
+    );
+  }
+
+  WeeklyReportRecommendation _buildDebugRecommendation(
+      BuildContext context, WeeklyReport report) {
+    final store = context.read<UserStateStore>();
+    final compatible = store.activeHabits.where((habit) {
+      final schedule = habit['schedule'];
+      final type = habit['type']?.toString().toLowerCase();
+      final quota = schedule is Map ? schedule['timesPerWeek'] : null;
+      return type == 'check' &&
+          schedule is Map &&
+          schedule['type']?.toString() == 'timesPerWeek' &&
+          quota is num &&
+          quota.toInt() >= 2;
+    }).toList(growable: false);
+    compatible.sort((a, b) {
+      final aQuota = (a['schedule'] as Map)['timesPerWeek'] as num;
+      final bQuota = (b['schedule'] as Map)['timesPerWeek'] as num;
+      final aPreferred = aQuota.toInt() == 5 ? 0 : 1;
+      final bPreferred = bQuota.toInt() == 5 ? 0 : 1;
+      if (aPreferred != bPreferred) return aPreferred.compareTo(bPreferred);
+      return (a['id'] ?? a['habitId'] ?? '')
+          .toString()
+          .compareTo((b['id'] ?? b['habitId'] ?? '').toString());
+    });
+    final live = compatible.isEmpty ? null : compatible.first;
+    final schedule = live?['schedule'] is Map
+        ? Map<String, dynamic>.from(live!['schedule'] as Map)
+        : <String, dynamic>{'type': 'timesPerWeek', 'timesPerWeek': 5};
+    final currentQuota = (schedule['timesPerWeek'] as num?)?.toInt() ?? 5;
+    final id = live == null
+        ? null
+        : (live['id'] ?? live['habitId'] ?? live['uuid'])?.toString();
+    return WeeklyReportRecommendation(
+      type: WeeklyReportRecommendationType.reduceFrequency,
+      reason: 'weekly_report_recommendation_reduce_frequency_v1',
+      habitId: id,
+      habitName: live?['title']?.toString() ?? live?['name']?.toString(),
+      emoji: live?['emoji']?.toString(),
+      currentConfig: <String, dynamic>{
+        'schedule': schedule,
+        'habitType': 'check',
+      },
+      proposedPatch: <String, dynamic>{
+        'version': 1,
+        'type': 'reduceFrequency',
+        'current': <String, dynamic>{'schedule': schedule},
+        'proposed': <String, dynamic>{
+          'schedule': <String, dynamic>{
+            'type': 'timesPerWeek',
+            'timesPerWeek': currentQuota - 1,
+            'weekStartsOn': schedule['weekStartsOn'] ?? 1,
+          },
+        },
+      },
     );
   }
 }
 
 class _ReportContent extends StatelessWidget {
-  const _ReportContent({required this.snapshot});
+  const _ReportContent({
+    required this.snapshot,
+    this.debugRecommendation,
+    this.onEnterDebugPreview,
+    this.onExitDebugPreview,
+  });
   final WeeklyReportSnapshot snapshot;
+  final WeeklyReportRecommendation? debugRecommendation;
+  final VoidCallback? onEnterDebugPreview;
+  final VoidCallback? onExitDebugPreview;
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +185,20 @@ class _ReportContent extends StatelessWidget {
               busy:
                   context.watch<WeeklyReportController>().debugActionInProgress,
             ),
+          if (kDebugMode &&
+              debugRecommendation == null &&
+              onEnterDebugPreview != null)
+            WeeklyReportDebugAction(
+              label: context.l10n.weeklyReportRecommendationDebugPreview,
+              onPressed: onEnterDebugPreview!,
+            ),
+          if (kDebugMode &&
+              debugRecommendation != null &&
+              onExitDebugPreview != null)
+            WeeklyReportDebugAction(
+              label: context.l10n.weeklyReportRecommendationDebugExit,
+              onPressed: onExitDebugPreview!,
+            ),
           const SizedBox(height: 8),
           _SummaryCard(report: report),
           const SizedBox(height: 8),
@@ -107,6 +206,20 @@ class _ReportContent extends StatelessWidget {
           if (report.habits.isNotEmpty) ...[
             const SizedBox(height: 10),
             WeeklyReportHabitsSection(habits: report.habits),
+          ],
+          if ((report.isFinal && report.recommendations.isNotEmpty) ||
+              debugRecommendation != null) ...[
+            const SizedBox(height: 8),
+            WeeklyReportRecommendationCard(
+              recommendation:
+                  debugRecommendation ?? report.recommendations.first,
+              habit: _habitFor(
+                  report,
+                  (debugRecommendation ?? report.recommendations.first)
+                      .habitId),
+              onReview: () => _openRecommendation(
+                  context, debugRecommendation ?? report.recommendations.first),
+            ),
           ],
           if (!report.summary.hasScheduledCount)
             Padding(
@@ -118,6 +231,29 @@ class _ReportContent extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  WeeklyReportHabit? _habitFor(WeeklyReport report, String? id) {
+    for (final habit in report.habits) {
+      if (habit.habitId == id) return habit;
+    }
+    return null;
+  }
+
+  void _openRecommendation(
+      BuildContext context, WeeklyReportRecommendation recommendation) {
+    final id = recommendation.habitId;
+    if (id == null) return;
+    final store = context.read<UserStateStore>();
+    final live = store.getActiveHabitById(id);
+    if (live == null) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => HabitDetailScreen(
+              habit: live,
+              familyColor: FamilyTheme.colorOf(FamilyTheme.fallbackId),
+              mode: HabitDetailScreenMode.editOnly,
+              proposedPatch: recommendation.proposedPatch,
+            )));
   }
 }
 

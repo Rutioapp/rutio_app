@@ -22,8 +22,10 @@ class HabitStatsWeeklyComparisonCard extends StatelessWidget {
     final delta = deltaPct ?? 0;
     final isPositive = delta >= 0;
     final valueText = hasComparison ? '${isPositive ? '+' : ''}$delta%' : '-';
-    final valueColor = hasComparison ? (isPositive ? _positive : _negative) : _cardMuted;
-    final accentColor = hasComparison ? (isPositive ? _positive : _negative) : _cardMuted;
+    final valueColor =
+        hasComparison ? (isPositive ? _positive : _negative) : _cardMuted;
+    final accentColor =
+        hasComparison ? (isPositive ? _positive : _negative) : _cardMuted;
 
     return Container(
       width: double.infinity,
@@ -43,7 +45,9 @@ class HabitStatsWeeklyComparisonCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              hasComparison ? Icons.trending_up_rounded : Icons.show_chart_rounded,
+              hasComparison
+                  ? Icons.trending_up_rounded
+                  : Icons.show_chart_rounded,
               color: hasComparison && delta < 0 ? _negative : _positive,
               size: 18,
             ),

@@ -266,6 +266,30 @@ class EditHabitTabFormData {
     return updatedHabit;
   }
 
+  bool applyPreviewPatch(Map<String, dynamic> patch) {
+    if (patch['type'] != 'reduceFrequency' || patch['version'] != 1)
+      return false;
+    final current = patch['current'];
+    final proposed = patch['proposed'];
+    if (current is! Map || proposed is! Map) return false;
+    final currentSchedule = current['schedule'];
+    final proposedSchedule = proposed['schedule'];
+    if (currentSchedule is! Map || proposedSchedule is! Map) return false;
+    final live = _habitScheduleForForm();
+    if (live['type'] != currentSchedule['type'] ||
+        live['timesPerWeek'] != currentSchedule['timesPerWeek']) return false;
+    if (proposedSchedule['type'] != 'timesPerWeek' ||
+        proposedSchedule['timesPerWeek'] is! num) return false;
+    final next = (proposedSchedule['timesPerWeek'] as num).toInt();
+    if (next < 1 || next >= timesPerWeekTarget) return false;
+    frequencyMode = 'timesPerWeek';
+    trackingType = 'check';
+    timesPerWeekTarget = next;
+    return true;
+  }
+
+  Map<String, dynamic> _habitScheduleForForm() => buildScheduleForSave();
+
   void _hydrateFrequencyFromHabit(dynamic habit) {
     final rawFrequencyMode =
         (getHabitString(habit, ['frequencyMode']) ?? '').trim();

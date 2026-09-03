@@ -43,7 +43,14 @@ WeeklyReport mapRemoteWeeklyReport(RemoteWeeklyReport remote) {
     finalizedAt: h.finalizedAt,
     recommendations: remote.recommendations
         .map((r) => WeeklyReportRecommendation(
-            type: _recommendation(r.type), reason: r.reason))
+            type: _recommendation(r.type),
+            reason: r.reason,
+            habitId: r.habitId,
+            habitName: r.habitName,
+            emoji: r.emoji,
+            currentConfig: r.currentConfig,
+            proposedPatch: r.proposedPatch,
+            policyVersion: r.policyVersion))
         .toList(growable: false),
   );
 }

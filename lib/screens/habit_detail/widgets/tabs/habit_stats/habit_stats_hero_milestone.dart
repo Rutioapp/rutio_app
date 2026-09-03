@@ -16,7 +16,8 @@ class HabitStatsHeroMilestoneProgress {
   }
 }
 
-HabitStatsHeroMilestoneProgress habitStatsHeroMilestoneProgressForStreak(int streak) {
+HabitStatsHeroMilestoneProgress habitStatsHeroMilestoneProgressForStreak(
+    int streak) {
   if (streak < 3) {
     return HabitStatsHeroMilestoneProgress(from: 0, to: 3, current: streak);
   }

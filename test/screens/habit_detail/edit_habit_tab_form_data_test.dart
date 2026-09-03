@@ -3,6 +3,51 @@ import 'package:rutio/screens/habit_detail/widgets/tabs/edit_habit_tab/edit_habi
 
 void main() {
   group('EditHabitTabFormData timesPerWeek handling', () {
+    test('applies a compatible recommendation as preview only', () {
+      final formData = EditHabitTabFormData.fromHabit({
+        'id': 'habit-1',
+        'type': 'check',
+        'schedule': {'type': 'timesPerWeek', 'timesPerWeek': 5},
+      });
+
+      final applied = formData.applyPreviewPatch({
+        'version': 1,
+        'type': 'reduceFrequency',
+        'current': {
+          'schedule': {'type': 'timesPerWeek', 'timesPerWeek': 5},
+        },
+        'proposed': {
+          'schedule': {'type': 'timesPerWeek', 'timesPerWeek': 4},
+        },
+      });
+
+      expect(applied, isTrue);
+      expect(formData.frequencyMode, 'timesPerWeek');
+      expect(formData.timesPerWeekTarget, 4);
+    });
+
+    test('does not apply a stale recommendation', () {
+      final formData = EditHabitTabFormData.fromHabit({
+        'id': 'habit-1',
+        'type': 'check',
+        'schedule': {'type': 'timesPerWeek', 'timesPerWeek': 4},
+      });
+
+      expect(
+        formData.applyPreviewPatch({
+          'version': 1,
+          'type': 'reduceFrequency',
+          'current': {
+            'schedule': {'type': 'timesPerWeek', 'timesPerWeek': 5},
+          },
+          'proposed': {
+            'schedule': {'type': 'timesPerWeek', 'timesPerWeek': 4},
+          },
+        }),
+        isFalse,
+      );
+      expect(formData.timesPerWeekTarget, 4);
+    });
     test('hydrates canonical timesPerWeek schedule for check habit', () {
       final formData = EditHabitTabFormData.fromHabit({
         'id': 'h-1',
