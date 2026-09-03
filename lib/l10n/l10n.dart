@@ -1880,6 +1880,35 @@ extension AppLocalizationsDiaryV2X on AppLocalizations {
       _isSpanishDiaryV2 ? 'Gratitud' : 'Gratitude';
 }
 
+extension AppLocalizationsWeeklyReflectionX on AppLocalizations {
+  bool get _weeklyReflectionEs => localeName.toLowerCase().startsWith('es');
+  String get weeklyReflectionTitle =>
+      _weeklyReflectionEs ? 'Reflexión semanal' : 'Weekly reflection';
+  String get weeklyReflectionQuestion => _weeklyReflectionEs
+      ? '¿Cómo te has sentido esta semana?'
+      : 'How have you felt this week?';
+  String get weeklyReflectionHint => _weeklyReflectionEs
+      ? 'Escribe algo opcional...'
+      : 'Write something optional...';
+  String get weeklyReflectionSave =>
+      _weeklyReflectionEs ? 'Guardar reflexión' : 'Save reflection';
+  String get weeklyReflectionEdit =>
+      _weeklyReflectionEs ? 'Editar reflexión' : 'Edit reflection';
+  String get weeklyReflectionSaving =>
+      _weeklyReflectionEs ? 'Guardando...' : 'Saving...';
+  String get weeklyReflectionDebugPreview => _weeklyReflectionEs
+      ? 'Previsualizar reflexión · Debug'
+      : 'Preview reflection · Debug';
+  String get weeklyReflectionDebugExit => _weeklyReflectionEs
+      ? 'Salir de previsualización · Debug'
+      : 'Exit reflection preview · Debug';
+  String get weeklyReflectionDebugDelete => _weeklyReflectionEs
+      ? 'Eliminar reflexión de prueba · Debug'
+      : 'Delete test reflection · Debug';
+  String weeklyReflectionMoodLabel(int value) =>
+      _weeklyReflectionEs ? 'Estado de ánimo $value de 5' : 'Mood $value of 5';
+}
+
 extension AppLocalizationsCatalogX on AppLocalizations {
   String familyName(String familyId) {
     switch (familyId) {

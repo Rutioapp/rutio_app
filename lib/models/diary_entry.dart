@@ -32,6 +32,9 @@ class DiaryEntry {
 
   final DiaryEntryContentType? entryType;
 
+  /// Optional contextual link to the immutable weekly report snapshot.
+  final String? weeklyReportId;
+
   final List<String> tags;
 
   final bool isPinned;
@@ -48,6 +51,7 @@ class DiaryEntry {
     this.familyId,
     this.mood,
     this.entryType,
+    this.weeklyReportId,
     this.tags = const <String>[],
     this.isPinned = false,
   });
@@ -85,6 +89,7 @@ class DiaryEntry {
     String? familyId,
     int? mood,
     Object? entryType = _diaryEntryUnset,
+    Object? weeklyReportId = _diaryEntryUnset,
     List<String>? tags,
     bool? isPinned,
   }) {
@@ -102,6 +107,9 @@ class DiaryEntry {
       entryType: identical(entryType, _diaryEntryUnset)
           ? this.entryType
           : entryType as DiaryEntryContentType?,
+      weeklyReportId: identical(weeklyReportId, _diaryEntryUnset)
+          ? this.weeklyReportId
+          : weeklyReportId as String?,
       tags: tags ?? this.tags,
       isPinned: isPinned ?? this.isPinned,
     );
@@ -119,6 +127,7 @@ class DiaryEntry {
         'familyId': familyId,
         'mood': mood,
         'entryType': entryType?.name,
+        'weeklyReportId': weeklyReportId,
         'tags': _normalizedTags(tags),
         'isPinned': isPinned,
       };
@@ -145,6 +154,8 @@ class DiaryEntry {
         entryType: diaryEntryContentTypeFromJsonValue(
           json['entryType'] ?? json['entry_type'],
         ),
+        weeklyReportId:
+            (json['weeklyReportId'] ?? json['weekly_report_id'])?.toString(),
         tags: _jsonTags(json['tags']),
         isPinned: (json['isPinned'] as bool?) ?? false,
       );

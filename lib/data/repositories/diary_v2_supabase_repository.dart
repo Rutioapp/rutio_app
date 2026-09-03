@@ -33,6 +33,7 @@ body,
 legacy_text,
 mood,
 entry_type,
+weekly_report_id,
 tags,
 is_pinned,
 habit_id,
@@ -165,6 +166,39 @@ metadata
     }
   }
 
+  Future<RepositoryResult<DiaryEntry?>> getWeeklyReflection(
+    String weeklyReportId,
+  ) async {
+    final userId = _currentUserId();
+    final reportId = weeklyReportId.trim();
+    if (userId == null)
+      return const RepositoryResult<DiaryEntry?>.success(data: null);
+    if (reportId.isEmpty)
+      return const RepositoryResult<DiaryEntry?>.success(data: null);
+    try {
+      final rows = await _client
+          .from(_diaryEntriesTable)
+          .select(_diaryEntryColumns)
+          .eq('user_id', userId)
+          .eq('weekly_report_id', reportId)
+          .eq('entry_type', DiaryEntryContentType.reflection.name)
+          .limit(1);
+      if (rows.isEmpty)
+        return const RepositoryResult<DiaryEntry?>.success(data: null);
+      return RepositoryResult<DiaryEntry?>.success(
+        data: diaryEntryFromRow(Map<String, dynamic>.from(rows.first)),
+      );
+    } on PostgrestException catch (error) {
+      return RepositoryResult<DiaryEntry?>.failure(_mapPostgrestError(
+        error,
+        fallbackMessage: 'Could not fetch weekly reflection.',
+        schemaLabel: 'Weekly reflection relation is unavailable.',
+        debugLabel: 'diary_v2_supabase_repository',
+        tableName: _diaryEntriesTable,
+      ));
+    }
+  }
+
   Future<RepositoryResult<List<DiaryEntry>>> upsertDiaryEntries(
     List<DiaryEntry> entries,
   ) async {
@@ -198,8 +232,10 @@ metadata
           )
           .toList(growable: false);
 
-      final expectedLocalIds =
-          entries.map((entry) => entry.id.trim()).where((id) => id.isNotEmpty).toSet();
+      final expectedLocalIds = entries
+          .map((entry) => entry.id.trim())
+          .where((id) => id.isNotEmpty)
+          .toSet();
       final actualLocalIds = mapped.map((entry) => entry.id.trim()).toSet();
       if (mapped.length != entries.length ||
           actualLocalIds.length != expectedLocalIds.length ||
@@ -207,7 +243,8 @@ metadata
         return RepositoryResult<List<DiaryEntry>>.failure(
           const RepositoryError(
             code: RepositoryErrorCode.invalidResponse,
-            message: 'Diary V2 upsert response did not match requested entries.',
+            message:
+                'Diary V2 upsert response did not match requested entries.',
           ),
         );
       }
@@ -308,7 +345,8 @@ metadata
     }
   }
 
-  Future<RepositoryResult<void>> deleteDiaryEntryByLocalId(String localId) async {
+  Future<RepositoryResult<void>> deleteDiaryEntryByLocalId(
+      String localId) async {
     final normalizedLocalId = _nullableTrim(localId);
     final userId = _currentUserId();
 
@@ -427,7 +465,8 @@ metadata
     }
   }
 
-  Future<RepositoryResult<DailyMood>> upsertDailyMood(DailyMood dailyMood) async {
+  Future<RepositoryResult<DailyMood>> upsertDailyMood(
+      DailyMood dailyMood) async {
     final userId = _currentUserId();
     if (userId == null) {
       return RepositoryResult<DailyMood>.failure(_notAuthenticated());
@@ -610,12 +649,14 @@ metadata
       title: title,
       body: body,
       remoteId: _nullableTrim(row['id'])?.toLowerCase(),
+      dateKey: _nullableTrim(row['entry_date']),
       habitId: _nullableTrim(row['habit_id']),
       familyId: _nullableTrim(row['family_id']),
       mood: _safeInt(row['mood']),
       entryType: diaryEntryContentTypeFromJsonValue(
         row['entry_type'] ?? row['entryType'],
       ),
+      weeklyReportId: _nullableTrim(row['weekly_report_id']),
       tags: _normalizeSupportedTags(row['tags']),
       isPinned: row['is_pinned'] == true,
     );
@@ -628,13 +669,15 @@ metadata
     final payload = <String, dynamic>{
       'user_id': userId.trim(),
       'local_id': entry.id.trim(),
-      'entry_date': _dateOnlyIso(DateTime.fromMillisecondsSinceEpoch(entry.createdAt)),
+      'entry_date':
+          _dateOnlyIso(DateTime.fromMillisecondsSinceEpoch(entry.createdAt)),
       'local_created_at_ms': entry.createdAt,
       'title': _nullableTrim(entry.title),
       'body': _nullableTrim(entry.body),
       'legacy_text': _nullableTrim(entry.legacyText),
       'mood': entry.mood,
       'entry_type': entry.entryType?.name,
+      'weekly_report_id': _nullableTrim(entry.weeklyReportId),
       'tags': entry.tags
           .map((tag) => tag.trim().toLowerCase())
           .where(DiaryEntry.supportedTags.contains)
@@ -680,8 +723,10 @@ metadata
       'mood_date': _dateOnlyIso(dailyMood.date),
       'mood': dailyMood.mood,
       'note': _nullableTrim(dailyMood.note),
-      'local_created_at_ms': dailyMood.createdAt == 0 ? null : dailyMood.createdAt,
-      'local_updated_at_ms': dailyMood.updatedAt == 0 ? null : dailyMood.updatedAt,
+      'local_created_at_ms':
+          dailyMood.createdAt == 0 ? null : dailyMood.createdAt,
+      'local_updated_at_ms':
+          dailyMood.updatedAt == 0 ? null : dailyMood.updatedAt,
       'metadata': const <String, dynamic>{},
     };
 
@@ -715,11 +760,13 @@ metadata
     required String expectedDateKey,
   }) {
     final currentUserId = userId.trim();
-    if (currentUserId.isEmpty || _dateOnlyIso(dailyMood.date) != expectedDateKey) {
+    if (currentUserId.isEmpty ||
+        _dateOnlyIso(dailyMood.date) != expectedDateKey) {
       return RepositoryResult<DailyMood>.failure(
         const RepositoryError(
           code: RepositoryErrorCode.invalidResponse,
-          message: 'Diary V2 daily mood response did not match current user scope.',
+          message:
+              'Diary V2 daily mood response did not match current user scope.',
         ),
       );
     }
@@ -753,7 +800,8 @@ metadata
     required String tableName,
   }) {
     if (kDebugMode) {
-      debugPrint('[$debugLabel] postgrest error (${error.code}): ${error.message}');
+      debugPrint(
+          '[$debugLabel] postgrest error (${error.code}): ${error.message}');
     }
 
     final code = (error.code ?? '').trim().toUpperCase();
