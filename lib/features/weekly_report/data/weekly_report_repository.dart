@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/rutio_supabase_client.dart';
@@ -79,28 +80,36 @@ class RemoteWeeklyReportHistoryItem {
   const RemoteWeeklyReportHistoryItem(this.json);
   final Map<String, dynamic> json;
   WeeklyReportHistoryItem toDomain() {
-    DateTime date(String k) => DateTime.parse(json[k] as String).toLocal();
-    final status = json['status'] as String;
-    if (status != 'provisional' && status != 'final')
-      throw const WeeklyReportMalformedPayload();
-    final rate = json['completionRate'];
-    return WeeklyReportHistoryItem(
-        reportId: json['reportId'] as String,
-        week: WeeklyReportWeekFactory.fromDates(
-            date('weekStartDate'), date('weekEndDate')),
-        status: status == 'final'
-            ? WeeklyReportStatus.finalized
-            : WeeklyReportStatus.provisional,
-        completionRate: (rate as num?)?.toDouble(),
-        completedCount: (json['completedCount'] as num).toInt(),
-        scheduledCount: (json['scheduledCount'] as num).toInt(),
-        firstPartialWeek: json['firstPartialWeek'] as bool,
-        refreshedAt: json['refreshedAt'] == null
-            ? null
-            : DateTime.parse(json['refreshedAt'] as String).toUtc(),
-        finalizedAt: json['finalizedAt'] == null
-            ? null
-            : DateTime.parse(json['finalizedAt'] as String).toUtc());
+    try {
+      DateTime date(String k) => DateTime.parse(json[k] as String).toLocal();
+      final status = json['status'] as String;
+      if (status != 'provisional' && status != 'final')
+        throw const WeeklyReportMalformedPayload();
+      final rate = json['completionRate'];
+      return WeeklyReportHistoryItem(
+          reportId: json['reportId'] as String,
+          week: WeeklyReportWeekFactory.fromDates(
+              date('weekStartDate'), date('weekEndDate')),
+          status: status == 'final'
+              ? WeeklyReportStatus.finalized
+              : WeeklyReportStatus.provisional,
+          completionRate: (rate as num?)?.toDouble(),
+          completedCount: (json['completedCount'] as num).toInt(),
+          scheduledCount: (json['scheduledCount'] as num).toInt(),
+          firstPartialWeek: json['firstPartialWeek'] as bool,
+          refreshedAt: json['refreshedAt'] == null
+              ? null
+              : DateTime.parse(json['refreshedAt'] as String).toUtc(),
+          finalizedAt: json['finalizedAt'] == null
+              ? null
+              : DateTime.parse(json['finalizedAt'] as String).toUtc());
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+            '[WEEKLY_REPORT_HISTORY] mapper failure type=${error.runtimeType}');
+      }
+      rethrow;
+    }
   }
 }
 
@@ -139,12 +148,31 @@ class SupabaseWeeklyReportRemoteDataSource
   @override
   Future<List<RemoteWeeklyReportHistoryItem>> getHistory(
       {DateTime? beforeWeekStart, required int limit}) async {
-    final raw = await _client.rpc('list_my_weekly_reports', params: {
-      'p_before_week_start':
-          beforeWeekStart == null ? null : _isoDate(beforeWeekStart),
-      'p_limit': limit
-    });
-    if (raw is! List) throw const WeeklyReportMalformedPayload();
+    if (kDebugMode) {
+      debugPrint(
+          '[WEEKLY_REPORT_HISTORY] request start cursor=${beforeWeekStart?.toIso8601String() ?? 'null'} limit=$limit');
+    }
+    late final dynamic raw;
+    try {
+      raw = await _client.rpc('list_my_weekly_reports', params: {
+        'p_before_week_start':
+            beforeWeekStart == null ? null : _isoDate(beforeWeekStart),
+        'p_limit': limit
+      });
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+            '[WEEKLY_REPORT_HISTORY] RPC failure type=${error.runtimeType}');
+      }
+      rethrow;
+    }
+    if (raw is! List) {
+      if (kDebugMode)
+        debugPrint('[WEEKLY_REPORT_HISTORY] RPC failure type=unexpected_shape');
+      throw const WeeklyReportMalformedPayload();
+    }
+    if (kDebugMode)
+      debugPrint('[WEEKLY_REPORT_HISTORY] RPC success rows=${raw.length}');
     return raw
         .map((e) => RemoteWeeklyReportHistoryItem(
             Map<String, dynamic>.from((e as Map).cast<String, dynamic>())))
@@ -318,16 +346,28 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
     final scope = _scope();
     try {
       final effectiveLimit = limit.clamp(1, 50);
+      if (kDebugMode) {
+        debugPrint(
+            '[WEEKLY_REPORT_HISTORY] repository start cursor=${beforeWeekStart?.toIso8601String() ?? 'null'} limit=$effectiveLimit');
+      }
       final items = await remote.getHistory(
           beforeWeekStart: beforeWeekStart, limit: effectiveLimit);
       if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
       final domains = items.map((e) => e.toDomain()).toList(growable: false);
+      if (kDebugMode) {
+        debugPrint(
+            '[WEEKLY_REPORT_HISTORY] resulting history count=${domains.length}');
+      }
       return WeeklyReportHistoryPage(
           items: domains,
           nextBeforeWeekStart: domains.length == effectiveLimit
               ? domains.last.week.weekStartDate
               : null);
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            '[WEEKLY_REPORT_HISTORY] repository failure type=${e.runtimeType}');
+      }
       if (e is WeeklyReportError) rethrow;
       throw _network(e);
     }
