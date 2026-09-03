@@ -36,6 +36,35 @@ extension WeeklyReportRecommendationL10n on AppLocalizations {
       : 'Exit preview · Debug';
 }
 
+extension WeeklyReportPhase11L10n on AppLocalizations {
+  bool get _weeklyReportPhase11Es => localeName.toLowerCase().startsWith('es');
+  String get weeklyReportSectionTitle =>
+      _weeklyReportPhase11Es ? 'Reporte semanal' : 'Weekly report';
+  String get weeklyReportViewReport =>
+      _weeklyReportPhase11Es ? 'Ver reporte' : 'View report';
+  String get weeklyReportHistory =>
+      _weeklyReportPhase11Es ? 'Historial semanal' : 'Weekly history';
+  String get weeklyReportThisWeek =>
+      _weeklyReportPhase11Es ? 'Esta semana' : 'This week';
+  String get weeklyReportPreviousWeeks =>
+      _weeklyReportPhase11Es ? 'Semanas anteriores' : 'Previous weeks';
+  String get weeklyReportInProgress =>
+      _weeklyReportPhase11Es ? 'En curso' : 'In progress';
+  String get weeklyReportNoPreviousWeeks => _weeklyReportPhase11Es
+      ? 'Todavía no tienes semanas anteriores.'
+      : 'You do not have previous weeks yet.';
+  String get weeklyReportLoadMore =>
+      _weeklyReportPhase11Es ? 'Cargar más' : 'Load more';
+  String get weeklyReportHistoryError => _weeklyReportPhase11Es
+      ? 'No se pudo cargar el historial'
+      : 'Could not load history';
+  String get weeklyReportNotAvailableYet => _weeklyReportPhase11Es
+      ? 'Aún no hay reporte disponible'
+      : 'No report available yet';
+  String get weeklyReportNoScheduleShort =>
+      _weeklyReportPhase11Es ? 'Sin programación' : 'No schedule';
+}
+
 extension L10nX on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 }

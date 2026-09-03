@@ -19,6 +19,7 @@ class AppViewDrawer extends StatelessWidget {
     required this.onGoDiaryV2,
     required this.onGoArchived,
     required this.onGoStats,
+    this.onGoWeeklyReport,
     this.onGoShop,
     required this.onGoProfile,
     this.selected,
@@ -31,11 +32,12 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoDiaryV2;
   final VoidCallback onGoArchived;
   final VoidCallback onGoStats;
+  final VoidCallback? onGoWeeklyReport;
   final VoidCallback? onGoShop;
   final VoidCallback onGoProfile;
 
   /// Valores sugeridos:
-  /// 'daily'|'weekly'|'monthly'|'diary'|'archived'|'stats'|'shop'|'profile'
+  /// 'daily'|'weekly'|'monthly'|'weekly-report'|'diary'|'archived'|'stats'|'shop'|'profile'
   final String? selected;
 
   static const Color _skyTop = Color(0xFFEAF3FB);
@@ -115,6 +117,18 @@ class AppViewDrawer extends StatelessWidget {
                       label: context.l10n.drawerStatistics,
                       isSelected: selected == 'stats',
                       onTap: () => _go(context, onGoStats),
+                    ),
+                    const _DrawerDivider(),
+                    _DrawerTile(
+                      icon: Icons.insights_outlined,
+                      label: context.l10n.weeklyReportSectionTitle,
+                      isSelected: selected == 'weekly-report',
+                      onTap: () => _go(
+                        context,
+                        onGoWeeklyReport ??
+                            () => Navigator.of(context)
+                                .pushNamed('/weekly-report'),
+                      ),
                     ),
                     const _DrawerDivider(),
                     if (onGoShop != null) ...[

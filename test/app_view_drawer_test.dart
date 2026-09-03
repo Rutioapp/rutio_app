@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/achievements/domain/models/habit_streak_snapshot.dart';
@@ -11,6 +12,48 @@ import 'package:rutio/widgets/app_view_drawer.dart';
 
 void main() {
   Provider.debugCheckInvalidValueType = null;
+
+  testWidgets('AppViewDrawer opens the productive Weekly Report route',
+      (tester) async {
+    final scaffoldKey = GlobalKey<ScaffoldState>();
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('es'),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      routes: {'/weekly-report': (_) => const Scaffold(body: Text('Weekly'))},
+      home: Scaffold(
+        key: scaffoldKey,
+        drawer: AppViewDrawer(
+          onGoDaily: () {},
+          onGoWeekly: () {},
+          onGoMonthly: () {},
+          onGoDiary: () {},
+          onGoDiaryV2: () {},
+          onGoArchived: () {},
+          onGoStats: () {},
+          onGoProfile: () {},
+          onGoWeeklyReport: () => Navigator.of(scaffoldKey.currentContext!)
+              .pushNamed('/weekly-report'),
+        ),
+        body: const Text('Home'),
+      ),
+    ));
+    scaffoldKey.currentState!.openDrawer();
+    await tester.pumpAndSettle();
+    final label =
+        AppLocalizations.of(tester.element(find.byType(Scaffold).first))
+            .weeklyReportSectionTitle;
+    expect(find.text(label), findsOneWidget);
+    await tester.tap(find.text(label));
+    await tester.pumpAndSettle();
+    expect(find.text('Weekly'), findsOneWidget);
+    expect(find.byType(Drawer), findsNothing);
+  });
 
   testWidgets('AppViewDrawer no longer renders feedback support in Spanish', (
     WidgetTester tester,

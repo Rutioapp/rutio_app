@@ -66,6 +66,7 @@ import 'features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 import 'features/weekly_report/data/weekly_report_repository.dart';
 import 'features/weekly_report/domain/weekly_report.dart';
 import 'features/weekly_report/presentation/screens/weekly_report_screen.dart';
+import 'features/weekly_report/presentation/screens/weekly_report_history_screen.dart';
 
 import 'screens/app_startup_gate.dart';
 import 'screens/welcome_screen.dart';
@@ -202,6 +203,8 @@ class MyApp extends StatelessWidget {
             '/stats': (_) => const StatisticsV3Screen(),
             StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
             WeeklyReportScreen.route: (_) => const WeeklyReportScreen(),
+            WeeklyReportHistoryScreen.route: (_) =>
+                const WeeklyReportHistoryScreen(),
             FeedbackHomeScreen.route: (_) => const FeedbackHomeScreen(),
             FeedbackFormScreen.route: (_) => const FeedbackFormScreen(),
             FeedbackSuccessScreen.route: (context) =>
@@ -232,6 +235,21 @@ class MyApp extends StatelessWidget {
             '/shop': (_) => const AppStartupGate(
                   authenticatedBuilder: _authenticatedShopBuilder,
                 ),
+          },
+          onGenerateRoute: (settings) {
+            final name = settings.name ?? '';
+            if (name.startsWith(WeeklyReportScreen.reportRoutePrefix) &&
+                name.length > WeeklyReportScreen.reportRoutePrefix.length) {
+              return MaterialPageRoute(
+                settings: settings,
+                builder: (_) => WeeklyReportScreen(
+                  reportId: Uri.decodeComponent(
+                    name.substring(WeeklyReportScreen.reportRoutePrefix.length),
+                  ),
+                ),
+              );
+            }
+            return null;
           },
         ),
       ),

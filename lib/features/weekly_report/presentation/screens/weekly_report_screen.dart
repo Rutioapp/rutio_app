@@ -10,13 +10,22 @@ import '../widgets/weekly_report_habits_section.dart';
 import '../weekly_report_copy_resolver.dart';
 import '../widgets/weekly_report_recommendation.dart';
 import '../widgets/weekly_report_reflection.dart';
+import 'weekly_report_history_screen.dart';
 import '../../../../stores/user_state_store.dart';
 import '../../../../screens/habit_detail/habit_detail_screen.dart';
 import '../../../../utils/family_theme.dart';
 
 class WeeklyReportScreen extends StatelessWidget {
-  const WeeklyReportScreen({super.key});
+  const WeeklyReportScreen({
+    super.key,
+    this.reportId,
+    this.openedFromHistory = false,
+  });
   static const route = '/weekly-report';
+  static const historyRoute = '/weekly-report/history';
+  static const reportRoutePrefix = '/weekly-report/';
+  final String? reportId;
+  final bool openedFromHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -31,15 +40,16 @@ class WeeklyReportScreen extends StatelessWidget {
           isScopeCurrent: () =>
               store.scopeEpoch == initialEpoch &&
               (store.activeLocalScopeUserId ?? store.userId) == initialUser,
-        )..load();
+        )..load(reportId: reportId);
       },
-      child: const _WeeklyReportView(),
+      child: _WeeklyReportView(openedFromHistory: openedFromHistory),
     );
   }
 }
 
 class _WeeklyReportView extends StatefulWidget {
-  const _WeeklyReportView();
+  const _WeeklyReportView({required this.openedFromHistory});
+  final bool openedFromHistory;
 
   @override
   State<_WeeklyReportView> createState() => _WeeklyReportViewState();
@@ -64,6 +74,18 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
         centerTitle: true,
         title: Text(context.l10n.weeklyReportTitle,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        actions: widget.openedFromHistory
+            ? null
+            : [
+                IconButton(
+                  key: const Key('weeklyReportHistoryAction'),
+                  tooltip: context.l10n.weeklyReportHistory,
+                  icon: const Icon(Icons.history_rounded, size: 22),
+                  onPressed: () => Navigator.of(context).pushNamed(
+                    WeeklyReportHistoryScreen.route,
+                  ),
+                ),
+              ],
       ),
       body: SafeArea(
         top: false,

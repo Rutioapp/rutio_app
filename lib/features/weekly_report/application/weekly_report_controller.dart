@@ -46,11 +46,13 @@ class WeeklyReportController extends ChangeNotifier {
   bool _debugActionInProgress = false;
   bool get debugActionInProgress => _debugActionInProgress;
 
-  Future<void> load() async {
+  Future<void> load({String? reportId}) async {
     _state = const WeeklyReportLoading();
     notifyListeners();
     try {
-      final snapshot = await repository.getLatest();
+      final snapshot = reportId == null
+          ? await repository.getLatest()
+          : await repository.getById(reportId);
       _state = snapshot == null
           ? const WeeklyReportEmpty()
           : WeeklyReportDataState(snapshot);
