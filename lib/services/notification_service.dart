@@ -49,6 +49,8 @@ class NotificationService {
   String _androidNotificationIcon = RutioNotificationChannel.androidSmallIcon;
   String? _launchPayload;
   void Function(String? payload)? _notificationInteractionHandler;
+  void Function(NotificationResponse response)? _notificationResponseHandler;
+  NotificationResponse? _launchResponse;
 
   NotificationScheduler get scheduler => _scheduler;
 
@@ -61,6 +63,17 @@ class NotificationService {
   void setNotificationInteractionHandler(
       void Function(String? payload) handler) {
     _notificationInteractionHandler = handler;
+  }
+
+  void setNotificationResponseHandler(
+      void Function(NotificationResponse response) handler) {
+    _notificationResponseHandler = handler;
+  }
+
+  NotificationResponse? takeLaunchResponse() {
+    final response = _launchResponse;
+    _launchResponse = null;
+    return response;
   }
 
   String? takeLaunchPayload() {
@@ -81,6 +94,7 @@ class NotificationService {
       await _initializePlugin();
       final launchDetails = await _plugin.getNotificationAppLaunchDetails();
       if (launchDetails?.didNotificationLaunchApp == true) {
+        _launchResponse = launchDetails?.notificationResponse;
         _launchPayload = launchDetails?.notificationResponse?.payload;
       }
       await _scheduler.createChannel();
@@ -649,9 +663,13 @@ class NotificationService {
 }
 
 void _handleNotificationResponse(NotificationResponse response) {
-  NotificationService.instance._notificationInteractionHandler?.call(
-    response.payload,
-  );
+  final service = NotificationService.instance;
+  final responseHandler = service._notificationResponseHandler;
+  if (responseHandler != null) {
+    responseHandler(response);
+  } else {
+    service._notificationInteractionHandler?.call(response.payload);
+  }
 }
 
 @pragma('vm:entry-point')

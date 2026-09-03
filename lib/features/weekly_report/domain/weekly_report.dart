@@ -246,6 +246,7 @@ class WeeklyReportSnapshot {
 abstract interface class WeeklyReportRepository {
   Future<WeeklyReportSnapshot?> getLatest();
   Future<WeeklyReportSnapshot> getById(String reportId);
+  Future<WeeklyReportSnapshot?> getByWeekStart(DateTime weekStartDate);
   Future<WeeklyReportHistoryPage> getHistory(
       {DateTime? beforeWeekStart, int limit = 20});
   Future<WeeklyReportSnapshot> refreshProvisional(DateTime weekStartDate);

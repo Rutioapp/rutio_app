@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show DateUtils;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tzdata;
 
@@ -34,12 +35,14 @@ class WeeklyReportController extends ChangeNotifier {
     this.repository, {
     required this.timeZoneResolver,
     this.isScopeCurrent = _alwaysCurrent,
+    this.refreshCurrentOnLoad = false,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
   final WeeklyReportRepository repository;
   final Future<String?> Function() timeZoneResolver;
   final bool Function() isScopeCurrent;
+  final bool refreshCurrentOnLoad;
   final DateTime Function() _now;
   WeeklyReportUiState _state = const WeeklyReportLoading();
   WeeklyReportUiState get state => _state;
@@ -50,9 +53,25 @@ class WeeklyReportController extends ChangeNotifier {
     _state = const WeeklyReportLoading();
     notifyListeners();
     try {
-      final snapshot = reportId == null
+      var snapshot = reportId == null
           ? await repository.getLatest()
           : await repository.getById(reportId);
+      if (refreshCurrentOnLoad &&
+          reportId == null &&
+          snapshot?.report.isProvisional == true) {
+        final timezone = (await timeZoneResolver())?.trim();
+        if (timezone != null &&
+            timezone.isNotEmpty &&
+            _isCurrentWeek(snapshot!.report.week.weekStartDate, timezone)) {
+          try {
+            snapshot = await repository.refreshProvisional(
+              snapshot.report.week.weekStartDate,
+            );
+          } on WeeklyReportError {
+            // The already loaded provisional report remains usable offline.
+          }
+        }
+      }
       _state = snapshot == null
           ? const WeeklyReportEmpty()
           : WeeklyReportDataState(snapshot);
@@ -146,6 +165,15 @@ class WeeklyReportController extends ChangeNotifier {
     tzdata.initializeTimeZones();
     final local = tz.TZDateTime.from(now.toUtc(), tz.getLocation(timezoneName));
     return DateTime(local.year, local.month, local.day);
+  }
+
+  bool _isCurrentWeek(DateTime weekStart, String timezoneName) {
+    tzdata.initializeTimeZones();
+    final local =
+        tz.TZDateTime.from(_now().toUtc(), tz.getLocation(timezoneName));
+    final monday = DateTime(local.year, local.month, local.day)
+        .subtract(Duration(days: local.weekday - 1));
+    return DateUtils.dateOnly(weekStart) == DateUtils.dateOnly(monday);
   }
 
   static bool _alwaysCurrent() => true;

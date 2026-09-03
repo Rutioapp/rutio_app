@@ -67,6 +67,7 @@ class WeeklyReportStaleScope extends WeeklyReportError {
 abstract interface class WeeklyReportRemoteDataSource {
   Future<RemoteWeeklyReport?> getLatest();
   Future<RemoteWeeklyReport?> getById(String reportId);
+  Future<RemoteWeeklyReport?> getByWeekStart(DateTime weekStartDate);
   Future<List<RemoteWeeklyReportHistoryItem>> getHistory(
       {DateTime? beforeWeekStart, required int limit});
   Future<RemoteWeeklyReport?> refresh(DateTime weekStartDate);
@@ -145,6 +146,12 @@ class SupabaseWeeklyReportRemoteDataSource
   Future<RemoteWeeklyReport?> getById(String reportId) async =>
       _parse(await _client
           .rpc('get_my_weekly_report', params: {'p_report_id': reportId}));
+
+  @override
+  Future<RemoteWeeklyReport?> getByWeekStart(DateTime weekStartDate) async =>
+      _parse(await _client.rpc('get_my_weekly_report_by_week_start', params: {
+        'p_week_start_date': _isoDate(weekStartDate),
+      }));
   @override
   Future<List<RemoteWeeklyReportHistoryItem>> getHistory(
       {DateTime? beforeWeekStart, required int limit}) async {
@@ -337,6 +344,21 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
       if (cached != null) return _cached(cached);
       if (e is WeeklyReportNotFound) rethrow;
       throw _network(e);
+    }
+  }
+
+  @override
+  Future<WeeklyReportSnapshot?> getByWeekStart(DateTime weekStartDate) async {
+    final scope = _scope();
+    try {
+      final payload = await remote.getByWeekStart(weekStartDate);
+      if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
+      if (payload == null) return null;
+      await _save(scope, payload);
+      return _fresh(payload);
+    } catch (error) {
+      if (error is WeeklyReportError) rethrow;
+      throw _network(error);
     }
   }
 

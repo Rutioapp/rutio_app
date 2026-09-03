@@ -28,6 +28,9 @@ class _FakeRepository implements WeeklyReportRepository {
   Future<WeeklyReportSnapshot> getById(String reportId) =>
       throw UnimplementedError();
   @override
+  Future<WeeklyReportSnapshot?> getByWeekStart(DateTime weekStartDate) =>
+      throw UnimplementedError();
+  @override
   Future<WeeklyReportHistoryPage> getHistory(
           {DateTime? beforeWeekStart, int limit = 20}) =>
       throw UnimplementedError();

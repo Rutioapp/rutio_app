@@ -63,6 +63,12 @@ extension WeeklyReportPhase11L10n on AppLocalizations {
       : 'No report available yet';
   String get weeklyReportNoScheduleShort =>
       _weeklyReportPhase11Es ? 'Sin programación' : 'No schedule';
+  String get weeklyReportDebugNotificationSchedule => _weeklyReportPhase11Es
+      ? 'Programar notificación semanal de prueba · Debug'
+      : 'Schedule weekly report test notification · Debug';
+  String get weeklyReportDebugNotificationScheduled => _weeklyReportPhase11Es
+      ? 'Notificación de prueba programada para dentro de un minuto.'
+      : 'Test notification scheduled for about one minute from now.';
 }
 
 extension L10nX on BuildContext {

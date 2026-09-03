@@ -5,11 +5,13 @@ import 'package:flutter/foundation.dart';
 import '../../../stores/user_state_store.dart';
 import '../domain/desired_notification.dart';
 import '../domain/notification_clock.dart';
+import '../domain/notification_payload.dart';
 import '../domain/personalized_notification_models.dart';
 import '../domain/personalized_notification_ports.dart';
 import 'notification_os_reconciliation_coordinator.dart';
 import 'notification_reconciliation_models.dart';
 import 'personalized_notification_plan_builder.dart';
+import '../domain/weekly_report_notification_copy.dart';
 
 enum NotificationReconciliationReason {
   login,
@@ -143,6 +145,7 @@ class PersonalizedNotificationOrchestrator
     NotificationClock? clock,
     NotificationOrchestrationObserver? observer,
     Duration foregroundThrottle = const Duration(seconds: 15),
+    bool enableWeeklyReportProduct = false,
   })  : _userStateStore = userStateStore,
         _installIdProvider = installIdProvider,
         _preferencesResolver = preferencesResolver,
@@ -154,7 +157,8 @@ class PersonalizedNotificationOrchestrator
             const EnvironmentPersonalizedNotificationsActivationPolicy(),
         _clock = clock ?? const SystemNotificationClock(),
         _observer = observer ?? const NoopNotificationOrchestrationObserver(),
-        _foregroundThrottle = foregroundThrottle;
+        _foregroundThrottle = foregroundThrottle,
+        _enableWeeklyReportProduct = enableWeeklyReportProduct;
 
   final UserStateStore _userStateStore;
   final NotificationInstallIdProvider _installIdProvider;
@@ -168,6 +172,7 @@ class PersonalizedNotificationOrchestrator
   final NotificationClock _clock;
   final NotificationOrchestrationObserver _observer;
   final Duration _foregroundThrottle;
+  final bool _enableWeeklyReportProduct;
 
   final Map<String, Future<PersonalizedNotificationOrchestrationResult>>
       _inFlightByScopeKey =
@@ -204,6 +209,62 @@ class PersonalizedNotificationOrchestrator
       reconcileForBootstrapReady() {
     return reconcilePersonalizedNotificationsNow(
       reason: NotificationReconciliationReason.bootstrapReady,
+    );
+  }
+
+  Future<PersonalizedNotificationOrchestrationResult>
+      scheduleDebugWeeklyReport({
+    required DateTime weekStart,
+    required NotificationScope scope,
+    required String timezoneId,
+    DateTime Function()? now,
+  }) async {
+    if (!kDebugMode) {
+      return const PersonalizedNotificationOrchestrationResult(
+        status: PersonalizedNotificationOrchestrationStatus.skippedDisabled,
+        reason: NotificationReconciliationReason.manualDebug,
+        coalescedReasons: <NotificationReconciliationReason>{
+          NotificationReconciliationReason.manualDebug,
+        },
+        diagnostics: <String>['debug_only'],
+      );
+    }
+    final capabilities = await _scheduleExecutor.getSchedulingCapabilities();
+    if (!_canProceedWithPermissions(capabilities)) {
+      return PersonalizedNotificationOrchestrationResult(
+        status: PersonalizedNotificationOrchestrationStatus.skippedPermissions,
+        reason: NotificationReconciliationReason.manualDebug,
+        coalescedReasons: const <NotificationReconciliationReason>{
+          NotificationReconciliationReason.manualDebug,
+        },
+        scope: scope,
+        capabilities: capabilities,
+        diagnostics: const <String>['permissions_block_debug_entry'],
+      );
+    }
+    final plan = await _planBuilder.buildWeeklyReportDebugOnly(
+      scope: scope,
+      timezoneId: timezoneId,
+      locale: scope.locale,
+      weekStart: weekStart,
+      now: now,
+    );
+    _notifV2Log(
+      'debug weekly report request logicalId=${plan.notifications.single.logicalNotificationId} '
+      'platformId=${plan.notifications.single.platformId} '
+      'scheduledAt=${plan.notifications.single.intendedLocalDateTime.toIso8601String()}',
+    );
+    final result = await _coordinator.reconcileDesiredPlan(plan);
+    return PersonalizedNotificationOrchestrationResult(
+      status: PersonalizedNotificationOrchestrationStatus.executed,
+      reason: NotificationReconciliationReason.manualDebug,
+      coalescedReasons: const <NotificationReconciliationReason>{
+        NotificationReconciliationReason.manualDebug,
+      },
+      scope: scope,
+      capabilities: capabilities,
+      reconciliationResult: result,
+      diagnostics: result.diagnostics,
     );
   }
 
@@ -406,11 +467,11 @@ class PersonalizedNotificationOrchestrator
       );
     }
 
+    final preferences = await _preferencesResolver.load(scope);
     final enabled = await _activationPolicy.isEnabledForScope(scope);
     _notifV2Log('activation gate enabled=$enabled');
-    if (!enabled) {
+    if (!enabled && !_enableWeeklyReportProduct) {
       final hadOwnedState = await _hasOwnedState(scope);
-      _notifV2Log('activation gate disabled hadOwnedState=$hadOwnedState');
       if (!hadOwnedState) {
         return PersonalizedNotificationOrchestrationResult(
           status: PersonalizedNotificationOrchestrationStatus.skippedDisabled,
@@ -430,8 +491,30 @@ class PersonalizedNotificationOrchestrator
         diagnostics: const <String>['activation_policy_disabled_cleanup'],
       );
     }
+    if (!enabled) {
+      // Weekly Report is a product notification, independent from the QA
+      // activation gate for Personalized Notifications V2.
+      final weeklyPlan = await _planBuilder.buildWeeklyReportOnly(
+        scope: scope,
+        capabilities: capabilities,
+        timezoneId: _clock.timezoneId(),
+        locale: scope.locale,
+        masterEnabled: preferences.masterEnabled,
+      );
+      final weeklyResult = await _coordinator.reconcileDesiredPlan(
+        await _includePersistedDebugEntries(weeklyPlan),
+      );
+      return PersonalizedNotificationOrchestrationResult(
+        status: PersonalizedNotificationOrchestrationStatus.executed,
+        reason: _selectPrimaryReason(reasons),
+        coalescedReasons: reasons,
+        scope: scope,
+        capabilities: capabilities,
+        reconciliationResult: weeklyResult,
+        diagnostics: <String>['weekly_report_independent_of_personalized_gate'],
+      );
+    }
 
-    final preferences = await _preferencesResolver.load(scope);
     _notifV2Log(
       'preferences master=${preferences.masterEnabled} '
       'general=${preferences.generalNotificationsEnabled} '
@@ -526,7 +609,9 @@ class PersonalizedNotificationOrchestrator
       );
     }
 
-    final reconciliationResult = await _coordinator.reconcileDesiredPlan(plan);
+    final reconciliationResult = await _coordinator.reconcileDesiredPlan(
+      await _includePersistedDebugEntries(plan),
+    );
     _notifV2Log(
       'reconcile complete planned=${reconciliationResult.operationsPlanned.length} '
       'succeeded=${reconciliationResult.operationsSucceeded.length} '
@@ -542,6 +627,73 @@ class PersonalizedNotificationOrchestrator
       preferences: preferences,
       reconciliationResult: reconciliationResult,
       diagnostics: reconciliationResult.diagnostics,
+    );
+  }
+
+  Future<DesiredNotificationPlan> _includePersistedDebugEntries(
+    DesiredNotificationPlan plan,
+  ) async {
+    if (!kDebugMode || plan.scope == null) return plan;
+    final manifest = await _scheduleStore.load(plan.scope!);
+    if (manifest == null) return plan;
+    final pending = await _scheduleExecutor.pendingNotifications();
+    final pendingIds = pending.map((entry) => entry.platformId).toSet();
+    final now = _clock.localNow();
+    final debugEntries = <DesiredNotification>[];
+    for (final entry in manifest.entries) {
+      if (!entry.notificationKey
+              .startsWith('rutio:v2:debug:weekly_report_test:') ||
+          entry.family != NotificationFamily.weeklyReport) {
+        continue;
+      }
+      final payload = NotificationPayloadV2.tryParse(entry.payload);
+      if (payload == null ||
+          payload.family != NotificationFamily.weeklyReport) {
+        continue;
+      }
+      final stillPending = pendingIds.contains(entry.platformId);
+      final scheduledInFuture = entry.scheduledAt.toLocal().isAfter(now);
+      if (!stillPending && !scheduledInFuture) continue;
+      debugEntries.add(DesiredNotification(
+        logicalNotificationId: entry.notificationKey,
+        platformId: entry.platformId,
+        kind: entry.kind,
+        family: entry.family,
+        templateId: entry.templateId,
+        renderedTitle: WeeklyReportNotificationCopy.title(plan.scope!.locale),
+        renderedBody: WeeklyReportNotificationCopy.body(plan.scope!.locale),
+        intendedLocalDateTime: entry.scheduledAt.toLocal(),
+        timezoneSemantics: NotificationTimezoneSemantics.localCalendarDay,
+        timezoneIdAtPlanTime: manifest.timezoneId,
+        payload: payload,
+        fingerprint: entry.sourceFingerprint,
+        scope: plan.scope!,
+        categoryTag: 'weeklyReport',
+        opportunityId: 'weekly_report_debug_${payload.dateKey}',
+        planVersion: entry.planVersion,
+        metadata: const <String, String>{'source': 'weekly_report_debug'},
+      ));
+    }
+    if (debugEntries.isEmpty) return plan;
+    return DesiredNotificationPlan.ready(
+      scope: plan.scope!,
+      generatedAt: plan.generatedAt,
+      horizonStart: plan.horizonStart,
+      horizonEnd: plan.horizonEnd,
+      notifications: <DesiredNotification>[
+        ...plan.notifications,
+        ...debugEntries
+      ],
+      opportunities: plan.opportunities,
+      diagnostics: DesiredNotificationPlanDiagnostics(
+        notes: <String>[...plan.diagnostics.notes, 'debug_entry_retained'],
+        selectedTemplateIds: plan.diagnostics.selectedTemplateIds,
+        suppressedOpportunityIds: plan.diagnostics.suppressedOpportunityIds,
+        usedWakeUpFallback: plan.diagnostics.usedWakeUpFallback,
+        habitReminderLoadUnavailable:
+            plan.diagnostics.habitReminderLoadUnavailable,
+        detectedHabitReminderCount: plan.diagnostics.detectedHabitReminderCount,
+      ),
     );
   }
 

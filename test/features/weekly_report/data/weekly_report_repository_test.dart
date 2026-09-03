@@ -242,6 +242,9 @@ class _FakeRemote implements WeeklyReportRemoteDataSource {
   @override
   Future<RemoteWeeklyReport?> getById(String reportId) async => latestValue;
   @override
+  Future<RemoteWeeklyReport?> getByWeekStart(DateTime weekStartDate) async =>
+      latestValue;
+  @override
   Future<List<RemoteWeeklyReportHistoryItem>> getHistory(
       {DateTime? beforeWeekStart, required int limit}) async {
     historyLimits.add(limit);
