@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "fallback-es-v1",
+  "locale": "es",
+  "phrases": [
+    {"id":"motivation_001","category":"motivation","tone":"balanced","sourceType":"original","author":null,"template":"Hoy has cumplido contigo. Ese paso cuenta.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_008","category":"motivation","tone":"gentle","sourceType":"original","author":null,"template":"Lo que haces con intención deja huella.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_015","category":"motivation","tone":"balanced","sourceType":"original","author":null,"template":"Tu constancia ya suma {streak_label}.","requiredTokens":["streak_label"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_029","category":"motivation","tone":"energetic","sourceType":"original","author":null,"template":"Has completado el {progress} de lo que te propusiste.","requiredTokens":["progress"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_045","category":"motivation","tone":"gentle","sourceType":"proverb","author":"Refrán popular","template":"Poco a poco también se llega lejos.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_068","category":"motivation","tone":"balanced","sourceType":"original","author":null,"template":"{name}, has hecho espacio para lo importante.","requiredTokens":["name"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_090","category":"motivation","tone":"energetic","sourceType":"original","author":null,"template":"{name}, completar el {progress} de hoy es una victoria real.","requiredTokens":["name","progress"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"consistency_001","category":"consistency","tone":"balanced","sourceType":"original","author":null,"template":"La constancia se construye con días como este.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"consistency_019","category":"consistency","tone":"gentle","sourceType":"original","author":null,"template":"Tu ritmo merece reconocimiento: {streak_label} de avance.","requiredTokens":["streak_label"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"consistency_040","category":"consistency","tone":"balanced","sourceType":"original","author":null,"template":"El progreso de hoy ya está completo: {progress}.","requiredTokens":["progress"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"consistency_068","category":"consistency","tone":"gentle","sourceType":"original","author":null,"template":"Repetir lo que te hace bien también es avanzar.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"personal_001","category":"personal","tone":"balanced","sourceType":"original","author":null,"template":"{name}, hoy alcanzaste el {progress} y llevas {streak_label} de constancia.","requiredTokens":["name","progress","streak_label"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"personal_002","category":"personal","tone":"gentle","sourceType":"original","author":null,"template":"{name}, este día refleja el cuidado que pones en ti.","requiredTokens":["name"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"personal_003","category":"personal","tone":"energetic","sourceType":"original","author":null,"template":"Tu esfuerzo, {name}, convirtió la intención en {progress}.","requiredTokens":["name","progress"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"personal_004","category":"personal","tone":"balanced","sourceType":"quote","author":"Rutio","template":"{name}, cada día completo es una nota que te dejas para mañana.","requiredTokens":["name"],"weight":10,"enabled":true,"contentVersion":1}
+  ]
+}
