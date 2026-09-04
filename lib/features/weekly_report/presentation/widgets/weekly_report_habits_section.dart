@@ -4,6 +4,7 @@ import '../../../../l10n/l10n.dart';
 import '../../../habits/domain/metrics/habit_occurrence_result.dart';
 import '../../domain/weekly_report.dart';
 import '../weekly_report_copy_resolver.dart';
+import '../weekly_report_visuals.dart';
 
 /// Compact, snapshot-only rendering of the habits part of a weekly report.
 class WeeklyReportHabitsSection extends StatefulWidget {
@@ -53,10 +54,7 @@ class _WeeklyReportHabitsSectionState extends State<WeeklyReportHabitsSection> {
               color: Color(0xFF2F251C))),
       const SizedBox(height: 6),
       Container(
-        decoration: BoxDecoration(
-            color: const Color(0xFFFDFBF7),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE9E3D9))),
+        decoration: WeeklyReportVisuals.cardDecoration(),
         child: Column(children: [
           for (var i = 0; i < groups.length; i++) ...[
             _GroupView(
@@ -64,10 +62,18 @@ class _WeeklyReportHabitsSectionState extends State<WeeklyReportHabitsSection> {
                 expanded: _expanded.contains(groups[i].classification),
                 onToggle: () => _toggle(groups[i].classification)),
             if (i < groups.length - 1)
-              const Divider(height: 1, indent: 10, endIndent: 10),
+              Divider(
+                  height: 1,
+                  indent: 10,
+                  endIndent: 10,
+                  color: WeeklyReportVisuals.border),
           ],
           if (unavailable.isNotEmpty) ...[
-            const Divider(height: 1, indent: 10, endIndent: 10),
+            Divider(
+                height: 1,
+                indent: 10,
+                endIndent: 10,
+                color: WeeklyReportVisuals.border),
             _GroupView(
                 group: _HabitGroup(
                     WeeklyReportHabitClassification.unavailable,
@@ -135,6 +141,7 @@ class _GroupView extends StatelessWidget {
         ? '${group.title}. 0'
         : '${group.title}. ${group.habits.length} ${context.l10n.weeklyReportHabitCountUnit}. $state';
 
+    final tone = _tone(group.classification);
     return Column(children: [
       Semantics(
         container: true,
@@ -147,13 +154,15 @@ class _GroupView extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           child: Padding(
             padding: EdgeInsets.symmetric(
-                horizontal: 10, vertical: secondary ? 7 : 8),
+                horizontal: 10, vertical: secondary ? 5 : 6),
             child: Row(children: [
-              Icon(group.icon,
-                  size: secondary ? 15 : 17,
-                  color: secondary
-                      ? const Color(0xFF8C8175)
-                      : const Color(0xFF6D8A55)),
+              Container(
+                  width: secondary ? 22 : 24,
+                  height: secondary ? 22 : 24,
+                  decoration: BoxDecoration(
+                      color: tone.background, shape: BoxShape.circle),
+                  child: Icon(group.icon,
+                      size: secondary ? 15 : 17, color: tone.foreground)),
               const SizedBox(width: 8),
               Expanded(
                   child: Column(
@@ -164,8 +173,8 @@ class _GroupView extends StatelessWidget {
                             fontSize: secondary ? 12 : 13,
                             fontWeight: FontWeight.w700,
                             color: secondary
-                                ? const Color(0xFF746A60)
-                                : const Color(0xFF2F251C))),
+                                ? WeeklyReportVisuals.mutedText
+                                : tone.foreground)),
                     if (group.subtitle != null)
                       Text(group.subtitle!,
                           maxLines: 2,
@@ -174,18 +183,29 @@ class _GroupView extends StatelessWidget {
                               fontSize: 10, color: Color(0xFF746A60))),
                   ])),
               const SizedBox(width: 8),
-              Text('${group.habits.length}',
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF5F554A))),
+              Container(
+                constraints: const BoxConstraints(minWidth: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                decoration: BoxDecoration(
+                    color: tone.background,
+                    borderRadius: BorderRadius.circular(20)),
+                child: Text('${group.habits.length}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: tone.foreground)),
+              ),
               if (!empty) ...[
                 const SizedBox(width: 5),
                 Semantics(
                     label: action,
-                    child: Icon(expanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded)),
+                    child: Icon(
+                        expanded
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        color: WeeklyReportVisuals.text,
+                        size: 22)),
               ],
             ]),
           ),
@@ -200,12 +220,38 @@ class _GroupView extends StatelessWidget {
                   for (var i = 0; i < group.habits.length; i++) ...[
                     _WeeklyReportHabitRow(habit: group.habits[i]),
                     if (i < group.habits.length - 1)
-                      const Divider(height: 1, indent: 10, endIndent: 10),
+                      Divider(
+                          height: 1,
+                          indent: 10,
+                          endIndent: 10,
+                          color: WeeklyReportVisuals.border),
                   ],
                 ])
               : const SizedBox.shrink()),
     ]);
   }
+
+  _GroupTone _tone(WeeklyReportHabitClassification classification) {
+    switch (classification) {
+      case WeeklyReportHabitClassification.highlighted:
+        return const _GroupTone(
+            WeeklyReportVisuals.stableSoft, WeeklyReportVisuals.successStrong);
+      case WeeklyReportHabitClassification.needsAttention:
+        return const _GroupTone(
+            WeeklyReportVisuals.warningSoft, WeeklyReportVisuals.warningStrong);
+      case WeeklyReportHabitClassification.stable:
+        return const _GroupTone(Color(0xFFF0EEE8), WeeklyReportVisuals.stable);
+      case WeeklyReportHabitClassification.unavailable:
+        return const _GroupTone(
+            Color(0xFFF2EEE8), WeeklyReportVisuals.neutralStrong);
+    }
+  }
+}
+
+class _GroupTone {
+  const _GroupTone(this.background, this.foreground);
+  final Color background;
+  final Color foreground;
 }
 
 class _WeeklyReportHabitRow extends StatelessWidget {

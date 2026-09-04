@@ -34,44 +34,31 @@ class WeeklyReportController extends ChangeNotifier {
   WeeklyReportController(
     this.repository, {
     required this.timeZoneResolver,
-    this.isScopeCurrent = _alwaysCurrent,
     this.refreshCurrentOnLoad = false,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
   final WeeklyReportRepository repository;
   final Future<String?> Function() timeZoneResolver;
-  final bool Function() isScopeCurrent;
   final bool refreshCurrentOnLoad;
   final DateTime Function() _now;
   WeeklyReportUiState _state = const WeeklyReportLoading();
   WeeklyReportUiState get state => _state;
-  bool _debugActionInProgress = false;
-  bool get debugActionInProgress => _debugActionInProgress;
+  String? _loadedReportId;
+  bool _operationInProgress = false;
 
   Future<void> load({String? reportId}) async {
+    if (_operationInProgress) return;
+    _operationInProgress = true;
+    _loadedReportId = reportId;
     _state = const WeeklyReportLoading();
     notifyListeners();
     try {
-      var snapshot = reportId == null
-          ? await repository.getLatest()
-          : await repository.getById(reportId);
-      if (refreshCurrentOnLoad &&
-          reportId == null &&
-          snapshot?.report.isProvisional == true) {
-        final timezone = (await timeZoneResolver())?.trim();
-        if (timezone != null &&
-            timezone.isNotEmpty &&
-            _isCurrentWeek(snapshot!.report.week.weekStartDate, timezone)) {
-          try {
-            snapshot = await repository.refreshProvisional(
-              snapshot.report.week.weekStartDate,
-            );
-          } on WeeklyReportError {
-            // The already loaded provisional report remains usable offline.
-          }
-        }
-      }
+      final snapshot = reportId == null && refreshCurrentOnLoad
+          ? await _loadCurrentWeek()
+          : reportId == null
+              ? await repository.getLatest()
+              : await repository.getById(reportId);
       _state = snapshot == null
           ? const WeeklyReportEmpty()
           : WeeklyReportDataState(snapshot);
@@ -79,85 +66,90 @@ class WeeklyReportController extends ChangeNotifier {
       _state = WeeklyReportFailure(error);
     } catch (error) {
       _state = WeeklyReportFailure(WeeklyReportNetworkFailure(error));
-    }
-    notifyListeners();
-  }
-
-  Future<void> refresh() async {
-    final current = _state;
-    if (current is! WeeklyReportDataState || !current.report.isProvisional) {
-      return load();
-    }
-    try {
-      _state = WeeklyReportDataState(
-        await repository.refreshProvisional(
-          current.report.week.weekStartDate,
-        ),
-      );
-      notifyListeners();
-    } on WeeklyReportError {
-      // Keep usable cached data visible if a refresh fails.
-    }
-  }
-
-  /// Debug-only command: the repository remains authoritative and the date
-  /// cannot be supplied by the caller.
-  Future<void> generateCurrentDebug() async {
-    if (_debugActionInProgress) return;
-    final previous = _state;
-    _debugActionInProgress = true;
-    notifyListeners();
-    try {
-      _debugLog('activation start');
-      final timezoneName = (await timeZoneResolver())?.trim();
-      if (!isScopeCurrent()) throw const WeeklyReportStaleScope();
-      if (timezoneName == null || timezoneName.isEmpty) {
-        throw const WeeklyReportActivationFailure();
-      }
-      final localDate = _localDateIn(timezoneName, _now());
-      _debugLog('timezoneId=$timezoneName localActivationDate=$localDate');
-      await repository.activate(
-        activationLocalDate: localDate,
-        timezoneName: timezoneName,
-      );
-      _debugLog('activation success');
-      if (!isScopeCurrent()) throw const WeeklyReportStaleScope();
-      final weekStart = WeeklyReportWeek.fromDate(localDate).weekStartDate;
-      _debugLog('refresh start');
-      final snapshot = await repository.refreshProvisional(
-        weekStart,
-      );
-      if (!isScopeCurrent()) throw const WeeklyReportStaleScope();
-      _debugLog('refresh success');
-      _state = WeeklyReportDataState(snapshot);
-    } on WeeklyReportError catch (error) {
-      _debugLog('failure type=${error.runtimeType}');
-      _state = previous is WeeklyReportDataState
-          ? previous
-          : WeeklyReportFailure(error);
     } finally {
-      _debugActionInProgress = false;
+      _operationInProgress = false;
       notifyListeners();
     }
   }
 
-  Future<void> refreshProvisionalDebug() async {
+  Future<void> refresh() => refreshCurrentWeek();
+
+  Future<void> refreshCurrentWeek() async {
+    if (_operationInProgress) return;
     final current = _state;
-    if (current is! WeeklyReportDataState || !current.report.isProvisional) {
+    if (current is! WeeklyReportDataState) {
+      return load(reportId: _loadedReportId);
+    }
+    if (_loadedReportId != null || !current.report.isProvisional) {
       return;
     }
-    if (_debugActionInProgress) return;
-    _debugActionInProgress = true;
-    notifyListeners();
+    final timezone = (await timeZoneResolver())?.trim();
+    if (timezone == null ||
+        timezone.isEmpty ||
+        !_isCurrentWeek(current.report.week.weekStartDate, timezone)) {
+      return;
+    }
+    final localDate = _localDateIn(timezone, _now());
+    _operationInProgress = true;
+    _logRefreshRequest(
+      current.report,
+      localDate: localDate,
+      timezone: timezone,
+      statusBefore: current.report.status.name,
+    );
     try {
-      _state = WeeklyReportDataState(
-        await repository.refreshProvisional(current.report.week.weekStartDate),
+      final snapshot = await repository.refreshProvisional(
+        current.report.week.weekStartDate,
       );
-    } on WeeklyReportError {
-      // Keep the valid provisional snapshot visible when refresh fails.
-    } finally {
-      _debugActionInProgress = false;
+      _state = WeeklyReportDataState(snapshot);
+      _logRefreshResult(snapshot);
       notifyListeners();
+    } on WeeklyReportError catch (error) {
+      _logRefreshFailure(current.report, error);
+      // Keep usable cached data visible if a refresh fails.
+    } finally {
+      _operationInProgress = false;
+    }
+  }
+
+  Future<WeeklyReportSnapshot?> _loadCurrentWeek() async {
+    final latest = await repository.getLatest();
+    final timezone = (await timeZoneResolver())?.trim();
+    if (timezone == null || timezone.isEmpty) return latest;
+    final localDate = _localDateIn(timezone, _now());
+    final weekStart = WeeklyReportWeek.fromDate(localDate).weekStartDate;
+    final latestIsCurrent = latest != null &&
+        DateUtils.dateOnly(latest.report.week.weekStartDate) ==
+            DateUtils.dateOnly(weekStart);
+    var current =
+        latestIsCurrent ? latest : await repository.getByWeekStart(weekStart);
+    if (current == null) {
+      _logRefreshRequest(
+        null,
+        reportId: 'none',
+        weekStartDate: weekStart,
+        localDate: localDate,
+        timezone: timezone,
+        statusBefore: 'absent',
+      );
+      current = await repository.refreshProvisional(weekStart);
+      _logRefreshResult(current);
+      return current;
+    }
+    if (!current.report.isProvisional) return current;
+    _logRefreshRequest(
+      current.report,
+      localDate: localDate,
+      timezone: timezone,
+      statusBefore: current.report.status.name,
+    );
+    try {
+      final refreshed = await repository.refreshProvisional(weekStart);
+      _logRefreshResult(refreshed);
+      return refreshed;
+    } on WeeklyReportError catch (error) {
+      _logRefreshFailure(current.report, error);
+      return current;
     }
   }
 
@@ -176,9 +168,53 @@ class WeeklyReportController extends ChangeNotifier {
     return DateUtils.dateOnly(weekStart) == DateUtils.dateOnly(monday);
   }
 
-  static bool _alwaysCurrent() => true;
-
-  void _debugLog(String message) {
-    if (kDebugMode) debugPrint('[WEEKLY_REPORT_DEBUG] $message');
+  void _logRefreshRequest(
+    WeeklyReport? report, {
+    String? reportId,
+    DateTime? weekStartDate,
+    DateTime? localDate,
+    required String? timezone,
+    required String statusBefore,
+  }) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[WEEKLY_REPORT_REFRESH] reportId=${report?.id ?? reportId ?? 'unknown'} '
+      'weekStartDate=${_dateOnly(weekStartDate ?? report?.week.weekStartDate)} '
+      'localDate=${_dateOnly(localDate)} timezone=${timezone ?? 'unknown'} '
+      'statusBefore=$statusBefore refresh requested',
+    );
   }
+
+  void _logRefreshResult(WeeklyReportSnapshot snapshot) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[WEEKLY_REPORT_REFRESH] reportId=${snapshot.report.id} '
+      'refresh result status=${snapshot.report.status.name} '
+      'completedCount=${snapshot.report.summary.completedCount} '
+      'scheduledCount=${snapshot.report.summary.scheduledCount} '
+      'days=${snapshot.report.days.length} habits=${snapshot.report.habits.length} '
+      'source=${snapshot.source.name}',
+    );
+    for (final day in snapshot.report.days) {
+      debugPrint(
+        '[WEEKLY_REPORT_REFRESH] date=${_dateOnly(day.date)} '
+        'scheduled=${day.scheduledCount} completed=${day.completedCount} '
+        'skipped=${day.skippedCount} state=${day.state.name}',
+      );
+    }
+  }
+
+  void _logRefreshFailure(WeeklyReport report, WeeklyReportError error) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[WEEKLY_REPORT_REFRESH] reportId=${report.id} '
+      'refresh result status=failed error=${error.runtimeType}',
+    );
+  }
+
+  String _dateOnly(DateTime? date) => date == null
+      ? 'unknown'
+      : '${date.year.toString().padLeft(4, '0')}-'
+          '${date.month.toString().padLeft(2, '0')}-'
+          '${date.day.toString().padLeft(2, '0')}';
 }

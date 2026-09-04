@@ -1,23 +1,19 @@
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../l10n/l10n.dart';
 import '../../application/weekly_report_controller.dart';
-import '../../application/weekly_report_debug_notification_service.dart';
 import '../../domain/weekly_report.dart';
 import '../widgets/weekly_report_habits_section.dart';
 import '../weekly_report_copy_resolver.dart';
 import '../widgets/weekly_report_recommendation.dart';
 import '../widgets/weekly_report_reflection.dart';
+import '../weekly_report_visuals.dart';
 import 'weekly_report_history_screen.dart';
 import '../../../../stores/user_state_store.dart';
 import '../../../../screens/habit_detail/habit_detail_screen.dart';
 import '../../../../utils/family_theme.dart';
-import '../../../notifications/data/local/shared_preferences_notification_install_id_provider.dart';
-import '../../../notifications/application/personalized_notification_orchestrator.dart';
-import '../../../notifications/domain/personalized_notification_models.dart';
 
 class WeeklyReportScreen extends StatelessWidget {
   const WeeklyReportScreen({
@@ -36,15 +32,10 @@ class WeeklyReportScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) {
         final store = context.read<UserStateStore>();
-        final initialUser = store.activeLocalScopeUserId ?? store.userId;
-        final initialEpoch = store.scopeEpoch;
         return WeeklyReportController(
           context.read<WeeklyReportRepository>(),
           timeZoneResolver: store.getLocalIanaTimeZone,
           refreshCurrentOnLoad: true,
-          isScopeCurrent: () =>
-              store.scopeEpoch == initialEpoch &&
-              (store.activeLocalScopeUserId ?? store.userId) == initialUser,
         )..load(reportId: reportId);
       },
       child: _WeeklyReportView(openedFromHistory: openedFromHistory),
@@ -61,16 +52,12 @@ class _WeeklyReportView extends StatefulWidget {
 }
 
 class _WeeklyReportViewState extends State<_WeeklyReportView> {
-  bool _debugPreviewingRecommendation = false;
-  bool _debugPreviewingReflection = false;
-  bool _debugNotificationScheduling = false;
-
   @override
   Widget build(BuildContext context) {
     final state = context.watch<WeeklyReportController>().state;
     final controller = context.read<WeeklyReportController>();
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F1E8),
+      backgroundColor: WeeklyReportVisuals.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -79,7 +66,10 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
         leading: const BackButton(),
         centerTitle: true,
         title: Text(context.l10n.weeklyReportTitle,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: WeeklyReportVisuals.text)),
         actions: widget.openedFromHistory
             ? null
             : [
@@ -99,169 +89,24 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
           WeeklyReportLoading() => const _LoadingView(),
           WeeklyReportEmpty() => _EmptyView(
               onRetry: controller.load,
-              onGenerate: kDebugMode ? controller.generateCurrentDebug : null,
-              busy: controller.debugActionInProgress,
             ),
           WeeklyReportFailure() => _ErrorView(
               onRetry: controller.load,
-              onGenerate: kDebugMode ? controller.generateCurrentDebug : null,
-              busy: controller.debugActionInProgress,
             ),
           WeeklyReportDataState() => _ReportContent(
               snapshot: state.snapshot,
-              debugReflection: _debugPreviewingReflection,
-              debugRecommendation: _debugPreviewingRecommendation
-                  ? _buildDebugRecommendation(context, state.snapshot.report)
-                  : null,
-              onEnterDebugPreview: kDebugMode
-                  ? () => setState(() => _debugPreviewingRecommendation = true)
-                  : null,
-              onExitDebugPreview: kDebugMode && _debugPreviewingRecommendation
-                  ? () => setState(() => _debugPreviewingRecommendation = false)
-                  : null,
-              onEnterDebugReflection:
-                  kDebugMode && state.snapshot.report.isProvisional
-                      ? () => setState(() => _debugPreviewingReflection = true)
-                      : null,
-              onExitDebugReflection: kDebugMode && _debugPreviewingReflection
-                  ? () => setState(() => _debugPreviewingReflection = false)
-                  : null,
-              onScheduleDebugNotification: kDebugMode
-                  ? () => _scheduleDebugNotification(state.snapshot.report)
-                  : null,
-              debugNotificationBusy: _debugNotificationScheduling,
             ),
         },
       ),
     );
-  }
-
-  WeeklyReportRecommendation _buildDebugRecommendation(
-      BuildContext context, WeeklyReport report) {
-    final store = context.read<UserStateStore>();
-    final compatible = store.activeHabits.where((habit) {
-      final schedule = habit['schedule'];
-      final type = habit['type']?.toString().toLowerCase();
-      final quota = schedule is Map ? schedule['timesPerWeek'] : null;
-      return type == 'check' &&
-          schedule is Map &&
-          schedule['type']?.toString() == 'timesPerWeek' &&
-          quota is num &&
-          quota.toInt() >= 2;
-    }).toList(growable: false);
-    compatible.sort((a, b) {
-      final aQuota = (a['schedule'] as Map)['timesPerWeek'] as num;
-      final bQuota = (b['schedule'] as Map)['timesPerWeek'] as num;
-      final aPreferred = aQuota.toInt() == 5 ? 0 : 1;
-      final bPreferred = bQuota.toInt() == 5 ? 0 : 1;
-      if (aPreferred != bPreferred) return aPreferred.compareTo(bPreferred);
-      return (a['id'] ?? a['habitId'] ?? '')
-          .toString()
-          .compareTo((b['id'] ?? b['habitId'] ?? '').toString());
-    });
-    final live = compatible.isEmpty ? null : compatible.first;
-    final schedule = live?['schedule'] is Map
-        ? Map<String, dynamic>.from(live!['schedule'] as Map)
-        : <String, dynamic>{'type': 'timesPerWeek', 'timesPerWeek': 5};
-    final currentQuota = (schedule['timesPerWeek'] as num?)?.toInt() ?? 5;
-    final id = live == null
-        ? null
-        : (live['id'] ?? live['habitId'] ?? live['uuid'])?.toString();
-    return WeeklyReportRecommendation(
-      type: WeeklyReportRecommendationType.reduceFrequency,
-      reason: 'weekly_report_recommendation_reduce_frequency_v1',
-      habitId: id,
-      habitName: live?['title']?.toString() ?? live?['name']?.toString(),
-      emoji: live?['emoji']?.toString(),
-      currentConfig: <String, dynamic>{
-        'schedule': schedule,
-        'habitType': 'check',
-      },
-      proposedPatch: <String, dynamic>{
-        'version': 1,
-        'type': 'reduceFrequency',
-        'current': <String, dynamic>{'schedule': schedule},
-        'proposed': <String, dynamic>{
-          'schedule': <String, dynamic>{
-            'type': 'timesPerWeek',
-            'timesPerWeek': currentQuota - 1,
-            'weekStartsOn': schedule['weekStartsOn'] ?? 1,
-          },
-        },
-      },
-    );
-  }
-
-  Future<void> _scheduleDebugNotification(WeeklyReport report) async {
-    if (_debugNotificationScheduling) return;
-    setState(() => _debugNotificationScheduling = true);
-    try {
-      final store = context.read<UserStateStore>();
-      final notificationOrchestrator =
-          context.read<PersonalizedNotificationOrchestrator>();
-      final userId = store.activeLocalScopeUserId ?? store.userId;
-      if (userId == null || userId.isEmpty) return;
-      final installId = await SharedPreferencesNotificationInstallIdProvider()
-          .getOrCreateInstallId();
-      if (!mounted) return;
-      final scope = NotificationScope(
-        userId: userId,
-        scopeEpoch: store.scopeEpoch,
-        installId: installId,
-        locale: store.preferredLocale?.languageCode ?? 'es',
-      );
-      final timezoneId = await store.getLocalIanaTimeZone();
-      if (timezoneId == null || timezoneId.isEmpty) {
-        throw StateError('device_timezone_unavailable');
-      }
-      await const WeeklyReportDebugNotificationService().scheduleFor(
-        report,
-        scope: scope,
-        orchestrator: notificationOrchestrator,
-        timezoneId: timezoneId,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.l10n.weeklyReportDebugNotificationScheduled,
-            ),
-          ),
-        );
-      }
-    } catch (error) {
-      if (kDebugMode) {
-        debugPrint(
-          '[WEEKLY_REPORT_NOTIFICATION_TEST] schedule failed type=${error.runtimeType}',
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _debugNotificationScheduling = false);
-    }
   }
 }
 
 class _ReportContent extends StatelessWidget {
   const _ReportContent({
     required this.snapshot,
-    this.debugReflection = false,
-    this.debugRecommendation,
-    this.onEnterDebugPreview,
-    this.onExitDebugPreview,
-    this.onEnterDebugReflection,
-    this.onExitDebugReflection,
-    this.onScheduleDebugNotification,
-    this.debugNotificationBusy = false,
   });
   final WeeklyReportSnapshot snapshot;
-  final bool debugReflection;
-  final WeeklyReportRecommendation? debugRecommendation;
-  final VoidCallback? onEnterDebugPreview;
-  final VoidCallback? onExitDebugPreview;
-  final VoidCallback? onEnterDebugReflection;
-  final VoidCallback? onExitDebugReflection;
-  final VoidCallback? onScheduleDebugNotification;
-  final bool debugNotificationBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -277,48 +122,6 @@ class _ReportContent extends StatelessWidget {
           if (snapshot.isStale) _OfflineBanner(cachedAt: snapshot.cachedAt),
           if (report.isProvisional) const _ProvisionalBanner(),
           if (report.firstPartialWeek) const _FirstWeekBanner(),
-          if (kDebugMode && report.isProvisional)
-            WeeklyReportDebugAction(
-              label: context.l10n.weeklyReportDebugRefresh,
-              onPressed: context
-                  .read<WeeklyReportController>()
-                  .refreshProvisionalDebug,
-              busy:
-                  context.watch<WeeklyReportController>().debugActionInProgress,
-            ),
-          if (kDebugMode && onScheduleDebugNotification != null)
-            WeeklyReportDebugAction(
-              label: context.l10n.weeklyReportDebugNotificationSchedule,
-              onPressed: onScheduleDebugNotification!,
-              busy: debugNotificationBusy,
-            ),
-          if (kDebugMode &&
-              debugRecommendation == null &&
-              onEnterDebugPreview != null)
-            WeeklyReportDebugAction(
-              label: context.l10n.weeklyReportRecommendationDebugPreview,
-              onPressed: onEnterDebugPreview!,
-            ),
-          if (kDebugMode &&
-              debugRecommendation != null &&
-              onExitDebugPreview != null)
-            WeeklyReportDebugAction(
-              label: context.l10n.weeklyReportRecommendationDebugExit,
-              onPressed: onExitDebugPreview!,
-            ),
-          if (kDebugMode && debugReflection && onExitDebugReflection != null)
-            WeeklyReportDebugAction(
-              label: context.l10n.weeklyReflectionDebugExit,
-              onPressed: onExitDebugReflection!,
-            ),
-          if (kDebugMode &&
-              !debugReflection &&
-              report.isProvisional &&
-              onEnterDebugReflection != null)
-            WeeklyReportDebugAction(
-              label: context.l10n.weeklyReflectionDebugPreview,
-              onPressed: onEnterDebugReflection!,
-            ),
           const SizedBox(height: 8),
           _SummaryCard(report: report),
           const SizedBox(height: 8),
@@ -327,28 +130,21 @@ class _ReportContent extends StatelessWidget {
             const SizedBox(height: 10),
             WeeklyReportHabitsSection(habits: report.habits),
           ],
-          if ((report.isFinal && report.recommendations.isNotEmpty) ||
-              debugRecommendation != null) ...[
+          if (report.isFinal && report.recommendations.isNotEmpty) ...[
             const SizedBox(height: 8),
             WeeklyReportRecommendationCard(
-              recommendation:
-                  debugRecommendation ?? report.recommendations.first,
-              habit: _habitFor(
-                  report,
-                  (debugRecommendation ?? report.recommendations.first)
-                      .habitId),
-              onReview: () => _openRecommendation(
-                  context, debugRecommendation ?? report.recommendations.first),
+              recommendation: report.recommendations.first,
+              habit: _habitFor(report, report.recommendations.first.habitId),
+              onReview: () =>
+                  _openRecommendation(context, report.recommendations.first),
             ),
           ],
-          if (report.isFinal || (kDebugMode && debugReflection)) ...[
+          if (report.isFinal) ...[
             const SizedBox(height: 8),
             WeeklyReportReflection(
               reportId: report.id,
               weekEnd: report.week.weekEndDate,
             ),
-            if (kDebugMode && debugReflection)
-              DebugReflectionCleanup(reportId: report.id),
           ],
           if (!report.summary.hasScheduledCount)
             Padding(
@@ -424,7 +220,21 @@ class _WeekRange extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF173D2C))),
-        if (isFinal) Chip(label: Text(context.l10n.weeklyReportFinalLabel)),
+        if (isFinal)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(
+              color: WeeklyReportVisuals.stableSoft,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: WeeklyReportVisuals.success.withValues(alpha: .3)),
+            ),
+            child: Text(context.l10n.weeklyReportFinalLabel,
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: WeeklyReportVisuals.successStrong)),
+          ),
       ]),
     );
   }
@@ -453,48 +263,74 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final summary = report.summary;
-    return _Card(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l10n.weeklyReportSummary,
-            style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF2F251C))),
-        const SizedBox(height: 6),
-        Text(WeeklyReportCopyResolver.summary(l10n, report),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xFF5F554A))),
-        const SizedBox(height: 8),
-        Row(children: [
-          Expanded(
-              child: _Metric(
-                  icon: Icons.check_circle_outline,
-                  value: '${summary.completedCount}',
-                  label: l10n.weeklyReportCompleted)),
-          _Divider(),
-          Expanded(
-              child: _Metric(
-                  icon: Icons.percent,
-                  value: summary.completionRate == null
-                      ? '—'
-                      : '${(summary.completionRate! * 100).round()}%',
-                  label: l10n.weeklyReportCompletion)),
-          _Divider(),
-          Expanded(
-              child: _Metric(
-                  icon: Icons.star_border,
-                  value: summary.bestDay == null
-                      ? '—'
-                      : context.l10n.weekdayFull(summary.bestDay!.date.weekday),
-                  label: l10n.weeklyReportBestDay)),
-        ]),
-        if (report.trend.kind != WeeklyReportTrendKind.unavailable) ...[
-          const SizedBox(height: 6),
-          Text(_trendLabel(context, report.trend),
-              style: const TextStyle(
-                  color: Color(0xFF4E7D35), fontWeight: FontWeight.w600)),
-        ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(children: [
+        _Card(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: WeeklyReportVisuals.stableSoft,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(Icons.trending_up_rounded,
+                    size: 18, color: WeeklyReportVisuals.successStrong),
+              ),
+              const SizedBox(width: 8),
+              Text(l10n.weeklyReportSummary,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: WeeklyReportVisuals.text)),
+            ]),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(right: 18),
+              child: Text(WeeklyReportCopyResolver.summary(l10n, report),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFF5F554A))),
+            ),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                  child: _Metric(
+                      icon: Icons.check_circle_outline,
+                      value: '${summary.completedCount}',
+                      label: l10n.weeklyReportCompleted)),
+              const _Divider(),
+              Expanded(
+                  child: _Metric(
+                      icon: Icons.percent,
+                      value: summary.completionRate == null
+                          ? '—'
+                          : '${(summary.completionRate! * 100).round()}%',
+                      label: l10n.weeklyReportCompletion)),
+              const _Divider(),
+              Expanded(
+                  child: _Metric(
+                      icon: Icons.star_border,
+                      value: summary.bestDay == null
+                          ? '—'
+                          : context.l10n
+                              .weekdayFull(summary.bestDay!.date.weekday),
+                      label: l10n.weeklyReportBestDay)),
+            ]),
+            if (report.trend.kind != WeeklyReportTrendKind.unavailable) ...[
+              const SizedBox(height: 6),
+              Text(_trendLabel(context, report.trend),
+                  style: const TextStyle(
+                      color: WeeklyReportVisuals.successStrong,
+                      fontWeight: FontWeight.w600)),
+            ],
+          ]),
+        ),
+        const Positioned(
+            top: -8, right: -10, child: WeeklyReportBotanicalDecoration()),
       ]),
     );
   }
@@ -603,7 +439,8 @@ class _DayBar extends StatelessWidget {
     final noPlan = d == null ||
         d.state == WeeklyReportDayState.noPlan ||
         d.scheduledCount == 0;
-    final fraction = noPlan ? 0.0 : (d.completionRate ?? 0).clamp(0.0, 1.0);
+    final completionRate = d?.completionRate;
+    final fraction = noPlan ? 0.0 : (completionRate ?? 0).clamp(0.0, 1.0);
     final semantics = noPlan
         ? '$fullLabel, ${context.l10n.weeklyReportNoScheduled}'
         : '$fullLabel, ${d.completedCount} ${context.l10n.weeklyReportOf} ${d.scheduledCount} ${context.l10n.weeklyReportCompleted}';
@@ -617,9 +454,18 @@ class _DayBar extends StatelessWidget {
                       width: 18,
                       height: 76 * (noPlan ? .08 : math.max(.08, fraction)),
                       decoration: BoxDecoration(
-                          color: noPlan
-                              ? const Color(0xFFE8E2D9)
-                              : const Color(0xFF8BB85D),
+                          color: WeeklyReportVisuals.barColor(
+                            noPlan
+                                ? WeeklyReportVisualBarState.noPlan
+                                : WeeklyReportVisualBarState.planned,
+                            completionRate,
+                          ),
+                          border: noPlan
+                              ? null
+                              : Border.all(
+                                  color: WeeklyReportVisuals.completionColor(
+                                      completionRate),
+                                  width: .5),
                           borderRadius: BorderRadius.circular(7))))),
           const SizedBox(height: 2),
           Text(label, style: const TextStyle(fontSize: 10))
@@ -633,11 +479,7 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFDFBF7),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE9E3D9)),
-      ),
+      decoration: WeeklyReportVisuals.cardDecoration(),
       child: child);
 }
 
@@ -648,14 +490,14 @@ class _Metric extends StatelessWidget {
   final String label;
   @override
   Widget build(BuildContext context) => Column(children: [
-        Icon(icon, size: 20, color: const Color(0xFF5D965A)),
+        Icon(icon, size: 20, color: WeeklyReportVisuals.success),
         const SizedBox(height: 3),
         Text(value,
             textAlign: TextAlign.center,
             style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2E241A))),
+                color: WeeklyReportVisuals.text)),
         const SizedBox(height: 2),
         Text(label,
             textAlign: TextAlign.center,
@@ -667,7 +509,7 @@ class _Divider extends StatelessWidget {
   const _Divider();
   @override
   Widget build(BuildContext context) =>
-      Container(width: 1, height: 50, color: const Color(0x33B8A98F));
+      Container(width: 1, height: 50, color: WeeklyReportVisuals.divider);
 }
 
 class _RingPainter extends CustomPainter {
@@ -678,14 +520,25 @@ class _RingPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final p = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 7
+      ..strokeWidth = 6
       ..strokeCap = StrokeCap.round
-      ..color = const Color(0xFFE5E7E1);
+      ..color = WeeklyReportVisuals.neutral;
     canvas.drawArc(rect.deflate(8), -math.pi / 2, math.pi * 2, false, p);
     if (rate != null) {
-      p.color = const Color(0xFF76AD45);
+      final progressRect = rect.deflate(8);
+      p.shader = SweepGradient(
+        startAngle: -math.pi / 2,
+        endAngle: math.pi * 1.5,
+        colors: [
+          WeeklyReportVisuals.completionColor(rate),
+          Color.lerp(WeeklyReportVisuals.completionColor(rate), Colors.white,
+                  .12) ??
+              WeeklyReportVisuals.completionColor(rate),
+        ],
+      ).createShader(progressRect);
       canvas.drawArc(rect.deflate(8), -math.pi / 2,
           math.pi * 2 * rate!.clamp(0, 1), false, p);
+      p.shader = null;
     }
   }
 
@@ -722,14 +575,28 @@ class _Banner extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
       margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-          color: const Color(0xFFF3EFE9),
-          borderRadius: BorderRadius.circular(10)),
+          color: WeeklyReportVisuals.stableSoft.withValues(alpha: .72),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: WeeklyReportVisuals.success.withValues(alpha: .2))),
       child: Row(children: [
-        Icon(icon, size: 16, color: const Color(0xFF4E7D35)),
-        const SizedBox(width: 5),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 12)))
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+              color: WeeklyReportVisuals.surface.withValues(alpha: .78),
+              shape: BoxShape.circle),
+          child: Icon(icon, size: 15, color: WeeklyReportVisuals.successStrong),
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+            child: Text(text,
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: WeeklyReportVisuals.text,
+                    fontWeight: FontWeight.w500)))
       ]));
 }
 
@@ -741,52 +608,32 @@ class _LoadingView extends StatelessWidget {
 }
 
 class _EmptyView extends StatelessWidget {
-  const _EmptyView({required this.onRetry, this.onGenerate, this.busy = false});
+  const _EmptyView({required this.onRetry});
   final VoidCallback onRetry;
-  final VoidCallback? onGenerate;
-  final bool busy;
   @override
   Widget build(BuildContext context) => _MessageView(
-      title: context.l10n.weeklyReportEmpty,
-      button: context.l10n.weeklyReportRetry,
-      onRetry: onRetry,
-      extra: onGenerate == null
-          ? null
-          : WeeklyReportDebugAction(
-              label: context.l10n.weeklyReportDebugGenerate,
-              onPressed: onGenerate!,
-              busy: busy,
-            ));
+        title: context.l10n.weeklyReportEmpty,
+        button: context.l10n.weeklyReportRetry,
+        onRetry: onRetry,
+      );
 }
 
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.onRetry, this.onGenerate, this.busy = false});
+  const _ErrorView({required this.onRetry});
   final VoidCallback onRetry;
-  final VoidCallback? onGenerate;
-  final bool busy;
   @override
   Widget build(BuildContext context) => _MessageView(
-      title: context.l10n.weeklyReportError,
-      button: context.l10n.weeklyReportRetry,
-      onRetry: onRetry,
-      extra: onGenerate == null
-          ? null
-          : WeeklyReportDebugAction(
-              label: context.l10n.weeklyReportDebugGenerate,
-              onPressed: onGenerate!,
-              busy: busy,
-            ));
+        title: context.l10n.weeklyReportError,
+        button: context.l10n.weeklyReportRetry,
+        onRetry: onRetry,
+      );
 }
 
 class _MessageView extends StatelessWidget {
   const _MessageView(
-      {required this.title,
-      required this.button,
-      required this.onRetry,
-      this.extra});
+      {required this.title, required this.button, required this.onRetry});
   final String title, button;
   final VoidCallback onRetry;
-  final Widget? extra;
   @override
   Widget build(BuildContext context) => Center(
       child: Padding(
@@ -795,39 +642,5 @@ class _MessageView extends StatelessWidget {
             Text(title, textAlign: TextAlign.center),
             const SizedBox(height: 14),
             FilledButton(onPressed: onRetry, child: Text(button)),
-            if (extra != null) ...[const SizedBox(height: 6), extra!],
           ])));
-}
-
-class WeeklyReportDebugAction extends StatelessWidget {
-  const WeeklyReportDebugAction({
-    super.key,
-    required this.label,
-    required this.onPressed,
-    this.busy = false,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-  final bool busy;
-
-  @override
-  Widget build(BuildContext context) => TextButton.icon(
-        key: Key(label),
-        onPressed: busy ? null : onPressed,
-        style: TextButton.styleFrom(
-          padding: EdgeInsets.zero,
-          minimumSize: const Size(0, 40),
-          visualDensity: VisualDensity.compact,
-          textStyle: const TextStyle(fontSize: 11),
-        ),
-        icon: busy
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.bug_report_outlined, size: 14),
-        label: Text(label),
-      );
 }

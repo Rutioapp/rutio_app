@@ -11,21 +11,21 @@ import 'package:rutio/l10n/gen/app_localizations_en.dart';
 import 'package:rutio/l10n/gen/app_localizations_es.dart';
 
 const _summaryFamilies = <String, int>{
-  'summary_first_partial': 8,
-  'summary_provisional': 8,
-  'summary_no_schedule': 6,
-  'summary_strong': 10,
-  'summary_good': 10,
-  'summary_mixed': 10,
-  'summary_needs_recovery': 10,
-  'summary_improved': 8,
-  'summary_declined': 8,
+  'summary_first_partial': 18,
+  'summary_provisional': 18,
+  'summary_no_schedule': 14,
+  'summary_strong': 20,
+  'summary_good': 20,
+  'summary_mixed': 20,
+  'summary_needs_recovery': 20,
+  'summary_improved': 18,
+  'summary_declined': 18,
 };
 
 const _observationFamilies = <String, int>{
-  'habit_highlighted': 8,
-  'habit_stable': 8,
-  'habit_needs_attention': 8,
+  'habit_highlighted': 16,
+  'habit_stable': 16,
+  'habit_needs_attention': 16,
 };
 
 List<String> _keys(Map<String, int> families) => [
@@ -33,6 +33,14 @@ List<String> _keys(Map<String, int> families) => [
         for (var i = 1; i <= entry.value; i++)
           'weekly_report_${entry.key}_${i.toString().padLeft(2, '0')}',
     ];
+
+List<String> _values(String path, String prefix, int count) {
+  final values = jsonDecode(File(path).readAsStringSync()) as Map;
+  return [
+    for (var i = 1; i <= count; i++)
+      values['$prefix${i.toString().padLeft(2, '0')}'].toString(),
+  ];
+}
 
 WeeklyReport _report(String? key) => WeeklyReport(
       id: 'r',
@@ -80,9 +88,10 @@ void main() {
   final allKeys = [...summaryKeys, ...observationKeys];
 
   test('approved catalog has exact family counts and l10n parity', () {
-    expect(summaryKeys, hasLength(78));
-    expect(observationKeys, hasLength(24));
-    expect(allKeys.toSet(), hasLength(102));
+    expect(summaryKeys, hasLength(166));
+    expect(observationKeys, hasLength(48));
+    expect(allKeys, hasLength(214));
+    expect(allKeys.toSet(), hasLength(214));
 
     for (final path in ['lib/l10n/app_es.arb', 'lib/l10n/app_en.arb']) {
       final values = jsonDecode(File(path).readAsStringSync()) as Map;
@@ -126,18 +135,102 @@ void main() {
     }
   });
 
-  test('family prefixes are disjoint and backend migration declares the pool',
+  test('family prefixes are disjoint and backend migrations declare the pool',
       () {
     final migration = File(
-      'supabase/migrations/20260903130000_weekly_report_copy_catalog_expansion.sql',
+          'supabase/migrations/20260903130000_weekly_report_copy_catalog_expansion.sql',
+        ).readAsStringSync() +
+        File(
+          'supabase/migrations/20260904120000_weekly_report_copy_catalog_expansion_v2.sql',
+        ).readAsStringSync();
+    final expansionV2 = File(
+      'supabase/migrations/20260904120000_weekly_report_copy_catalog_expansion_v2.sql',
     ).readAsStringSync();
     for (final entry
         in {..._summaryFamilies, ..._observationFamilies}.entries) {
-      expect(migration, contains("('${entry.key}'"));
-      expect(migration, contains(',${entry.value})'));
+      expect(expansionV2, contains("('${entry.key}'"));
+      expect(expansionV2, contains(', ${entry.value})'));
     }
     expect(migration, contains('generate_series'));
+    expect(migration, contains('md5('));
+    expect(migration, contains('not exists'));
     expect(migration, isNot(contains('random()')));
+  });
+
+  test('catalog values are non-empty and unique within each family', () {
+    final es =
+        jsonDecode(File('lib/l10n/app_es.arb').readAsStringSync()) as Map;
+    final en =
+        jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync()) as Map;
+    for (final entry
+        in {..._summaryFamilies, ..._observationFamilies}.entries) {
+      final arbPrefix = entry.key
+          .split('_')
+          .skip(1)
+          .map((part) => part[0].toUpperCase() + part.substring(1))
+          .join();
+      final prefix = entry.key.startsWith('summary_')
+          ? 'weeklyReportSummary$arbPrefix'
+          : 'weeklyReportHabit$arbPrefix';
+      final esValues = [
+        for (var i = 1; i <= entry.value; i++)
+          es['${prefix}${i.toString().padLeft(2, '0')}'],
+      ];
+      final enValues = [
+        for (var i = 1; i <= entry.value; i++)
+          en['${prefix}${i.toString().padLeft(2, '0')}'],
+      ];
+      expect(esValues, everyElement(isA<String>()));
+      expect(enValues, everyElement(isA<String>()));
+      expect(esValues.toSet(), hasLength(entry.value));
+      expect(enValues.toSet(), hasLength(entry.value));
+    }
+  });
+
+  test('no-schedule selection is reserved for exactly zero scheduled items',
+      () {
+    final source = File(
+      'supabase/migrations/20260903120000_weekly_report_contextual_copy.sql',
+    ).readAsStringSync();
+    expect(source, contains("when p_scheduled = 0 then 'summary_no_schedule'"));
+    expect(source, isNot(contains('low_signal')));
+    expect(source, isNot(contains('p_rate <')));
+  });
+
+  test('provisional copy stays day-agnostic', () {
+    for (final path in ['lib/l10n/app_es.arb', 'lib/l10n/app_en.arb']) {
+      final values = _values(
+        path,
+        path.endsWith('app_es.arb')
+            ? 'weeklyReportSummaryProvisional'
+            : 'weeklyReportSummaryProvisional',
+        18,
+      );
+      expect(
+        values.join(' '),
+        isNot(matches(RegExp(
+          r'próximos días|quedan días|cada día pendiente|days ahead|days to adjust|day ahead',
+          caseSensitive: false,
+        ))),
+      );
+    }
+  });
+
+  test('needs-attention copy is observational, not prescriptive', () {
+    for (final path in ['lib/l10n/app_es.arb', 'lib/l10n/app_en.arb']) {
+      final values = _values(
+        path,
+        'weeklyReportHabitNeedsAttention',
+        16,
+      );
+      expect(
+        values.join(' '),
+        isNot(matches(RegExp(
+          r'simplif|ajuste|ajustar|probar|siguiente paso|revisar|simplif|adjust|try |next step|review|easier|reduce |approach',
+          caseSensitive: false,
+        ))),
+      );
+    }
   });
 
   test('unknown keys remain safe and language switching preserves the key', () {

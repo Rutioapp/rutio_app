@@ -28,12 +28,6 @@ extension WeeklyReportRecommendationL10n on AppLocalizations {
   String get weeklyReportRecommendationStale => _weeklyRecommendationEs
       ? 'Este hábito cambió desde el reporte. Revisa los valores actuales antes de guardar.'
       : 'This habit changed since the report. Review the current values before saving.';
-  String get weeklyReportRecommendationDebugPreview => _weeklyRecommendationEs
-      ? 'Previsualizar recomendación · Debug'
-      : 'Preview recommendation · Debug';
-  String get weeklyReportRecommendationDebugExit => _weeklyRecommendationEs
-      ? 'Salir de previsualización · Debug'
-      : 'Exit preview · Debug';
 }
 
 extension WeeklyReportPhase11L10n on AppLocalizations {
@@ -63,12 +57,6 @@ extension WeeklyReportPhase11L10n on AppLocalizations {
       : 'No report available yet';
   String get weeklyReportNoScheduleShort =>
       _weeklyReportPhase11Es ? 'Sin programación' : 'No schedule';
-  String get weeklyReportDebugNotificationSchedule => _weeklyReportPhase11Es
-      ? 'Programar notificación semanal de prueba · Debug'
-      : 'Schedule weekly report test notification · Debug';
-  String get weeklyReportDebugNotificationScheduled => _weeklyReportPhase11Es
-      ? 'Notificación de prueba programada para dentro de un minuto.'
-      : 'Test notification scheduled for about one minute from now.';
 }
 
 extension L10nX on BuildContext {
@@ -1931,15 +1919,6 @@ extension AppLocalizationsWeeklyReflectionX on AppLocalizations {
       _weeklyReflectionEs ? 'Editar reflexión' : 'Edit reflection';
   String get weeklyReflectionSaving =>
       _weeklyReflectionEs ? 'Guardando...' : 'Saving...';
-  String get weeklyReflectionDebugPreview => _weeklyReflectionEs
-      ? 'Previsualizar reflexión · Debug'
-      : 'Preview reflection · Debug';
-  String get weeklyReflectionDebugExit => _weeklyReflectionEs
-      ? 'Salir de previsualización · Debug'
-      : 'Exit reflection preview · Debug';
-  String get weeklyReflectionDebugDelete => _weeklyReflectionEs
-      ? 'Eliminar reflexión de prueba · Debug'
-      : 'Delete test reflection · Debug';
   String weeklyReflectionMoodLabel(int value) =>
       _weeklyReflectionEs ? 'Estado de ánimo $value de 5' : 'Mood $value of 5';
 }

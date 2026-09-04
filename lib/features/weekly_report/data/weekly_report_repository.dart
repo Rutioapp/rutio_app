@@ -187,9 +187,21 @@ class SupabaseWeeklyReportRemoteDataSource
   }
 
   @override
-  Future<RemoteWeeklyReport?> refresh(DateTime weekStartDate) async =>
-      _parse(await _client.rpc('refresh_my_weekly_report',
+  Future<RemoteWeeklyReport?> refresh(DateTime weekStartDate) async {
+    try {
+      return _parse(await _client.rpc('refresh_my_weekly_report',
           params: {'p_week_start_date': _isoDate(weekStartDate)}));
+    } on PostgrestException catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[WEEKLY_REPORT_REFRESH] PostgrestException '
+          'code=${error.code ?? 'unknown'} '
+          'message=${error.message} details=${error.details} hint=${error.hint}',
+        );
+      }
+      rethrow;
+    }
+  }
 
   @override
   Future<void> activate({
@@ -309,11 +321,18 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
   Future<WeeklyReportSnapshot?> getLatest() async {
     final scope = _scope();
     final cached = await _cachedLatest(scope);
+    _debugRefreshLog(
+      'read latest cacheSource=${cached?.source.name ?? 'none'}',
+    );
     try {
       final payload = await remote.getLatest();
       if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
       if (payload == null) return null;
       await _save(scope, payload);
+      _debugRefreshLog(
+        'read latest remoteSource=remoteFresh reportId=${payload.report.id} '
+        'status=${payload.report.status}',
+      );
       return WeeklyReportSnapshot(
           report: mapRemoteWeeklyReport(payload),
           source: WeeklyReportDataSource.remoteFresh,
@@ -350,11 +369,19 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
   @override
   Future<WeeklyReportSnapshot?> getByWeekStart(DateTime weekStartDate) async {
     final scope = _scope();
+    _debugRefreshLog(
+      'read exact weekStartDate=${_isoDate(weekStartDate)} '
+      'cacheSource=none',
+    );
     try {
       final payload = await remote.getByWeekStart(weekStartDate);
       if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
       if (payload == null) return null;
       await _save(scope, payload);
+      _debugRefreshLog(
+        'read exact remoteSource=remoteFresh reportId=${payload.report.id} '
+        'status=${payload.report.status}',
+      );
       return _fresh(payload);
     } catch (error) {
       if (error is WeeklyReportError) rethrow;
@@ -399,11 +426,19 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
   Future<WeeklyReportSnapshot> refreshProvisional(
       DateTime weekStartDate) async {
     final scope = _scope();
+    _debugRefreshLog(
+      'refresh RPC requested weekStartDate=${_isoDate(weekStartDate)} '
+      'cacheSource=${(await _cachedLatest(scope))?.source.name ?? 'none'}',
+    );
     try {
       final payload = await remote.refresh(weekStartDate);
       if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
       if (payload == null) throw const WeeklyReportNotFound();
       await _save(scope, payload);
+      _debugRefreshLog(
+        'refresh RPC remoteSource=remoteFresh reportId=${payload.report.id} '
+        'status=${payload.report.status}',
+      );
       return _fresh(payload);
     } on WeeklyReportError {
       rethrow;
@@ -482,6 +517,10 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
           isStale: true);
   WeeklyReportNetworkFailure _network(Object e) =>
       WeeklyReportNetworkFailure(e);
+
+  void _debugRefreshLog(String message) {
+    if (kDebugMode) debugPrint('[WEEKLY_REPORT_REFRESH] $message');
+  }
 }
 
 String _isoDate(DateTime d) =>

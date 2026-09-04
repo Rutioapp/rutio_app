@@ -140,7 +140,14 @@ HabitSchedule _schedule(Map<String, dynamic> s) {
   }
 }
 
-DateTime _date(String value) => DateTime.parse(value).toLocal();
+// Weekly-report calendar fields are date-only values. Rebuild them as local
+// calendar dates instead of converting midnight UTC, which can move the date
+// to the previous day on devices west of UTC.
+DateTime _date(String value) {
+  final parsed = DateTime.parse(value);
+  return DateTime(parsed.year, parsed.month, parsed.day);
+}
+
 WeeklyReportStatus _status(String v) => v == 'final'
     ? WeeklyReportStatus.finalized
     : WeeklyReportStatus.provisional;
