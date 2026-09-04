@@ -6,7 +6,7 @@ import 'package:rutio/features/weekly_report/presentation/widgets/weekly_report_
 import 'package:rutio/l10n/gen/app_localizations.dart';
 
 void main() {
-  testWidgets('debug-style fixture renders the productive widget and CTA only',
+  testWidgets('productive fixture renders the recommendation and CTA only',
       (tester) async {
     var reviewCalls = 0;
     await tester.pumpWidget(_app(

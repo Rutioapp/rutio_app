@@ -3,25 +3,27 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('debug reflection only bypasses the final visibility gate', () {
+  test('weekly report has no visible debug controls', () {
     final source = File(
       'lib/features/weekly_report/presentation/screens/weekly_report_screen.dart',
     ).readAsStringSync();
-    expect(source, contains('kDebugMode && debugReflection'));
     expect(source, contains('WeeklyReportReflection('));
-    expect(
-        source, contains('report.isFinal || (kDebugMode && debugReflection)'));
-    expect(source, contains('report.isProvisional'));
-    expect(source, contains('WeeklyReportDebugAction'));
-    expect(source, contains('weeklyReflectionDebugPreview'));
+    expect(source, contains('if (report.isFinal)'));
+    expect(source, isNot(contains('Debug')));
+    expect(source, isNot(contains('debug')));
+    expect(source, isNot(contains('Preview')));
+    expect(source, isNot(contains('WeeklyReportDebugAction')));
     expect(source, isNot(contains("status = 'final'")));
   });
 
-  test('debug cleanup uses the real Diary delete flow', () {
+  test('productive reflection keeps its save and edit flow', () {
     final source = File(
       'lib/features/weekly_report/presentation/widgets/weekly_report_reflection.dart',
     ).readAsStringSync();
-    expect(source, contains('deleteDiaryEntry(entry.id)'));
     expect(source, contains('WeeklyReportReflection'));
+    expect(source, contains('weeklyReflectionSave'));
+    expect(source, contains('weeklyReflectionEdit'));
+    expect(source, isNot(contains('Debug')));
+    expect(source, isNot(contains('debug')));
   });
 }

@@ -18,7 +18,9 @@ void main() {
     expect(habitsIndex, greaterThanOrEqualTo(0));
     expect(recommendationIndex, greaterThan(habitsIndex));
     expect(source,
-        contains('debugRecommendation ?? report.recommendations.first'));
+        contains('report.isFinal && report.recommendations.isNotEmpty'));
+    expect(source, isNot(contains('WeeklyReportDebugAction')));
+    expect(source, isNot(contains('debugRecommendation')));
   });
 
   test('history action is localized and avoids history loops', () {

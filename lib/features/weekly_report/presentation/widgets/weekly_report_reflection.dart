@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../../l10n/l10n.dart';
 import '../../../../models/diary_entry.dart';
 import '../../../../screens/diary_v2/diary_v2_mood_visuals.dart';
-import '../../../../screens/diary_v2/widgets/diary_v2_styles.dart';
 import '../../../../screens/diary/helpers/diary_screen_actions.dart';
 import '../../../../stores/user_state_store.dart';
+import '../weekly_report_visuals.dart';
 
 class WeeklyReportReflection extends StatefulWidget {
   const WeeklyReportReflection(
@@ -48,8 +48,10 @@ class _WeeklyReportReflectionState extends State<WeeklyReportReflection> {
       _editing = entry == null;
     }
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: DiaryV2Styles.compactCardDecoration(),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: WeeklyReportVisuals.cardDecoration(
+          color: WeeklyReportVisuals.reflection,
+          borderColor: WeeklyReportVisuals.reflectionBorder),
       child: _editing || entry == null
           ? _Composer(
               mood: _mood,
@@ -132,11 +134,27 @@ class _Composer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(l10n.weeklyReflectionTitle,
-          style: const TextStyle(fontWeight: FontWeight.w700)),
-      const SizedBox(height: 6),
-      Text(l10n.weeklyReflectionQuestion),
-      const SizedBox(height: 8),
+      Row(children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .56),
+              shape: BoxShape.circle),
+          child: const Icon(Icons.favorite_border_rounded,
+              size: 16, color: Color(0xFF75649B)),
+        ),
+        const SizedBox(width: 6),
+        Text(l10n.weeklyReflectionTitle,
+            style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF584477))),
+      ]),
+      const SizedBox(height: 4),
+      Text(l10n.weeklyReflectionQuestion,
+          style: const TextStyle(color: WeeklyReportVisuals.mutedText)),
+      const SizedBox(height: 4),
       Row(children: [
         for (final value in const [-2, -1, 0, 1, 2])
           Expanded(
@@ -148,24 +166,38 @@ class _Composer extends StatelessWidget {
                       onTap: () => onMood(value),
                       borderRadius: BorderRadius.circular(22),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         child: CircleAvatar(
-                            radius: 19,
+                            radius: 16,
                             backgroundColor: mood == value
-                                ? const Color(0xFFD5E8D4)
-                                : const Color(0xFFF2ECE3),
+                                ? const Color(0xFFE3DCF1)
+                                : Colors.white.withValues(alpha: .62),
                             child: Text(DiaryMoodVisuals.emojiFor(value),
-                                style: const TextStyle(fontSize: 18))),
+                                style: const TextStyle(fontSize: 16))),
                       ))))
       ]),
-      const SizedBox(height: 8),
+      const SizedBox(height: 4),
       TextField(
           controller: controller,
-          maxLines: 3,
+          maxLines: 2,
+          minLines: 1,
           decoration: InputDecoration(
               labelText: l10n.weeklyReflectionHint,
-              border: const OutlineInputBorder())),
-      const SizedBox(height: 8),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: .58),
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFDCD3E9))),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFDCD3E9))),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF9B8ABF))))),
+      const SizedBox(height: 4),
       SizedBox(
           height: 44,
           child: FilledButton(
@@ -185,43 +217,29 @@ class _Saved extends StatelessWidget {
   Widget build(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
+          const Icon(Icons.favorite_rounded,
+              size: 18, color: Color(0xFF75649B)),
+          const SizedBox(width: 5),
           Expanded(
               child: Text(context.l10n.weeklyReflectionTitle,
-                  style: const TextStyle(fontWeight: FontWeight.w700))),
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF584477)))),
           TextButton(
-              onPressed: onEdit, child: Text(context.l10n.weeklyReflectionEdit))
+              onPressed: onEdit,
+              style: TextButton.styleFrom(
+                  minimumSize: const Size(44, 44),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  visualDensity: VisualDensity.compact),
+              child: Text(context.l10n.weeklyReflectionEdit))
         ]),
         if (entry.mood != null)
           Text(DiaryMoodVisuals.emojiFor(entry.mood!),
-              style: const TextStyle(fontSize: 22)),
+              style: const TextStyle(fontSize: 20)),
         if (entry.legacyText.trim().isNotEmpty) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(entry.legacyText)
         ],
       ]);
-}
-
-class DebugReflectionCleanup extends StatelessWidget {
-  const DebugReflectionCleanup({super.key, required this.reportId});
-  final String reportId;
-
-  @override
-  Widget build(BuildContext context) {
-    final entry = context
-        .watch<UserStateStore>()
-        .diaryEntries
-        .where((entry) =>
-            entry.weeklyReportId == reportId &&
-            entry.entryType == DiaryEntryContentType.reflection)
-        .firstOrNull;
-    if (entry == null) return const SizedBox.shrink();
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton(
-        onPressed: () =>
-            context.read<UserStateStore>().deleteDiaryEntry(entry.id),
-        child: Text(context.l10n.weeklyReflectionDebugDelete),
-      ),
-    );
-  }
 }

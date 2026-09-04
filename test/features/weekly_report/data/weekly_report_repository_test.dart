@@ -81,6 +81,8 @@ void main() {
     final report = mapRemoteWeeklyReport(remote);
     expect(report.status, WeeklyReportStatus.finalized);
     expect(report.summary.completionRate, isNull);
+    expect(report.week.weekStartDate, DateTime(2026, 8, 31));
+    expect(report.days.single.date, DateTime(2026, 8, 31));
     expect(report.days.single.state, WeeklyReportDayState.noPlan);
     expect(report.habits.single.occurrences.single.scope,
         HabitOccurrenceScope.dateBound);

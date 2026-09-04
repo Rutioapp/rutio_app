@@ -12,11 +12,8 @@ class _FakeRepository implements WeeklyReportRepository {
   int refreshCalls = 0;
   DateTime? refreshedWeekStart;
   WeeklyReportSnapshot? refreshResult;
-  final List<String> events = [];
-  int activationCalls = 0;
-  DateTime? activationDate;
-  String? activationTimezone;
-  void Function()? activationOnSuccess;
+  WeeklyReportSnapshot? exactWeekResult;
+  int exactWeekCalls = 0;
 
   @override
   Future<WeeklyReportSnapshot?> getLatest() async {
@@ -28,8 +25,11 @@ class _FakeRepository implements WeeklyReportRepository {
   Future<WeeklyReportSnapshot> getById(String reportId) =>
       throw UnimplementedError();
   @override
-  Future<WeeklyReportSnapshot?> getByWeekStart(DateTime weekStartDate) =>
-      throw UnimplementedError();
+  Future<WeeklyReportSnapshot?> getByWeekStart(DateTime weekStartDate) async {
+    exactWeekCalls++;
+    return exactWeekResult;
+  }
+
   @override
   Future<WeeklyReportHistoryPage> getHistory(
           {DateTime? beforeWeekStart, int limit = 20}) =>
@@ -39,7 +39,6 @@ class _FakeRepository implements WeeklyReportRepository {
       _refresh(weekStartDate);
 
   Future<WeeklyReportSnapshot> _refresh(DateTime weekStartDate) async {
-    events.add('refresh');
     refreshCalls++;
     refreshedWeekStart = weekStartDate;
     if (refreshFailure != null) throw refreshFailure!;
@@ -50,22 +49,17 @@ class _FakeRepository implements WeeklyReportRepository {
   Future<void> activate({
     required DateTime activationLocalDate,
     required String timezoneName,
-  }) async {
-    events.add('activate');
-    activationCalls++;
-    activationDate = activationLocalDate;
-    activationTimezone = timezoneName;
-    if (failure != null) throw failure!;
-    activationOnSuccess?.call();
-  }
+  }) async {}
 }
 
-WeeklyReport _report(
-        {WeeklyReportStatus status = WeeklyReportStatus.finalized}) =>
+WeeklyReport _report({
+  WeeklyReportStatus status = WeeklyReportStatus.finalized,
+  DateTime? weekDate,
+}) =>
     WeeklyReport(
       id: 'report-1',
       userId: 'user-1',
-      week: WeeklyReportWeek.fromDate(DateTime(2026, 9, 1)),
+      week: WeeklyReportWeek.fromDate(weekDate ?? DateTime(2026, 9, 1)),
       timezoneId: 'Europe/Madrid',
       status: status,
       firstPartialWeek: false,
@@ -125,32 +119,103 @@ void main() {
     expect(state.report.days, isEmpty);
   });
 
-  test('generates the current Monday-Sunday week from empty', () async {
-    final repository = _FakeRepository(null)
-      ..refreshResult = WeeklyReportSnapshot(
-        report: _report(status: WeeklyReportStatus.provisional),
-        source: WeeklyReportDataSource.remoteFresh,
-        cachedAt: null,
-        isStale: false,
-      );
+  test('refreshes an existing current provisional report on open once',
+      () async {
+    final current = WeeklyReportSnapshot(
+      report: _report(status: WeeklyReportStatus.provisional),
+      source: WeeklyReportDataSource.remoteFresh,
+      cachedAt: null,
+      isStale: false,
+    );
+    final repository = _FakeRepository(current)..refreshResult = current;
     final controller = WeeklyReportController(
       repository,
       timeZoneResolver: () async => 'Europe/Madrid',
-      now: () => DateTime(2026, 9, 2, 12),
+      refreshCurrentOnLoad: true,
+      now: () => DateTime(2026, 9, 4, 12),
     );
+
     await controller.load();
-    await controller.generateCurrentDebug();
 
     expect(repository.refreshCalls, 1);
-    expect(repository.activationCalls, 1);
-    expect(repository.activationTimezone, 'Europe/Madrid');
-    expect(repository.activationDate, DateTime(2026, 9, 2));
-    expect(repository.refreshedWeekStart?.weekday, DateTime.monday);
+    expect(repository.exactWeekCalls, 0);
     expect(controller.state, isA<WeeklyReportDataState>());
   });
 
-  test('preserves a valid provisional report when debug refresh fails',
+  test('generates current week when latest is a previous final report',
       () async {
+    final current = WeeklyReportSnapshot(
+      report: _report(status: WeeklyReportStatus.provisional),
+      source: WeeklyReportDataSource.remoteFresh,
+      cachedAt: null,
+      isStale: false,
+    );
+    final repository = _FakeRepository(WeeklyReportSnapshot(
+      report: _report(weekDate: DateTime(2026, 8, 24)),
+      source: WeeklyReportDataSource.remoteFresh,
+      cachedAt: null,
+      isStale: false,
+    ))
+      ..refreshResult = current;
+    final controller = WeeklyReportController(
+      repository,
+      timeZoneResolver: () async => 'Europe/Madrid',
+      refreshCurrentOnLoad: true,
+      now: () => DateTime(2026, 9, 4, 12),
+    );
+
+    await controller.load();
+
+    expect(repository.exactWeekCalls, 1);
+    expect(repository.refreshCalls, 1);
+    expect((controller.state as WeeklyReportDataState).report.isProvisional,
+        isTrue);
+  });
+
+  test('generates current week when no current report exists', () async {
+    final current = WeeklyReportSnapshot(
+      report: _report(status: WeeklyReportStatus.provisional),
+      source: WeeklyReportDataSource.remoteFresh,
+      cachedAt: null,
+      isStale: false,
+    );
+    final repository = _FakeRepository(null)..refreshResult = current;
+    final controller = WeeklyReportController(
+      repository,
+      timeZoneResolver: () async => 'Europe/Madrid',
+      refreshCurrentOnLoad: true,
+      now: () => DateTime(2026, 9, 4, 12),
+    );
+
+    await controller.load();
+
+    expect(repository.exactWeekCalls, 1);
+    expect(repository.refreshCalls, 1);
+    expect((controller.state as WeeklyReportDataState).report.isProvisional,
+        isTrue);
+  });
+
+  test('does not refresh a current final report', () async {
+    final repository = _FakeRepository(WeeklyReportSnapshot(
+      report: _report(),
+      source: WeeklyReportDataSource.remoteFresh,
+      cachedAt: null,
+      isStale: false,
+    ));
+    final controller = WeeklyReportController(
+      repository,
+      timeZoneResolver: () async => 'Europe/Madrid',
+      refreshCurrentOnLoad: true,
+      now: () => DateTime(2026, 9, 4, 12),
+    );
+
+    await controller.load();
+    await controller.refreshCurrentWeek();
+
+    expect(repository.refreshCalls, 0);
+  });
+
+  test('preserves a valid provisional report when refresh fails', () async {
     final repository = _FakeRepository(WeeklyReportSnapshot(
       report: _report(status: WeeklyReportStatus.provisional),
       source: WeeklyReportDataSource.remoteFresh,
@@ -163,7 +228,7 @@ void main() {
     );
     await controller.load();
     repository.refreshFailure = const WeeklyReportNetworkFailure();
-    await controller.refreshProvisionalDebug();
+    await controller.refreshCurrentWeek();
 
     expect(repository.refreshCalls, 1);
     expect(controller.state, isA<WeeklyReportDataState>());
@@ -181,54 +246,8 @@ void main() {
       timeZoneResolver: () async => 'Europe/Madrid',
     );
     await controller.load();
-    await controller.refreshProvisionalDebug();
+    await controller.refreshCurrentWeek();
 
     expect(repository.refreshCalls, 0);
-  });
-
-  test('does not refresh when scope changes during activation', () async {
-    final repository = _FakeRepository(null)
-      ..refreshResult = WeeklyReportSnapshot(
-        report: _report(status: WeeklyReportStatus.provisional),
-        source: WeeklyReportDataSource.remoteFresh,
-        cachedAt: null,
-        isStale: false,
-      );
-    var scopeIsCurrent = true;
-    final controller = WeeklyReportController(
-      repository,
-      timeZoneResolver: () async => 'Europe/Madrid',
-      isScopeCurrent: () => scopeIsCurrent,
-    );
-    repository.activationOnSuccess = () => scopeIsCurrent = false;
-    await controller.load();
-    await controller.generateCurrentDebug();
-
-    expect(repository.events, ['activate']);
-    expect(controller.state, isA<WeeklyReportFailure>());
-  });
-
-  test('keeps activation and exposes refresh failure for retry', () async {
-    final repository = _FakeRepository(null)
-      ..refreshResult = WeeklyReportSnapshot(
-        report: _report(status: WeeklyReportStatus.provisional),
-        source: WeeklyReportDataSource.remoteFresh,
-        cachedAt: null,
-        isStale: false,
-      );
-    final controller = WeeklyReportController(
-      repository,
-      timeZoneResolver: () async => 'Europe/Madrid',
-    );
-    await controller.load();
-    repository.refreshFailure = const WeeklyReportNetworkFailure();
-    await controller.generateCurrentDebug();
-    expect(controller.state, isA<WeeklyReportFailure>());
-    expect(repository.activationCalls, 1);
-
-    repository.refreshFailure = null;
-    await controller.generateCurrentDebug();
-    expect(controller.state, isA<WeeklyReportDataState>());
-    expect(repository.activationCalls, 2);
   });
 }

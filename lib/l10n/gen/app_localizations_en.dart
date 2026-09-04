@@ -61,12 +61,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weeklyReportRetry => 'Retry';
 
   @override
-  String get weeklyReportDebugGenerate => 'Generate provisional report · Debug';
-
-  @override
-  String get weeklyReportDebugRefresh => 'Refresh report · Debug';
-
-  @override
   String get weeklyReportHabitsTitle => 'Habits of the week';
 
   @override
@@ -4919,7 +4913,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weeklyReportSummaryNoSchedule01 =>
-      'There was no scheduled activity to compare this week.';
+      'No habits were scheduled to evaluate this week.';
 
   @override
   String get weeklyReportSummaryStrong01 =>
@@ -4954,7 +4948,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weeklyReportHabitNeedsAttention01 =>
-      'This habit had a more uneven week than you were aiming for.';
+      'This habit had a more uneven week.';
 
   @override
   String get weeklyReportSummaryFirstPartial02 =>
@@ -4998,7 +4992,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weeklyReportSummaryProvisional05 =>
-      'The week is in progress, so this is only an early read.';
+      'The week is in progress, so this reading may still change before it closes.';
 
   @override
   String get weeklyReportSummaryProvisional06 =>
@@ -5014,23 +5008,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weeklyReportSummaryNoSchedule02 =>
-      'No planned sessions were recorded for this week.';
+      'There was no scheduled activity in this period.';
 
   @override
   String get weeklyReportSummaryNoSchedule03 =>
-      'This week had no schedule, so there is no completion rate to interpret.';
+      'Without scheduled goals, there is no completion baseline to compare.';
 
   @override
   String get weeklyReportSummaryNoSchedule04 =>
-      'Nothing was scheduled in the report period.';
+      'This week stays neutral because no habits were scheduled.';
 
   @override
   String get weeklyReportSummaryNoSchedule05 =>
-      'With no planned activity, this week does not yet offer a useful comparison.';
+      'There were no scheduled opportunities to interpret.';
 
   @override
   String get weeklyReportSummaryNoSchedule06 =>
-      'No scheduled habits were available for this snapshot.';
+      'The report has no scheduled activity to build a reading from.';
 
   @override
   String get weeklyReportSummaryStrong02 =>
@@ -5290,29 +5284,477 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weeklyReportHabitNeedsAttention02 =>
-      'Keeping this habit going took more effort this week.';
+      'This habit had less follow-through than planned.';
 
   @override
   String get weeklyReportHabitNeedsAttention03 =>
-      'A simpler version of this habit may be easier to sustain next week.';
+      'This habit followed a more uneven pattern.';
 
   @override
   String get weeklyReportHabitNeedsAttention04 =>
-      'This habit had less continuity than usual.';
+      'This habit had fewer completed opportunities this week.';
 
   @override
   String get weeklyReportHabitNeedsAttention05 =>
-      'There was more friction around this habit this week.';
+      'This habit encountered more friction this week.';
 
   @override
   String get weeklyReportHabitNeedsAttention06 =>
-      'This habit did not quite settle into a steady rhythm.';
+      'This habit showed limited continuity this week.';
 
   @override
   String get weeklyReportHabitNeedsAttention07 =>
-      'A small adjustment could make this habit feel more manageable.';
+      'This habit did not fully settle into a steady pattern.';
 
   @override
   String get weeklyReportHabitNeedsAttention08 =>
-      'This habit has room to find a steadier pace.';
+      'This habit showed less stability this week.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial09 =>
+      'The picture is still partial, but it already offers an early direction.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial10 =>
+      'There are still days to add context; for now, take it in without pressure.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial11 =>
+      'This starting point shows early signals, not a conclusion about your routine.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial12 =>
+      'There is not much history yet, but the first shape of your routine is starting to show.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial13 =>
+      'This first record does not cover a full week. Use it for direction, not judgment.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial14 =>
+      'Some days are outside this view; the picture will gain context over time.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial15 =>
+      'This first summary is brief and incomplete, but it can still be a useful reference.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial16 =>
+      'We are still gathering context. What appears here is an early, useful signal.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial17 =>
+      'There is no need to draw conclusions yet; this report only captures the beginning.';
+
+  @override
+  String get weeklyReportSummaryFirstPartial18 =>
+      'Your first snapshot creates a reference point; more context will come with a full cycle.';
+
+  @override
+  String get weeklyReportSummaryProvisional09 =>
+      'The week is still open, and this balance may change before it closes.';
+
+  @override
+  String get weeklyReportSummaryProvisional10 =>
+      'What you see is a live reading, useful for finding your bearings as you go.';
+
+  @override
+  String get weeklyReportSummaryProvisional11 =>
+      'There is no final result yet; the rhythm can still take shape before the week ends.';
+
+  @override
+  String get weeklyReportSummaryProvisional12 =>
+      'This summary captures the ground covered so far, not a final assessment.';
+
+  @override
+  String get weeklyReportSummaryProvisional13 =>
+      'The week remains open, with room for the balance to change before it closes.';
+
+  @override
+  String get weeklyReportSummaryProvisional14 =>
+      'This picture is provisional; use it to notice patterns, not predict the outcome.';
+
+  @override
+  String get weeklyReportSummaryProvisional15 =>
+      'Your week is taking shape; what happens before it closes still counts.';
+
+  @override
+  String get weeklyReportSummaryProvisional16 =>
+      'For now, these figures tell only part of the story.';
+
+  @override
+  String get weeklyReportSummaryProvisional17 =>
+      'The outcome is still open, but there are already signals to help you find your bearings.';
+
+  @override
+  String get weeklyReportSummaryProvisional18 =>
+      'A reading of the moment: enough to notice patterns, too early to close the story.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule07 =>
+      'There was no scheduled activity to evaluate this week.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule08 =>
+      'There is no scheduled baseline for calculating follow-through.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule09 =>
+      'This week had no scheduled habits to compare.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule10 =>
+      'Without scheduled activity, the balance has no follow-through reading.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule11 =>
+      'No planned opportunities were available for this weekly reading.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule12 =>
+      'The week stays neutral because no habits were scheduled.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule13 =>
+      'The report needs scheduled habits to offer a follow-through signal.';
+
+  @override
+  String get weeklyReportSummaryNoSchedule14 =>
+      'When habits are scheduled again, there will be a new reference point.';
+
+  @override
+  String get weeklyReportSummaryStrong11 =>
+      'A firm, well-supported foundation runs through the week.';
+
+  @override
+  String get weeklyReportSummaryStrong12 =>
+      'Follow-through stayed high without losing its natural feel.';
+
+  @override
+  String get weeklyReportSummaryStrong13 =>
+      'Your plans found a good deal of continuity across these days.';
+
+  @override
+  String get weeklyReportSummaryStrong14 =>
+      'There is clear consistency behind this week’s balance.';
+
+  @override
+  String get weeklyReportSummaryStrong15 =>
+      'Your set of habits held together with strength.';
+
+  @override
+  String get weeklyReportSummaryStrong16 =>
+      'A week with good control of the rhythm and few interruptions.';
+
+  @override
+  String get weeklyReportSummaryStrong17 =>
+      'What you set out to do had a very steady presence.';
+
+  @override
+  String get weeklyReportSummaryStrong18 =>
+      'The balance points to a routine that was cared for and consistent.';
+
+  @override
+  String get weeklyReportSummaryStrong19 =>
+      'Many days lined up well with what you had planned.';
+
+  @override
+  String get weeklyReportSummaryStrong20 =>
+      'The week leaves a clear signal of continuity and a good rhythm.';
+
+  @override
+  String get weeklyReportSummaryGood11 =>
+      'The balance is positive and gives you a healthy base to build from.';
+
+  @override
+  String get weeklyReportSummaryGood12 =>
+      'Your week moved forward with continuity worth recognizing.';
+
+  @override
+  String get weeklyReportSummaryGood13 =>
+      'A good share of what you planned found its moment.';
+
+  @override
+  String get weeklyReportSummaryGood14 =>
+      'There is a useful rhythm here, with calm room to keep refining it.';
+
+  @override
+  String get weeklyReportSummaryGood15 =>
+      'Your routine had a solid presence across several days.';
+
+  @override
+  String get weeklyReportSummaryGood16 =>
+      'There is real progress in how you are sustaining your habits.';
+
+  @override
+  String get weeklyReportSummaryGood17 =>
+      'The overall result supports you: you are building a practical foundation.';
+
+  @override
+  String get weeklyReportSummaryGood18 =>
+      'Not every day had to look the same for the week to move forward well.';
+
+  @override
+  String get weeklyReportSummaryGood19 =>
+      'Your plan found plenty of room in the days.';
+
+  @override
+  String get weeklyReportSummaryGood20 =>
+      'A favorable balance, with signs that some things are beginning to fit.';
+
+  @override
+  String get weeklyReportSummaryMixed11 =>
+      'The balance holds both progress and pauses; each helps explain the week.';
+
+  @override
+  String get weeklyReportSummaryMixed12 =>
+      'There were moments of good continuity alongside others that were harder to sustain.';
+
+  @override
+  String get weeklyReportSummaryMixed13 =>
+      'The week changed pace several times, which leaves useful information too.';
+
+  @override
+  String get weeklyReportSummaryMixed14 =>
+      'Some parts fit better than others. That may be the useful clue.';
+
+  @override
+  String get weeklyReportSummaryMixed15 =>
+      'The result is uneven, not final; it is worth seeing what repeats.';
+
+  @override
+  String get weeklyReportSummaryMixed16 =>
+      'Positive signals appeared alongside ordinary interruptions.';
+
+  @override
+  String get weeklyReportSummaryMixed17 =>
+      'Not everything followed the same pattern, but the whole picture can still teach you something.';
+
+  @override
+  String get weeklyReportSummaryMixed18 =>
+      'The week had different moments; keep the ones that felt easiest to sustain.';
+
+  @override
+  String get weeklyReportSummaryMixed19 =>
+      'Between stronger and harder days, there is a reference for adjusting.';
+
+  @override
+  String get weeklyReportSummaryMixed20 =>
+      'A middle-ground balance can be valuable when it shows what works.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery11 =>
+      'This week calls for less pressure and a simpler look at the next step.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery12 =>
+      'The rhythm was harder to sustain than planned; returning to basics may help.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery13 =>
+      'You do not need to recover everything at once. A manageable start counts.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery14 =>
+      'The week offers signals for reviewing expectations and reducing friction.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery15 =>
+      'Continuity was limited, but there is a clear chance to reorder things.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery16 =>
+      'When keeping it going feels hard, simplifying can make room to return.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery17 =>
+      'This balance does not define your routine; it only points to where to look calmly.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery18 =>
+      'The week was difficult to sustain. One small step may be enough for now.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery19 =>
+      'There is room to regain presence without turning it into a debt.';
+
+  @override
+  String get weeklyReportSummaryNeedsRecovery20 =>
+      'A difficult week can help you adjust the plan to something easier to carry.';
+
+  @override
+  String get weeklyReportSummaryImproved09 =>
+      'This week brings a favorable signal compared with the one before.';
+
+  @override
+  String get weeklyReportSummaryImproved10 =>
+      'There is a visible step forward in the direction of your routine.';
+
+  @override
+  String get weeklyReportSummaryImproved11 =>
+      'The balance is improving from the last snapshot, one step at a time.';
+
+  @override
+  String get weeklyReportSummaryImproved12 =>
+      'There is more continuity than before, though the trend can still change.';
+
+  @override
+  String get weeklyReportSummaryImproved13 =>
+      'A positive change is beginning to show in the comparison.';
+
+  @override
+  String get weeklyReportSummaryImproved14 =>
+      'The week recovered some of the rhythm that had been lost.';
+
+  @override
+  String get weeklyReportSummaryImproved15 =>
+      'The result is moving in a better direction than last week.';
+
+  @override
+  String get weeklyReportSummaryImproved16 =>
+      'You found a little more steadiness across these days.';
+
+  @override
+  String get weeklyReportSummaryImproved17 =>
+      'The comparison shows clear improvement without needing to force it.';
+
+  @override
+  String get weeklyReportSummaryImproved18 =>
+      'This step forward adds a positive reference to keep observing.';
+
+  @override
+  String get weeklyReportSummaryDeclined09 =>
+      'The balance is below the previous one, but one week does not set the direction.';
+
+  @override
+  String get weeklyReportSummaryDeclined10 =>
+      'There was less continuity this time. It may be useful to notice what changed.';
+
+  @override
+  String get weeklyReportSummaryDeclined11 =>
+      'The comparison shows a moderate dip, not a conclusion about your process.';
+
+  @override
+  String get weeklyReportSummaryDeclined12 =>
+      'The rhythm lost some strength compared with the last snapshot.';
+
+  @override
+  String get weeklyReportSummaryDeclined13 =>
+      'This week was more uneven than the last; there is still room to adjust.';
+
+  @override
+  String get weeklyReportSummaryDeclined14 =>
+      'A lower result can also point to where it may help to look.';
+
+  @override
+  String get weeklyReportSummaryDeclined15 =>
+      'The difference from last week is visible without defining what comes next.';
+
+  @override
+  String get weeklyReportSummaryDeclined16 =>
+      'This comparison invites a curious, judgment-free look at the rhythm.';
+
+  @override
+  String get weeklyReportSummaryDeclined17 =>
+      'There was less follow-through than before, but the pattern is still open.';
+
+  @override
+  String get weeklyReportSummaryDeclined18 =>
+      'The week dipped a little from the previous one; returning to essentials may help orient you.';
+
+  @override
+  String get weeklyReportHabitHighlighted09 =>
+      'This habit kept an especially firm presence.';
+
+  @override
+  String get weeklyReportHabitHighlighted10 =>
+      'A clear sense of regularity shows up here.';
+
+  @override
+  String get weeklyReportHabitHighlighted11 =>
+      'The habit responded well to what you had planned.';
+
+  @override
+  String get weeklyReportHabitHighlighted12 =>
+      'One of the week’s most consistent foundations.';
+
+  @override
+  String get weeklyReportHabitHighlighted13 =>
+      'This habit found a cadence that fits.';
+
+  @override
+  String get weeklyReportHabitHighlighted14 =>
+      'Its presence stayed strong across the days.';
+
+  @override
+  String get weeklyReportHabitHighlighted15 =>
+      'Many of its planned moments became completed ones.';
+
+  @override
+  String get weeklyReportHabitHighlighted16 =>
+      'There is visible continuity in this habit.';
+
+  @override
+  String get weeklyReportHabitStable09 =>
+      'This habit keeps a reasonable foundation.';
+
+  @override
+  String get weeklyReportHabitStable10 =>
+      'The habit was present with fairly regular follow-through.';
+
+  @override
+  String get weeklyReportHabitStable11 =>
+      'There is enough continuity here to keep building.';
+
+  @override
+  String get weeklyReportHabitStable12 =>
+      'The rhythm is holding without major changes.';
+
+  @override
+  String get weeklyReportHabitStable13 =>
+      'This habit keeps a steady place in the routine.';
+
+  @override
+  String get weeklyReportHabitStable14 =>
+      'A quiet presence, with room to settle further.';
+
+  @override
+  String get weeklyReportHabitStable15 =>
+      'The week shows a foundation that can keep growing.';
+
+  @override
+  String get weeklyReportHabitStable16 =>
+      'This habit appears with useful regularity.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention09 =>
+      'This habit showed less continuity this week.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention10 =>
+      'This habit had a lighter presence this week.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention11 =>
+      'This habit had more interruptions this week.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention12 =>
+      'This habit followed an uneven rhythm this week.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention13 =>
+      'This habit showed less continuity across the week.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention14 =>
+      'This habit had an inconsistent presence this week.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention15 =>
+      'This habit appeared less consistently.';
+
+  @override
+  String get weeklyReportHabitNeedsAttention16 =>
+      'This habit showed lower stability this week.';
 }
