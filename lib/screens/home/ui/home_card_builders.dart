@@ -322,6 +322,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     }
 
     final card = HabitCardWidget(
+      key: ValueKey('habit_card_$id'),
       title: title,
       description: description,
       backgroundImageAssetPath: backgroundAsset?.assetPath,
@@ -479,6 +480,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
     );
 
     final revealCard = HabitCardSwipeShell(
+      key: ValueKey('habit_swipe_$id'),
       cardId: id,
       isOpen: isTrayOpen,
       compact: compact,

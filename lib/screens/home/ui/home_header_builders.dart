@@ -9,7 +9,7 @@ extension _HomeScreenHeaderBuilders on _HomeScreenState {
       context: context,
       anchorContext: anchorContext,
       selectedFilter: _habitStatusFilter,
-      pendingCount: homeData.pendingHabits.length,
+      pendingCount: homeData.pendingCount,
       completedCount: homeData.completedHabits.length,
       skippedCount: homeData.skippedHabits.length,
     );

@@ -173,6 +173,61 @@ void main() {
       );
     });
 
+    testWidgets('removing the first habit preserves the remaining card state',
+        (tester) async {
+      final transition = _transition('habit-a', originalIndex: 0);
+
+      Widget app(
+        List<Map<String, dynamic>> habits, {
+        List<HomeHabitCompletionTransition> transitions = const [],
+      }) {
+        return MaterialApp(
+          home: Scaffold(
+            body: CustomScrollView(
+              slivers: [
+                HomeHabitsSliver(
+                  selectedFilter: HomeHabitStatusFilter.pending,
+                  visibleHabits: habits,
+                  completionTransitions: transitions,
+                  habitCardBuilder: (context, habit, {bool compact = false}) {
+                    return _IdentityProbe(
+                      habitId: habit['id'].toString(),
+                    );
+                  },
+                  completionTransitionBuilder: (_, __) => const SizedBox(),
+                  onCompletionTransitionDismissed: (
+                      {required habitId, required transitionId}) {},
+                  onPendingReorder: (_, __) async {},
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      await tester.pumpWidget(app(
+        [_habit('habit-a'), _habit('habit-b'), _habit('habit-c')],
+        transitions: [transition],
+      ));
+      await tester.pump();
+
+      final bLabel =
+          tester.widget<Text>(find.textContaining('Habit habit-b')).data!;
+      final cLabel =
+          tester.widget<Text>(find.textContaining('Habit habit-c')).data!;
+
+      await tester.pumpWidget(
+        app(
+          [_habit('habit-b'), _habit('habit-c')],
+          transitions: [transition],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(bLabel), findsOneWidget);
+      expect(find.text(cLabel), findsOneWidget);
+    });
+
     testWidgets('completed and skipped use static lists without reorder',
         (tester) async {
       await tester.pumpWidget(
@@ -283,6 +338,38 @@ void main() {
       );
     });
   });
+}
+
+class _IdentityProbe extends StatefulWidget {
+  const _IdentityProbe({
+    required this.habitId,
+  });
+
+  final String habitId;
+
+  @override
+  State<_IdentityProbe> createState() => _IdentityProbeState();
+}
+
+class _IdentityProbeState extends State<_IdentityProbe> {
+  static int _nextIdentity = 0;
+  late final int _identity;
+
+  @override
+  void initState() {
+    super.initState();
+    _identity = ++_nextIdentity;
+  }
+
+  String get _label => 'Habit ${widget.habitId} state $_identity';
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 88,
+      child: Text(_label),
+    );
+  }
 }
 
 Widget _testApp({

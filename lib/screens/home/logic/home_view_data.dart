@@ -18,6 +18,8 @@ class HomeViewData {
   final int xpToNext;
   final double xpProgress;
 
+  int get pendingCount => pendingHabits.length;
+
   const HomeViewData({
     required this.visibleHabits,
     required this.viewHabits,

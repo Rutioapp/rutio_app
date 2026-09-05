@@ -383,6 +383,7 @@ class UserStateStore extends ChangeNotifier {
   String? _activeLocalScopeUserId;
   int _scopeEpoch = 0;
   Future<void> _scopeSwitchChain = Future<void>.value();
+  Future<void> _habitMutationQueue = Future<void>.value();
   final Map<String, int> _hydratedXpBaselineByUserId = <String, int>{};
   final Map<String, int> _hydratedLevelBaselineByUserId = <String, int>{};
   final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
@@ -441,6 +442,14 @@ class UserStateStore extends ChangeNotifier {
   }
 
   void _emitChanged() => notifyListeners();
+
+  /// Serialize read/modify/save habit mutations so quick actions cannot
+  /// overwrite the store with stale snapshots of other habits.
+  Future<void> _enqueueHabitMutation(Future<void> Function() mutation) {
+    final next = _habitMutationQueue.then((_) => mutation());
+    _habitMutationQueue = next.catchError((_) {});
+    return next;
+  }
 
   bool get hasSession => onboardingDone;
   bool get onboardingDone => _onboardingDone(this);
@@ -752,30 +761,38 @@ class UserStateStore extends ChangeNotifier {
     required String habitId,
     required num value,
   }) =>
-      _setCountHabitValue(this, habitId: habitId, value: value);
+      _enqueueHabitMutation(
+        () => _setCountHabitValue(this, habitId: habitId, value: value),
+      );
 
   Future<void> completeHabit({
     required String habitId,
     num delta = 1,
   }) =>
-      _completeHabit(this, habitId: habitId, delta: delta);
+      _enqueueHabitMutation(
+        () => _completeHabit(this, habitId: habitId, delta: delta),
+      );
 
   Future<void> toggleHabitDoneForDate({
     required String habitId,
     required DateTime date,
   }) =>
-      _toggleHabitDoneForDate(this, habitId: habitId, date: date);
+      _enqueueHabitMutation(
+        () => _toggleHabitDoneForDate(this, habitId: habitId, date: date),
+      );
 
   Future<void> setHabitCompletionForKey({
     required String habitId,
     required String dateKey,
     required bool done,
   }) =>
-      _setHabitCompletionForKey(
-        this,
-        habitId: habitId,
-        dateKey: dateKey,
-        done: done,
+      _enqueueHabitMutation(
+        () => _setHabitCompletionForKey(
+          this,
+          habitId: habitId,
+          dateKey: dateKey,
+          done: done,
+        ),
       );
 
   Future<void> setCheckHabitDoneForKey({
@@ -805,11 +822,13 @@ class UserStateStore extends ChangeNotifier {
     required String dateKey,
     required bool skipped,
   }) =>
-      _setHabitSkipForKey(
-        this,
-        habitId: habitId,
-        dateKey: dateKey,
-        skipped: skipped,
+      _enqueueHabitMutation(
+        () => _setHabitSkipForKey(
+          this,
+          habitId: habitId,
+          dateKey: dateKey,
+          skipped: skipped,
+        ),
       );
 
   Future<void> setHabitSkip({
@@ -828,11 +847,13 @@ class UserStateStore extends ChangeNotifier {
     required DateTime date,
     required num value,
   }) =>
-      _setCountHabitValueForDate(
-        this,
-        habitId: habitId,
-        date: date,
-        value: value,
+      _enqueueHabitMutation(
+        () => _setCountHabitValueForDate(
+          this,
+          habitId: habitId,
+          date: date,
+          value: value,
+        ),
       );
 
   List<DiaryEntry> get diaryEntries => _diaryEntries(this);
