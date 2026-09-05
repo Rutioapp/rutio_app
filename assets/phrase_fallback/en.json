@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "fallback-en-v1",
+  "locale": "en",
+  "phrases": [
+    {"id":"motivation_001","category":"motivation","tone":"balanced","sourceType":"original","author":null,"template":"Today you showed up for yourself. That step counts.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_008","category":"motivation","tone":"gentle","sourceType":"original","author":null,"template":"What you do with intention leaves a mark.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_015","category":"motivation","tone":"balanced","sourceType":"original","author":null,"template":"Your consistency already adds up to {streak_label}.","requiredTokens":["streak_label"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_029","category":"motivation","tone":"energetic","sourceType":"original","author":null,"template":"You completed {progress} of what you set out to do.","requiredTokens":["progress"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_045","category":"motivation","tone":"gentle","sourceType":"proverb","author":"Popular proverb","template":"Little by little, you can go a long way.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_068","category":"motivation","tone":"balanced","sourceType":"original","author":null,"template":"{name}, you made room for what matters.","requiredTokens":["name"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"motivation_090","category":"motivation","tone":"energetic","sourceType":"original","author":null,"template":"{name}, completing {progress} today is a real win.","requiredTokens":["name","progress"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"consistency_001","category":"consistency","tone":"balanced","sourceType":"original","author":null,"template":"Consistency is built with days like this.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"consistency_019","category":"consistency","tone":"gentle","sourceType":"original","author":null,"template":"Your pace deserves recognition: {streak_label} of progress.","requiredTokens":["streak_label"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"consistency_040","category":"consistency","tone":"balanced","sourceType":"original","author":null,"template":"Today’s progress is complete: {progress}.","requiredTokens":["progress"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"consistency_068","category":"consistency","tone":"gentle","sourceType":"original","author":null,"template":"Repeating what helps you is progress too.","requiredTokens":[],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"personal_001","category":"personal","tone":"balanced","sourceType":"original","author":null,"template":"{name}, you reached {progress} today and kept a {streak_label} streak.","requiredTokens":["name","progress","streak_label"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"personal_002","category":"personal","tone":"gentle","sourceType":"original","author":null,"template":"{name}, this day reflects the care you put into yourself.","requiredTokens":["name"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"personal_003","category":"personal","tone":"energetic","sourceType":"original","author":null,"template":"Your effort, {name}, turned intention into {progress}.","requiredTokens":["name","progress"],"weight":10,"enabled":true,"contentVersion":1},
+    {"id":"personal_004","category":"personal","tone":"balanced","sourceType":"quote","author":"Rutio","template":"{name}, each completed day is a note you leave for tomorrow.","requiredTokens":["name"],"weight":10,"enabled":true,"contentVersion":1}
+  ]
+}

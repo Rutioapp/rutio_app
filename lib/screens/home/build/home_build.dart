@@ -10,6 +10,7 @@ part of 'package:rutio/screens/home/home_screen.dart';
 extension _HomeScreenBuild on _HomeScreenState {
   Widget buildContent(BuildContext context) {
     final store = context.watch<UserStateStore>();
+    final authController = context.watch<AuthController?>();
     final walletController = context.watch<GlobalWalletController>();
     final isLoading = store.isLoading;
     final error = store.error;
@@ -57,7 +58,34 @@ extension _HomeScreenBuild on _HomeScreenState {
       });
     }
 
-    final homeData = buildHomeViewData(root, _selectedDay);
+    final localToday = DateTime.now();
+    final homeData = buildHomeViewData(
+      root,
+      _selectedDay,
+      today: localToday,
+    );
+    final completedDayEligibility = buildCompletedDayEligibility(
+      viewHabits: homeData.viewHabits,
+      selectedDay: _selectedDay,
+      localToday: localToday,
+      isReady: homeCompletedDayDataIsReady(
+        hasLoadedState: true,
+        isLoading: isLoading,
+      ),
+    );
+    if (kDebugMode) {
+      debugPrint(
+        '[COMPLETED_DAY_PHRASE] eligibility='
+        '${completedDayEligibility.isCompletedDay} '
+        'reason=${completedDayEligibilityReason(completedDayEligibility)}',
+      );
+    }
+    var streak = 0;
+    try {
+      streak = store.globalHabitStreakSnapshot.currentStreak;
+    } catch (_) {
+      // Lightweight Home test doubles may predate streak snapshots.
+    }
     _keepHomeScrollPositionValidOnNextFrame();
     final selectedDateKey = _dateKey(_selectedDay);
     final pendingHabitIds = homeData.pendingHabits
@@ -103,6 +131,7 @@ extension _HomeScreenBuild on _HomeScreenState {
       scaffoldKey: _scaffoldKey,
       username: username,
       homeData: homeData,
+      completedDayEligibility: completedDayEligibility,
       completionTransitions: completionTransitions,
       scrollController: _homeScrollController,
       selectedFilter: _habitStatusFilter,
@@ -124,6 +153,18 @@ extension _HomeScreenBuild on _HomeScreenState {
         ),
         onOpenHabitStatusFilter: (anchorContext) =>
             _showHabitStatusFilterMenu(homeData, anchorContext),
+      ),
+      completedDayPhrase: CompletedDayPhraseHost(
+        controller: _completedDayPhraseController,
+        eligibility: completedDayEligibility,
+        input: CompletedDayPhraseInput(
+          userId: authController?.currentUser?.id,
+          localDate: localToday,
+          locale: context.l10n.localeName,
+          name: store.displayName,
+          streak: streak,
+          streakLabel: context.l10n.habitStatsDaysUnitLabel(streak),
+        ),
       ),
       habitCardBuilder: (ctx, h, {bool compact = false}) => _habitCard(
         context: ctx,
@@ -150,6 +191,24 @@ extension _HomeScreenBuild on _HomeScreenState {
   }
 }
 
+/// A loaded local Home snapshot remains ready while a background remote pull
+/// reconciles it. Bootstrap/loading guards are handled before buildContent.
+@visibleForTesting
+bool homeCompletedDayDataIsReady({
+  required bool hasLoadedState,
+  required bool isLoading,
+}) {
+  return hasLoadedState && !isLoading;
+}
+
+@visibleForTesting
+bool shouldShowCompletedDayPhrase({
+  required HomeHabitStatusFilter selectedFilter,
+  required bool isCompletedDay,
+}) {
+  return isCompletedDay && selectedFilter == HomeHabitStatusFilter.pending;
+}
+
 /// Vista cargada de Home.
 /// Recibe datos ya preparados para que el build principal sea mas estable
 /// y para aislar mejor los rebuilds locales del arbol visual.
@@ -157,6 +216,7 @@ class _HomeLoadedView extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final String username;
   final HomeViewData homeData;
+  final CompletedDayEligibility completedDayEligibility;
   final List<HomeHabitCompletionTransition> completionTransitions;
   final ScrollController scrollController;
   final HomeHabitStatusFilter selectedFilter;
@@ -166,6 +226,7 @@ class _HomeLoadedView extends StatelessWidget {
   final Widget statsHeader;
   final Widget weekStrip;
   final Widget dayProgress;
+  final Widget completedDayPhrase;
   final Widget Function(BuildContext ctx, Map<String, dynamic> habit,
       {bool compact}) habitCardBuilder;
   final Widget Function(
@@ -182,6 +243,7 @@ class _HomeLoadedView extends StatelessWidget {
     required this.scaffoldKey,
     required this.username,
     required this.homeData,
+    required this.completedDayEligibility,
     required this.completionTransitions,
     required this.scrollController,
     required this.selectedFilter,
@@ -191,6 +253,7 @@ class _HomeLoadedView extends StatelessWidget {
     required this.statsHeader,
     required this.weekStrip,
     required this.dayProgress,
+    required this.completedDayPhrase,
     required this.habitCardBuilder,
     required this.completionTransitionBuilder,
     required this.onCompletionTransitionDismissed,
@@ -258,9 +321,16 @@ class _HomeLoadedView extends StatelessWidget {
                           parent: AlwaysScrollableScrollPhysics(),
                         ),
                         slivers: [
+                          if (shouldShowCompletedDayPhrase(
+                            selectedFilter: selectedFilter,
+                            isCompletedDay:
+                                completedDayEligibility.isCompletedDay,
+                          ))
+                            SliverToBoxAdapter(child: completedDayPhrase),
                           HomeScrollableContentSliver(
                             homeData: homeData,
                             selectedFilter: selectedFilter,
+                            completedDayEligibility: completedDayEligibility,
                             completionTransitions: completionTransitions,
                             habitCardBuilder: habitCardBuilder,
                             completionTransitionBuilder:

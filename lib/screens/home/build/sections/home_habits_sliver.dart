@@ -6,6 +6,7 @@ part of 'package:rutio/screens/home/home_screen.dart';
 /// secciones desplegables quedan fuera del arbol y pendientes de retirada.
 class HomeHabitsSliver extends StatefulWidget {
   final HomeHabitStatusFilter selectedFilter;
+  final bool suppressPendingEmptyState;
   final List<Map<String, dynamic>> visibleHabits;
   final List<HomeHabitCompletionTransition> completionTransitions;
 
@@ -24,6 +25,7 @@ class HomeHabitsSliver extends StatefulWidget {
   const HomeHabitsSliver({
     super.key,
     required this.selectedFilter,
+    this.suppressPendingEmptyState = false,
     required this.visibleHabits,
     required this.completionTransitions,
     required this.habitCardBuilder,
@@ -349,10 +351,13 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
         isPending && widget.completionTransitions.isNotEmpty;
     final canReorder =
         isPending && widget.visibleHabits.length >= 2 && !hasPendingTransitions;
+    final shouldShowEmptyState = widget.visibleHabits.isEmpty &&
+        !hasPendingTransitions &&
+        !(isPending && widget.suppressPendingEmptyState);
 
     return SliverMainAxisGroup(
       slivers: [
-        if (widget.visibleHabits.isEmpty && !hasPendingTransitions)
+        if (shouldShowEmptyState)
           SliverToBoxAdapter(
             child: HomeHabitFilterEmptyState(
               selectedFilter: widget.selectedFilter,

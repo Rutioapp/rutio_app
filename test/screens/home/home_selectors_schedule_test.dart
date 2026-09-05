@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/features/completed_day_phrase/completed_day_phrase.dart';
 import 'package:rutio/screens/home/home_screen.dart';
 
 void main() {
@@ -85,6 +86,42 @@ void main() {
       expect(
         habitsForFilter(viewData, HomeHabitStatusFilter.skipped),
         same(viewData.skippedHabits),
+      );
+    });
+  });
+
+  group('CompletedDayPhrase presentation', () {
+    test('only participates in the pending filter for a completed day', () {
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.pending,
+          isCompletedDay: true,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.completed,
+          isCompletedDay: true,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.skipped,
+          isCompletedDay: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('eligibility remains required for the pending filter', () {
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.pending,
+          isCompletedDay: false,
+        ),
+        isFalse,
       );
     });
   });
@@ -631,6 +668,64 @@ void main() {
       expect(habit.containsKey('weeklyTargetCount'), isFalse);
       expect(habit.containsKey('isWeeklyTargetMet'), isFalse);
     });
+  });
+
+  test('local completion reaches completed-day readiness without remote pull',
+      () {
+    final day = DateTime(2026, 9, 5);
+    final dateKey = _dateKey(day);
+    final activeHabits = [
+      _habit(
+        id: 'habit-1',
+        createdAt: '2026-09-01',
+        schedule: const {'type': 'daily'},
+      ),
+      _habit(
+        id: 'habit-2',
+        createdAt: '2026-09-01',
+        schedule: const {'type': 'daily'},
+      ),
+      _habit(
+        id: 'habit-3',
+        createdAt: '2026-09-01',
+        schedule: const {'type': 'daily'},
+      ),
+    ];
+    final root = <String, dynamic>{
+      'userState': <String, dynamic>{
+        'activeHabits': activeHabits,
+        'history': <String, dynamic>{
+          'habitCompletions': <String, dynamic>{
+            dateKey: <String, dynamic>{
+              'habit-1': true,
+              'habit-2': true,
+            },
+          },
+        },
+      },
+    };
+
+    final before = buildHomeViewData(root, day, today: day);
+    expect(before.completedHabits, hasLength(2));
+    expect(before.pendingHabits, hasLength(1));
+
+    (root['userState']['history']['habitCompletions'][dateKey]
+        as Map<String, dynamic>)['habit-3'] = true;
+    final after = buildHomeViewData(root, day, today: day);
+    final eligibility = buildCompletedDayEligibility(
+      viewHabits: after.viewHabits,
+      selectedDay: day,
+      localToday: day,
+      isReady: homeCompletedDayDataIsReady(
+        hasLoadedState: true,
+        isLoading: false,
+      ),
+    );
+
+    expect(after.completedHabits, hasLength(3));
+    expect(after.pendingHabits, isEmpty);
+    expect(eligibility.isCompletedDay, isTrue);
+    expect(completedDayEligibilityReason(eligibility), 'eligible');
   });
 }
 

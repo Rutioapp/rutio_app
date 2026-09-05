@@ -68,6 +68,10 @@ import 'features/weekly_report/domain/weekly_report.dart';
 import 'features/weekly_report/presentation/screens/weekly_report_screen.dart';
 import 'features/weekly_report/presentation/screens/weekly_report_history_screen.dart';
 import 'features/weekly_report/application/weekly_report_activation_service.dart';
+import 'features/completed_day_phrase/application/phrase_catalog_sync_coordinator.dart';
+import 'features/completed_day_phrase/data/local/shared_preferences_phrase_catalog_cache_store.dart';
+import 'features/completed_day_phrase/data/phrase_catalog_repository.dart';
+import 'features/completed_day_phrase/data/remote/supabase_phrase_catalog_data_source.dart';
 
 import 'screens/app_startup_gate.dart';
 import 'screens/welcome_screen.dart';
@@ -388,14 +392,31 @@ class MyApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider<AuthController>(
-          create: (context) => AuthController(
-            context.read<AuthRepository>(),
-            userStateStore: context.read<UserStateStore>(),
-            profileRepository: context.read<ProfileRepository>(),
-            globalWalletController: context.read<GlobalWalletController>(),
-            personalizedNotificationOrchestrator:
-                context.read<PersonalizedNotificationOrchestrator>(),
-          ),
+          create: (context) {
+            final store = context.read<UserStateStore>();
+            final phraseRepository = PhraseCatalogRepository(
+              cache: SharedPreferencesPhraseCatalogCacheStore(),
+              remote: SupabasePhraseCatalogDataSource(),
+            );
+            return AuthController(
+              context.read<AuthRepository>(),
+              userStateStore: store,
+              profileRepository: context.read<ProfileRepository>(),
+              globalWalletController: context.read<GlobalWalletController>(),
+              personalizedNotificationOrchestrator:
+                  context.read<PersonalizedNotificationOrchestrator>(),
+              phraseCatalogSyncCoordinator: PhraseCatalogSyncCoordinator(
+                repository: phraseRepository,
+                currentUserIdProvider: () =>
+                    RutioSupabaseClient.instance.auth.currentUser?.id,
+                localeProvider: () => store.preferredLanguageCode ?? 'es',
+                scopeProvider: () => (
+                  userId: store.activeLocalScopeUserId ?? store.userId,
+                  epoch: store.scopeEpoch,
+                ),
+              ),
+            );
+          },
         ),
         ChangeNotifierProxyProvider4<AuthController, UserStateStore,
             ProfileRepository, ShopCosmeticsController, BootstrapController>(
@@ -410,16 +431,16 @@ class MyApp extends StatelessWidget {
             ),
             onHomeReady: (ready) async {
               final store = context.read<UserStateStore>();
-              await context
-                  .read<WeeklyReportActivationService>()
-                  .ensureActivated(
-                    userId: ready.userId,
-                    scopeEpoch: ready.scopeEpoch,
-                    timezoneResolver: store.getLocalIanaTimeZone,
-                  );
-              await context
-                  .read<PersonalizedNotificationOrchestrator>()
-                  .reconcileForBootstrapReady();
+              final weeklyReportActivation =
+                  context.read<WeeklyReportActivationService>();
+              final notificationOrchestrator =
+                  context.read<PersonalizedNotificationOrchestrator>();
+              await weeklyReportActivation.ensureActivated(
+                userId: ready.userId,
+                scopeEpoch: ready.scopeEpoch,
+                timezoneResolver: store.getLocalIanaTimeZone,
+              );
+              await notificationOrchestrator.reconcileForBootstrapReady();
             },
           ),
           update: (_, __, ___, ____, _____, controller) => controller!,
