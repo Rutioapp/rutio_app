@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
+import 'package:rutio/features/completed_day_phrase/completed_day_phrase.dart';
+import 'package:rutio/screens/home/home_screen.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,7 +15,10 @@ void main() {
       final store = await _seedStore(habits: [
         _habit(
           id: 'weekly-check',
-          schedule: const {'type': 'weekly', 'weekdays': [1, 3]},
+          schedule: const {
+            'type': 'weekly',
+            'weekdays': [1, 3]
+          },
         ),
       ]);
 
@@ -30,7 +35,10 @@ void main() {
       final store = await _seedStore(habits: [
         _habit(
           id: 'weekly-check',
-          schedule: const {'type': 'weekly', 'weekdays': [1, 3]},
+          schedule: const {
+            'type': 'weekly',
+            'weekdays': [1, 3]
+          },
         ),
       ]);
 
@@ -68,7 +76,10 @@ void main() {
       final store = await _seedStore(habits: [
         _habit(
           id: 'weekly-check',
-          schedule: const {'type': 'weekly', 'weekdays': [1, 3]},
+          schedule: const {
+            'type': 'weekly',
+            'weekdays': [1, 3]
+          },
         ),
       ]);
 
@@ -87,7 +98,10 @@ void main() {
           id: 'weekly-count',
           type: 'count',
           target: 5,
-          schedule: const {'type': 'weekly', 'weekdays': [1, 3]},
+          schedule: const {
+            'type': 'weekly',
+            'weekdays': [1, 3]
+          },
         ),
       ]);
 
@@ -173,6 +187,80 @@ void main() {
       expect(_historyDoneFor(store, '2026-05-11', 'archived-count'), isNull);
       expect(_historySkipFor(store, '2026-05-11', 'archived-count'), isNull);
       expect(_historyCountFor(store, '2026-05-11', 'archived-count'), isNull);
+    });
+
+    test('rapid completions keep the store and Home selectors consistent',
+        () async {
+      final store = await _seedStore(habits: [
+        _habit(id: 'habit-a', schedule: const {'type': 'daily'}),
+        _habit(id: 'habit-b', schedule: const {'type': 'daily'}),
+        _habit(id: 'habit-c', schedule: const {'type': 'daily'}),
+      ]);
+      final today = DateTime.now();
+      final date = DateTime(today.year, today.month, today.day);
+      final dateKey = _todayKey();
+
+      await Future.wait([
+        store.setHabitCompletionForKey(
+          habitId: 'habit-a',
+          dateKey: dateKey,
+          done: true,
+        ),
+        store.setHabitCompletionForKey(
+          habitId: 'habit-b',
+          dateKey: dateKey,
+          done: true,
+        ),
+        store.setHabitCompletionForKey(
+          habitId: 'habit-c',
+          dateKey: dateKey,
+          done: true,
+        ),
+      ]);
+
+      final view = buildHomeViewData(store.state, date, today: date);
+      final eligibility = buildCompletedDayEligibility(
+        viewHabits: view.viewHabits,
+        selectedDay: date,
+        localToday: date,
+        isReady: true,
+      );
+
+      expect(view.pendingHabits, isEmpty);
+      expect(view.completedHabits, hasLength(3));
+      expect(view.pendingCount, view.pendingHabits.length);
+      expect(view.pendingCount, 0);
+      expect(eligibility.pendingHabitCount, 0);
+      expect(eligibility.isCompletedDay, isTrue);
+    });
+
+    test('completing the last habit updates pending selectors immediately',
+        () async {
+      final store = await _seedStore(habits: [
+        _habit(id: 'last-habit', schedule: const {'type': 'daily'}),
+      ]);
+      final today = DateTime.now();
+      final date = DateTime(today.year, today.month, today.day);
+
+      await store.setHabitCompletionForKey(
+        habitId: 'last-habit',
+        dateKey: _todayKey(),
+        done: true,
+      );
+
+      final view = buildHomeViewData(store.state, date, today: date);
+      final eligibility = buildCompletedDayEligibility(
+        viewHabits: view.viewHabits,
+        selectedDay: date,
+        localToday: date,
+        isReady: true,
+      );
+
+      expect(view.pendingHabits, isEmpty);
+      expect(view.pendingCount, view.pendingHabits.length);
+      expect(view.pendingCount, 0);
+      expect(eligibility.pendingHabitCount, 0);
+      expect(eligibility.isCompletedDay, isTrue);
     });
   });
 }

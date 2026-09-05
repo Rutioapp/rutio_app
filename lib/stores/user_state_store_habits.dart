@@ -3224,7 +3224,7 @@ Future<void> _toggleHabitDoneForDate(
   final userState = _ensureUserStateRoot(root);
 
   if (_isSameDay(date, store._nowProvider())) {
-    await store.completeHabit(habitId: habitId);
+    await _completeHabit(store, habitId: habitId);
     return;
   }
 
@@ -3295,7 +3295,7 @@ Future<void> _setHabitCompletionForKey(
 
   if (_isSameDay(date, store._nowProvider())) {
     if (done) {
-      await store.completeHabit(habitId: habitId);
+      await _completeHabit(store, habitId: habitId);
       return;
     }
     final existingTransaction = await _habitRewardTransactionForDate(
@@ -3534,7 +3534,7 @@ Future<void> _setCountHabitValueForDate(
   final userState = _ensureUserStateRoot(root);
 
   if (_isSameDay(date, store._nowProvider())) {
-    await store.setCountHabitValue(habitId: habitId, value: value);
+    await _setCountHabitValue(store, habitId: habitId, value: value);
     return;
   }
 
