@@ -61,6 +61,83 @@ PhraseContext context({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('CompletedDayEligibility', () {
+    final today = DateTime(2026, 9, 4, 23, 30);
+
+    CompletedDayEligibility eligibility({
+      bool ready = true,
+      DateTime? selectedDay,
+      int scheduled = 3,
+      int completed = 3,
+      int pending = 0,
+      int skipped = 0,
+    }) {
+      return CompletedDayEligibility(
+        isReady: ready,
+        isLocalToday: (selectedDay ?? today).year == today.year &&
+            (selectedDay ?? today).month == today.month &&
+            (selectedDay ?? today).day == today.day,
+        scheduledHabitCount: scheduled,
+        completedHabitCount: completed,
+        pendingHabitCount: pending,
+        skippedHabitCount: skipped,
+      );
+    }
+
+    test('ready + 3 completed of 3 is eligible', () {
+      expect(eligibility().isCompletedDay, isTrue);
+    });
+
+    test('pending, skipped, zero scheduled, loading and another date are not',
+        () {
+      expect(eligibility(completed: 2, pending: 1).isCompletedDay, isFalse);
+      expect(eligibility(completed: 2, skipped: 1).isCompletedDay, isFalse);
+      expect(eligibility(scheduled: 0).isCompletedDay, isFalse);
+      expect(eligibility(ready: false).isCompletedDay, isFalse);
+      expect(
+        eligibility(selectedDay: DateTime(2026, 9, 3)).isCompletedDay,
+        isFalse,
+      );
+    });
+
+    test('timesPerWeek does not create daily obligations', () {
+      final result = buildCompletedDayEligibility(
+        viewHabits: <Map<String, dynamic>>[
+          <String, dynamic>{
+            'isTimesPerWeekCheck': true,
+            'doneToday': false,
+            'isWeeklyTargetMet': false,
+          },
+        ],
+        selectedDay: today,
+        localToday: today,
+        isReady: true,
+      );
+      expect(result.scheduledHabitCount, 0);
+      expect(result.isCompletedDay, isFalse);
+    });
+
+    test('timesPerWeek pending beside completed daily habits does not block',
+        () {
+      final result = buildCompletedDayEligibility(
+        viewHabits: <Map<String, dynamic>>[
+          <String, dynamic>{'doneToday': true},
+          <String, dynamic>{
+            'schedule': <String, dynamic>{'type': 'timesPerWeek'},
+            'doneToday': false,
+          },
+        ],
+        selectedDay: today,
+        localToday: today,
+        isReady: true,
+      );
+      expect(result.scheduledHabitCount, 1);
+      expect(result.completedHabitCount, 1);
+      expect(result.pendingHabitCount, 0);
+      expect(result.isCompletedDay, isTrue);
+    });
+  });
+
   group('PhraseTemplateRenderer', () {
     final renderer = const PhraseTemplateRenderer();
 
@@ -194,6 +271,29 @@ void main() {
       expect((await store.loadHistory('user-1')).phraseIds, isEmpty);
       expect(await store.loadDailySelection('user-2', date), isNull);
     });
+
+    test('namespaces daily selections by locale', () async {
+      final date = DateTime(2026, 9, 4);
+      await store.saveDailySelection(
+        'user-1',
+        date,
+        PhraseDailySelection(
+          phraseId: 'es-phrase',
+          localDate: date,
+          locale: 'es',
+          catalogVersion: 'v1',
+        ),
+      );
+      expect(
+        await store.loadDailySelection('user-1', date, locale: 'en'),
+        isNull,
+      );
+      expect(
+        (await store.loadDailySelection('user-1', date, locale: 'es'))
+            ?.phraseId,
+        'es-phrase',
+      );
+    });
   });
 
   group('PhraseCatalogValidator and bundled catalog', () {
@@ -270,6 +370,121 @@ void main() {
     expect(second?.phrase.id, 'only');
     expect(second?.fromDailySelection, isTrue);
     expect((await store.loadHistory('user-1')).phraseIds, <String>['only']);
+  });
+
+  group('CompletedDayPhraseController', () {
+    late SharedPreferencesCompletedDayPhraseStore store;
+    late CompletedDayPhraseController controller;
+    final date = DateTime(2026, 9, 4, 18);
+    final eligible = const CompletedDayEligibility(
+      isReady: true,
+      isLocalToday: true,
+      scheduledHabitCount: 1,
+      completedHabitCount: 1,
+      pendingHabitCount: 0,
+      skippedHabitCount: 0,
+    );
+
+    CompletedDayPhraseInput input({String userId = 'user-a', DateTime? day}) {
+      return CompletedDayPhraseInput(
+        userId: userId,
+        localDate: day ?? date,
+        locale: 'es-ES',
+        name: 'Nora',
+        streak: 2,
+        streakLabel: '2 días',
+      );
+    }
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      store = SharedPreferencesCompletedDayPhraseStore();
+      controller = CompletedDayPhraseController(
+        service: CompletedDayPhraseService(
+          catalogSource: _FakeCatalogSource(
+            PhraseCatalog(
+              schemaVersion: 1,
+              catalogVersion: 'controller-v1',
+              locale: 'es',
+              phrases: <MotivationalPhrase>[
+                phrase('stable',
+                    template: 'Hecho {progress}',
+                    requiredTokens: const ['progress']),
+              ],
+            ),
+          ),
+          historyStore: store,
+          selectionEngine: PhraseSelectionEngine(
+            randomSource: FixedPhraseRandomSource(<double>[0]),
+          ),
+        ),
+      );
+    });
+
+    tearDown(() => controller.dispose());
+
+    test('resolves once and keeps the same phrase across repeated updates',
+        () async {
+      controller.resolve(eligibility: eligible, input: input());
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      final first = controller.state.phrase;
+      expect(first?.phrase.id, 'stable');
+
+      controller.resolve(eligibility: eligible, input: input());
+      expect(controller.state.phrase?.phrase.id, 'stable');
+    });
+
+    test('reopening hides and completing again restores the same daily ID',
+        () async {
+      controller.resolve(eligibility: eligible, input: input());
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.state.phrase?.phrase.id, 'stable');
+
+      controller.resolve(
+        eligibility: const CompletedDayEligibility(
+          isReady: true,
+          isLocalToday: true,
+          scheduledHabitCount: 1,
+          completedHabitCount: 0,
+          pendingHabitCount: 1,
+          skippedHabitCount: 0,
+        ),
+        input: input(),
+      );
+      expect(controller.state.status, CompletedDayPhraseStatus.hidden);
+
+      controller.resolve(eligibility: eligible, input: input());
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.state.phrase?.phrase.id, 'stable');
+      expect(controller.state.phrase?.fromDailySelection, isTrue);
+    });
+
+    test('a different user or local date cannot reuse the previous result',
+        () async {
+      controller.resolve(eligibility: eligible, input: input());
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.state.phrase?.phrase.id, 'stable');
+
+      controller.resolve(eligibility: eligible, input: input(userId: 'user-b'));
+      expect(controller.state.status, CompletedDayPhraseStatus.resolving);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.state.phrase?.phrase.id, 'stable');
+      expect(controller.state.phrase?.fromDailySelection, isFalse);
+
+      controller.resolve(
+        eligibility: eligible,
+        input: input(userId: 'user-b', day: DateTime(2026, 9, 5)),
+      );
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.state.phrase?.localDate, DateTime(2026, 9, 5));
+      expect(controller.state.phrase?.fromDailySelection, isFalse);
+    });
   });
 }
 

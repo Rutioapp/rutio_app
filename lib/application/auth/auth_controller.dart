@@ -10,6 +10,7 @@ import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../../features/notifications/application/personalized_notification_orchestrator.dart';
 import '../../features/global_wallet/application/global_wallet_controller.dart';
+import '../../features/completed_day_phrase/application/phrase_catalog_sync_coordinator.dart';
 import '../../stores/user_state_store.dart';
 
 typedef AuthDebugLogger = void Function(String message);
@@ -71,6 +72,7 @@ class AuthController extends ChangeNotifier {
     ProfileRepository? profileRepository,
     bool enableBackgroundProfileSync = true,
     PostHomeBootstrapTaskRunner? postHomeBootstrapTaskRunner,
+    PhraseCatalogSyncCoordinator? phraseCatalogSyncCoordinator,
     PersonalizedNotificationOrchestrator? personalizedNotificationOrchestrator,
     AuthDebugLogger? debugLogger,
   })  : _userStateStore = userStateStore,
@@ -78,6 +80,7 @@ class AuthController extends ChangeNotifier {
         _profileRepository = profileRepository,
         _enableBackgroundProfileSync = enableBackgroundProfileSync,
         _postHomeBootstrapTaskRunner = postHomeBootstrapTaskRunner,
+        _phraseCatalogSyncCoordinator = phraseCatalogSyncCoordinator,
         _personalizedNotificationOrchestrator =
             personalizedNotificationOrchestrator,
         _debugLogger = debugLogger ?? debugPrint {
@@ -128,6 +131,7 @@ class AuthController extends ChangeNotifier {
   final ProfileRepository? _profileRepository;
   final bool _enableBackgroundProfileSync;
   final PostHomeBootstrapTaskRunner? _postHomeBootstrapTaskRunner;
+  final PhraseCatalogSyncCoordinator? _phraseCatalogSyncCoordinator;
   final PersonalizedNotificationOrchestrator?
       _personalizedNotificationOrchestrator;
   final AuthDebugLogger _debugLogger;
@@ -748,6 +752,14 @@ class AuthController extends ChangeNotifier {
   ) async {
     final startedAt = DateTime.now();
     try {
+      final phraseCatalogSync = _phraseCatalogSyncCoordinator;
+      if (phraseCatalogSync != null) {
+        await phraseCatalogSync.syncAfterBootstrap(
+          userId: context.userId,
+          scopeUserId: context.scopeUserId,
+          scopeEpoch: context.scopeEpoch,
+        );
+      }
       final profileStartedAt = DateTime.now();
       await _runPostHomeProfileMetadata(context);
       _bootstrapMetric(
@@ -1090,6 +1102,7 @@ class AuthController extends ChangeNotifier {
   void dispose() {
     _authSubscription?.cancel();
     _authSubscription = null;
+    _phraseCatalogSyncCoordinator?.dispose();
     super.dispose();
   }
 }

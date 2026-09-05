@@ -163,8 +163,9 @@ abstract interface class PhraseHistoryStore {
 
   Future<PhraseDailySelection?> loadDailySelection(
     String userId,
-    DateTime localDate,
-  );
+    DateTime localDate, {
+    String? locale,
+  });
 
   Future<void> saveDailySelection(
     String userId,

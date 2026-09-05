@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/identity/user_namespace.dart';
 import '../../domain/motivational_phrase.dart';
+import '../../domain/phrase_catalog_locale_resolver.dart';
 import '../../domain/phrase_date_key.dart';
 
 class SharedPreferencesCompletedDayPhraseStore implements PhraseHistoryStore {
@@ -20,8 +21,23 @@ class SharedPreferencesCompletedDayPhraseStore implements PhraseHistoryStore {
   static String historyKey(String userId) =>
       '$rootPrefix/${safeUserNamespace(userId)}/history';
 
-  static String dailySelectionKey(String userId, DateTime localDate) =>
-      '$rootPrefix/${safeUserNamespace(userId)}/daily_phrase/${PhraseDateKey.format(localDate)}';
+  static String dailySelectionKey(
+    String userId,
+    DateTime localDate, {
+    String? locale,
+  }) =>
+      '$rootPrefix/${safeUserNamespace(userId)}/daily_phrase/'
+      '${PhraseCatalogLocaleResolver.selectionLocale(locale ?? 'es')}/'
+      '${PhraseDateKey.format(localDate)}';
+
+  static String _legacyDailySelectionKey(
+    String userId,
+    DateTime localDate, {
+    String? locale,
+  }) =>
+      '$rootPrefix/${safeUserNamespace(userId)}/daily_phrase/'
+      '${PhraseLocale.canonicalize(locale ?? 'es')}/'
+      '${PhraseDateKey.format(localDate)}';
 
   @override
   Future<PhraseHistory> loadHistory(String userId) async {
@@ -71,10 +87,16 @@ class SharedPreferencesCompletedDayPhraseStore implements PhraseHistoryStore {
   @override
   Future<PhraseDailySelection?> loadDailySelection(
     String userId,
-    DateTime localDate,
-  ) async {
+    DateTime localDate, {
+    String? locale,
+  }) async {
     final prefs = await _sharedPreferencesProvider();
-    final raw = prefs.getString(dailySelectionKey(userId, localDate));
+    final raw = prefs.getString(
+          dailySelectionKey(userId, localDate, locale: locale),
+        ) ??
+        prefs.getString(
+          _legacyDailySelectionKey(userId, localDate, locale: locale),
+        );
     if (raw == null || raw.trim().isEmpty) return null;
     try {
       final decoded = jsonDecode(raw);
@@ -121,7 +143,7 @@ class SharedPreferencesCompletedDayPhraseStore implements PhraseHistoryStore {
       throw ArgumentError('Daily selection date does not match its key.');
     }
     await prefs.setString(
-      dailySelectionKey(userId, localDate),
+      dailySelectionKey(userId, localDate, locale: selection.locale),
       jsonEncode(<String, Object?>{
         'schemaVersion': schemaVersion,
         'userNamespace': safeUserNamespace(userId),

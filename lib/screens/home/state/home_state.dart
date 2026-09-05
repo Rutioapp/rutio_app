@@ -52,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _habitCompletionTransitionSequence = 0;
   final Map<String, HomeHabitCompletionTransition> _habitCompletionTransitions =
       {};
+  late final CompletedDayPhraseController _completedDayPhraseController;
   final NotificationPermissionController _notificationPermissionController =
       NotificationPermissionController();
   bool _didQueuePostLoginNotificationPrompt = false;
@@ -394,6 +395,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    _completedDayPhraseController = CompletedDayPhraseController();
     WidgetsBinding.instance.addObserver(this);
 
     _selectedDay = _onlyDate(DateTime.now());
@@ -731,6 +733,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _customTargetCtrl.dispose();
     _customUnitsCtrl.dispose();
     _habitCompletionTransitions.clear();
+    _completedDayPhraseController.dispose();
 
     super.dispose();
   }

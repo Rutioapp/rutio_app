@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
+
 import '../domain/motivational_phrase.dart';
 import '../domain/phrase_catalog_validator.dart';
 import '../domain/phrase_date_key.dart';
+import '../domain/phrase_catalog_locale_resolver.dart';
 import '../domain/phrase_selection_engine.dart';
 import '../domain/phrase_template_renderer.dart';
 
@@ -29,7 +32,7 @@ class CompletedDayPhraseService {
       context.localDate.month,
       context.localDate.day,
     );
-    final locale = PhraseLocale.canonicalize(context.locale);
+    final locale = PhraseCatalogLocaleResolver.selectionLocale(context.locale);
     final PhraseCatalog catalog;
     try {
       catalog = await _catalogSource.load(locale);
@@ -41,10 +44,32 @@ class CompletedDayPhraseService {
     } catch (_) {
       return null;
     }
-    final daily = await _historyStore.loadDailySelection(userId, localDate);
-    if (daily != null) {
+    final daily = await _historyStore.loadDailySelection(
+      userId,
+      localDate,
+      locale: locale,
+    );
+    if (daily != null &&
+        PhraseCatalogLocaleResolver.selectionLocale(daily.locale) == locale) {
       final existing = _findAvailablePhrase(catalog, daily.phraseId, context);
       if (existing != null) {
+        if (daily.catalogVersion != catalog.catalogVersion) {
+          await _historyStore.saveDailySelection(
+            userId,
+            localDate,
+            PhraseDailySelection(
+              phraseId: existing.id,
+              localDate: localDate,
+              locale: locale,
+              catalogVersion: catalog.catalogVersion,
+            ),
+          );
+        }
+        if (kDebugMode) {
+          debugPrint(
+            '[COMPLETED_DAY_PHRASE] daily_phrase_restored id=${existing.id}',
+          );
+        }
         return RenderedMotivationalPhrase(
           phrase: existing,
           text: _renderer.render(existing, context),
@@ -73,6 +98,11 @@ class CompletedDayPhraseService {
       ),
     );
     await _historyStore.saveHistory(userId, selection.history);
+    if (kDebugMode) {
+      debugPrint(
+        '[COMPLETED_DAY_PHRASE] daily_phrase_selected id=${selection.phrase.id}',
+      );
+    }
     return RenderedMotivationalPhrase(
       phrase: selection.phrase,
       text: selection.text,

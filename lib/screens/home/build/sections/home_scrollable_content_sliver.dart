@@ -9,6 +9,7 @@ class HomeScrollableContentSliver extends StatelessWidget {
     super.key,
     required this.homeData,
     required this.selectedFilter,
+    required this.completedDayEligibility,
     required this.completionTransitions,
     required this.habitCardBuilder,
     required this.completionTransitionBuilder,
@@ -20,6 +21,7 @@ class HomeScrollableContentSliver extends StatelessWidget {
 
   final HomeViewData homeData;
   final HomeHabitStatusFilter selectedFilter;
+  final CompletedDayEligibility completedDayEligibility;
   final List<HomeHabitCompletionTransition> completionTransitions;
   final Widget Function(BuildContext ctx, Map<String, dynamic> habit,
       {bool compact}) habitCardBuilder;
@@ -55,6 +57,7 @@ class HomeScrollableContentSliver extends StatelessWidget {
             )
           : HomeHabitsSliver(
               selectedFilter: selectedFilter,
+              suppressPendingEmptyState: completedDayEligibility.isCompletedDay,
               visibleHabits: visibleHabits,
               completionTransitions: completionTransitions,
               habitCardBuilder: habitCardBuilder,
