@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:rutio/constants/reward_constants.dart';
 import 'package:rutio/features/achievements/application/achievement_rewards.dart';
 import 'package:rutio/features/achievements/domain/models/achievement.dart';
+import 'package:rutio/features/habits/domain/models/habit_reward_transaction.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 import 'package:rutio/l10n/l10n.dart';
@@ -19,6 +20,8 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
   required UserStateStore store,
   required StatisticsV3Period period,
   required AppLocalizations l10n,
+  List<HabitRewardTransaction> habitRewardTransactions =
+      const <HabitRewardTransaction>[],
   DateTime? now,
 }) {
   final today = _dateOnly((now ?? DateTime.now()).toLocal());
@@ -164,10 +167,7 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     end: periodRange.end,
     today: today,
     userState: userState,
-    completionsRoot: completionsRoot,
-    skipsRoot: skipsRoot,
-    countValuesRoot: countValuesRoot,
-    habitsById: habitsById,
+    habitRewardTransactions: habitRewardTransactions,
   );
 
   final xpGained = rewardBreakdown.totalXp;
@@ -635,10 +635,7 @@ StatisticsV3RewardBreakdown _buildPeriodRewardBreakdown({
   required DateTime end,
   required DateTime today,
   required Map<String, dynamic> userState,
-  required Map<String, dynamic> completionsRoot,
-  required Map<String, dynamic> skipsRoot,
-  required Map<String, dynamic> countValuesRoot,
-  required Map<String, Map<String, dynamic>> habitsById,
+  required List<HabitRewardTransaction> habitRewardTransactions,
 }) {
   if (end.isBefore(start)) {
     return const StatisticsV3RewardBreakdown(
@@ -649,10 +646,7 @@ StatisticsV3RewardBreakdown _buildPeriodRewardBreakdown({
     start: start,
     end: end,
     today: today,
-    completionsRoot: completionsRoot,
-    skipsRoot: skipsRoot,
-    countValuesRoot: countValuesRoot,
-    habitsById: habitsById,
+    habitRewardTransactions: habitRewardTransactions,
   );
   final diaryRewards = _aggregateDiaryRewardsForPeriod(
     start: start,
@@ -695,76 +689,26 @@ _PeriodRewardSummary _aggregateHabitRewardsForPeriod({
   required DateTime start,
   required DateTime end,
   required DateTime today,
-  required Map<String, dynamic> completionsRoot,
-  required Map<String, dynamic> skipsRoot,
-  required Map<String, dynamic> countValuesRoot,
-  required Map<String, Map<String, dynamic>> habitsById,
+  required List<HabitRewardTransaction> habitRewardTransactions,
 }) {
   var xp = 0;
   var amber = 0;
-  for (var day = start;
-      !day.isAfter(end);
-      day = day.add(const Duration(days: 1))) {
-    if (day.isAfter(today)) break;
-    final dayKey = _dateKey(day);
-    final dayCompletions = _map(completionsRoot[dayKey]);
-    final daySkips = _map(skipsRoot[dayKey]);
-    final dayCountValues = _map(countValuesRoot[dayKey]);
-    final rewardedHabitIds = <String>{};
+  final firstDay = _dateOnly(start);
+  final lastDay = _minDate(_dateOnly(end), _dateOnly(today));
+  if (lastDay.isBefore(firstDay)) {
+    return const _PeriodRewardSummary(xp: 0, amber: 0);
+  }
 
-    for (final entry in dayCompletions.entries) {
-      final habitId = entry.key.toString().trim();
-      if (habitId.isEmpty) continue;
-      if (_isDone(daySkips[habitId])) continue;
-      if (!_isDone(entry.value)) continue;
-
-      final habit = habitsById[habitId];
-      if (habit == null) {
-        xp += _xpForCheckCompletionReward();
-        amber += _amberForCheckCompletionReward();
-        rewardedHabitIds.add(habitId);
-        continue;
-      }
-
-      if (!_wasHabitCreatedByDay(habit, day)) continue;
-      if (_isCountHabit(habit)) {
-        final target = _safePositiveNum(habit['target'], fallback: 1);
-        final progress = _safeNum(
-          dayCountValues[habitId],
-          fallback: target,
-        );
-        if (progress >= target) {
-          final xpGain = _xpForCountCompletionReward(target);
-          xp += xpGain;
-          amber += _amberForCountCompletionReward(xpGain);
-          rewardedHabitIds.add(habitId);
-        }
-        continue;
-      }
-
-      xp += _xpForCheckCompletionReward();
-      amber += _amberForCheckCompletionReward();
-      rewardedHabitIds.add(habitId);
+  for (final transaction in habitRewardTransactions) {
+    final date = _parseDateKey(transaction.localDateKey);
+    if (date == null || date.isBefore(firstDay) || date.isAfter(lastDay)) {
+      continue;
     }
 
-    for (final entry in dayCountValues.entries) {
-      final habitId = entry.key.toString().trim();
-      if (habitId.isEmpty) continue;
-      if (rewardedHabitIds.contains(habitId)) continue;
-      if (_isDone(daySkips[habitId])) continue;
-
-      final habit = habitsById[habitId];
-      if (habit == null || !_isCountHabit(habit)) continue;
-      if (!_wasHabitCreatedByDay(habit, day)) continue;
-      final target = _safePositiveNum(habit['target'], fallback: 1);
-      final progress = _safeNum(entry.value, fallback: 0);
-      if (progress < target) continue;
-
-      final xpGain = _xpForCountCompletionReward(target);
-      xp += xpGain;
-      amber += _amberForCountCompletionReward(xpGain);
-      rewardedHabitIds.add(habitId);
-    }
+    // Rewards are historical: once a transaction exists, the reward was
+    // earned for this habit/date even if the completion state later changes.
+    xp += transaction.totalXp;
+    amber += transaction.totalCoins;
   }
 
   return _PeriodRewardSummary(xp: xp, amber: amber);
@@ -1435,16 +1379,6 @@ DateTime? _parseDateKey(String raw) {
   if (day < 1 || day > DateUtils.getDaysInMonth(year, month)) return null;
   return DateTime(year, month, day);
 }
-
-int _xpForCheckCompletionReward() => RewardConstants.habitCheckXpReward;
-
-int _amberForCheckCompletionReward() => RewardConstants.habitCheckAmbarReward;
-
-int _xpForCountCompletionReward(num target) =>
-    RewardConstants.habitCountXpReward(target);
-
-int _amberForCountCompletionReward(num xp) =>
-    RewardConstants.habitCountAmbarReward(xp);
 
 AchievementTier _safeAchievementTierForRewards(dynamic rawTier) {
   final key = (rawTier ?? '').toString().trim().toLowerCase();

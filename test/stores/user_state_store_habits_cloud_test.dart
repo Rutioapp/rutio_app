@@ -341,7 +341,8 @@ void main() {
       expect(_coins(fixture.store), greaterThan(0));
     });
 
-    test('legacy local transaction does not block the cloud RPC', () async {
+    test('legacy local transaction still blocks a second cloud award',
+        () async {
       final fixture = await _seedFixture(
         scopeUserId: 'cloud-habit-user-2',
         cloudHabitRewardsEnabled: true,
@@ -402,22 +403,12 @@ void main() {
 
       await fixture.store.completeHabit(habitId: 'habit-check');
 
-      expect(fixture.rewardRepository.applyCalls, 1);
-      expect(fixture.rewardRepository.applyRequests.single.habitId,
-          _remoteHabitUuid2);
-      expect(
-        fixture.rewardRepository.applyRequests.single.completionEventId,
-        'habit_cloud_reward|$_remoteHabitUuid2|2026-07-18',
-      );
-      expect(
-        fixture.rewardRepository.applyRequests.single.requestId,
-        'habit_cloud_reward_apply|$_remoteHabitUuid2|2026-07-18',
-      );
+      expect(fixture.rewardRepository.applyCalls, 0);
       expect(fixture.transactions, hasLength(1));
-      expect(fixture.transactions.single.cloudOperationType, 'apply');
+      expect(fixture.transactions.single.cloudOperationType, isNull);
       expect(_xp(fixture.store), 15);
       expect(_coins(fixture.store), 8);
-      expect((await fixture.effects()).single.remainingUses, 9);
+      expect((await fixture.effects()).single.remainingUses, 10);
     });
 
     test('cloud confirmed transaction avoids duplicate completion', () async {
@@ -467,7 +458,7 @@ void main() {
       expect((await fixture.effects()).single.remainingUses, 9);
     });
 
-    test('migrating from local to cloud does not duplicate xp or coins',
+    test('migrating from local to cloud does not issue a second award',
         () async {
       final fixture = await _seedFixture(
         scopeUserId: 'cloud-habit-user-4',
@@ -537,11 +528,9 @@ void main() {
 
       expect(_xp(fixture.store), 15);
       expect(_coins(fixture.store), 8);
-      expect(fixture.rewardRepository.applyCalls, 1);
-      expect(fixture.rewardRepository.applyRequests.single.habitId,
-          _remoteHabitUuid4);
+      expect(fixture.rewardRepository.applyCalls, 0);
       expect(fixture.transactions, hasLength(1));
-      expect(fixture.transactions.single.cloudOperationType, 'apply');
+      expect(fixture.transactions.single.cloudOperationType, isNull);
       final effects = await fixture.effects();
       expect(
         effects,
@@ -549,12 +538,12 @@ void main() {
       );
       expect(
         effects.any(
-            (effect) => effect.id == 'xp-boost' && effect.remainingUses == 9),
+            (effect) => effect.id == 'xp-boost' && effect.remainingUses == 10),
         isTrue,
       );
       expect(
         effects.any(
-          (effect) => effect.id == 'coin-boost' && effect.remainingUses == 9,
+          (effect) => effect.id == 'coin-boost' && effect.remainingUses == 10,
         ),
         isTrue,
       );
@@ -706,7 +695,7 @@ void main() {
       expect((await fixture.effects()).single.remainingUses, 10);
     });
 
-    test('reversal uses the same remote UUID and keeps local ids intact',
+    test('undo does not emit a cloud reversal or change the reward transaction',
         () async {
       final fixture = await _seedFixture(
         scopeUserId: 'cloud-habit-user-8',
@@ -766,23 +755,69 @@ void main() {
       );
 
       expect(fixture.rewardRepository.applyCalls, 1);
-      expect(fixture.rewardRepository.reverseCalls, 1);
+      expect(fixture.rewardRepository.reverseCalls, 0);
       expect(fixture.rewardRepository.applyRequests.single.habitId,
           _remoteHabitUuid2);
-      expect(fixture.rewardRepository.reverseRequests.single.habitId,
-          _remoteHabitUuid2);
-      expect(
-        fixture.rewardRepository.reverseRequests.single.completionEventId,
-        'habit_cloud_reward|$_remoteHabitUuid2|2026-07-18',
+      expect(fixture.transactions, hasLength(1));
+      expect(fixture.transactions.single.isReversed, isFalse);
+    });
+
+    test('complete, undo, and re-complete emits one cloud award and no refund',
+        () async {
+      final walletController = GlobalWalletController(
+        repository: _NeverWalletRepository(),
+        cache: _MemoryWalletCache(),
+        currentUserIdProvider: () => 'cloud-habit-cycle-user',
+        enabled: true,
       );
-      expect(
-        fixture.rewardRepository.reverseRequests.single.requestId,
-        'habit_cloud_reward_reverse|$_remoteHabitUuid2|2026-07-18',
+      await walletController.applyConfirmedBalance(
+        userId: 'cloud-habit-cycle-user',
+        coins: 50,
+        version: 1,
+        updatedAt: DateTime.utc(2026, 7, 18, 11),
       );
-      expect(
-        fixture.rewardRepository.applyRequests.single.requestId,
-        isNot(fixture.rewardRepository.reverseRequests.single.requestId),
+
+      final fixture = await _seedFixture(
+        scopeUserId: 'cloud-habit-cycle-user',
+        cloudHabitRewardsEnabled: true,
+        globalWalletController: walletController,
+        habits: <Map<String, dynamic>>[
+          _habit(
+            id: 'habit-cycle',
+            type: 'check',
+            target: 1,
+            remoteId: _remoteHabitUuid2,
+          ),
+        ],
+        activeEffects: const <ActiveUtilityEffect>[],
+        rewardHandler: (request, effects) {
+          return HabitCurrencyRewardResult.success(
+            data: _ledgerFor(
+              request: request,
+              userId: 'cloud-habit-cycle-user',
+              coinDelta: 10,
+              balanceAfter: 60,
+            ),
+          );
+        },
       );
+
+      await fixture.store.completeHabit(habitId: 'habit-cycle');
+      expect(walletController.state.coins, 60);
+
+      await fixture.store.setHabitCompletion(
+        habitId: 'habit-cycle',
+        date: DateTime.utc(2026, 7, 18, 12),
+        done: false,
+      );
+      expect(walletController.state.coins, 60);
+
+      await fixture.store.completeHabit(habitId: 'habit-cycle');
+      expect(walletController.state.coins, 60);
+      expect(fixture.rewardRepository.applyCalls, 1);
+      expect(fixture.rewardRepository.reverseCalls, 0);
+      expect(fixture.transactions, hasLength(1));
+      expect(fixture.transactions.single.isReversed, isFalse);
     });
 
     test('local mode remains intact', () async {

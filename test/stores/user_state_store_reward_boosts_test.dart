@@ -134,8 +134,7 @@ void main() {
       expect(await _transactionsFor(fixture, 'boost-user-4'), hasLength(1));
     });
 
-    test(
-        'uncompleting removes reward once and never returns boost uses, even on repeat',
+    test('uncompleting keeps the reward and never returns boost uses',
         () async {
       final expectedXp = RewardConstants.habitCheckXpReward +
           (RewardConstants.habitCheckXpReward * 0.5).round();
@@ -168,12 +167,12 @@ void main() {
       );
 
       expect(_xp(fixture.store), expectedXp);
-      expect(_coins(fixture.store), 0);
+      expect(_coins(fixture.store), expectedCoins);
       expect(await _remainingUses(fixture, 'xp-boost'), 9);
       expect(await _remainingUses(fixture, 'coin-boost'), 9);
       expect(
         (await _transactionsFor(fixture, 'boost-user-5')).single.isReversed,
-        isTrue,
+        isFalse,
       );
     });
 
@@ -269,42 +268,6 @@ void main() {
       expect(await _remainingUses(fixture, 'xp-boost'), 10);
       expect(await _remainingUses(fixture, 'coin-boost'), 10);
       expect(await _transactionsFor(fixture, 'boost-user-8'), isEmpty);
-    });
-
-    test('reversal clamps XP and coins at zero', () async {
-      final fixture = await _seedStore(
-        scopeUserId: 'boost-user-9',
-        habits: <Map<String, dynamic>>[
-          _habit(id: 'habit-check', type: 'check', target: 1),
-        ],
-        activeEffects: <ActiveUtilityEffect>[
-          _effect('xp-boost', 'utility_xp_boost_1d',
-              ActiveUtilityEffectType.xpBoost),
-          _effect('coin-boost', 'utility_coin_boost_1d',
-              ActiveUtilityEffectType.coinBoost),
-        ],
-      );
-
-      await fixture.store.completeHabit(habitId: 'habit-check');
-
-      final root = fixture.store.state!;
-      final userState = root['userState'] as Map<String, dynamic>;
-      final progression = userState['progression'] as Map<String, dynamic>;
-      final wallet = userState['wallet'] as Map<String, dynamic>;
-      progression['xp'] = 0;
-      wallet['coins'] = 0;
-      await fixture.store.save(root);
-
-      await fixture.store.setHabitCompletion(
-        habitId: 'habit-check',
-        date: fixture.now,
-        done: false,
-      );
-
-      expect(_xp(fixture.store), 0);
-      expect(_coins(fixture.store), 0);
-      expect(await _remainingUses(fixture, 'xp-boost'), 9);
-      expect(await _remainingUses(fixture, 'coin-boost'), 9);
     });
 
     test(

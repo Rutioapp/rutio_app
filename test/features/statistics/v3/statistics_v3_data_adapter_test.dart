@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/constants/reward_constants.dart';
 import 'package:rutio/devtools/demo_seed/demo_seed_data.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
+import 'package:rutio/features/habits/domain/models/habit_reward_transaction.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 import 'package:rutio/l10n/gen/app_localizations_en.dart';
@@ -386,6 +387,20 @@ void main() {
             ),
           ],
           history: history,
+          rewardTransactions: [
+            _rewardTransaction(
+              habitId: 'check-week',
+              date: DateTime(2026, 5, 18),
+              baseXp: 10,
+              baseCoins: 5,
+            ),
+            _rewardTransaction(
+              habitId: 'count-week',
+              date: DateTime(2026, 5, 19),
+              baseXp: 7,
+              baseCoins: 3,
+            ),
+          ],
         );
 
         expect(result.xpGained, 17);
@@ -398,6 +413,127 @@ void main() {
         );
         expect(habitRow.xp, 17);
         expect(habitRow.amber, 8);
+      });
+
+      test('historical completion contributes to habits but not rewards',
+          () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 5, 19, 8), 'habit-past');
+
+        final result = await _buildWeekViewData(
+          now: fixedNow,
+          activeHabits: [_habit(id: 'habit-past', title: 'Past habit')],
+          history: history,
+        );
+
+        expect(result.completedHabits, greaterThan(0));
+        expect(result.xpGained, 0);
+        expect(result.amberGained, 0);
+        expect(result.rewardBreakdown.visibleRows, isEmpty);
+      });
+
+      test('future completion never contributes a reward', () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 5, 21, 8), 'habit-future');
+
+        final result = await _buildMonthViewData(
+          now: fixedNow,
+          activeHabits: [_habit(id: 'habit-future', title: 'Future habit')],
+          history: history,
+        );
+
+        expect(result.xpGained, 0);
+        expect(result.amberGained, 0);
+      });
+
+      test('reward transaction keeps historical XP and Amber after undo',
+          () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _historyForDay(
+          fixedNow,
+          completions: {'habit-reversed': true},
+        );
+
+        final result = await _buildDayViewData(
+          now: fixedNow,
+          activeHabits: [_habit(id: 'habit-reversed', title: 'Reversed')],
+          history: history,
+          rewardTransactions: [
+            _rewardTransaction(
+              habitId: 'habit-reversed',
+              date: fixedNow,
+              baseXp: 10,
+              bonusXp: 5,
+              baseCoins: 5,
+              bonusCoins: 2,
+              isReversed: true,
+            ),
+          ],
+        );
+
+        expect(result.xpGained, 15);
+        expect(result.amberGained, 7);
+      });
+
+      test('recompleted transaction remains one historical reward', () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _historyForDay(
+          fixedNow,
+          completions: {'habit-recompleted': true},
+        );
+
+        final result = await _buildDayViewData(
+          now: fixedNow,
+          activeHabits: [_habit(id: 'habit-recompleted', title: 'Recompleted')],
+          history: history,
+          rewardTransactions: [
+            _rewardTransaction(
+              habitId: 'habit-recompleted',
+              date: fixedNow,
+              baseXp: 10,
+              bonusXp: 5,
+              baseCoins: 5,
+              bonusCoins: 2,
+            ),
+          ],
+        );
+
+        expect(result.xpGained, 15);
+        expect(result.amberGained, 7);
+      });
+
+      test('count habit reward is counted once from its transaction', () async {
+        final fixedNow = DateTime(2026, 5, 20, 10);
+        final history = _historyForDay(
+          fixedNow,
+          countValues: {'count-habit': 5},
+        );
+
+        final result = await _buildDayViewData(
+          now: fixedNow,
+          activeHabits: [
+            _habit(
+              id: 'count-habit',
+              title: 'Count habit',
+              type: 'count',
+              target: 5,
+            ),
+          ],
+          history: history,
+          rewardTransactions: [
+            _rewardTransaction(
+              habitId: 'count-habit',
+              date: fixedNow,
+              baseXp: 7,
+              baseCoins: 3,
+            ),
+          ],
+        );
+
+        expect(result.xpGained, 7);
+        expect(result.amberGained, 3);
       });
 
       test('month summary aggregates diary rewards and excludes future keys',
@@ -1407,8 +1543,8 @@ void main() {
             .where((month) => month.expectedCount > 0)
             .length;
         expect(monthsWithData, greaterThan(2));
-        expect(result.xpGained, greaterThan(0));
-        expect(result.amberGained, greaterThan(0));
+        expect(result.xpGained, 0);
+        expect(result.amberGained, 0);
       });
 
       test('returns 12 month entries for year period', () async {
@@ -2160,6 +2296,8 @@ void main() {
 Future<StatisticsV3ViewData> _buildDayViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
+  List<HabitRewardTransaction> rewardTransactions =
+      const <HabitRewardTransaction>[],
   Map<String, dynamic>? history,
   Map<String, dynamic>? daily,
   Map<String, dynamic>? meta,
@@ -2173,12 +2311,15 @@ Future<StatisticsV3ViewData> _buildDayViewData({
     daily: daily,
     meta: meta,
     profile: profile,
+    rewardTransactions: rewardTransactions,
   );
 }
 
 Future<StatisticsV3ViewData> _buildWeekViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
+  List<HabitRewardTransaction> rewardTransactions =
+      const <HabitRewardTransaction>[],
   Map<String, dynamic>? history,
   Map<String, dynamic>? daily,
   Map<String, dynamic>? meta,
@@ -2192,12 +2333,15 @@ Future<StatisticsV3ViewData> _buildWeekViewData({
     daily: daily,
     meta: meta,
     profile: profile,
+    rewardTransactions: rewardTransactions,
   );
 }
 
 Future<StatisticsV3ViewData> _buildMonthViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
+  List<HabitRewardTransaction> rewardTransactions =
+      const <HabitRewardTransaction>[],
   Map<String, dynamic>? history,
   Map<String, dynamic>? daily,
   Map<String, dynamic>? meta,
@@ -2211,12 +2355,15 @@ Future<StatisticsV3ViewData> _buildMonthViewData({
     daily: daily,
     meta: meta,
     profile: profile,
+    rewardTransactions: rewardTransactions,
   );
 }
 
 Future<StatisticsV3ViewData> _buildYearViewData({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
+  List<HabitRewardTransaction> rewardTransactions =
+      const <HabitRewardTransaction>[],
   Map<String, dynamic>? history,
   Map<String, dynamic>? daily,
   Map<String, dynamic>? meta,
@@ -2230,6 +2377,7 @@ Future<StatisticsV3ViewData> _buildYearViewData({
     daily: daily,
     meta: meta,
     profile: profile,
+    rewardTransactions: rewardTransactions,
   );
 }
 
@@ -2237,6 +2385,8 @@ Future<StatisticsV3ViewData> _buildViewData({
   required StatisticsV3Period period,
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
+  List<HabitRewardTransaction> rewardTransactions =
+      const <HabitRewardTransaction>[],
   Map<String, dynamic>? history,
   Map<String, dynamic>? daily,
   Map<String, dynamic>? meta,
@@ -2256,6 +2406,7 @@ Future<StatisticsV3ViewData> _buildViewData({
     store: store,
     period: period,
     l10n: _l10n,
+    habitRewardTransactions: rewardTransactions,
     now: now,
   );
 }
@@ -2372,6 +2523,29 @@ Map<String, dynamic> _ensureDayMap(
 }
 
 List<int> _days(List<int> dayNumbers) => dayNumbers;
+
+HabitRewardTransaction _rewardTransaction({
+  required String habitId,
+  required DateTime date,
+  int baseXp = 0,
+  int bonusXp = 0,
+  int baseCoins = 0,
+  int bonusCoins = 0,
+  bool isReversed = false,
+}) {
+  return HabitRewardTransaction(
+    id: '$habitId|${_dateKey(date)}',
+    habitId: habitId,
+    localDateKey: _dateKey(date),
+    baseXp: baseXp,
+    bonusXp: bonusXp,
+    baseCoins: baseCoins,
+    bonusCoins: bonusCoins,
+    appliedEffectIds: const <String>[],
+    createdAtMillis: date.millisecondsSinceEpoch,
+    isReversed: isReversed,
+  );
+}
 
 Map<String, dynamic> _emptyHistory() {
   return <String, dynamic>{
