@@ -96,6 +96,17 @@ void main() {
         shouldShowCompletedDayPhrase(
           selectedFilter: HomeHabitStatusFilter.pending,
           isCompletedDay: true,
+          completionTransitions: <HomeHabitCompletionTransition>[
+            _completionTransition(),
+          ],
+        ),
+        isFalse,
+      );
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.pending,
+          isCompletedDay: true,
+          completionTransitions: const <HomeHabitCompletionTransition>[],
         ),
         isTrue,
       );
@@ -103,6 +114,7 @@ void main() {
         shouldShowCompletedDayPhrase(
           selectedFilter: HomeHabitStatusFilter.completed,
           isCompletedDay: true,
+          completionTransitions: const <HomeHabitCompletionTransition>[],
         ),
         isFalse,
       );
@@ -110,6 +122,7 @@ void main() {
         shouldShowCompletedDayPhrase(
           selectedFilter: HomeHabitStatusFilter.skipped,
           isCompletedDay: true,
+          completionTransitions: const <HomeHabitCompletionTransition>[],
         ),
         isFalse,
       );
@@ -122,6 +135,42 @@ void main() {
           isCompletedDay: false,
         ),
         isFalse,
+      );
+    });
+
+    test('keeps the phrase hidden until all active transitions are gone', () {
+      final transitions = <HomeHabitCompletionTransition>[
+        _completionTransition(),
+        _completionTransition(),
+      ];
+
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.pending,
+          isCompletedDay: true,
+          completionTransitions: transitions,
+        ),
+        isFalse,
+      );
+
+      transitions.removeLast();
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.pending,
+          isCompletedDay: true,
+          completionTransitions: transitions,
+        ),
+        isFalse,
+      );
+
+      transitions.clear();
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.pending,
+          isCompletedDay: true,
+          completionTransitions: transitions,
+        ),
+        isTrue,
       );
     });
   });
@@ -727,6 +776,21 @@ void main() {
     expect(eligibility.isCompletedDay, isTrue);
     expect(completedDayEligibilityReason(eligibility), 'eligible');
   });
+}
+
+HomeHabitCompletionTransition _completionTransition() {
+  return HomeHabitCompletionTransition(
+    transitionId: 'transition-1',
+    habitId: 'habit-1',
+    originalIndex: 0,
+    dateKey: '2026-09-05',
+    habitSnapshot: <String, dynamic>{'id': 'habit-1'},
+    startedAt: DateTime(2026, 9, 5, 12),
+    initialOffsetX: 0,
+    velocityX: 0,
+    cardWidth: 360,
+    commitProgress: 0,
+  );
 }
 
 Map<String, dynamic> _habit({

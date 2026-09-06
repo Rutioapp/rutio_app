@@ -258,6 +258,102 @@ void main() {
     expect(find.byType(CompletedDayPhraseView), findsOneWidget);
     expect(controller.state.phrase!.phrase.id, selectedId);
   });
+
+  testWidgets('completed day phrase waits for the active completion transition',
+      (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final controller = CompletedDayPhraseController(
+      service: CompletedDayPhraseService(
+        catalogSource: _SinglePhraseCatalogSource(),
+        historyStore: SharedPreferencesCompletedDayPhraseStore(),
+      ),
+    );
+    addTearDown(controller.dispose);
+
+    const eligibility = CompletedDayEligibility(
+      isReady: true,
+      isLocalToday: true,
+      scheduledHabitCount: 1,
+      completedHabitCount: 1,
+      pendingHabitCount: 0,
+      skippedHabitCount: 0,
+    );
+    final input = CompletedDayPhraseInput(
+      userId: 'user-a',
+      localDate: DateTime(2026, 9, 4),
+      locale: 'es-ES',
+      name: null,
+      streak: 1,
+      streakLabel: '1 día',
+    );
+    final transitions = <HomeHabitCompletionTransition>[
+      _completionTransition('habit-1'),
+    ];
+    final dismissed = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              return CustomScrollView(
+                slivers: [
+                  if (shouldShowCompletedDayPhrase(
+                    selectedFilter: HomeHabitStatusFilter.pending,
+                    isCompletedDay: eligibility.isCompletedDay,
+                    completionTransitions: transitions,
+                  ))
+                    SliverToBoxAdapter(
+                      child: CompletedDayPhraseHost(
+                        controller: controller,
+                        eligibility: eligibility,
+                        input: input,
+                      ),
+                    ),
+                  HomeHabitsSliver(
+                    selectedFilter: HomeHabitStatusFilter.pending,
+                    suppressPendingEmptyState: true,
+                    visibleHabits: const <Map<String, dynamic>>[],
+                    completionTransitions: transitions,
+                    habitCardBuilder: (_, __, {bool compact = false}) =>
+                        const SizedBox(),
+                    completionTransitionBuilder: (_, transition) => SizedBox(
+                      key: ValueKey('transition_${transition.habitId}'),
+                      height: 88,
+                    ),
+                    onCompletionTransitionDismissed: ({
+                      required habitId,
+                      required transitionId,
+                    }) {
+                      transitions.removeWhere(
+                        (transition) =>
+                            transition.habitId == habitId &&
+                            transition.transitionId == transitionId,
+                      );
+                      dismissed.add('$transitionId:$habitId');
+                      setState(() {});
+                    },
+                    onPendingReorder: (_, __) async {},
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(find.byType(CompletedDayPhraseHost), findsNothing);
+    expect(find.byType(CompletedDayPhraseView), findsNothing);
+    expect(find.byKey(const ValueKey('transition_habit-1')), findsOneWidget);
+
+    await tester.pumpAndSettle();
+
+    expect(dismissed, ['transition-habit-1:habit-1']);
+    expect(find.byType(CompletedDayPhraseHost), findsOneWidget);
+    expect(find.byType(CompletedDayPhraseView), findsOneWidget);
+  });
 }
 
 HomeViewData _completedHomeData() {
@@ -280,6 +376,21 @@ HomeViewData _completedHomeData() {
     xpInLevel: 0,
     xpToNext: 100,
     xpProgress: 0,
+  );
+}
+
+HomeHabitCompletionTransition _completionTransition(String habitId) {
+  return HomeHabitCompletionTransition(
+    transitionId: 'transition-$habitId',
+    habitId: habitId,
+    originalIndex: 0,
+    dateKey: '2026-09-04',
+    habitSnapshot: <String, dynamic>{'id': habitId},
+    startedAt: DateTime(2026, 9, 4, 12),
+    initialOffsetX: 0,
+    velocityX: 0,
+    cardWidth: 360,
+    commitProgress: 0,
   );
 }
 

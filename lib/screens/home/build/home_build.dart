@@ -205,8 +205,12 @@ bool homeCompletedDayDataIsReady({
 bool shouldShowCompletedDayPhrase({
   required HomeHabitStatusFilter selectedFilter,
   required bool isCompletedDay,
+  Iterable<HomeHabitCompletionTransition> completionTransitions =
+      const <HomeHabitCompletionTransition>[],
 }) {
-  return isCompletedDay && selectedFilter == HomeHabitStatusFilter.pending;
+  return isCompletedDay &&
+      selectedFilter == HomeHabitStatusFilter.pending &&
+      completionTransitions.isEmpty;
 }
 
 /// Vista cargada de Home.
@@ -325,6 +329,7 @@ class _HomeLoadedView extends StatelessWidget {
                             selectedFilter: selectedFilter,
                             isCompletedDay:
                                 completedDayEligibility.isCompletedDay,
+                            completionTransitions: completionTransitions,
                           ))
                             SliverToBoxAdapter(child: completedDayPhrase),
                           HomeScrollableContentSliver(
