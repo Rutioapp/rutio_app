@@ -1,5 +1,7 @@
 import 'models/onboarding_draft.dart';
 import 'models/onboarding_types.dart';
+import '../data/onboarding_habit_draft_adapter.dart';
+import '../data/onboarding_reminder_draft_adapter.dart';
 import 'onboarding_goals.dart';
 
 enum OnboardingValidationCode {
@@ -142,13 +144,20 @@ class OnboardingDraftValidator {
       case OnboardingStep.pace:
         return validatePace(draft.pace).isValid;
       case OnboardingStep.recommendations:
-        return draft.selectedRecommendationId != null;
+        return draft.selectedRecommendationId != null ||
+            OnboardingHabitDraftAdapter.tryDecode(draft.habit) != null;
       case OnboardingStep.habit:
-        return draft.habit != null && draft.habit!.isNotEmpty;
+        return OnboardingHabitDraftAdapter.tryDecode(draft.habit) != null;
       case OnboardingStep.reminder:
-        return draft.reminder != null;
+        return OnboardingReminderDraftAdapter.tryDecode(draft.reminder) != null;
       case OnboardingStep.preview:
-        return draft.habit != null && draft.habit!.isNotEmpty;
+        return validateFirstName(draft.firstName).isValid &&
+            validateGoalCodes(draft.goalCodes).isValid &&
+            validatePace(draft.pace).isValid &&
+            (draft.selectedRecommendationId != null ||
+                OnboardingHabitDraftAdapter.tryDecode(draft.habit) != null) &&
+            OnboardingHabitDraftAdapter.tryDecode(draft.habit) != null &&
+            OnboardingReminderDraftAdapter.tryDecode(draft.reminder) != null;
       case OnboardingStep.auth:
         return draft.authIntent != null;
       case OnboardingStep.emailConfirmation:

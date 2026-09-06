@@ -19,6 +19,7 @@ class OnboardingShell extends StatelessWidget {
     this.showStepHeader = true,
     this.continueEnabled = true,
     this.errorMessage,
+    this.showContinueButton = true,
   });
 
   final OnboardingStep step;
@@ -31,6 +32,7 @@ class OnboardingShell extends StatelessWidget {
   final bool showStepHeader;
   final bool continueEnabled;
   final String? errorMessage;
+  final bool showContinueButton;
 
   @override
   Widget build(BuildContext context) {
@@ -148,34 +150,35 @@ class OnboardingShell extends StatelessWidget {
                 ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                26,
-                10,
-                26,
-                18 + MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: SafeArea(
-                top: false,
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 58,
-                  child: ElevatedButton(
-                    onPressed: isBusy || !continueEnabled ? null : onContinue,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.ink,
-                      foregroundColor: AppColors.cream,
-                      shape: const StadiumBorder(),
-                      textStyle: AppTextStyles.buttonPrimary,
+            if (showContinueButton)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  26,
+                  10,
+                  26,
+                  18,
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 58,
+                    child: ElevatedButton(
+                      onPressed: isBusy || !continueEnabled ? null : onContinue,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.ink,
+                        foregroundColor: AppColors.cream,
+                        shape: const StadiumBorder(),
+                        textStyle: AppTextStyles.buttonPrimary,
+                      ),
+                      child: isBusy
+                          ? const CupertinoActivityIndicator(
+                              color: AppColors.cream)
+                          : Text(l10n.onboardingContinue),
                     ),
-                    child: isBusy
-                        ? const CupertinoActivityIndicator(
-                            color: AppColors.cream)
-                        : Text(l10n.onboardingContinue),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -191,13 +194,13 @@ class OnboardingShell extends StatelessWidget {
       case OnboardingStep.pace:
         return l10n.onboardingStepPace;
       case OnboardingStep.recommendations:
-        return l10n.onboardingStepRecommendations;
+        return l10n.onboardingRecommendationsTitle;
       case OnboardingStep.habit:
         return l10n.onboardingStepHabit;
       case OnboardingStep.reminder:
         return l10n.onboardingStepReminder;
       case OnboardingStep.preview:
-        return l10n.onboardingStepPreview;
+        return l10n.onboardingPreviewTitle;
       case OnboardingStep.auth:
       case OnboardingStep.emailConfirmation:
       case OnboardingStep.resolvingAccount:

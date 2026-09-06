@@ -167,7 +167,7 @@ class HabitFormTypeCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: double.infinity,
+        constraints: const BoxConstraints(minHeight: 80),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
           color: isSelected
