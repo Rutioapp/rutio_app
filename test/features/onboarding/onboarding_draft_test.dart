@@ -109,6 +109,10 @@ void main() {
         OnboardingDraftValidator.validateFirstName('a' * 31).isValid,
         isFalse,
       );
+      expect(
+        OnboardingDraftValidator.validateFirstName('a' * 30).isValid,
+        isTrue,
+      );
     });
 
     test('goals and pace enforce step requirements', () {
@@ -116,16 +120,20 @@ void main() {
           OnboardingDraftValidator.validateGoalCodes(const <String>[]).isValid,
           isFalse);
       expect(
-          OnboardingDraftValidator.validateGoalCodes(const <String>['focus'])
-              .isValid,
+          OnboardingDraftValidator.validateGoalCodes(
+              const <String>['care_body']).isValid,
           isTrue);
       expect(
           OnboardingDraftValidator.validateGoalCodes(
-              const <String>['a', 'b', 'c']).isValid,
+              const <String>['care_body', 'find_calm', 'learn_grow']).isValid,
           isTrue);
       expect(
           OnboardingDraftValidator.validateGoalCodes(
               const <String>['a', 'b', 'c', 'd']).isValid,
+          isFalse);
+      expect(
+          OnboardingDraftValidator.validateGoalCodes(const <String>['unknown'])
+              .isValid,
           isFalse);
       expect(OnboardingDraftValidator.validatePace(null).isValid, isFalse);
       expect(
@@ -137,7 +145,7 @@ void main() {
     test('recovery does not trust an advanced currentStep', () {
       final invalidPrevious = draft(step: OnboardingStep.pace).copyWith(
         firstName: null,
-        goalCodes: {'focus'},
+        goalCodes: {'care_body'},
         pace: OnboardingPace.gentle,
       );
       expect(
@@ -163,7 +171,7 @@ void main() {
     test('round trips fields, enums, sets and timestamps', () {
       final original = draft(step: OnboardingStep.habit).copyWith(
         firstName: ' Ana ',
-        goalCodes: {'focus', 'energy'},
+        goalCodes: {'care_body', 'find_calm'},
         pace: OnboardingPace.energized,
         habit: {
           'id': 'local-habit',
@@ -183,7 +191,7 @@ void main() {
 
       expect(result.status, OnboardingDraftDecodeStatus.valid);
       expect(result.draft!.firstName, 'Ana');
-      expect(result.draft!.goalCodes, {'focus', 'energy'});
+      expect(result.draft!.goalCodes, {'care_body', 'find_calm'});
       expect(result.draft!.pace, OnboardingPace.energized);
       expect(result.draft!.habit!['schedule'], {'type': 'daily'});
       expect(result.draft!.authIntent, AuthIntent.signUp);

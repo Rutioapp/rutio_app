@@ -27,6 +27,7 @@ typedef BootstrapDebugLogger = void Function(String message);
 typedef BootstrapHomeReadyCallback = Future<void> Function(
   BootstrapHomeEssentialReady ready,
 );
+typedef HasResumableOnboardingDraft = Future<bool> Function();
 
 class _BootstrapRunTelemetry {
   _BootstrapRunTelemetry({
@@ -445,6 +446,7 @@ class BootstrapController extends ChangeNotifier {
     BootstrapEssentialCosmeticsPreparer? essentialCosmeticsPreparer,
     BootstrapEssentialAssetPreloader? essentialAssetPreloader,
     BootstrapHomeReadyCallback? onHomeReady,
+    HasResumableOnboardingDraft? hasResumableOnboardingDraft,
     BootstrapDebugLogger? debugLogger,
   })  : _authController = authController,
         _userStateStore = userStateStore,
@@ -463,6 +465,7 @@ class BootstrapController extends ChangeNotifier {
         _essentialAssetPreloader =
             essentialAssetPreloader ?? RootBundleEssentialAssetPreloader(),
         _onHomeReady = onHomeReady,
+        _hasResumableOnboardingDraft = hasResumableOnboardingDraft,
         _debugLogger = debugLogger ?? debugPrint {
     _trace(0, 'controller_created');
     _authController.addListener(_handleAuthChanged);
@@ -478,6 +481,7 @@ class BootstrapController extends ChangeNotifier {
   final BootstrapEssentialCosmeticsPreparer? _essentialCosmeticsPreparer;
   final BootstrapEssentialAssetPreloader _essentialAssetPreloader;
   final BootstrapHomeReadyCallback? _onHomeReady;
+  final HasResumableOnboardingDraft? _hasResumableOnboardingDraft;
   final BootstrapDebugLogger _debugLogger;
 
   BootstrapState _state = BootstrapState.initial;
@@ -995,10 +999,19 @@ class BootstrapController extends ChangeNotifier {
     _log(runId, 'local_state_ready', startedAt: startedAt);
     _timeline(runId, 'local_state_ready');
 
+    final hasResumableDraft = await (_hasResumableOnboardingDraft?.call() ??
+        Future<bool>.value(false));
+    if (!_isCurrentRun(runId) || _authController.currentUser != null) {
+      _recordStaleDiscard(runId, domain: 'guest_onboarding_draft');
+      return;
+    }
+
     _setState(_state.copyWith(phase: BootstrapPhase.decidingDestination));
-    final destination = _userStateStore.onboardingDone
-        ? BootstrapDestination.authentication
-        : BootstrapDestination.welcome;
+    final destination = hasResumableDraft
+        ? BootstrapDestination.welcome
+        : _userStateStore.onboardingDone
+            ? BootstrapDestination.authentication
+            : BootstrapDestination.welcome;
     _setState(
       BootstrapState(
         phase: BootstrapPhase.ready,

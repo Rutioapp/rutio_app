@@ -182,6 +182,164 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeSignupButton => 'Create account';
 
   @override
+  String get onboardingPrepareTitle => 'Prepare my Rutio';
+
+  @override
+  String get onboardingPrepareSubtitle => 'Build your path one step at a time.';
+
+  @override
+  String get onboardingExistingAccount => 'I already have an account';
+
+  @override
+  String get onboardingResume => 'Continue where I left off';
+
+  @override
+  String get onboardingRestart => 'Start over';
+
+  @override
+  String get onboardingRestartTitle => 'Start over?';
+
+  @override
+  String get onboardingRestartBody =>
+      'The current draft will be removed and we’ll start from the beginning.';
+
+  @override
+  String get onboardingRestartConfirm => 'Start over';
+
+  @override
+  String get onboardingBack => 'Back';
+
+  @override
+  String get onboardingContinue => 'Continue';
+
+  @override
+  String get onboardingLoading => 'Preparing your Rutio…';
+
+  @override
+  String get onboardingRecoverableError =>
+      'We couldn’t save this step. Your last saved state is safe.';
+
+  @override
+  String get onboardingRetry => 'Try again';
+
+  @override
+  String get onboardingPlaceholderBody =>
+      'Temporary screen used to verify the onboarding flow.';
+
+  @override
+  String get onboardingStepName => 'Name';
+
+  @override
+  String get onboardingStepGoals => 'Goals';
+
+  @override
+  String get onboardingStepPace => 'Pace';
+
+  @override
+  String get onboardingStepRecommendations => 'Recommendations';
+
+  @override
+  String get onboardingStepHabit => 'Habit';
+
+  @override
+  String get onboardingStepReminder => 'Reminder';
+
+  @override
+  String get onboardingStepPreview => 'Preview';
+
+  @override
+  String get onboardingNameTitle => 'What should we call you?';
+
+  @override
+  String get onboardingNameSubtitle =>
+      'This helps us make Rutio feel a little more personal.';
+
+  @override
+  String get onboardingNameInputLabel => 'Your name';
+
+  @override
+  String get onboardingNameInputHint => 'Enter your name';
+
+  @override
+  String get onboardingNameRequired => 'Enter your name to continue.';
+
+  @override
+  String get onboardingNameTooLong => 'Your name can be at most 30 characters.';
+
+  @override
+  String get onboardingNameInvalid => 'Check the name and try again.';
+
+  @override
+  String get onboardingGoalsTitle => 'What would you like to improve?';
+
+  @override
+  String get onboardingGoalsSubtitle => 'You can choose up to 3 goals.';
+
+  @override
+  String get onboardingGoalCareBody => 'Take care of my body';
+
+  @override
+  String get onboardingGoalFindCalm => 'Feel calmer';
+
+  @override
+  String get onboardingGoalOrganizeDays => 'Organize my days better';
+
+  @override
+  String get onboardingGoalLearnGrow => 'Learn and grow';
+
+  @override
+  String get onboardingGoalCareRelationships => 'Take care of my relationships';
+
+  @override
+  String get onboardingGoalBuildDiscipline => 'Build more discipline';
+
+  @override
+  String get onboardingGoalsMinimum => 'Choose at least one goal.';
+
+  @override
+  String get onboardingGoalsMaximum => 'You can choose up to 3 goals.';
+
+  @override
+  String get onboardingGoalsInvalid => 'Review the selected goals.';
+
+  @override
+  String get onboardingGoalSelected => 'Selected';
+
+  @override
+  String get onboardingGoalUnavailable =>
+      'Unavailable until another goal is deselected.';
+
+  @override
+  String get onboardingPaceTitle => 'How would you like to start?';
+
+  @override
+  String get onboardingPaceGentleTitle => 'Little by little';
+
+  @override
+  String get onboardingPaceGentleDescription =>
+      'I want to start with something very simple.';
+
+  @override
+  String get onboardingPaceBalancedTitle => 'Balanced';
+
+  @override
+  String get onboardingPaceBalancedDescription =>
+      'I want to move forward without pushing too hard.';
+
+  @override
+  String get onboardingPaceEnergizedTitle => 'With energy';
+
+  @override
+  String get onboardingPaceEnergizedDescription =>
+      'I am ready for a bigger challenge.';
+
+  @override
+  String get onboardingPaceRequired => 'Choose a pace to continue.';
+
+  @override
+  String get onboardingPaceSelected => 'Selected';
+
+  @override
   String get loginHeaderSubtitle => 'Welcome back';
 
   @override

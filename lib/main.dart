@@ -33,6 +33,9 @@ import 'features/notifications/data/local/shared_preferences_notification_prefer
 import 'features/notifications/data/local/shared_preferences_notification_schedule_store.dart';
 import 'features/notifications/data/native/flutter_local_notifications_native_gateway.dart';
 import 'features/notifications/data/native/native_notification_schedule_executor.dart';
+import 'features/onboarding/application/onboarding_coordinator.dart';
+import 'features/onboarding/application/onboarding_draft_service.dart';
+import 'features/onboarding/presentation/onboarding_v1_screen.dart';
 import 'features/feedback/presentation/screens/feedback_home_screen.dart';
 import 'features/feedback/presentation/screens/feedback_form_screen.dart';
 import 'features/feedback/presentation/screens/feedback_success_screen.dart';
@@ -192,6 +195,7 @@ class MyApp extends StatelessWidget {
           routes: {
             '/splash': (_) => const AppStartupGate(),
             '/welcome': (_) => const WelcomeScreen(),
+            '/onboarding-v1': (_) => const OnboardingV1Screen(),
             '/auth': (_) => const SignInScreen(),
             '/auth-signup': (_) => const SignUpScreen(),
             SignInScreen.route: (_) => const SignInScreen(),
@@ -272,6 +276,14 @@ class MyApp extends StatelessWidget {
         Provider<ShopCloudRuntimeConfig>.value(value: shopRuntimeConfig),
         Provider<UserStateStorage>(create: (_) => UserStateStorage()),
         Provider<AssetJsonLoader>(create: (_) => AssetJsonLoader()),
+        Provider<OnboardingDraftService>(
+          create: (_) => OnboardingDraftService.sharedPreferences(),
+        ),
+        ChangeNotifierProvider<OnboardingCoordinator>(
+          create: (context) => OnboardingCoordinator(
+            draftService: context.read<OnboardingDraftService>(),
+          ),
+        ),
         Provider<AuthRepository>(create: (_) => AuthRepository()),
         Provider<ProfileRepository>(create: (_) => ProfileRepository()),
         ProxyProvider2<UserStateStorage, AssetJsonLoader, UserStateRepository>(
@@ -423,6 +435,8 @@ class MyApp extends StatelessWidget {
           create: (context) => BootstrapController(
             authController: context.read<AuthController>(),
             userStateStore: context.read<UserStateStore>(),
+            hasResumableOnboardingDraft:
+                context.read<OnboardingDraftService>().hasAnonymousDraft,
             profileRepository: ProfileBootstrapRepository(
               context.read<ProfileRepository>(),
             ),

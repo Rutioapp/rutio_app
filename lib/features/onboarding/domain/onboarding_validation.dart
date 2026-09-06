@@ -1,5 +1,6 @@
 import 'models/onboarding_draft.dart';
 import 'models/onboarding_types.dart';
+import 'onboarding_goals.dart';
 
 enum OnboardingValidationCode {
   required,
@@ -9,6 +10,7 @@ enum OnboardingValidationCode {
   maximum,
   duplicate,
   missing,
+  unknown,
 }
 
 class OnboardingValidationIssue {
@@ -91,13 +93,20 @@ class OnboardingDraftValidator {
       ]);
     }
     final normalized = <String>{};
-    for (final value in list) {
-      final code = value.trim();
+    for (final code in list) {
       if (code.isEmpty) {
         return const OnboardingValidationResult(<OnboardingValidationIssue>[
           OnboardingValidationIssue(
             OnboardingValidationCode.required,
             'Goal codes must not be empty.',
+          ),
+        ]);
+      }
+      if (!OnboardingGoalCatalog.validCodes.contains(code)) {
+        return const OnboardingValidationResult(<OnboardingValidationIssue>[
+          OnboardingValidationIssue(
+            OnboardingValidationCode.unknown,
+            'Goal code is not part of the bundled V1 catalog.',
           ),
         ]);
       }

@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../application/bootstrap/bootstrap_controller.dart';
 import '../../utils/app_theme.dart';
 
+/// Legacy fallback retained for compatibility; V1 uses OnboardingV1Screen.
+@Deprecated('Use OnboardingV1Screen for the onboarding flow.')
 class TemporaryOnboardingScreen extends StatefulWidget {
   const TemporaryOnboardingScreen({super.key});
 
