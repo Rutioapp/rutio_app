@@ -382,6 +382,8 @@ class UserStateStore extends ChangeNotifier {
   Object? _accountDeletionError;
   String? _activeLocalScopeUserId;
   int _scopeEpoch = 0;
+  List<HabitRewardTransaction> _habitRewardTransactions =
+      const <HabitRewardTransaction>[];
   Future<void> _scopeSwitchChain = Future<void>.value();
   Future<void> _habitMutationQueue = Future<void>.value();
   final Map<String, int> _hydratedXpBaselineByUserId = <String, int>{};
@@ -410,6 +412,23 @@ class UserStateStore extends ChangeNotifier {
       ((userId ?? '').trim().isNotEmpty);
   String? get activeLocalScopeUserId => _activeLocalScopeUserId;
   int get scopeEpoch => _scopeEpoch;
+  List<HabitRewardTransaction> get habitRewardTransactions =>
+      List<HabitRewardTransaction>.unmodifiable(_habitRewardTransactions);
+
+  Future<List<HabitRewardTransaction>> loadHabitRewardTransactions() async {
+    final repository = _habitRewardTransactionRepository ??=
+        LocalHabitRewardTransactionRepository(
+      scopeResolver: () => activeLocalScopeUserId ?? userId,
+    );
+    final transactions = await repository.loadTransactions(
+      (activeLocalScopeUserId ?? userId ?? '').trim(),
+    );
+    _habitRewardTransactions = List<HabitRewardTransaction>.unmodifiable(
+      transactions,
+    );
+    return _habitRewardTransactions;
+  }
+
   Future<String?> getLocalIanaTimeZone() =>
       _deviceTimeZoneProvider.getLocalIanaTimeZone();
   bool get isSupabaseAchievementsBackfillRunning =>

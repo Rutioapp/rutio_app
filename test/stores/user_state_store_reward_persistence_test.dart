@@ -78,7 +78,7 @@ void main() {
       expect(_level(reloaded), LevelProgression.fromTotalXp(expectedXp).level);
     });
 
-    test('count habit rollback removes granted coins and can re-grant later', () async {
+    test('count habit crossing the target grants once permanently', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       const scopeUserId = 'real-user-count-rollback';
@@ -94,13 +94,21 @@ void main() {
       final expectedCoins = RewardConstants.habitCountAmbarReward(
         RewardConstants.habitCountXpReward(5),
       );
+      final expectedXp = RewardConstants.habitCountXpReward(5);
       expect(_coins(store), expectedCoins);
+      expect(_xp(store), expectedXp);
 
       await store.setCountHabitValue(habitId: 'habit-count-rollback', value: 4);
-      expect(_coins(store), 0);
+      expect(_coins(store), expectedCoins);
+      expect(_xp(store), expectedXp);
 
       await store.setCountHabitValue(habitId: 'habit-count-rollback', value: 5);
       expect(_coins(store), expectedCoins);
+      expect(_xp(store), expectedXp);
+      expect(
+        (await store.loadHabitRewardTransactions()).single.isReversed,
+        isFalse,
+      );
     });
 
     test('logout/reset overlay guards do not block normal reward application',
@@ -124,7 +132,7 @@ void main() {
       expect(_coins(store), RewardConstants.habitCheckAmbarReward);
     });
 
-    test('uncompleting today removes granted coins and keeps XP', () async {
+    test('uncompleting today keeps the earned reward', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final today = DateTime.now();
@@ -145,7 +153,115 @@ void main() {
       );
 
       expect(_xp(store), RewardConstants.habitCheckXpReward);
-      expect(_coins(store), 0);
+      expect(_coins(store), RewardConstants.habitCheckAmbarReward);
+    });
+
+    test('complete, undo, and re-complete keeps one reward ledger entry',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final today = DateTime.now();
+      final store = await _seedScopedStore(
+        scopeUserId: 'real-user-cycle',
+        stateUserId: 'user_123',
+        initialXp: 100,
+        initialCoins: 50,
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'habit-cycle', type: 'check', target: 1),
+        ],
+      );
+
+      await store.completeHabit(habitId: 'habit-cycle');
+      final completedXp = _xp(store);
+      final completedCoins = _coins(store);
+      final rewardTransactions = await store.loadHabitRewardTransactions();
+
+      expect(completedXp, 100 + RewardConstants.habitCheckXpReward);
+      expect(completedCoins, 50 + RewardConstants.habitCheckAmbarReward);
+      expect(rewardTransactions, hasLength(1));
+      expect(rewardTransactions.single.isReversed, isFalse);
+
+      await store.setHabitCompletion(
+        habitId: 'habit-cycle',
+        date: today,
+        done: false,
+      );
+
+      expect(_xp(store), completedXp);
+      expect(_coins(store), completedCoins);
+      expect(
+        (await store.loadHabitRewardTransactions()).single.isReversed,
+        isFalse,
+      );
+
+      await store.completeHabit(habitId: 'habit-cycle');
+
+      expect(_xp(store), completedXp);
+      expect(_coins(store), completedCoins);
+      final restoredTransactions = await store.loadHabitRewardTransactions();
+      expect(restoredTransactions, hasLength(1));
+      expect(restoredTransactions.single.isReversed, isFalse);
+    });
+
+    test('multiple undo and re-complete cycles never grant twice', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final today = DateTime.now();
+      final store = await _seedScopedStore(
+        scopeUserId: 'real-user-multiple-cycles',
+        stateUserId: 'user_123',
+        initialXp: 100,
+        initialCoins: 50,
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'habit-multiple-cycles', type: 'check', target: 1),
+        ],
+      );
+
+      for (var cycle = 0; cycle < 3; cycle += 1) {
+        await store.completeHabit(habitId: 'habit-multiple-cycles');
+        await store.setHabitCompletion(
+          habitId: 'habit-multiple-cycles',
+          date: today,
+          done: false,
+        );
+      }
+
+      await store.completeHabit(habitId: 'habit-multiple-cycles');
+
+      expect(_xp(store), 100 + RewardConstants.habitCheckXpReward);
+      expect(_coins(store), 50 + RewardConstants.habitCheckAmbarReward);
+      expect(await store.loadHabitRewardTransactions(), hasLength(1));
+    });
+
+    test('reward transaction survives restart across undo and re-complete',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      const scopeUserId = 'real-user-restart-cycle';
+      final today = DateTime.now();
+      final store = await _seedScopedStore(
+        scopeUserId: scopeUserId,
+        stateUserId: 'user_123',
+        initialXp: 100,
+        initialCoins: 50,
+        habits: <Map<String, dynamic>>[
+          _habit(id: 'habit-restart-cycle', type: 'check', target: 1),
+        ],
+      );
+
+      await store.completeHabit(habitId: 'habit-restart-cycle');
+      await store.setHabitCompletion(
+        habitId: 'habit-restart-cycle',
+        date: today,
+        done: false,
+      );
+
+      final recreated = await _reloadScopedStore(scopeUserId: scopeUserId);
+      await recreated.completeHabit(habitId: 'habit-restart-cycle');
+
+      expect(_xp(recreated), 100 + RewardConstants.habitCheckXpReward);
+      expect(_coins(recreated), 50 + RewardConstants.habitCheckAmbarReward);
+      expect(await recreated.loadHabitRewardTransactions(), hasLength(1));
     });
 
     test('uncompleting a non-rewarded habit does not subtract coins', () async {
@@ -171,7 +287,8 @@ void main() {
       expect(_coins(store), 0);
     });
 
-    test('coin rollback never makes wallet negative', () async {
+    test('undo never changes a reward wallet that was already persisted',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final today = DateTime.now();
@@ -185,9 +302,9 @@ void main() {
       );
 
       await store.completeHabit(habitId: 'habit-spend-then-undo');
-      final wallet =
-          ((store.state?['userState'] as Map?)?['wallet'] as Map?)?.cast<String, dynamic>() ??
-              <String, dynamic>{};
+      final wallet = ((store.state?['userState'] as Map?)?['wallet'] as Map?)
+              ?.cast<String, dynamic>() ??
+          <String, dynamic>{};
       wallet['coins'] = 0;
       await store.save(store.state!);
 
@@ -227,13 +344,16 @@ void main() {
       );
 
       await store.load();
-      expect(store.activeHabits.map((habit) => habit['id']), <String>['habit-a']);
+      expect(
+          store.activeHabits.map((habit) => habit['id']), <String>['habit-a']);
 
       await store.switchLocalScope(userId: 'real-user-b');
-      expect(store.activeHabits.map((habit) => habit['id']), <String>['habit-b']);
+      expect(
+          store.activeHabits.map((habit) => habit['id']), <String>['habit-b']);
 
       await store.switchLocalScope(userId: 'real-user-a');
-      expect(store.activeHabits.map((habit) => habit['id']), <String>['habit-a']);
+      expect(
+          store.activeHabits.map((habit) => habit['id']), <String>['habit-a']);
     });
 
     test('demo and authenticated scopes stay isolated from each other',
@@ -257,8 +377,7 @@ void main() {
 
       final demoStore =
           await _reloadScopedStore(scopeUserId: DemoSeedScope.userId);
-      final authStore =
-          await _reloadScopedStore(scopeUserId: 'real-user-auth');
+      final authStore = await _reloadScopedStore(scopeUserId: 'real-user-auth');
 
       expect(
         demoStore.activeHabits.map((habit) => habit['id']),
@@ -299,6 +418,8 @@ Future<UserStateStore> _seedScopedStore({
   required String scopeUserId,
   required String stateUserId,
   required List<Map<String, dynamic>> habits,
+  int initialXp = 0,
+  int initialCoins = 0,
 }) async {
   final repo = UserStateRepository(storage: UserStateStorage())
     ..setActiveUserScope(scopeUserId);
@@ -306,7 +427,14 @@ Future<UserStateStore> _seedScopedStore({
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
   );
-  await store.save(_baseState(userId: stateUserId, habits: habits));
+  await store.save(
+    _baseState(
+      userId: stateUserId,
+      habits: habits,
+      initialXp: initialXp,
+      initialCoins: initialCoins,
+    ),
+  );
   return store;
 }
 
@@ -326,6 +454,8 @@ Future<UserStateStore> _reloadScopedStore({
 Map<String, dynamic> _baseState({
   required String userId,
   required List<Map<String, dynamic>> habits,
+  int initialXp = 0,
+  int initialCoins = 0,
 }) {
   return <String, dynamic>{
     'userState': <String, dynamic>{
@@ -337,10 +467,10 @@ Map<String, dynamic> _baseState({
       },
       'progression': <String, dynamic>{
         'level': 1,
-        'xp': 0,
+        'xp': initialXp,
         'prestige': 0,
       },
-      'wallet': <String, dynamic>{'coins': 0},
+      'wallet': <String, dynamic>{'coins': initialCoins},
       'inventory': <String, dynamic>{'items': <dynamic>[]},
       'profile': <String, dynamic>{
         'equipped': <String, dynamic>{},

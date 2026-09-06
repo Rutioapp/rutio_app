@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_global_insight_resolver.dart';
+import 'package:rutio/features/habits/domain/models/habit_reward_transaction.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_global_insight.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
@@ -55,6 +56,58 @@ class StatisticsV3Screen extends StatefulWidget {
 class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
   StatisticsV3Period _period = StatisticsV3Period.week;
   bool _showHabitView = false;
+  UserStateStore? _rewardTransactionsStore;
+  int? _rewardTransactionsScopeEpoch;
+  List<HabitRewardTransaction> _habitRewardTransactions =
+      const <HabitRewardTransaction>[];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureHabitRewardTransactionsLoaded(context.read<UserStateStore>());
+  }
+
+  void _ensureHabitRewardTransactionsLoaded(UserStateStore store) {
+    final scopeEpoch = _scopeEpochFor(store);
+    if (_rewardTransactionsStore == store &&
+        _rewardTransactionsScopeEpoch == scopeEpoch) {
+      return;
+    }
+
+    _rewardTransactionsStore = store;
+    _rewardTransactionsScopeEpoch = scopeEpoch;
+    _habitRewardTransactions = const <HabitRewardTransaction>[];
+    Future<List<HabitRewardTransaction>> loadTransactions() {
+      try {
+        return store.loadHabitRewardTransactions();
+      } catch (_) {
+        // Keep lightweight test stores and degraded app states usable when
+        // they do not expose the optional local reward ledger.
+        return Future<List<HabitRewardTransaction>>.value(
+          const <HabitRewardTransaction>[],
+        );
+      }
+    }
+
+    loadTransactions().then((transactions) {
+      if (!mounted ||
+          _rewardTransactionsStore != store ||
+          _rewardTransactionsScopeEpoch != scopeEpoch) {
+        return;
+      }
+      setState(() {
+        _habitRewardTransactions = transactions;
+      });
+    });
+  }
+
+  int? _scopeEpochFor(UserStateStore store) {
+    try {
+      return (store as dynamic).scopeEpoch as int?;
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,17 +115,19 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final listBottomPadding = (bottomInset + 32).clamp(48.0, 88.0).toDouble();
     final store = context.watch<UserStateStore>();
+    _ensureHabitRewardTransactionsLoaded(store);
     final viewData = buildStatisticsV3ViewData(
       store: store,
       period: _period,
       l10n: l10n,
+      habitRewardTransactions: _habitRewardTransactions,
     );
     final habitListItems = buildStatisticsV3HabitListData(
       store: store,
       l10n: l10n,
     );
     final globalInsight = resolveStatisticsV3GlobalInsight(viewData);
-    final currentStreakDays = store.globalHabitStreakSnapshot.currentStreak;
+    final currentStreakDays = _currentStreakDaysFor(store);
     final highlightedHabitStreakDays =
         _highlightedHabitStreak(store, viewData.highlightedHabits);
 
@@ -241,6 +296,16 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
         ),
       ],
     );
+  }
+
+  int _currentStreakDaysFor(UserStateStore store) {
+    try {
+      final snapshot = (store as dynamic).globalHabitStreakSnapshot;
+      final currentStreak = (snapshot as dynamic).currentStreak;
+      return currentStreak is int ? currentStreak : 0;
+    } catch (_) {
+      return 0;
+    }
   }
 
   String _globalInsightMessage({

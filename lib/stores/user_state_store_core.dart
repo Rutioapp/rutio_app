@@ -209,6 +209,7 @@ Future<void> _switchLocalScope(
   if (scopeChanged) {
     store._state = null;
     store._error = null;
+    store._habitRewardTransactions = const <HabitRewardTransaction>[];
     _clearTransientGamificationStateInternal(store);
     _clearHydrationBaselinesInternal(store);
     store._emitChanged();

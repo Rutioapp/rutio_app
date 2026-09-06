@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/achievements/domain/models/habit_streak_snapshot.dart';
+import 'package:rutio/features/habits/domain/models/habit_reward_transaction.dart';
 import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/stores/user_state_store.dart';
@@ -19,6 +20,7 @@ void main() {
           now: now,
           activeHabits: [_habit(id: 'habit-xp', title: 'Habit XP')],
           history: _historyWithCheckCompletion(now, 'habit-xp'),
+          rewardTransactions: [_rewardTransaction(now, 'habit-xp')],
         ),
       );
 
@@ -43,6 +45,7 @@ void main() {
           now: now,
           activeHabits: [_habit(id: 'habit-amber', title: 'Habit Amber')],
           history: _historyWithCheckCompletion(now, 'habit-amber'),
+          rewardTransactions: [_rewardTransaction(now, 'habit-amber')],
         ),
       );
 
@@ -354,6 +357,8 @@ Map<String, dynamic> _rootState({
   required DateTime now,
   required List<Map<String, dynamic>> activeHabits,
   required Map<String, dynamic> history,
+  List<HabitRewardTransaction> rewardTransactions =
+      const <HabitRewardTransaction>[],
 }) {
   return <String, dynamic>{
     'userState': <String, dynamic>{
@@ -362,8 +367,26 @@ Map<String, dynamic> _rootState({
       'history': history,
       'profile': <String, dynamic>{'achievements': <String, dynamic>{}},
       'activeHabits': activeHabits,
+      'habitRewardTransactions': rewardTransactions
+          .map((transaction) => transaction.toJson())
+          .toList(),
     },
   };
+}
+
+HabitRewardTransaction _rewardTransaction(DateTime date, String habitId) {
+  return HabitRewardTransaction(
+    id: '$habitId|${_dateKey(date)}',
+    habitId: habitId,
+    localDateKey: _dateKey(date),
+    baseXp: 10,
+    bonusXp: 0,
+    baseCoins: 5,
+    bonusCoins: 0,
+    appliedEffectIds: const <String>[],
+    createdAtMillis: date.millisecondsSinceEpoch,
+    isReversed: false,
+  );
 }
 
 Map<String, dynamic> _historyWithCheckCompletion(DateTime now, String habitId) {
@@ -478,6 +501,31 @@ class _FakeStatisticsV3Store implements UserStateStore {
   @override
   Map<String, HabitStreakSnapshot> get achievementMetricSnapshots =>
       const <String, HabitStreakSnapshot>{};
+
+  @override
+  HabitStreakSnapshot get globalHabitStreakSnapshot =>
+      const HabitStreakSnapshot(
+        habitId: '__global__',
+        currentStreak: 0,
+        bestStreak: 0,
+        totalCompletedDays: 0,
+      );
+
+  @override
+  Future<List<HabitRewardTransaction>> loadHabitRewardTransactions() async {
+    final userState = state?['userState'];
+    if (userState is! Map) return const <HabitRewardTransaction>[];
+    final raw = userState['habitRewardTransactions'];
+    if (raw is! List) return const <HabitRewardTransaction>[];
+    return raw
+        .whereType<Map>()
+        .map(
+          (entry) => HabitRewardTransaction.fromJson(
+            entry.cast<String, dynamic>(),
+          ),
+        )
+        .toList(growable: false);
+  }
 
   @override
   dynamic getActiveHabitById(String id) {
