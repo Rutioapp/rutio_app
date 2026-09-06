@@ -48,6 +48,11 @@ class OnboardingDraftService {
 
   Future<OnboardingDraft?> loadAnonymousDraft() => _store.loadAnonymousDraft();
 
+  Future<OnboardingDraftLoadResult> loadAnonymousDraftResult() =>
+      _store.loadAnonymousDraftResult();
+
+  Future<bool> hasAnonymousDraft() => _store.hasAnonymousDraft();
+
   Future<void> saveAnonymousDraft(OnboardingDraft draft) async {
     await _store.saveAnonymousDraft(draft.copyWith(updatedAt: _now()));
   }

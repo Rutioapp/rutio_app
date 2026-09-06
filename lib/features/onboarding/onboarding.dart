@@ -1,9 +1,16 @@
 export 'application/onboarding_draft_service.dart';
+export 'application/onboarding_coordinator.dart';
 export 'data/onboarding_draft_codec.dart';
 export 'data/onboarding_draft_migrator.dart';
 export 'data/shared_preferences_onboarding_draft_store.dart';
 export 'domain/models/onboarding_draft.dart';
 export 'domain/models/onboarding_types.dart';
 export 'domain/onboarding_draft_store.dart';
+export 'domain/onboarding_goals.dart';
 export 'domain/onboarding_retention.dart';
 export 'domain/onboarding_validation.dart';
+export 'presentation/onboarding_shell.dart';
+export 'presentation/onboarding_v1_screen.dart';
+export 'presentation/onboarding_name_step.dart';
+export 'presentation/onboarding_goals_step.dart';
+export 'presentation/onboarding_pace_step.dart';

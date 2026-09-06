@@ -416,6 +416,306 @@ abstract class AppLocalizations {
   /// **'Crear cuenta'**
   String get welcomeSignupButton;
 
+  /// No description provided for @onboardingPrepareTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Preparar mi Rutio'**
+  String get onboardingPrepareTitle;
+
+  /// No description provided for @onboardingPrepareSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Construye tu camino paso a paso.'**
+  String get onboardingPrepareSubtitle;
+
+  /// No description provided for @onboardingExistingAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tengo una cuenta'**
+  String get onboardingExistingAccount;
+
+  /// No description provided for @onboardingResume.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar donde lo dejé'**
+  String get onboardingResume;
+
+  /// No description provided for @onboardingRestart.
+  ///
+  /// In es, this message translates to:
+  /// **'Empezar de nuevo'**
+  String get onboardingRestart;
+
+  /// No description provided for @onboardingRestartTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Empezar de nuevo?'**
+  String get onboardingRestartTitle;
+
+  /// No description provided for @onboardingRestartBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Se eliminará el borrador actual y empezaremos desde el principio.'**
+  String get onboardingRestartBody;
+
+  /// No description provided for @onboardingRestartConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Empezar de nuevo'**
+  String get onboardingRestartConfirm;
+
+  /// No description provided for @onboardingBack.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver'**
+  String get onboardingBack;
+
+  /// No description provided for @onboardingContinue.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get onboardingContinue;
+
+  /// No description provided for @onboardingLoading.
+  ///
+  /// In es, this message translates to:
+  /// **'Preparando tu Rutio…'**
+  String get onboardingLoading;
+
+  /// No description provided for @onboardingRecoverableError.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido guardar este paso. Tu último estado sigue a salvo.'**
+  String get onboardingRecoverableError;
+
+  /// No description provided for @onboardingRetry.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get onboardingRetry;
+
+  /// No description provided for @onboardingPlaceholderBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Pantalla provisional para comprobar el recorrido del onboarding.'**
+  String get onboardingPlaceholderBody;
+
+  /// No description provided for @onboardingStepName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre'**
+  String get onboardingStepName;
+
+  /// No description provided for @onboardingStepGoals.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivos'**
+  String get onboardingStepGoals;
+
+  /// No description provided for @onboardingStepPace.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritmo'**
+  String get onboardingStepPace;
+
+  /// No description provided for @onboardingStepRecommendations.
+  ///
+  /// In es, this message translates to:
+  /// **'Recomendaciones'**
+  String get onboardingStepRecommendations;
+
+  /// No description provided for @onboardingStepHabit.
+  ///
+  /// In es, this message translates to:
+  /// **'Hábito'**
+  String get onboardingStepHabit;
+
+  /// No description provided for @onboardingStepReminder.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorio'**
+  String get onboardingStepReminder;
+
+  /// No description provided for @onboardingStepPreview.
+  ///
+  /// In es, this message translates to:
+  /// **'Vista previa'**
+  String get onboardingStepPreview;
+
+  /// No description provided for @onboardingNameTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo te llamas?'**
+  String get onboardingNameTitle;
+
+  /// No description provided for @onboardingNameSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Así podremos hacer Rutio un poco más tuyo.'**
+  String get onboardingNameSubtitle;
+
+  /// No description provided for @onboardingNameInputLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu nombre'**
+  String get onboardingNameInputLabel;
+
+  /// No description provided for @onboardingNameInputHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe tu nombre'**
+  String get onboardingNameInputHint;
+
+  /// No description provided for @onboardingNameRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe tu nombre para continuar.'**
+  String get onboardingNameRequired;
+
+  /// No description provided for @onboardingNameTooLong.
+  ///
+  /// In es, this message translates to:
+  /// **'El nombre puede tener como máximo 30 caracteres.'**
+  String get onboardingNameTooLong;
+
+  /// No description provided for @onboardingNameInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa el nombre e inténtalo de nuevo.'**
+  String get onboardingNameInvalid;
+
+  /// No description provided for @onboardingGoalsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué te gustaría mejorar?'**
+  String get onboardingGoalsTitle;
+
+  /// No description provided for @onboardingGoalsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes elegir hasta 3 objetivos.'**
+  String get onboardingGoalsSubtitle;
+
+  /// No description provided for @onboardingGoalCareBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuidar mi cuerpo'**
+  String get onboardingGoalCareBody;
+
+  /// No description provided for @onboardingGoalFindCalm.
+  ///
+  /// In es, this message translates to:
+  /// **'Tener más calma'**
+  String get onboardingGoalFindCalm;
+
+  /// No description provided for @onboardingGoalOrganizeDays.
+  ///
+  /// In es, this message translates to:
+  /// **'Organizar mejor mis días'**
+  String get onboardingGoalOrganizeDays;
+
+  /// No description provided for @onboardingGoalLearnGrow.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprender y crecer'**
+  String get onboardingGoalLearnGrow;
+
+  /// No description provided for @onboardingGoalCareRelationships.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuidar mis relaciones'**
+  String get onboardingGoalCareRelationships;
+
+  /// No description provided for @onboardingGoalBuildDiscipline.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear más disciplina'**
+  String get onboardingGoalBuildDiscipline;
+
+  /// No description provided for @onboardingGoalsMinimum.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige al menos un objetivo.'**
+  String get onboardingGoalsMinimum;
+
+  /// No description provided for @onboardingGoalsMaximum.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes elegir como máximo 3 objetivos.'**
+  String get onboardingGoalsMaximum;
+
+  /// No description provided for @onboardingGoalsInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa los objetivos seleccionados.'**
+  String get onboardingGoalsInvalid;
+
+  /// No description provided for @onboardingGoalSelected.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionado'**
+  String get onboardingGoalSelected;
+
+  /// No description provided for @onboardingGoalUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'No disponible hasta desmarcar otro objetivo.'**
+  String get onboardingGoalUnavailable;
+
+  /// No description provided for @onboardingPaceTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo quieres empezar?'**
+  String get onboardingPaceTitle;
+
+  /// No description provided for @onboardingPaceGentleTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Poco a poco'**
+  String get onboardingPaceGentleTitle;
+
+  /// No description provided for @onboardingPaceGentleDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Quiero empezar con algo muy sencillo.'**
+  String get onboardingPaceGentleDescription;
+
+  /// No description provided for @onboardingPaceBalancedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Equilibrado'**
+  String get onboardingPaceBalancedTitle;
+
+  /// No description provided for @onboardingPaceBalancedDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Quiero avanzar sin exigirme demasiado.'**
+  String get onboardingPaceBalancedDescription;
+
+  /// No description provided for @onboardingPaceEnergizedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Con energía'**
+  String get onboardingPaceEnergizedTitle;
+
+  /// No description provided for @onboardingPaceEnergizedDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Estoy preparado para un reto mayor.'**
+  String get onboardingPaceEnergizedDescription;
+
+  /// No description provided for @onboardingPaceRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige un ritmo para continuar.'**
+  String get onboardingPaceRequired;
+
+  /// No description provided for @onboardingPaceSelected.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionado'**
+  String get onboardingPaceSelected;
+
   /// No description provided for @loginHeaderSubtitle.
   ///
   /// In es, this message translates to:

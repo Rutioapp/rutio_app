@@ -9,7 +9,7 @@ import '../application/bootstrap/bootstrap_controller.dart';
 import '../data/models/remote/remote_profile.dart';
 import '../utils/app_theme.dart';
 import 'auth/sign_in_screen.dart';
-import 'onboarding/temporary_onboarding_screen.dart';
+import '../features/onboarding/presentation/onboarding_v1_screen.dart';
 import 'root_gate.dart';
 import 'splash_screen.dart';
 import 'welcome_screen.dart';
@@ -109,7 +109,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
       case BootstrapDestination.authentication:
         return const SignInScreen();
       case BootstrapDestination.onboarding:
-        return const TemporaryOnboardingScreen();
+        return const OnboardingV1Screen();
       case BootstrapDestination.profileUninitialized:
       case BootstrapDestination.profileDeleted:
       case BootstrapDestination.accountSuspended:
