@@ -530,6 +530,44 @@ void main() {
     expect(find.byType(SingleChildScrollView), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('Recommendations renders cards, refresh and custom route',
+      (tester) async {
+    final store = await pumpPace(tester);
+    await tester.tap(find.text('Equilibrado'));
+    await tester.pump();
+    await tester.tap(find.text('Continuar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Un buen punto de partida'), findsOneWidget);
+    expect(find.text('Hacer ejercicio'), findsOneWidget);
+    expect(find.text('Ver otras opciones'), findsOneWidget);
+    expect(find.text('Crear un hábito desde cero'), findsOneWidget);
+
+    await tester.tap(find.text('Hacer ejercicio'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(store.anonymous?.currentStep, OnboardingStep.habit);
+    expect(
+        store.anonymous?.selectedRecommendationId, 'onboarding_v1_move_body');
+    expect(store.anonymous?.habit, isNull);
+
+    await tester.tap(find.byTooltip('Volver'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.scrollUntilVisible(
+      find.text('Crear un hábito desde cero'),
+      180,
+      scrollable: find.byType(Scrollable),
+    );
+    await tester.tap(find.text('Crear un hábito desde cero'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(store.anonymous?.currentStep, OnboardingStep.habit);
+    expect(store.anonymous?.selectedRecommendationId, isNull);
+    expect(store.anonymous?.habit, isNull);
+  });
 }
 
 OnboardingDraft _draft({String? firstName}) {

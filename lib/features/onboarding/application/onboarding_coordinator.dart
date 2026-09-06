@@ -1,15 +1,28 @@
 import 'package:flutter/foundation.dart';
 
+import '../data/bundled_recommendation_catalog_repository.dart';
+import '../data/onboarding_habit_draft_adapter.dart';
+import '../data/onboarding_reminder_draft_adapter.dart';
+import '../data/recommendation_catalog_repository.dart';
 import '../domain/models/onboarding_draft.dart';
+import '../domain/models/onboarding_habit_configuration.dart';
+import '../domain/models/onboarding_recommendation.dart';
+import '../domain/models/onboarding_reminder_configuration.dart';
 import '../domain/models/onboarding_types.dart';
 import '../domain/onboarding_draft_store.dart';
+import '../domain/onboarding_habit_configuration_validator.dart';
+import '../domain/onboarding_reminder_configuration_validator.dart';
+import '../domain/onboarding_recommendation_catalog_validator.dart';
+import '../domain/onboarding_recommendation_ranking.dart';
 import '../domain/onboarding_validation.dart';
 import 'onboarding_draft_service.dart';
+import 'onboarding_reminder_permission_gateway.dart';
 
 enum OnboardingCoordinatorStatus {
   loading,
   ready,
   persisting,
+  refreshing,
   recoverableError,
 }
 
@@ -18,6 +31,7 @@ enum OnboardingCoordinatorErrorType {
   recovery,
   invalidDraft,
   completedDraft,
+  catalog,
 }
 
 @immutable
@@ -37,6 +51,7 @@ class OnboardingCoordinatorState {
     this.isAtWelcome = true,
     this.error,
     this.validation,
+    this.recommendations,
   });
 
   final OnboardingCoordinatorStatus status;
@@ -45,9 +60,11 @@ class OnboardingCoordinatorState {
   final bool isAtWelcome;
   final OnboardingCoordinatorError? error;
   final OnboardingValidationResult? validation;
+  final List<OnboardingRecommendation>? recommendations;
 
   bool get isLoading => status == OnboardingCoordinatorStatus.loading;
   bool get isPersisting => status == OnboardingCoordinatorStatus.persisting;
+  bool get isRefreshing => status == OnboardingCoordinatorStatus.refreshing;
   bool get isRecoverableError =>
       status == OnboardingCoordinatorStatus.recoverableError;
   bool get hasDraft => draft != null;
@@ -57,7 +74,9 @@ class OnboardingCoordinatorState {
       !isAtWelcome &&
       effectiveStep != null &&
       effectiveStep != OnboardingStep.preview &&
-      !isPersisting;
+      !isPersisting &&
+      !isRefreshing &&
+      !isLoading;
 
   double get progress {
     if (isAtWelcome || effectiveStep == null) return 0;
@@ -72,6 +91,7 @@ class OnboardingCoordinatorState {
     bool? isAtWelcome,
     Object? error = _unset,
     Object? validation = _unset,
+    Object? recommendations = _unset,
   }) {
     return OnboardingCoordinatorState(
       status: status ?? this.status,
@@ -86,6 +106,9 @@ class OnboardingCoordinatorState {
       validation: identical(validation, _unset)
           ? this.validation
           : validation as OnboardingValidationResult?,
+      recommendations: identical(recommendations, _unset)
+          ? this.recommendations
+          : recommendations as List<OnboardingRecommendation>?,
     );
   }
 
@@ -97,8 +120,18 @@ class OnboardingCoordinatorState {
 /// Presentation emits intents to this class. It owns recovery, step guards,
 /// persistence ordering and the run epoch used to ignore stale async results.
 class OnboardingCoordinator extends ChangeNotifier {
-  OnboardingCoordinator({required OnboardingDraftService draftService})
-      : _draftService = draftService;
+  OnboardingCoordinator({
+    required OnboardingDraftService draftService,
+    RecommendationCatalogRepository? catalogRepository,
+    OnboardingRecommendationRankingService? rankingService,
+    OnboardingReminderPermissionGateway? reminderPermissionGateway,
+  })  : _draftService = draftService,
+        _catalogRepository =
+            catalogRepository ?? const BundledRecommendationCatalogRepository(),
+        _rankingService =
+            rankingService ?? const OnboardingRecommendationRankingService(),
+        _reminderPermissionGateway = reminderPermissionGateway ??
+            AppOnboardingReminderPermissionGateway();
 
   static const List<OnboardingStep> internalSteps = <OnboardingStep>[
     OnboardingStep.name,
@@ -111,11 +144,18 @@ class OnboardingCoordinator extends ChangeNotifier {
   ];
 
   final OnboardingDraftService _draftService;
+  final RecommendationCatalogRepository _catalogRepository;
+  final OnboardingRecommendationRankingService _rankingService;
+  final OnboardingReminderPermissionGateway _reminderPermissionGateway;
+  OnboardingRecommendationCatalogSnapshot? _catalogSnapshot;
   OnboardingCoordinatorState _state = const OnboardingCoordinatorState(
     status: OnboardingCoordinatorStatus.loading,
   );
   int _runEpoch = 0;
   int? _scopeEpoch;
+  bool _reminderSubmitInFlight = false;
+  bool _returnToPreviewAfterEdit = false;
+  _PendingReminderSubmission? _pendingReminderSubmission;
 
   OnboardingCoordinatorState get state => _state;
   OnboardingDraft? get draft => _state.draft;
@@ -161,11 +201,15 @@ class OnboardingCoordinator extends ChangeNotifier {
       }
 
       final safeStep = effectiveStepFor(loaded);
+      final safeDraft = loaded.copyWith(currentStep: safeStep);
       _publish(OnboardingCoordinatorState(
         status: OnboardingCoordinatorStatus.ready,
-        draft: loaded.copyWith(currentStep: safeStep),
+        draft: safeDraft,
         effectiveStep: safeStep,
       ));
+      if (_stepIndex(safeStep) >= _stepIndex(OnboardingStep.recommendations)) {
+        await _loadRecommendationsForDraft(safeDraft, epoch: epoch);
+      }
     } catch (error) {
       if (!_isCurrent(epoch)) return;
       _publish(OnboardingCoordinatorState(
@@ -179,6 +223,8 @@ class OnboardingCoordinator extends ChangeNotifier {
   }
 
   Future<void> startNew() async {
+    _clearPendingReminderSubmission();
+    _returnToPreviewAfterEdit = false;
     final epoch = _beginOperation();
     _publish(_state.copyWith(
       status: OnboardingCoordinatorStatus.persisting,
@@ -223,6 +269,8 @@ class OnboardingCoordinator extends ChangeNotifier {
   }
 
   Future<void> restart() async {
+    _clearPendingReminderSubmission();
+    _returnToPreviewAfterEdit = false;
     final epoch = _beginOperation();
     _publish(_state.copyWith(
       status: OnboardingCoordinatorStatus.persisting,
@@ -253,10 +301,377 @@ class OnboardingCoordinator extends ChangeNotifier {
     }
   }
 
+  /// Loads the exact catalog version pinned by the draft. The locale is an
+  /// input to the repository; the coordinator does not inspect platform
+  /// locale or mix localization with ranking.
+  Future<bool> loadRecommendations({String locale = 'es'}) async {
+    final current = _state.draft;
+    if (current == null || current.pace == null || current.goalCodes.isEmpty) {
+      return false;
+    }
+    final epoch = _beginOperation();
+    return _loadRecommendationsForDraft(current, epoch: epoch, locale: locale);
+  }
+
+  Future<bool> refreshRecommendations({String locale = 'es'}) async {
+    final current = _state.draft;
+    final visible =
+        _state.recommendations ?? const <OnboardingRecommendation>[];
+    if (current == null ||
+        _state.effectiveStep != OnboardingStep.recommendations ||
+        _catalogSnapshot == null) {
+      return false;
+    }
+    final epoch = _beginOperation();
+    final discarded = <String>{...current.discardedRecommendationIds};
+    for (final recommendation in visible) {
+      if (recommendation.id != current.selectedRecommendationId) {
+        discarded.add(recommendation.id);
+      }
+    }
+    final base = current.copyWith(discardedRecommendationIds: discarded);
+    _publish(_state.copyWith(
+      status: OnboardingCoordinatorStatus.refreshing,
+      draft: base,
+      error: null,
+      validation: null,
+    ));
+    try {
+      final snapshot = await _catalogRepository.resolve(
+        catalogVersion: base.catalogVersion,
+        locale: locale,
+      );
+      if (!_isCurrent(epoch)) return false;
+      _catalogSnapshot = snapshot;
+      final batch = _rank(base, snapshot);
+      if (batch.isEmpty) throw const _NoRecommendationsException();
+      final updated = base.copyWith(
+        shownRecommendationIds: {
+          ...base.shownRecommendationIds,
+          ...batch.map((recommendation) => recommendation.id),
+        },
+      );
+      await _draftService.saveAnonymousDraft(updated);
+      if (!_isCurrent(epoch)) return false;
+      _publish(OnboardingCoordinatorState(
+        status: OnboardingCoordinatorStatus.ready,
+        draft: updated,
+        effectiveStep: OnboardingStep.recommendations,
+        isAtWelcome: false,
+        recommendations: batch,
+      ));
+      return true;
+    } catch (error) {
+      if (!_isCurrent(epoch)) return false;
+      _publish(_state.copyWith(
+        status: OnboardingCoordinatorStatus.recoverableError,
+        draft: current,
+        recommendations: visible,
+        error: OnboardingCoordinatorError(
+          type: error is RecommendationCatalogException
+              ? OnboardingCoordinatorErrorType.catalog
+              : OnboardingCoordinatorErrorType.persistence,
+          cause: error,
+        ),
+      ));
+      return false;
+    }
+  }
+
+  /// Stores only the selected template id. It deliberately does not write a
+  /// habit or call any habit, notification, sync or remote service.
+  Future<bool> selectRecommendation(String id) async {
+    final current = _state.draft;
+    final snapshot = _catalogSnapshot;
+    if (current == null ||
+        snapshot == null ||
+        _state.effectiveStep != OnboardingStep.recommendations) {
+      return false;
+    }
+    final recommendation = snapshot.findById(id);
+    if (recommendation == null || !recommendation.active) return false;
+    return _persistStep(
+      current.copyWith(selectedRecommendationId: id),
+      OnboardingStep.habit,
+      _beginOperation(),
+      validate: false,
+    );
+  }
+
+  /// Persists the custom route intent (null recommendation) before opening
+  /// HabitStep. It does not create or persist a habit yet.
+  Future<bool> createHabitFromScratch() async {
+    final current = _state.draft;
+    if (current == null ||
+        _state.effectiveStep != OnboardingStep.recommendations) {
+      return false;
+    }
+    return _persistStep(
+      current.copyWith(selectedRecommendationId: null),
+      OnboardingStep.habit,
+      _beginOperation(),
+      validate: false,
+    );
+  }
+
+  /// Returns the typed editor value without overwriting an already confirmed
+  /// draft configuration. A missing recommendation snapshot is recoverable by
+  /// the caller and never becomes arbitrary habit data.
+  OnboardingHabitConfiguration? habitConfigurationForDraft({
+    String locale = 'es',
+  }) {
+    final current = _state.draft;
+    if (current == null) return null;
+    if (current.habit != null) {
+      return OnboardingHabitDraftAdapter.tryDecode(current.habit);
+    }
+    final selectedId = current.selectedRecommendationId;
+    if (selectedId == null) return OnboardingHabitConfiguration.custom();
+    final recommendation = _catalogSnapshot?.findById(selectedId);
+    if (recommendation == null || !recommendation.active) return null;
+    try {
+      return OnboardingHabitConfiguration.fromRecommendation(
+        recommendation,
+        locale: locale,
+      );
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// Validates and persists only the typed habit configuration in the draft.
+  /// No UserStateStore, notifications, sync or remote repository is involved.
+  Future<bool> submitHabit(OnboardingHabitConfiguration configuration) async {
+    final current = _state.draft;
+    if (current == null ||
+        _state.isAtWelcome ||
+        _state.effectiveStep != OnboardingStep.habit) {
+      return false;
+    }
+    if (!OnboardingDraftValidator.validateFirstName(
+                current.firstName)
+            .isValid ||
+        !OnboardingDraftValidator.validateGoalCodes(current.goalCodes)
+            .isValid ||
+        !OnboardingDraftValidator.validatePace(current.pace).isValid) {
+      _publish(_state.copyWith(
+        status: OnboardingCoordinatorStatus.ready,
+        validation:
+            const OnboardingValidationResult(<OnboardingValidationIssue>[
+          OnboardingValidationIssue(
+            OnboardingValidationCode.required,
+            'Habit prerequisites are incomplete.',
+          ),
+        ]),
+      ));
+      return false;
+    }
+    if (current.selectedRecommendationId != null &&
+        _catalogSnapshot?.findById(current.selectedRecommendationId) == null) {
+      _publish(_state.copyWith(
+        status: OnboardingCoordinatorStatus.recoverableError,
+        error: const OnboardingCoordinatorError(
+          type: OnboardingCoordinatorErrorType.catalog,
+        ),
+      ));
+      return false;
+    }
+    final validation = OnboardingHabitConfigurationValidator.validate(
+      configuration,
+    );
+    if (!validation.isValid) {
+      _publish(_state.copyWith(
+        status: OnboardingCoordinatorStatus.ready,
+        validation: validation,
+        error: null,
+      ));
+      return false;
+    }
+    final encoded = OnboardingHabitDraftAdapter.encode(configuration);
+    final returnToPreview = _returnToPreviewAfterEdit;
+    final result = await _persistStep(
+      current.copyWith(habit: encoded),
+      returnToPreview ? OnboardingStep.preview : OnboardingStep.reminder,
+      _beginOperation(),
+    );
+    if (result && returnToPreview) _returnToPreviewAfterEdit = false;
+    return result;
+  }
+
+  /// Opens one of the editable Preview blocks without changing the draft's
+  /// identity or creating a persisted return route. The flag is process-local
+  /// and is consumed only after the edited step saves successfully.
+  Future<bool> goToStepForEditing(OnboardingStep step) async {
+    final current = _state.draft;
+    if (current == null ||
+        _state.isAtWelcome ||
+        _state.effectiveStep != OnboardingStep.preview ||
+        _state.isPersisting ||
+        _state.isRefreshing ||
+        _state.isLoading ||
+        !const <OnboardingStep>{
+          OnboardingStep.goals,
+          OnboardingStep.pace,
+          OnboardingStep.habit,
+          OnboardingStep.reminder,
+        }.contains(step) ||
+        !OnboardingDraftValidator.isStepDataValid(current, step)) {
+      return false;
+    }
+    _returnToPreviewAfterEdit = true;
+    return _persistStep(
+      current,
+      step,
+      _beginOperation(),
+      validate: false,
+    );
+  }
+
+  /// Advances to the Auth boundary only. Auth, account creation and remote
+  /// completion are deliberately owned by the next onboarding phase.
+  Future<bool> continueFromPreview() async {
+    final current = _state.draft;
+    if (current == null ||
+        _state.isAtWelcome ||
+        _state.effectiveStep != OnboardingStep.preview ||
+        !_isPreviewDraftValid(current)) {
+      return false;
+    }
+    _returnToPreviewAfterEdit = false;
+    return _persistStep(
+      current,
+      OnboardingStep.auth,
+      _beginOperation(),
+    );
+  }
+
+  /// Returns the persisted reminder or a calm initial suggestion. A catalog
+  /// suggestion is only a time prefill; it never enables the reminder.
+  OnboardingReminderConfiguration? reminderConfigurationForDraft() {
+    final current = _state.draft;
+    if (current == null) return null;
+    if (current.reminder != null) {
+      return OnboardingReminderDraftAdapter.tryDecode(current.reminder);
+    }
+
+    final recommendation = _catalogSnapshot?.findById(
+      current.selectedRecommendationId,
+    );
+    final suggested = _parseReminderTime(recommendation?.suggestedReminderTime);
+    return OnboardingReminderConfiguration.suggestion(
+      selectedTime:
+          suggested ?? const OnboardingReminderTime(hour: 8, minute: 0),
+    );
+  }
+
+  /// Commits an explicit reminder decision. Permission is requested only for
+  /// an enabled reminder and only when the system state has not been resolved
+  /// previously. No scheduling API is called because there is no canonical
+  /// habit id in this phase.
+  Future<bool> submitReminder(
+    OnboardingReminderConfiguration configuration,
+  ) async {
+    final current = _state.draft;
+    if (current == null ||
+        _state.isAtWelcome ||
+        _state.effectiveStep != OnboardingStep.reminder ||
+        _reminderSubmitInFlight) {
+      return false;
+    }
+    final validation = OnboardingReminderConfigurationValidator.validate(
+      configuration,
+    );
+    if (!validation.isValid) {
+      _publish(_state.copyWith(
+        status: OnboardingCoordinatorStatus.ready,
+        validation: validation,
+        error: null,
+      ));
+      return false;
+    }
+
+    _reminderSubmitInFlight = true;
+    final epoch = _beginOperation();
+    try {
+      if (!configuration.enabled) {
+        final previous = OnboardingReminderDraftAdapter.tryDecode(
+          current.reminder,
+        );
+        final disabled = OnboardingReminderConfiguration.disabled(
+          permissionState:
+              previous?.permissionState ?? ReminderPermissionState.notRequested,
+        );
+        final result = await _persistStep(
+          current.copyWith(
+            reminder: OnboardingReminderDraftAdapter.encode(disabled),
+          ),
+          OnboardingStep.preview,
+          epoch,
+        );
+        if (result) {
+          _clearPendingReminderSubmission();
+          _returnToPreviewAfterEdit = false;
+        }
+        return result;
+      }
+
+      final previous = OnboardingReminderDraftAdapter.tryDecode(
+        current.reminder,
+      );
+      final cached = _pendingReminderSubmission;
+      final sameTime = cached != null &&
+          cached.draftId == current.draftId &&
+          cached.configuration.selectedTime == configuration.selectedTime;
+      final permission = sameTime
+          ? cached.permissionState
+          : previous != null &&
+                  previous.permissionState !=
+                      ReminderPermissionState.notRequested
+              ? previous.permissionState
+              : await _requestReminderPermission(epoch);
+      if (!_isCurrent(epoch)) return false;
+
+      final scheduling = permission == ReminderPermissionState.authorized ||
+              permission == ReminderPermissionState.provisional
+          ? ReminderSchedulingState.readyToSchedule
+          : ReminderSchedulingState.pendingRetry;
+      final resolved = configuration.copyWith(
+        permissionState: permission,
+        schedulingState: scheduling,
+      );
+      _pendingReminderSubmission = _PendingReminderSubmission(
+        draftId: current.draftId,
+        configuration: configuration,
+        permissionState: permission,
+      );
+      final result = await _persistStep(
+        current.copyWith(
+            reminder: OnboardingReminderDraftAdapter.encode(resolved)),
+        OnboardingStep.preview,
+        epoch,
+      );
+      if (result) {
+        _clearPendingReminderSubmission();
+        _returnToPreviewAfterEdit = false;
+      }
+      return result;
+    } finally {
+      _reminderSubmitInFlight = false;
+    }
+  }
+
+  Future<ReminderPermissionState> _requestReminderPermission(int epoch) async {
+    final result = await _reminderPermissionGateway.requestPermission();
+    if (!_isCurrent(epoch)) return ReminderPermissionState.notRequested;
+    return result;
+  }
+
   Future<bool> goBack() async {
     final current = _state.draft;
     final step = _state.effectiveStep;
     if (current == null || step == null || _state.isAtWelcome) return false;
+    _returnToPreviewAfterEdit = false;
+    if (step != OnboardingStep.reminder) _clearPendingReminderSubmission();
     final index = internalSteps.indexOf(step);
     if (index <= 0) {
       _publish(_state.copyWith(
@@ -268,7 +683,12 @@ class OnboardingCoordinator extends ChangeNotifier {
       return true;
     }
 
-    return _persistStep(current, internalSteps[index - 1], _beginOperation());
+    return _persistStep(
+      current,
+      internalSteps[index - 1],
+      _beginOperation(),
+      validate: false,
+    );
   }
 
   /// Persists a candidate draft, validates the current step through Domain,
@@ -335,7 +755,7 @@ class OnboardingCoordinator extends ChangeNotifier {
         _state.effectiveStep != OnboardingStep.goals) {
       return false;
     }
-    final candidate = current.copyWith(goalCodes: goalCodes);
+    var candidate = current.copyWith(goalCodes: goalCodes);
     final validation = OnboardingDraftValidator.validateGoalCodes(
       candidate.goalCodes,
     );
@@ -347,7 +767,16 @@ class OnboardingCoordinator extends ChangeNotifier {
       ));
       return false;
     }
-    return _persistStep(candidate, OnboardingStep.pace, _beginOperation());
+    final selected = candidate.selectedRecommendationId;
+    final selectedRecommendation = _catalogSnapshot?.findById(selected);
+    if (selected != null &&
+        (selectedRecommendation == null ||
+            selectedRecommendation.goalCodes
+                .intersection(candidate.goalCodes)
+                .isEmpty)) {
+      candidate = candidate.copyWith(selectedRecommendationId: null);
+    }
+    return _persistEditedOrNormalStep(candidate, OnboardingStep.pace);
   }
 
   /// Commits the selected initial pace and advances only after persistence.
@@ -368,10 +797,9 @@ class OnboardingCoordinator extends ChangeNotifier {
       ));
       return false;
     }
-    return _persistStep(
+    return _persistEditedOrNormalStep(
       candidate,
       OnboardingStep.recommendations,
-      _beginOperation(),
     );
   }
 
@@ -381,38 +809,44 @@ class OnboardingCoordinator extends ChangeNotifier {
     final current = _state.draft;
     final step = _state.effectiveStep;
     if (current == null || step == null) return Future<bool>.value(false);
-    var candidate = current;
     switch (step) {
       case OnboardingStep.recommendations:
-        candidate = current.copyWith(selectedRecommendationId: 'placeholder');
+        // Real recommendation actions use selectRecommendation or
+        // createHabitFromScratch. Recommendations have no placeholder path.
+        return Future<bool>.value(false);
       case OnboardingStep.habit:
-        candidate = current.copyWith(habit: <String, dynamic>{
-          'id': 'placeholder-habit',
-          'type': 'check',
-          'schedule': <String, dynamic>{'type': 'daily'},
-        });
+        // HabitStep is real. It submits a typed configuration through
+        // submitHabit; this method is reserved for remaining placeholders.
+        return Future<bool>.value(false);
       case OnboardingStep.reminder:
-        candidate = current.copyWith(reminder: <String, dynamic>{
-          'permissionState': ReminderPermissionState.notRequested.code,
-        });
+        // Reminder is real. Its explicit actions use submitReminder().
+        return Future<bool>.value(false);
       case OnboardingStep.preview:
         return Future<bool>.value(false);
       default:
         // Name and non-placeholder terminal steps have no fake data path.
         return Future<bool>.value(false);
     }
-    return submitCurrentStep(candidate: candidate);
   }
 
   /// Invalidates pending results for logout, scope switches and restart.
   void invalidateAsyncOperations({int? scopeEpoch}) {
     _runEpoch++;
     _scopeEpoch = scopeEpoch;
+    _clearPendingReminderSubmission();
+    _returnToPreviewAfterEdit = false;
   }
 
   /// Computes the first step that is safe to show, clamped by the persisted
   /// cursor. Thus an advanced cursor can never bypass an invalid prerequisite.
   OnboardingStep effectiveStepFor(OnboardingDraft draft) {
+    if (draft.currentStep == OnboardingStep.habit &&
+        draft.selectedRecommendationId == null &&
+        OnboardingDraftValidator.validateFirstName(draft.firstName).isValid &&
+        OnboardingDraftValidator.validateGoalCodes(draft.goalCodes).isValid &&
+        OnboardingDraftValidator.validatePace(draft.pace).isValid) {
+      return OnboardingStep.habit;
+    }
     final safe = OnboardingDraftValidator.lastSafeStep(draft);
     final firstInvalidIndex = safe == null
         ? 0
@@ -434,8 +868,19 @@ class OnboardingCoordinator extends ChangeNotifier {
   Future<bool> _persistStep(
     OnboardingDraft candidate,
     OnboardingStep step,
-    int epoch,
-  ) async {
+    int epoch, {
+    bool validate = true,
+  }) async {
+    if (validate) {
+      final validation = _validateCandidate(candidate, _state.effectiveStep!);
+      if (!validation.isValid) {
+        _publish(_state.copyWith(
+          status: OnboardingCoordinatorStatus.ready,
+          validation: validation,
+        ));
+        return false;
+      }
+    }
     final persisted = candidate.copyWith(currentStep: step);
     _publish(_state.copyWith(
       status: OnboardingCoordinatorStatus.persisting,
@@ -445,11 +890,15 @@ class OnboardingCoordinator extends ChangeNotifier {
     try {
       await _draftService.saveAnonymousDraft(persisted);
       if (!_isCurrent(epoch)) return false;
+      if (step == OnboardingStep.recommendations) {
+        return _loadRecommendationsForDraft(persisted, epoch: epoch);
+      }
       _publish(OnboardingCoordinatorState(
         status: OnboardingCoordinatorStatus.ready,
         draft: persisted,
         effectiveStep: step,
         isAtWelcome: false,
+        recommendations: _state.recommendations,
       ));
       return true;
     } catch (error) {
@@ -486,30 +935,173 @@ class OnboardingCoordinator extends ChangeNotifier {
               ])
             : const OnboardingValidationResult.valid();
       case OnboardingStep.habit:
-        return candidate.habit == null || candidate.habit!.isEmpty
-            ? const OnboardingValidationResult(<OnboardingValidationIssue>[
-                OnboardingValidationIssue(
-                  OnboardingValidationCode.required,
-                  'Habit is required.',
-                ),
-              ])
-            : const OnboardingValidationResult.valid();
+        return OnboardingHabitConfigurationValidator.validateDraftMap(
+          candidate.habit,
+        );
       case OnboardingStep.reminder:
-        return candidate.reminder == null
-            ? const OnboardingValidationResult(<OnboardingValidationIssue>[
+        return OnboardingReminderConfigurationValidator.validateDraftMap(
+          candidate.reminder,
+        );
+      case OnboardingStep.preview:
+        return _isPreviewDraftValid(candidate)
+            ? const OnboardingValidationResult.valid()
+            : const OnboardingValidationResult(<OnboardingValidationIssue>[
                 OnboardingValidationIssue(
                   OnboardingValidationCode.required,
-                  'Reminder is required.',
+                  'Preview prerequisites are incomplete.',
                 ),
-              ])
-            : const OnboardingValidationResult.valid();
-      case OnboardingStep.preview:
+              ]);
       case OnboardingStep.auth:
       case OnboardingStep.emailConfirmation:
       case OnboardingStep.resolvingAccount:
       case OnboardingStep.finalizing:
         return const OnboardingValidationResult.valid();
     }
+  }
+
+  Future<bool> _loadRecommendationsForDraft(
+    OnboardingDraft draft, {
+    required int epoch,
+    String locale = 'es',
+  }) async {
+    if (!_isCurrent(epoch)) return false;
+    final step = effectiveStepFor(draft);
+    _publish(OnboardingCoordinatorState(
+      status: OnboardingCoordinatorStatus.loading,
+      draft: draft,
+      effectiveStep: step,
+      isAtWelcome: _state.isAtWelcome,
+      recommendations: _state.recommendations,
+    ));
+    try {
+      final snapshot = await _catalogRepository.resolve(
+        catalogVersion: draft.catalogVersion,
+        locale: locale,
+      );
+      if (!_isCurrent(epoch)) return false;
+      if (snapshot.version != draft.catalogVersion) {
+        throw RecommendationCatalogException(
+          message: 'Resolved catalog did not match the pinned version.',
+          catalogVersion: draft.catalogVersion,
+        );
+      }
+      final validation = OnboardingRecommendationCatalogValidator.validate(
+        snapshot,
+        expectedVersion: draft.catalogVersion,
+      );
+      if (validation.validRecommendations.isEmpty) {
+        throw const _NoRecommendationsException();
+      }
+      _catalogSnapshot = snapshot;
+      var effectiveDraft = draft;
+      if (draft.selectedRecommendationId != null &&
+          snapshot.findById(draft.selectedRecommendationId) == null) {
+        // An unknown selection is invalidated only after the pinned snapshot
+        // has been resolved. Version failures above leave the draft untouched.
+        effectiveDraft = draft.copyWith(
+          currentStep: OnboardingStep.recommendations,
+          selectedRecommendationId: null,
+        );
+      }
+      final batch = _rank(effectiveDraft, snapshot);
+      if (batch.isEmpty) throw const _NoRecommendationsException();
+      final updated = effectiveDraft.copyWith(
+        shownRecommendationIds: {
+          ...effectiveDraft.shownRecommendationIds,
+          ...batch.map((recommendation) => recommendation.id),
+        },
+      );
+      await _draftService.saveAnonymousDraft(updated);
+      if (!_isCurrent(epoch)) return false;
+      _publish(OnboardingCoordinatorState(
+        status: OnboardingCoordinatorStatus.ready,
+        draft: updated,
+        effectiveStep: effectiveStepFor(updated),
+        isAtWelcome: _state.isAtWelcome,
+        recommendations: batch,
+      ));
+      return true;
+    } catch (error) {
+      if (!_isCurrent(epoch)) return false;
+      _publish(OnboardingCoordinatorState(
+        status: OnboardingCoordinatorStatus.recoverableError,
+        draft: draft,
+        effectiveStep: step,
+        isAtWelcome: _state.isAtWelcome,
+        recommendations: _state.recommendations,
+        error: OnboardingCoordinatorError(
+          type: error is RecommendationCatalogException ||
+                  error is _NoRecommendationsException
+              ? OnboardingCoordinatorErrorType.catalog
+              : OnboardingCoordinatorErrorType.persistence,
+          cause: error,
+        ),
+      ));
+      return false;
+    }
+  }
+
+  List<OnboardingRecommendation> _rank(
+    OnboardingDraft draft,
+    OnboardingRecommendationCatalogSnapshot snapshot,
+  ) {
+    return _rankingService.rank(
+      OnboardingRecommendationRankingRequest(
+        snapshot: snapshot,
+        selectedGoalCodes: draft.goalCodes,
+        pace: draft.pace!,
+        shownRecommendationIds: draft.shownRecommendationIds,
+        discardedRecommendationIds: draft.discardedRecommendationIds,
+      ),
+    );
+  }
+
+  int _stepIndex(OnboardingStep step) => internalSteps.indexOf(step);
+
+  Future<bool> _persistEditedOrNormalStep(
+    OnboardingDraft candidate,
+    OnboardingStep normalNextStep,
+  ) async {
+    final returnToPreview = _returnToPreviewAfterEdit;
+    final result = await _persistStep(
+      candidate,
+      returnToPreview ? OnboardingStep.preview : normalNextStep,
+      _beginOperation(),
+    );
+    if (result && returnToPreview) _returnToPreviewAfterEdit = false;
+    return result;
+  }
+
+  bool _isPreviewDraftValid(OnboardingDraft draft) {
+    if (!OnboardingDraftValidator.isStepDataValid(
+      draft,
+      OnboardingStep.preview,
+    )) {
+      return false;
+    }
+    // A null selection is the valid custom-habit route. A selected
+    // recommendation still needs to resolve against the pinned snapshot.
+    if (draft.selectedRecommendationId == null) return true;
+    final recommendation = _catalogSnapshot?.findById(
+      draft.selectedRecommendationId,
+    );
+    return recommendation != null && recommendation.active;
+  }
+
+  void _clearPendingReminderSubmission() {
+    _pendingReminderSubmission = null;
+  }
+
+  OnboardingReminderTime? _parseReminderTime(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) return null;
+    final match = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(value);
+    if (match == null) return null;
+    final time = OnboardingReminderTime(
+      hour: int.parse(match.group(1)!),
+      minute: int.parse(match.group(2)!),
+    );
+    return time.isValid ? time : null;
   }
 
   int _beginOperation() {
@@ -523,4 +1115,20 @@ class OnboardingCoordinator extends ChangeNotifier {
     _state = state;
     if (hasListeners) notifyListeners();
   }
+}
+
+class _PendingReminderSubmission {
+  const _PendingReminderSubmission({
+    required this.draftId,
+    required this.configuration,
+    required this.permissionState,
+  });
+
+  final String draftId;
+  final OnboardingReminderConfiguration configuration;
+  final ReminderPermissionState permissionState;
+}
+
+class _NoRecommendationsException implements Exception {
+  const _NoRecommendationsException();
 }

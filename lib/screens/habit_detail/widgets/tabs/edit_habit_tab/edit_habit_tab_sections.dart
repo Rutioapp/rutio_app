@@ -205,6 +205,7 @@ class EditHabitIdentitySection extends StatelessWidget {
     super.key,
     required this.titleController,
     required this.titleFocusNode,
+    this.titleFieldKey,
     required this.emoji,
     required this.showTitleError,
     required this.onPickEmoji,
@@ -213,6 +214,7 @@ class EditHabitIdentitySection extends StatelessWidget {
 
   final TextEditingController titleController;
   final FocusNode titleFocusNode;
+  final Key? titleFieldKey;
   final String emoji;
   final bool showTitleError;
   final VoidCallback onPickEmoji;
@@ -296,6 +298,7 @@ class EditHabitIdentitySection extends StatelessWidget {
                     ),
                   ),
                   child: TextField(
+                    key: titleFieldKey,
                     controller: titleController,
                     focusNode: titleFocusNode,
                     maxLength: 40,
@@ -384,7 +387,7 @@ class EditHabitCategorySection extends StatelessWidget {
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,
                 width: 66,
-                height: 76,
+                constraints: const BoxConstraints(minHeight: 76),
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected
@@ -400,6 +403,7 @@ class EditHabitCategorySection extends StatelessWidget {
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       FamilyTheme.emojiOf(familyId),
@@ -445,8 +449,7 @@ class EditHabitTrackingTypeSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
-    return SizedBox(
-      height: 86,
+    return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -503,6 +506,8 @@ class EditHabitCountSection extends StatelessWidget {
     required this.onDecrementStep,
     required this.onIncrementStep,
     required this.onEditStep,
+    this.targetKey,
+    this.unitFieldKey,
   });
 
   final bool isVisible;
@@ -517,6 +522,8 @@ class EditHabitCountSection extends StatelessWidget {
   final VoidCallback onDecrementStep;
   final VoidCallback onIncrementStep;
   final VoidCallback onEditStep;
+  final Key? targetKey;
+  final Key? unitFieldKey;
 
   @override
   Widget build(BuildContext context) {
@@ -649,6 +656,7 @@ class EditHabitCountSection extends StatelessWidget {
                                     ),
                                     Expanded(
                                       child: GestureDetector(
+                                        key: targetKey,
                                         onTap: onEditTarget,
                                         child: Container(
                                           alignment: Alignment.center,
@@ -703,6 +711,7 @@ class EditHabitCountSection extends StatelessWidget {
                                   child: SizedBox(
                                     height: 42,
                                     child: TextField(
+                                      key: unitFieldKey,
                                       controller: unitController,
                                       readOnly: true,
                                       minLines: 1,
@@ -952,6 +961,8 @@ class EditHabitFrequencySection extends StatelessWidget {
     required this.onDecrementTimesPerWeek,
     required this.onIncrementTimesPerWeek,
     required this.onEditTimesPerWeek,
+    this.includeTimesPerWeek = true,
+    this.weekdayKeyPrefix,
   });
 
   final String trackingType;
@@ -964,6 +975,8 @@ class EditHabitFrequencySection extends StatelessWidget {
   final VoidCallback onDecrementTimesPerWeek;
   final VoidCallback onIncrementTimesPerWeek;
   final VoidCallback onEditTimesPerWeek;
+  final bool includeTimesPerWeek;
+  final String? weekdayKeyPrefix;
 
   @override
   Widget build(BuildContext context) {
@@ -977,7 +990,7 @@ class EditHabitFrequencySection extends StatelessWidget {
         id: 'specificDays',
         label: l10n.editHabitFrequencySpecificDays,
       ),
-      if (trackingType == 'check')
+      if (trackingType == 'check' && includeTimesPerWeek)
         _EditSegmentOption(
           id: 'timesPerWeek',
           label: l10n.editHabitFrequencyTimesPerWeek,
@@ -1081,6 +1094,11 @@ class EditHabitFrequencySection extends StatelessWidget {
                             final bool isSelected = selectedDays.contains(day);
 
                             return GestureDetector(
+                              key: weekdayKeyPrefix == null
+                                  ? null
+                                  : ValueKey<String>(
+                                      '${weekdayKeyPrefix}_$day',
+                                    ),
                               onTap: () => onToggleSelectedDay(day),
                               child: Container(
                                 width: 34,

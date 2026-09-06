@@ -716,6 +716,336 @@ abstract class AppLocalizations {
   /// **'Seleccionado'**
   String get onboardingPaceSelected;
 
+  /// No description provided for @onboardingRecommendationsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Un buen punto de partida'**
+  String get onboardingRecommendationsTitle;
+
+  /// No description provided for @onboardingRecommendationsRefresh.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver otras opciones'**
+  String get onboardingRecommendationsRefresh;
+
+  /// No description provided for @onboardingRecommendationsCreateCustom.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear un hábito desde cero'**
+  String get onboardingRecommendationsCreateCustom;
+
+  /// No description provided for @onboardingRecommendationsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos encontrado recomendaciones disponibles ahora mismo.'**
+  String get onboardingRecommendationsEmpty;
+
+  /// No description provided for @onboardingRecommendationsError.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido cargar tus recomendaciones. Tu progreso sigue a salvo.'**
+  String get onboardingRecommendationsError;
+
+  /// No description provided for @onboardingRecommendationsUpdated.
+  ///
+  /// In es, this message translates to:
+  /// **'Recomendaciones actualizadas'**
+  String get onboardingRecommendationsUpdated;
+
+  /// No description provided for @onboardingRecommendationSelected.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionado'**
+  String get onboardingRecommendationSelected;
+
+  /// No description provided for @onboardingHabitSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Configura un hábito sencillo para empezar. Podrás ajustarlo más adelante.'**
+  String get onboardingHabitSubtitle;
+
+  /// No description provided for @onboardingHabitNameLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre'**
+  String get onboardingHabitNameLabel;
+
+  /// No description provided for @onboardingHabitNameHint.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué quieres convertir en hábito?'**
+  String get onboardingHabitNameHint;
+
+  /// No description provided for @onboardingHabitEmojiLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Icono'**
+  String get onboardingHabitEmojiLabel;
+
+  /// No description provided for @onboardingHabitChooseEmoji.
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir emoji'**
+  String get onboardingHabitChooseEmoji;
+
+  /// No description provided for @onboardingHabitFamilyLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Familia principal'**
+  String get onboardingHabitFamilyLabel;
+
+  /// No description provided for @onboardingHabitNoFamily.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin familia'**
+  String get onboardingHabitNoFamily;
+
+  /// No description provided for @onboardingHabitTargetLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cantidad y unidad'**
+  String get onboardingHabitTargetLabel;
+
+  /// No description provided for @onboardingHabitTargetHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Cantidad'**
+  String get onboardingHabitTargetHint;
+
+  /// No description provided for @onboardingHabitUnitHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Unidad (opcional)'**
+  String get onboardingHabitUnitHint;
+
+  /// No description provided for @onboardingHabitWeekdaysLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Días seleccionados'**
+  String get onboardingHabitWeekdaysLabel;
+
+  /// No description provided for @onboardingHabitDaySelected.
+  ///
+  /// In es, this message translates to:
+  /// **'seleccionado'**
+  String get onboardingHabitDaySelected;
+
+  /// No description provided for @onboardingHabitRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa los datos del hábito para continuar.'**
+  String get onboardingHabitRequired;
+
+  /// No description provided for @onboardingHabitNameTooLong.
+  ///
+  /// In es, this message translates to:
+  /// **'El nombre puede tener como máximo 40 caracteres.'**
+  String get onboardingHabitNameTooLong;
+
+  /// No description provided for @onboardingHabitTargetInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce una cantidad mayor que cero.'**
+  String get onboardingHabitTargetInvalid;
+
+  /// No description provided for @onboardingHabitInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa la configuración del hábito e inténtalo de nuevo.'**
+  String get onboardingHabitInvalid;
+
+  /// No description provided for @onboardingReminderSupport.
+  ///
+  /// In es, this message translates to:
+  /// **'Podemos avisarte cuando llegue el momento. Podrás cambiarlo o desactivarlo más adelante desde Ajustes.'**
+  String get onboardingReminderSupport;
+
+  /// No description provided for @onboardingReminderEnable.
+  ///
+  /// In es, this message translates to:
+  /// **'Activar recordatorio'**
+  String get onboardingReminderEnable;
+
+  /// No description provided for @onboardingReminderNotNow.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahora no'**
+  String get onboardingReminderNotNow;
+
+  /// No description provided for @onboardingReminderTime.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora del recordatorio'**
+  String get onboardingReminderTime;
+
+  /// No description provided for @onboardingReminderTimeDone.
+  ///
+  /// In es, this message translates to:
+  /// **'Listo'**
+  String get onboardingReminderTimeDone;
+
+  /// No description provided for @onboardingReminderPermissionDenied.
+  ///
+  /// In es, this message translates to:
+  /// **'El permiso está desactivado. Podrás activarlo más adelante desde Ajustes.'**
+  String get onboardingReminderPermissionDenied;
+
+  /// No description provided for @onboardingReminderPermissionRestricted.
+  ///
+  /// In es, this message translates to:
+  /// **'El sistema restringe este permiso. Podrás revisarlo más adelante desde Ajustes.'**
+  String get onboardingReminderPermissionRestricted;
+
+  /// No description provided for @onboardingReminderError.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido guardar el recordatorio. Tu último estado sigue a salvo.'**
+  String get onboardingReminderError;
+
+  /// No description provided for @onboardingPreviewTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu punto de partida está preparado'**
+  String get onboardingPreviewTitle;
+
+  /// No description provided for @onboardingPreviewIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'Este es tu Rutio de partida. Puedes revisar cada bloque antes de continuar.'**
+  String get onboardingPreviewIntro;
+
+  /// No description provided for @onboardingPreviewSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar mi Rutio'**
+  String get onboardingPreviewSave;
+
+  /// No description provided for @onboardingPreviewEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar'**
+  String get onboardingPreviewEdit;
+
+  /// No description provided for @onboardingPreviewGoals.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivos'**
+  String get onboardingPreviewGoals;
+
+  /// No description provided for @onboardingPreviewPace.
+  ///
+  /// In es, this message translates to:
+  /// **'Ritmo'**
+  String get onboardingPreviewPace;
+
+  /// No description provided for @onboardingPreviewHabit.
+  ///
+  /// In es, this message translates to:
+  /// **'Primer hábito'**
+  String get onboardingPreviewHabit;
+
+  /// No description provided for @onboardingPreviewReminder.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorio'**
+  String get onboardingPreviewReminder;
+
+  /// No description provided for @onboardingPreviewFamily.
+  ///
+  /// In es, this message translates to:
+  /// **'Familia'**
+  String get onboardingPreviewFamily;
+
+  /// No description provided for @onboardingPreviewType.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo'**
+  String get onboardingPreviewType;
+
+  /// No description provided for @onboardingPreviewSchedule.
+  ///
+  /// In es, this message translates to:
+  /// **'Frecuencia'**
+  String get onboardingPreviewSchedule;
+
+  /// No description provided for @onboardingPreviewTarget.
+  ///
+  /// In es, this message translates to:
+  /// **'Objetivo'**
+  String get onboardingPreviewTarget;
+
+  /// No description provided for @onboardingPreviewEveryDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los días'**
+  String get onboardingPreviewEveryDay;
+
+  /// No description provided for @onboardingPreviewNoReminder.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin recordatorio'**
+  String get onboardingPreviewNoReminder;
+
+  /// No description provided for @onboardingPreviewReminderReady.
+  ///
+  /// In es, this message translates to:
+  /// **'activado'**
+  String get onboardingPreviewReminderReady;
+
+  /// No description provided for @onboardingPreviewReminderPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Preparado para activarlo desde Ajustes'**
+  String get onboardingPreviewReminderPending;
+
+  /// No description provided for @onboardingPreviewReadOnly.
+  ///
+  /// In es, this message translates to:
+  /// **'Vista previa, sin acciones todavía'**
+  String get onboardingPreviewReadOnly;
+
+  /// No description provided for @onboardingPreviewFamilyMind.
+  ///
+  /// In es, this message translates to:
+  /// **'Mente'**
+  String get onboardingPreviewFamilyMind;
+
+  /// No description provided for @onboardingPreviewFamilySpirit.
+  ///
+  /// In es, this message translates to:
+  /// **'Espíritu'**
+  String get onboardingPreviewFamilySpirit;
+
+  /// No description provided for @onboardingPreviewFamilyBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuerpo'**
+  String get onboardingPreviewFamilyBody;
+
+  /// No description provided for @onboardingPreviewFamilyEmotional.
+  ///
+  /// In es, this message translates to:
+  /// **'Emocional'**
+  String get onboardingPreviewFamilyEmotional;
+
+  /// No description provided for @onboardingPreviewFamilySocial.
+  ///
+  /// In es, this message translates to:
+  /// **'Social'**
+  String get onboardingPreviewFamilySocial;
+
+  /// No description provided for @onboardingPreviewFamilyDiscipline.
+  ///
+  /// In es, this message translates to:
+  /// **'Disciplina'**
+  String get onboardingPreviewFamilyDiscipline;
+
+  /// No description provided for @onboardingPreviewFamilyProfessional.
+  ///
+  /// In es, this message translates to:
+  /// **'Profesional'**
+  String get onboardingPreviewFamilyProfessional;
+
   /// No description provided for @loginHeaderSubtitle.
   ///
   /// In es, this message translates to:

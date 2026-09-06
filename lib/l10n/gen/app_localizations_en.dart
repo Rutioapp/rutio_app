@@ -340,6 +340,186 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingPaceSelected => 'Selected';
 
   @override
+  String get onboardingRecommendationsTitle => 'A good place to start';
+
+  @override
+  String get onboardingRecommendationsRefresh => 'See other options';
+
+  @override
+  String get onboardingRecommendationsCreateCustom =>
+      'Create a habit from scratch';
+
+  @override
+  String get onboardingRecommendationsEmpty =>
+      'We couldn\'t find any recommendations right now.';
+
+  @override
+  String get onboardingRecommendationsError =>
+      'We couldn\'t load your recommendations. Your progress is safe.';
+
+  @override
+  String get onboardingRecommendationsUpdated => 'Recommendations updated';
+
+  @override
+  String get onboardingRecommendationSelected => 'Selected';
+
+  @override
+  String get onboardingHabitSubtitle =>
+      'Set up a simple habit to get started. You can adjust it later.';
+
+  @override
+  String get onboardingHabitNameLabel => 'Name';
+
+  @override
+  String get onboardingHabitNameHint => 'What do you want to make a habit?';
+
+  @override
+  String get onboardingHabitEmojiLabel => 'Icon';
+
+  @override
+  String get onboardingHabitChooseEmoji => 'Choose an emoji';
+
+  @override
+  String get onboardingHabitFamilyLabel => 'Primary family';
+
+  @override
+  String get onboardingHabitNoFamily => 'No family';
+
+  @override
+  String get onboardingHabitTargetLabel => 'Amount and unit';
+
+  @override
+  String get onboardingHabitTargetHint => 'Amount';
+
+  @override
+  String get onboardingHabitUnitHint => 'Unit (optional)';
+
+  @override
+  String get onboardingHabitWeekdaysLabel => 'Selected days';
+
+  @override
+  String get onboardingHabitDaySelected => 'selected';
+
+  @override
+  String get onboardingHabitRequired =>
+      'Complete the habit details to continue.';
+
+  @override
+  String get onboardingHabitNameTooLong =>
+      'The name can be at most 40 characters.';
+
+  @override
+  String get onboardingHabitTargetInvalid =>
+      'Enter an amount greater than zero.';
+
+  @override
+  String get onboardingHabitInvalid =>
+      'Review the habit configuration and try again.';
+
+  @override
+  String get onboardingReminderSupport =>
+      'We can let you know when it is time. You can change or disable it later in Settings.';
+
+  @override
+  String get onboardingReminderEnable => 'Enable reminder';
+
+  @override
+  String get onboardingReminderNotNow => 'Not now';
+
+  @override
+  String get onboardingReminderTime => 'Reminder time';
+
+  @override
+  String get onboardingReminderTimeDone => 'Done';
+
+  @override
+  String get onboardingReminderPermissionDenied =>
+      'Notifications are turned off. You can enable them later in Settings.';
+
+  @override
+  String get onboardingReminderPermissionRestricted =>
+      'The system restricts this permission. You can review it later in Settings.';
+
+  @override
+  String get onboardingReminderError =>
+      'We couldn\'t save the reminder. Your last saved state is safe.';
+
+  @override
+  String get onboardingPreviewTitle => 'Your starting point is ready';
+
+  @override
+  String get onboardingPreviewIntro =>
+      'This is your starting Rutio. Review each block before you continue.';
+
+  @override
+  String get onboardingPreviewSave => 'Save my Rutio';
+
+  @override
+  String get onboardingPreviewEdit => 'Edit';
+
+  @override
+  String get onboardingPreviewGoals => 'Goals';
+
+  @override
+  String get onboardingPreviewPace => 'Pace';
+
+  @override
+  String get onboardingPreviewHabit => 'First habit';
+
+  @override
+  String get onboardingPreviewReminder => 'Reminder';
+
+  @override
+  String get onboardingPreviewFamily => 'Family';
+
+  @override
+  String get onboardingPreviewType => 'Type';
+
+  @override
+  String get onboardingPreviewSchedule => 'Frequency';
+
+  @override
+  String get onboardingPreviewTarget => 'Target';
+
+  @override
+  String get onboardingPreviewEveryDay => 'Every day';
+
+  @override
+  String get onboardingPreviewNoReminder => 'No reminder';
+
+  @override
+  String get onboardingPreviewReminderReady => 'enabled';
+
+  @override
+  String get onboardingPreviewReminderPending =>
+      'Ready to enable from Settings';
+
+  @override
+  String get onboardingPreviewReadOnly =>
+      'Preview, actions are not available yet';
+
+  @override
+  String get onboardingPreviewFamilyMind => 'Mind';
+
+  @override
+  String get onboardingPreviewFamilySpirit => 'Spirit';
+
+  @override
+  String get onboardingPreviewFamilyBody => 'Body';
+
+  @override
+  String get onboardingPreviewFamilyEmotional => 'Emotional';
+
+  @override
+  String get onboardingPreviewFamilySocial => 'Social';
+
+  @override
+  String get onboardingPreviewFamilyDiscipline => 'Discipline';
+
+  @override
+  String get onboardingPreviewFamilyProfessional => 'Professional';
+
+  @override
   String get loginHeaderSubtitle => 'Welcome back';
 
   @override
