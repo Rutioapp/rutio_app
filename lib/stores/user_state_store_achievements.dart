@@ -566,6 +566,7 @@ Map<DateTime, int> _extractHabitDoneCountsByDay(
   for (final dayKey in keys) {
     final date = _dateFromKey(dayKey);
     final day = DateTime(date.year, date.month, date.day);
+    if (_isFlexibleTimesPerWeekHabit(habit)) continue;
     if (!_isScheduledForDate(habit, day)) continue;
 
     final completionMap = _map(completions[dayKey]);
@@ -605,6 +606,7 @@ Map<DateTime, int> _extractFamilyDoneCountsByDay(
 
     for (final habit in habits) {
       if (_habitFamilyId(habit) != normalizedFamilyId) continue;
+      if (_isFlexibleTimesPerWeekHabit(habit)) continue;
       if (!_isScheduledForDate(habit, day)) continue;
 
       final habitId = _habitIdValue(habit);
@@ -634,6 +636,7 @@ bool _habitCompletedOnDate(
 }) {
   final habitId = _habitIdValue(habit);
   if (habitId == null || habitId.isEmpty) return false;
+  if (_isFlexibleTimesPerWeekHabit(habit)) return false;
 
   return _normalizedHabitType(habit['type']) == 'count'
       ? _safeNum(countValueMap[habitId], fallback: 0) > 0

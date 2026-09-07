@@ -93,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       kind: HomeHabitStatusFeedbackKind.completed,
       originalIndex: originalIndex,
       dateKey: _dateKey(_selectedDay),
+      scopeSignature: _homeScopeSignature ?? 'unknown',
       habitSnapshot: Map<String, dynamic>.from(habit),
       startedAt: DateTime.now(),
       initialOffsetX: visualState.offsetX,
@@ -108,6 +109,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _revealedHomeSwipeHabitId = null;
       }
     });
+    if (kDebugMode) {
+      debugPrint(
+        '[HOME_MUTATION] habitId=$normalizedId dateKey=${transition.dateKey} '
+        'action=complete transitionId=${transition.transitionId} reason=registered',
+      );
+    }
+    _logHomeTransition(
+      transition,
+      reason: 'registered',
+      canonicalState: 'pending',
+    );
     return transition;
   }
 
@@ -129,6 +141,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       kind: HomeHabitStatusFeedbackKind.skipped,
       originalIndex: originalIndex,
       dateKey: _dateKey(_selectedDay),
+      scopeSignature: _homeScopeSignature ?? 'unknown',
       habitSnapshot: Map<String, dynamic>.from(habit),
       startedAt: DateTime.now(),
       initialOffsetX: visualState.offsetX,
@@ -143,18 +156,107 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _revealedHomeSwipeHabitId = null;
       }
     });
+    _logHomeTransition(
+      transition,
+      reason: 'registered',
+      canonicalState: 'pending',
+    );
     return transition;
   }
 
   void _removeHabitCompletionTransition({
     required String habitId,
     required String transitionId,
+    String reason = 'cleanup',
   }) {
     final current = _habitCompletionTransitions[habitId];
     if (current == null || current.transitionId != transitionId) return;
     _applyHomeState(() {
       _habitCompletionTransitions.remove(habitId);
     });
+    if (kDebugMode) {
+      debugPrint(
+        '[HOME_MUTATION] habitId=$habitId transitionId=$transitionId '
+        'action=complete reason=$reason',
+      );
+    }
+    _logHomeTransition(
+      current,
+      reason: reason,
+      canonicalState: 'unknown',
+    );
+  }
+
+  void _logHomeTransition(
+    HomeHabitCompletionTransition transition, {
+    required String reason,
+    required String canonicalState,
+  }) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[HOME_TRANSITION] habitId=${transition.habitId} '
+      'transitionId=${transition.transitionId} dateKey=${transition.dateKey} '
+      'scope=${transition.scopeSignature} reason=$reason '
+      'lifecycle=${transition.lifecycle.name} canonicalState=$canonicalState',
+    );
+  }
+
+  bool _isTerminalHabitTransition(HomeHabitCompletionTransition transition) {
+    return transition.lifecycle ==
+            HomeHabitTransitionLifecycle.alreadyApplied ||
+        transition.lifecycle == HomeHabitTransitionLifecycle.notApplicable ||
+        transition.lifecycle == HomeHabitTransitionLifecycle.failed ||
+        transition.lifecycle == HomeHabitTransitionLifecycle.animationComplete;
+  }
+
+  void _markHabitCompletionTransitionEnqueued({
+    required String habitId,
+    required String transitionId,
+  }) {
+    final current = _habitCompletionTransitions[habitId];
+    if (current == null || current.transitionId != transitionId) return;
+    final next = current.copyWith(
+      lifecycle: HomeHabitTransitionLifecycle.enqueued,
+    );
+    _habitCompletionTransitions[habitId] = next;
+    _logHomeTransition(
+      next,
+      reason: 'enqueue_started',
+      canonicalState: 'pending',
+    );
+  }
+
+  void _markHabitCompletionTransitionOutcome({
+    required String habitId,
+    required String transitionId,
+    required HabitMutationOutcome outcome,
+    required String canonicalState,
+  }) {
+    final current = _habitCompletionTransitions[habitId];
+    if (current == null || current.transitionId != transitionId) return;
+    final lifecycle = switch (outcome) {
+      HabitMutationOutcome.applied => HomeHabitTransitionLifecycle.applied,
+      HabitMutationOutcome.alreadyApplied =>
+        HomeHabitTransitionLifecycle.alreadyApplied,
+      HabitMutationOutcome.notApplicable =>
+        HomeHabitTransitionLifecycle.notApplicable,
+      HabitMutationOutcome.failed => HomeHabitTransitionLifecycle.failed,
+    };
+    final next = current.copyWith(lifecycle: lifecycle);
+    _logHomeTransition(
+      next,
+      reason: 'mutation_${outcome.name}',
+      canonicalState: canonicalState,
+    );
+    if (outcome != HabitMutationOutcome.applied) {
+      _removeHabitCompletionTransition(
+        habitId: habitId,
+        transitionId: transitionId,
+        reason: 'mutation_${outcome.name}',
+      );
+      return;
+    }
+    _habitCompletionTransitions[habitId] = next;
   }
 
   void _markHabitCompletionTransitionVisualCompleted({
@@ -163,27 +265,47 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }) {
     final current = _habitCompletionTransitions[habitId];
     if (current == null || current.transitionId != transitionId) return;
-    final next = current.copyWith(visualAnimationCompleted: true);
-    _applyHomeState(() {
-      if (next.isReadyForCleanup) {
-        _habitCompletionTransitions.remove(habitId);
-      } else {
-        _habitCompletionTransitions[habitId] = next;
-      }
-    });
+    final next = current.copyWith(
+      visualAnimationCompleted: true,
+      lifecycle: HomeHabitTransitionLifecycle.animationComplete,
+    );
+    _logHomeTransition(
+      next,
+      reason: 'animation_complete',
+      canonicalState: 'unknown',
+    );
+    _removeHabitCompletionTransition(
+      habitId: habitId,
+      transitionId: transitionId,
+      reason: 'animation_complete',
+    );
   }
 
   void _reconcileHabitCompletionTransitions({
     required Set<String> pendingHabitIds,
     required String dateKey,
+    required String scopeSignature,
   }) {
     if (_habitCompletionTransitions.isEmpty) return;
 
     var hasChanges = false;
     for (final transition in _habitCompletionTransitions.values) {
+      final isOutOfDate = transition.dateKey != dateKey;
+      final isOutOfScope = transition.scopeSignature != scopeSignature;
+      final isTerminal = _isTerminalHabitTransition(transition);
+      final isPreEnqueueStale =
+          transition.lifecycle == HomeHabitTransitionLifecycle.registered;
+      final isStalePendingTransition =
+          pendingHabitIds.contains(transition.habitId) &&
+              transition.visualAnimationCompleted;
       final pendingRemoved = transition.dateKey != dateKey ||
           !pendingHabitIds.contains(transition.habitId);
-      if (transition.pendingRemoved != pendingRemoved ||
+      if (isOutOfDate ||
+          isOutOfScope ||
+          isTerminal ||
+          isPreEnqueueStale ||
+          isStalePendingTransition ||
+          transition.pendingRemoved != pendingRemoved ||
           transition
               .copyWith(pendingRemoved: pendingRemoved)
               .isReadyForCleanup) {
@@ -201,10 +323,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
       for (final entry in _habitCompletionTransitions.entries) {
         final transition = entry.value;
+        final isOutOfDate = transition.dateKey != dateKey;
+        final isOutOfScope = transition.scopeSignature != scopeSignature;
+        final isTerminal = _isTerminalHabitTransition(transition);
+        final isPreEnqueueStale =
+            transition.lifecycle == HomeHabitTransitionLifecycle.registered;
+        final isStalePendingTransition =
+            pendingHabitIds.contains(transition.habitId) &&
+                transition.visualAnimationCompleted;
         final pendingRemoved = transition.dateKey != dateKey ||
             !pendingHabitIds.contains(transition.habitId);
         final updated = transition.copyWith(pendingRemoved: pendingRemoved);
-        if (updated.isReadyForCleanup) {
+        if (isOutOfDate ||
+            isOutOfScope ||
+            isTerminal ||
+            isPreEnqueueStale ||
+            isStalePendingTransition ||
+            updated.isReadyForCleanup) {
+          _logHomeTransition(
+            transition,
+            reason: isOutOfDate
+                ? 'date_change'
+                : isOutOfScope
+                    ? 'scope_change'
+                    : isPreEnqueueStale
+                        ? 'pre_enqueue_abort'
+                        : 'reconcile_stale',
+            canonicalState: pendingHabitIds.contains(transition.habitId)
+                ? 'pending'
+                : 'resolved',
+          );
           next.remove(entry.key);
           didChange = true;
         } else if (transition.pendingRemoved != pendingRemoved) {
@@ -221,9 +369,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-  void _clearHabitCompletionTransitions() {
+  void _clearHabitCompletionTransitions({String reason = 'cleanup'}) {
     if (_habitCompletionTransitions.isEmpty) return;
-    _applyHomeState(_habitCompletionTransitions.clear);
+    final transitions = _habitCompletionTransitions.values.toList();
+    _habitCompletionTransitions.clear();
+    for (final transition in transitions) {
+      _logHomeTransition(
+        transition,
+        reason: reason,
+        canonicalState: 'unknown',
+      );
+    }
   }
 
   void _syncHomeUiScope(UserStateStore store) {
@@ -262,30 +418,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _showCompleted = false;
     _showSkipped = false;
     _revealedHomeSwipeHabitId = null;
-    _habitCompletionTransitions.clear();
-  }
-
-  void _markVisibleHabitStatusTransitionsFinished() {
-    if (_habitCompletionTransitions.isEmpty) return;
-    final next = Map<String, HomeHabitCompletionTransition>.from(
-      _habitCompletionTransitions,
-    );
-    var didChange = false;
-    for (final entry in _habitCompletionTransitions.entries) {
-      final transition = entry.value;
-      if (transition.visualAnimationCompleted) continue;
-      final updated = transition.copyWith(visualAnimationCompleted: true);
-      if (updated.isReadyForCleanup) {
-        next.remove(entry.key);
-      } else {
-        next[entry.key] = updated;
-      }
-      didChange = true;
-    }
-    if (!didChange) return;
-    _habitCompletionTransitions
-      ..clear()
-      ..addAll(next);
+    _clearHabitCompletionTransitions(reason: 'scope_change');
   }
 
   Future<void> _applyCountUpdateFromHome({
@@ -324,12 +457,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     try {
+      if (transition != null) {
+        _markHabitCompletionTransitionEnqueued(
+          habitId: transition.habitId,
+          transitionId: transition.transitionId,
+        );
+      }
       await productiveCallback();
+      if (transition != null) {
+        _markHabitCompletionTransitionOutcome(
+          habitId: transition.habitId,
+          transitionId: transition.transitionId,
+          outcome: HabitMutationOutcome.applied,
+          canonicalState: 'completed',
+        );
+      }
     } catch (_) {
       if (transition != null) {
         _removeHabitCompletionTransition(
           habitId: transition.habitId,
           transitionId: transition.transitionId,
+          reason: 'mutation_failed',
         );
       }
       rethrow;
@@ -368,11 +516,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
 
+    _clearHabitCompletionTransitions(reason: 'filter_change');
     _applyHomeState(() {
       _revealedHomeSwipeHabitId = null;
       _showCompleted = false;
       _showSkipped = false;
-      _markVisibleHabitStatusTransitionsFinished();
       _habitStatusFilter = filter;
     });
     _scrollHomeToTopOnNextFrame();
@@ -712,7 +860,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         setState(() {
           _selectedDay = today;
         });
-        _clearHabitCompletionTransitions();
+        _clearHabitCompletionTransitions(reason: 'date_change');
       }
       _lastToday = today;
     }
@@ -732,7 +880,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _customDescCtrl.dispose();
     _customTargetCtrl.dispose();
     _customUnitsCtrl.dispose();
-    _habitCompletionTransitions.clear();
+    _clearHabitCompletionTransitions(reason: 'dispose');
     _completedDayPhraseController.dispose();
 
     super.dispose();
@@ -764,7 +912,9 @@ bool shouldAnimateCountCompletionUpdate({
   required num nextValue,
   required num targetValue,
 }) {
-  if (selectedFilter != HomeHabitStatusFilter.pending) return false;
+  if (selectedFilter != HomeHabitStatusFilter.pending) {
+    return false;
+  }
   return currentValue < targetValue && nextValue >= targetValue;
 }
 
@@ -780,6 +930,16 @@ const double homeHabitTapCompletionSpringStiffness = 156.25;
 @visibleForTesting
 const double homeHabitTapCompletionSpringDamping = 26.25;
 
+enum HomeHabitTransitionLifecycle {
+  registered,
+  enqueued,
+  applied,
+  alreadyApplied,
+  notApplicable,
+  failed,
+  animationComplete,
+}
+
 @visibleForTesting
 class HomeHabitCompletionTransition {
   const HomeHabitCompletionTransition({
@@ -788,6 +948,7 @@ class HomeHabitCompletionTransition {
     this.kind = HomeHabitStatusFeedbackKind.completed,
     required this.originalIndex,
     required this.dateKey,
+    this.scopeSignature = 'unknown',
     required this.habitSnapshot,
     required this.startedAt,
     required this.initialOffsetX,
@@ -797,6 +958,7 @@ class HomeHabitCompletionTransition {
     this.rightRevealProgress = 1,
     this.leftRevealProgress = 1,
     this.useTapCompletionMotion = false,
+    this.lifecycle = HomeHabitTransitionLifecycle.registered,
     this.visualAnimationCompleted = false,
     this.pendingRemoved = false,
   });
@@ -806,6 +968,7 @@ class HomeHabitCompletionTransition {
   final HomeHabitStatusFeedbackKind kind;
   final int originalIndex;
   final String dateKey;
+  final String scopeSignature;
   final Map<String, dynamic> habitSnapshot;
   final DateTime startedAt;
   final double initialOffsetX;
@@ -815,6 +978,7 @@ class HomeHabitCompletionTransition {
   final double rightRevealProgress;
   final double leftRevealProgress;
   final bool useTapCompletionMotion;
+  final HomeHabitTransitionLifecycle lifecycle;
   final bool visualAnimationCompleted;
   final bool pendingRemoved;
 
@@ -829,6 +993,7 @@ class HomeHabitCompletionTransition {
       ValueKey('habit_completion_transition_${transitionId}_$habitId');
 
   HomeHabitCompletionTransition copyWith({
+    HomeHabitTransitionLifecycle? lifecycle,
     bool? visualAnimationCompleted,
     bool? pendingRemoved,
   }) {
@@ -838,6 +1003,7 @@ class HomeHabitCompletionTransition {
       kind: kind,
       originalIndex: originalIndex,
       dateKey: dateKey,
+      scopeSignature: scopeSignature,
       habitSnapshot: habitSnapshot,
       startedAt: startedAt,
       initialOffsetX: initialOffsetX,
@@ -847,6 +1013,7 @@ class HomeHabitCompletionTransition {
       rightRevealProgress: rightRevealProgress,
       leftRevealProgress: leftRevealProgress,
       useTapCompletionMotion: useTapCompletionMotion,
+      lifecycle: lifecycle ?? this.lifecycle,
       visualAnimationCompleted:
           visualAnimationCompleted ?? this.visualAnimationCompleted,
       pendingRemoved: pendingRemoved ?? this.pendingRemoved,

@@ -1191,7 +1191,7 @@ void main() {
     expect(find.byType(Transform), findsWidgets);
   });
 
-  testWidgets('preserves action labels and icon semantics', (tester) async {
+  testWidgets('CHECK-compatible cards show Skip by default', (tester) async {
     await tester.pumpWidget(
       _testApp(
         _shell(
@@ -1228,6 +1228,32 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('respects an explicit caller request to hide Skip',
+      (tester) async {
+    await tester.pumpWidget(
+      _testApp(
+        _shell(
+          isOpen: true,
+          showSkip: false,
+          skipLabel: 'Skip',
+          editLabel: 'Edit',
+          deleteLabel: 'Delete',
+        ),
+      ),
+    );
+
+    expect(find.text('Skip'), findsNothing);
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Delete'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(CupertinoButton),
+        matching: find.byIcon(CupertinoIcons.forward_end_fill),
+      ),
+      findsNothing,
+    );
+  });
 }
 
 const _childKey = Key('habit-card-swipe-shell-child');
@@ -1255,6 +1281,7 @@ HabitCardSwipeShell _shell({
   String skipLabel = 'Saltar',
   String editLabel = 'Editar',
   String deleteLabel = 'Eliminar',
+  bool showSkip = true,
   void Function(String cardId)? onRequestCloseOtherCards,
   void Function(String cardId)? onRequestOpen,
   VoidCallback? onRequestClose,
@@ -1290,6 +1317,7 @@ HabitCardSwipeShell _shell({
         },
     onEdit: onEdit,
     onDelete: onDelete ?? () async {},
+    showSkip: showSkip,
     motionConfig: motionConfig,
     child: child ??
         Container(

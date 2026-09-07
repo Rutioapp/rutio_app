@@ -349,6 +349,18 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
     final isPending = widget.selectedFilter == HomeHabitStatusFilter.pending;
     final hasPendingTransitions =
         isPending && widget.completionTransitions.isNotEmpty;
+    final renderedPendingIds = widget.visibleHabits.map(_habitId).toList();
+    if (kDebugMode &&
+        isPending &&
+        widget.visibleHabits.isNotEmpty &&
+        renderedPendingIds.isEmpty &&
+        widget.completionTransitions.isEmpty) {
+      debugPrint(
+        '[HOME_RENDER_INVARIANT] pendingCount=${widget.visibleHabits.length} '
+        'renderedPendingIds=none '
+        'validTransitionIds=none',
+      );
+    }
     final canReorder =
         isPending && widget.visibleHabits.length >= 2 && !hasPendingTransitions;
     final shouldShowEmptyState = widget.visibleHabits.isEmpty &&
@@ -390,6 +402,10 @@ class _HomeHabitsSliverState extends State<HomeHabitsSliver> {
       HomeHabitStatusFilter.completed => 'habit_done',
       HomeHabitStatusFilter.skipped => 'habit_skipped',
     };
+  }
+
+  String _habitId(Map<String, dynamic> habit) {
+    return (habit['id'] ?? habit['habitId'] ?? '').toString();
   }
 }
 

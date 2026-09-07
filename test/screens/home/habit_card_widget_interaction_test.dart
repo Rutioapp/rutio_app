@@ -400,6 +400,33 @@ void main() {
     expect(openDetailCount, 1);
   });
 
+  testWidgets('flexible weekly check remains a normal check after quota',
+      (tester) async {
+    var checkTapCount = 0;
+
+    await tester.pumpWidget(
+      _testApp(
+        HabitCardWidget(
+          title: 'Sport',
+          description: '',
+          familyColor: Colors.indigo,
+          progress: 0,
+          isCompleted: false,
+          currentCount: 4,
+          targetCount: 3,
+          weeklyProgressLabel: 'Weekly goal · 4/3 days',
+          onCheckTap: () => checkTapCount += 1,
+        ),
+      ),
+    );
+
+    expect(find.text('Weekly goal · 4/3 days'), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.add), findsNothing);
+    await tester.tap(find.byKey(const Key('habitCardCheckControl')));
+    await tester.pumpAndSettle();
+    expect(checkTapCount, 1);
+  });
+
   testWidgets('habit card draws a single outer border above its content',
       (tester) async {
     await tester.pumpWidget(

@@ -88,10 +88,8 @@ void main() {
       expect(eligibility().isCompletedDay, isTrue);
     });
 
-    test('pending, skipped, zero scheduled, loading and another date are not',
-        () {
+    test('pending, zero scheduled, loading and another date are not', () {
       expect(eligibility(completed: 2, pending: 1).isCompletedDay, isFalse);
-      expect(eligibility(completed: 2, skipped: 1).isCompletedDay, isFalse);
       expect(eligibility(scheduled: 0).isCompletedDay, isFalse);
       expect(eligibility(ready: false).isCompletedDay, isFalse);
       expect(
@@ -100,25 +98,52 @@ void main() {
       );
     });
 
-    test('timesPerWeek does not create daily obligations', () {
+    test('completed plus skipped resolves the day without being perfect', () {
+      final result = eligibility(completed: 2, skipped: 1);
+
+      expect(result.isDayResolvedForPhrase, isTrue);
+      expect(result.isCompletedDay, isTrue);
+    });
+
+    test('all skipped habits resolve the day for the phrase', () {
+      final result = eligibility(completed: 0, skipped: 3);
+
+      expect(result.isDayResolvedForPhrase, isTrue);
+    });
+
+    test('pending still blocks when other habits are skipped', () {
+      final result = eligibility(completed: 1, pending: 1, skipped: 1);
+
+      expect(result.isDayResolvedForPhrase, isFalse);
+    });
+
+    test('undoing the last skip returns the day to pending', () {
+      final skipped = eligibility(scheduled: 1, completed: 0, skipped: 1);
+      final undone = eligibility(scheduled: 1, completed: 0, pending: 1);
+
+      expect(skipped.isDayResolvedForPhrase, isTrue);
+      expect(undone.isDayResolvedForPhrase, isFalse);
+    });
+
+    test('timesPerWeek pending participates in daily resolution', () {
       final result = buildCompletedDayEligibility(
         viewHabits: <Map<String, dynamic>>[
           <String, dynamic>{
             'isTimesPerWeekCheck': true,
             'doneToday': false,
-            'isWeeklyTargetMet': false,
+            'weeklyQuotaMet': false,
           },
         ],
         selectedDay: today,
         localToday: today,
         isReady: true,
       );
-      expect(result.scheduledHabitCount, 0);
+      expect(result.scheduledHabitCount, 1);
+      expect(result.pendingHabitCount, 1);
       expect(result.isCompletedDay, isFalse);
     });
 
-    test('timesPerWeek pending beside completed daily habits does not block',
-        () {
+    test('timesPerWeek pending beside completed daily habits blocks', () {
       final result = buildCompletedDayEligibility(
         viewHabits: <Map<String, dynamic>>[
           <String, dynamic>{'doneToday': true},
@@ -131,9 +156,72 @@ void main() {
         localToday: today,
         isReady: true,
       );
-      expect(result.scheduledHabitCount, 1);
+      expect(result.scheduledHabitCount, 2);
+      expect(result.completedHabitCount, 1);
+      expect(result.pendingHabitCount, 1);
+      expect(result.isCompletedDay, isFalse);
+    });
+
+    test('timesPerWeek pending blocks even after the weekly quota is met', () {
+      final result = buildCompletedDayEligibility(
+        viewHabits: <Map<String, dynamic>>[
+          <String, dynamic>{
+            'isTimesPerWeekCheck': true,
+            'doneToday': false,
+            'weeklyCompletedCount': 3,
+            'weeklyTargetCount': 3,
+            'weeklyQuotaMet': true,
+          },
+        ],
+        selectedDay: today,
+        localToday: today,
+        isReady: true,
+      );
+      expect(result.pendingHabitCount, 1);
+      expect(result.isCompletedDay, isFalse);
+    });
+
+    test('timesPerWeek completed today can allow the phrase', () {
+      final result = buildCompletedDayEligibility(
+        viewHabits: <Map<String, dynamic>>[
+          <String, dynamic>{'doneToday': true},
+          <String, dynamic>{
+            'isTimesPerWeekCheck': true,
+            'doneToday': true,
+            'skippedToday': false,
+          },
+        ],
+        selectedDay: today,
+        localToday: today,
+        isReady: true,
+      );
+      expect(result.scheduledHabitCount, 2);
+      expect(result.completedHabitCount, 2);
+      expect(result.pendingHabitCount, 0);
+      expect(result.skippedHabitCount, 0);
+      expect(result.isCompletedDay, isTrue);
+    });
+
+    test('timesPerWeek skipped today resolves the phrase without quota gating',
+        () {
+      final result = buildCompletedDayEligibility(
+        viewHabits: <Map<String, dynamic>>[
+          <String, dynamic>{'doneToday': true},
+          <String, dynamic>{
+            'isTimesPerWeekCheck': true,
+            'doneToday': false,
+            'skippedToday': true,
+          },
+        ],
+        selectedDay: today,
+        localToday: today,
+        isReady: true,
+      );
+      expect(result.scheduledHabitCount, 2);
       expect(result.completedHabitCount, 1);
       expect(result.pendingHabitCount, 0);
+      expect(result.skippedHabitCount, 1);
+      expect(result.isDayResolvedForPhrase, isTrue);
       expect(result.isCompletedDay, isTrue);
     });
   });

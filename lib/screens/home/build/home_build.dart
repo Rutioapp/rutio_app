@@ -76,7 +76,7 @@ extension _HomeScreenBuild on _HomeScreenState {
     if (kDebugMode) {
       debugPrint(
         '[COMPLETED_DAY_PHRASE] eligibility='
-        '${completedDayEligibility.isCompletedDay} '
+        '${completedDayEligibility.isDayResolvedForPhrase} '
         'reason=${completedDayEligibilityReason(completedDayEligibility)}',
       );
     }
@@ -95,9 +95,16 @@ extension _HomeScreenBuild on _HomeScreenState {
     _reconcileHabitCompletionTransitions(
       pendingHabitIds: pendingHabitIds,
       dateKey: selectedDateKey,
+      scopeSignature: _homeScopeSignature ?? 'unknown',
     );
     final completionTransitions = _habitCompletionTransitions.values
-        .where((transition) => transition.dateKey == selectedDateKey)
+        .where(
+          (transition) =>
+              transition.dateKey == selectedDateKey &&
+              transition.scopeSignature == (_homeScopeSignature ?? 'unknown') &&
+              (transition.lifecycle == HomeHabitTransitionLifecycle.enqueued ||
+                  transition.lifecycle == HomeHabitTransitionLifecycle.applied),
+        )
         .toList(growable: false)
       ..sort((a, b) => a.originalIndex.compareTo(b.originalIndex));
 
@@ -328,7 +335,7 @@ class _HomeLoadedView extends StatelessWidget {
                           if (shouldShowCompletedDayPhrase(
                             selectedFilter: selectedFilter,
                             isCompletedDay:
-                                completedDayEligibility.isCompletedDay,
+                                completedDayEligibility.isDayResolvedForPhrase,
                             completionTransitions: completionTransitions,
                           ))
                             SliverToBoxAdapter(child: completedDayPhrase),

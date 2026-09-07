@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/completed_day_phrase/completed_day_phrase.dart';
 import 'package:rutio/screens/home/home_screen.dart';
+import 'package:rutio/screens/home/widgets/habit/habit_card_status_feedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -354,6 +355,105 @@ void main() {
     expect(find.byType(CompletedDayPhraseHost), findsOneWidget);
     expect(find.byType(CompletedDayPhraseView), findsOneWidget);
   });
+
+  testWidgets('skipped day phrase waits for the active skip transition',
+      (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final controller = CompletedDayPhraseController(
+      service: CompletedDayPhraseService(
+        catalogSource: _SinglePhraseCatalogSource(),
+        historyStore: SharedPreferencesCompletedDayPhraseStore(),
+      ),
+    );
+    addTearDown(controller.dispose);
+
+    const eligibility = CompletedDayEligibility(
+      isReady: true,
+      isLocalToday: true,
+      scheduledHabitCount: 1,
+      completedHabitCount: 0,
+      pendingHabitCount: 0,
+      skippedHabitCount: 1,
+    );
+    final input = CompletedDayPhraseInput(
+      userId: 'user-a',
+      localDate: DateTime(2026, 9, 4),
+      locale: 'es-ES',
+      name: null,
+      streak: 1,
+      streakLabel: '1 día',
+    );
+    final transitions = <HomeHabitCompletionTransition>[
+      _completionTransition(
+        'habit-1',
+        kind: HomeHabitStatusFeedbackKind.skipped,
+      ),
+    ];
+    final dismissed = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              return CustomScrollView(
+                slivers: [
+                  if (shouldShowCompletedDayPhrase(
+                    selectedFilter: HomeHabitStatusFilter.pending,
+                    isCompletedDay: eligibility.isDayResolvedForPhrase,
+                    completionTransitions: transitions,
+                  ))
+                    SliverToBoxAdapter(
+                      child: CompletedDayPhraseHost(
+                        controller: controller,
+                        eligibility: eligibility,
+                        input: input,
+                      ),
+                    ),
+                  HomeHabitsSliver(
+                    selectedFilter: HomeHabitStatusFilter.pending,
+                    suppressPendingEmptyState: true,
+                    visibleHabits: const <Map<String, dynamic>>[],
+                    completionTransitions: transitions,
+                    habitCardBuilder: (_, __, {bool compact = false}) =>
+                        const SizedBox(),
+                    completionTransitionBuilder: (_, transition) => SizedBox(
+                      key: ValueKey('transition_${transition.habitId}'),
+                      height: 88,
+                    ),
+                    onCompletionTransitionDismissed: ({
+                      required habitId,
+                      required transitionId,
+                    }) {
+                      transitions.removeWhere(
+                        (transition) =>
+                            transition.habitId == habitId &&
+                            transition.transitionId == transitionId,
+                      );
+                      dismissed.add('$transitionId:$habitId');
+                      setState(() {});
+                    },
+                    onPendingReorder: (_, __) async {},
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    expect(find.byType(CompletedDayPhraseHost), findsNothing);
+    expect(find.byType(CompletedDayPhraseView), findsNothing);
+    expect(find.byKey(const ValueKey('transition_habit-1')), findsOneWidget);
+
+    await tester.pumpAndSettle();
+
+    expect(dismissed, ['transition-habit-1:habit-1']);
+    expect(find.byType(CompletedDayPhraseHost), findsOneWidget);
+    expect(find.byType(CompletedDayPhraseView), findsOneWidget);
+  });
 }
 
 HomeViewData _completedHomeData() {
@@ -379,10 +479,14 @@ HomeViewData _completedHomeData() {
   );
 }
 
-HomeHabitCompletionTransition _completionTransition(String habitId) {
+HomeHabitCompletionTransition _completionTransition(
+  String habitId, {
+  HomeHabitStatusFeedbackKind kind = HomeHabitStatusFeedbackKind.completed,
+}) {
   return HomeHabitCompletionTransition(
     transitionId: 'transition-$habitId',
     habitId: habitId,
+    kind: kind,
     originalIndex: 0,
     dateKey: '2026-09-04',
     habitSnapshot: <String, dynamic>{'id': habitId},

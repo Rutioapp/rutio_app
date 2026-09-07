@@ -920,6 +920,13 @@ _HabitLogRemoteMergeResult _mergeRemoteHabitLogsIntoLocalState({
       habitId: localHabitId,
       dateKey: dateKey,
     )) {
+      final completionTimes = _map(
+        _map(_ensureHistoryRoot(userState)['habitCompletionTimes'])[dateKey],
+      );
+      final localEpoch = _safeInt(completionTimes[localHabitId], fallback: 0);
+      final localTimestamp = localEpoch > 0
+          ? DateTime.fromMillisecondsSinceEpoch(localEpoch, isUtc: false)
+          : null;
       if (!_shouldReplaceLocalProgressWithRemote(
         userState: userState,
         localHabit: localHabit,
@@ -927,7 +934,23 @@ _HabitLogRemoteMergeResult _mergeRemoteHabitLogsIntoLocalState({
         dateKey: dateKey,
         remoteLog: remoteLog,
       )) {
+        if (kDebugMode) {
+          debugPrint(
+            '[HABIT_SYNC] habitId=$localHabitId dateKey=$dateKey '
+            'localTimestamp=${localTimestamp?.toIso8601String() ?? 'unknown'} '
+            'remoteTimestamp=${remoteLog.updatedAt?.toIso8601String() ?? 'unknown'} '
+            'decision=keep_local remote_log=${remoteLog.id}',
+          );
+        }
         continue;
+      }
+      if (kDebugMode) {
+        debugPrint(
+          '[HABIT_SYNC] habitId=$localHabitId dateKey=$dateKey '
+          'localTimestamp=${localTimestamp?.toIso8601String() ?? 'unknown'} '
+          'remoteTimestamp=${remoteLog.updatedAt?.toIso8601String() ?? 'unknown'} '
+          'decision=replace_local remote_log=${remoteLog.id}',
+        );
       }
     }
 
@@ -2927,13 +2950,13 @@ Future<void> _setCountHabitValue(
   }
 }
 
-Future<void> _completeHabit(
+Future<HabitMutationOutcome> _completeHabit(
   UserStateStore store, {
   required String habitId,
   num delta = 1,
 }) async {
   final root = store._state;
-  if (root == null) return;
+  if (root == null) return HabitMutationOutcome.notApplicable;
   final originalRoot = _cloneMap(root);
   final now = store._nowProvider();
 
@@ -2943,10 +2966,13 @@ Future<void> _completeHabit(
   final activeHabits = _mutableActiveHabits(userState);
 
   final index = _activeHabitIndex(activeHabits, habitId);
-  if (index == -1) return;
+  if (index == -1) return HabitMutationOutcome.notApplicable;
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
-  if (!_isHabitExpectedForDate(habit, now)) return;
+  if (!_isHabitExpectedForDate(habit, now)) {
+    return HabitMutationOutcome.notApplicable;
+  }
+  final beforeCompleted = habit['doneToday'] == true;
 
   final type = _normalizedHabitType(habit['type']);
   final dayKey = _dateKey(now);
@@ -2961,7 +2987,16 @@ Future<void> _completeHabit(
   );
 
   if (type == 'check') {
-    if (habit['doneToday'] == true) return;
+    if (habit['doneToday'] == true) {
+      _logHomeMutationOutcome(
+        habitId: habitId,
+        dateKey: dayKey,
+        outcome: HabitMutationOutcome.alreadyApplied,
+        canonicalCompleted: true,
+        canonicalSkipped: habit['skippedToday'] == true,
+      );
+      return HabitMutationOutcome.alreadyApplied;
+    }
   }
 
   final progressResult = _applyHabitProgressDelta(
@@ -2994,15 +3029,29 @@ Future<void> _completeHabit(
   if (habit['doneToday'] == true &&
       progressResult.grantDailyReward &&
       !rewardAlreadyGranted) {
-    completionOutcome = await _applyHabitRewardCompletion(
-      store,
-      userState,
-      habit: habit,
-      habitId: habitId,
-      dateKey: dayKey,
-      baseXp: progressResult.xpGain,
-      baseCoins: progressResult.coinsGain,
-    );
+    try {
+      completionOutcome = await _applyHabitRewardCompletion(
+        store,
+        userState,
+        habit: habit,
+        habitId: habitId,
+        dateKey: dayKey,
+        baseXp: progressResult.xpGain,
+        baseCoins: progressResult.coinsGain,
+      );
+    } catch (error) {
+      store._state = originalRoot;
+      store._emitChanged();
+      _logHomeMutationOutcome(
+        habitId: habitId,
+        dateKey: dayKey,
+        outcome: HabitMutationOutcome.failed,
+        canonicalCompleted: beforeCompleted,
+        canonicalSkipped: false,
+        reason: error.toString(),
+      );
+      return HabitMutationOutcome.failed;
+    }
     if (completionOutcome.granted) {
       _setDailyRewardGrant(userState, habitId: habitId, granted: true);
     }
@@ -3023,6 +3072,13 @@ Future<void> _completeHabit(
   );
 
   try {
+    if (kDebugMode) {
+      debugPrint(
+        '[HABIT_WRITE] habitId=$habitId dateKey=$dayKey '
+        'beforeCompleted=$beforeCompleted '
+        'afterCompleted=${habit['doneToday'] == true} saveResult=started',
+      );
+    }
     await store.save(root);
     if (completionOutcome.granted && !cloudHabitRewardsEnabled) {
       await _saveActiveUtilityEffectsForStore(
@@ -3044,14 +3100,41 @@ Future<void> _completeHabit(
         completionOutcome.transaction!,
       );
     }
-  } catch (_) {
-    await _rollbackHabitRewardPersistence(
-      store,
-      originalRoot: originalRoot,
-      originalEffects:
-          completionOutcome.granted ? completionOutcome.sourceEffects : null,
+    if (kDebugMode) {
+      debugPrint(
+        '[HABIT_WRITE] habitId=$habitId dateKey=$dayKey '
+        'beforeCompleted=$beforeCompleted '
+        'afterCompleted=${habit['doneToday'] == true} saveResult=success',
+      );
+    }
+  } catch (error) {
+    if (kDebugMode) {
+      debugPrint(
+        '[HABIT_WRITE] habitId=$habitId dateKey=$dayKey '
+        'beforeCompleted=$beforeCompleted '
+        'afterCompleted=${habit['doneToday'] == true} saveResult=failed',
+      );
+    }
+    try {
+      await _rollbackHabitRewardPersistence(
+        store,
+        originalRoot: originalRoot,
+        originalEffects:
+            completionOutcome.granted ? completionOutcome.sourceEffects : null,
+      );
+    } catch (_) {
+      store._state = originalRoot;
+      store._emitChanged();
+    }
+    _logHomeMutationOutcome(
+      habitId: habitId,
+      dateKey: dayKey,
+      outcome: HabitMutationOutcome.failed,
+      canonicalCompleted: false,
+      canonicalSkipped: false,
+      reason: error.toString(),
     );
-    rethrow;
+    return HabitMutationOutcome.failed;
   }
   _queueBestEffortAchievementUnlockSync(
     store,
@@ -3090,6 +3173,14 @@ Future<void> _completeHabit(
   if (habit['doneToday'] == true) {
     store.notificationMutationObserver.onHabitCompleted(habitId);
   }
+  _logHomeMutationOutcome(
+    habitId: habitId,
+    dateKey: dayKey,
+    outcome: HabitMutationOutcome.applied,
+    canonicalCompleted: habit['doneToday'] == true,
+    canonicalSkipped: habit['skippedToday'] == true,
+  );
+  return HabitMutationOutcome.applied;
 }
 
 Future<void> _toggleHabitDoneForDate(
@@ -3116,7 +3207,6 @@ Future<void> _toggleHabitDoneForDate(
 
   final habit = Map<String, dynamic>.from(activeHabits[index]);
   if (!_isHabitExpectedForDate(habit, date)) return;
-
   final dayKey = _dateKey(date);
   final history = _ensureHistoryRoot(userState);
   final dayMap = _map(_map(history['habitCompletions'])[dayKey]);
@@ -3147,14 +3237,14 @@ Future<void> _toggleHabitDoneForDate(
   );
 }
 
-Future<void> _setHabitCompletionForKey(
+Future<HabitMutationOutcome> _setHabitCompletionForKey(
   UserStateStore store, {
   required String habitId,
   required String dateKey,
   required bool done,
 }) async {
   final root = store._state;
-  if (root == null) return;
+  if (root == null) return HabitMutationOutcome.notApplicable;
 
   final userState = _ensureUserStateRoot(root);
   _ensureDailyReset(store, userState, nowProvider: store._nowProvider);
@@ -3163,14 +3253,19 @@ Future<void> _setHabitCompletionForKey(
   final originalRoot = _cloneMap(root);
   final activeHabits = _mutableActiveHabits(userState);
   final index = _activeHabitIndex(activeHabits, habitId);
-  if (index == -1) return;
+  if (index == -1) return HabitMutationOutcome.notApplicable;
   final habit = Map<String, dynamic>.from(activeHabits[index]);
-  if (!_isHabitExpectedForDate(habit, date)) return;
-
+  if (!_isHabitExpectedForDate(habit, date)) {
+    return HabitMutationOutcome.notApplicable;
+  }
   if (_isSameDay(date, store._nowProvider())) {
     if (done) {
-      await _completeHabit(store, habitId: habitId);
-      return;
+      return await _completeHabit(store, habitId: habitId);
+    }
+    final currentDone = habit['doneToday'] == true;
+    final currentSkipped = habit['skippedToday'] == true;
+    if (!currentDone && !currentSkipped) {
+      return HabitMutationOutcome.alreadyApplied;
     }
     habit['doneToday'] = false;
     habit['skippedToday'] = false;
@@ -3204,12 +3299,25 @@ Future<void> _setHabitCompletionForKey(
 
   try {
     await store.save(root);
-  } catch (_) {
-    await _rollbackHabitRewardPersistence(
-      store,
-      originalRoot: originalRoot,
+  } catch (error) {
+    try {
+      await _rollbackHabitRewardPersistence(
+        store,
+        originalRoot: originalRoot,
+      );
+    } catch (_) {
+      store._state = originalRoot;
+      store._emitChanged();
+    }
+    _logHomeMutationOutcome(
+      habitId: habitId,
+      dateKey: dateKey,
+      outcome: HabitMutationOutcome.failed,
+      canonicalCompleted: false,
+      canonicalSkipped: false,
+      reason: error.toString(),
     );
-    rethrow;
+    return HabitMutationOutcome.failed;
   }
   final syncHabit = _activeHabitSnapshotForSync(userState, habitId);
   if (syncHabit != null) {
@@ -3228,6 +3336,30 @@ Future<void> _setHabitCompletionForKey(
   } else {
     store.notificationMutationObserver.onHabitUncompleted(habitId);
   }
+  _logHomeMutationOutcome(
+    habitId: habitId,
+    dateKey: dateKey,
+    outcome: HabitMutationOutcome.applied,
+    canonicalCompleted: done,
+    canonicalSkipped: false,
+  );
+  return HabitMutationOutcome.applied;
+}
+
+void _logHomeMutationOutcome({
+  required String habitId,
+  required String dateKey,
+  required HabitMutationOutcome outcome,
+  required bool canonicalCompleted,
+  required bool canonicalSkipped,
+  String? reason,
+}) {
+  if (!kDebugMode) return;
+  debugPrint(
+    '[HOME_MUTATION] habitId=$habitId dateKey=$dateKey '
+    'outcome=${outcome.name} completed=$canonicalCompleted '
+    'skipped=$canonicalSkipped${reason == null ? '' : ' reason=$reason'}',
+  );
 }
 
 Future<void> _setHabitSkipForKey(
@@ -3249,7 +3381,6 @@ Future<void> _setHabitSkipForKey(
   if (index == -1) return;
   final habit = Map<String, dynamic>.from(activeHabits[index]);
   if (!_isHabitExpectedForDate(habit, date)) return;
-
   if (_isSameDay(date, store._nowProvider())) {
     habit['skippedToday'] = skipped;
     if (skipped) {
@@ -3387,7 +3518,6 @@ Future<void> _setCountHabitValueForDate(
     habit: habit,
     habitId: habitId,
     date: date,
-    isCompletedOverride: safeValue >= target,
     isSkippedOverride: false,
     countValueOverride: safeValue,
   );
@@ -4223,6 +4353,7 @@ Map<DateTime, int> _extractHabitStreakContinuityByDay(
   for (final dayKey in keys) {
     final date = _dateFromKey(dayKey);
     final day = DateTime(date.year, date.month, date.day);
+    if (_isFlexibleTimesPerWeekHabit(habit)) continue;
     if (!_isScheduledForDate(habit, day)) continue;
 
     final completionMap = _map(completions[dayKey]);

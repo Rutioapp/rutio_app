@@ -258,6 +258,7 @@ class HabitCardSwipeShell extends StatefulWidget {
     required this.onSkip,
     required this.onEdit,
     required this.onDelete,
+    this.showSkip = true,
     this.motionConfig = const HabitCardSwipeMotionConfig(),
   });
 
@@ -275,6 +276,7 @@ class HabitCardSwipeShell extends StatefulWidget {
   final Future<void> Function(HabitCardRightCommitVisualState visualState)?
       onSwipeRightComplete;
   final Future<void> Function(HabitCardSkipVisualState visualState) onSkip;
+  final bool showSkip;
   final VoidCallback? onEdit;
   final Future<void> Function() onDelete;
   final HabitCardSwipeMotionConfig motionConfig;
@@ -603,13 +605,14 @@ class _HabitCardSwipeShellState extends State<HabitCardSwipeShell>
                           width: revealWidth,
                           child: Row(
                             children: [
-                              _SwipeTrayActionButton(
-                                icon: CupertinoIcons.forward_end_fill,
-                                label: widget.skipLabel,
-                                onTap: _isInteractionLocked
-                                    ? null
-                                    : _handleSkipAction,
-                              ),
+                              if (widget.showSkip)
+                                _SwipeTrayActionButton(
+                                  icon: CupertinoIcons.forward_end_fill,
+                                  label: widget.skipLabel,
+                                  onTap: _isInteractionLocked
+                                      ? null
+                                      : _handleSkipAction,
+                                ),
                               _SwipeTrayActionButton(
                                 icon: CupertinoIcons.pencil,
                                 label: widget.editLabel,

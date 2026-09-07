@@ -41,6 +41,34 @@ void main() {
     expect(homeHabitTapCompletionSpringDamping, 26.25);
   });
 
+  test('completion transitions expose lifecycle and scope for reconciliation',
+      () {
+    final transition = HomeHabitCompletionTransition(
+      transitionId: 'transition-1',
+      habitId: 'habit-1',
+      originalIndex: 0,
+      dateKey: '2026-09-13',
+      scopeSignature: 'scope-a|habit-1|1',
+      habitSnapshot: <String, dynamic>{'id': 'habit-1'},
+      startedAt: DateTime.utc(2026, 9, 13),
+      initialOffsetX: 0,
+      velocityX: 0,
+      cardWidth: 320,
+      commitProgress: 0,
+    );
+
+    expect(transition.lifecycle, HomeHabitTransitionLifecycle.registered);
+    expect(transition.scopeSignature, 'scope-a|habit-1|1');
+    expect(
+      transition
+          .copyWith(
+            lifecycle: HomeHabitTransitionLifecycle.applied,
+          )
+          .lifecycle,
+      HomeHabitTransitionLifecycle.applied,
+    );
+  });
+
   test('count completion transition only starts on pending crossing', () {
     expect(
       shouldAnimateCountCompletionUpdate(

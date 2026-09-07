@@ -484,7 +484,10 @@ class HabitCurrencyRewardCoordinator {
 
     return (transaction ??
             HabitRewardTransaction(
-              id: _transactionId(habitId, logicalDateKey),
+              id: _transactionId(
+                habitId,
+                logicalDateKey,
+              ),
               habitId: habitId,
               localDateKey: logicalDateKey,
               completionEventId: completionEventId,
@@ -523,8 +526,11 @@ class HabitCurrencyRewardCoordinator {
     );
   }
 
-  String _transactionId(String habitId, String logicalDateKey) {
-    return '$habitId|$logicalDateKey';
+  String _transactionId(
+    String habitId,
+    String logicalDateKey,
+  ) {
+    return '${habitId.trim()}|${logicalDateKey.trim()}';
   }
 
   bool _isConfirmedCloudHabitRewardTransaction(

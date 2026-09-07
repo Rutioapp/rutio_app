@@ -106,8 +106,8 @@ extension _HomeScreenHeaderBuilders on _HomeScreenState {
                       IosFeedback.selection();
                       _applyHomeState(() {
                         _selectedDay = newDay;
-                        _habitCompletionTransitions.clear();
                       });
+                      _clearHabitCompletionTransitions(reason: 'date_change');
                       context.read<UserStateStore>().setActiveViewDate(newDay);
                     },
                   ),
