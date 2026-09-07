@@ -160,7 +160,19 @@ class OnboardingHabitSchedule {
         days.sort();
         return HabitSchedule.weekly(weekdays: days);
       case 'timesPerWeek':
-        throw const FormatException('timesPerWeek is not supported in V1.');
+        final rawTarget = source['timesPerWeek'];
+        final target = rawTarget is num
+            ? rawTarget.toInt()
+            : int.tryParse((rawTarget ?? '').toString().trim());
+        if (target == null || target < 1) {
+          throw const FormatException(
+            'timesPerWeek schedule needs a positive target.',
+          );
+        }
+        return HabitSchedule.timesPerWeek(
+          timesPerWeek: target,
+          weekStartsOn: (source['weekStartsOn'] as num?)?.toInt() ?? 1,
+        );
       case 'once':
         throw const FormatException('once is not supported in onboarding.');
       default:
@@ -183,7 +195,11 @@ class OnboardingHabitSchedule {
       case HabitScheduleType.once:
         throw const FormatException('once is not supported in onboarding.');
       case HabitScheduleType.timesPerWeek:
-        throw const FormatException('timesPerWeek is not supported in V1.');
+        return <String, dynamic>{
+          'type': 'timesPerWeek',
+          'timesPerWeek': schedule.timesPerWeek ?? 1,
+          'weekStartsOn': schedule.weekStartsOn,
+        };
     }
   }
 }

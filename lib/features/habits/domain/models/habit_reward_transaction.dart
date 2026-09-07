@@ -19,6 +19,7 @@ class HabitRewardTransaction {
   final String id;
   final String habitId;
   final String localDateKey;
+
   final String? completionEventId;
   final String? applyRequestId;
   final String? reverseRequestId;

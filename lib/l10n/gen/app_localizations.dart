@@ -980,6 +980,12 @@ abstract class AppLocalizations {
   /// **'Todos los días'**
   String get onboardingPreviewEveryDay;
 
+  /// No description provided for @habitScheduleTimesPerWeek.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one{1 vez por semana} other{{count} veces por semana}}'**
+  String habitScheduleTimesPerWeek(int count);
+
   /// No description provided for @onboardingPreviewNoReminder.
   ///
   /// In es, this message translates to:
@@ -1374,7 +1380,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTimesPerWeekProgress.
   ///
   /// In es, this message translates to:
-  /// **'{completed}/{target} esta semana'**
+  /// **'Objetivo semanal · {completed}/{target} días'**
   String homeTimesPerWeekProgress(String completed, String target);
 
   /// No description provided for @homeAddHabitLoadError.

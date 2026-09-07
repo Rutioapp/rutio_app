@@ -146,6 +146,14 @@
   "onboardingPreviewSchedule": "Frecuencia",
   "onboardingPreviewTarget": "Objetivo",
   "onboardingPreviewEveryDay": "Todos los días",
+  "habitScheduleTimesPerWeek": "{count, plural, one{1 vez por semana} other{{count} veces por semana}}",
+  "@habitScheduleTimesPerWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "onboardingPreviewNoReminder": "Sin recordatorio",
   "onboardingPreviewReminderReady": "activado",
   "onboardingPreviewReminderPending": "Preparado para activarlo desde Ajustes",
@@ -283,7 +291,7 @@
       }
     }
   },
-  "homeTimesPerWeekProgress": "{completed}/{target} esta semana",
+  "homeTimesPerWeekProgress": "Objetivo semanal · {completed}/{target} días",
   "@homeTimesPerWeekProgress": {
     "placeholders": {
       "completed": {

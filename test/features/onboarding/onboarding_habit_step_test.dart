@@ -92,6 +92,43 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(Scrollable), findsAtLeastNWidgets(1));
   });
+
+  testWidgets('HabitStep exposes and submits a flexible weekly check target',
+      (tester) async {
+    OnboardingHabitConfiguration? submitted;
+    await tester.pumpWidget(
+      _app(
+        OnboardingHabitStep(
+          initialConfiguration:
+              OnboardingHabitConfiguration.custom().copyWith(name: 'Flexible'),
+          onSubmit: (value) => submitted = value,
+        ),
+      ),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('X veces / semana'),
+      240,
+      scrollable: _verticalScrollables,
+    );
+    await tester.tap(find.text('X veces / semana').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Objetivo semanal'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pump();
+    expect(find.text('3'), findsOneWidget);
+
+    tester
+        .state<OnboardingHabitStepState>(find.byType(OnboardingHabitStep))
+        .submit();
+
+    expect(submitted?.schedule.type, HabitScheduleType.timesPerWeek);
+    expect(submitted?.schedule.timesPerWeek, 3);
+    expect(submitted?.schedule.weekStartsOn, DateTime.monday);
+  });
 }
 
 final Finder _verticalScrollables = find.byWidgetPredicate(

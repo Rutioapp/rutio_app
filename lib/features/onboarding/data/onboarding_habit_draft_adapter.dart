@@ -1,6 +1,6 @@
 import '../../../data/mappers/habit_schedule_normalizer.dart';
+import '../../habits/domain/metrics/habit_snapshot.dart';
 import '../domain/models/onboarding_habit_configuration.dart';
-import '../../../features/habits/domain/metrics/habit_snapshot.dart';
 import '../../../utils/family_theme.dart';
 
 class OnboardingHabitDraftAdapterException implements Exception {
@@ -29,8 +29,7 @@ class OnboardingHabitDraftAdapter {
     final schedule = OnboardingHabitSchedule.toCanonicalMap(value.schedule);
     final normalizedSchedule =
         HabitScheduleNormalizer.normalizeOrNull(schedule);
-    if (normalizedSchedule == null ||
-        normalizedSchedule['type'] == 'timesPerWeek') {
+    if (normalizedSchedule == null) {
       throw const OnboardingHabitDraftAdapterException(
         'Schedule is not supported by onboarding.',
       );
@@ -148,6 +147,9 @@ class OnboardingHabitDraftAdapter {
         (value.targetValue == null || value.targetValue! < 1)) {
       return 'Count habit needs a positive target.';
     }
+    if (value.kind == HabitKind.count && value.schedule.isTimesPerWeek) {
+      return 'Count habits cannot use a flexible weekly schedule.';
+    }
     if (value.kind == HabitKind.check && value.targetValue != null) {
       return 'Check habit must not contain count configuration.';
     }
@@ -157,7 +159,9 @@ class OnboardingHabitDraftAdapter {
     if (value.schedule.isWeekly && value.schedule.weekdays.isEmpty) {
       return 'Weekly schedule needs weekdays.';
     }
-    if (!value.schedule.isDaily && !value.schedule.isWeekly) {
+    if (!value.schedule.isDaily &&
+        !value.schedule.isWeekly &&
+        !value.schedule.isTimesPerWeek) {
       return 'Schedule is not supported by onboarding.';
     }
     return null;
@@ -187,9 +191,7 @@ class OnboardingHabitDraftAdapter {
       final decoded = OnboardingHabitSchedule.fromCanonicalMap(map);
       final canonical = OnboardingHabitSchedule.toCanonicalMap(decoded);
       final normalized = HabitScheduleNormalizer.normalizeOrNull(canonical);
-      if (normalized == null ||
-          normalized['type'] == 'timesPerWeek' ||
-          normalized['type'] == 'once') {
+      if (normalized == null || normalized['type'] == 'once') {
         throw const FormatException(
           'Habit schedule is not supported by onboarding.',
         );

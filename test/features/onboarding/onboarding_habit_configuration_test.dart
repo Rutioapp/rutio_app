@@ -49,7 +49,7 @@ void main() {
         kind: HabitKind.count,
         targetValue: 10,
         unit: 'minutes',
-        schedule: HabitSchedule.weekly(weekdays: [1, 3, 5]),
+        schedule: HabitSchedule.daily(),
       ),
     ];
 
@@ -65,12 +65,42 @@ void main() {
       expect(decoded.schedule, value.schedule);
       expect(
           map.keys, containsAll(<String>['name', 'emoji', 'type', 'schedule']));
-      expect(map.keys, isNot(contains('timesPerWeek')));
     }
   });
 
+  test('legacy count draft remains valid without target period metadata', () {
+    final decoded = OnboardingHabitDraftAdapter.decode(<String, dynamic>{
+      'name': 'Read',
+      'emoji': '📖',
+      'type': 'count',
+      'target': 8,
+      'unit': 'pages',
+      'schedule': <String, dynamic>{'type': 'daily'},
+    });
+
+    expect(decoded.kind, HabitKind.count);
+    expect(OnboardingHabitDraftAdapter.encode(decoded),
+        isNot(contains('targetPeriod')));
+  });
+
+  test('count onboarding keeps a concrete weekly schedule', () {
+    final configuration = OnboardingHabitConfiguration(
+      name: 'Run',
+      emoji: '🏃',
+      primaryFamilyCode: null,
+      kind: HabitKind.count,
+      targetValue: 3,
+      schedule: HabitSchedule.weekly(weekdays: [1, 3, 5]),
+    );
+
+    expect(
+      OnboardingHabitConfigurationValidator.validate(configuration).isValid,
+      isTrue,
+    );
+  });
+
   test(
-      'adapter writes no stale count fields for check and rejects unsupported schedules',
+      'adapter writes no stale count fields and round-trips flexible CHECK schedules',
       () {
     final check = OnboardingHabitConfiguration(
       name: 'Walk',
@@ -83,18 +113,18 @@ void main() {
     expect(map, isNot(contains('target')));
     expect(map, isNot(contains('unit')));
 
-    expect(
-      () => OnboardingHabitDraftAdapter.decode(<String, dynamic>{
-        'name': 'Legacy',
-        'emoji': '✅',
-        'type': 'check',
-        'schedule': <String, dynamic>{
-          'type': 'timesPerWeek',
-          'timesPerWeek': 3,
-        },
-      }),
-      throwsA(isA<OnboardingHabitDraftAdapterException>()),
-    );
+    final decodedFlexible =
+        OnboardingHabitDraftAdapter.decode(<String, dynamic>{
+      'name': 'Legacy',
+      'emoji': '✅',
+      'type': 'check',
+      'schedule': <String, dynamic>{
+        'type': 'timesPerWeek',
+        'timesPerWeek': 3,
+      },
+    });
+    expect(decodedFlexible.schedule.isTimesPerWeek, isTrue);
+    expect(decodedFlexible.schedule.timesPerWeek, 3);
     expect(
       () => OnboardingHabitDraftAdapter.decode(<String, dynamic>{
         'name': 'Bad days',

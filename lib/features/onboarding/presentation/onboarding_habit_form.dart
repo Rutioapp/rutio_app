@@ -122,16 +122,22 @@ class OnboardingHabitFormState extends State<OnboardingHabitForm> {
           frequencyMode: _formData.frequencyMode,
           selectedDays: _formData.selectedDays,
           timesPerWeekTarget: _formData.timesPerWeekTarget,
-          showsWeeklyCheckTargetSection: false,
-          includeTimesPerWeek: false,
+          showsWeeklyCheckTargetSection: true,
+          includeTimesPerWeek: true,
           weekdayKeyPrefix: 'onboardingHabitWeekday',
           onSelectFrequencyMode: _selectFrequencyMode,
           onToggleSelectedDay: (day) => setState(() {
             _formData.toggleSelectedDay(day);
           }),
-          onDecrementTimesPerWeek: () {},
-          onIncrementTimesPerWeek: () {},
-          onEditTimesPerWeek: () {},
+          onDecrementTimesPerWeek: () => setState(() {
+            _formData.timesPerWeekTarget =
+                (_formData.timesPerWeekTarget - 1).clamp(1, 7);
+          }),
+          onIncrementTimesPerWeek: () => setState(() {
+            _formData.timesPerWeekTarget =
+                (_formData.timesPerWeekTarget + 1).clamp(1, 7);
+          }),
+          onEditTimesPerWeek: () => _editTimesPerWeek(),
         ),
         if (widget.errorMessage != null) ...[
           const SizedBox(height: 16),
@@ -159,14 +165,18 @@ class OnboardingHabitFormState extends State<OnboardingHabitForm> {
       trackingType: value.kind.key,
       targetCount: value.targetValue ?? 1,
       unitLabel: value.unit ?? '',
-      frequencyMode: schedule.isWeekly ? 'specificDays' : 'daily',
+      frequencyMode: schedule.isTimesPerWeek
+          ? 'timesPerWeek'
+          : schedule.isWeekly
+              ? 'specificDays'
+              : 'daily',
       selectedDays: schedule.isWeekly
           ? schedule.weekdays.toSet()
           : <int>{1, 2, 3, 4, 5, 6, 7},
       remindersEnabled: false,
       reminderTime: DateTime(2000, 1, 1, 8),
       archived: false,
-      timesPerWeekTarget: 1,
+      timesPerWeekTarget: schedule.timesPerWeek ?? 1,
       counterStep: 1,
     );
   }
@@ -190,8 +200,22 @@ class OnboardingHabitFormState extends State<OnboardingHabitForm> {
   }
 
   void _selectFrequencyMode(String mode) {
-    if (mode != 'daily' && mode != 'specificDays') return;
+    if (mode != 'daily' && mode != 'specificDays' && mode != 'timesPerWeek') {
+      return;
+    }
     setState(() => _formData.frequencyMode = mode);
+  }
+
+  Future<void> _editTimesPerWeek() async {
+    await showEditHabitNumberInputDialog(
+      context,
+      title: context.l10n.editHabitTimesPerWeekDialogTitle,
+      subtitle: context.l10n.editHabitTimesPerWeekDialogSubtitle,
+      initialValue: _formData.timesPerWeekTarget,
+      onSubmitted: (value) => setState(() {
+        _formData.timesPerWeekTarget = value.clamp(1, 7);
+      }),
+    );
   }
 
   Future<void> _editTarget() async {
@@ -234,11 +258,15 @@ class OnboardingHabitFormState extends State<OnboardingHabitForm> {
       _titleFocusNode.requestFocus();
       return;
     }
-    final schedule = _formData.frequencyMode == 'specificDays'
-        ? HabitSchedule.weekly(
-            weekdays: _formData.resolvedRoutineDaysForSave(),
+    final schedule = _formData.frequencyMode == 'timesPerWeek'
+        ? HabitSchedule.timesPerWeek(
+            timesPerWeek: _formData.timesPerWeekTarget,
           )
-        : HabitSchedule.daily();
+        : _formData.frequencyMode == 'specificDays'
+            ? HabitSchedule.weekly(
+                weekdays: _formData.resolvedRoutineDaysForSave(),
+              )
+            : HabitSchedule.daily();
     widget.onSubmit(
       OnboardingHabitConfiguration(
         name: _titleController.text.trim(),

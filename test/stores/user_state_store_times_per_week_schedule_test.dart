@@ -33,6 +33,40 @@ void main() {
       );
     });
 
+    test(
+        'local persistence round-trips check timesPerWeek without daily fallback',
+        () async {
+      final store = await _seedStore(habits: []);
+
+      await store.addCustomHabit({
+        'id': 'check-tpw-reload',
+        'name': 'Check TPW Reload',
+        'type': 'check',
+        'schedule': {
+          'type': 'timesPerWeek',
+          'timesPerWeek': 3,
+          'weekStartsOn': 1,
+        },
+      });
+
+      final repository = UserStateRepository(storage: UserStateStorage())
+        ..setActiveUserScope('user_123');
+      final reloaded = UserStateStore(
+        repository,
+        journalEntrySyncService: JournalEntrySyncService(),
+      );
+      await reloaded.load();
+
+      expect(
+        _activeHabitById(reloaded, 'check-tpw-reload')!['schedule'],
+        {
+          'type': 'timesPerWeek',
+          'timesPerWeek': 3,
+          'weekStartsOn': 1,
+        },
+      );
+    });
+
     test('addCustomHabit normalizes invalid timesPerWeek payload values',
         () async {
       final store = await _seedStore(habits: []);
@@ -85,7 +119,9 @@ void main() {
     test('updateHabitDetailsFromEdit keeps canonical timesPerWeek schedule',
         () async {
       final store = await _seedStore(
-        habits: [_habit(id: 'edit-check', schedule: const {'type': 'daily'})],
+        habits: [
+          _habit(id: 'edit-check', schedule: const {'type': 'daily'})
+        ],
       );
 
       await store.updateHabitDetailsFromEdit({
@@ -115,7 +151,9 @@ void main() {
     test('legacy timesPerWeek fields normalize into canonical schedule',
         () async {
       final store = await _seedStore(
-        habits: [_habit(id: 'legacy-check', schedule: const {'type': 'daily'})],
+        habits: [
+          _habit(id: 'legacy-check', schedule: const {'type': 'daily'})
+        ],
       );
 
       await store.updateHabitDetailsFromEdit({
@@ -165,7 +203,8 @@ void main() {
         },
       });
 
-      expect(_activeHabitById(store, 'daily-check')!['schedule'], {'type': 'daily'});
+      expect(_activeHabitById(store, 'daily-check')!['schedule'],
+          {'type': 'daily'});
       expect(
         _activeHabitById(store, 'weekly-check')!['schedule'],
         {

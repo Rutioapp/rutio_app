@@ -11,7 +11,7 @@ class HabitScheduleNormalizer {
     if (raw is! Map) return null;
 
     final source = Map<String, dynamic>.from(raw.cast<String, dynamic>());
-    final type = (source['type'] ?? '').toString().trim();
+    final type = (source['type'] ?? '').toString().trim().toLowerCase();
 
     switch (type) {
       case 'weekly':
@@ -25,14 +25,14 @@ class HabitScheduleNormalizer {
         final date = _normalizeIsoDate(source['date']);
         if (date == null) return null;
         return <String, dynamic>{'type': 'once', 'date': date};
-      case 'timesPerWeek':
-        final target = _positiveInt(
-          source['timesPerWeek'] ??
-              source['timesPerWeekTarget'] ??
-              source['goal'] ??
-              source['times'],
-        );
-        if (target == null) return null;
+      case 'timesperweek':
+        final rawTarget = source['timesPerWeek'] ??
+            source['timesPerWeekTarget'] ??
+            source['goal'] ??
+            source['times'];
+        final parsedTarget = _int(rawTarget);
+        if (parsedTarget == null) return null;
+        final target = parsedTarget < 1 ? 1 : parsedTarget;
 
         final output = <String, dynamic>{
           'type': 'timesPerWeek',
@@ -63,12 +63,6 @@ class HabitScheduleNormalizer {
   static int? _weekday(dynamic value) {
     final parsed = _int(value);
     if (parsed == null || parsed < 1 || parsed > 7) return null;
-    return parsed;
-  }
-
-  static int? _positiveInt(dynamic value) {
-    final parsed = _int(value);
-    if (parsed == null || parsed < 1) return null;
     return parsed;
   }
 
