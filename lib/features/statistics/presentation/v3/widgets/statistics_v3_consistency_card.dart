@@ -11,6 +11,8 @@ class StatisticsV3ConsistencyCard extends StatelessWidget {
     required this.totalHabits,
     required this.consistencyPct,
     required this.streakDays,
+    this.progressRatio,
+    this.dataUnavailable = false,
     this.onTap,
   });
 
@@ -30,13 +32,21 @@ class StatisticsV3ConsistencyCard extends StatelessWidget {
   final int totalHabits;
   final int consistencyPct;
   final int streakDays;
+  final double? progressRatio;
+  final bool dataUnavailable;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final pct = consistencyPct.clamp(0, 100);
-    final pendingCount = (totalHabits - completedHabits).clamp(0, totalHabits);
+    final pct = dataUnavailable ? 0 : consistencyPct.clamp(0, 100);
+    final boundedProgress =
+        (dataUnavailable ? 0.0 : (progressRatio ?? (pct / 100)))
+            .clamp(0.0, 1.0)
+            .toDouble();
+    final pendingCount = dataUnavailable
+        ? 0
+        : (totalHabits - completedHabits).clamp(0, totalHabits);
     final progressColor = _progressColorForPct(pct);
 
     return Material(
@@ -60,9 +70,8 @@ class StatisticsV3ConsistencyCard extends StatelessWidget {
               final footerHeight = compact ? 32.0 : 34.0;
               final headerGap = compact ? 6.0 : 7.0;
               final dividerGap = compact ? 5.0 : 6.0;
-              final availableHeight = constraints.hasBoundedHeight
-                  ? constraints.maxHeight
-                  : 178.0;
+              final availableHeight =
+                  constraints.hasBoundedHeight ? constraints.maxHeight : 178.0;
               final bodyHeight = math.max(
                 68.0,
                 availableHeight -
@@ -92,9 +101,12 @@ class StatisticsV3ConsistencyCard extends StatelessWidget {
                     child: _ConsistencyBody(
                       completedHabits: completedHabits,
                       totalHabits: totalHabits,
+                      dataUnavailable: dataUnavailable,
                       percentage: pct,
-                      completedHabitsLabel:
-                          l10n.statisticsV3SummaryCompletedLabel,
+                      progressRatio: boundedProgress,
+                      completedHabitsLabel: dataUnavailable
+                          ? l10n.statisticsV3ConsistencyLegendNoData
+                          : l10n.statisticsV3SummaryCompletedLabel,
                       color: progressColor,
                       ringSize: ringSize,
                       compact: compact,
@@ -108,10 +120,8 @@ class StatisticsV3ConsistencyCard extends StatelessWidget {
                     child: _ConsistencyFooter(
                       pendingCount: pendingCount,
                       streakDays: streakDays,
-                      pendingLabel:
-                          l10n.statisticsV3ConsistencyPendingLabel,
-                      streakLabel:
-                          l10n.statisticsV3ConsistencyStreakLabel,
+                      pendingLabel: l10n.statisticsV3ConsistencyPendingLabel,
+                      streakLabel: l10n.statisticsV3ConsistencyStreakLabel,
                       compact: compact,
                     ),
                   ),
@@ -201,7 +211,9 @@ class _ConsistencyBody extends StatelessWidget {
   const _ConsistencyBody({
     required this.completedHabits,
     required this.totalHabits,
+    required this.dataUnavailable,
     required this.percentage,
+    required this.progressRatio,
     required this.completedHabitsLabel,
     required this.color,
     required this.ringSize,
@@ -210,7 +222,9 @@ class _ConsistencyBody extends StatelessWidget {
 
   final int completedHabits;
   final int totalHabits;
+  final bool dataUnavailable;
   final int percentage;
+  final double progressRatio;
   final String completedHabitsLabel;
   final Color color;
   final double ringSize;
@@ -223,6 +237,7 @@ class _ConsistencyBody extends StatelessWidget {
       children: [
         _ConsistencyProgressRing(
           percentage: percentage,
+          progressRatio: progressRatio,
           color: color,
           size: ringSize,
           compact: compact,
@@ -237,7 +252,7 @@ class _ConsistencyBody extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  '$completedHabits de $totalHabits',
+                  dataUnavailable ? '—' : '$completedHabits de $totalHabits',
                   maxLines: 1,
                   style: TextStyle(
                     fontSize: compact ? 18 : 20,
@@ -270,12 +285,14 @@ class _ConsistencyBody extends StatelessWidget {
 class _ConsistencyProgressRing extends StatelessWidget {
   const _ConsistencyProgressRing({
     required this.percentage,
+    required this.progressRatio,
     required this.color,
     required this.size,
     required this.compact,
   });
 
   final int percentage;
+  final double progressRatio;
   final Color color;
   final double size;
   final bool compact;
@@ -291,7 +308,7 @@ class _ConsistencyProgressRing extends StatelessWidget {
           CustomPaint(
             size: Size.square(size),
             painter: _ProgressRingPainter(
-              progress: percentage / 100,
+              progress: progressRatio,
               color: color,
               strokeWidth: compact ? 6.2 : 6.8,
             ),

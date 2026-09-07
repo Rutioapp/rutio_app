@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../../../../l10n/l10n.dart';
 import '../../../../../stores/user_state_store.dart';
+import '../../../../../features/habits/domain/metrics/flexible_weekly_quota.dart';
+import '../../../../../features/habits/domain/metrics/flexible_weekly_quota_period_aggregator.dart';
 import 'habit_stats_models.dart';
 
 HabitStatsShellData buildHabitStatsShellData(
@@ -42,28 +44,59 @@ HabitStatsShellData buildHabitStatsShellData(
     start: weekRange.start.subtract(const Duration(days: 7)),
     end: weekRange.end.subtract(const Duration(days: 7)),
   );
-  final weeklyTarget = _weeklyTarget(habitMap, schedule, isCounter: isCounter);
-  final weeklyCompleted = _countCompletedDays(
+  var weeklyTarget = _weeklyTarget(habitMap, schedule, isCounter: isCounter);
+  var weeklyCompleted = _countCompletedDays(
     countsByDay: countsByDay,
     skipsByDay: skipsByDay,
     range: weekRange,
   );
-  final previousWeekCompleted = _countCompletedDays(
+  var previousWeekCompleted = _countCompletedDays(
     countsByDay: countsByDay,
     skipsByDay: skipsByDay,
     range: previousWeekRange,
   );
+  double? flexibleCurrentRatio;
+  double? flexiblePreviousRatio;
+  if (!isCounter && _isTimesPerWeekCheckHabit(habitMap)) {
+    const aggregator = FlexibleWeeklyQuotaPeriodAggregator();
+    final quotaHabit = _buildFlexibleQuotaHabit(habitMap);
+    final historyMap = <String, dynamic>{
+      'habitCompletions': history.completionsRoot,
+      'habitSkips': history.skipsRoot,
+    };
+    final currentResult = aggregator.aggregate(
+      habit: quotaHabit,
+      history: historyMap,
+      startDate: weekRange.start,
+      endDate: weekRange.end,
+      currentWeekDate: DateTime.now(),
+    );
+    final previousResult = aggregator.aggregate(
+      habit: quotaHabit,
+      history: historyMap,
+      startDate: previousWeekRange.start,
+      endDate: previousWeekRange.end,
+    );
+    weeklyTarget = currentResult.scheduledCount;
+    weeklyCompleted = currentResult.completedCount;
+    previousWeekCompleted = previousResult.completedCount;
+    flexibleCurrentRatio = currentResult.cappedRatio;
+    flexiblePreviousRatio = previousResult.cappedRatio;
+  }
   final weeklyConsistencyPct = weeklyTarget <= 0
       ? 0
       : ((weeklyCompleted / weeklyTarget) * 100).round().clamp(0, 100);
-  final weeklyComparisonDeltaPct = _weeklyComparisonDelta(
-    countsByDay: countsByDay,
-    skipsByDay: skipsByDay,
-    currentTarget: weeklyTarget,
-    previousTarget: weeklyTarget,
-    currentRange: weekRange,
-    previousRange: previousWeekRange,
-  );
+  final weeklyComparisonDeltaPct =
+      flexibleCurrentRatio != null && flexiblePreviousRatio != null
+          ? ((flexibleCurrentRatio - flexiblePreviousRatio) * 100).round()
+          : _weeklyComparisonDelta(
+              countsByDay: countsByDay,
+              skipsByDay: skipsByDay,
+              currentTarget: weeklyTarget,
+              previousTarget: weeklyTarget,
+              currentRange: weekRange,
+              previousRange: previousWeekRange,
+            );
   final bestMoment = _bestMomentLabel(
     l10n: l10n,
     completionTimesByDay: completionTimesByDay,
@@ -147,9 +180,6 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
       _normalizeCountMap(completionTimesByDay);
   final isTimesPerWeekCheck = _isTimesPerWeekCheckHabit(habitMap);
   final monthEnd = DateTime(month.year, month.month + 1, 0);
-  final activeStart =
-      _activeStartInMonth(habitMap: habitMap, monthStart: monthStart);
-  final hasActiveRangeInMonth = !activeStart.isAfter(monthEnd);
   final safeToday = _dateOnly(today);
 
   final days = List<HabitStatsMonthDayState>.generate(
@@ -224,30 +254,45 @@ HabitStatsMonthlyData buildHabitStatsMonthlyDataForCheck({
     futureScheduledDays = futureDays;
     objectiveUnit = HabitStatsMonthlyObjectiveUnit.days;
   } else {
-    final weeklyTarget = _timesPerWeekTargetForCheck(habitMap);
-    final activeDaysInMonth =
-        hasActiveRangeInMonth ? _inclusiveDayCount(activeStart, monthEnd) : 0;
-    final elapsedEnd = safeToday.isBefore(monthEnd) ? safeToday : monthEnd;
-    final activeElapsedDays =
-        hasActiveRangeInMonth && !elapsedEnd.isBefore(activeStart)
-            ? _inclusiveDayCount(activeStart, elapsedEnd)
-            : 0;
-    monthlyObjective = _timesPerWeekExpectedCount(
-      activeDays: activeDaysInMonth,
-      weeklyTarget: weeklyTarget,
+    final quotaResult = const FlexibleWeeklyQuotaPeriodAggregator().aggregate(
+      habit: _buildFlexibleQuotaHabit(habitMap),
+      history: _historyForHabit(
+        countsByDay: normalizedCountsByDay,
+        skipsByDay: normalizedSkipsByDay,
+        habitId: _habitId(habitMap),
+      ),
+      startDate: monthStart,
+      endDate: safeToday.isBefore(monthEnd) ? safeToday : monthEnd,
+      currentWeekDate: safeToday,
     );
-    expectedToDate = _timesPerWeekExpectedCount(
-      activeDays: activeElapsedDays,
-      weeklyTarget: weeklyTarget,
-    );
-    if (expectedToDate > monthlyObjective) {
-      expectedToDate = monthlyObjective;
-    }
-    if (completedDays > expectedToDate) {
-      expectedToDate = completedDays;
-    }
-    futureScheduledDays = activeDaysInMonth - activeElapsedDays;
+    monthlyObjective = quotaResult.scheduledCount;
+    expectedToDate = quotaResult.scheduledCount;
+    completedDays = quotaResult.completedCount;
+    futureScheduledDays = 0;
     objectiveUnit = HabitStatsMonthlyObjectiveUnit.times;
+    final consistency =
+        monthlyObjective <= 0 ? 0.0 : completedDays / monthlyObjective;
+    return HabitStatsMonthlyData(
+      monthlyObjective: monthlyObjective,
+      elapsedTrackableDays: expectedToDate,
+      expectedToDate: expectedToDate,
+      futureScheduledDays: futureScheduledDays,
+      objectiveUnit: objectiveUnit,
+      completedDays: completedDays,
+      partialDays: partialDays,
+      skippedDays: skippedDays,
+      missedDays: 0,
+      totalTrackableDays: monthlyObjective,
+      consistency: consistency,
+      bestStreak: bestStreak,
+      totalDone: completedDays,
+      bestMoment: _buildMonthlyBestMoment(
+        monthStart: monthStart,
+        daysInMonth: daysInMonth,
+        completionTimesByDay: normalizedCompletionTimesByDay,
+      ),
+      days: days,
+    );
   }
 
   final consistency =
@@ -2191,6 +2236,40 @@ int _timesPerWeekTargetForCheck(Map<String, dynamic> habitMap) {
   );
   if (raw == null || raw < 1) return 1;
   return raw;
+}
+
+Map<String, dynamic> _historyForHabit({
+  required Map<DateTime, int> countsByDay,
+  required Map<DateTime, bool> skipsByDay,
+  required String habitId,
+}) {
+  String key(DateTime date) => '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+  return <String, dynamic>{
+    'habitCompletions': <String, dynamic>{
+      for (final entry in countsByDay.entries)
+        key(entry.key): <String, dynamic>{habitId: entry.value > 0},
+    },
+    'habitSkips': <String, dynamic>{
+      for (final entry in skipsByDay.entries)
+        key(entry.key): <String, dynamic>{habitId: entry.value},
+    },
+  };
+}
+
+FlexibleWeeklyQuotaHabit _buildFlexibleQuotaHabit(
+  Map<String, dynamic> habitMap,
+) {
+  final schedule = _map(habitMap['schedule']);
+  return FlexibleWeeklyQuotaHabit(
+    habitId: _habitId(habitMap),
+    timesPerWeek: _timesPerWeekTargetForCheck(habitMap),
+    createdAt: _tryParseDate(
+      habitMap['createdAt'] ?? habitMap['created_at'],
+    ),
+    weekStartsOn: _weekStartsOn(schedule),
+  );
 }
 
 int _inclusiveDayCount(DateTime start, DateTime end) {

@@ -118,8 +118,7 @@ void main() {
       );
     });
 
-    test('times-per-week objective uses monthly quota formula for 31-day month',
-        () {
+    test('times-per-week objective aggregates weekly quota slices for May', () {
       final data = buildHabitStatsMonthlyDataForCheck(
         habit: _habit(
           schedule: const {'type': 'timesPerWeek', 'timesPerWeek': 4},
@@ -135,16 +134,16 @@ void main() {
       );
 
       expect(data.objectiveUnit, HabitStatsMonthlyObjectiveUnit.times);
-      expect(data.monthlyObjective, 18);
-      expect(data.totalTrackableDays, 18);
+      expect(data.monthlyObjective, 6);
+      expect(data.totalTrackableDays, 6);
       expect(data.elapsedTrackableDays, 6);
       expect(data.expectedToDate, 6);
-      expect(data.futureScheduledDays, 21);
+      expect(data.futureScheduledDays, 0);
       expect(data.completedDays, 2);
       expect(data.consistency, closeTo(2 / 6, 0.000001));
     });
 
-    test('times-per-week objective uses monthly quota formula for 30-day month',
+    test('times-per-week objective aggregates weekly quota slices for April',
         () {
       final data = buildHabitStatsMonthlyDataForCheck(
         habit: _habit(
@@ -157,11 +156,10 @@ void main() {
         skipsByDay: const {},
       );
 
-      expect(data.monthlyObjective, 17);
+      expect(data.monthlyObjective, 7);
     });
 
-    test('times-per-week objective uses monthly quota formula for target 3',
-        () {
+    test('times-per-week objective aggregates target three weekly slices', () {
       final data = buildHabitStatsMonthlyDataForCheck(
         habit: _habit(
           schedule: const {'type': 'timesPerWeek', 'timesPerWeek': 3},
@@ -173,7 +171,7 @@ void main() {
         skipsByDay: const {},
       );
 
-      expect(data.monthlyObjective, 13);
+      expect(data.monthlyObjective, 5);
     });
 
     test('empty month before createdAt stays safe with zero objective', () {

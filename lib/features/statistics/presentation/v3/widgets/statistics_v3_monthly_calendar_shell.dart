@@ -67,7 +67,8 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
                   childAspectRatio: rawCellWidth / cellHeight,
                 ),
                 itemBuilder: (context, index) {
-                  if (index < leadingDays || index >= leadingDays + daysInMonth) {
+                  if (index < leadingDays ||
+                      index >= leadingDays + daysInMonth) {
                     return const SizedBox.shrink();
                   }
 
@@ -76,6 +77,7 @@ class StatisticsV3MonthlyCalendarShell extends StatelessWidget {
                     percentage: day.percentage,
                     expectedCount: day.expectedCount,
                     isFuture: day.isFuture,
+                    activityCount: day.activityCount,
                   );
                   final tone =
                       StatisticsV3ConsistencyPalette.toneFor(intensity);

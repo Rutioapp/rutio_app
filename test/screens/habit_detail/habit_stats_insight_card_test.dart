@@ -73,7 +73,8 @@ Widget _app({required Widget child}) {
     supportedLocales: AppLocalizations.supportedLocales,
     home: MediaQuery(
       data: const MediaQueryData(size: Size(320, 568)),
-      child: Scaffold(body: Padding(padding: const EdgeInsets.all(12), child: child)),
+      child: Scaffold(
+          body: Padding(padding: const EdgeInsets.all(12), child: child)),
     ),
   );
 }

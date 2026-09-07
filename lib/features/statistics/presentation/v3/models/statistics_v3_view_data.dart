@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/features/habits/domain/metrics/flexible_weekly_quota.dart';
 
 class StatisticsV3FamilyItem {
   const StatisticsV3FamilyItem({
@@ -57,6 +58,7 @@ class StatisticsV3WeeklyActivityDay {
     required this.percentage,
     required this.isToday,
     required this.isFuture,
+    this.activityCount = 0,
   });
 
   final DateTime date;
@@ -65,6 +67,7 @@ class StatisticsV3WeeklyActivityDay {
   final int percentage;
   final bool isToday;
   final bool isFuture;
+  final int activityCount;
 }
 
 class StatisticsV3MonthlyCalendarDay {
@@ -76,6 +79,7 @@ class StatisticsV3MonthlyCalendarDay {
     required this.isToday,
     required this.isFuture,
     required this.isCurrentMonth,
+    this.activityCount = 0,
   });
 
   final DateTime date;
@@ -85,6 +89,7 @@ class StatisticsV3MonthlyCalendarDay {
   final bool isToday;
   final bool isFuture;
   final bool isCurrentMonth;
+  final int activityCount;
 }
 
 class StatisticsV3YearlyConsistencyDay {
@@ -95,6 +100,7 @@ class StatisticsV3YearlyConsistencyDay {
     required this.percentage,
     required this.isToday,
     required this.isFuture,
+    this.activityCount = 0,
   });
 
   final DateTime date;
@@ -103,6 +109,7 @@ class StatisticsV3YearlyConsistencyDay {
   final int percentage;
   final bool isToday;
   final bool isFuture;
+  final int activityCount;
 }
 
 class StatisticsV3YearlyConsistencyMonth {
@@ -133,12 +140,22 @@ class StatisticsV3WeeklyImprovementData {
     required this.currentWeekPercentage,
     required this.previousWeekPercentage,
     required this.deltaPercentage,
+    this.currentRawRatio = 0,
+    this.previousRawRatio = 0,
+    this.currentCappedRatio = 0,
+    this.previousCappedRatio = 0,
+    this.dataQuality = FlexibleWeeklyDataQuality.verified,
   });
 
   final bool hasComparison;
   final int currentWeekPercentage;
   final int previousWeekPercentage;
   final int deltaPercentage;
+  final double currentRawRatio;
+  final double previousRawRatio;
+  final double currentCappedRatio;
+  final double previousCappedRatio;
+  final FlexibleWeeklyDataQuality dataQuality;
 }
 
 enum StatisticsV3RewardBreakdownSource {
@@ -173,11 +190,10 @@ class StatisticsV3RewardBreakdown {
 
   int get totalXp =>
       rows.fold<int>(0, (sum, row) => sum + row.xp).clamp(0, 1 << 30).toInt();
-  int get totalAmber =>
-      rows
-          .fold<int>(0, (sum, row) => sum + row.amber)
-          .clamp(0, 1 << 30)
-          .toInt();
+  int get totalAmber => rows
+      .fold<int>(0, (sum, row) => sum + row.amber)
+      .clamp(0, 1 << 30)
+      .toInt();
   bool get hasRewards => rows.any((row) => row.hasRewards);
   bool get isEmpty => !hasRewards;
 
@@ -233,6 +249,9 @@ class StatisticsV3ViewData {
     required this.yearlyConsistencyMonths,
     required this.weeklyImprovement,
     required this.rewardBreakdown,
+    this.rawConsistencyRatio = 0,
+    this.cappedConsistencyRatio = 0,
+    this.dataQuality = FlexibleWeeklyDataQuality.verified,
   });
 
   final int totalDays;
@@ -249,4 +268,11 @@ class StatisticsV3ViewData {
   final List<StatisticsV3YearlyConsistencyMonth> yearlyConsistencyMonths;
   final StatisticsV3WeeklyImprovementData weeklyImprovement;
   final StatisticsV3RewardBreakdown rewardBreakdown;
+
+  /// Unbounded aggregate ratio retained for future insights/presentation.
+  final double rawConsistencyRatio;
+
+  /// Ratio suitable for bounded visual components.
+  final double cappedConsistencyRatio;
+  final FlexibleWeeklyDataQuality dataQuality;
 }
