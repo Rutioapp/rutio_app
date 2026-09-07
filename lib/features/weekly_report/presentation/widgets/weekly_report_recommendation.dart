@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../l10n/l10n.dart';
 import '../../domain/weekly_report.dart';
+import '../weekly_report_metric_display.dart';
 import '../weekly_report_visuals.dart';
 
 class WeeklyReportRecommendationCard extends StatelessWidget {
@@ -30,10 +31,13 @@ class WeeklyReportRecommendationCard extends StatelessWidget {
     final name = recommendation.habitName ??
         habit?.name ??
         l10n.weeklyReportRecommendationUnavailableHabit;
-    final detail = habit == null
+    final completed =
+        habit == null ? null : WeeklyReportMetricDisplay.habitCompleted(habit!);
+    final quota =
+        habit == null ? null : WeeklyReportMetricDisplay.habitQuota(habit!);
+    final detail = habit == null || completed == null || quota == null
         ? l10n.weeklyReportRecommendationUnavailable
-        : l10n.weeklyReportRecommendationReason(
-            name, habit!.completedCount, habit!.scheduledCount);
+        : l10n.weeklyReportRecommendationReason(name, completed, quota);
     return Semantics(
       container: true,
       label:

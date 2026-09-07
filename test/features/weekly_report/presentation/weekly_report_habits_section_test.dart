@@ -173,6 +173,77 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Destacado por backend'), findsOneWidget);
   });
+
+  testWidgets(
+      'uses capped ratios for canonical grouping and raw counts in rows',
+      (tester) async {
+    await tester.pumpWidget(_app([
+      _habit('Sin avances', '🪨',
+          scheduled: 3,
+          completed: 0,
+          rate: 0,
+          canonicalCompleted: 0,
+          canonicalQuota: 3,
+          canonicalRawRatio: 0,
+          canonicalCappedRatio: 0,
+          classification: WeeklyReportHabitClassification.stable),
+      _habit('En ritmo', '🌿',
+          scheduled: 3,
+          completed: 2,
+          rate: 2 / 3,
+          canonicalCompleted: 2,
+          canonicalQuota: 3,
+          canonicalRawRatio: 2 / 3,
+          canonicalCappedRatio: 2 / 3),
+      _habit('Objetivo cumplido', '🎯',
+          scheduled: 3,
+          completed: 3,
+          rate: 1,
+          canonicalCompleted: 3,
+          canonicalQuota: 3,
+          canonicalRawRatio: 1,
+          canonicalCappedRatio: 1),
+      _habit('Más allá del objetivo', '🚀',
+          scheduled: 3,
+          completed: 4,
+          rate: 4 / 3,
+          canonicalCompleted: 4,
+          canonicalQuota: 3,
+          canonicalRawRatio: 4 / 3,
+          canonicalCappedRatio: 1),
+    ], width: 390));
+
+    expect(find.text('Necesitan atención'), findsOneWidget);
+    expect(find.text('Estables'), findsOneWidget);
+    expect(find.text('Destacados'), findsOneWidget);
+    await tester.tap(find.text('Destacados'));
+    await tester.pumpAndSettle();
+    expect(find.text('3/3 · 100%'), findsOneWidget);
+    expect(find.text('4/3 · 100%'), findsOneWidget);
+  });
+
+  testWidgets('flexible neutral occurrence is not rendered as a failure',
+      (tester) async {
+    await tester.pumpWidget(_app([
+      _habit('Cuota flexible', '🔁',
+          scheduled: 2,
+          completed: 1,
+          rate: .5,
+          schedule: HabitSchedule.timesPerWeek(timesPerWeek: 2),
+          occurrences: [
+            _occurrence(DateTime(2026, 8, 31),
+                scheduled: false,
+                completed: false,
+                scope: HabitOccurrenceScope.weeklyQuota,
+                scheduleType: HabitScheduleType.timesPerWeek),
+          ]),
+    ], width: 390));
+    await tester.tap(find.text('Estables'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel(RegExp('lunes: sin programación')),
+        findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('lunes: pendiente')), findsNothing);
+  });
 }
 
 Widget _app(List<WeeklyReportHabit> habits, {required double width}) =>
@@ -190,6 +261,10 @@ WeeklyReportHabit _habit(String name, String emoji,
         {required int scheduled,
         required int completed,
         required double? rate,
+        int? canonicalCompleted,
+        int? canonicalQuota,
+        double? canonicalRawRatio,
+        double? canonicalCappedRatio,
         HabitSchedule? schedule,
         HabitOccurrenceResult? occurrence,
         List<HabitOccurrenceResult>? occurrences,
@@ -206,6 +281,13 @@ WeeklyReportHabit _habit(String name, String emoji,
       completedCount: completed,
       skippedCount: 0,
       completionRate: rate,
+      completedRaw: canonicalCompleted,
+      scheduledQuota: canonicalQuota,
+      rawRatio: canonicalRawRatio,
+      cappedRatio: canonicalCappedRatio,
+      dataQuality: canonicalCompleted == null
+          ? WeeklyReportDataQuality.legacy
+          : WeeklyReportDataQuality.verified,
       classification: classification,
       occurrences:
           occurrences ?? (occurrence == null ? const [] : [occurrence]),
@@ -213,12 +295,17 @@ WeeklyReportHabit _habit(String name, String emoji,
     );
 
 HabitOccurrenceResult _occurrence(DateTime date,
-        {bool completed = true, bool skipped = false, bool partial = false}) =>
+        {bool completed = true,
+        bool skipped = false,
+        bool partial = false,
+        bool scheduled = true,
+        HabitOccurrenceScope scope = HabitOccurrenceScope.dateBound,
+        HabitScheduleType scheduleType = HabitScheduleType.daily}) =>
     HabitOccurrenceResult(
       date: date,
-      scope: HabitOccurrenceScope.dateBound,
-      scheduleType: HabitScheduleType.daily,
-      scheduled: true,
+      scope: scope,
+      scheduleType: scheduleType,
+      scheduled: scheduled,
       completed: completed,
       skipped: skipped,
       progress: partial ? 1 : null,

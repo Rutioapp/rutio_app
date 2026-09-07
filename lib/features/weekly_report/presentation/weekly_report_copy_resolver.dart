@@ -1,5 +1,6 @@
 import '../../../l10n/gen/app_localizations.dart';
 import '../domain/weekly_report.dart';
+import 'weekly_report_metric_display.dart';
 
 /// Resolves persisted backend copy keys to the active localized catalog.
 ///
@@ -246,7 +247,8 @@ class WeeklyReportCopyResolver {
       'weekly_report_summary_declined_16' => l10n.weeklyReportSummaryDeclined16,
       'weekly_report_summary_declined_17' => l10n.weeklyReportSummaryDeclined17,
       'weekly_report_summary_declined_18' => l10n.weeklyReportSummaryDeclined18,
-      _ => !report.summary.hasScheduledCount
+      _ => !WeeklyReportMetricDisplay.hasQuota(
+              WeeklyReportMetricDisplay.summaryQuota(report.summary))
           ? l10n.weeklyReportSummaryNoSchedule01
           : report.isProvisional
               ? l10n.weeklyReportSummaryProvisional01
