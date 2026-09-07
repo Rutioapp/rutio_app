@@ -757,8 +757,7 @@ void main() {
     });
 
     group('timesPerWeek check habits', () {
-      test('week period uses elapsed weekly window without future-day penalty',
-          () async {
+      test('week period uses the full weekly quota for an open week', () async {
         final weekNow = DateTime(2026, 5, 8, 10);
         final history = _emptyHistory();
         _setCheckCompletion(history, DateTime(2026, 5, 4, 8), 'tpw-check');
@@ -779,9 +778,40 @@ void main() {
           history: history,
         );
 
-        expect(result.totalDays, 2);
+        expect(result.totalDays, 3);
         expect(result.completedHabits, 1);
-        expect(result.consistencyPct, 50);
+        expect(result.consistencyPct, 33);
+        expect(result.rawConsistencyRatio, closeTo(1 / 3, 0.000001));
+        expect(result.cappedConsistencyRatio, closeTo(1 / 3, 0.000001));
+      });
+
+      test('open week keeps target three when two days are completed',
+          () async {
+        final weekNow = DateTime(2026, 5, 6, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 5, 4, 8), 'tpw-open');
+        _setCheckCompletion(history, DateTime(2026, 5, 5, 8), 'tpw-open');
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [
+            _habit(
+              id: 'tpw-open',
+              title: 'TPW Open',
+              schedule: {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+            ),
+          ],
+          history: history,
+        );
+
+        expect(result.totalDays, 3);
+        expect(result.completedHabits, 2);
+        expect(result.rawConsistencyRatio, closeTo(2 / 3, 0.000001));
+        expect(result.cappedConsistencyRatio, closeTo(2 / 3, 0.000001));
       });
 
       test('week period hits 100% when weekly target is met (3/3)', () async {
@@ -807,12 +837,13 @@ void main() {
           history: history,
         );
 
-        expect(result.totalDays, 2);
-        expect(result.completedHabits, 2);
+        expect(result.totalDays, 3);
+        expect(result.completedHabits, 3);
         expect(result.consistencyPct, 100);
       });
 
-      test('week period caps over-completion at 100% (4/3 => 100%)', () async {
+      test('week period preserves over-completion (4/3 raw, 100% capped)',
+          () async {
         final weekNow = DateTime(2026, 5, 8, 10);
         final history = _emptyHistory();
         _setCheckCompletion(history, DateTime(2026, 5, 4, 8), 'tpw-check');
@@ -836,9 +867,44 @@ void main() {
           history: history,
         );
 
-        expect(result.totalDays, 2);
-        expect(result.completedHabits, 2);
+        expect(result.totalDays, 3);
+        expect(result.completedHabits, 4);
         expect(result.consistencyPct, 100);
+        expect(result.rawConsistencyRatio, closeTo(4 / 3, 0.000001));
+        expect(result.cappedConsistencyRatio, 1);
+      });
+
+      test('daily projections expose flexible completion as activity only',
+          () async {
+        final monthNow = DateTime(2026, 5, 8, 10);
+        final history = _emptyHistory();
+        _setCheckCompletion(history, DateTime(2026, 5, 4, 8), 'tpw-activity');
+
+        final result = await _buildMonthViewData(
+          now: monthNow,
+          activeHabits: [
+            _habit(
+              id: 'tpw-activity',
+              title: 'TPW Activity',
+              schedule: {
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+              },
+            ),
+          ],
+          history: history,
+        );
+        final monday = result.monthlyCalendarDays.firstWhere(
+          (day) => day.date.day == 4,
+        );
+        final tuesday = result.monthlyCalendarDays.firstWhere(
+          (day) => day.date.day == 5,
+        );
+
+        expect(monday.expectedCount, 0);
+        expect(monday.activityCount, 1);
+        expect(tuesday.activityCount, 0);
+        expect(tuesday.expectedCount, 0);
       });
 
       test('weekly target counts completions on any weekday', () async {
@@ -1654,7 +1720,7 @@ void main() {
         expect(may.percentage, 67);
       });
 
-      test('timesPerWeek monthly aggregation uses elapsed window per week',
+      test('timesPerWeek monthly aggregation uses weekly quota buckets',
           () async {
         final yearNow = DateTime(2026, 5, 20, 10);
         final history = _emptyHistory();
@@ -1684,8 +1750,8 @@ void main() {
         final may = result.yearlyConsistencyMonths.firstWhere(
           (item) => item.month == 5,
         );
-        expect(may.expectedCount, 8);
-        expect(may.completedCount, 8);
+        expect(may.expectedCount, 10);
+        expect(may.completedCount, 20);
         expect(may.percentage, 100);
       });
 
@@ -2042,6 +2108,47 @@ void main() {
         expect(result.weeklyImprovement.previousWeekPercentage, 100);
         expect(result.weeklyImprovement.currentWeekPercentage, 0);
         expect(result.weeklyImprovement.deltaPercentage, -100);
+      });
+
+      test('compares flexible weekly improvement by quota ratio', () async {
+        final weekNow = DateTime(2026, 5, 8, 10);
+        final currentMonday = _startOfWeek(weekNow);
+        final previousMonday = currentMonday.subtract(const Duration(days: 7));
+        final history = _emptyHistory();
+        final habit = _habit(
+          id: 'flex-improvement',
+          title: 'Flexible Improvement',
+          schedule: {
+            'type': 'timesPerWeek',
+            'timesPerWeek': 3,
+          },
+        );
+        _setCheckCompletion(history, previousMonday, habit['id'] as String);
+        _setCheckCompletion(
+          history,
+          previousMonday.add(const Duration(days: 1)),
+          habit['id'] as String,
+        );
+        for (var index = 0; index < 4; index++) {
+          _setCheckCompletion(
+            history,
+            currentMonday.add(Duration(days: index)),
+            habit['id'] as String,
+          );
+        }
+
+        final result = await _buildWeekViewData(
+          now: weekNow,
+          activeHabits: [habit],
+          history: history,
+        );
+
+        expect(result.weeklyImprovement.previousWeekPercentage, 67);
+        expect(result.weeklyImprovement.currentWeekPercentage, 100);
+        expect(result.weeklyImprovement.deltaPercentage, 33);
+        expect(
+            result.weeklyImprovement.currentRawRatio, closeTo(4 / 3, 0.000001));
+        expect(result.weeklyImprovement.currentCappedRatio, 1);
       });
 
       test('count habits below target remain unfinished for weekly improvement',

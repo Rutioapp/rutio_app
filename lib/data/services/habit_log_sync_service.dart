@@ -91,7 +91,8 @@ class HabitLogSyncService {
       }
 
       final localHabitId = _localHabitId(localHabit);
-      final remoteHabitId = HabitLogRemoteMapper.extractRemoteHabitId(localHabit);
+      final remoteHabitId =
+          HabitLogRemoteMapper.extractRemoteHabitId(localHabit);
       if (remoteHabitId == null) {
         _debugWarn(
           'habit log sync skipped for local habit "${localHabitId ?? 'unknown'}": '
@@ -255,7 +256,8 @@ class HabitLogSyncService {
       }
 
       final localHabitId = _localHabitId(localHabit);
-      final remoteHabitId = HabitLogRemoteMapper.extractRemoteHabitId(localHabit);
+      final remoteHabitId =
+          HabitLogRemoteMapper.extractRemoteHabitId(localHabit);
       if (remoteHabitId == null) {
         _debugWarn(
           'habit log delete skipped for local habit "${localHabitId ?? 'unknown'}": '
@@ -306,7 +308,8 @@ class HabitLogSyncService {
     return normalized.isEmpty ? null : normalized;
   }
 
-  bool _isExpectedUser(String authenticatedUserId, String? expectedLocalUserId) {
+  bool _isExpectedUser(
+      String authenticatedUserId, String? expectedLocalUserId) {
     final expected = (expectedLocalUserId ?? '').trim();
     if (expected.isEmpty) return true;
     return expected == authenticatedUserId;

@@ -51,6 +51,37 @@ void main() {
       );
     });
 
+    test('hydrates remote flexible CHECK schedule without daily fallback',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: _FakeHabitRepository(
+          fetchedHabits: <RemoteHabit>[
+            _remoteCheckHabit(
+              id: '550e8400-e29b-41d4-a716-446655440003',
+              name: 'Sport',
+              schedule: const <String, dynamic>{
+                'type': 'timesPerWeek',
+                'timesPerWeek': 3,
+                'weekStartsOn': 1,
+              },
+              hasExplicitSchedule: true,
+            ),
+          ],
+        ),
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits.single['schedule'], {
+        'type': 'timesPerWeek',
+        'timesPerWeek': 3,
+        'weekStartsOn': 1,
+      });
+    });
+
     test('existing remoteId match does not duplicate and newer remote updates',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -1376,6 +1407,7 @@ Map<String, dynamic> _localCountHabit({
   required num target,
   String? remoteId,
   String? remoteUserId,
+  String? updatedAt,
 }) {
   return <String, dynamic>{
     'id': id,
@@ -1388,6 +1420,7 @@ Map<String, dynamic> _localCountHabit({
     'skippedToday': false,
     'schedule': const <String, dynamic>{'type': 'daily'},
     'createdAt': '2026-06-20',
+    if (updatedAt != null) 'updatedAt': updatedAt,
     if (remoteId != null) 'remoteId': remoteId,
     if (remoteUserId != null) 'remoteUserId': remoteUserId,
   };

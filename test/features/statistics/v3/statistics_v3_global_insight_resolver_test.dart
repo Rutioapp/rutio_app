@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/features/habits/domain/metrics/flexible_weekly_quota.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_global_insight_resolver.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_global_insight.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
@@ -70,6 +71,19 @@ void main() {
       expect(result.momentLabel, 'Morning');
       expect(result.momentSlot, StatisticsV3BestMomentSlot.morning);
     });
+
+    test('does not turn unverifiable totals into an exact insight', () {
+      final result = resolveStatisticsV3GlobalInsight(
+        _viewData(
+          totalDays: 13,
+          completedHabits: 14,
+          consistencyPct: 100,
+          dataQuality: FlexibleWeeklyDataQuality.unverifiable,
+        ),
+      );
+
+      expect(result.type, StatisticsV3GlobalInsightType.noData);
+    });
   });
 }
 
@@ -85,6 +99,7 @@ StatisticsV3ViewData _viewData({
     label: '',
     count: 0,
   ),
+  FlexibleWeeklyDataQuality dataQuality = FlexibleWeeklyDataQuality.verified,
 }) {
   return StatisticsV3ViewData(
     totalDays: totalDays,
@@ -106,5 +121,6 @@ StatisticsV3ViewData _viewData({
       deltaPercentage: 0,
     ),
     rewardBreakdown: const StatisticsV3RewardBreakdown(rows: []),
+    dataQuality: dataQuality,
   );
 }

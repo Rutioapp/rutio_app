@@ -30,7 +30,8 @@ void main() {
       expect(habit['schedule'], {'type': 'daily'});
 
       final home = _homeViewForToday(store);
-      expect(home.viewHabits.map((habit) => habit['id']), contains('check-habit'));
+      expect(
+          home.viewHabits.map((habit) => habit['id']), contains('check-habit'));
     });
 
     test('creates count habit with defaults and it appears in Home', () async {
@@ -58,7 +59,8 @@ void main() {
       expect(habit['schedule'], {'type': 'daily'});
 
       final home = _homeViewForToday(store);
-      expect(home.viewHabits.map((habit) => habit['id']), contains('count-default'));
+      expect(home.viewHabits.map((habit) => habit['id']),
+          contains('count-default'));
     });
 
     test('creates count habit with modified target and it appears in Home',
@@ -88,7 +90,8 @@ void main() {
       expect(habit['name'], 'Meditate 15 minutes');
 
       final home = _homeViewForToday(store);
-      expect(home.viewHabits.map((habit) => habit['id']), contains('count-edited'));
+      expect(home.viewHabits.map((habit) => habit['id']),
+          contains('count-edited'));
     });
 
     test('creates count habit with weekly frequency and expected model values',
@@ -125,7 +128,8 @@ void main() {
       expect(habit['targetCount'], 25);
 
       final home = _homeViewForToday(store);
-      expect(home.viewHabits.map((habit) => habit['id']), contains('count-weekly'));
+      expect(home.viewHabits.map((habit) => habit['id']),
+          contains('count-weekly'));
     });
   });
 }

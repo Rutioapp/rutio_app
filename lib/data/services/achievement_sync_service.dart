@@ -168,7 +168,8 @@ class AchievementSyncService {
           continue;
         }
 
-        final rewardValues = AchievementRewards.getAchievementReward(record.tier);
+        final rewardValues =
+            AchievementRewards.getAchievementReward(record.tier);
         final result = await _repo.upsertUnlockedAchievement(
           achievementId: record.id,
           familyId: _nullableTrim(record.familyId),
@@ -251,7 +252,8 @@ class AchievementSyncService {
     }
   }
 
-  bool _isExpectedUser(String authenticatedUserId, String? expectedLocalUserId) {
+  bool _isExpectedUser(
+      String authenticatedUserId, String? expectedLocalUserId) {
     final expected = (expectedLocalUserId ?? '').trim();
     if (expected.isEmpty) return true;
     return expected == authenticatedUserId;
@@ -274,7 +276,8 @@ class AchievementSyncService {
         : '${error.code.name}: ${error.message}';
     _debugWarn('achievement sync failed: $message');
     if (!_isSchemaMissingError(error)) {
-      _debugWarn('schema-unavailable not set: failure is not a schema-missing class');
+      _debugWarn(
+          'schema-unavailable not set: failure is not a schema-missing class');
       return;
     }
 

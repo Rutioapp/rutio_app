@@ -45,6 +45,63 @@ void main() {
       expect(reloaded.userId, scopeUserId);
     });
 
+    test('timesPerWeek CHECK uses the normal daily CHECK reward', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final store = await _seedScopedStore(
+        scopeUserId: 'real-user-flexible-check',
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(
+            id: 'habit-flexible-check',
+            type: 'check',
+            target: 1,
+            schedule: const <String, dynamic>{
+              'type': 'timesPerWeek',
+              'timesPerWeek': 3,
+            },
+          ),
+        ],
+      );
+
+      await store.completeHabit(habitId: 'habit-flexible-check');
+
+      expect(_xp(store), RewardConstants.habitCheckXpReward);
+      expect(_coins(store), RewardConstants.habitCheckAmbarReward);
+      expect(store.activeHabits.single['doneToday'], isTrue);
+    });
+
+    test('timesPerWeek CHECK skip grants no reward', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final store = await _seedScopedStore(
+        scopeUserId: 'real-user-flexible-check-skip',
+        stateUserId: 'user_123',
+        habits: <Map<String, dynamic>>[
+          _habit(
+            id: 'habit-flexible-check-skip',
+            type: 'check',
+            target: 1,
+            schedule: const <String, dynamic>{
+              'type': 'timesPerWeek',
+              'timesPerWeek': 3,
+            },
+          ),
+        ],
+      );
+
+      await store.setHabitSkipForKey(
+        habitId: 'habit-flexible-check-skip',
+        dateKey: _todayKey(),
+        skipped: true,
+      );
+
+      expect(_xp(store), 0);
+      expect(_coins(store), 0);
+      expect(store.activeHabits.single['doneToday'], isFalse);
+      expect(store.activeHabits.single['skippedToday'], isTrue);
+    });
+
     test('count habit grants reward once when reaching target', () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -517,6 +574,7 @@ Map<String, dynamic> _habit({
   required String id,
   required String type,
   required num target,
+  Map<String, dynamic> schedule = const <String, dynamic>{'type': 'daily'},
 }) {
   return <String, dynamic>{
     'id': id,
@@ -529,7 +587,7 @@ Map<String, dynamic> _habit({
     'progress': 0,
     'doneToday': false,
     'skippedToday': false,
-    'schedule': const <String, dynamic>{'type': 'daily'},
+    'schedule': schedule,
     'archived': false,
     'isCustom': true,
     'reminderEnabled': false,

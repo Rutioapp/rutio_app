@@ -401,7 +401,8 @@ updated_at
     if (code == '42P01' || code == '42703' || code == 'PGRST204') {
       return RepositoryError(
         code: RepositoryErrorCode.invalidResponse,
-        message: 'User achievements schema/table is missing expected structure.',
+        message:
+            'User achievements schema/table is missing expected structure.',
         cause: error,
       );
     }
@@ -481,7 +482,8 @@ updated_at
         .insert(payload)
         .select(_userAchievementColumns)
         .single();
-    final remote = RemoteUserAchievement.fromMap(Map<String, dynamic>.from(row));
+    final remote =
+        RemoteUserAchievement.fromMap(Map<String, dynamic>.from(row));
     if (remote.userId != userId || remote.achievementId != achievementId) {
       return RepositoryResult<RemoteUserAchievement>.failure(
         const RepositoryError(

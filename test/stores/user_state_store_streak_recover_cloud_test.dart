@@ -160,7 +160,8 @@ Future<UserStateStore> _createStore({
   DateTime Function()? nowProvider,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
-  final currentNowProvider = nowProvider ?? (() => DateTime.utc(2026, 7, 22, 12));
+  final currentNowProvider =
+      nowProvider ?? (() => DateTime.utc(2026, 7, 22, 12));
   final mutableRecoverableBreaks = recoverableBreaks.map(
     (key, value) => MapEntry(
       key,

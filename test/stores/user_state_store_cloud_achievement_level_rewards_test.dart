@@ -273,8 +273,7 @@ class _FakeAchievementLevelRewardCoordinator
     extends AchievementLevelRewardCoordinator {
   _FakeAchievementLevelRewardCoordinator({
     bool enabled = true,
-  })
-      : super(
+  }) : super(
           rewardRepository: _NoopRewardRepository(),
           pendingClaimStore: _NoopPendingRewardClaimStore(),
           currentUserIdProvider: () => 'user-1',
@@ -292,13 +291,12 @@ class _FakeAchievementLevelRewardCoordinator
     String? requestId,
   }) async {
     achievementCallCount += 1;
-    return AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>
-        .success(
+    return AchievementLevelRewardResult<
+        AchievementLevelRewardLedgerEntry>.success(
       data: AchievementLevelRewardLedgerEntry(
         id: 'achievement_$achievementId',
         userId: 'user-1',
-        requestId: requestId ??
-            'reward:user-1:achievement:$achievementId',
+        requestId: requestId ?? 'reward:user-1:achievement:$achievementId',
         operationType: 'claim',
         sourceType: 'achievement_reward',
         sourceId: achievementId,
@@ -320,8 +318,8 @@ class _FakeAchievementLevelRewardCoordinator
     if (level >= 5) {
       levelChargeCount += 1;
     }
-    return AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>
-        .success(
+    return AchievementLevelRewardResult<
+        AchievementLevelRewardLedgerEntry>.success(
       data: AchievementLevelRewardLedgerEntry(
         id: 'level_$level',
         userId: 'user-1',
@@ -342,7 +340,8 @@ class _FakeAchievementLevelRewardCoordinator
       resolvePendingForCurrentUser({
     int maxOperations = 5,
   }) async {
-    return const <AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>[];
+    return const <AchievementLevelRewardResult<
+        AchievementLevelRewardLedgerEntry>>[];
   }
 }
 
