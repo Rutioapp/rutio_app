@@ -274,6 +274,9 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
     final hasReminder = reminderLabel != null && reminderLabel.isNotEmpty;
     final compactCountLabel =
         '${_formatCountLabel(widget.currentCount)}/${_formatCountLabel(widget.targetCount)}';
+    final weeklyProgressLabel = widget.weeklyProgressLabel?.trim();
+    final hasWeeklyProgress =
+        weeklyProgressLabel != null && weeklyProgressLabel.isNotEmpty;
     final countInfoLabel = widget.isCounting
         ? hasReminder
             ? compactCountLabel
@@ -288,9 +291,7 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                     widget.unitLabel!.trim(),
                   )
         : null;
-    final weeklyProgressLabel = widget.weeklyProgressLabel?.trim();
-    final hasWeeklyProgress =
-        weeklyProgressLabel != null && weeklyProgressLabel.isNotEmpty;
+    final showSecondaryWeeklyProgress = hasWeeklyProgress;
     final badgeZone =
         hasReminder || widget.isCounting || isSkipped || hasWeeklyProgress
             ? HabitCardBadgeZone(
@@ -299,7 +300,8 @@ class _HabitCardWidgetState extends State<HabitCardWidget>
                 foregroundStyle: foregroundStyle,
                 reminderLabel: reminderLabel,
                 countLabel: countInfoLabel,
-                progressLabel: hasWeeklyProgress ? weeklyProgressLabel : null,
+                progressLabel:
+                    showSecondaryWeeklyProgress ? weeklyProgressLabel : null,
                 extraBadges: isSkipped
                     ? [
                         HabitSkippedBadge(

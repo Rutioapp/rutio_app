@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../features/habits/domain/metrics/habit_snapshot.dart';
+import '../../../features/habits/presentation/habit_schedule_label_resolver.dart';
 import '../../../l10n/l10n.dart';
 import '../../../screens/home/widgets/habit/habit_card_widget.dart';
 import '../../../utils/app_theme.dart';
@@ -35,7 +36,10 @@ class OnboardingPreviewStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final schedule = _scheduleLabel(context, habit.schedule);
+    final schedule = const HabitScheduleLabelResolver().resolve(
+      l10n,
+      habit.schedule,
+    );
     final reminderSummary = _reminderSummary(context, reminder);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,35 +218,6 @@ class OnboardingPreviewStep extends StatelessWidget {
       default:
         return l10n.onboardingPreviewFamilyMind;
     }
-  }
-
-  String _scheduleLabel(BuildContext context, HabitSchedule schedule) {
-    final l10n = context.l10n;
-    if (schedule.isDaily) return l10n.onboardingPreviewEveryDay;
-    final labels = schedule.weekdays
-        .map((day) {
-          switch (day) {
-            case DateTime.monday:
-              return l10n.weekdayShortMon;
-            case DateTime.tuesday:
-              return l10n.weekdayShortTue;
-            case DateTime.wednesday:
-              return l10n.weekdayShortWed;
-            case DateTime.thursday:
-              return l10n.weekdayShortThu;
-            case DateTime.friday:
-              return l10n.weekdayShortFri;
-            case DateTime.saturday:
-              return l10n.weekdayShortSat;
-            case DateTime.sunday:
-              return l10n.weekdayShortSun;
-            default:
-              return '';
-          }
-        })
-        .where((label) => label.isNotEmpty)
-        .join(' · ');
-    return labels.isEmpty ? l10n.onboardingPreviewEveryDay : labels;
   }
 
   String _reminderSummary(

@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'habit_date_utils.dart';
-import 'habit_snapshot.dart';
 import 'weekly_report_week.dart';
 
 enum TimesPerWeekQuotaPolicyKind {

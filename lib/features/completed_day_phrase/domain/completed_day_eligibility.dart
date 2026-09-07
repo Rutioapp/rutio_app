@@ -19,13 +19,20 @@ class CompletedDayEligibility {
   final int pendingHabitCount;
   final int skippedHabitCount;
 
-  bool get isCompletedDay =>
+  /// Whether every relevant habit has a resolved state for today's phrase.
+  ///
+  /// A resolved state is either completed or skipped. This is intentionally
+  /// separate from any future perfect-day concept, which may still require
+  /// zero skips.
+  bool get isDayResolvedForPhrase =>
       isReady &&
       isLocalToday &&
       scheduledHabitCount > 0 &&
-      completedHabitCount == scheduledHabitCount &&
       pendingHabitCount == 0 &&
-      skippedHabitCount == 0;
+      completedHabitCount + skippedHabitCount == scheduledHabitCount;
+
+  /// Backwards-compatible name for existing Home presentation callers.
+  bool get isCompletedDay => isDayResolvedForPhrase;
 
   double get progress =>
       scheduledHabitCount <= 0 ? 0 : completedHabitCount / scheduledHabitCount;
@@ -60,10 +67,10 @@ String completedDayEligibilityReason(CompletedDayEligibility eligibility) {
   if (!eligibility.isReady) reasons.add('not_ready');
   if (!eligibility.isLocalToday) reasons.add('not_local_today');
   if (eligibility.scheduledHabitCount == 0) reasons.add('zero_scheduled');
-  if (eligibility.completedHabitCount != eligibility.scheduledHabitCount) {
-    reasons.add('completed_count_mismatch');
-  }
   if (eligibility.pendingHabitCount != 0) reasons.add('pending_gt_zero');
-  if (eligibility.skippedHabitCount != 0) reasons.add('skipped_gt_zero');
+  if (eligibility.completedHabitCount + eligibility.skippedHabitCount !=
+      eligibility.scheduledHabitCount) {
+    reasons.add('resolved_count_mismatch');
+  }
   return reasons.join(',');
 }

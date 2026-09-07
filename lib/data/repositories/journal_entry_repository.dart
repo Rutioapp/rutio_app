@@ -72,7 +72,8 @@ updated_at
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[journal_entry_repository] unexpected fetch-range error: $error');
+        debugPrint(
+            '[journal_entry_repository] unexpected fetch-range error: $error');
       }
       return RepositoryResult<List<RemoteJournalEntry>>.failure(
         RepositoryError(
@@ -123,7 +124,8 @@ updated_at
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[journal_entry_repository] unexpected fetch-recent error: $error');
+        debugPrint(
+            '[journal_entry_repository] unexpected fetch-recent error: $error');
       }
       return RepositoryResult<List<RemoteJournalEntry>>.failure(
         RepositoryError(
@@ -169,7 +171,8 @@ updated_at
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[journal_entry_repository] unexpected insert error: $error');
+        debugPrint(
+            '[journal_entry_repository] unexpected insert error: $error');
       }
       return RepositoryResult<RemoteJournalEntry>.failure(
         RepositoryError(
@@ -237,7 +240,8 @@ updated_at
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[journal_entry_repository] unexpected update error: $error');
+        debugPrint(
+            '[journal_entry_repository] unexpected update error: $error');
       }
       return RepositoryResult<RemoteJournalEntry>.failure(
         RepositoryError(
@@ -318,7 +322,8 @@ updated_at
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[journal_entry_repository] unexpected delete error: $error');
+        debugPrint(
+            '[journal_entry_repository] unexpected delete error: $error');
       }
       return RepositoryResult<void>.failure(
         RepositoryError(
@@ -385,7 +390,8 @@ updated_at
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[journal_entry_repository] unexpected soft-delete error: $error');
+        debugPrint(
+            '[journal_entry_repository] unexpected soft-delete error: $error');
       }
       return RepositoryResult<RemoteJournalEntry>.failure(
         RepositoryError(

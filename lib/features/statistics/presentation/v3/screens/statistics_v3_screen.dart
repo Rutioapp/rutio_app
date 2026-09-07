@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/features/habits/domain/metrics/flexible_weekly_quota.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_global_insight_resolver.dart';
 import 'package:rutio/features/habits/domain/models/habit_reward_transaction.dart';
@@ -230,6 +231,9 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                         totalHabits: viewData.totalDays,
                         consistencyPct: viewData.consistencyPct,
                         streakDays: currentStreakDays,
+                        progressRatio: viewData.cappedConsistencyRatio,
+                        dataUnavailable: viewData.dataQuality ==
+                            FlexibleWeeklyDataQuality.unverifiable,
                       ),
                       StatisticsV3FamilyChipsCard(
                         title: l10n.statisticsV3FamiliesCardTitle,

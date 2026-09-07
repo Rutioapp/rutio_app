@@ -126,8 +126,7 @@ void main() {
       expect(store.activeStreakShields, isEmpty);
     });
 
-    test('protects the streak when the habit is missed the same day',
-        () async {
+    test('protects the streak when the habit is missed the same day', () async {
       final utilityRepo = _RecordingUtilityConsumptionRepository();
       var now = DateTime(2026, 7, 23, 10);
       final store = await _createStore(
@@ -199,8 +198,7 @@ void main() {
       );
     });
 
-    test('restarting the app does not reactivate an expired shield',
-        () async {
+    test('restarting the app does not reactivate an expired shield', () async {
       final utilityRepo = _RecordingUtilityConsumptionRepository();
       var now = DateTime(2026, 7, 24, 10);
       final store = await _createStore(
@@ -318,8 +316,7 @@ Future<UserStateStore> _createStore({
         'userId': userId,
         'meta': <String, dynamic>{
           'schemaVersion': 1,
-          'lastSavedAt':
-              currentNowProvider().toUtc().toIso8601String(),
+          'lastSavedAt': currentNowProvider().toUtc().toIso8601String(),
           'diaryRewardAppliedDateKeys': <dynamic>[],
         },
         'progression': <String, dynamic>{
@@ -345,8 +342,7 @@ Future<UserStateStore> _createStore({
           'prestigeClaimed': <dynamic>[],
         },
         'daily': <String, dynamic>{
-          'lastResetDate':
-              _dateKey(currentNowProvider().toLocal()),
+          'lastResetDate': _dateKey(currentNowProvider().toLocal()),
           'xpEarnedToday': 0,
           'coinsEarnedToday': 0,
           'habitsCompletedToday': <String, dynamic>{},

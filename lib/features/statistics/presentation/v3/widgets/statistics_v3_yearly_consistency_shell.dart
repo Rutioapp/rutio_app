@@ -39,7 +39,8 @@ class StatisticsV3YearlyConsistencyShell extends StatelessWidget {
           const rowSpacing = 10.0;
           final columns = constraints.maxWidth < 295 ? 2 : 3;
           final monthWidth =
-              (constraints.maxWidth - (columnSpacing * (columns - 1))) / columns;
+              (constraints.maxWidth - (columnSpacing * (columns - 1))) /
+                  columns;
           final dayGap = monthWidth < 96 ? 1.5 : 2.0;
           final daySize =
               ((monthWidth - (dayGap * 6)) / 7).clamp(4.0, 9.0).toDouble();
@@ -233,7 +234,8 @@ class _MonthMiniCalendar extends StatelessWidget {
                 fontSize: 13,
                 height: 1,
                 fontWeight: FontWeight.w700,
-                color: StatisticsV3ConsistencyPalette.text.withValues(alpha: 0.9),
+                color:
+                    StatisticsV3ConsistencyPalette.text.withValues(alpha: 0.9),
               ),
         ),
         const SizedBox(height: 6),
@@ -278,6 +280,7 @@ class _YearDayDot extends StatelessWidget {
       percentage: day!.percentage,
       expectedCount: day!.expectedCount,
       isFuture: day!.isFuture,
+      activityCount: day!.activityCount,
     );
     final tone = StatisticsV3ConsistencyPalette.toneFor(intensity);
 

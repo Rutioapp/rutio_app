@@ -243,7 +243,8 @@ class UserProgressSyncService {
     }
   }
 
-  bool _isExpectedUser(String authenticatedUserId, String? expectedLocalUserId) {
+  bool _isExpectedUser(
+      String authenticatedUserId, String? expectedLocalUserId) {
     final expected = (expectedLocalUserId ?? '').trim();
     if (expected.isEmpty) return true;
     return expected == authenticatedUserId;

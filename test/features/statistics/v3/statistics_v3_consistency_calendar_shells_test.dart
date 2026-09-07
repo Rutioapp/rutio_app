@@ -8,6 +8,36 @@ import 'package:rutio/l10n/gen/app_localizations.dart';
 
 void main() {
   group('Statistics V3 consistency calendar shells', () {
+    test('flexible activity is visible without becoming a daily denominator', () {
+      expect(
+        StatisticsV3ConsistencyPalette.intensityFor(
+          percentage: 0,
+          expectedCount: 0,
+          activityCount: 1,
+          isFuture: false,
+        ),
+        StatisticsV3ConsistencyIntensity.high,
+      );
+      expect(
+        StatisticsV3ConsistencyPalette.intensityFor(
+          percentage: 0,
+          expectedCount: 0,
+          activityCount: 0,
+          isFuture: false,
+        ),
+        StatisticsV3ConsistencyIntensity.unavailable,
+      );
+      expect(
+        StatisticsV3ConsistencyPalette.intensityFor(
+          percentage: 0,
+          expectedCount: 1,
+          activityCount: 1,
+          isFuture: false,
+        ),
+        StatisticsV3ConsistencyIntensity.zero,
+      );
+    });
+
     testWidgets('monthly calendar renders rounded day cells', (tester) async {
       final days = _buildMonthDays(
         DateTime(2026, 5, 1),

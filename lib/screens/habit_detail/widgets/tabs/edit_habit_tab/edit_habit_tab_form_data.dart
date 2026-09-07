@@ -251,14 +251,16 @@ class EditHabitTabFormData {
       setHabitValue(updatedHabit, ['goal', 'times'], targetCount);
     } else if (showsWeeklyCheckTargetSection) {
       setHabitValue(updatedHabit, ['target', 'targetCount'], 1);
-      setHabitValue(
-        updatedHabit,
-        ['goal', 'times', 'timesPerWeekTarget'],
-        timesPerWeekTarget,
-      );
+      updatedHabit
+        ..remove('goal')
+        ..remove('times')
+        ..remove('timesPerWeekTarget');
     } else {
       setHabitValue(updatedHabit, ['target', 'targetCount'], 1);
-      setHabitValue(updatedHabit, ['goal', 'times', 'timesPerWeekTarget'], 1);
+      updatedHabit
+        ..remove('goal')
+        ..remove('times')
+        ..remove('timesPerWeekTarget');
     }
 
     updatedHabit['schedule'] = buildScheduleForSave();
@@ -298,7 +300,8 @@ class EditHabitTabFormData {
 
     final schedule = habit is Map ? habit['schedule'] : null;
     if (schedule is Map) {
-      final type = (schedule['type'] ?? 'daily').toString();
+      final type =
+          (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
       final weekdays = (schedule['weekdays'] is List)
           ? (schedule['weekdays'] as List)
               .whereType<num>()
@@ -312,7 +315,7 @@ class EditHabitTabFormData {
         selectedDays
           ..clear()
           ..addAll(weekdays);
-      } else if (trackingType == 'check' && type == 'timesPerWeek') {
+      } else if (trackingType == 'check' && type == 'timesperweek') {
         frequencyMode = 'timesPerWeek';
         final scheduleTarget = getHabitInt(
               schedule,

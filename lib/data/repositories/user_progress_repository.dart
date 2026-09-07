@@ -33,7 +33,8 @@ class UserProgressRepository {
         return const RepositoryResult<RemoteUserProgress?>.success(data: null);
       }
 
-      final progress = RemoteUserProgress.fromMap(Map<String, dynamic>.from(row));
+      final progress =
+          RemoteUserProgress.fromMap(Map<String, dynamic>.from(row));
       if (progress.userId != userId) {
         return RepositoryResult<RemoteUserProgress?>.failure(
           const RepositoryError(
@@ -82,7 +83,9 @@ class UserProgressRepository {
     }
 
     try {
-      await _client.from(_userProgressTable).upsert(payload, onConflict: 'user_id');
+      await _client
+          .from(_userProgressTable)
+          .upsert(payload, onConflict: 'user_id');
 
       if (kDebugMode) {
         debugPrint('[user_progress_repository] upsert success');
@@ -90,7 +93,8 @@ class UserProgressRepository {
 
       final fetched = await fetchCurrentProgress();
       if (fetched.isSuccess && fetched.data != null) {
-        return RepositoryResult<RemoteUserProgress>.success(data: fetched.data!);
+        return RepositoryResult<RemoteUserProgress>.success(
+            data: fetched.data!);
       }
 
       return RepositoryResult<RemoteUserProgress>.success(
@@ -101,7 +105,8 @@ class UserProgressRepository {
           currentLevelXp: _safeInt(payload['current_level_xp'], fallback: 0),
           nextLevelXp: _safeInt(payload['next_level_xp'], fallback: 100),
           ambarBalance: _safeInt(payload['ambar_balance'], fallback: 0),
-          totalAmbarEarned: _safeInt(payload['total_ambar_earned'], fallback: 0),
+          totalAmbarEarned:
+              _safeInt(payload['total_ambar_earned'], fallback: 0),
           totalAmbarSpent: _safeInt(payload['total_ambar_spent'], fallback: 0),
           raw: payload,
         ),
@@ -120,7 +125,8 @@ class UserProgressRepository {
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[user_progress_repository] unexpected upsert error: $error');
+        debugPrint(
+            '[user_progress_repository] unexpected upsert error: $error');
       }
       return RepositoryResult<RemoteUserProgress>.failure(
         RepositoryError(
@@ -163,7 +169,8 @@ class UserProgressRepository {
       final currentSpent = existing.data!.totalAmbarSpent;
       nextTotalAmbarEarned =
           (currentEarned < 0 ? 0 : currentEarned) + safeEarnedDelta;
-      nextTotalAmbarSpent = (currentSpent < 0 ? 0 : currentSpent) + safeSpentDelta;
+      nextTotalAmbarSpent =
+          (currentSpent < 0 ? 0 : currentSpent) + safeSpentDelta;
     } else if (!existing.isSuccess && kDebugMode) {
       debugPrint(
         '[user_progress_repository] existing progress unavailable; using safe deltas',
@@ -243,7 +250,8 @@ class UserProgressRepository {
     if (code == '42703' || code == 'PGRST204') {
       return RepositoryError(
         code: RepositoryErrorCode.invalidResponse,
-        message: 'User progress schema is missing one or more expected columns.',
+        message:
+            'User progress schema is missing one or more expected columns.',
         cause: error,
       );
     }

@@ -92,6 +92,13 @@ enum SupabaseUserProgressRestoreStatus {
   failedRemoteStateUnknown,
 }
 
+enum HabitMutationOutcome {
+  applied,
+  alreadyApplied,
+  notApplicable,
+  failed,
+}
+
 @immutable
 class SupabaseUserProgressRestoreResult {
   const SupabaseUserProgressRestoreResult({
@@ -386,6 +393,7 @@ class UserStateStore extends ChangeNotifier {
       const <HabitRewardTransaction>[];
   Future<void> _scopeSwitchChain = Future<void>.value();
   Future<void> _habitMutationQueue = Future<void>.value();
+  int _habitMutationSequence = 0;
   final Map<String, int> _hydratedXpBaselineByUserId = <String, int>{};
   final Map<String, int> _hydratedLevelBaselineByUserId = <String, int>{};
   final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
@@ -464,9 +472,24 @@ class UserStateStore extends ChangeNotifier {
 
   /// Serialize read/modify/save habit mutations so quick actions cannot
   /// overwrite the store with stale snapshots of other habits.
-  Future<void> _enqueueHabitMutation(Future<void> Function() mutation) {
-    final next = _habitMutationQueue.then((_) => mutation());
-    _habitMutationQueue = next.catchError((_) {});
+  Future<T> _enqueueHabitMutation<T>(Future<T> Function() mutation) {
+    final sequence = ++_habitMutationSequence;
+    if (kDebugMode) {
+      debugPrint('[HOME_MUTATION] queue enqueue sequence=$sequence');
+    }
+    final next = _habitMutationQueue.then((_) async {
+      if (kDebugMode) {
+        debugPrint('[HOME_MUTATION] queue start sequence=$sequence');
+      }
+      try {
+        return await mutation();
+      } finally {
+        if (kDebugMode) {
+          debugPrint('[HOME_MUTATION] queue finish sequence=$sequence');
+        }
+      }
+    });
+    _habitMutationQueue = next.then<void>((_) {}, onError: (_, __) {});
     return next;
   }
 
@@ -787,10 +810,14 @@ class UserStateStore extends ChangeNotifier {
   Future<void> completeHabit({
     required String habitId,
     num delta = 1,
-  }) =>
-      _enqueueHabitMutation(
-        () => _completeHabit(this, habitId: habitId, delta: delta),
-      );
+  }) async {
+    final outcome = await _enqueueHabitMutation(
+      () => _completeHabit(this, habitId: habitId, delta: delta),
+    );
+    if (outcome == HabitMutationOutcome.failed) {
+      throw StateError('Habit completion persistence failed.');
+    }
+  }
 
   Future<void> toggleHabitDoneForDate({
     required String habitId,
@@ -801,6 +828,18 @@ class UserStateStore extends ChangeNotifier {
       );
 
   Future<void> setHabitCompletionForKey({
+    required String habitId,
+    required String dateKey,
+    required bool done,
+  }) async {
+    await setHabitCompletionForKeyWithOutcome(
+      habitId: habitId,
+      dateKey: dateKey,
+      done: done,
+    );
+  }
+
+  Future<HabitMutationOutcome> setHabitCompletionForKeyWithOutcome({
     required String habitId,
     required String dateKey,
     required bool done,

@@ -5,6 +5,8 @@ import 'package:rutio/constants/reward_constants.dart';
 import 'package:rutio/features/achievements/application/achievement_rewards.dart';
 import 'package:rutio/features/achievements/domain/models/achievement.dart';
 import 'package:rutio/features/habits/domain/models/habit_reward_transaction.dart';
+import 'package:rutio/features/habits/domain/metrics/flexible_weekly_quota.dart';
+import 'package:rutio/features/habits/domain/metrics/flexible_weekly_quota_period_aggregator.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_period.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 import 'package:rutio/l10n/l10n.dart';
@@ -220,6 +222,9 @@ StatisticsV3ViewData buildStatisticsV3ViewData({
     amberGained: amberGained,
     activeDays: completedExpectedHabitInstances,
     consistencyPct: consistencyPct.clamp(0, 100),
+    rawConsistencyRatio: periodStats.rawRatio,
+    cappedConsistencyRatio: periodStats.cappedRatio,
+    dataQuality: periodStats.dataQuality,
     families: families,
     bestMoment: bestMoment,
     highlightedHabits: highlightedItems,
@@ -468,14 +473,36 @@ StatisticsV3WeeklyImprovementData _buildWeeklyImprovementData({
       currentWeekPercentage: currentWeekStats.percentage,
       previousWeekPercentage: previousWeekStats.percentage,
       deltaPercentage: 0,
+      currentRawRatio: currentWeekStats.rawRatio,
+      previousRawRatio: previousWeekStats.rawRatio,
+      currentCappedRatio: currentWeekStats.cappedRatio,
+      previousCappedRatio: previousWeekStats.cappedRatio,
+      dataQuality: _mergeFlexibleDataQuality(
+        currentWeekStats.dataQuality,
+        previousWeekStats.dataQuality,
+      ),
     );
   }
 
+  final dataQuality = _mergeFlexibleDataQuality(
+    currentWeekStats.dataQuality,
+    previousWeekStats.dataQuality,
+  );
+  final hasReliableComparison =
+      dataQuality != FlexibleWeeklyDataQuality.unverifiable;
   return StatisticsV3WeeklyImprovementData(
-    hasComparison: true,
+    hasComparison: hasReliableComparison,
     currentWeekPercentage: currentWeekStats.percentage,
     previousWeekPercentage: previousWeekStats.percentage,
-    deltaPercentage: currentWeekStats.percentage - previousWeekStats.percentage,
+    deltaPercentage: hasReliableComparison
+        ? ((currentWeekStats.cappedRatio - previousWeekStats.cappedRatio) * 100)
+            .round()
+        : 0,
+    currentRawRatio: currentWeekStats.rawRatio,
+    previousRawRatio: previousWeekStats.rawRatio,
+    currentCappedRatio: currentWeekStats.cappedRatio,
+    previousCappedRatio: previousWeekStats.cappedRatio,
+    dataQuality: dataQuality,
   );
 }
 
@@ -497,11 +524,15 @@ _PeriodConsistencyStats _buildPeriodConsistencyStats({
       expectedCount: 0,
       completedCount: 0,
       percentage: 0,
+      rawRatio: 0,
+      cappedRatio: 0,
+      dataQuality: FlexibleWeeklyDataQuality.verified,
     );
   }
 
   var expectedCount = 0;
   var completedCount = 0;
+  var dataQuality = FlexibleWeeklyDataQuality.verified;
   final days = to.difference(from).inDays + 1;
   for (var index = 0; index < days; index++) {
     final day = from.add(Duration(days: index));
@@ -531,6 +562,10 @@ _PeriodConsistencyStats _buildPeriodConsistencyStats({
   );
   expectedCount += timesPerWeekContribution.expectedCount;
   completedCount += timesPerWeekContribution.completedCount;
+  dataQuality = _mergeFlexibleDataQuality(
+    dataQuality,
+    timesPerWeekContribution.dataQuality,
+  );
 
   final percentage = expectedCount == 0
       ? 0
@@ -539,6 +574,11 @@ _PeriodConsistencyStats _buildPeriodConsistencyStats({
     expectedCount: expectedCount,
     completedCount: completedCount,
     percentage: percentage,
+    rawRatio: expectedCount <= 0 ? 0 : completedCount / expectedCount,
+    cappedRatio: expectedCount <= 0
+        ? 0
+        : (completedCount / expectedCount).clamp(0.0, 1.0),
+    dataQuality: dataQuality,
   );
 }
 
@@ -555,6 +595,7 @@ _ExpectedCompletedCounts _buildTimesPerWeekContribution({
     return const _ExpectedCompletedCounts(
       expectedCount: 0,
       completedCount: 0,
+      dataQuality: FlexibleWeeklyDataQuality.verified,
     );
   }
 
@@ -565,68 +606,46 @@ _ExpectedCompletedCounts _buildTimesPerWeekContribution({
     return const _ExpectedCompletedCounts(
       expectedCount: 0,
       completedCount: 0,
+      dataQuality: FlexibleWeeklyDataQuality.verified,
     );
   }
 
   var expectedCount = 0;
   var completedCount = 0;
+  var dataQuality = FlexibleWeeklyDataQuality.verified;
+  const aggregator = FlexibleWeeklyQuotaPeriodAggregator();
+  final history = <String, dynamic>{
+    'habitCompletions': completionsRoot,
+    'habitSkips': skipsRoot,
+  };
 
   for (final habit in habits) {
-    if (!_isTimesPerWeekCheckHabit(habit)) continue;
-    if (_isArchivedHabit(habit)) continue;
-
+    if (!_isTimesPerWeekCheckHabit(habit) || _isArchivedHabit(habit)) continue;
     final habitId = _habitId(habit);
     if (habitId.isEmpty) continue;
-
-    final target = _timesPerWeekTargetOf(habit);
-    final weekStartsOn = _timesPerWeekWeekStartsOn(habit);
-    final includedWeekStarts = <String>{};
-    final totalDays = boundedTo.difference(normalizedFrom).inDays + 1;
-
-    for (var index = 0; index < totalDays; index++) {
-      final day = normalizedFrom.add(Duration(days: index));
-      if (!_wasHabitCreatedByDay(habit, day)) continue;
-
-      final weekStart = _weekStartForDate(day, weekStartsOn: weekStartsOn);
-      final weekKey = _dateKey(weekStart);
-      if (!includedWeekStarts.add(weekKey)) continue;
-
-      final weekEnd = weekStart.add(const Duration(days: 6));
-      final windowStart = _maxDate(normalizedFrom, weekStart);
-      final windowEnd = _minDate(boundedTo, weekEnd);
-      if (windowEnd.isBefore(windowStart)) continue;
-
-      final activeDays = _timesPerWeekActiveDaysInRange(
-        habit: habit,
-        from: windowStart,
-        to: windowEnd,
-      );
-      if (activeDays <= 0) continue;
-
-      final expectedForWindow = _timesPerWeekExpectedCount(
-        activeDays: activeDays,
-        weeklyTarget: target,
-      );
-      if (expectedForWindow <= 0) continue;
-
-      expectedCount += expectedForWindow;
-      final completedInWindow = _completedCountForHabitInDateRange(
-        habit: habit,
-        habitId: habitId,
-        from: windowStart,
-        to: windowEnd,
+    final result = aggregator.aggregate(
+      habit: _flexibleWeeklyQuotaHabit(habit),
+      history: history,
+      startDate: normalizedFrom,
+      endDate: boundedTo,
+      currentWeekDate: _isCurrentOpenWeekRange(
+        from: normalizedFrom,
+        to: boundedTo,
         today: today,
-        userState: userState,
-        completionsRoot: completionsRoot,
-        skipsRoot: skipsRoot,
-      );
-      completedCount += math.min(completedInWindow, expectedForWindow);
-    }
+        weekStartsOn: _timesPerWeekWeekStartsOn(habit),
+      )
+          ? today
+          : null,
+    );
+    expectedCount += result.scheduledCount;
+    completedCount += result.completedCount;
+    dataQuality = _mergeFlexibleDataQuality(dataQuality, result.dataQuality);
   }
 
   return _ExpectedCompletedCounts(
     expectedCount: expectedCount,
     completedCount: completedCount,
+    dataQuality: dataQuality,
   );
 }
 
@@ -788,37 +807,6 @@ _PeriodRewardSummary _aggregateAchievementRewardsForPeriod({
   return _PeriodRewardSummary(xp: xp, amber: amber);
 }
 
-int _timesPerWeekActiveDaysInRange({
-  required Map<String, dynamic> habit,
-  required DateTime from,
-  required DateTime to,
-}) {
-  final start = _dateOnly(from);
-  final end = _dateOnly(to);
-  if (end.isBefore(start)) return 0;
-
-  var activeDays = 0;
-  final dayCount = end.difference(start).inDays + 1;
-  for (var index = 0; index < dayCount; index++) {
-    final day = start.add(Duration(days: index));
-    if (_wasHabitCreatedByDay(habit, day)) {
-      activeDays += 1;
-    }
-  }
-  return activeDays;
-}
-
-int _timesPerWeekExpectedCount({
-  required int activeDays,
-  required int weeklyTarget,
-}) {
-  if (activeDays <= 0 || weeklyTarget <= 0) return 0;
-  var expected = ((activeDays / 7) * weeklyTarget).round();
-  if (expected < 1) expected = 1;
-  if (expected > activeDays) expected = activeDays;
-  return expected;
-}
-
 String _habitListFamilyId(Map<String, dynamic> habit) {
   final familyId = (habit['familyId'] ?? habit['family'] ?? '')
       .toString()
@@ -963,81 +951,18 @@ int _completedCountForHabitInWeek({
   required Map<String, dynamic> completionsRoot,
   required Map<String, dynamic> skipsRoot,
 }) {
-  var completed = 0;
-  for (var offset = 0; offset < 7; offset++) {
-    final day = weekStart.add(Duration(days: offset));
-    if (!_wasHabitCreatedByDay(habit, day)) continue;
-    if (_isTimesPerWeekCompletedOnDay(
-      habit: habit,
-      habitId: habitId,
-      day: day,
-      today: today,
-      userState: userState,
-      completionsRoot: completionsRoot,
-      skipsRoot: skipsRoot,
-    )) {
-      completed += 1;
-    }
-  }
-  return completed;
-}
-
-int _completedCountForHabitInDateRange({
-  required Map<String, dynamic> habit,
-  required String habitId,
-  required DateTime from,
-  required DateTime to,
-  required DateTime today,
-  required Map<String, dynamic> userState,
-  required Map<String, dynamic> completionsRoot,
-  required Map<String, dynamic> skipsRoot,
-}) {
-  final start = _dateOnly(from);
-  final end = _dateOnly(to);
-  if (end.isBefore(start)) return 0;
-
-  var completed = 0;
-  final dayCount = end.difference(start).inDays + 1;
-  for (var index = 0; index < dayCount; index++) {
-    final day = start.add(Duration(days: index));
-    if (!_wasHabitCreatedByDay(habit, day)) continue;
-    if (_isTimesPerWeekCompletedOnDay(
-      habit: habit,
-      habitId: habitId,
-      day: day,
-      today: today,
-      userState: userState,
-      completionsRoot: completionsRoot,
-      skipsRoot: skipsRoot,
-    )) {
-      completed += 1;
-    }
-  }
-  return completed;
-}
-
-bool _isTimesPerWeekCompletedOnDay({
-  required Map<String, dynamic> habit,
-  required String habitId,
-  required DateTime day,
-  required DateTime today,
-  required Map<String, dynamic> userState,
-  required Map<String, dynamic> completionsRoot,
-  required Map<String, dynamic> skipsRoot,
-}) {
-  final dayKey = _dateKey(day);
-  final dayCompletions = _map(completionsRoot[dayKey]);
-  final daySkips = _map(skipsRoot[dayKey]);
-  if (_isDone(daySkips[habitId])) return false;
-
-  var completed = _isDone(dayCompletions[habitId]);
-  final useCurrentHabitState = dayKey == _dateKey(today) &&
-      _activeViewDateKey(userState, fallbackKey: dayKey) == dayKey;
-  if (!useCurrentHabitState) return completed;
-
-  if (_isDone(habit['skippedToday'])) return false;
-  completed = _isCurrentHabitDone(habit);
-  return completed;
+  final weekEnd = weekStart.add(const Duration(days: 6));
+  final result = const FlexibleWeeklyQuotaPeriodAggregator().aggregate(
+    habit: _flexibleWeeklyQuotaHabit(habit),
+    history: <String, dynamic>{
+      'habitCompletions': completionsRoot,
+      'habitSkips': skipsRoot,
+    },
+    startDate: weekStart,
+    endDate: weekEnd,
+    currentWeekDate: today,
+  );
+  return result.completedCount;
 }
 
 List<StatisticsV3WeeklyActivityDay> _buildWeeklyActivityData({
@@ -1087,6 +1012,13 @@ List<StatisticsV3WeeklyActivityDay> _buildWeeklyActivityData({
       percentage: dayStats.percentage,
       isToday: isToday,
       isFuture: false,
+      activityCount: dayStats.completedCount +
+          _flexibleActivityCountForDay(
+            dayKey: dayKey,
+            completionsRoot: completionsRoot,
+            skipsRoot: skipsRoot,
+            habits: habits,
+          ),
     );
   }, growable: false);
 }
@@ -1142,6 +1074,13 @@ List<StatisticsV3MonthlyCalendarDay> _buildMonthlyCalendarData({
       isToday: isToday,
       isFuture: false,
       isCurrentMonth: isCurrentMonth,
+      activityCount: dayStats.completedCount +
+          _flexibleActivityCountForDay(
+            dayKey: dayKey,
+            completionsRoot: completionsRoot,
+            skipsRoot: skipsRoot,
+            habits: habits,
+          ),
     );
   }, growable: false);
 }
@@ -1263,6 +1202,13 @@ List<StatisticsV3YearlyConsistencyDay> _buildYearlyConsistencyMonthDays({
       percentage: dayStats.percentage,
       isToday: isToday,
       isFuture: false,
+      activityCount: dayStats.completedCount +
+          _flexibleActivityCountForDay(
+            dayKey: dayKey,
+            completionsRoot: completionsRoot,
+            skipsRoot: skipsRoot,
+            habits: habits,
+          ),
     );
   }, growable: false);
 }
@@ -1338,8 +1284,6 @@ DateTime _weekStartForDate(DateTime day, {required int weekStartsOn}) {
 }
 
 DateTime _minDate(DateTime a, DateTime b) => a.isBefore(b) ? a : b;
-
-DateTime _maxDate(DateTime a, DateTime b) => a.isAfter(b) ? a : b;
 
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
@@ -1470,6 +1414,28 @@ Set<String> _completedHabitIdsForDay({
   }
 
   return completedIds;
+}
+
+int _flexibleActivityCountForDay({
+  required String dayKey,
+  required Map<String, dynamic> completionsRoot,
+  required Map<String, dynamic> skipsRoot,
+  required List<Map<String, dynamic>> habits,
+}) {
+  final completions = _map(completionsRoot[dayKey]);
+  final skips = _map(skipsRoot[dayKey]);
+  var count = 0;
+  for (final habit in habits) {
+    final habitId = _habitId(habit);
+    if (habitId.isEmpty ||
+        !_isTimesPerWeekCheckHabit(habit) ||
+        _isArchivedHabit(habit)) {
+      continue;
+    }
+    if (_isDone(skips[habitId])) continue;
+    if (_isDone(completions[habitId])) count += 1;
+  }
+  return count;
 }
 
 _DayCompletionStats _buildDayCompletionStats({
@@ -1609,6 +1575,46 @@ bool _isTimesPerWeekCheckHabit(Map<String, dynamic> habit) {
   final schedule = _map(habit['schedule']);
   final scheduleType = (schedule['type'] ?? '').toString().trim().toLowerCase();
   return scheduleType == 'timesperweek';
+}
+
+FlexibleWeeklyQuotaHabit _flexibleWeeklyQuotaHabit(
+  Map<String, dynamic> habit,
+) {
+  final schedule = _map(habit['schedule']);
+  return FlexibleWeeklyQuotaHabit(
+    habitId: _habitId(habit),
+    timesPerWeek: _safeInt(
+      schedule['timesPerWeek'] ?? schedule['timesPerWeekTarget'],
+      fallback: 0,
+    ),
+    createdAt: _parseHabitDate(habit['createdAt']),
+    weekStartsOn: _timesPerWeekWeekStartsOn(habit),
+  );
+}
+
+bool _isCurrentOpenWeekRange({
+  required DateTime from,
+  required DateTime to,
+  required DateTime today,
+  required int weekStartsOn,
+}) {
+  return _dateOnly(to) == _dateOnly(today) &&
+      _dateOnly(from) == _weekStartForDate(today, weekStartsOn: weekStartsOn);
+}
+
+FlexibleWeeklyDataQuality _mergeFlexibleDataQuality(
+  FlexibleWeeklyDataQuality current,
+  FlexibleWeeklyDataQuality next,
+) {
+  if (current == FlexibleWeeklyDataQuality.unverifiable ||
+      next == FlexibleWeeklyDataQuality.unverifiable) {
+    return FlexibleWeeklyDataQuality.unverifiable;
+  }
+  if (current == FlexibleWeeklyDataQuality.currentConfigFallback ||
+      next == FlexibleWeeklyDataQuality.currentConfigFallback) {
+    return FlexibleWeeklyDataQuality.currentConfigFallback;
+  }
+  return FlexibleWeeklyDataQuality.verified;
 }
 
 int _timesPerWeekTargetOf(Map<String, dynamic> habit) {
@@ -1830,21 +1836,29 @@ class _PeriodConsistencyStats {
     required this.expectedCount,
     required this.completedCount,
     required this.percentage,
+    required this.rawRatio,
+    required this.cappedRatio,
+    required this.dataQuality,
   });
 
   final int expectedCount;
   final int completedCount;
   final int percentage;
+  final double rawRatio;
+  final double cappedRatio;
+  final FlexibleWeeklyDataQuality dataQuality;
 }
 
 class _ExpectedCompletedCounts {
   const _ExpectedCompletedCounts({
     required this.expectedCount,
     required this.completedCount,
+    this.dataQuality = FlexibleWeeklyDataQuality.verified,
   });
 
   final int expectedCount;
   final int completedCount;
+  final FlexibleWeeklyDataQuality dataQuality;
 }
 
 class _PeriodRewardSummary {

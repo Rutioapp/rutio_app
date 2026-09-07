@@ -9,7 +9,8 @@ class ShopData {
     'Consumibles',
   ];
 
-  static const Map<String, List<Product>> productsByCategory = <String, List<Product>>{
+  static const Map<String, List<Product>> productsByCategory =
+      <String, List<Product>>{
     'Ropa': <Product>[
       Product(
         id: 'hoodie_01',

@@ -6,6 +6,24 @@ enum HabitOccurrenceScope {
   weeklyQuota,
 }
 
+enum HabitOccurrenceActivity {
+  completed,
+  skipped,
+  neutral,
+}
+
+extension HabitOccurrenceActivityX on HabitOccurrenceActivity {
+  static HabitOccurrenceActivity fromWire(Object? value) {
+    return switch (value) {
+      'completed' => HabitOccurrenceActivity.completed,
+      'skipped' => HabitOccurrenceActivity.skipped,
+      _ => HabitOccurrenceActivity.neutral,
+    };
+  }
+
+  String get wireValue => name;
+}
+
 class HabitOccurrenceResult {
   const HabitOccurrenceResult({
     required this.date,
@@ -14,12 +32,18 @@ class HabitOccurrenceResult {
     required this.scheduled,
     required this.completed,
     required this.skipped,
+    HabitOccurrenceActivity? activity,
     this.progress,
     this.target,
     this.weeklyScheduledCount,
     this.weeklyCompletedCount,
     this.weeklyQuotaMet = false,
-  });
+  }) : activity = activity ??
+            (skipped
+                ? HabitOccurrenceActivity.skipped
+                : completed
+                    ? HabitOccurrenceActivity.completed
+                    : HabitOccurrenceActivity.neutral);
 
   final DateTime date;
   final HabitOccurrenceScope scope;
@@ -27,6 +51,7 @@ class HabitOccurrenceResult {
   final bool scheduled;
   final bool completed;
   final bool skipped;
+  final HabitOccurrenceActivity activity;
   final num? progress;
   final num? target;
   final int? weeklyScheduledCount;
@@ -49,6 +74,7 @@ class HabitOccurrenceResult {
     bool? scheduled,
     bool? completed,
     bool? skipped,
+    HabitOccurrenceActivity? activity,
     num? progress,
     bool clearProgress = false,
     num? target,
@@ -59,13 +85,17 @@ class HabitOccurrenceResult {
     bool clearWeeklyCompletedCount = false,
     bool? weeklyQuotaMet,
   }) {
+    final nextCompleted = completed ?? this.completed;
+    final nextSkipped = skipped ?? this.skipped;
     return HabitOccurrenceResult(
       date: date ?? this.date,
       scope: scope ?? this.scope,
       scheduleType: scheduleType ?? this.scheduleType,
       scheduled: scheduled ?? this.scheduled,
-      completed: completed ?? this.completed,
-      skipped: skipped ?? this.skipped,
+      completed: nextCompleted,
+      skipped: nextSkipped,
+      activity: activity ??
+          (completed != null || skipped != null ? null : this.activity),
       progress: clearProgress ? null : progress ?? this.progress,
       target: clearTarget ? null : target ?? this.target,
       weeklyScheduledCount: clearWeeklyScheduledCount
@@ -88,6 +118,7 @@ class HabitOccurrenceResult {
         other.scheduled == scheduled &&
         other.completed == completed &&
         other.skipped == skipped &&
+        other.activity == activity &&
         other.progress == progress &&
         other.target == target &&
         other.weeklyScheduledCount == weeklyScheduledCount &&
@@ -103,6 +134,7 @@ class HabitOccurrenceResult {
         scheduled,
         completed,
         skipped,
+        activity,
         progress,
         target,
         weeklyScheduledCount,

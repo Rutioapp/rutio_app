@@ -489,6 +489,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingPreviewEveryDay => 'Todos los días';
 
   @override
+  String habitScheduleTimesPerWeek(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count veces por semana',
+      one: '1 vez por semana',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get onboardingPreviewNoReminder => 'Sin recordatorio';
 
   @override
@@ -708,7 +719,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String homeTimesPerWeekProgress(String completed, String target) {
-    return '$completed/$target esta semana';
+    return 'Objetivo semanal · $completed/$target días';
   }
 
   @override

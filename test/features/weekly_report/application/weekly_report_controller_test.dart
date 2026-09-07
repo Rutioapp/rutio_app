@@ -225,6 +225,7 @@ void main() {
     final controller = WeeklyReportController(
       repository,
       timeZoneResolver: () async => 'Europe/Madrid',
+      now: () => DateTime(2026, 9, 4, 12),
     );
     await controller.load();
     repository.refreshFailure = const WeeklyReportNetworkFailure();

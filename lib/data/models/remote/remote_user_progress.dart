@@ -50,8 +50,9 @@ class RemoteUserProgress {
       ),
       nextLevelXp: _safeInt(
         map['next_level_xp'],
-        fallback:
-            fallbackProgress.xpToNextLevel < 1 ? 1 : fallbackProgress.xpToNextLevel,
+        fallback: fallbackProgress.xpToNextLevel < 1
+            ? 1
+            : fallbackProgress.xpToNextLevel,
       ),
       ambarBalance: _safeInt(map['ambar_balance'], fallback: 0),
       totalAmbarEarned: _safeInt(map['total_ambar_earned'], fallback: 0),

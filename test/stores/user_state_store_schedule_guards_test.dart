@@ -11,6 +11,116 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('UserStateStore expected-date mutation guards', () {
+    test('completion outcomes are explicit and over-target progress is valid',
+        () async {
+      final now = DateTime(2026, 9, 13);
+      final store = await _seedStore(
+        habits: [
+          _habit(
+            id: 'flexible-over-target',
+            schedule: const {
+              'type': 'timesPerWeek',
+              'timesPerWeek': 4,
+              'weekStartsOn': 1,
+            },
+          ),
+        ],
+        nowProvider: () => now,
+      );
+      for (final day in [
+        DateTime(2026, 9, 7),
+        DateTime(2026, 9, 8),
+        DateTime(2026, 9, 9),
+        DateTime(2026, 9, 10),
+        DateTime(2026, 9, 11),
+      ]) {
+        await store.setHabitCompletionForKey(
+          habitId: 'flexible-over-target',
+          dateKey: _key(day),
+          done: true,
+        );
+      }
+
+      final outcome = await store.setHabitCompletionForKeyWithOutcome(
+        habitId: 'flexible-over-target',
+        dateKey: _key(now),
+        done: true,
+      );
+      expect(outcome, HabitMutationOutcome.applied);
+      expect(_historyDoneFor(store, _key(now), 'flexible-over-target'), true);
+
+      final view = buildHomeViewData(
+        store.state,
+        now,
+        today: now,
+      );
+      final habit = view.viewHabits.singleWhere(
+        (item) => item['id'] == 'flexible-over-target',
+      );
+      expect(habit['weeklyCompletedCount'], 6);
+      expect(habit['weeklyTargetCount'], 4);
+
+      final retry = await store.setHabitCompletionForKeyWithOutcome(
+        habitId: 'flexible-over-target',
+        dateKey: _key(now),
+        done: true,
+      );
+      expect(retry, HabitMutationOutcome.alreadyApplied);
+    });
+
+    test('non-scheduled day returns notApplicable', () async {
+      final store = await _seedStore(habits: [
+        _habit(
+          id: 'guarded-outcome',
+          schedule: const {
+            'type': 'weekly',
+            'weekdays': [1, 3],
+          },
+        ),
+      ]);
+
+      final outcome = await store.setHabitCompletionForKeyWithOutcome(
+        habitId: 'guarded-outcome',
+        dateKey: '2026-05-12',
+        done: true,
+      );
+      expect(outcome, HabitMutationOutcome.notApplicable);
+    });
+
+    test('local save failure returns failed and restores canonical memory',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final storage = _FailingStorage();
+      final repository = UserStateRepository(storage: storage)
+        ..setActiveUserScope('user_123');
+      final store = UserStateStore(
+        repository,
+        journalEntrySyncService: JournalEntrySyncService(),
+      );
+      await store.save(
+        _baseState(habits: [
+          _habit(
+            id: 'failed-completion',
+            schedule: const {'type': 'daily'},
+          ),
+        ]),
+      );
+      storage.failWrites = true;
+
+      final outcome = await store.setHabitCompletionForKeyWithOutcome(
+        habitId: 'failed-completion',
+        dateKey: _todayKey(),
+        done: true,
+      );
+
+      expect(outcome, HabitMutationOutcome.failed);
+      expect(store.activeHabits.single['doneToday'], isFalse);
+      expect(
+        _historyDoneFor(store, _todayKey(), 'failed-completion'),
+        isNull,
+      );
+    });
+
     test('weekly completion is ignored on non-scheduled weekday', () async {
       final store = await _seedStore(habits: [
         _habit(
@@ -70,6 +180,56 @@ void main() {
       );
 
       expect(_historyDoneFor(store, '2026-05-12', 'tpw-check'), isTrue);
+    });
+
+    test('timesPerWeek check skip works on any weekday', () async {
+      final store = await _seedStore(habits: [
+        _habit(
+          id: 'tpw-check',
+          schedule: const {
+            'type': 'timesPerWeek',
+            'timesPerWeek': 3,
+            'weekStartsOn': 1,
+          },
+        ),
+      ]);
+
+      await store.setHabitSkipForKey(
+        habitId: 'tpw-check',
+        dateKey: '2026-05-12',
+        skipped: true,
+      );
+
+      expect(_historySkipFor(store, '2026-05-12', 'tpw-check'), isTrue);
+      expect(_historyDoneFor(store, '2026-05-12', 'tpw-check'), isFalse);
+    });
+
+    test('timesPerWeek skip can be undone back to pending', () async {
+      final store = await _seedStore(habits: [
+        _habit(
+          id: 'tpw-check',
+          schedule: const {
+            'type': 'timesPerWeek',
+            'timesPerWeek': 3,
+          },
+        ),
+      ]);
+      final today = _todayKey();
+
+      await store.setHabitSkipForKey(
+        habitId: 'tpw-check',
+        dateKey: today,
+        skipped: true,
+      );
+      await store.setHabitSkipForKey(
+        habitId: 'tpw-check',
+        dateKey: today,
+        skipped: false,
+      );
+
+      expect(store.activeHabits.single['skippedToday'], isFalse);
+      expect(store.activeHabits.single['doneToday'], isFalse);
+      expect(_historySkipFor(store, today, 'tpw-check'), isFalse);
     });
 
     test('weekly skip is ignored on non-scheduled weekday', () async {
@@ -267,6 +427,7 @@ void main() {
 
 Future<UserStateStore> _seedStore({
   required List<Map<String, dynamic>> habits,
+  DateTime Function()? nowProvider,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final repo = UserStateRepository(storage: UserStateStorage())
@@ -274,9 +435,17 @@ Future<UserStateStore> _seedStore({
   final store = UserStateStore(
     repo,
     journalEntrySyncService: JournalEntrySyncService(),
+    nowProvider: nowProvider,
   );
   await store.save(_baseState(habits: habits));
   return store;
+}
+
+String _key(DateTime date) {
+  final local = DateTime(date.year, date.month, date.day);
+  return '${local.year.toString().padLeft(4, '0')}-'
+      '${local.month.toString().padLeft(2, '0')}-'
+      '${local.day.toString().padLeft(2, '0')}';
 }
 
 Map<String, dynamic> _baseState({
@@ -414,4 +583,19 @@ String _todayKey() {
   final m = date.month.toString().padLeft(2, '0');
   final d = date.day.toString().padLeft(2, '0');
   return '$y-$m-$d';
+}
+
+class _FailingStorage extends UserStateStorage {
+  bool failWrites = false;
+
+  @override
+  Future<void> write(
+    Map<String, dynamic> userStateJson, {
+    String? userId,
+  }) {
+    if (failWrites) {
+      return Future<void>.error(StateError('test write failure'));
+    }
+    return super.write(userStateJson, userId: userId);
+  }
 }

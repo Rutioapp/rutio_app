@@ -98,7 +98,8 @@ class CurrencyEventRepository {
       }
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[currency_event_repository] unexpected insert error: $error');
+        debugPrint(
+            '[currency_event_repository] unexpected insert error: $error');
       }
       return RepositoryResult<RemoteCurrencyEvent>.failure(
         RepositoryError(
@@ -110,7 +111,8 @@ class CurrencyEventRepository {
     }
   }
 
-  Future<RepositoryResult<List<RemoteCurrencyEvent>>> fetchRecentCurrencyEvents({
+  Future<RepositoryResult<List<RemoteCurrencyEvent>>>
+      fetchRecentCurrencyEvents({
     int limit = 30,
   }) async {
     final userId = _currentUserId();
@@ -149,7 +151,8 @@ class CurrencyEventRepository {
       );
     } catch (error) {
       if (kDebugMode) {
-        debugPrint('[currency_event_repository] unexpected fetch error: $error');
+        debugPrint(
+            '[currency_event_repository] unexpected fetch error: $error');
       }
       return RepositoryResult<List<RemoteCurrencyEvent>>.failure(
         RepositoryError(

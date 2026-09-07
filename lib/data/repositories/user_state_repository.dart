@@ -140,9 +140,8 @@ class UserStateRepository {
   String? _extractUserId(Map<String, dynamic> root) {
     final userState = root['userState'];
     if (userState is! Map) return null;
-    final value = (userState['userId'] ?? userState['id'] ?? '')
-        .toString()
-        .trim();
+    final value =
+        (userState['userId'] ?? userState['id'] ?? '').toString().trim();
     return value.isEmpty ? null : value;
   }
 
@@ -177,4 +176,3 @@ class UserStateRepository {
     );
   }
 }
-

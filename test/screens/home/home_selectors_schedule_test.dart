@@ -138,6 +138,32 @@ void main() {
       );
     });
 
+    test('resolved skipped days show the phrase only in pending filter', () {
+      const isDayResolvedForPhrase = true;
+
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.pending,
+          isCompletedDay: isDayResolvedForPhrase,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.completed,
+          isCompletedDay: isDayResolvedForPhrase,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldShowCompletedDayPhrase(
+          selectedFilter: HomeHabitStatusFilter.skipped,
+          isCompletedDay: isDayResolvedForPhrase,
+        ),
+        isFalse,
+      );
+    });
+
     test('keeps the phrase hidden until all active transitions are gone', () {
       final transitions = <HomeHabitCompletionTransition>[
         _completionTransition(),
@@ -377,7 +403,7 @@ void main() {
       expect(habit['isTimesPerWeekCheck'], isTrue);
       expect(habit['weeklyCompletedCount'], 1);
       expect(habit['weeklyTargetCount'], 3);
-      expect(habit['isWeeklyTargetMet'], isFalse);
+      expect(habit['weeklyQuotaMet'], isFalse);
     });
 
     test(
@@ -418,12 +444,12 @@ void main() {
       final habit = view.completedHabits.single;
       expect(habit['weeklyCompletedCount'], 1);
       expect(habit['weeklyTargetCount'], 3);
-      expect(habit['isWeeklyTargetMet'], isFalse);
+      expect(habit['weeklyQuotaMet'], isFalse);
       expect(habit['doneToday'], isTrue);
     });
 
     test(
-        'timesPerWeek check is completed for the week once target is reached even if not done on selected day',
+        'timesPerWeek check stays pending after quota is reached if not done today',
         () {
       final selectedDay = DateTime(2026, 5, 15);
       final selectedKey = _dateKey(selectedDay);
@@ -456,14 +482,14 @@ void main() {
       };
 
       final view = buildHomeViewData(root, selectedDay);
-      expect(view.pendingHabits, isEmpty);
-      expect(view.completedHabits.map((h) => h['id']), ['tpw-check']);
+      expect(view.pendingHabits.map((h) => h['id']), ['tpw-check']);
+      expect(view.completedHabits, isEmpty);
       expect(view.skippedHabits, isEmpty);
-      expect(view.doneCount, 1);
+      expect(view.doneCount, 0);
       expect(view.totalCount, 1);
 
-      final habit = view.completedHabits.single;
-      expect(habit['isWeeklyTargetMet'], isTrue);
+      final habit = view.pendingHabits.single;
+      expect(habit['weeklyQuotaMet'], isTrue);
       expect(habit['weeklyCompletedCount'], 3);
       expect(habit['weeklyTargetCount'], 3);
       expect(habit['doneToday'], isFalse);
@@ -506,7 +532,7 @@ void main() {
       final habit = view.viewHabits.single;
       expect(habit['weeklyCompletedCount'], 2);
       expect(habit['weeklyTargetCount'], 3);
-      expect(habit['isWeeklyTargetMet'], isFalse);
+      expect(habit['weeklyQuotaMet'], isFalse);
     });
 
     test('timesPerWeek display supports over-completion (4/3)', () {
@@ -548,7 +574,7 @@ void main() {
       final habit = view.completedHabits.single;
       expect(habit['weeklyCompletedCount'], 4);
       expect(habit['weeklyTargetCount'], 3);
-      expect(habit['isWeeklyTargetMet'], isTrue);
+      expect(habit['weeklyQuotaMet'], isTrue);
     });
 
     test('timesPerWeek visibility still respects createdAt', () {
@@ -587,9 +613,7 @@ void main() {
       expect(view.skippedHabits, isEmpty);
     });
 
-    test(
-        'timesPerWeek skip does not reduce weekly target and met target remains completed',
-        () {
+    test('timesPerWeek skip is a daily skipped state', () {
       final selectedDay = DateTime(2026, 5, 15);
       final selectedKey = _dateKey(selectedDay);
       final root = <String, dynamic>{
@@ -622,17 +646,17 @@ void main() {
 
       final view = buildHomeViewData(root, selectedDay);
       expect(view.pendingHabits, isEmpty);
-      expect(view.completedHabits.map((h) => h['id']), ['tpw-check']);
-      expect(view.skippedHabits, isEmpty);
+      expect(view.completedHabits, isEmpty);
+      expect(view.skippedHabits.map((h) => h['id']), ['tpw-check']);
 
-      final habit = view.completedHabits.single;
+      final habit = view.skippedHabits.single;
       expect(habit['weeklyCompletedCount'], 3);
       expect(habit['weeklyTargetCount'], 3);
-      expect(habit['isWeeklyTargetMet'], isTrue);
+      expect(habit['weeklyQuotaMet'], isTrue);
       expect(habit['skippedToday'], isTrue);
     });
 
-    test('timesPerWeek skipped today and target not met appears skipped', () {
+    test('timesPerWeek skipped today leaves the habit resolved for today', () {
       final selectedDay = DateTime(2026, 5, 15);
       final selectedKey = _dateKey(selectedDay);
       final root = <String, dynamic>{
@@ -669,7 +693,7 @@ void main() {
       final habit = view.skippedHabits.single;
       expect(habit['weeklyCompletedCount'], 1);
       expect(habit['weeklyTargetCount'], 3);
-      expect(habit['isWeeklyTargetMet'], isFalse);
+      expect(habit['weeklyQuotaMet'], isFalse);
       expect(habit['skippedToday'], isTrue);
     });
 
@@ -715,7 +739,7 @@ void main() {
       expect(habit['isTimesPerWeekCheck'], isFalse);
       expect(habit.containsKey('weeklyCompletedCount'), isFalse);
       expect(habit.containsKey('weeklyTargetCount'), isFalse);
-      expect(habit.containsKey('isWeeklyTargetMet'), isFalse);
+      expect(habit.containsKey('weeklyQuotaMet'), isFalse);
     });
   });
 

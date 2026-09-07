@@ -39,6 +39,11 @@ class WeeklyReportUnsupportedSchema extends WeeklyReportError {
       : super('Weekly Report schema is not supported.', cause: cause);
 }
 
+class WeeklyReportUnsupportedMetricsPolicy extends WeeklyReportError {
+  const WeeklyReportUnsupportedMetricsPolicy([Object? cause])
+      : super('Weekly Report metrics policy is not supported.', cause: cause);
+}
+
 class WeeklyReportMalformedPayload extends WeeklyReportError {
   const WeeklyReportMalformedPayload([Object? cause])
       : super('Weekly Report payload is malformed.', cause: cause);
@@ -86,7 +91,13 @@ class RemoteWeeklyReportHistoryItem {
       final status = json['status'] as String;
       if (status != 'provisional' && status != 'final')
         throw const WeeklyReportMalformedPayload();
+      final policy = _historyPolicy(json['metricsPolicyVersion']);
+      final dataQuality = policy == 1
+          ? WeeklyReportDataQuality.legacy
+          : WeeklyReportDataQualityX.fromWire(json['dataQuality']);
       final rate = json['completionRate'];
+      final completedCount = (json['completedCount'] as num).toInt();
+      final scheduledCount = (json['scheduledCount'] as num).toInt();
       return WeeklyReportHistoryItem(
           reportId: json['reportId'] as String,
           week: WeeklyReportWeekFactory.fromDates(
@@ -95,8 +106,22 @@ class RemoteWeeklyReportHistoryItem {
               ? WeeklyReportStatus.finalized
               : WeeklyReportStatus.provisional,
           completionRate: (rate as num?)?.toDouble(),
-          completedCount: (json['completedCount'] as num).toInt(),
-          scheduledCount: (json['scheduledCount'] as num).toInt(),
+          completedCount: completedCount,
+          scheduledCount: scheduledCount,
+          completedRaw: policy == 1
+              ? completedCount
+              : _historyNonNegativeInt(json['completedRaw']),
+          scheduledQuota: policy == 1
+              ? scheduledCount
+              : _historyNonNegativeInt(json['scheduledQuota']),
+          rawRatio: policy == 1
+              ? (rate as num?)?.toDouble()
+              : _historyRawRatio(json['rawRatio']),
+          cappedRatio: policy == 1
+              ? (rate as num?)?.toDouble()
+              : _historyCappedRatio(json['cappedRatio']),
+          dataQuality: dataQuality,
+          metricsPolicyVersion: policy,
           firstPartialWeek: json['firstPartialWeek'] as bool,
           refreshedAt: json['refreshedAt'] == null
               ? null
@@ -134,7 +159,9 @@ class SupabaseWeeklyReportRemoteDataSource
           supportedSchemaVersion: supportedSchemaVersion);
     } on WeeklyReportPayloadException catch (e) {
       if (e.message.startsWith('Unsupported'))
-        throw WeeklyReportUnsupportedSchema(e);
+        throw (e.message.startsWith('Unsupported metricsPolicyVersion')
+            ? WeeklyReportUnsupportedMetricsPolicy(e)
+            : WeeklyReportUnsupportedSchema(e));
       throw WeeklyReportMalformedPayload(e);
     }
   }
@@ -328,13 +355,13 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
       final payload = await remote.getLatest();
       if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
       if (payload == null) return null;
-      await _save(scope, payload);
+      final saved = await _save(scope, payload);
       _debugRefreshLog(
-        'read latest remoteSource=remoteFresh reportId=${payload.report.id} '
-        'status=${payload.report.status}',
+        'read latest remoteSource=remoteFresh reportId=${saved.report.id} '
+        'status=${saved.report.status}',
       );
       return WeeklyReportSnapshot(
-          report: mapRemoteWeeklyReport(payload),
+          report: mapRemoteWeeklyReport(saved),
           source: WeeklyReportDataSource.remoteFresh,
           cachedAt: null,
           isStale: false);
@@ -354,8 +381,8 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
       final payload = await remote.getById(reportId);
       if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
       if (payload == null) throw const WeeklyReportNotFound();
-      await _save(scope, payload);
-      return _fresh(payload);
+      final saved = await _save(scope, payload);
+      return _fresh(saved);
     } catch (e) {
       if (e is WeeklyReportError &&
           e is! WeeklyReportNetworkFailure &&
@@ -377,12 +404,12 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
       final payload = await remote.getByWeekStart(weekStartDate);
       if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
       if (payload == null) return null;
-      await _save(scope, payload);
+      final saved = await _save(scope, payload);
       _debugRefreshLog(
-        'read exact remoteSource=remoteFresh reportId=${payload.report.id} '
-        'status=${payload.report.status}',
+        'read exact remoteSource=remoteFresh reportId=${saved.report.id} '
+        'status=${saved.report.status}',
       );
-      return _fresh(payload);
+      return _fresh(saved);
     } catch (error) {
       if (error is WeeklyReportError) rethrow;
       throw _network(error);
@@ -434,12 +461,12 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
       final payload = await remote.refresh(weekStartDate);
       if (!_isCurrent(scope)) throw const WeeklyReportStaleScope();
       if (payload == null) throw const WeeklyReportNotFound();
-      await _save(scope, payload);
+      final saved = await _save(scope, payload);
       _debugRefreshLog(
-        'refresh RPC remoteSource=remoteFresh reportId=${payload.report.id} '
-        'status=${payload.report.status}',
+        'refresh RPC remoteSource=remoteFresh reportId=${saved.report.id} '
+        'status=${saved.report.status}',
       );
-      return _fresh(payload);
+      return _fresh(saved);
     } on WeeklyReportError {
       rethrow;
     } catch (e) {
@@ -480,7 +507,8 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
     return _cached(entries.single);
   }
 
-  Future<void> _save(WeeklyReportScope s, RemoteWeeklyReport p) async {
+  Future<RemoteWeeklyReport> _save(
+      WeeklyReportScope s, RemoteWeeklyReport p) async {
     if (!_isCurrent(s)) throw const WeeklyReportStaleScope();
     if (p.report.userId != s.userId) {
       throw const WeeklyReportUnauthorized();
@@ -488,7 +516,7 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
     final id = p.report.id;
     final old = await cache.read(s.userId, id);
     if (old != null && id != 'latest' && old.payload.report.status == 'final') {
-      return;
+      return old.payload;
     }
     if (old != null &&
         old.payload.report.status == 'provisional' &&
@@ -496,10 +524,11 @@ class SupabaseWeeklyReportRepository implements WeeklyReportRepository {
         old.payload.report.refreshedAt != null &&
         p.report.refreshedAt != null &&
         !p.report.refreshedAt!.isAfter(old.payload.report.refreshedAt!)) {
-      return;
+      return old.payload;
     }
     await cache.write(s.userId, id, p, cachedAt: _now().toUtc());
     await cache.write(s.userId, 'latest', p, cachedAt: _now().toUtc());
+    return p;
   }
 
   WeeklyReportSnapshot _fresh(RemoteWeeklyReport p) => WeeklyReportSnapshot(
@@ -540,6 +569,11 @@ Map<String, dynamic> _payloadJson(RemoteWeeklyReport p) => {
         'scheduledCount': p.report.scheduledCount,
         'completedCount': p.report.completedCount,
         'completionRate': p.report.completionRate,
+        'completedRaw': p.report.completedRaw,
+        'scheduledQuota': p.report.scheduledQuota,
+        'rawRatio': p.report.rawRatio,
+        'cappedRatio': p.report.cappedRatio,
+        'dataQuality': p.report.dataQuality?.wireValue,
         'bestDay': p.report.bestDay,
         'trendKind': p.report.trendKind,
         'trendDelta': p.report.trendDelta,
@@ -575,6 +609,11 @@ Map<String, dynamic> _payloadJson(RemoteWeeklyReport p) => {
                 'completedCount': h.completedCount,
                 'skippedCount': h.skippedCount,
                 'completionRate': h.completionRate,
+                'completedRaw': h.completedRaw,
+                'scheduledQuota': h.scheduledQuota,
+                'rawRatio': h.rawRatio,
+                'cappedRatio': h.cappedRatio,
+                'dataQuality': h.dataQuality?.wireValue,
                 'occurrences': h.occurrences,
                 'streakSnapshot': h.streakSnapshot
               })
@@ -592,3 +631,42 @@ Map<String, dynamic> _payloadJson(RemoteWeeklyReport p) => {
               })
           .toList(),
     };
+
+int _historyPolicy(Object? value) {
+  final policy = value ?? 1;
+  if (policy is! num ||
+      !policy.isFinite ||
+      policy != policy.round() ||
+      policy < 1) {
+    throw const WeeklyReportMalformedPayload();
+  }
+  final result = policy.toInt();
+  if (result > supportedWeeklyReportMetricsPolicyVersion) {
+    throw const WeeklyReportUnsupportedMetricsPolicy();
+  }
+  return result;
+}
+
+int? _historyNonNegativeInt(Object? value) {
+  if (value == null) return null;
+  if (value is! num || !value.isFinite || value != value.round() || value < 0) {
+    throw const WeeklyReportMalformedPayload();
+  }
+  return value.toInt();
+}
+
+double? _historyRawRatio(Object? value) {
+  if (value == null) return null;
+  if (value is! num || !value.isFinite || value < 0) {
+    throw const WeeklyReportMalformedPayload();
+  }
+  return value.toDouble();
+}
+
+double? _historyCappedRatio(Object? value) {
+  if (value == null) return null;
+  if (value is! num || !value.isFinite || value < 0 || value > 1) {
+    throw const WeeklyReportMalformedPayload();
+  }
+  return value.toDouble();
+}

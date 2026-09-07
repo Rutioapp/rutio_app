@@ -7,6 +7,7 @@ import '../../application/weekly_report_controller.dart';
 import '../../domain/weekly_report.dart';
 import '../widgets/weekly_report_habits_section.dart';
 import '../weekly_report_copy_resolver.dart';
+import '../weekly_report_metric_display.dart';
 import '../widgets/weekly_report_recommendation.dart';
 import '../widgets/weekly_report_reflection.dart';
 import '../weekly_report_visuals.dart';
@@ -263,6 +264,14 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final summary = report.summary;
+    final completed = WeeklyReportMetricDisplay.summaryCompleted(summary);
+    final quota = WeeklyReportMetricDisplay.summaryQuota(summary);
+    final progress = WeeklyReportMetricDisplay.summaryProgress(summary);
+    final completedText = completed == null
+        ? '—'
+        : WeeklyReportMetricDisplay.hasQuota(quota)
+            ? '$completed/$quota'
+            : '$completed';
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Stack(children: [
@@ -300,15 +309,15 @@ class _SummaryCard extends StatelessWidget {
               Expanded(
                   child: _Metric(
                       icon: Icons.check_circle_outline,
-                      value: '${summary.completedCount}',
+                      value: completedText,
                       label: l10n.weeklyReportCompleted)),
               const _Divider(),
               Expanded(
                   child: _Metric(
                       icon: Icons.percent,
-                      value: summary.completionRate == null
+                      value: progress == null
                           ? '—'
-                          : '${(summary.completionRate! * 100).round()}%',
+                          : '${(progress * 100).round()}%',
                       label: l10n.weeklyReportCompletion)),
               const _Divider(),
               Expanded(
@@ -371,14 +380,20 @@ class _CompletionRing extends StatelessWidget {
   final WeeklyReport report;
   @override
   Widget build(BuildContext context) {
-    final rate = report.summary.completionRate;
+    final rate = WeeklyReportMetricDisplay.summaryProgress(report.summary);
+    final completed =
+        WeeklyReportMetricDisplay.summaryCompleted(report.summary);
+    final scheduled = WeeklyReportMetricDisplay.summaryQuota(report.summary);
+    final countSemantics = completed == null || scheduled == null
+        ? ''
+        : ', $completed ${context.l10n.weeklyReportOf} $scheduled';
     final label = rate == null
         ? context.l10n.weeklyReportNoScheduled
         : '${(rate * 100).round()}%';
     return Semantics(
         label: rate == null
             ? context.l10n.weeklyReportNoScheduled
-            : '${(rate * 100).round()}% ${context.l10n.weeklyReportCompletion}, ${report.summary.completedCount} ${context.l10n.weeklyReportOf} ${report.summary.scheduledCount}',
+            : '${(rate * 100).round()}% ${context.l10n.weeklyReportCompletion}$countSemantics',
         child: Column(children: [
           Text(context.l10n.weeklyReportCompletion,
               style:

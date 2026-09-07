@@ -53,7 +53,8 @@ void main() {
 
       final store = await _buildStore(
         userProgressRepository: _FakeUserProgressRepository(
-          result: const RepositoryResult<RemoteUserProgress?>.success(data: null),
+          result:
+              const RepositoryResult<RemoteUserProgress?>.success(data: null),
         ),
         currentSupabaseUserIdProvider: () => 'user-123',
         initialXp: 18,
@@ -62,7 +63,8 @@ void main() {
 
       final result = await store.restoreSupabaseUserProgressBestEffort();
 
-      expect(result.status, SupabaseUserProgressRestoreStatus.skippedNoRemoteRow);
+      expect(
+          result.status, SupabaseUserProgressRestoreStatus.skippedNoRemoteRow);
       expect(_xp(store), 18);
       expect(_level(store), 1);
       expect(_coins(store), 7);
@@ -89,7 +91,8 @@ void main() {
 
       final result = await store.restoreSupabaseUserProgressBestEffort();
 
-      expect(result.status, SupabaseUserProgressRestoreStatus.skippedNoAuthUser);
+      expect(
+          result.status, SupabaseUserProgressRestoreStatus.skippedNoAuthUser);
       expect(fakeRepo.fetchCallCount, 0);
       expect(_xp(store), 0);
       expect(_coins(store), 0);
@@ -115,7 +118,8 @@ void main() {
           currentSupabaseUserIdProvider: () => 'user-123',
         );
 
-        final result = await store.syncSupabaseUserProgressBootstrapBestEffort();
+        final result =
+            await store.syncSupabaseUserProgressBootstrapBestEffort();
 
         expect(
           result.restoreResult.status,
@@ -161,7 +165,8 @@ void main() {
       expect(_coins(store), 88);
     });
 
-    test('clean template state with remote progress does not remain default', () async {
+    test('clean template state with remote progress does not remain default',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final store = await _buildStore(
@@ -186,7 +191,8 @@ void main() {
       expect(_coins(store), isNot(0));
     });
 
-    test('restore does not trigger reward or celebration side effects', () async {
+    test('restore does not trigger reward or celebration side effects',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final syncService = _RecordingUserProgressSyncService();
@@ -217,7 +223,9 @@ void main() {
       expect(syncService.currencyEventCallCount, 0);
     });
 
-    test('conflicting non-template local progress skips destructive restore and backfill', () async {
+    test(
+        'conflicting non-template local progress skips destructive restore and backfill',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       final syncService = _RecordingUserProgressSyncService();

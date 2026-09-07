@@ -1,4 +1,5 @@
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_global_insight.dart';
+import 'package:rutio/features/habits/domain/metrics/flexible_weekly_quota.dart';
 import 'package:rutio/features/statistics/presentation/v3/models/statistics_v3_view_data.dart';
 
 const int _minConsistencyForPositiveInsight = 72;
@@ -11,6 +12,11 @@ const int _maxCompletionsForLowActivityInsight = 1;
 StatisticsV3GlobalInsight resolveStatisticsV3GlobalInsight(
   StatisticsV3ViewData viewData,
 ) {
+  if (viewData.dataQuality == FlexibleWeeklyDataQuality.unverifiable) {
+    return const StatisticsV3GlobalInsight(
+      type: StatisticsV3GlobalInsightType.noData,
+    );
+  }
   if (viewData.totalDays <= 0 || viewData.completedHabits <= 0) {
     return const StatisticsV3GlobalInsight(
       type: StatisticsV3GlobalInsightType.noData,

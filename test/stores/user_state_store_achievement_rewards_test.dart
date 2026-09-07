@@ -9,7 +9,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('UserStateStore achievement rewards', () {
-    test('achievement reward adds coins to the real wallet on unlock', () async {
+    test('achievement reward adds coins to the real wallet on unlock',
+        () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
 
       const scopeUserId = 'achievement-wallet-reward';

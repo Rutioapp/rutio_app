@@ -17,10 +17,13 @@ void main() {
 
     test('progress is relative to the active interval', () {
       expect(habitStatsHeroMilestoneProgressForStreak(0).progress, 0);
-      expect(habitStatsHeroMilestoneProgressForStreak(1).progress, closeTo(1 / 3, 0.0001));
-      expect(habitStatsHeroMilestoneProgressForStreak(2).progress, closeTo(2 / 3, 0.0001));
+      expect(habitStatsHeroMilestoneProgressForStreak(1).progress,
+          closeTo(1 / 3, 0.0001));
+      expect(habitStatsHeroMilestoneProgressForStreak(2).progress,
+          closeTo(2 / 3, 0.0001));
       expect(habitStatsHeroMilestoneProgressForStreak(3).progress, 0);
-      expect(habitStatsHeroMilestoneProgressForStreak(5).progress, closeTo(2 / 4, 0.0001));
+      expect(habitStatsHeroMilestoneProgressForStreak(5).progress,
+          closeTo(2 / 4, 0.0001));
       expect(habitStatsHeroMilestoneProgressForStreak(30).progress, 0);
     });
   });

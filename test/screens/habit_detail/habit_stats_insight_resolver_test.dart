@@ -126,13 +126,15 @@ void main() {
           currentWeekCompleted: 2,
           previousWeekCompleted: 4,
         ),
-        _shell(todayState: HabitStatsDayState.pending, weeklyConsistencyPct: 80),
+        _shell(
+            todayState: HabitStatsDayState.pending, weeklyConsistencyPct: 80),
         _shell(
           todayState: HabitStatsDayState.pending,
           hasBestMomentData: true,
           bestMomentSlot: HabitStatsBestMomentSlot.morning,
         ),
-        _shell(todayState: HabitStatsDayState.pending, weeklyConsistencyPct: 20),
+        _shell(
+            todayState: HabitStatsDayState.pending, weeklyConsistencyPct: 20),
         _shell(
           todayState: HabitStatsDayState.pending,
           hasHistory: true,

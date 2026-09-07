@@ -4,6 +4,7 @@ import '../../../../l10n/l10n.dart';
 import '../../../habits/domain/metrics/habit_occurrence_result.dart';
 import '../../domain/weekly_report.dart';
 import '../weekly_report_copy_resolver.dart';
+import '../weekly_report_metric_display.dart';
 import '../weekly_report_visuals.dart';
 
 /// Compact, snapshot-only rendering of the habits part of a weekly report.
@@ -96,8 +97,23 @@ class _WeeklyReportHabitsSectionState extends State<WeeklyReportHabitsSection> {
           WeeklyReportHabitClassification classification) =>
       [
         for (final habit in widget.habits)
-          if (habit.classification == classification) habit,
+          if (_displayClassification(habit) == classification) habit,
       ];
+
+  WeeklyReportHabitClassification _displayClassification(
+      WeeklyReportHabit habit) {
+    if (habit.dataQuality == WeeklyReportDataQuality.legacy) {
+      return habit.classification;
+    }
+    final quota = WeeklyReportMetricDisplay.habitQuota(habit);
+    final progress = WeeklyReportMetricDisplay.habitProgress(habit);
+    if (!WeeklyReportMetricDisplay.hasQuota(quota) || progress == null) {
+      return WeeklyReportHabitClassification.unavailable;
+    }
+    if (progress >= .8) return WeeklyReportHabitClassification.highlighted;
+    if (progress < .5) return WeeklyReportHabitClassification.needsAttention;
+    return WeeklyReportHabitClassification.stable;
+  }
 
   void _toggle(WeeklyReportHabitClassification classification) {
     if (_byClassification(classification).isEmpty) return;
@@ -260,9 +276,14 @@ class _WeeklyReportHabitRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final result = habit.scheduledCount == 0
+    final completed = WeeklyReportMetricDisplay.habitCompleted(habit);
+    final quota = WeeklyReportMetricDisplay.habitQuota(habit);
+    final progress = WeeklyReportMetricDisplay.habitProgress(habit);
+    final result = !WeeklyReportMetricDisplay.hasQuota(quota)
         ? context.l10n.weeklyReportHabitNoSchedule
-        : '${habit.completedCount}/${habit.scheduledCount} · ${(habit.completionRate! * 100).round()}%';
+        : completed == null || progress == null
+            ? context.l10n.weeklyReportHabitUnavailable
+            : '$completed/$quota · ${(progress * 100).round()}%';
     final streak = habit.streakSnapshot;
     final streakText = streak == null
         ? null
@@ -354,7 +375,9 @@ class _WeeklyReportHabitRow extends StatelessWidget {
     for (final occurrence in habit.occurrences) {
       if (occurrence.date.weekday == weekday &&
           (occurrence.scope == HabitOccurrenceScope.dateBound ||
-              habit.schedule.isTimesPerWeek)) return occurrence;
+              habit.schedule.isTimesPerWeek)) {
+        return occurrence;
+      }
     }
     return null;
   }
@@ -362,12 +385,16 @@ class _WeeklyReportHabitRow extends StatelessWidget {
   String _occurrenceLabel(
       BuildContext context, String day, HabitOccurrenceResult occurrence) {
     final l10n = context.l10n;
-    if (occurrence.skipped) return l10n.weeklyReportHabitDaySkipped(day);
-    if (occurrence.completed) return l10n.weeklyReportHabitDayCompleted(day);
-    if (occurrence.isPartialProgress)
-      return l10n.weeklyReportHabitDayPartial(day);
-    if (occurrence.scheduled) return l10n.weeklyReportHabitDayIncomplete(day);
-    return l10n.weeklyReportHabitDayNoSchedule(day);
+    return switch (occurrence.activity) {
+      HabitOccurrenceActivity.skipped => l10n.weeklyReportHabitDaySkipped(day),
+      HabitOccurrenceActivity.completed =>
+        l10n.weeklyReportHabitDayCompleted(day),
+      HabitOccurrenceActivity.neutral => occurrence.isPartialProgress
+          ? l10n.weeklyReportHabitDayPartial(day)
+          : occurrence.scheduled
+              ? l10n.weeklyReportHabitDayIncomplete(day)
+              : l10n.weeklyReportHabitDayNoSchedule(day),
+    };
   }
 }
 
@@ -397,7 +424,9 @@ class _HabitDayDots extends StatelessWidget {
     for (final occurrence in habit.occurrences) {
       if (occurrence.date.weekday == weekday &&
           (occurrence.scope == HabitOccurrenceScope.dateBound ||
-              habit.schedule.isTimesPerWeek)) return occurrence;
+              habit.schedule.isTimesPerWeek)) {
+        return occurrence;
+      }
     }
     return null;
   }
@@ -405,15 +434,20 @@ class _HabitDayDots extends StatelessWidget {
   String _daySemantics(
       BuildContext context, int weekday, HabitOccurrenceResult? occurrence) {
     final day = context.l10n.weekdayFull(weekday);
-    if (occurrence == null)
+    if (occurrence == null) {
       return context.l10n.weeklyReportHabitDayNoActivity(day);
+    }
     final l10n = context.l10n;
-    if (occurrence.skipped) return l10n.weeklyReportHabitDaySkipped(day);
-    if (occurrence.completed) return l10n.weeklyReportHabitDayCompleted(day);
-    if (occurrence.isPartialProgress)
-      return l10n.weeklyReportHabitDayPartial(day);
-    if (occurrence.scheduled) return l10n.weeklyReportHabitDayIncomplete(day);
-    return l10n.weeklyReportHabitDayNoSchedule(day);
+    return switch (occurrence.activity) {
+      HabitOccurrenceActivity.skipped => l10n.weeklyReportHabitDaySkipped(day),
+      HabitOccurrenceActivity.completed =>
+        l10n.weeklyReportHabitDayCompleted(day),
+      HabitOccurrenceActivity.neutral => occurrence.isPartialProgress
+          ? l10n.weeklyReportHabitDayPartial(day)
+          : occurrence.scheduled
+              ? l10n.weeklyReportHabitDayIncomplete(day)
+              : l10n.weeklyReportHabitDayNoSchedule(day),
+    };
   }
 }
 

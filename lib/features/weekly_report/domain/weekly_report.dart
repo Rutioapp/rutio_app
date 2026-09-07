@@ -9,17 +9,48 @@ enum WeeklyReportStatus {
   finalized,
 }
 
+enum WeeklyReportDataQuality {
+  legacy,
+  verified,
+  partial,
+  unverifiable,
+}
+
+extension WeeklyReportDataQualityX on WeeklyReportDataQuality {
+  static WeeklyReportDataQuality fromWire(Object? value) {
+    return switch (value) {
+      'legacy' => WeeklyReportDataQuality.legacy,
+      'verified' => WeeklyReportDataQuality.verified,
+      'partial' => WeeklyReportDataQuality.partial,
+      'unverifiable' => WeeklyReportDataQuality.unverifiable,
+      _ => WeeklyReportDataQuality.unverifiable,
+    };
+  }
+
+  String get wireValue => name;
+}
+
 class WeeklyReportSummary {
   const WeeklyReportSummary({
     required this.scheduledCount,
     required this.completedCount,
     required this.completionRate,
+    this.completedRaw,
+    this.scheduledQuota,
+    this.rawRatio,
+    this.cappedRatio,
+    this.dataQuality = WeeklyReportDataQuality.legacy,
     this.bestDay,
   });
 
   final int scheduledCount;
   final int completedCount;
   final double? completionRate;
+  final int? completedRaw;
+  final int? scheduledQuota;
+  final double? rawRatio;
+  final double? cappedRatio;
+  final WeeklyReportDataQuality dataQuality;
   final WeeklyReportDay? bestDay;
 
   bool get hasScheduledCount => scheduledCount > 0;
@@ -70,6 +101,11 @@ class WeeklyReportHabit {
     required this.completedCount,
     required this.skippedCount,
     required this.completionRate,
+    this.completedRaw,
+    this.scheduledQuota,
+    this.rawRatio,
+    this.cappedRatio,
+    this.dataQuality = WeeklyReportDataQuality.legacy,
     required this.occurrences,
     required this.classification,
     this.emoji,
@@ -90,6 +126,11 @@ class WeeklyReportHabit {
   final int completedCount;
   final int skippedCount;
   final double? completionRate;
+  final int? completedRaw;
+  final int? scheduledQuota;
+  final double? rawRatio;
+  final double? cappedRatio;
+  final WeeklyReportDataQuality dataQuality;
   final WeeklyReportHabitClassification classification;
   final List<HabitOccurrenceResult> occurrences;
   final HabitStreakSnapshot? streakSnapshot;
@@ -202,6 +243,12 @@ class WeeklyReportHistoryItem {
     required this.completionRate,
     required this.completedCount,
     required this.scheduledCount,
+    this.completedRaw,
+    this.scheduledQuota,
+    this.rawRatio,
+    this.cappedRatio,
+    this.dataQuality = WeeklyReportDataQuality.legacy,
+    this.metricsPolicyVersion = 1,
     required this.firstPartialWeek,
     this.refreshedAt,
     this.finalizedAt,
@@ -213,6 +260,12 @@ class WeeklyReportHistoryItem {
   final double? completionRate;
   final int completedCount;
   final int scheduledCount;
+  final int? completedRaw;
+  final int? scheduledQuota;
+  final double? rawRatio;
+  final double? cappedRatio;
+  final WeeklyReportDataQuality dataQuality;
+  final int metricsPolicyVersion;
   final bool firstPartialWeek;
   final DateTime? refreshedAt;
   final DateTime? finalizedAt;
@@ -275,6 +328,11 @@ WeeklyReportHabit weeklyReportHabitFromMetrics({
     completedCount: metrics.completedCount,
     skippedCount: metrics.skippedCount,
     completionRate: metrics.completionRate,
+    completedRaw: metrics.completedCount,
+    scheduledQuota: metrics.scheduledCount,
+    rawRatio: metrics.completionRate,
+    cappedRatio: metrics.completionRate,
+    dataQuality: WeeklyReportDataQuality.legacy,
     classification: classification,
     occurrences: metrics.occurrences,
     streakSnapshot: streakSnapshot,

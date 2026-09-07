@@ -131,7 +131,8 @@ class _QueueingHttpClient extends http.BaseClient {
     lastUri = request.url;
 
     if (_responses.isEmpty) {
-      throw StateError('No queued response for ${request.method} ${request.url}');
+      throw StateError(
+          'No queued response for ${request.method} ${request.url}');
     }
 
     final next = _responses.removeAt(0);

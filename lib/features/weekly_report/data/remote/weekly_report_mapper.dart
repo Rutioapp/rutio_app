@@ -19,7 +19,16 @@ WeeklyReport mapRemoteWeeklyReport(RemoteWeeklyReport remote) {
     summary: WeeklyReportSummary(
         scheduledCount: h.scheduledCount,
         completedCount: h.completedCount,
-        completionRate: h.completionRate),
+        completionRate: h.completionRate,
+        completedRaw: _completedRaw(
+            remote.metricsPolicyVersion, h.completedRaw, h.completedCount),
+        scheduledQuota: _scheduledQuota(
+            remote.metricsPolicyVersion, h.scheduledQuota, h.scheduledCount),
+        rawRatio: _rawRatio(
+            remote.metricsPolicyVersion, h.rawRatio, h.completionRate),
+        cappedRatio: _cappedRatio(
+            remote.metricsPolicyVersion, h.cappedRatio, h.completionRate),
+        dataQuality: _dataQuality(remote.metricsPolicyVersion, h.dataQuality)),
     days: remote.days
         .map((d) => WeeklyReportDay(
             date: _date(d.date),
@@ -29,7 +38,9 @@ WeeklyReport mapRemoteWeeklyReport(RemoteWeeklyReport remote) {
             completionRate: d.completionRate,
             state: _dayState(d.state)))
         .toList(growable: false),
-    habits: remote.habits.map(_habit).toList(growable: false),
+    habits: remote.habits
+        .map((habit) => _habit(habit, remote.metricsPolicyVersion))
+        .toList(growable: false),
     trend: WeeklyReportTrend(
         kind: _trend(h.trendKind),
         delta: h.trendDelta ?? 0,
@@ -56,7 +67,8 @@ WeeklyReport mapRemoteWeeklyReport(RemoteWeeklyReport remote) {
   );
 }
 
-WeeklyReportHabit _habit(RemoteWeeklyReportHabit h) => WeeklyReportHabit(
+WeeklyReportHabit _habit(RemoteWeeklyReportHabit h, int policy) =>
+    WeeklyReportHabit(
       habitId: h.habitId,
       name: h.name,
       emoji: h.emoji,
@@ -68,6 +80,12 @@ WeeklyReportHabit _habit(RemoteWeeklyReportHabit h) => WeeklyReportHabit(
       completedCount: h.completedCount,
       skippedCount: h.skippedCount,
       completionRate: h.completionRate,
+      completedRaw: _completedRaw(policy, h.completedRaw, h.completedCount),
+      scheduledQuota:
+          _scheduledQuota(policy, h.scheduledQuota, h.scheduledCount),
+      rawRatio: _rawRatio(policy, h.rawRatio, h.completionRate),
+      cappedRatio: _cappedRatio(policy, h.cappedRatio, h.completionRate),
+      dataQuality: _dataQuality(policy, h.dataQuality),
       classification: _classification(h.classification),
       occurrences: h.occurrences.map(_occurrence).toList(growable: false),
       streakSnapshot:
@@ -111,12 +129,43 @@ HabitOccurrenceResult _occurrence(Map<String, dynamic> o) =>
       scheduled: o['scheduled'] as bool,
       completed: o['completed'] as bool,
       skipped: o['skipped'] as bool,
+      activity: _activity(o),
       progress: o['progress'] as num?,
       target: o['target'] as num?,
       weeklyQuotaMet: o['weeklyQuotaMet'] as bool? ?? false,
       weeklyScheduledCount: (o['weeklyScheduledCount'] as num?)?.toInt(),
       weeklyCompletedCount: (o['weeklyCompletedCount'] as num?)?.toInt(),
     );
+
+HabitOccurrenceActivity _activity(Map<String, dynamic> occurrence) {
+  final value = occurrence['activity'];
+  if (value is String) return HabitOccurrenceActivityX.fromWire(value);
+  if (occurrence['skipped'] == true) return HabitOccurrenceActivity.skipped;
+  if (occurrence['completed'] == true) {
+    return HabitOccurrenceActivity.completed;
+  }
+  return HabitOccurrenceActivity.neutral;
+}
+
+int? _completedRaw(int policy, int? value, int legacyValue) =>
+    policy >= 2 ? value : legacyValue;
+
+int? _scheduledQuota(int policy, int? value, int legacyValue) =>
+    policy >= 2 ? value : legacyValue;
+
+double? _rawRatio(int policy, double? value, double? legacyValue) =>
+    policy >= 2 ? value : legacyValue;
+
+double? _cappedRatio(int policy, double? value, double? legacyValue) =>
+    policy >= 2 ? value : legacyValue;
+
+WeeklyReportDataQuality _dataQuality(
+  int policy,
+  WeeklyReportDataQuality? value,
+) =>
+    policy >= 2
+        ? value ?? WeeklyReportDataQuality.unverifiable
+        : WeeklyReportDataQuality.legacy;
 
 HabitSchedule _schedule(Map<String, dynamic> s) {
   final type = HabitScheduleTypeX.fromString(s['type'] as String?);

@@ -41,13 +41,16 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
 
   String _homeTimesPerWeekProgressLabel(
     BuildContext context, {
-    required int completed,
-    required int target,
+    required num completed,
+    required num target,
   }) {
-    final base = '$completed/$target';
-    return _isSpanishHomeSwipe(context)
-        ? '$base esta semana'
-        : '$base this week';
+    String format(num value) =>
+        value % 1 == 0 ? value.toInt().toString() : value.toString();
+
+    return context.l10n.homeTimesPerWeekProgress(
+      format(completed),
+      format(target),
+    );
   }
 
   Future<void> _confirmAndDeleteHabitFromHome(
@@ -190,6 +193,8 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       habit['progress'] ?? habit['current'] ?? habit['value'],
       fallback: 0,
     );
+    final todayValue = current;
+    final displayedCurrent = current;
     final target =
         toPositiveNum(habit['target'] ?? habit['goal'] ?? 1, fallback: 1);
     final title = _localizedHabitTitle(
@@ -213,7 +218,9 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
         : null;
 
     final progress01 = isCounting
-        ? (target <= 0 ? 0.0 : (current / target).clamp(0.0, 1.0).toDouble())
+        ? (target <= 0
+            ? 0.0
+            : (displayedCurrent / target).clamp(0.0, 1.0).toDouble())
         : (doneToday && !skippedToday ? 1.0 : 0.0);
     final completionVisualIntent = (doneToday && !skippedToday)
         ? HabitCompletionVisualIntent.uncomplete
@@ -367,6 +374,18 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       isCounting: isCounting,
       completionBurstText: completionBurstText,
       onCheckTap: () async {
+        final actionDateKey = _dateKey(_selectedDay);
+        if (!context.mounted) {
+          if (kDebugMode) {
+            debugPrint(
+              '[HOME_MUTATION] habitId=$id dateKey=$actionDateKey '
+              'transitionId=none stage=pre_enqueue_abort reason=not_mounted',
+            );
+          }
+          return;
+        }
+
+        final store = context.read<UserStateStore>();
         HomeHabitCompletionTransition? transition;
         final shouldUseTapCompletionTransition =
             _habitStatusFilter == HomeHabitStatusFilter.pending &&
@@ -386,30 +405,80 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
             ),
             useTapCompletionMotion: true,
           );
-          if (transition == null) return;
+          if (transition == null) {
+            if (kDebugMode) {
+              debugPrint(
+                '[HOME_MUTATION] habitId=$id '
+                'dateKey=$actionDateKey transitionId=none '
+                'stage=pre_enqueue_abort reason=transition_registration_rejected',
+              );
+            }
+            return;
+          }
         }
 
-        // IOS-FIRST IMPROVEMENT START
-        await IosFeedback.success();
-        if (!context.mounted) return;
-
         try {
-          await context.read<UserStateStore>().setHabitCompletionForKey(
-                habitId: id,
-                dateKey: _dateKey(_selectedDay),
-                done: !(doneToday && !skippedToday),
+          if (transition != null && kDebugMode) {
+            debugPrint(
+              '[HOME_MUTATION] habitId=$id dateKey=$actionDateKey '
+              'transitionId=${transition.transitionId} '
+              'stage=enqueue_started reason=mutation_enqueued',
+            );
+          }
+          final mutationFuture = store.setHabitCompletionForKeyWithOutcome(
+            habitId: id,
+            dateKey: actionDateKey,
+            done: !(doneToday && !skippedToday),
+          );
+          if (transition != null) {
+            _markHabitCompletionTransitionEnqueued(
+              habitId: transition.habitId,
+              transitionId: transition.transitionId,
+            );
+          }
+          // Keep haptics after enqueue: feedback must never gate the mutation.
+          try {
+            await IosFeedback.success();
+          } catch (error) {
+            if (transition != null && kDebugMode) {
+              debugPrint(
+                '[HOME_MUTATION] habitId=$id dateKey=$actionDateKey '
+                'transitionId=${transition.transitionId} '
+                'stage=post_enqueue_feedback_error error=$error',
               );
+            }
+          }
+          final outcome = await mutationFuture;
+          if (kDebugMode) {
+            debugPrint(
+              '[HOME_MUTATION] habitId=$id dateKey=$actionDateKey '
+              'action=complete transitionId=${transition?.transitionId ?? 'none'} '
+              'outcome=${outcome.name}',
+            );
+          }
+          if (transition != null) {
+            _markHabitCompletionTransitionOutcome(
+              habitId: transition.habitId,
+              transitionId: transition.transitionId,
+              outcome: outcome,
+              canonicalState: outcome == HabitMutationOutcome.applied ||
+                      outcome == HabitMutationOutcome.alreadyApplied
+                  ? 'completed'
+                  : 'pending',
+            );
+          }
         } catch (_) {
           if (transition != null) {
             _removeHabitCompletionTransition(
               habitId: transition.habitId,
               transitionId: transition.transitionId,
+              reason: 'pre_enqueue_abort:error',
             );
           }
           rethrow;
         }
       },
-      currentCount: current,
+      currentCount: displayedCurrent,
       targetCount: target,
       unitLabel: unitLabel.isEmpty ? null : unitLabel,
       reminderLabel: reminderLabel,
@@ -420,13 +489,13 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
                 habit['counterStep'] ?? habit['step'] ?? 1,
                 fallback: 1,
               ).toDouble();
-              final next = current + step;
+              final next = todayValue + step;
               unawaited(
                 _applyCountUpdateFromHome(
                   context: context,
                   habitId: id,
                   habit: habit,
-                  currentValue: current,
+                  currentValue: todayValue,
                   nextValue: next,
                   targetValue: target,
                   cardWidth: resolvedCardWidth(),
@@ -446,7 +515,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
                 habit['counterStep'] ?? habit['step'] ?? 1,
                 fallback: 1,
               ).toDouble();
-              final next = current - step;
+              final next = todayValue - step;
               context.read<UserStateStore>().setCountHabitValueForDate(
                     habitId: id,
                     date: _selectedDay,
@@ -460,7 +529,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
                 habit: habit,
                 habitId: id,
                 date: _selectedDay,
-                currentValue: current,
+                currentValue: todayValue,
                 targetValue: target,
                 cardWidth: resolvedCardWidth(),
                 unitLabel: unitLabel.isEmpty ? null : unitLabel,
@@ -485,6 +554,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       isOpen: isTrayOpen,
       compact: compact,
       canSwipeRightComplete: canRightCommitComplete,
+      showSkip: true,
       skipLabel: _homeSwipeSkipLabel(context),
       editLabel: _homeSwipeEditLabel(context),
       deleteLabel: _homeSwipeDeleteLabel(context),
@@ -502,26 +572,96 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       onRequestClose: closeTrayIfOpen,
       onSwipeRightComplete: canRightCommitComplete
           ? (visualState) async {
+              final actionDateKey = _dateKey(_selectedDay);
+              final store = context.read<UserStateStore>();
               final transition = _registerHabitCompletionTransition(
                 habitId: id,
                 habit: habit,
                 originalIndex: _pendingHabitIndexForTransition(context, id),
                 visualState: visualState,
               );
-              IosFeedback.lightImpact();
+              if (transition == null) {
+                if (kDebugMode) {
+                  debugPrint(
+                    '[HOME_MUTATION] habitId=$id '
+                    'dateKey=$actionDateKey transitionId=none '
+                    'stage=pre_enqueue_abort '
+                    'reason=transition_registration_rejected',
+                  );
+                }
+                return;
+              }
               try {
-                await context.read<UserStateStore>().setHabitCompletionForKey(
-                      habitId: id,
-                      dateKey: _dateKey(_selectedDay),
-                      done: !doneToday,
+                if (!context.mounted) {
+                  if (kDebugMode) {
+                    debugPrint(
+                      '[HOME_MUTATION] habitId=$id '
+                      'dateKey=$actionDateKey '
+                      'transitionId=${transition.transitionId} '
+                      'stage=pre_enqueue_abort reason=not_mounted',
                     );
-              } catch (_) {
-                if (transition != null) {
+                  }
                   _removeHabitCompletionTransition(
                     habitId: transition.habitId,
                     transitionId: transition.transitionId,
+                    reason: 'pre_enqueue_abort:not_mounted',
+                  );
+                  return;
+                }
+                if (kDebugMode) {
+                  debugPrint(
+                    '[HOME_MUTATION] habitId=$id '
+                    'dateKey=$actionDateKey '
+                    'transitionId=${transition.transitionId} '
+                    'stage=enqueue_started reason=mutation_enqueued',
                   );
                 }
+                final mutationFuture =
+                    store.setHabitCompletionForKeyWithOutcome(
+                  habitId: id,
+                  dateKey: actionDateKey,
+                  done: !doneToday,
+                );
+                _markHabitCompletionTransitionEnqueued(
+                  habitId: transition.habitId,
+                  transitionId: transition.transitionId,
+                );
+                try {
+                  await IosFeedback.lightImpact();
+                } catch (error) {
+                  if (kDebugMode) {
+                    debugPrint(
+                      '[HOME_MUTATION] habitId=$id '
+                      'dateKey=$actionDateKey '
+                      'transitionId=${transition.transitionId} '
+                      'stage=post_enqueue_feedback_error error=$error',
+                    );
+                  }
+                }
+                final outcome = await mutationFuture;
+                if (kDebugMode) {
+                  debugPrint(
+                    '[HOME_MUTATION] habitId=$id '
+                    'dateKey=$actionDateKey action=complete '
+                    'transitionId=${transition.transitionId} '
+                    'outcome=${outcome.name}',
+                  );
+                }
+                _markHabitCompletionTransitionOutcome(
+                  habitId: transition.habitId,
+                  transitionId: transition.transitionId,
+                  outcome: outcome,
+                  canonicalState: outcome == HabitMutationOutcome.applied ||
+                          outcome == HabitMutationOutcome.alreadyApplied
+                      ? 'completed'
+                      : 'pending',
+                );
+              } catch (_) {
+                _removeHabitCompletionTransition(
+                  habitId: transition.habitId,
+                  transitionId: transition.transitionId,
+                  reason: 'pre_enqueue_abort:error',
+                );
                 rethrow;
               }
             }
@@ -536,16 +676,33 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
               )
             : null;
         try {
-          await context.read<UserStateStore>().setHabitSkipForKey(
-                habitId: id,
-                dateKey: _dateKey(_selectedDay),
-                skipped: !skippedToday,
-              );
+          final mutationFuture =
+              context.read<UserStateStore>().setHabitSkipForKey(
+                    habitId: id,
+                    dateKey: _dateKey(_selectedDay),
+                    skipped: !skippedToday,
+                  );
+          if (transition != null) {
+            _markHabitCompletionTransitionEnqueued(
+              habitId: transition.habitId,
+              transitionId: transition.transitionId,
+            );
+          }
+          await mutationFuture;
+          if (transition != null) {
+            _markHabitCompletionTransitionOutcome(
+              habitId: transition.habitId,
+              transitionId: transition.transitionId,
+              outcome: HabitMutationOutcome.applied,
+              canonicalState: 'skipped',
+            );
+          }
         } catch (_) {
           if (transition != null) {
             _removeHabitCompletionTransition(
               habitId: transition.habitId,
               transitionId: transition.transitionId,
+              reason: 'mutation_failed',
             );
           }
           rethrow;

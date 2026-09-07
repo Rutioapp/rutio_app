@@ -411,7 +411,8 @@ void main() {
         currentUserIdProvider: () => null,
       );
 
-      final result = await repository.deleteDiaryEntryByLocalId('local-entry-1');
+      final result =
+          await repository.deleteDiaryEntryByLocalId('local-entry-1');
 
       expect(result.isSuccess, isFalse);
       expect(result.error?.code, RepositoryErrorCode.notAuthenticated);
@@ -424,7 +425,8 @@ void main() {
         currentUserIdProvider: () => null,
       );
 
-      final result = await repository.deleteDailyMoodByDate(DateTime(2026, 6, 13));
+      final result =
+          await repository.deleteDailyMoodByDate(DateTime(2026, 6, 13));
 
       expect(result.isSuccess, isFalse);
       expect(result.error?.code, RepositoryErrorCode.notAuthenticated);
@@ -444,17 +446,20 @@ void main() {
         currentUserIdProvider: () => 'user-123',
       );
 
-      final result = await repository.deleteDiaryEntryByLocalId('local-entry-1');
+      final result =
+          await repository.deleteDiaryEntryByLocalId('local-entry-1');
 
       expect(result.isSuccess, isTrue);
       expect(recordingClient.lastMethod, 'DELETE');
       expect(recordingClient.lastUri?.path, '/rest/v1/diary_entries');
-      expect(recordingClient.lastUri?.queryParameters['user_id'], 'eq.user-123');
+      expect(
+          recordingClient.lastUri?.queryParameters['user_id'], 'eq.user-123');
       expect(
         recordingClient.lastUri?.queryParameters['local_id'],
         'eq.local-entry-1',
       );
-      expect(recordingClient.lastUri?.queryParameters.containsKey('id'), isFalse);
+      expect(
+          recordingClient.lastUri?.queryParameters.containsKey('id'), isFalse);
     });
 
     test('deleteDiaryEntry prefers local_id over remote uuid when both exist',
@@ -475,12 +480,14 @@ void main() {
       );
 
       expect(result.isSuccess, isTrue);
-      expect(recordingClient.lastUri?.queryParameters['user_id'], 'eq.user-123');
+      expect(
+          recordingClient.lastUri?.queryParameters['user_id'], 'eq.user-123');
       expect(
         recordingClient.lastUri?.queryParameters['local_id'],
         'eq.local-entry-1',
       );
-      expect(recordingClient.lastUri?.queryParameters.containsKey('id'), isFalse);
+      expect(
+          recordingClient.lastUri?.queryParameters.containsKey('id'), isFalse);
     });
   });
 }

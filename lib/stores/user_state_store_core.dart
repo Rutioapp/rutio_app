@@ -387,7 +387,7 @@ Map<String, dynamic> _normalizeSchedule(Map<String, dynamic>? schedule) {
 
 bool _isScheduledForDate(Map<String, dynamic> habit, DateTime date) {
   final schedule = _normalizeSchedule(_map(habit['schedule']));
-  final type = (schedule['type'] ?? 'daily').toString();
+  final type = (schedule['type'] ?? 'daily').toString().trim().toLowerCase();
 
   if (type == 'daily') return true;
 
@@ -395,6 +395,8 @@ bool _isScheduledForDate(Map<String, dynamic> habit, DateTime date) {
     final scheduledDate = (schedule['date'] ?? '').toString();
     return scheduledDate.isNotEmpty && scheduledDate == _dateKey(date);
   }
+
+  if (type == 'timesperweek') return true;
 
   if (type == 'weekly') {
     final weekdays = schedule['weekdays'] is List
@@ -413,6 +415,14 @@ bool _isHabitExpectedForDate(Map<String, dynamic> habit, DateTime date) {
   if (_isArchivedHabit(habit)) return false;
   if (!_wasHabitCreatedByDay(habit, date)) return false;
   return _isScheduledForDate(habit, date);
+}
+
+bool _isFlexibleTimesPerWeekHabit(Map<String, dynamic> habit) {
+  final type = (habit['type'] ?? 'check').toString().trim().toLowerCase();
+  final schedule = _normalizeSchedule(_map(habit['schedule']));
+  return type == 'check' &&
+      (schedule['type'] ?? '').toString().trim().toLowerCase() ==
+          'timesperweek';
 }
 
 bool _isArchivedHabit(Map<String, dynamic> habit) =>
@@ -654,6 +664,18 @@ void _finalizeHabitDayRollover(
             _safePositiveNum(habit['target'], fallback: 1)
         : habit['doneToday'] == true;
     final skipped = habit['skippedToday'] == true;
+
+    if (_isFlexibleTimesPerWeekHabit(habit)) {
+      if (done && !skipped) {
+        previousDone[habitId] = true;
+        previousStatuses[habitId] = HabitOccurrenceStatus.completed.key;
+      } else {
+        previousDone.remove(habitId);
+        previousSkips[habitId] = false;
+        previousStatuses[habitId] = HabitOccurrenceStatus.notScheduled.key;
+      }
+      continue;
+    }
 
     previousSkips[habitId] = skipped;
     if (done && !skipped) {

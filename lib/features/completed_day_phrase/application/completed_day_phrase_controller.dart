@@ -80,7 +80,9 @@ class CompletedDayPhraseController extends ChangeNotifier {
     required CompletedDayPhraseInput input,
   }) {
     final userId = input.userId?.trim();
-    if (!eligibility.isCompletedDay || userId == null || userId.isEmpty) {
+    if (!eligibility.isDayResolvedForPhrase ||
+        userId == null ||
+        userId.isEmpty) {
       _requestSequence += 1;
       _requestKey = null;
       _setState(const CompletedDayPhraseState.hidden());

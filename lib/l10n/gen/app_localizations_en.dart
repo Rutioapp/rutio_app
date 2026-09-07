@@ -485,6 +485,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingPreviewEveryDay => 'Every day';
 
   @override
+  String habitScheduleTimesPerWeek(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count times per week',
+      one: '1 time per week',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get onboardingPreviewNoReminder => 'No reminder';
 
   @override
@@ -705,7 +716,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String homeTimesPerWeekProgress(String completed, String target) {
-    return '$completed/$target this week';
+    return 'Weekly goal · $completed/$target days';
   }
 
   @override

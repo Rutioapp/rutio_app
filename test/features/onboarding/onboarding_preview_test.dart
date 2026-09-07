@@ -2,10 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/habits/domain/metrics/habit_snapshot.dart';
+import 'package:rutio/features/habits/presentation/habit_schedule_label_resolver.dart';
 import 'package:rutio/features/onboarding/onboarding.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 
 void main() {
+  test('schedule label resolver keeps every schedule type distinct', () async {
+    const resolver = HabitScheduleLabelResolver();
+    final es = await AppLocalizations.delegate.load(const Locale('es'));
+    final en = await AppLocalizations.delegate.load(const Locale('en'));
+
+    expect(resolver.resolve(es, HabitSchedule.daily()), 'Todos los días');
+    expect(
+      resolver.resolve(
+        es,
+        HabitSchedule.timesPerWeek(timesPerWeek: 1),
+      ),
+      '1 vez por semana',
+    );
+    expect(
+      resolver.resolve(
+        es,
+        HabitSchedule.timesPerWeek(timesPerWeek: 3),
+      ),
+      '3 veces por semana',
+    );
+    expect(
+      resolver.resolve(es, HabitSchedule.weekly(weekdays: [1, 3, 5])),
+      'Lun · Mié · Vie',
+    );
+    expect(
+      resolver.resolve(
+        en,
+        HabitSchedule.timesPerWeek(timesPerWeek: 3),
+      ),
+      '3 times per week',
+    );
+  });
+
   testWidgets('Preview renders the complete read-only summary in Spanish',
       (tester) async {
     final edits = <OnboardingStep>[];
@@ -88,6 +122,54 @@ void main() {
     expect(find.text('Save my Rutio'), findsOneWidget);
     expect(find.byKey(const ValueKey('onboardingPreviewHabitCard')),
         findsOneWidget);
+  });
+
+  testWidgets('Preview formats flexible weekly targets in Spanish and English',
+      (tester) async {
+    await tester.pumpWidget(
+      _app(
+        OnboardingPreviewStep(
+          goalCodes: const {'care_body'},
+          pace: OnboardingPace.balanced,
+          habit: OnboardingHabitConfiguration(
+            name: 'Caminar',
+            emoji: '👟',
+            primaryFamilyCode: 'body',
+            kind: HabitKind.check,
+            schedule: HabitSchedule.timesPerWeek(timesPerWeek: 3),
+          ),
+          reminder: OnboardingReminderConfiguration.disabled(),
+          onEdit: (_) {},
+          onSave: () {},
+        ),
+      ),
+    );
+
+    expect(find.text('3 veces por semana'), findsOneWidget);
+    expect(find.text('Todos los días'), findsNothing);
+
+    await tester.pumpWidget(
+      _app(
+        OnboardingPreviewStep(
+          goalCodes: const {'care_body'},
+          pace: OnboardingPace.balanced,
+          habit: OnboardingHabitConfiguration(
+            name: 'Caminar',
+            emoji: '👟',
+            primaryFamilyCode: 'body',
+            kind: HabitKind.check,
+            schedule: HabitSchedule.timesPerWeek(timesPerWeek: 1),
+          ),
+          reminder: OnboardingReminderConfiguration.disabled(),
+          onEdit: (_) {},
+          onSave: () {},
+        ),
+        locale: const Locale('en'),
+      ),
+    );
+
+    expect(find.text('1 time per week'), findsOneWidget);
+    expect(find.text('Every day'), findsNothing);
   });
 
   testWidgets(

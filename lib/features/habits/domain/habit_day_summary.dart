@@ -2,6 +2,8 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 
+import 'metrics/weekly_check_progress.dart';
+
 @immutable
 class HabitDaySummary {
   HabitDaySummary({
@@ -88,6 +90,7 @@ HabitDaySummary buildHabitDaySummary({
   final selectedDoneMap = _map(habitCompletions[selectedKey]);
   final selectedCountMap = _map(habitCountValues[selectedKey]);
   final selectedSkipsMap = _map(habitSkips[selectedKey]);
+  const weeklyProgressCalculator = HabitWeeklyCheckProgressCalculator();
 
   final viewHabits = expectedHabits.map((habit) {
     final out = Map<String, dynamic>.from(habit);
@@ -106,62 +109,44 @@ HabitDaySummary buildHabitDaySummary({
       final doneFromSelectedDay = selectedDoneMap[habitId] == true;
       out['skippedToday'] = skipped;
       if (type == 'check') {
-        out['doneToday'] = isTimesPerWeekCheck
-            ? doneFromSelectedDay
-            : !skipped && doneFromSelectedDay;
+        out['doneToday'] = doneFromSelectedDay && !skipped;
       } else {
         final target = _readNum(out['target'], fallback: 1);
         final value = skipped ? 0 : _readNum(selectedCountMap[habitId]);
         out['progress'] = value;
         out['doneToday'] = !skipped && (doneFromSelectedDay || value >= target);
       }
-    } else if (type == 'check' &&
-        !isTimesPerWeekCheck &&
-        out['skippedToday'] == true) {
+    } else if (type == 'check' && out['skippedToday'] == true) {
       out['doneToday'] = false;
     }
 
     if (isTimesPerWeekCheck) {
-      final weeklyTarget = _timesPerWeekTarget(out);
-      final weekStartsOn = _timesPerWeekWeekStartsOn(out);
-      final completedThisWeek = _completedTimesInWeek(
+      final weeklyProgress = weeklyProgressCalculator.calculate(
         habit: out,
-        habitId: habitId,
-        selectedDay: normalizedSelectedDay,
-        weekStartsOn: weekStartsOn,
-        habitCompletions: habitCompletions,
+        history: history,
+        referenceDate: normalizedSelectedDay,
       );
-      out['weeklyCompletedCount'] = completedThisWeek;
-      out['weeklyTargetCount'] = weeklyTarget;
-      out['isWeeklyTargetMet'] = completedThisWeek >= weeklyTarget;
+      out['weeklyCompletedCount'] = weeklyProgress.completedDays;
+      out['weeklyTargetCount'] = weeklyProgress.targetDays;
+      out['weeklyWeekStart'] = _dateKey(weeklyProgress.weekStart);
+      out['weeklyWeekEnd'] = _dateKey(weeklyProgress.weekEnd);
+      out['weeklyRawProgressRatio'] = weeklyProgress.rawProgressRatio;
+      out['weeklyCappedProgressRatio'] = weeklyProgress.cappedProgressRatio;
+      out['weeklyQuotaMet'] = weeklyProgress.quotaMet;
     }
 
     return out;
   }).toList(growable: false);
 
   final pendingHabits = viewHabits.where((habit) {
-    if (_isTimesPerWeekCheckHabit(habit)) {
-      final doneToday = habit['doneToday'] == true;
-      final weeklyTargetMet = habit['isWeeklyTargetMet'] == true;
-      final skipped = habit['skippedToday'] == true;
-      return !skipped && !doneToday && !weeklyTargetMet;
-    }
     return habit['doneToday'] != true && habit['skippedToday'] != true;
   }).toList(growable: false);
 
   final completedHabits = viewHabits.where((habit) {
-    if (_isTimesPerWeekCheckHabit(habit)) {
-      return habit['doneToday'] == true || habit['isWeeklyTargetMet'] == true;
-    }
     return habit['doneToday'] == true;
   }).toList(growable: false);
 
   final skippedHabits = viewHabits.where((habit) {
-    if (_isTimesPerWeekCheckHabit(habit)) {
-      final doneToday = habit['doneToday'] == true;
-      final weeklyTargetMet = habit['isWeeklyTargetMet'] == true;
-      return habit['skippedToday'] == true && !doneToday && !weeklyTargetMet;
-    }
     return habit['skippedToday'] == true;
   }).toList(growable: false);
 
@@ -250,59 +235,6 @@ bool _isTimesPerWeekCheckHabit(Map<String, dynamic> habit) {
   final schedule = _map(habit['schedule']);
   final scheduleType = (schedule['type'] ?? '').toString().trim().toLowerCase();
   return scheduleType == 'timesperweek';
-}
-
-int _timesPerWeekTarget(Map<String, dynamic> habit) {
-  final schedule = _map(habit['schedule']);
-  final target = _readNum(
-    schedule['timesPerWeek'] ?? schedule['timesPerWeekTarget'],
-    fallback: 1,
-  ).toInt();
-  return target < 1 ? 1 : target;
-}
-
-int _timesPerWeekWeekStartsOn(Map<String, dynamic> habit) {
-  final schedule = _map(habit['schedule']);
-  final raw = _readNum(schedule['weekStartsOn'], fallback: 1).toInt();
-  if (raw < 1 || raw > 7) return 1;
-  return raw;
-}
-
-int _completedTimesInWeek({
-  required Map<String, dynamic> habit,
-  required String habitId,
-  required DateTime selectedDay,
-  required int weekStartsOn,
-  required Map<String, dynamic> habitCompletions,
-}) {
-  final weekStart = _weekStartForDate(selectedDay, weekStartsOn: weekStartsOn);
-  var completed = 0;
-  for (var offset = 0; offset < 7; offset += 1) {
-    final day = weekStart.add(Duration(days: offset));
-    if (!_wasHabitCreatedByDay(habit, day)) continue;
-    final dayDoneMap = _map(habitCompletions[_dateKey(day)]);
-    if (_isTruthyDone(dayDoneMap[habitId])) {
-      completed += 1;
-    }
-  }
-  return completed;
-}
-
-DateTime _weekStartForDate(DateTime day, {required int weekStartsOn}) {
-  final normalized = _onlyDate(day);
-  final start = weekStartsOn >= 1 && weekStartsOn <= 7 ? weekStartsOn : 1;
-  final delta = (normalized.weekday - start + 7) % 7;
-  return normalized.subtract(Duration(days: delta));
-}
-
-bool _isTruthyDone(dynamic value) {
-  if (value is bool) return value;
-  if (value is num) return value > 0;
-  if (value is String) {
-    final normalized = value.trim().toLowerCase();
-    return normalized == 'true' || normalized == '1';
-  }
-  return false;
 }
 
 num _readNum(dynamic value, {num fallback = 0}) {

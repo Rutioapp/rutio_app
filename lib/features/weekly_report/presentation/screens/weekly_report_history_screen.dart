@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../l10n/l10n.dart';
 import '../../domain/weekly_report.dart';
+import '../weekly_report_metric_display.dart';
 import 'weekly_report_screen.dart';
 
 class WeeklyReportHistoryScreen extends StatefulWidget {
@@ -172,10 +173,18 @@ class _ReportRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final week = report?.week ?? item!.week;
-    final rate = report?.summary.completionRate ?? item!.completionRate;
-    final completed = report?.summary.completedCount ?? item!.completedCount;
-    final scheduled = report?.summary.scheduledCount ?? item!.scheduledCount;
-    final rateText = scheduled == 0 || rate == null
+    final rate = report == null
+        ? WeeklyReportMetricDisplay.historyProgress(item!)
+        : WeeklyReportMetricDisplay.summaryProgress(report!.summary);
+    final completed = report == null
+        ? WeeklyReportMetricDisplay.historyCompleted(item!)
+        : WeeklyReportMetricDisplay.summaryCompleted(report!.summary);
+    final scheduled = report == null
+        ? WeeklyReportMetricDisplay.historyQuota(item!)
+        : WeeklyReportMetricDisplay.summaryQuota(report!.summary);
+    final rateText = !WeeklyReportMetricDisplay.hasQuota(scheduled) ||
+            rate == null ||
+            completed == null
         ? context.l10n.weeklyReportNoScheduleShort
         : '${(rate * 100).round()}% · $completed/$scheduled';
     final id = report?.id ?? item!.reportId;

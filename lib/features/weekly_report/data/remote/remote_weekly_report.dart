@@ -1,3 +1,7 @@
+import '../../domain/weekly_report.dart';
+
+const int supportedWeeklyReportMetricsPolicyVersion = 2;
+
 class WeeklyReportPayloadException implements FormatException {
   const WeeklyReportPayloadException(this.message, [this.source]);
   @override
@@ -28,28 +32,41 @@ class RemoteWeeklyReport {
   final List<RemoteWeeklyReportRecommendation> recommendations;
 
   factory RemoteWeeklyReport.fromJson(Object? value,
-      {int supportedSchemaVersion = 1}) {
+      {int supportedSchemaVersion = 1,
+      int supportedMetricsPolicyVersion =
+          supportedWeeklyReportMetricsPolicyVersion}) {
     final map = _object(value, 'payload');
     final schema = _positiveInt(map['schemaVersion'], 'schemaVersion');
     if (schema > supportedSchemaVersion)
       throw WeeklyReportPayloadException('Unsupported schemaVersion $schema.');
+    final metricsPolicy =
+        _positiveInt(map['metricsPolicyVersion'], 'metricsPolicyVersion');
+    if (metricsPolicy > supportedMetricsPolicyVersion) {
+      throw WeeklyReportPayloadException(
+          'Unsupported metricsPolicyVersion $metricsPolicy.');
+    }
     final report = _object(map['report'], 'report');
+    final header = RemoteWeeklyReportHeader.fromJson(report);
     final days = _array(map['days'], 'days')
         .map((e) => RemoteWeeklyReportDay.fromJson(e))
         .toList(growable: false);
     final habits = _array(map['habits'], 'habits')
-        .map((e) => RemoteWeeklyReportHabit.fromJson(e))
+        .map((e) => RemoteWeeklyReportHabit.fromJson(e,
+            metricsPolicyVersion: metricsPolicy))
         .toList(growable: false);
     final recommendations =
         _array(map['recommendations'] ?? const [], 'recommendations')
             .map((e) => RemoteWeeklyReportRecommendation.fromJson(e))
             .toList(growable: false);
+    if (header.metricsPolicyVersion != metricsPolicy) {
+      throw WeeklyReportPayloadException(
+          'metricsPolicyVersion does not match report.metricsPolicyVersion.');
+    }
     return RemoteWeeklyReport(
         schemaVersion: schema,
-        metricsPolicyVersion:
-            _positiveInt(map['metricsPolicyVersion'], 'metricsPolicyVersion'),
+        metricsPolicyVersion: metricsPolicy,
         contentVersion: _positiveInt(map['contentVersion'], 'contentVersion'),
-        report: RemoteWeeklyReportHeader.fromJson(report),
+        report: header,
         days: days,
         habits: habits,
         recommendations: recommendations);
@@ -68,6 +85,11 @@ class RemoteWeeklyReportHeader {
       required this.scheduledCount,
       required this.completedCount,
       required this.completionRate,
+      this.completedRaw,
+      this.scheduledQuota,
+      this.rawRatio,
+      this.cappedRatio,
+      this.dataQuality,
       required this.bestDay,
       required this.trendKind,
       required this.trendDelta,
@@ -93,47 +115,70 @@ class RemoteWeeklyReportHeader {
       metricsPolicyVersion,
       contentVersion;
   final double? completionRate, trendDelta;
+  final int? completedRaw, scheduledQuota;
+  final double? rawRatio, cappedRatio;
+  final WeeklyReportDataQuality? dataQuality;
   final String? bestDay, comparabilityReason;
   final List<String> messageKeys;
   final DateTime? generatedAt, refreshedAt, finalizedAt;
-  factory RemoteWeeklyReportHeader.fromJson(Map<String, dynamic> m) =>
-      RemoteWeeklyReportHeader(
-          id: _id(m['id'], 'report.id'),
-          userId: _id(m['userId'], 'report.userId'),
-          weekStartDate: _dateString(m['weekStartDate'], 'weekStartDate'),
-          weekEndDate: _dateString(m['weekEndDate'], 'weekEndDate'),
-          timezoneId: _string(m['timezoneId'], 'timezoneId'),
-          status: _enum(m['status'], const ['provisional', 'final'], 'status'),
-          trendKind: _enum(
-              m['trendKind'],
-              const ['improved', 'stable', 'declined', 'unavailable'],
-              'trendKind'),
-          firstPartialWeek: _bool(m['firstPartialWeek'], 'firstPartialWeek'),
-          scheduledCount:
-              _nonNegativeInt(m['scheduledCount'], 'scheduledCount'),
-          completedCount:
-              _nonNegativeInt(m['completedCount'], 'completedCount'),
-          completionRate: _rate(m['completionRate'], 'completionRate'),
-          bestDay: m['bestDay'] == null
-              ? null
-              : _dateString(m['bestDay'], 'bestDay'),
-          trendDelta: m['trendDelta'] == null
-              ? null
-              : _number(m['trendDelta'], 'trendDelta').toDouble(),
-          comparabilityReason: m['comparabilityReason'] as String?,
-          schemaVersion:
-              _positiveInt(m['schemaVersion'], 'report.schemaVersion'),
-          metricsPolicyVersion: _positiveInt(
-              m['metricsPolicyVersion'], 'report.metricsPolicyVersion'),
-          contentVersion:
-              _positiveInt(m['contentVersion'], 'report.contentVersion'),
-          // Older payloads predate contextual copy; absence is safe and means
-          // the Flutter resolver will use its neutral fallback.
-          messageKeys:
-              _stringArray(m['messageKeys'] ?? const [], 'messageKeys'),
-          generatedAt: _instant(m['generatedAt'], 'generatedAt'),
-          refreshedAt: _instant(m['refreshedAt'], 'refreshedAt'),
-          finalizedAt: _instant(m['finalizedAt'], 'finalizedAt'));
+  factory RemoteWeeklyReportHeader.fromJson(Map<String, dynamic> m) {
+    final policy =
+        _positiveInt(m['metricsPolicyVersion'], 'report.metricsPolicyVersion');
+    final header = RemoteWeeklyReportHeader(
+        id: _id(m['id'], 'report.id'),
+        userId: _id(m['userId'], 'report.userId'),
+        weekStartDate: _dateString(m['weekStartDate'], 'weekStartDate'),
+        weekEndDate: _dateString(m['weekEndDate'], 'weekEndDate'),
+        timezoneId: _string(m['timezoneId'], 'timezoneId'),
+        status: _enum(m['status'], const ['provisional', 'final'], 'status'),
+        trendKind: _enum(
+            m['trendKind'],
+            const ['improved', 'stable', 'declined', 'unavailable'],
+            'trendKind'),
+        firstPartialWeek: _bool(m['firstPartialWeek'], 'firstPartialWeek'),
+        scheduledCount: _nonNegativeInt(m['scheduledCount'], 'scheduledCount'),
+        completedCount: _nonNegativeInt(m['completedCount'], 'completedCount'),
+        completionRate: _rate(m['completionRate'], 'completionRate'),
+        bestDay:
+            m['bestDay'] == null ? null : _dateString(m['bestDay'], 'bestDay'),
+        trendDelta: m['trendDelta'] == null
+            ? null
+            : _number(m['trendDelta'], 'trendDelta').toDouble(),
+        comparabilityReason: m['comparabilityReason'] as String?,
+        schemaVersion: _positiveInt(m['schemaVersion'], 'report.schemaVersion'),
+        metricsPolicyVersion: policy,
+        contentVersion:
+            _positiveInt(m['contentVersion'], 'report.contentVersion'),
+        completedRaw: policy >= 2
+            ? _optionalNonNegativeInt(m['completedRaw'], 'report.completedRaw')
+            : null,
+        scheduledQuota: policy >= 2
+            ? _optionalNonNegativeInt(
+                m['scheduledQuota'], 'report.scheduledQuota')
+            : null,
+        rawRatio:
+            policy >= 2 ? _rawRatio(m['rawRatio'], 'report.rawRatio') : null,
+        cappedRatio:
+            policy >= 2 ? _rate(m['cappedRatio'], 'report.cappedRatio') : null,
+        dataQuality: policy >= 2
+            ? _dataQuality(m['dataQuality'], 'report.dataQuality')
+            : null,
+        // Older payloads predate contextual copy; absence is safe and means
+        // the Flutter resolver will use its neutral fallback.
+        messageKeys: _stringArray(m['messageKeys'] ?? const [], 'messageKeys'),
+        generatedAt: _instant(m['generatedAt'], 'generatedAt'),
+        refreshedAt: _instant(m['refreshedAt'], 'refreshedAt'),
+        finalizedAt: _instant(m['finalizedAt'], 'finalizedAt'));
+    _validateMetricCoherence(
+      policy: policy,
+      completedRaw: header.completedRaw,
+      scheduledQuota: header.scheduledQuota,
+      rawRatio: header.rawRatio,
+      cappedRatio: header.cappedRatio,
+      field: 'report',
+    );
+    return header;
+  }
 }
 
 class RemoteWeeklyReportDay {
@@ -183,6 +228,11 @@ class RemoteWeeklyReportHabit {
       required this.completedCount,
       required this.skippedCount,
       required this.completionRate,
+      this.completedRaw,
+      this.scheduledQuota,
+      this.rawRatio,
+      this.cappedRatio,
+      this.dataQuality,
       required this.classification,
       this.observationKey,
       required this.occurrences,
@@ -193,12 +243,19 @@ class RemoteWeeklyReportHabit {
   final Map<String, dynamic> schedule;
   final int scheduledCount, completedCount, skippedCount;
   final double? completionRate;
+  final int? completedRaw, scheduledQuota;
+  final double? rawRatio, cappedRatio;
+  final WeeklyReportDataQuality? dataQuality;
   final String? classification;
   final String? observationKey;
   final List<Map<String, dynamic>> occurrences;
   final Map<String, dynamic>? streakSnapshot;
-  factory RemoteWeeklyReportHabit.fromJson(Object? value) {
+  factory RemoteWeeklyReportHabit.fromJson(Object? value,
+      {int metricsPolicyVersion = 1}) {
     final m = _object(value, 'habit');
+    final policy = metricsPolicyVersion;
+    final schedule = _object(m['schedule'], 'habit.schedule');
+    _validateSchedule(schedule);
     final occurrences = _array(m['occurrences'], 'habit.occurrences')
         .map((e) => _object(e, 'occurrence'))
         .toList(growable: false);
@@ -212,8 +269,13 @@ class RemoteWeeklyReportHabit {
       _bool(o['scheduled'], 'occurrence.scheduled');
       _bool(o['completed'], 'occurrence.completed');
       _bool(o['skipped'], 'occurrence.skipped');
+      if (o['activity'] != null) {
+        _enum(o['activity'], const ['completed', 'skipped', 'neutral'],
+            'occurrence.activity');
+      }
+      _validateOccurrenceActivity(o);
     }
-    return RemoteWeeklyReportHabit(
+    final habit = RemoteWeeklyReportHabit(
         habitId: _id(m['habitId'], 'habit.habitId'),
         name: _string(m['name'], 'habit.name'),
         emoji: m['emoji'] as String?,
@@ -221,13 +283,27 @@ class RemoteWeeklyReportHabit {
         target:
             m['target'] == null ? null : _number(m['target'], 'habit.target'),
         familyId: m['familyId'] as String?,
-        schedule: _object(m['schedule'], 'habit.schedule'),
+        schedule: schedule,
         scheduledCount:
             _nonNegativeInt(m['scheduledCount'], 'habit.scheduledCount'),
         completedCount:
             _nonNegativeInt(m['completedCount'], 'habit.completedCount'),
         skippedCount: _nonNegativeInt(m['skippedCount'], 'habit.skippedCount'),
         completionRate: _rate(m['completionRate'], 'habit.completionRate'),
+        completedRaw: policy >= 2
+            ? _optionalNonNegativeInt(m['completedRaw'], 'habit.completedRaw')
+            : null,
+        scheduledQuota: policy >= 2
+            ? _optionalNonNegativeInt(
+                m['scheduledQuota'], 'habit.scheduledQuota')
+            : null,
+        rawRatio:
+            policy >= 2 ? _rawRatio(m['rawRatio'], 'habit.rawRatio') : null,
+        cappedRatio:
+            policy >= 2 ? _rate(m['cappedRatio'], 'habit.cappedRatio') : null,
+        dataQuality: policy >= 2
+            ? _dataQuality(m['dataQuality'], 'habit.dataQuality')
+            : null,
         classification: m['classification'] == null
             ? null
             : _enum(
@@ -244,6 +320,15 @@ class RemoteWeeklyReportHabit {
         streakSnapshot: m['streakSnapshot'] == null
             ? null
             : _object(m['streakSnapshot'], 'streakSnapshot'));
+    _validateMetricCoherence(
+      policy: policy,
+      completedRaw: habit.completedRaw,
+      scheduledQuota: habit.scheduledQuota,
+      rawRatio: habit.rawRatio,
+      cappedRatio: habit.cappedRatio,
+      field: 'habit',
+    );
+    return habit;
   }
 }
 
@@ -324,6 +409,83 @@ double? _rate(Object? v, String f) {
   if (n < 0 || n > 1)
     throw WeeklyReportPayloadException('$f must be between 0 and 1.');
   return n;
+}
+
+double? _rawRatio(Object? v, String f) {
+  if (v == null) return null;
+  final n = _number(v, f).toDouble();
+  if (n < 0) {
+    throw WeeklyReportPayloadException('$f must be non-negative.');
+  }
+  return n;
+}
+
+int? _optionalNonNegativeInt(Object? v, String f) =>
+    v == null ? null : _nonNegativeInt(v, f);
+
+WeeklyReportDataQuality? _dataQuality(Object? v, String f) {
+  if (v == null) return null;
+  if (v is! String || v.trim().isEmpty) {
+    throw WeeklyReportPayloadException('$f must be a string.');
+  }
+  return WeeklyReportDataQualityX.fromWire(v);
+}
+
+void _validateMetricCoherence({
+  required int policy,
+  required int? completedRaw,
+  required int? scheduledQuota,
+  required double? rawRatio,
+  required double? cappedRatio,
+  required String field,
+}) {
+  if (policy < 2 || scheduledQuota == null || rawRatio == null) return;
+  if (scheduledQuota > 0) {
+    final expected =
+        completedRaw == null ? null : completedRaw.toDouble() / scheduledQuota;
+    if (expected != null && (expected - rawRatio).abs() > 0.0001) {
+      throw WeeklyReportPayloadException(
+          '$field.rawRatio is inconsistent with completedRaw/scheduledQuota.');
+    }
+  }
+  if (cappedRatio != null && (cappedRatio < 0 || cappedRatio > 1)) {
+    throw WeeklyReportPayloadException('$field.cappedRatio must be capped.');
+  }
+}
+
+void _validateSchedule(Map<String, dynamic> schedule) {
+  final type = schedule['type'];
+  _enum(type, const ['daily', 'weekly', 'once', 'timesPerWeek'],
+      'habit.schedule.type');
+  if (type == 'timesPerWeek') {
+    _nonNegativeInt(schedule['timesPerWeek'], 'habit.schedule.timesPerWeek');
+    final times = (schedule['timesPerWeek'] as num).toInt();
+    if (times < 1 || times > 6) {
+      throw WeeklyReportPayloadException(
+          'habit.schedule.timesPerWeek must be between 1 and 6.');
+    }
+    if (schedule['weekStartsOn'] != null) {
+      final start = _nonNegativeInt(
+          schedule['weekStartsOn'], 'habit.schedule.weekStartsOn');
+      if (start < 1 || start > 7) {
+        throw WeeklyReportPayloadException(
+            'habit.schedule.weekStartsOn must be between 1 and 7.');
+      }
+    }
+  }
+}
+
+void _validateOccurrenceActivity(Map<String, dynamic> occurrence) {
+  final activity = occurrence['activity'];
+  if (activity == null) return;
+  final completed = occurrence['completed'] as bool;
+  final skipped = occurrence['skipped'] as bool;
+  if (activity == 'completed' && (!completed || skipped) ||
+      activity == 'skipped' && (!skipped || completed) ||
+      activity == 'neutral' && (completed || skipped)) {
+    throw WeeklyReportPayloadException(
+        'occurrence.activity is inconsistent with completion state.');
+  }
 }
 
 String _dateString(Object? v, String f) {

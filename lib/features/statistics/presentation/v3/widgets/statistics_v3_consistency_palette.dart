@@ -73,9 +73,14 @@ class StatisticsV3ConsistencyPalette {
     required int percentage,
     required int expectedCount,
     required bool isFuture,
+    int activityCount = 0,
   }) {
     if (isFuture) return StatisticsV3ConsistencyIntensity.future;
-    if (expectedCount <= 0) return StatisticsV3ConsistencyIntensity.unavailable;
+    if (expectedCount <= 0) {
+      return activityCount > 0
+          ? StatisticsV3ConsistencyIntensity.high
+          : StatisticsV3ConsistencyIntensity.unavailable;
+    }
 
     final value = percentage.clamp(0, 100);
     for (final bucket in percentageBuckets) {

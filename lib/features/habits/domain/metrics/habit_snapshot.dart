@@ -211,7 +211,10 @@ class HabitSchedule {
       case HabitScheduleType.once:
         return date != null && sameDate(date!, normalized);
       case HabitScheduleType.timesPerWeek:
-        return false;
+        // Flexible weekly quotas are available every day. The quota is
+        // evaluated from distinct daily CHECK completions, not from a set of
+        // fixed weekdays.
+        return true;
     }
   }
 
