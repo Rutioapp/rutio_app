@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../data/models/remote/remote_profile.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/profile_repository.dart';
 import '../../../data/repositories/repository_result.dart';
@@ -111,6 +113,8 @@ class RepositoryOnboardingAccountResolver implements OnboardingAccountResolver {
   @override
   Future<RemoteAccountSnapshot> loadRemoteAccountSnapshot(String userId) async {
     final expected = userId.trim();
+    _onboardingAuthTrace(
+        'event=resolve_remote_start user=${_shortId(expected)}');
     final result = await _repository.fetchCurrentProfile();
     if (!result.isSuccess) {
       throw OnboardingAuthError(
@@ -124,10 +128,58 @@ class RepositoryOnboardingAccountResolver implements OnboardingAccountResolver {
     if (profile != null && profile.id.trim() != expected) {
       throw const OnboardingAuthError(OnboardingAuthErrorCode.crossUser);
     }
+    final freshBootstrap =
+        profile != null && _isFreshBootstrapProfile(profile, expected);
+    _onboardingAuthTrace(
+      'event=resolve_remote_result user=${_shortId(expected)} '
+      'profileExists=${profile != null} '
+      'remoteStatus=${profile?.onboardingStatus.name ?? 'none'} '
+      'remoteCompleted=${profile?.onboardingCompletedAt != null} '
+      'freshBootstrap=$freshBootstrap remoteStateAvailable=true',
+    );
     return RemoteAccountSnapshot(
       userId: expected,
       profile: profile,
       remoteUserStateAvailable: true,
+      isFreshBootstrapProfile: freshBootstrap,
     );
+  }
+
+  bool _isFreshBootstrapProfile(RemoteProfile profile, String userId) {
+    if (profile.id.trim() != userId ||
+        profile.onboardingStatus != OnboardingStatus.pending ||
+        profile.onboardingCompletedAt != null ||
+        profile.pillarHabitIds.isNotEmpty ||
+        profile.lastLoginAt != null ||
+        profile.lastSeenAt != null) {
+      return false;
+    }
+
+    final profileCreatedAt = profile.createdAt;
+    final profileUpdatedAt = profile.updatedAt;
+    final authCreatedAt = _parseDateTime(_repository.currentUser?.createdAt);
+    if (profileCreatedAt == null || authCreatedAt == null) return false;
+    if (profileCreatedAt.difference(authCreatedAt).abs() >
+        const Duration(minutes: 15)) {
+      return false;
+    }
+    if (profileUpdatedAt != null &&
+        profileUpdatedAt.difference(profileCreatedAt).abs() >
+            const Duration(minutes: 2)) {
+      return false;
+    }
+    return true;
+  }
+
+  DateTime? _parseDateTime(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return DateTime.tryParse(value)?.toUtc();
+  }
+
+  static String _shortId(String value) =>
+      value.length <= 8 ? value : value.substring(0, 8);
+
+  static void _onboardingAuthTrace(String message) {
+    if (kDebugMode) debugPrint('[ONBOARDING_AUTH] $message');
   }
 }

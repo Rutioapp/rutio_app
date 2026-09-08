@@ -268,6 +268,7 @@ class UserStateStore extends ChangeNotifier {
   final CurrentUserIdProvider _currentSupabaseUserIdProvider;
   final DateTime Function() _nowProvider;
   UserStateNotificationMutationObserver _notificationMutationObserver;
+  final Future<void> Function(String userId)? _onboardingRecoveryCleanup;
 
   UserStateStore(
     this._repo, {
@@ -296,6 +297,7 @@ class UserStateStore extends ChangeNotifier {
     CurrentUserIdProvider? currentSupabaseUserIdProvider,
     DateTime Function()? nowProvider,
     UserStateNotificationMutationObserver? notificationMutationObserver,
+    Future<void> Function(String userId)? onboardingRecoveryCleanup,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
         _habitSyncService = habitSyncService ?? HabitSyncService(),
@@ -360,7 +362,8 @@ class UserStateStore extends ChangeNotifier {
             currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId,
         _nowProvider = nowProvider ?? DateTime.now,
         _notificationMutationObserver = notificationMutationObserver ??
-            const NoopUserStateNotificationMutationObserver();
+            const NoopUserStateNotificationMutationObserver(),
+        _onboardingRecoveryCleanup = onboardingRecoveryCleanup;
 
   Map<String, dynamic>? _state;
   bool _loading = false;
@@ -388,6 +391,7 @@ class UserStateStore extends ChangeNotifier {
   int _essentialHabitsBootstrapRequestId = 0;
   Object? _accountDeletionError;
   String? _activeLocalScopeUserId;
+  String? _pendingGuestEntryReason;
   int _scopeEpoch = 0;
   List<HabitRewardTransaction> _habitRewardTransactions =
       const <HabitRewardTransaction>[];
@@ -495,6 +499,18 @@ class UserStateStore extends ChangeNotifier {
 
   bool get hasSession => onboardingDone;
   bool get onboardingDone => _onboardingDone(this);
+
+  void markGuestEntryReason(String reason) {
+    final normalized = reason.trim();
+    if (normalized.isEmpty) return;
+    _pendingGuestEntryReason = normalized;
+  }
+
+  String? consumeGuestEntryReason() {
+    final reason = _pendingGuestEntryReason;
+    _pendingGuestEntryReason = null;
+    return reason;
+  }
 
   Future<void> setOnboardingDone(bool done, {String? email}) =>
       _setOnboardingDone(this, done, email: email);

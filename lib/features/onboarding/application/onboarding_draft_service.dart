@@ -58,14 +58,27 @@ class OnboardingDraftService {
   }
 
   /// Clears only after the remote completion contract returned a definitive
-  /// success. Before that point the operation id remains recoverable locally.
+  /// success. A remote-in-progress draft is intentionally accepted here: the
+  /// caller persists the recovery envelope before the RPC and clears it only
+  /// after local reconciliation succeeds.
   Future<void> clearAfterCompletion(OnboardingDraft draft) async {
-    if (draft.completionState != OnboardingCompletionState.completed) return;
+    if (draft.completionState != OnboardingCompletionState.completed &&
+        draft.completionState != OnboardingCompletionState.remoteInProgress) {
+      return;
+    }
     if (draft.boundUserId == null) {
       await _store.deleteAnonymousDraft();
     } else {
       await _store.deleteForUser(draft.boundUserId!);
     }
+  }
+
+  /// Clears recovery that belongs to one account after an explicit session
+  /// exit. Anonymous guest drafts are intentionally left untouched.
+  Future<void> clearUserBoundDraft(String userId) async {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) return;
+    await _store.deleteForUser(normalizedUserId);
   }
 
   /// Explicitly binds an anonymous draft to one account. The anonymous copy

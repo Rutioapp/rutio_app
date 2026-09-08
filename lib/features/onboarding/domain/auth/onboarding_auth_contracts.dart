@@ -93,11 +93,18 @@ class RemoteAccountSnapshot {
     required this.userId,
     this.profile,
     required this.remoteUserStateAvailable,
+    this.isFreshBootstrapProfile = false,
   });
 
   final String userId;
   final RemoteProfile? profile;
   final bool remoteUserStateAvailable;
+
+  /// True only when the remote profile has the shape of the account bootstrap
+  /// shell: it is pending, untouched, and was created with the auth account.
+  /// This is deliberately supplied by the data adapter; the domain service
+  /// must not infer freshness from the signup button or callback provenance.
+  final bool isFreshBootstrapProfile;
 }
 
 enum OnboardingAccountResolution {
@@ -143,16 +150,29 @@ class OnboardingAccountResolutionService {
       );
     }
     final profile = snapshot.profile;
-    final classification = profile == null
+    final classification = profile == null || snapshot.isFreshBootstrapProfile
         ? OnboardingAccountResolution.newAccount
         : profile.onboardingStatus == OnboardingStatus.completed
             ? OnboardingAccountResolution.existingAccountCompleted
             : OnboardingAccountResolution.existingAccountIncomplete;
+    if (kDebugMode) {
+      debugPrint(
+        '[ONBOARDING_AUTH] event=resolution_decision '
+        'user=${_shortId(userId)} profileExists=${profile != null} '
+        'remoteStatus=${profile?.onboardingStatus.name ?? 'none'} '
+        'remoteCompleted=${profile?.onboardingCompletedAt != null} '
+        'freshBootstrap=${snapshot.isFreshBootstrapProfile} '
+        'resolution=${classification.name}',
+      );
+    }
     return OnboardingAccountResolutionResult(
       account: snapshot,
       classification: classification,
     );
   }
+
+  static String _shortId(String value) =>
+      value.length <= 8 ? value : value.substring(0, 8);
 }
 
 enum PreparedHabitDecision { undecided, keep, discard }
@@ -193,6 +213,52 @@ class OnboardingCompletionIntent {
       accountResolution: resolution.classification,
       preparedHabitDecision:
           keepHabit ? PreparedHabitDecision.keep : preparedHabitDecision,
+      profileApplication: existing
+          ? OnboardingProfileApplication.preserveRemote
+          : OnboardingProfileApplication.applyDraft,
+      name: existing ? null : draft.firstName,
+      preparedHabit: keepHabit ? draft.habit : null,
+      reminder: keepHabit ? draft.reminder : null,
+    );
+  }
+
+  factory OnboardingCompletionIntent.fromPersistedRecovery({
+    required OnboardingDraft draft,
+    required String authenticatedUserId,
+  }) {
+    final normalizedUserId = authenticatedUserId.trim();
+    final boundUserId = draft.boundUserId?.trim();
+    if (normalizedUserId.isEmpty ||
+        boundUserId == null ||
+        boundUserId.isEmpty) {
+      throw const OnboardingAuthError(
+        OnboardingAuthErrorCode.completionRetryable,
+      );
+    }
+    if (boundUserId != normalizedUserId) {
+      throw const OnboardingAuthError(OnboardingAuthErrorCode.crossUser);
+    }
+    final resolution = OnboardingAccountResolution.values
+        .where((candidate) =>
+            candidate.name == draft.completionAccountResolutionCode)
+        .firstOrNull;
+    final decision = PreparedHabitDecision.values
+        .where((candidate) =>
+            candidate.name == draft.completionPreparedHabitDecisionCode)
+        .firstOrNull;
+    if (resolution == null || decision == null) {
+      throw const OnboardingAuthError(
+        OnboardingAuthErrorCode.completionRetryable,
+      );
+    }
+    final existing = resolution != OnboardingAccountResolution.newAccount;
+    final keepHabit = draft.habit != null &&
+        (decision == PreparedHabitDecision.keep || !existing);
+    return OnboardingCompletionIntent(
+      operationId: draft.onboardingOperationId,
+      authenticatedUserId: normalizedUserId,
+      accountResolution: resolution,
+      preparedHabitDecision: keepHabit ? PreparedHabitDecision.keep : decision,
       profileApplication: existing
           ? OnboardingProfileApplication.preserveRemote
           : OnboardingProfileApplication.applyDraft,

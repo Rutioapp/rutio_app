@@ -165,8 +165,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       await context.read<AuthController>().signOut();
-      if (!context.mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/welcome', (_) => false);
     } catch (_) {
       if (context.mounted) {
         messenger.showSnackBar(
@@ -184,7 +182,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final confirmed = await _showDeleteAccountConfirmation(context);
     if (!confirmed || !context.mounted) return;
 
-    final navigator = Navigator.of(context);
     final rootNavigator = Navigator.of(context, rootNavigator: true);
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
@@ -224,8 +221,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await context.read<UserStateStore>().deleteAccount();
       closeLoadingDialog();
-      if (!context.mounted) return;
-      navigator.pushNamedAndRemoveUntil('/welcome', (_) => false);
     } catch (_) {
       closeLoadingDialog();
       if (context.mounted) {

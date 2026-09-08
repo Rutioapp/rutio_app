@@ -377,6 +377,7 @@ class BootstrapState {
     this.destination,
     this.error,
     this.cosmeticsReadyToken,
+    this.pendingOnboardingDraft = false,
     this.usesOfflinePolicy = false,
   });
 
@@ -388,6 +389,7 @@ class BootstrapState {
   final BootstrapDestination? destination;
   final BootstrapError? error;
   final CosmeticsReadyToken? cosmeticsReadyToken;
+  final bool pendingOnboardingDraft;
   final bool usesOfflinePolicy;
 
   bool get isReady => phase == BootstrapPhase.ready && destination != null;
@@ -406,6 +408,7 @@ class BootstrapState {
     BootstrapError? error,
     CosmeticsReadyToken? cosmeticsReadyToken,
     bool clearCosmeticsReadyToken = false,
+    bool? pendingOnboardingDraft,
     bool clearError = false,
     bool? usesOfflinePolicy,
   }) {
@@ -421,6 +424,8 @@ class BootstrapState {
       cosmeticsReadyToken: clearCosmeticsReadyToken
           ? null
           : cosmeticsReadyToken ?? this.cosmeticsReadyToken,
+      pendingOnboardingDraft:
+          pendingOnboardingDraft ?? this.pendingOnboardingDraft,
       usesOfflinePolicy: usesOfflinePolicy ?? this.usesOfflinePolicy,
     );
   }
@@ -769,12 +774,39 @@ class BootstrapController extends ChangeNotifier {
       _log(runId, 'authoritative_bootstrap_started', startedAt: startedAt);
       _startupLog(
           '[STARTUP] 48 BootstrapController awaiting authoritative bootstrap decision');
-      final authoritativeDecisionResult =
-          await _profileRepository.loadAuthoritativeBootstrapDecision(
-        scopeUserId: scopeUserId,
-        scopeEpoch: scopeEpoch,
-        onboardingPolicyVersion: _onboardingPolicyVersion,
+      _startupTrace(
+        runId,
+        stage: 'authoritative_bootstrap_decision',
+        event: 'before',
+        note: 'scopeEpoch=$scopeEpoch',
       );
+      late final AuthoritativeBootstrapDecisionLoadResult
+          authoritativeDecisionResult;
+      try {
+        authoritativeDecisionResult =
+            await _profileRepository.loadAuthoritativeBootstrapDecision(
+          scopeUserId: scopeUserId,
+          scopeEpoch: scopeEpoch,
+          onboardingPolicyVersion: _onboardingPolicyVersion,
+        );
+        _startupTrace(
+          runId,
+          stage: 'authoritative_bootstrap_decision',
+          event: 'after',
+          note:
+              'decision=${authoritativeDecisionResult.decision?.decision.name ?? 'null'} '
+              'error=${authoritativeDecisionResult.error?.code.name ?? 'none'} '
+              'stale=${authoritativeDecisionResult.staleResultDiscarded}',
+        );
+      } catch (error) {
+        _startupTrace(
+          runId,
+          stage: 'authoritative_bootstrap_decision',
+          event: 'error',
+          errorType: error.runtimeType.toString(),
+        );
+        rethrow;
+      }
       _startupLog(
           '[STARTUP] 49 BootstrapController authoritative bootstrap decision completed');
       _metric(
@@ -870,9 +902,31 @@ class BootstrapController extends ChangeNotifier {
       // A pending anonymous Phase 6 draft owns the handoff until AUTH-3
       // completes it. This prevents the session listener/authoritative home
       // decision from racing the onboarding auth screen.
-      final hasPendingOnboarding =
-          await (_hasResumableOnboardingDraft?.call() ??
-              Future<bool>.value(false));
+      _startupTrace(
+        runId,
+        stage: 'onboarding_draft_decision',
+        event: 'before',
+      );
+      late final bool hasPendingOnboarding;
+      try {
+        hasPendingOnboarding = await (_hasResumableOnboardingDraft?.call() ??
+            Future<bool>.value(false));
+        _startupTrace(
+          runId,
+          stage: 'onboarding_draft_decision',
+          event: 'after',
+          note:
+              'draftPresent=$hasPendingOnboarding remoteDecision=${authoritative.decision.name}',
+        );
+      } catch (error) {
+        _startupTrace(
+          runId,
+          stage: 'onboarding_draft_decision',
+          event: 'error',
+          errorType: error.runtimeType.toString(),
+        );
+        rethrow;
+      }
       if (hasPendingOnboarding && destination == BootstrapDestination.home) {
         destination = BootstrapDestination.onboarding;
       }
@@ -935,6 +989,7 @@ class BootstrapController extends ChangeNotifier {
             remoteProfile: profile,
             destination: destination,
             cosmeticsReadyToken: essentials.cosmeticsReadyToken,
+            pendingOnboardingDraft: hasPendingOnboarding,
           ),
         );
         _metric(
@@ -965,6 +1020,7 @@ class BootstrapController extends ChangeNotifier {
           user: user,
           remoteProfile: profile,
           destination: destination,
+          pendingOnboardingDraft: hasPendingOnboarding,
         ),
       );
       _startupLog(
@@ -1016,11 +1072,16 @@ class BootstrapController extends ChangeNotifier {
     }
 
     _setState(_state.copyWith(phase: BootstrapPhase.decidingDestination));
-    final destination = hasResumableDraft
-        ? BootstrapDestination.welcome
-        : _userStateStore.onboardingDone
-            ? BootstrapDestination.authentication
-            : BootstrapDestination.welcome;
+    final exitReason = _userStateStore.consumeGuestEntryReason();
+    final reason = exitReason ??
+        (hasResumableDraft ? 'guest_draft' : 'no_session_no_draft');
+    const destination = BootstrapDestination.welcome;
+    if (kDebugMode) {
+      debugPrint(
+        '[BOOTSTRAP_TRACE] event=guest_destination_decision '
+        'reason=$reason destination=welcome',
+      );
+    }
     _setState(
       BootstrapState(
         phase: BootstrapPhase.ready,
@@ -1593,8 +1654,36 @@ class BootstrapController extends ChangeNotifier {
   }
 
   void _setState(BootstrapState state) {
+    if (_state.phase != state.phase ||
+        _state.destination != state.destination ||
+        _state.error != state.error) {
+      _startupTrace(
+        state.runId,
+        stage: 'bootstrap_state',
+        event: 'transition',
+        note: 'from=${_state.phase.name}/${_state.destination?.name ?? 'none'} '
+            'to=${state.phase.name}/${state.destination?.name ?? 'none'} '
+            'user=${state.user != null} '
+            'draftPresent=${state.pendingOnboardingDraft}',
+      );
+    }
     _state = state;
     notifyListeners();
+  }
+
+  void _startupTrace(
+    int runId, {
+    required String stage,
+    required String event,
+    String? note,
+    String? errorType,
+  }) {
+    if (!kDebugMode) return;
+    _debugLogger(
+      '[BOOTSTRAP_TRACE] runId=$runId stage=$stage event=$event'
+      '${note == null ? '' : ' $note'}'
+      '${errorType == null ? '' : ' errorType=$errorType'}',
+    );
   }
 
   void _recordStaleDiscard(int runId, {required String domain}) {

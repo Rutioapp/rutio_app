@@ -8,8 +8,14 @@ class DraftOnboardingAuthPersistence implements OnboardingAuthDraftPersistence {
   final OnboardingDraftService _service;
 
   @override
-  Future<void> save(OnboardingDraft draft) =>
-      _service.saveAnonymousDraft(draft);
+  Future<void> save(OnboardingDraft draft) async {
+    final boundUserId = draft.boundUserId;
+    if (boundUserId == null) {
+      await _service.saveAnonymousDraft(draft);
+    } else {
+      await _service.bindToUser(draft, boundUserId);
+    }
+  }
 
   @override
   Future<void> clear(OnboardingDraft draft) =>

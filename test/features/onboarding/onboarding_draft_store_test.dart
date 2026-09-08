@@ -138,5 +138,18 @@ void main() {
       expect(second.onboardingOperationId, isNot(first.onboardingOperationId));
       expect((await service.loadAnonymousDraft())!.draftId, second.draftId);
     });
+
+    test('clears user-bound recovery without deleting guest draft', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final store = createStore();
+      final service = OnboardingDraftService(store: store);
+      await service.saveAnonymousDraft(draft());
+      await store.saveForUser('user-a', draft().bindToUser('user-a'));
+
+      await service.clearUserBoundDraft('user-a');
+
+      expect(await store.loadForUser('user-a'), isNull);
+      expect(await store.loadAnonymousDraft(), isNotNull);
+    });
   });
 }

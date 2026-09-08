@@ -6,6 +6,7 @@ import 'package:rutio/features/onboarding/data/onboarding_draft_codec.dart';
 import 'package:rutio/features/onboarding/domain/auth/onboarding_auth_contracts.dart';
 import 'package:rutio/features/onboarding/domain/models/onboarding_draft.dart';
 import 'package:rutio/features/onboarding/domain/models/onboarding_types.dart';
+import 'package:rutio/features/onboarding/presentation/onboarding_auth_step.dart';
 
 void main() {
   OnboardingDraft draft() => OnboardingDraft(
@@ -76,6 +77,30 @@ void main() {
         '22222222-2222-4222-8222-222222222222');
     expect(OnboardingDraftCodec().encodeString(saved.last),
         isNot(contains('secret-value')));
+  });
+
+  test('authenticated frozen recovery shows only the recovery UI gate', () {
+    expect(
+      onboardingAuthRecoveryGateVisible(
+        hasAuthenticatedSession: true,
+        completionState: OnboardingCompletionState.remoteInProgress,
+      ),
+      isTrue,
+    );
+    expect(
+      onboardingAuthRecoveryGateVisible(
+        hasAuthenticatedSession: false,
+        completionState: OnboardingCompletionState.remoteInProgress,
+      ),
+      isFalse,
+    );
+    expect(
+      onboardingAuthRecoveryGateVisible(
+        hasAuthenticatedSession: true,
+        completionState: OnboardingCompletionState.draft,
+      ),
+      isFalse,
+    );
   });
 }
 

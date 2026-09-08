@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/onboarding/onboarding.dart';
+import 'package:rutio/features/onboarding/domain/auth/onboarding_auth_contracts.dart';
 
 void main() {
   final firstId = '11111111-1111-4111-8111-111111111111';
@@ -184,6 +185,9 @@ void main() {
         selectedRecommendationId: 'r3',
         authIntent: AuthIntent.signUp,
         completionState: OnboardingCompletionState.authPending,
+        completionAccountResolutionCode:
+            OnboardingAccountResolution.newAccount.name,
+        completionPreparedHabitDecisionCode: PreparedHabitDecision.keep.name,
         completedAt: null,
       );
       final codec = OnboardingDraftCodec();
@@ -197,6 +201,10 @@ void main() {
       expect(result.draft!.authIntent, AuthIntent.signUp);
       expect(
           result.draft!.completionState, OnboardingCompletionState.authPending);
+      expect(result.draft!.completionAccountResolutionCode,
+          OnboardingAccountResolution.newAccount.name);
+      expect(result.draft!.completionPreparedHabitDecisionCode,
+          PreparedHabitDecision.keep.name);
       expect(result.draft!.createdAt, original.createdAt);
       expect(result.draft!.updatedAt, original.updatedAt);
     });

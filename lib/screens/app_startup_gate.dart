@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../application/auth/auth_controller.dart';
 import '../application/bootstrap/bootstrap_controller.dart';
 import '../data/models/remote/remote_profile.dart';
+import '../stores/user_state_store.dart';
 import '../utils/app_theme.dart';
 import 'auth/sign_in_screen.dart';
 import '../features/onboarding/presentation/onboarding_v1_screen.dart';
@@ -18,9 +20,11 @@ class AppStartupGate extends StatefulWidget {
   const AppStartupGate({
     super.key,
     this.authenticatedBuilder,
+    this.onboardingBuilder,
   });
 
   final WidgetBuilder? authenticatedBuilder;
+  final WidgetBuilder? onboardingBuilder;
 
   @override
   State<AppStartupGate> createState() => _AppStartupGateState();
@@ -31,6 +35,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
 
   Timer? _minimumSplashTimer;
   bool _minimumSplashElapsed = false;
+  String? _lastStartupGateSnapshot;
 
   @override
   void initState() {
@@ -61,6 +66,12 @@ class _AppStartupGateState extends State<AppStartupGate> {
             (routeName == null || routeName == '/' || routeName == '/home');
         if (state.isReady) {
           if (shouldHoldReadySplash) {
+            _traceStartupGate(
+              controller,
+              state,
+              render: 'splash',
+              reason: 'minimum_cold_start_splash',
+            );
             controller.logColdStartSplashShown();
             return const SplashScreen(
               autoAdvanceDuration: null,
@@ -69,13 +80,32 @@ class _AppStartupGateState extends State<AppStartupGate> {
             );
           }
           if (state.destination == BootstrapDestination.onboarding &&
-              !_hasOnboardingProfile(state)) {
+              !_hasOnboardingProfile(state) &&
+              !(state.user != null && state.pendingOnboardingDraft)) {
+            _traceStartupGate(
+              controller,
+              state,
+              render: 'preparing',
+              reason: 'ready_onboarding_without_profile',
+            );
             return const BootstrapPreparationScreen();
           }
+          _traceStartupGate(
+            controller,
+            state,
+            render: state.destination?.name ?? 'unknown',
+            reason: 'bootstrap_ready',
+          );
           return _buildDestination(context, state.destination!);
         }
 
         if (state.isFailed) {
+          _traceStartupGate(
+            controller,
+            state,
+            render: 'error',
+            reason: 'bootstrap_failed',
+          );
           return BootstrapPreparationScreen(
             errorMessage: state.error?.message,
             onRetry: controller.retry,
@@ -83,6 +113,12 @@ class _AppStartupGateState extends State<AppStartupGate> {
         }
 
         if (isColdStart) {
+          _traceStartupGate(
+            controller,
+            state,
+            render: 'splash',
+            reason: 'cold_start_pending',
+          );
           controller.logColdStartSplashShown();
           return const SplashScreen(
             autoAdvanceDuration: null,
@@ -91,10 +127,57 @@ class _AppStartupGateState extends State<AppStartupGate> {
           );
         }
 
+        _traceStartupGate(
+          controller,
+          state,
+          render: 'preparing',
+          reason: 'bootstrap_not_ready',
+        );
         controller.logPreparingScreenShown();
         return const BootstrapPreparationScreen();
       },
     );
+  }
+
+  void _traceStartupGate(
+    BootstrapController controller,
+    BootstrapState state, {
+    required String render,
+    required String reason,
+  }) {
+    if (!kDebugMode) return;
+    UserStateStore? store;
+    try {
+      store = context.read<UserStateStore>();
+    } catch (_) {
+      // Isolated AppStartupGate tests do not install production providers.
+    }
+    final remoteStatus = state.remoteProfile?.onboardingStatus.name ?? 'none';
+    final snapshot = <String>[
+      'runId=${state.runId}',
+      'bootstrapStatus=${state.phase.name}',
+      'user=${state.user != null}',
+      'scope=${store == null ? 'unknown' : store.activeLocalScopeUserId == null ? 'guest' : 'authenticated'}',
+      'draftPresent=${state.pendingOnboardingDraft}',
+      'remoteOnboardingStatus=$remoteStatus',
+      'profileDecision=${state.destination?.name ?? 'none'}',
+      'userStateReady=${store == null ? 'unknown' : !store.isLoading && store.state != null}',
+      'routeDecision=${state.destination?.name ?? 'none'}',
+      'render=$render',
+      'reason=$reason',
+    ].join(' ');
+    if (snapshot == _lastStartupGateSnapshot) return;
+    _lastStartupGateSnapshot = snapshot;
+    debugPrint('[STARTUP_GATE] $snapshot');
+    if (render == BootstrapDestination.home.name) {
+      debugPrint(
+        '[ONBOARDING_HANDOFF] event=startup_gate_home_rendered '
+        'operationId=unknown '
+        'bootstrapStatus=${state.phase.name} '
+        'destination=${state.destination?.name ?? 'none'} '
+        'draftPresent=${state.pendingOnboardingDraft}',
+      );
+    }
   }
 
   Widget _buildDestination(
@@ -109,7 +192,8 @@ class _AppStartupGateState extends State<AppStartupGate> {
       case BootstrapDestination.authentication:
         return const SignInScreen();
       case BootstrapDestination.onboarding:
-        return const OnboardingV1Screen();
+        return widget.onboardingBuilder?.call(context) ??
+            const OnboardingV1Screen();
       case BootstrapDestination.profileUninitialized:
       case BootstrapDestination.profileDeleted:
       case BootstrapDestination.accountSuspended:

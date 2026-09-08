@@ -42,6 +42,18 @@ void main() {
       expect(fixture.controller.errorMessage, isNull);
     });
 
+    test('successful logout clears only the leaving user recovery', () async {
+      final clearedUserIds = <String>[];
+      final fixture = await _createSignOutFixture(
+        currentUserId: 'user-a',
+        onExplicitSessionExit: (userId) async => clearedUserIds.add(userId),
+      );
+
+      await fixture.controller.signOut();
+
+      expect(clearedUserIds, <String>['user-a']);
+    });
+
     test('double tap reuses the in-flight sign-out', () async {
       final completer = Completer<void>();
       final fixture = await _createSignOutFixture(
@@ -96,6 +108,21 @@ void main() {
 
       expect(fixture.controller.isAuthenticated, isFalse);
       expect(fixture.userStateStore.scopeHistory.last, isNull);
+    });
+
+    test('session loss does not invoke explicit recovery cleanup', () async {
+      final clearedUserIds = <String>[];
+      final fixture = await _createSignOutFixture(
+        currentUserId: 'user-a',
+        onExplicitSessionExit: (userId) async => clearedUserIds.add(userId),
+      );
+
+      fixture.currentUser = null;
+      fixture.authStream.add(_authState(AuthChangeEvent.signedOut, null));
+      await _flushMicrotasks();
+
+      expect(clearedUserIds, isEmpty);
+      expect(fixture.controller.isAuthenticated, isFalse);
     });
 
     test('new login after failed logout creates a new scope', () async {
@@ -595,6 +622,7 @@ Future<_SignOutFixture> _createSignOutFixture({
   Completer<void>? signOutCompleter,
   Object? signOutError,
   String signInUserId = 'user-b',
+  Future<void> Function(String userId)? onExplicitSessionExit,
 }) async {
   final authStream = StreamController<AuthState>.broadcast(sync: true);
   final userStateStore = _SignOutUserStateStore();
@@ -622,6 +650,7 @@ Future<_SignOutFixture> _createSignOutFixture({
     globalWalletController: walletController,
     profileRepository: null,
     enableBackgroundProfileSync: false,
+    onExplicitSessionExit: onExplicitSessionExit,
   );
   authStream.add(
     _authState(

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/auth/onboarding_auth_contracts.dart';
@@ -17,6 +18,12 @@ class SupabaseOnboardingCompletionAdapter implements OnboardingCompletionPort {
   Future<OnboardingCompletionResult> completeOnboarding(
     OnboardingCompletionIntent intent,
   ) async {
+    _trace(
+      'event=request_started op=${_shortId(intent.operationId)} '
+      'user=${_shortId(intent.authenticatedUserId)} '
+      'resolution=${intent.accountResolution.name} '
+      'preparedHabitDecision=${intent.preparedHabitDecision.name}',
+    );
     final preparedHabit = intent.preparedHabit == null
         ? null
         : _canonicalHabit(intent.preparedHabit!);
@@ -37,16 +44,38 @@ class SupabaseOnboardingCompletionAdapter implements OnboardingCompletionPort {
           'p_reminder': reminder,
         },
       );
+      _trace(
+        'event=rpc_returned op=${_shortId(intent.operationId)} '
+        'user=${_shortId(intent.authenticatedUserId)}',
+      );
       final row = _asMap(raw);
-      return _parseResult(row, intent);
+      final result = _parseResult(row, intent);
+      _trace(
+        'event=result_mapped op=${_shortId(intent.operationId)} '
+        'kind=${result.kind.name} error=${result.error?.code.name ?? 'none'}',
+      );
+      return result;
     } on PostgrestException catch (error) {
+      final mapped = _errorFor(error);
+      _trace(
+        'event=rpc_error op=${_shortId(intent.operationId)} '
+        'user=${_shortId(intent.authenticatedUserId)} errorType=PostgrestException '
+        'code=${error.code ?? 'none'} message=${_safe(error.message)} '
+        'details=${_safe(error.details)} hint=${_safe(error.hint)} '
+        'mapped=${mapped.code.name}',
+      );
       return OnboardingCompletionResult(
         kind: _kindFor(error),
         operationId: intent.operationId,
         userId: intent.authenticatedUserId,
-        error: _errorFor(error),
+        error: mapped,
       );
     } on SocketException catch (error) {
+      _trace(
+        'event=rpc_error op=${_shortId(intent.operationId)} '
+        'user=${_shortId(intent.authenticatedUserId)} errorType=SocketException '
+        'mapped=network',
+      );
       return OnboardingCompletionResult(
         kind: OnboardingCompletionResultKind.retryableFailure,
         operationId: intent.operationId,
@@ -55,6 +84,11 @@ class SupabaseOnboardingCompletionAdapter implements OnboardingCompletionPort {
             OnboardingAuthError(OnboardingAuthErrorCode.network, cause: error),
       );
     } catch (error) {
+      _trace(
+        'event=rpc_error op=${_shortId(intent.operationId)} '
+        'user=${_shortId(intent.authenticatedUserId)} errorType=${error.runtimeType} '
+        'mapped=completionRetryable',
+      );
       return OnboardingCompletionResult(
         kind: OnboardingCompletionResultKind.retryableFailure,
         operationId: intent.operationId,
@@ -184,5 +218,31 @@ class SupabaseOnboardingCompletionAdapter implements OnboardingCompletionPort {
     }
     return OnboardingAuthError(OnboardingAuthErrorCode.completionRetryable,
         cause: error);
+  }
+
+  static String _shortId(String value) =>
+      value.length <= 8 ? value : value.substring(0, 8);
+
+  static String _safe(Object? value) {
+    final text =
+        (value ?? '').toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (text.isEmpty) return 'none';
+    final redacted = text
+        .replaceAll(
+          RegExp(
+            r'(password|token|jwt|secret|email)\s*[:=]\s*[^, ]+',
+            caseSensitive: false,
+          ),
+          '[redacted]',
+        )
+        .replaceAll(
+          RegExp(r'bearer\s+[^ ]+', caseSensitive: false),
+          'Bearer [redacted]',
+        );
+    return redacted.length <= 240 ? redacted : '${redacted.substring(0, 240)}…';
+  }
+
+  static void _trace(String message) {
+    if (kDebugMode) debugPrint('[ONBOARDING_COMPLETION] $message');
   }
 }

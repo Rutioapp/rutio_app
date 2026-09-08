@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
 import '../application/auth/onboarding_auth_state_machine.dart';
@@ -16,10 +17,27 @@ import '../../../utils/app_theme.dart';
 import '../../../screens/auth/widgets/auth_field.dart';
 import '../../../screens/auth/widgets/auth_primary_button.dart';
 
+@visibleForTesting
+bool onboardingAuthRecoveryGateVisible({
+  required bool hasAuthenticatedSession,
+  required OnboardingCompletionState completionState,
+}) {
+  return hasAuthenticatedSession &&
+      completionState == OnboardingCompletionState.remoteInProgress;
+}
+
 class OnboardingAuthStep extends StatefulWidget {
-  const OnboardingAuthStep({required this.draft, super.key});
+  const OnboardingAuthStep({
+    required this.draft,
+    this.onCompletionHandoff,
+    super.key,
+  });
 
   final OnboardingDraft draft;
+  final Future<void> Function({
+    required String operationId,
+    required bool habitPresent,
+  })? onCompletionHandoff;
 
   @override
   State<OnboardingAuthStep> createState() => _OnboardingAuthStepState();
@@ -49,7 +67,15 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       draftPersistence: DraftOnboardingAuthPersistence(
         context.read<OnboardingDraftService>(),
       ),
+      onCompletionHandoff: widget.onCompletionHandoff,
     )..addListener(_onMachineChanged);
+    if (kDebugMode) {
+      debugPrint(
+        '[ONBOARDING_AUTH] event=machine_created '
+        'op=${_shortId(widget.draft.onboardingOperationId)} '
+        'draftStep=${widget.draft.currentStep.name}',
+      );
+    }
     context.read<AuthController>().addListener(_onAuthControllerChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -84,6 +110,13 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
 
   @override
   void dispose() {
+    if (kDebugMode) {
+      debugPrint(
+        '[ONBOARDING_AUTH] event=machine_disposed '
+        'op=${_shortId(_machine.state.draft.onboardingOperationId)} '
+        'phase=${_machine.state.phase.name}',
+      );
+    }
     context.read<AuthController>().removeListener(_onAuthControllerChanged);
     _machine.removeListener(_onMachineChanged);
     _machine.dispose();
@@ -92,7 +125,11 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     super.dispose();
   }
 
+  static String _shortId(String value) =>
+      value.length <= 8 ? value : value.substring(0, 8);
+
   Future<void> _submit() async {
+    if (_isAuthenticatedFrozenRecovery) return;
     FocusScope.of(context).unfocus();
     await _machine.authenticate(
       command: _isSignUp
@@ -105,7 +142,10 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
   }
 
   void _switchMode(bool signUp) {
-    if (_machine.state.phase == OnboardingAuthPhase.authenticating) return;
+    if (_isAuthenticatedFrozenRecovery ||
+        _machine.state.phase == OnboardingAuthPhase.authenticating) {
+      return;
+    }
     setState(() {
       _isSignUp = signUp;
       _password.clear();
@@ -121,6 +161,15 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     final resolving = state.phase == OnboardingAuthPhase.resolvingAccount;
     final ready = state.phase == OnboardingAuthPhase.readyToComplete ||
         state.phase == OnboardingAuthPhase.awaitingPreparedHabitDecision;
+    final completionFailure = state.phase == OnboardingAuthPhase.failure &&
+        state.failureStage == OnboardingAuthFailureStage.completion &&
+        state.authenticatedUserId != null &&
+        state.resolution != null;
+    final completionRetryable =
+        state.error?.code == OnboardingAuthErrorCode.completionRetryable;
+    final recovering = _isAuthenticatedFrozenRecovery &&
+        state.phase != OnboardingAuthPhase.completed &&
+        !completionFailure;
     if (waiting) {
       return _ConfirmationView(
         email: _email.text,
@@ -129,6 +178,30 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
           _password.clear();
         }),
       );
+    }
+    if (completionFailure) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'No se pudo finalizar el onboarding. Tu sesión y tus datos siguen guardados.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.authSub,
+            ),
+            if (completionRetryable) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _machine.complete,
+                child: const Text('Reintentar finalización'),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+    if (recovering) {
+      return const _RecoveryView();
     }
     if (resolving || ready) {
       return Center(
@@ -162,7 +235,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
             if (state.phase == OnboardingAuthPhase.readyToComplete) ...[
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _machine.complete,
+                onPressed: _completeFromCta,
                 child: const Text('Finalizar onboarding'),
               ),
             ],
@@ -242,6 +315,25 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     );
   }
 
+  bool get _isAuthenticatedFrozenRecovery =>
+      onboardingAuthRecoveryGateVisible(
+        hasAuthenticatedSession:
+            context.read<AuthController>().currentUser != null ||
+                _machine.state.authenticatedUserId != null,
+        completionState: _machine.state.draft.completionState,
+      );
+
+  Future<void> _completeFromCta() async {
+    if (kDebugMode) {
+      debugPrint(
+        '[ONBOARDING_HANDOFF] event=final_cta_tapped '
+        'operationId=${_shortId(_machine.state.draft.onboardingOperationId)} '
+        'draftPresent=true',
+      );
+    }
+    await _machine.complete();
+  }
+
   String _errorCopy(AppLocalizations l10n, OnboardingAuthErrorCode code) {
     switch (code) {
       case OnboardingAuthErrorCode.emailAlreadyRegistered:
@@ -284,6 +376,37 @@ class _ConfirmationView extends StatelessWidget {
             AuthPrimaryButton(
               label: context.l10n.onboardingAuthConfirmedCta,
               onTap: onLogin,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecoveryView extends StatelessWidget {
+  const _RecoveryView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 18),
+            Text(
+              'Recuperando tu onboarding…',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.authSub,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No necesitas volver a registrarte.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.authSub,
             ),
           ],
         ),

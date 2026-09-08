@@ -54,16 +54,13 @@ void main() {
       expect(fixture.bootstrap.state.destination, BootstrapDestination.welcome);
     });
 
-    test('resolved guest routes to Auth when local onboarding is done',
+    test('resolved guest routes to Welcome even when local onboarding is done',
         () async {
       final fixture = _Fixture(localOnboardingDone: true);
       fixture.resolveGuest();
       await fixture.pump();
 
-      expect(
-        fixture.bootstrap.state.destination,
-        BootstrapDestination.authentication,
-      );
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.welcome);
     });
 
     test('authenticated pending profile routes to onboarding', () async {
@@ -94,6 +91,43 @@ void main() {
       await fixture.pump();
 
       expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
+    });
+
+    testWidgets(
+        'completed account with pending draft renders onboarding recovery',
+        (tester) async {
+      final auth = _FakeAuthorityAuthController()
+        .._currentUser = _user('user-1');
+      final bootstrap = _FakeAuthorityBootstrapController(
+        initialDestination: BootstrapDestination.onboarding,
+        initialMode: BootstrapRunMode.inAppBootstrap,
+        initialUser: _user('user-1'),
+        initialRemoteProfile: _profile('user-1', OnboardingStatus.completed),
+        pendingOnboardingDraft: true,
+        loggedOutDestination: BootstrapDestination.authentication,
+        authController: auth,
+      );
+      addTearDown(() {
+        bootstrap.dispose();
+        auth.dispose();
+      });
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<BootstrapController>.value(
+          value: bootstrap,
+          child: _localizedApp(
+            home: AppStartupGate(
+              onboardingBuilder: (_) => const Text('Onboarding Recovery'),
+            ),
+          ),
+        ),
+      );
+
+      expect(bootstrap.state.phase, BootstrapPhase.ready);
+      expect(bootstrap.state.destination, BootstrapDestination.onboarding);
+      expect(bootstrap.state.pendingOnboardingDraft, isTrue);
+      expect(find.byType(BootstrapPreparationScreen), findsNothing);
+      expect(find.text('Onboarding Recovery'), findsOneWidget);
     });
 
     test('same-user relogin recovers when an authoritative decision goes stale',
@@ -390,7 +424,7 @@ void main() {
       final guestRun = fixture.bootstrap.state.runId;
       expect(
         fixture.bootstrap.state.destination,
-        BootstrapDestination.authentication,
+        BootstrapDestination.welcome,
       );
 
       fixture.resolveUser('user-1');
@@ -428,8 +462,7 @@ void main() {
       expect(fixture.bootstrap.state.user, isNull);
       expect(
         fixture.bootstrap.state.destination,
-        anyOf(
-            BootstrapDestination.welcome, BootstrapDestination.authentication),
+        BootstrapDestination.welcome,
       );
     });
 
@@ -1075,13 +1108,20 @@ class _FakeAuthorityAuthController extends AuthController {
 class _FakeAuthorityBootstrapController extends BootstrapController {
   _FakeAuthorityBootstrapController({
     required BootstrapDestination initialDestination,
+    BootstrapRunMode initialMode = BootstrapRunMode.coldStart,
+    User? initialUser,
+    RemoteProfile? initialRemoteProfile,
+    bool pendingOnboardingDraft = false,
     required this.loggedOutDestination,
     required super.authController,
   })  : _state = BootstrapState(
           phase: BootstrapPhase.ready,
           runId: 1,
-          mode: BootstrapRunMode.coldStart,
+          mode: initialMode,
+          user: initialUser,
+          remoteProfile: initialRemoteProfile,
           destination: initialDestination,
+          pendingOnboardingDraft: pendingOnboardingDraft,
         ),
         super(
           userStateStore: _FakeUserStateStore(localOnboardingDone: false),
@@ -1316,6 +1356,7 @@ class _Fixture {
     bool enableBackgroundProfileSync = false,
     PostHomeBootstrapTaskRunner? postHomeBootstrapTaskRunner,
     Completer<void>? signOutCompleter,
+    Future<bool> Function()? hasResumableOnboardingDraft,
   })  : authStream = StreamController<AuthState>.broadcast(sync: true),
         userStore = _FakeUserStateStore(
           localOnboardingDone: localOnboardingDone,
@@ -1356,6 +1397,7 @@ class _Fixture {
       essentialCosmeticsPreparer:
           cosmeticsPreparer ?? _FakeEssentialCosmeticsPreparer(),
       essentialAssetPreloader: assetPreloader ?? _FakeEssentialAssetPreloader(),
+      hasResumableOnboardingDraft: hasResumableOnboardingDraft,
     );
     addTearDown(() async {
       bootstrap.dispose();

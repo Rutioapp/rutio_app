@@ -17,8 +17,26 @@ Future<void> _deleteAccount(UserStateStore store) async {
       throw result.error ?? StateError('Account deletion failed.');
     }
 
+    final deletedUserId =
+        store._repo.activeUserId ?? _normalizedScopeUserId(store.userId);
+    if (deletedUserId != null) {
+      try {
+        await store._onboardingRecoveryCleanup?.call(deletedUserId);
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint(
+              '[user_state_store] account recovery cleanup failed: $error');
+        }
+      }
+    }
+
     // After the server confirms deletion, invalidate any local auth session.
+    store.markGuestEntryReason('account_deleted');
     await _signOutSupabaseSessionIfPresent();
+    await store.switchLocalScope(userId: null, forceReload: true);
+    if (kDebugMode) {
+      debugPrint('[AUTH_SESSION] event=account_deleted');
+    }
     store._accountDeletionError = null;
   } catch (error) {
     store._accountDeletionError = error;
