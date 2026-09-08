@@ -56,6 +56,7 @@ class OnboardingDraftCodec {
           draft.discardedRecommendationIds.toList(growable: false),
       'selectedRecommendationId': draft.selectedRecommendationId,
       'authIntent': draft.authIntent?.code,
+      'authEmail': draft.authEmail,
       'completionState': draft.completionState.code,
       'boundUserId': draft.boundUserId,
       'completedAt': draft.completedAt?.toUtc().toIso8601String(),
@@ -184,6 +185,7 @@ class OnboardingDraftCodec {
       selectedRecommendationId:
           _nullableString(json['selectedRecommendationId']),
       authIntent: authIntent,
+      authEmail: _nullableString(json['authEmail']),
       completionState: completion,
       boundUserId: _nullableString(json['boundUserId']),
       completedAt: completedAt,

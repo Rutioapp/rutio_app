@@ -141,6 +141,9 @@ class OnboardingCoordinator extends ChangeNotifier {
     OnboardingStep.habit,
     OnboardingStep.reminder,
     OnboardingStep.preview,
+    OnboardingStep.auth,
+    OnboardingStep.emailConfirmation,
+    OnboardingStep.resolvingAccount,
   ];
 
   final OnboardingDraftService _draftService;
@@ -207,7 +210,8 @@ class OnboardingCoordinator extends ChangeNotifier {
         draft: safeDraft,
         effectiveStep: safeStep,
       ));
-      if (_stepIndex(safeStep) >= _stepIndex(OnboardingStep.recommendations)) {
+      if (_stepIndex(safeStep) >= _stepIndex(OnboardingStep.recommendations) &&
+          _stepIndex(safeStep) < _stepIndex(OnboardingStep.auth)) {
         await _loadRecommendationsForDraft(safeDraft, epoch: epoch);
       }
     } catch (error) {

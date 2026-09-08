@@ -10534,6 +10534,108 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'El hábito mostró una estabilidad más baja esta semana.'**
   String get weeklyReportHabitNeedsAttention16;
+
+  /// No description provided for @onboardingAuthCreateTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea tu cuenta'**
+  String get onboardingAuthCreateTitle;
+
+  /// No description provided for @onboardingAuthLoginTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tengo cuenta'**
+  String get onboardingAuthLoginTitle;
+
+  /// No description provided for @onboardingAuthSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Guarda tu Rutio para continuar.'**
+  String get onboardingAuthSubtitle;
+
+  /// No description provided for @onboardingAuthCreateMode.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear cuenta'**
+  String get onboardingAuthCreateMode;
+
+  /// No description provided for @onboardingAuthLoginMode.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión'**
+  String get onboardingAuthLoginMode;
+
+  /// No description provided for @onboardingAuthCreateCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear cuenta'**
+  String get onboardingAuthCreateCta;
+
+  /// No description provided for @onboardingAuthLoginCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión'**
+  String get onboardingAuthLoginCta;
+
+  /// No description provided for @onboardingAuthConfirmationTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa tu correo'**
+  String get onboardingAuthConfirmationTitle;
+
+  /// No description provided for @onboardingAuthConfirmationBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Hemos enviado un enlace de confirmación a {email}.'**
+  String onboardingAuthConfirmationBody(Object email);
+
+  /// No description provided for @onboardingAuthConfirmedCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya lo he confirmado'**
+  String get onboardingAuthConfirmedCta;
+
+  /// No description provided for @onboardingAuthResolving.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprobando tu cuenta…'**
+  String get onboardingAuthResolving;
+
+  /// No description provided for @onboardingAuthReady.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu Rutio está listo para el siguiente paso.'**
+  String get onboardingAuthReady;
+
+  /// No description provided for @onboardingAuthEmailExists.
+  ///
+  /// In es, this message translates to:
+  /// **'Este email ya tiene una cuenta. Puedes iniciar sesión.'**
+  String get onboardingAuthEmailExists;
+
+  /// No description provided for @onboardingAuthInvalidCredentials.
+  ///
+  /// In es, this message translates to:
+  /// **'El email o la contraseña no son correctos.'**
+  String get onboardingAuthInvalidCredentials;
+
+  /// No description provided for @onboardingAuthWeakPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'La contraseña no cumple la política actual.'**
+  String get onboardingAuthWeakPassword;
+
+  /// No description provided for @onboardingAuthNetwork.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay conexión. Inténtalo de nuevo.'**
+  String get onboardingAuthNetwork;
+
+  /// No description provided for @onboardingAuthGenericError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido completar la autenticación.'**
+  String get onboardingAuthGenericError;
 }
 
 class _AppLocalizationsDelegate

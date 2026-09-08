@@ -35,6 +35,7 @@ class OnboardingDraft {
     Set<String>? discardedRecommendationIds,
     this.selectedRecommendationId,
     this.authIntent,
+    this.authEmail,
     this.completionState = OnboardingCompletionState.draft,
     this.boundUserId,
     DateTime? completedAt,
@@ -93,6 +94,7 @@ class OnboardingDraft {
   final Set<String> discardedRecommendationIds;
   final String? selectedRecommendationId;
   final AuthIntent? authIntent;
+  final String? authEmail;
   final OnboardingCompletionState completionState;
   final String? boundUserId;
   final DateTime? completedAt;
@@ -148,6 +150,7 @@ class OnboardingDraft {
     Set<String>? discardedRecommendationIds,
     Object? selectedRecommendationId = _unset,
     Object? authIntent = _unset,
+    Object? authEmail = _unset,
     OnboardingCompletionState? completionState,
     Object? boundUserId = _unset,
     Object? completedAt = _unset,
@@ -182,6 +185,8 @@ class OnboardingDraft {
       authIntent: identical(authIntent, _unset)
           ? this.authIntent
           : authIntent as AuthIntent?,
+      authEmail:
+          identical(authEmail, _unset) ? this.authEmail : authEmail as String?,
       completionState: completionState ?? this.completionState,
       boundUserId: identical(boundUserId, _unset)
           ? this.boundUserId

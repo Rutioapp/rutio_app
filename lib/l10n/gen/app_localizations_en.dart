@@ -6106,4 +6106,61 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get weeklyReportHabitNeedsAttention16 =>
       'This habit showed lower stability this week.';
+
+  @override
+  String get onboardingAuthCreateTitle => 'Create your account';
+
+  @override
+  String get onboardingAuthLoginTitle => 'I already have an account';
+
+  @override
+  String get onboardingAuthSubtitle => 'Save your Rutio to continue.';
+
+  @override
+  String get onboardingAuthCreateMode => 'Create account';
+
+  @override
+  String get onboardingAuthLoginMode => 'Log in';
+
+  @override
+  String get onboardingAuthCreateCta => 'Create account';
+
+  @override
+  String get onboardingAuthLoginCta => 'Log in';
+
+  @override
+  String get onboardingAuthConfirmationTitle => 'Check your email';
+
+  @override
+  String onboardingAuthConfirmationBody(Object email) {
+    return 'We sent a confirmation link to $email.';
+  }
+
+  @override
+  String get onboardingAuthConfirmedCta => 'I have confirmed it';
+
+  @override
+  String get onboardingAuthResolving => 'Checking your account…';
+
+  @override
+  String get onboardingAuthReady => 'Your Rutio is ready for the next step.';
+
+  @override
+  String get onboardingAuthEmailExists =>
+      'This email already has an account. You can log in.';
+
+  @override
+  String get onboardingAuthInvalidCredentials =>
+      'The email or password is incorrect.';
+
+  @override
+  String get onboardingAuthWeakPassword =>
+      'The password does not meet the current policy.';
+
+  @override
+  String get onboardingAuthNetwork => 'No connection. Try again.';
+
+  @override
+  String get onboardingAuthGenericError =>
+      'Authentication could not be completed.';
 }

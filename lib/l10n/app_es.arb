@@ -2626,5 +2626,22 @@
   "weeklyReportHabitNeedsAttention13": "La semana dejó menos continuidad en este hábito.",
   "weeklyReportHabitNeedsAttention14": "La presencia del hábito fue inestable.",
   "weeklyReportHabitNeedsAttention15": "Este hábito apareció menos de forma sostenida.",
-  "weeklyReportHabitNeedsAttention16": "El hábito mostró una estabilidad más baja esta semana."
+  "weeklyReportHabitNeedsAttention16": "El hábito mostró una estabilidad más baja esta semana.",
+  "onboardingAuthCreateTitle": "Crea tu cuenta",
+  "onboardingAuthLoginTitle": "Ya tengo cuenta",
+  "onboardingAuthSubtitle": "Guarda tu Rutio para continuar.",
+  "onboardingAuthCreateMode": "Crear cuenta",
+  "onboardingAuthLoginMode": "Iniciar sesión",
+  "onboardingAuthCreateCta": "Crear cuenta",
+  "onboardingAuthLoginCta": "Iniciar sesión",
+  "onboardingAuthConfirmationTitle": "Revisa tu correo",
+  "onboardingAuthConfirmationBody": "Hemos enviado un enlace de confirmación a {email}.",
+  "onboardingAuthConfirmedCta": "Ya lo he confirmado",
+  "onboardingAuthResolving": "Comprobando tu cuenta…",
+  "onboardingAuthReady": "Tu Rutio está listo para el siguiente paso.",
+  "onboardingAuthEmailExists": "Este email ya tiene una cuenta. Puedes iniciar sesión.",
+  "onboardingAuthInvalidCredentials": "El email o la contraseña no son correctos.",
+  "onboardingAuthWeakPassword": "La contraseña no cumple la política actual.",
+  "onboardingAuthNetwork": "No hay conexión. Inténtalo de nuevo.",
+  "onboardingAuthGenericError": "No se ha podido completar la autenticación."
 }

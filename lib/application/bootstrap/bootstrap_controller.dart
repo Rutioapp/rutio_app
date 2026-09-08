@@ -866,7 +866,16 @@ class BootstrapController extends ChangeNotifier {
           authoritativeDecision: authoritative,
         ),
       );
-      final destination = _destinationForAuthoritativeDecision(authoritative);
+      var destination = _destinationForAuthoritativeDecision(authoritative);
+      // A pending anonymous Phase 6 draft owns the handoff until AUTH-3
+      // completes it. This prevents the session listener/authoritative home
+      // decision from racing the onboarding auth screen.
+      final hasPendingOnboarding =
+          await (_hasResumableOnboardingDraft?.call() ??
+              Future<bool>.value(false));
+      if (hasPendingOnboarding && destination == BootstrapDestination.home) {
+        destination = BootstrapDestination.onboarding;
+      }
       final bootstrapProfile = authoritative.toBootstrapProfileDecision();
       final profile = bootstrapProfile?.toRemoteProfile();
       if (profile != null && profile.id != user.id) {
