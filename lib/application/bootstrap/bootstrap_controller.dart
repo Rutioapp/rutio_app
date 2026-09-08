@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import '../../core/diagnostics/onboarding_runtime_trace.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -451,6 +452,7 @@ class BootstrapController extends ChangeNotifier {
     BootstrapEssentialCosmeticsPreparer? essentialCosmeticsPreparer,
     BootstrapEssentialAssetPreloader? essentialAssetPreloader,
     BootstrapHomeReadyCallback? onHomeReady,
+    void Function(String reason)? onExplicitGuestReady,
     HasResumableOnboardingDraft? hasResumableOnboardingDraft,
     BootstrapDebugLogger? debugLogger,
   })  : _authController = authController,
@@ -470,6 +472,7 @@ class BootstrapController extends ChangeNotifier {
         _essentialAssetPreloader =
             essentialAssetPreloader ?? RootBundleEssentialAssetPreloader(),
         _onHomeReady = onHomeReady,
+        _onExplicitGuestReady = onExplicitGuestReady,
         _hasResumableOnboardingDraft = hasResumableOnboardingDraft,
         _debugLogger = debugLogger ?? debugPrint {
     _trace(0, 'controller_created');
@@ -486,6 +489,7 @@ class BootstrapController extends ChangeNotifier {
   final BootstrapEssentialCosmeticsPreparer? _essentialCosmeticsPreparer;
   final BootstrapEssentialAssetPreloader _essentialAssetPreloader;
   final BootstrapHomeReadyCallback? _onHomeReady;
+  final void Function(String reason)? _onExplicitGuestReady;
   final HasResumableOnboardingDraft? _hasResumableOnboardingDraft;
   final BootstrapDebugLogger _debugLogger;
 
@@ -494,14 +498,41 @@ class BootstrapController extends ChangeNotifier {
   String? _lastResolvedUserId;
   bool _isCompletingTemporaryOnboarding = false;
   bool _hasStartedInitialBootstrap = false;
+  String? _onboardingAuthOwnershipOperationId;
   final Map<int, _BootstrapRunTelemetry> _telemetryByRunId =
       <int, _BootstrapRunTelemetry>{};
 
   BootstrapState get state => _state;
 
-  Future<void> start() => _run(mode: _consumeNextRunMode());
+  void acquireOnboardingAuthOwnership(String operationId) {
+    _onboardingAuthOwnershipOperationId = operationId;
+    OnboardingRuntimeTrace.log(
+      'ONBOARDING_AUTH_OWNERSHIP',
+      'event=acquired operationId=${OnboardingRuntimeTrace.short(operationId)} '
+          'user=${OnboardingRuntimeTrace.short(_authController.currentUser?.id)}',
+    );
+  }
 
-  Future<void> retry() => _run(mode: BootstrapRunMode.inAppBootstrap);
+  void releaseOnboardingAuthOwnership(String operationId) {
+    if (_onboardingAuthOwnershipOperationId != operationId) return;
+    _onboardingAuthOwnershipOperationId = null;
+    OnboardingRuntimeTrace.log(
+      'ONBOARDING_AUTH_OWNERSHIP',
+      'event=released operationId=${OnboardingRuntimeTrace.short(operationId)} '
+          'user=${OnboardingRuntimeTrace.short(_authController.currentUser?.id)}',
+    );
+  }
+
+  Future<void> start() => _run(
+        mode: _consumeNextRunMode(),
+        trigger:
+            BootstrapRunMode.coldStart == _state.mode ? 'cold_start' : 'start',
+      );
+
+  Future<void> retry() => _run(
+        mode: BootstrapRunMode.inAppBootstrap,
+        trigger: 'post_onboarding_retry',
+      );
 
   void logColdStartSplashShown() {
     _log(_state.runId, 'cold_start_showing_splash');
@@ -621,6 +652,16 @@ class BootstrapController extends ChangeNotifier {
     final currentUserId = _authController.currentUser?.id;
     final sessionResolved = _authController.isSessionResolved;
     if (!sessionResolved) return;
+    final ownedOperationId = _onboardingAuthOwnershipOperationId;
+    if (ownedOperationId != null) {
+      OnboardingRuntimeTrace.log(
+        'ONBOARDING_AUTH_OWNERSHIP',
+        'event=auth_event_suppressed_or_coordinated '
+            'operationId=${OnboardingRuntimeTrace.short(ownedOperationId)} '
+            'user=${OnboardingRuntimeTrace.short(currentUserId)}',
+      );
+      return;
+    }
     _trace(
       _state.runId,
       'auth_stream_event',
@@ -632,7 +673,9 @@ class BootstrapController extends ChangeNotifier {
         !_state.isFailed) {
       return;
     }
-    if (currentUserId == _lastResolvedUserId && !_state.isFailed) {
+    if (currentUserId == _lastResolvedUserId &&
+        !_state.isFailed &&
+        !_userStateStore.hasPendingGuestEntryReason) {
       _trace(
         _state.runId,
         'auth_stream_event',
@@ -641,11 +684,21 @@ class BootstrapController extends ChangeNotifier {
       return;
     }
     _log(_state.runId, 'auth_changed user=${currentUserId != null}');
-    unawaited(_run(mode: BootstrapRunMode.inAppBootstrap));
+    unawaited(
+      _run(mode: BootstrapRunMode.inAppBootstrap, trigger: 'auth_event'),
+    );
   }
 
-  Future<void> _run({required BootstrapRunMode mode}) async {
+  Future<void> _run(
+      {required BootstrapRunMode mode, String trigger = 'unknown'}) async {
     final runId = ++_nextRunId;
+    OnboardingRuntimeTrace.log(
+      'BOOTSTRAP_TRACE',
+      'runId=$runId trigger=$trigger event=start '
+          'userPresent=${_authController.currentUser != null} '
+          'user=${OnboardingRuntimeTrace.short(_authController.currentUser?.id)} '
+          'status=${_state.phase.name} destination=${_state.destination?.name ?? 'none'}',
+    );
     final startedAt = DateTime.now();
     _startupLog(
         '[STARTUP] 40 BootstrapController._run entered runId=$runId mode=${mode.name}');
@@ -1090,6 +1143,19 @@ class BootstrapController extends ChangeNotifier {
         destination: destination,
       ),
     );
+    final boundaryReason = exitReason;
+    if (boundaryReason == 'explicit_logout' ||
+        boundaryReason == 'account_deleted') {
+      OnboardingRuntimeTrace.log(
+        'AUTH_NAV_BOUNDARY',
+        'event=reset_requested reason=$boundaryReason destination=welcome',
+      );
+      _onExplicitGuestReady?.call(boundaryReason!);
+      OnboardingRuntimeTrace.log(
+        'AUTH_NAV_BOUNDARY',
+        'event=reset_applied reason=$boundaryReason destination=welcome',
+      );
+    }
     _finishRun(runId);
     _log(runId, 'destination=${destination.name}', startedAt: startedAt);
   }
@@ -1668,6 +1734,17 @@ class BootstrapController extends ChangeNotifier {
       );
     }
     _state = state;
+    if (state.isReady || state.isFailed) {
+      OnboardingRuntimeTrace.log(
+        'BOOTSTRAP_TRACE',
+        'runId=${state.runId} event=final_state status=${state.phase.name} '
+            'userPresent=${state.user != null} '
+            'user=${OnboardingRuntimeTrace.short(state.user?.id)} '
+            'draftPresent=${state.pendingOnboardingDraft} '
+            'remoteStatus=${state.remoteProfile?.onboardingStatus.name ?? 'none'} '
+            'destination=${state.destination?.name ?? 'none'}',
+      );
+    }
     notifyListeners();
   }
 

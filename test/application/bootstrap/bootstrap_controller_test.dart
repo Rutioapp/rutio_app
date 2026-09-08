@@ -466,6 +466,47 @@ void main() {
       );
     });
 
+    test('explicit guest boundary notifies stack reset after Welcome is ready',
+        () async {
+      String? resetReason;
+      final fixture = _Fixture(
+        onExplicitGuestReady: (reason) => resetReason = reason,
+      );
+      fixture.userStore.markGuestEntryReason('explicit_logout');
+      fixture.resolveGuest();
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.welcome);
+      expect(resetReason, 'explicit_logout');
+    });
+
+    test('unexpected guest transition does not request stack reset', () async {
+      String? resetReason;
+      final fixture = _Fixture(
+        onExplicitGuestReady: (reason) => resetReason = reason,
+      );
+      fixture.resolveGuest();
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.welcome);
+      expect(resetReason, isNull);
+    });
+
+    test('onboarding auth ownership suppresses auth bootstrap takeover',
+        () async {
+      final fixture = _Fixture(profileStatus: OnboardingStatus.pending);
+      fixture.bootstrap.acquireOnboardingAuthOwnership('onboarding-op-1');
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.runId, 1);
+      expect(fixture.bootstrap.state.destination,
+          isNot(BootstrapDestination.home));
+
+      fixture.bootstrap.releaseOnboardingAuthOwnership('onboarding-op-1');
+    });
+
     test('temporary onboarding completion routes to home', () async {
       final fixture = _Fixture(profileStatus: OnboardingStatus.pending);
       fixture.resolveUser('user-1');
@@ -1357,6 +1398,7 @@ class _Fixture {
     PostHomeBootstrapTaskRunner? postHomeBootstrapTaskRunner,
     Completer<void>? signOutCompleter,
     Future<bool> Function()? hasResumableOnboardingDraft,
+    void Function(String reason)? onExplicitGuestReady,
   })  : authStream = StreamController<AuthState>.broadcast(sync: true),
         userStore = _FakeUserStateStore(
           localOnboardingDone: localOnboardingDone,
@@ -1398,6 +1440,7 @@ class _Fixture {
           cosmeticsPreparer ?? _FakeEssentialCosmeticsPreparer(),
       essentialAssetPreloader: assetPreloader ?? _FakeEssentialAssetPreloader(),
       hasResumableOnboardingDraft: hasResumableOnboardingDraft,
+      onExplicitGuestReady: onExplicitGuestReady,
     );
     addTearDown(() async {
       bootstrap.dispose();

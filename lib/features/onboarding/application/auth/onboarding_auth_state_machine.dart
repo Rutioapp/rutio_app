@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/diagnostics/onboarding_runtime_trace.dart';
+
 import '../../domain/auth/onboarding_auth_contracts.dart';
 import '../../domain/models/onboarding_draft.dart';
 import '../../domain/models/onboarding_types.dart';
@@ -331,6 +333,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
           resolution: _state.resolution!,
           preparedHabitDecision: _state.preparedHabitDecision,
         );
+    final handoffRunId = OnboardingRuntimeTrace.activeHandoffRunId;
     _trace(
       'event=completion_payload_built '
       'op=${_shortId(intent.operationId)} '
@@ -452,8 +455,26 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
       ));
       return false;
     }
+    OnboardingRuntimeTrace.log(
+      'ONBOARDING_HANDOFF',
+      'event=remote_completion_success operationId=${_shortId(intent.operationId)} '
+          'userId=${_shortId(intent.authenticatedUserId)} draftPresent=true',
+      handoffRunId: handoffRunId,
+    );
     try {
+      OnboardingRuntimeTrace.log(
+        'ONBOARDING_HANDOFF',
+        'event=reconcile_start operationId=${_shortId(intent.operationId)} '
+            'userId=${_shortId(intent.authenticatedUserId)} draftPresent=true',
+        handoffRunId: handoffRunId,
+      );
       await _reconciler?.reconcile(intent: intent, result: result);
+      OnboardingRuntimeTrace.log(
+        'ONBOARDING_HANDOFF',
+        'event=reconcile_done operationId=${_shortId(intent.operationId)} '
+            'userId=${_shortId(intent.authenticatedUserId)} draftPresent=true',
+        handoffRunId: handoffRunId,
+      );
     } catch (error) {
       _trace(
         'event=completion_failed op=${_shortId(intent.operationId)} '
@@ -496,6 +517,12 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
         'habitPresent=${result.preparedHabitApplied}',
       );
       await _draftPersistence?.clear(pendingDraft);
+      OnboardingRuntimeTrace.log(
+        'ONBOARDING_HANDOFF',
+        'event=draft_clear_done operationId=${_shortId(intent.operationId)} '
+            'userId=${_shortId(intent.authenticatedUserId)} draftPresent=false',
+        handoffRunId: handoffRunId,
+      );
       _trace(
         'event=draft_clear_success op=${_shortId(intent.operationId)} '
         'user=${_shortId(intent.authenticatedUserId)} '
@@ -540,6 +567,12 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
       'stateTo=${OnboardingAuthPhase.completed.name}',
     );
     try {
+      OnboardingRuntimeTrace.log(
+        'ONBOARDING_HANDOFF',
+        'event=handoff_callback_start operationId=${_shortId(intent.operationId)} '
+            'userId=${_shortId(intent.authenticatedUserId)} draftPresent=false',
+        handoffRunId: handoffRunId,
+      );
       await _onCompletionHandoff?.call(
         operationId: intent.operationId,
         habitPresent: result.preparedHabitApplied,

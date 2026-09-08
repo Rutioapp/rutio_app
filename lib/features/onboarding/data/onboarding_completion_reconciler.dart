@@ -3,6 +3,7 @@ import '../../../services/notification_service.dart';
 import '../../../stores/user_state_store.dart';
 import '../domain/auth/onboarding_auth_contracts.dart';
 import 'package:flutter/foundation.dart';
+import '../../../core/diagnostics/onboarding_runtime_trace.dart';
 
 /// Applies only post-transaction local effects. Permission is observed, never
 /// requested here; a denied permission is a valid no-op for onboarding.
@@ -86,6 +87,11 @@ class LocalOnboardingCompletionReconciler
       }
       _trace('event=local_done_start', intent, habitPresent: habitPresent);
       await _userStateStore.setOnboardingDone(true);
+      OnboardingRuntimeTrace.log(
+        'ONBOARDING_HANDOFF',
+        'event=onboarding_done_set operationId=${_shortId(intent.operationId)} '
+            'userId=${_shortId(intent.authenticatedUserId)} draftPresent=true',
+      );
       _trace('event=local_done_success', intent, habitPresent: habitPresent);
     } catch (error) {
       _trace(
