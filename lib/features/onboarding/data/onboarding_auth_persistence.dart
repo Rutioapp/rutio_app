@@ -8,12 +8,16 @@ class DraftOnboardingAuthPersistence implements OnboardingAuthDraftPersistence {
   final OnboardingDraftService _service;
 
   @override
-  Future<void> save(OnboardingDraft draft) =>
-      _service.saveAnonymousDraft(draft);
+  Future<void> save(OnboardingDraft draft) async {
+    final boundUserId = draft.boundUserId;
+    if (boundUserId == null) {
+      await _service.saveAnonymousDraft(draft);
+    } else {
+      await _service.bindToUser(draft, boundUserId);
+    }
+  }
 
   @override
-  Future<void> clear(OnboardingDraft draft) async {
-    // AUTH-3 owns draft clearing. Keeping this no-op prevents an AUTH-2
-    // success/session event from deleting the user's recoverable draft.
-  }
+  Future<void> clear(OnboardingDraft draft) =>
+      _service.clearAfterCompletion(draft);
 }

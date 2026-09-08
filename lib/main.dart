@@ -35,9 +35,9 @@ import 'features/notifications/data/native/flutter_local_notifications_native_ga
 import 'features/notifications/data/native/native_notification_schedule_executor.dart';
 import 'features/onboarding/application/onboarding_coordinator.dart';
 import 'features/onboarding/data/onboarding_auth_adapter.dart';
+import 'features/onboarding/data/onboarding_completion_adapter.dart';
 import 'features/onboarding/domain/auth/onboarding_auth_contracts.dart';
 import 'features/onboarding/application/onboarding_draft_service.dart';
-import 'features/onboarding/presentation/onboarding_v1_screen.dart';
 import 'features/feedback/presentation/screens/feedback_home_screen.dart';
 import 'features/feedback/presentation/screens/feedback_form_screen.dart';
 import 'features/feedback/presentation/screens/feedback_success_screen.dart';
@@ -79,7 +79,6 @@ import 'features/completed_day_phrase/data/phrase_catalog_repository.dart';
 import 'features/completed_day_phrase/data/remote/supabase_phrase_catalog_data_source.dart';
 
 import 'screens/app_startup_gate.dart';
-import 'screens/welcome_screen.dart';
 import 'screens/auth/auth_gate.dart';
 import 'screens/auth/sign_in_screen.dart';
 import 'screens/auth/sign_up_screen.dart';
@@ -196,8 +195,10 @@ class MyApp extends StatelessWidget {
           home: const AppStartupGate(),
           routes: {
             '/splash': (_) => const AppStartupGate(),
-            '/welcome': (_) => const WelcomeScreen(),
-            '/onboarding-v1': (_) => const OnboardingV1Screen(),
+            // Compatibility deep links must remain under the global startup
+            // authority so a completed onboarding can hand off to Home.
+            '/welcome': (_) => const AppStartupGate(),
+            '/onboarding-v1': (_) => const AppStartupGate(),
             '/auth': (_) => const SignInScreen(),
             '/auth-signup': (_) => const SignUpScreen(),
             SignInScreen.route: (_) => const SignInScreen(),
@@ -298,6 +299,9 @@ class MyApp extends StatelessWidget {
             context.read<ProfileRepository>(),
           ),
         ),
+        Provider<OnboardingCompletionPort>(
+          create: (_) => SupabaseOnboardingCompletionAdapter(),
+        ),
         ProxyProvider2<UserStateStorage, AssetJsonLoader, UserStateRepository>(
           update: (_, storage, assets, __) => UserStateRepository(
             storage: storage,
@@ -319,6 +323,9 @@ class MyApp extends StatelessWidget {
               userStateRepository,
               globalWalletController: context.read<GlobalWalletController>(),
               profileRepository: context.read<ProfileRepository>(),
+              onboardingRecoveryCleanup: (userId) => context
+                  .read<OnboardingDraftService>()
+                  .clearUserBoundDraft(userId),
             )..load();
           },
         ),
@@ -429,6 +436,9 @@ class MyApp extends StatelessWidget {
               globalWalletController: context.read<GlobalWalletController>(),
               personalizedNotificationOrchestrator:
                   context.read<PersonalizedNotificationOrchestrator>(),
+              onExplicitSessionExit: (userId) => context
+                  .read<OnboardingDraftService>()
+                  .clearUserBoundDraft(userId),
               phraseCatalogSyncCoordinator: PhraseCatalogSyncCoordinator(
                 repository: phraseRepository,
                 currentUserIdProvider: () =>

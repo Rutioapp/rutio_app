@@ -74,6 +74,7 @@ class AuthController extends ChangeNotifier {
     PostHomeBootstrapTaskRunner? postHomeBootstrapTaskRunner,
     PhraseCatalogSyncCoordinator? phraseCatalogSyncCoordinator,
     PersonalizedNotificationOrchestrator? personalizedNotificationOrchestrator,
+    Future<void> Function(String userId)? onExplicitSessionExit,
     AuthDebugLogger? debugLogger,
   })  : _userStateStore = userStateStore,
         _globalWalletController = globalWalletController,
@@ -83,6 +84,7 @@ class AuthController extends ChangeNotifier {
         _phraseCatalogSyncCoordinator = phraseCatalogSyncCoordinator,
         _personalizedNotificationOrchestrator =
             personalizedNotificationOrchestrator,
+        _onExplicitSessionExit = onExplicitSessionExit,
         _debugLogger = debugLogger ?? debugPrint {
     if (RutioRuntimeProfile.isDemo) {
       // Demo profile is intentionally local-only: avoid binding to any live
@@ -127,6 +129,7 @@ class AuthController extends ChangeNotifier {
 
   final AuthRepository _authRepository;
   final UserStateStore _userStateStore;
+  final Future<void> Function(String userId)? _onExplicitSessionExit;
   final GlobalWalletController _globalWalletController;
   final ProfileRepository? _profileRepository;
   final bool _enableBackgroundProfileSync;
@@ -356,6 +359,19 @@ class AuthController extends ChangeNotifier {
     _setError(null);
     _setNotice(null);
     final previousUserId = _currentUser?.id ?? _authRepository.currentUser?.id;
+    if (previousUserId != null) {
+      try {
+        await _onExplicitSessionExit?.call(previousUserId);
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint('[auth] explicit session recovery cleanup failed: $error');
+        }
+      }
+    }
+    _userStateStore.markGuestEntryReason('explicit_logout');
+    if (kDebugMode) {
+      debugPrint('[AUTH_SESSION] event=explicit_logout');
+    }
     await _runPersonalizedLogoutCleanupBestEffort();
     _locallySignedOutUserId = previousUserId;
     _currentUser = null;

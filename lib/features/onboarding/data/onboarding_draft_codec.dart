@@ -58,6 +58,9 @@ class OnboardingDraftCodec {
       'authIntent': draft.authIntent?.code,
       'authEmail': draft.authEmail,
       'completionState': draft.completionState.code,
+      'completionAccountResolution': draft.completionAccountResolutionCode,
+      'completionPreparedHabitDecision':
+          draft.completionPreparedHabitDecisionCode,
       'boundUserId': draft.boundUserId,
       'completedAt': draft.completedAt?.toUtc().toIso8601String(),
     };
@@ -163,6 +166,12 @@ class OnboardingDraftCodec {
     final habit = _jsonMap(json['habit']);
     final reminder = _jsonMap(json['reminder']);
     final completedAt = _date(json['completedAt']);
+    final completionAccountResolutionCode = _nullableString(
+      json['completionAccountResolution'],
+    );
+    final completionPreparedHabitDecisionCode = _nullableString(
+      json['completionPreparedHabitDecision'],
+    );
     final draft = OnboardingDraft(
       draftId: draftId,
       onboardingOperationId: operationId,
@@ -187,6 +196,8 @@ class OnboardingDraftCodec {
       authIntent: authIntent,
       authEmail: _nullableString(json['authEmail']),
       completionState: completion,
+      completionAccountResolutionCode: completionAccountResolutionCode,
+      completionPreparedHabitDecisionCode: completionPreparedHabitDecisionCode,
       boundUserId: _nullableString(json['boundUserId']),
       completedAt: completedAt,
     );

@@ -119,6 +119,25 @@ void main() {
     expect(coordinator.state.isAtWelcome, isTrue);
   });
 
+  test('auth completion refresh removes the draft before bootstrap handoff',
+      () async {
+    final store = _MemoryStore()
+      ..anonymous = makeDraft(step: OnboardingStep.auth);
+    final coordinator = OnboardingCoordinator(
+      draftService: OnboardingDraftService(store: store),
+    );
+    await coordinator.resume();
+    expect(coordinator.draft, isNotNull);
+
+    await store.deleteAnonymousDraft();
+    await coordinator.refreshAfterAuthCompletion();
+
+    expect(coordinator.state.draft, isNull);
+    expect(coordinator.state.isAtWelcome, isTrue);
+    expect(await OnboardingDraftService(store: store).hasAnonymousDraft(),
+        isFalse);
+  });
+
   test('submit persists before publishing the next step and Back keeps data',
       () async {
     final store = _MemoryStore()..anonymous = makeDraft(firstName: 'Ana');

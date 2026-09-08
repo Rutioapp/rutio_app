@@ -272,6 +272,10 @@ class OnboardingCoordinator extends ChangeNotifier {
     ));
   }
 
+  /// Refreshes coordinator state after AUTH-3 has completed and cleared the
+  /// local draft. Bootstrap remains the authority for the final Home handoff.
+  Future<void> refreshAfterAuthCompletion() => resume();
+
   Future<void> restart() async {
     _clearPendingReminderSubmission();
     _returnToPreviewAfterEdit = false;

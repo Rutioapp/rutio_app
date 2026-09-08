@@ -37,6 +37,8 @@ class OnboardingDraft {
     this.authIntent,
     this.authEmail,
     this.completionState = OnboardingCompletionState.draft,
+    this.completionAccountResolutionCode,
+    this.completionPreparedHabitDecisionCode,
     this.boundUserId,
     DateTime? completedAt,
   })  : createdAt = createdAt.toUtc(),
@@ -96,6 +98,8 @@ class OnboardingDraft {
   final AuthIntent? authIntent;
   final String? authEmail;
   final OnboardingCompletionState completionState;
+  final String? completionAccountResolutionCode;
+  final String? completionPreparedHabitDecisionCode;
   final String? boundUserId;
   final DateTime? completedAt;
 
@@ -152,6 +156,8 @@ class OnboardingDraft {
     Object? authIntent = _unset,
     Object? authEmail = _unset,
     OnboardingCompletionState? completionState,
+    Object? completionAccountResolutionCode = _unset,
+    Object? completionPreparedHabitDecisionCode = _unset,
     Object? boundUserId = _unset,
     Object? completedAt = _unset,
   }) {
@@ -188,6 +194,18 @@ class OnboardingDraft {
       authEmail:
           identical(authEmail, _unset) ? this.authEmail : authEmail as String?,
       completionState: completionState ?? this.completionState,
+      completionAccountResolutionCode: identical(
+        completionAccountResolutionCode,
+        _unset,
+      )
+          ? this.completionAccountResolutionCode
+          : completionAccountResolutionCode as String?,
+      completionPreparedHabitDecisionCode: identical(
+        completionPreparedHabitDecisionCode,
+        _unset,
+      )
+          ? this.completionPreparedHabitDecisionCode
+          : completionPreparedHabitDecisionCode as String?,
       boundUserId: identical(boundUserId, _unset)
           ? this.boundUserId
           : boundUserId as String?,

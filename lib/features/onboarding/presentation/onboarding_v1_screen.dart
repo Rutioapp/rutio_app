@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../application/auth/auth_controller.dart';
+import '../../../application/bootstrap/bootstrap_controller.dart';
 import '../../../l10n/l10n.dart';
 import '../../../utils/app_theme.dart';
 import '../../../widgets/backgrounds/rutio_sky_background.dart';
@@ -48,6 +50,7 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
   bool _paceCanSubmit = false;
   bool _reminderCanSubmit = false;
   String? _reminderDraftId;
+  bool _authHandoffInFlight = false;
 
   @override
   void didChangeDependencies() {
@@ -258,6 +261,8 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
                                                         .resolvingAccount
                                             ? OnboardingAuthStep(
                                                 draft: state.draft!,
+                                                onCompletionHandoff:
+                                                    _onAuthCompletionHandoff,
                                               )
                                             : null,
             continueEnabled: !isRecommendations &&
@@ -292,6 +297,96 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
         );
       },
     );
+  }
+
+  Future<void> _onAuthCompletionHandoff({
+    required String operationId,
+    required bool habitPresent,
+  }) async {
+    if (_authHandoffInFlight) return;
+    _authHandoffInFlight = true;
+    OnboardingCoordinator? coordinator;
+    BootstrapController? bootstrap;
+    try {
+      coordinator = context.read<OnboardingCoordinator>();
+      bootstrap = context.read<BootstrapController>();
+      _handoffTrace(
+        'completion_callback_received',
+        operationId: operationId,
+        bootstrapStatus: bootstrap.state.phase.name,
+        destination: bootstrap.state.destination?.name,
+        draftPresent: coordinator.state.draft != null,
+      );
+      _handoffTrace(
+        'coordinator_refresh_start',
+        operationId: operationId,
+        bootstrapStatus: bootstrap.state.phase.name,
+        destination: bootstrap.state.destination?.name,
+        draftPresent: coordinator.state.draft != null,
+      );
+      await coordinator.refreshAfterAuthCompletion();
+      _handoffTrace(
+        'coordinator_refresh_end',
+        operationId: operationId,
+        bootstrapStatus: bootstrap.state.phase.name,
+        destination: bootstrap.state.destination?.name,
+        draftPresent: coordinator.state.draft != null,
+      );
+      _handoffTrace(
+        'bootstrap_retry_called',
+        operationId: operationId,
+        bootstrapStatus: bootstrap.state.phase.name,
+        destination: bootstrap.state.destination?.name,
+        draftPresent: coordinator.state.draft != null,
+      );
+      await bootstrap.retry();
+      _handoffTrace(
+        'bootstrap_retry_completed',
+        operationId: operationId,
+        bootstrapStatus: bootstrap.state.phase.name,
+        destination: bootstrap.state.destination?.name,
+        draftPresent: coordinator.state.draft != null,
+      );
+      _handoffTrace(
+        'bootstrap_destination',
+        operationId: operationId,
+        bootstrapStatus: bootstrap.state.phase.name,
+        destination: bootstrap.state.destination?.name,
+        draftPresent: coordinator.state.draft != null,
+      );
+    } finally {
+      _handoffTrace(
+        'handoff_finished',
+        operationId: operationId,
+        bootstrapStatus: bootstrap?.state.phase.name ?? 'unavailable',
+        destination: bootstrap?.state.destination?.name,
+        draftPresent: coordinator?.state.draft != null,
+      );
+      _authHandoffInFlight = false;
+    }
+  }
+
+  static void _handoffTrace(
+    String event, {
+    required String operationId,
+    required String bootstrapStatus,
+    required String? destination,
+    required bool draftPresent,
+  }) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[ONBOARDING_HANDOFF] event=$event '
+      'operationId=${_shortId(operationId)} '
+      'bootstrapStatus=$bootstrapStatus '
+      'destination=${destination ?? 'none'} '
+      'draftPresent=$draftPresent',
+    );
+  }
+
+  static String _shortId(String? value) {
+    final normalized = value?.trim() ?? '';
+    if (normalized.isEmpty) return 'none';
+    return normalized.length <= 8 ? normalized : normalized.substring(0, 8);
   }
 
   String? _reminderErrorMessage(
