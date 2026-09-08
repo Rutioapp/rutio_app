@@ -388,14 +388,14 @@ class NotificationService {
     );
   }
 
-  Future<void> scheduleHabitDailyReminder({
+  Future<bool> scheduleHabitDailyReminder({
     required String habitId,
     required int hour,
     required int minute,
     String title = 'Rutio',
     required String body,
   }) async {
-    if (!await _ensureInitialized()) return;
+    if (!await _ensureInitialized()) return false;
     try {
       await _scheduler.scheduleDaily(
         id: RutioNotificationIds.habitReminder(habitId),
@@ -403,11 +403,13 @@ class NotificationService {
         time: NotificationTime(hour: hour, minute: minute),
         payload: RutioNotificationPayloads.habitReminder(habitId),
       );
+      return true;
     } catch (error, stackTrace) {
       logNotificationError(
         'Schedule habit reminder failed for $habitId: $error',
         stackTrace: stackTrace,
       );
+      return false;
     }
   }
 

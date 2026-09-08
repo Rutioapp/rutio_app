@@ -35,6 +35,7 @@ import 'features/notifications/data/native/flutter_local_notifications_native_ga
 import 'features/notifications/data/native/native_notification_schedule_executor.dart';
 import 'features/onboarding/application/onboarding_coordinator.dart';
 import 'features/onboarding/data/onboarding_auth_adapter.dart';
+import 'features/onboarding/data/onboarding_completion_adapter.dart';
 import 'features/onboarding/domain/auth/onboarding_auth_contracts.dart';
 import 'features/onboarding/application/onboarding_draft_service.dart';
 import 'features/onboarding/presentation/onboarding_v1_screen.dart';
@@ -297,6 +298,9 @@ class MyApp extends StatelessWidget {
           create: (context) => RepositoryOnboardingAccountResolver(
             context.read<ProfileRepository>(),
           ),
+        ),
+        Provider<OnboardingCompletionPort>(
+          create: (_) => SupabaseOnboardingCompletionAdapter(),
         ),
         ProxyProvider2<UserStateStorage, AssetJsonLoader, UserStateRepository>(
           update: (_, storage, assets, __) => UserStateRepository(

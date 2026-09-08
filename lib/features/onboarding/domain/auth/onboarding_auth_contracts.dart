@@ -226,12 +226,20 @@ class OnboardingCompletionResult {
     required this.kind,
     required this.operationId,
     required this.userId,
+    this.habitId,
+    this.preparedHabitApplied = false,
+    this.accountResolution,
+    this.completedAt,
     this.error,
   });
 
   final OnboardingCompletionResultKind kind;
   final String operationId;
   final String userId;
+  final String? habitId;
+  final bool preparedHabitApplied;
+  final OnboardingAccountResolution? accountResolution;
+  final DateTime? completedAt;
   final OnboardingAuthError? error;
 
   bool get isSuccess =>
@@ -243,6 +251,16 @@ abstract interface class OnboardingCompletionPort {
   Future<OnboardingCompletionResult> completeOnboarding(
     OnboardingCompletionIntent intent,
   );
+}
+
+/// Local work that must happen after the remote transaction has definitively
+/// succeeded. It is deliberately separate from the RPC port because OS
+/// notifications are not part of the database transaction.
+abstract interface class OnboardingCompletionReconciler {
+  Future<void> reconcile({
+    required OnboardingCompletionIntent intent,
+    required OnboardingCompletionResult result,
+  });
 }
 
 abstract interface class OnboardingAuthDraftPersistence {

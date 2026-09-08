@@ -47,10 +47,12 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
     required OnboardingAuthPort auth,
     required OnboardingAccountResolutionService accountResolution,
     required OnboardingCompletionPort completion,
+    OnboardingCompletionReconciler? reconciler,
     OnboardingAuthDraftPersistence? draftPersistence,
   })  : _auth = auth,
         _accountResolution = accountResolution,
         _completion = completion,
+        _reconciler = reconciler,
         _draftPersistence = draftPersistence,
         _state = OnboardingAuthState(
           phase: draft.currentStep == OnboardingStep.emailConfirmation
@@ -64,6 +66,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
   final OnboardingAuthPort _auth;
   final OnboardingAccountResolutionService _accountResolution;
   final OnboardingCompletionPort _completion;
+  final OnboardingCompletionReconciler? _reconciler;
   final OnboardingAuthDraftPersistence? _draftPersistence;
   OnboardingAuthState _state;
   String? _lastSessionUserId;
@@ -231,7 +234,24 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
       preparedHabitDecision: _state.preparedHabitDecision,
       intent: intent,
     ));
-    final result = await _completion.completeOnboarding(intent);
+    late final OnboardingCompletionResult result;
+    try {
+      result = await _completion.completeOnboarding(intent);
+    } catch (error) {
+      final retryable = const OnboardingAuthError(
+        OnboardingAuthErrorCode.completionRetryable,
+      );
+      _publish(OnboardingAuthState(
+        phase: OnboardingAuthPhase.failure,
+        draft: _state.draft,
+        authenticatedUserId: _state.authenticatedUserId,
+        resolution: _state.resolution,
+        preparedHabitDecision: _state.preparedHabitDecision,
+        intent: intent,
+        error: OnboardingAuthError(retryable.code, cause: error),
+      ));
+      return false;
+    }
     if (result.operationId != intent.operationId ||
         result.userId != intent.authenticatedUserId) {
       _publish(OnboardingAuthState(
@@ -265,11 +285,29 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
       ));
       return false;
     }
+    try {
+      await _reconciler?.reconcile(intent: intent, result: result);
+    } catch (error) {
+      _publish(OnboardingAuthState(
+        phase: OnboardingAuthPhase.failure,
+        draft: _state.draft,
+        authenticatedUserId: _state.authenticatedUserId,
+        resolution: _state.resolution,
+        preparedHabitDecision: _state.preparedHabitDecision,
+        intent: intent,
+        error: OnboardingAuthError(
+          OnboardingAuthErrorCode.completionRetryable,
+          cause: error,
+        ),
+      ));
+      return false;
+    }
     final completed = _state.draft.copyWith(
       completionState: OnboardingCompletionState.completed,
       completedAt: DateTime.now().toUtc(),
       currentStep: OnboardingStep.finalizing,
     );
+    await _persist(completed);
     await _draftPersistence?.clear(completed);
     _publish(OnboardingAuthState(
       phase: OnboardingAuthPhase.completed,

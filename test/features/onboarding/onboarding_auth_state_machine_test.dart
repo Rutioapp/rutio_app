@@ -33,12 +33,14 @@ void main() {
     required OnboardingAuthPort auth,
     required OnboardingAccountResolver resolver,
     required OnboardingCompletionPort completion,
+    OnboardingCompletionReconciler? reconciler,
   }) {
     return OnboardingAuthStateMachine(
       draft: draft(),
       auth: auth,
       accountResolution: OnboardingAccountResolutionService(resolver),
       completion: completion,
+      reconciler: reconciler,
     );
   }
 
@@ -180,6 +182,57 @@ void main() {
         OnboardingAccountResolution.existingAccountIncomplete);
     expect(m.state.phase, OnboardingAuthPhase.awaitingPreparedHabitDecision);
   });
+
+  test('discard completion reconciles without a reminder request', () async {
+    final reconciler = _RecordingReconciler();
+    final m = machine(
+      auth: _Auth((_) async => const OnboardingAuthenticated(
+          AuthenticatedOnboardingSession(userId: 'user-1'))),
+      resolver: _Resolver(RemoteAccountSnapshot(
+        userId: 'user-1',
+        profile: profile,
+        remoteUserStateAvailable: true,
+      )),
+      completion: _Completion(),
+      reconciler: reconciler,
+    );
+    await m.authenticate(
+      command: OnboardingAuthCommand.signInWithEmail,
+      email: 'a@example.com',
+    );
+    m.choosePreparedHabit(PreparedHabitDecision.discard);
+    expect(await m.complete(), isTrue);
+    expect(reconciler.calls, 1);
+    expect(reconciler.last!.reminder, isNull);
+  });
+
+  test('completion exception is retryable and definitive success clears draft',
+      () async {
+    final persistence = _Persistence();
+    final completion = _ThrowingThenCompleted();
+    final m = OnboardingAuthStateMachine(
+      draft: draft(),
+      auth: _Auth((_) async => const OnboardingAuthenticated(
+          AuthenticatedOnboardingSession(userId: 'user-1'))),
+      accountResolution: OnboardingAccountResolutionService(
+        _Resolver(const RemoteAccountSnapshot(
+          userId: 'user-1',
+          remoteUserStateAvailable: true,
+        )),
+      ),
+      completion: completion,
+      draftPersistence: persistence,
+    );
+    await m.authenticate(
+      command: OnboardingAuthCommand.signUpWithEmail,
+      email: 'a@example.com',
+    );
+    expect(await m.complete(), isFalse);
+    expect(m.state.error!.code, OnboardingAuthErrorCode.completionRetryable);
+    expect(persistence.cleared, isFalse);
+    expect(await m.complete(), isTrue);
+    expect(persistence.cleared, isTrue);
+  });
 }
 
 class _Auth implements OnboardingAuthPort {
@@ -225,5 +278,47 @@ class _Completion implements OnboardingCompletionPort {
       operationId: intent.operationId,
       userId: intent.authenticatedUserId,
     );
+  }
+}
+
+class _ThrowingThenCompleted implements OnboardingCompletionPort {
+  int calls = 0;
+
+  @override
+  Future<OnboardingCompletionResult> completeOnboarding(
+      OnboardingCompletionIntent intent) async {
+    calls++;
+    if (calls == 1) throw StateError('network');
+    return OnboardingCompletionResult(
+      kind: OnboardingCompletionResultKind.alreadyCompletedSameOperation,
+      operationId: intent.operationId,
+      userId: intent.authenticatedUserId,
+    );
+  }
+}
+
+class _Persistence implements OnboardingAuthDraftPersistence {
+  bool cleared = false;
+
+  @override
+  Future<void> save(OnboardingDraft draft) async {}
+
+  @override
+  Future<void> clear(OnboardingDraft draft) async {
+    cleared = true;
+  }
+}
+
+class _RecordingReconciler implements OnboardingCompletionReconciler {
+  int calls = 0;
+  OnboardingCompletionIntent? last;
+
+  @override
+  Future<void> reconcile({
+    required OnboardingCompletionIntent intent,
+    required OnboardingCompletionResult result,
+  }) async {
+    calls++;
+    last = intent;
   }
 }

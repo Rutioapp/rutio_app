@@ -57,6 +57,17 @@ class OnboardingDraftService {
     await _store.saveAnonymousDraft(draft.copyWith(updatedAt: _now()));
   }
 
+  /// Clears only after the remote completion contract returned a definitive
+  /// success. Before that point the operation id remains recoverable locally.
+  Future<void> clearAfterCompletion(OnboardingDraft draft) async {
+    if (draft.completionState != OnboardingCompletionState.completed) return;
+    if (draft.boundUserId == null) {
+      await _store.deleteAnonymousDraft();
+    } else {
+      await _store.deleteForUser(draft.boundUserId!);
+    }
+  }
+
   /// Explicitly binds an anonymous draft to one account. The anonymous copy
   /// is removed only after the user-scoped copy has been persisted.
   Future<OnboardingDraft> bindToUser(

@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import '../application/auth/onboarding_auth_state_machine.dart';
 import '../application/onboarding_draft_service.dart';
 import '../data/onboarding_auth_persistence.dart';
+import '../data/onboarding_completion_reconciler.dart';
 import '../domain/auth/onboarding_auth_contracts.dart';
 import '../domain/models/onboarding_draft.dart';
 import '../domain/models/onboarding_types.dart';
 import '../../../application/auth/auth_controller.dart';
+import '../../../stores/user_state_store.dart';
 import '../../../l10n/l10n.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../../utils/app_theme.dart';
@@ -40,7 +42,10 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       accountResolution: OnboardingAccountResolutionService(
         context.read<OnboardingAccountResolver>(),
       ),
-      completion: const _Auth2CompletionPort(),
+      completion: context.read<OnboardingCompletionPort>(),
+      reconciler: LocalOnboardingCompletionReconciler(
+        userStateStore: context.read<UserStateStore>(),
+      ),
       draftPersistence: DraftOnboardingAuthPersistence(
         context.read<OnboardingDraftService>(),
       ),
@@ -127,10 +132,41 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     }
     if (resolving || ready) {
       return Center(
-        child: Text(
-          resolving ? l10n.onboardingAuthResolving : l10n.onboardingAuthReady,
-          textAlign: TextAlign.center,
-          style: AppTextStyles.authSub,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              resolving
+                  ? l10n.onboardingAuthResolving
+                  : l10n.onboardingAuthReady,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.authSub,
+            ),
+            if (state.phase ==
+                OnboardingAuthPhase.awaitingPreparedHabitDecision) ...[
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: () => _machine.choosePreparedHabit(
+                  PreparedHabitDecision.discard,
+                ),
+                child: const Text('Descartar hábito preparado'),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () => _machine.choosePreparedHabit(
+                  PreparedHabitDecision.keep,
+                ),
+                child: const Text('Conservar hábito preparado'),
+              ),
+            ],
+            if (state.phase == OnboardingAuthPhase.readyToComplete) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _machine.complete,
+                child: const Text('Finalizar onboarding'),
+              ),
+            ],
+          ],
         ),
       );
     }
@@ -252,23 +288,6 @@ class _ConfirmationView extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Auth2CompletionPort implements OnboardingCompletionPort {
-  const _Auth2CompletionPort();
-
-  @override
-  Future<OnboardingCompletionResult> completeOnboarding(
-    OnboardingCompletionIntent intent,
-  ) async {
-    return OnboardingCompletionResult(
-      kind: OnboardingCompletionResultKind.terminalFailure,
-      operationId: intent.operationId,
-      userId: intent.authenticatedUserId,
-      error:
-          const OnboardingAuthError(OnboardingAuthErrorCode.completionFailed),
     );
   }
 }
