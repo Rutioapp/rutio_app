@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:rutio/utils/app_theme.dart';
 
 import '../../application/auth/auth_controller.dart';
+import '../../core/diagnostics/onboarding_runtime_trace.dart';
 import '../../features/feedback/presentation/screens/feedback_home_screen.dart';
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
@@ -34,6 +35,24 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _isSigningOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    OnboardingRuntimeTrace.log(
+      'ROUTE_WIDGET',
+      'widget=Settings event=mounted',
+    );
+  }
+
+  @override
+  void dispose() {
+    OnboardingRuntimeTrace.log(
+      'ROUTE_WIDGET',
+      'widget=Settings event=disposed',
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

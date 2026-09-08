@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../application/auth/auth_controller.dart';
 import '../application/bootstrap/bootstrap_controller.dart';
+import '../core/diagnostics/onboarding_runtime_trace.dart';
 import '../data/models/remote/remote_profile.dart';
 import '../stores/user_state_store.dart';
 import '../utils/app_theme.dart';
@@ -31,15 +32,18 @@ class AppStartupGate extends StatefulWidget {
 }
 
 class _AppStartupGateState extends State<AppStartupGate> {
+  static int _nextGateIdentity = 0;
   static const Duration _minimumSplashDuration = Duration(milliseconds: 2000);
 
   Timer? _minimumSplashTimer;
   bool _minimumSplashElapsed = false;
   String? _lastStartupGateSnapshot;
+  late final int _gateIdentity;
 
   @override
   void initState() {
     super.initState();
+    _gateIdentity = ++_nextGateIdentity;
     _minimumSplashTimer = Timer(_minimumSplashDuration, () {
       if (!mounted) return;
       setState(() {
@@ -50,6 +54,10 @@ class _AppStartupGateState extends State<AppStartupGate> {
 
   @override
   void dispose() {
+    OnboardingRuntimeTrace.log(
+      'STARTUP_GATE',
+      'gateIdentity=$_gateIdentity routeName=unknown event=disposed',
+    );
     _minimumSplashTimer?.cancel();
     super.dispose();
   }
@@ -154,6 +162,8 @@ class _AppStartupGateState extends State<AppStartupGate> {
     }
     final remoteStatus = state.remoteProfile?.onboardingStatus.name ?? 'none';
     final snapshot = <String>[
+      'gateIdentity=$_gateIdentity',
+      'routeName=${ModalRoute.of(context)?.settings.name ?? 'unknown'}',
       'runId=${state.runId}',
       'bootstrapStatus=${state.phase.name}',
       'user=${state.user != null}',
@@ -186,8 +196,16 @@ class _AppStartupGateState extends State<AppStartupGate> {
   ) {
     switch (destination) {
       case BootstrapDestination.home:
+        OnboardingRuntimeTrace.log(
+          'ROUTE_WIDGET',
+          'widget=Home event=mounted gateIdentity=$_gateIdentity',
+        );
         return widget.authenticatedBuilder?.call(context) ?? const RootGate();
       case BootstrapDestination.welcome:
+        OnboardingRuntimeTrace.log(
+          'ROUTE_WIDGET',
+          'widget=Welcome event=mounted gateIdentity=$_gateIdentity',
+        );
         return const WelcomeScreen();
       case BootstrapDestination.authentication:
         return const SignInScreen();

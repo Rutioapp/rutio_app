@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../application/auth/auth_controller.dart';
 import '../../../application/bootstrap/bootstrap_controller.dart';
+import '../../../core/diagnostics/onboarding_runtime_trace.dart';
 import '../../../l10n/l10n.dart';
 import '../../../utils/app_theme.dart';
 import '../../../widgets/backgrounds/rutio_sky_background.dart';
@@ -51,6 +52,28 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
   bool _reminderCanSubmit = false;
   String? _reminderDraftId;
   bool _authHandoffInFlight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    OnboardingRuntimeTrace.log(
+      'ROUTE_WIDGET',
+      'widget=OnboardingV1Screen event=mounted',
+    );
+  }
+
+  @override
+  void dispose() {
+    OnboardingRuntimeTrace.log(
+      'ROUTE_WIDGET',
+      'widget=OnboardingV1Screen event=disposed',
+    );
+    OnboardingRuntimeTrace.log(
+      'ONBOARDING_HANDOFF',
+      'event=screen_dispose mounted=false currentStep=unknown draftPresent=unknown',
+    );
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -308,6 +331,10 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
     OnboardingCoordinator? coordinator;
     BootstrapController? bootstrap;
     try {
+      OnboardingRuntimeTrace.log(
+        'ONBOARDING_HANDOFF',
+        'event=handoff_callback_start mounted=$mounted draftPresent=unknown',
+      );
       coordinator = context.read<OnboardingCoordinator>();
       bootstrap = context.read<BootstrapController>();
       _handoffTrace(
@@ -325,6 +352,12 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
         draftPresent: coordinator.state.draft != null,
       );
       await coordinator.refreshAfterAuthCompletion();
+      OnboardingRuntimeTrace.log(
+        'ONBOARDING_HANDOFF',
+        'event=coordinator_refresh_done mounted=$mounted '
+            'draftPresent=${coordinator.state.draft != null} '
+            'currentStep=${coordinator.state.effectiveStep?.name ?? 'none'}',
+      );
       _handoffTrace(
         'coordinator_refresh_end',
         operationId: operationId,
@@ -340,6 +373,12 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
         draftPresent: coordinator.state.draft != null,
       );
       await bootstrap.retry();
+      OnboardingRuntimeTrace.log(
+        'ONBOARDING_HANDOFF',
+        'event=bootstrap_retry_return mounted=$mounted '
+            'draftPresent=${coordinator.state.draft != null} '
+            'destination=${bootstrap.state.destination?.name ?? 'none'}',
+      );
       _handoffTrace(
         'bootstrap_retry_completed',
         operationId: operationId,

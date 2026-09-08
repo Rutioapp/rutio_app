@@ -506,6 +506,8 @@ class UserStateStore extends ChangeNotifier {
     _pendingGuestEntryReason = normalized;
   }
 
+  bool get hasPendingGuestEntryReason => _pendingGuestEntryReason != null;
+
   String? consumeGuestEntryReason() {
     final reason = _pendingGuestEntryReason;
     _pendingGuestEntryReason = null;

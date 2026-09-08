@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/diagnostics/onboarding_runtime_trace.dart';
+
 import '../application/auth/onboarding_auth_state_machine.dart';
 import '../application/onboarding_draft_service.dart';
 import '../data/onboarding_auth_persistence.dart';
@@ -10,6 +12,7 @@ import '../domain/auth/onboarding_auth_contracts.dart';
 import '../domain/models/onboarding_draft.dart';
 import '../domain/models/onboarding_types.dart';
 import '../../../application/auth/auth_controller.dart';
+import '../../../application/bootstrap/bootstrap_controller.dart';
 import '../../../stores/user_state_store.dart';
 import '../../../l10n/l10n.dart';
 import '../../../l10n/gen/app_localizations.dart';
@@ -45,6 +48,8 @@ class OnboardingAuthStep extends StatefulWidget {
 
 class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
   late final OnboardingAuthStateMachine _machine;
+  late final String _ownershipOperationId;
+  BootstrapController? _bootstrapController;
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _isSignUp = true;
@@ -54,6 +59,14 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     super.initState();
     _email.text = widget.draft.authEmail ?? '';
     _isSignUp = widget.draft.authIntent != AuthIntent.signIn;
+    _ownershipOperationId = widget.draft.onboardingOperationId;
+    try {
+      _bootstrapController = context.read<BootstrapController>();
+      _bootstrapController
+          ?.acquireOnboardingAuthOwnership(_ownershipOperationId);
+    } catch (_) {
+      // Isolated onboarding widget tests may omit the production bootstrap.
+    }
     _machine = OnboardingAuthStateMachine(
       draft: widget.draft,
       auth: context.read<OnboardingAuthPort>(),
@@ -110,6 +123,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
 
   @override
   void dispose() {
+    _bootstrapController?.releaseOnboardingAuthOwnership(_ownershipOperationId);
     if (kDebugMode) {
       debugPrint(
         '[ONBOARDING_AUTH] event=machine_disposed '
@@ -315,8 +329,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     );
   }
 
-  bool get _isAuthenticatedFrozenRecovery =>
-      onboardingAuthRecoveryGateVisible(
+  bool get _isAuthenticatedFrozenRecovery => onboardingAuthRecoveryGateVisible(
         hasAuthenticatedSession:
             context.read<AuthController>().currentUser != null ||
                 _machine.state.authenticatedUserId != null,
@@ -324,6 +337,13 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       );
 
   Future<void> _completeFromCta() async {
+    final state = _machine.state;
+    OnboardingRuntimeTrace.beginHandoff(
+      operationId: state.draft.onboardingOperationId,
+      userId: state.authenticatedUserId,
+      currentStep: state.draft.currentStep.name,
+      draftPresent: true,
+    );
     if (kDebugMode) {
       debugPrint(
         '[ONBOARDING_HANDOFF] event=final_cta_tapped '
@@ -331,6 +351,12 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
         'draftPresent=true',
       );
     }
+    OnboardingRuntimeTrace.log(
+      'ONBOARDING_HANDOFF',
+      'event=completion_call operationId=${_shortId(state.draft.onboardingOperationId)} '
+          'userId=${OnboardingRuntimeTrace.short(state.authenticatedUserId)} mounted=$mounted '
+          'currentStep=${state.draft.currentStep.name} draftPresent=true',
+    );
     await _machine.complete();
   }
 

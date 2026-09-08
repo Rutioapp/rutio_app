@@ -79,6 +79,7 @@ import 'features/completed_day_phrase/data/phrase_catalog_repository.dart';
 import 'features/completed_day_phrase/data/remote/supabase_phrase_catalog_data_source.dart';
 
 import 'screens/app_startup_gate.dart';
+import 'core/diagnostics/onboarding_runtime_trace.dart';
 import 'screens/auth/auth_gate.dart';
 import 'screens/auth/sign_in_screen.dart';
 import 'screens/auth/sign_up_screen.dart';
@@ -153,6 +154,32 @@ Future<void> main() async {
   _startupLog('[STARTUP] 11 after runApp()');
 }
 
+class _RuntimeRouteObserver extends NavigatorObserver {
+  void _trace(String event, Route<dynamic>? route, Route<dynamic>? previous) {
+    OnboardingRuntimeTrace.log(
+      'ROUTE_TRACE',
+      'event=$event route=${route?.settings.name ?? 'unknown'} '
+          'previousRoute=${previous?.settings.name ?? 'none'}',
+    );
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _trace('push', route, previousRoute);
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _trace('pop', route, previousRoute);
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
+      _trace('replace', newRoute, oldRoute);
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _trace('remove', route, previousRoute);
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({
     super.key,
@@ -165,6 +192,18 @@ class MyApp extends StatelessWidget {
 
   static final GlobalKey<NavigatorState> _navigatorKey =
       GlobalKey<NavigatorState>();
+
+  static void _resetAuthenticatedStackForGuest(String reason) {
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) {
+      OnboardingRuntimeTrace.log(
+        'AUTH_NAV_BOUNDARY',
+        'event=reset_skipped reason=navigator_unavailable boundary=$reason',
+      );
+      return;
+    }
+    navigator.popUntil((route) => route.isFirst);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +231,9 @@ class MyApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          navigatorObservers: <NavigatorObserver>[
+            _RuntimeRouteObserver(),
+          ],
           home: const AppStartupGate(),
           routes: {
             '/splash': (_) => const AppStartupGate(),
@@ -478,6 +520,7 @@ class MyApp extends StatelessWidget {
               );
               await notificationOrchestrator.reconcileForBootstrapReady();
             },
+            onExplicitGuestReady: _resetAuthenticatedStackForGuest,
           ),
           update: (_, __, ___, ____, _____, controller) => controller!,
         ),

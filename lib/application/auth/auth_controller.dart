@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import '../../core/diagnostics/onboarding_runtime_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../devtools/rutio_runtime_profile.dart';
@@ -359,6 +360,11 @@ class AuthController extends ChangeNotifier {
     _setError(null);
     _setNotice(null);
     final previousUserId = _currentUser?.id ?? _authRepository.currentUser?.id;
+    OnboardingRuntimeTrace.log(
+      'AUTH_SESSION',
+      'event=explicit_sign_out oldUser=${OnboardingRuntimeTrace.short(previousUserId)} '
+          'newUser=none authEvent=signOut explicitLogout=true',
+    );
     if (previousUserId != null) {
       try {
         await _onExplicitSessionExit?.call(previousUserId);
@@ -367,10 +373,6 @@ class AuthController extends ChangeNotifier {
           debugPrint('[auth] explicit session recovery cleanup failed: $error');
         }
       }
-    }
-    _userStateStore.markGuestEntryReason('explicit_logout');
-    if (kDebugMode) {
-      debugPrint('[AUTH_SESSION] event=explicit_logout');
     }
     await _runPersonalizedLogoutCleanupBestEffort();
     _locallySignedOutUserId = previousUserId;
@@ -393,6 +395,10 @@ class AuthController extends ChangeNotifier {
 
     try {
       await _authRepository.signOut();
+      _userStateStore.markGuestEntryReason('explicit_logout');
+      if (kDebugMode) {
+        debugPrint('[AUTH_SESSION] event=explicit_logout');
+      }
       _locallySignedOutUserId = null;
       notifyListeners();
       if (kDebugMode) {
@@ -486,6 +492,12 @@ class AuthController extends ChangeNotifier {
     try {
       final previousUserId = _currentUser?.id;
       final nextUser = state.session?.user ?? _authRepository.currentUser;
+      OnboardingRuntimeTrace.log(
+        'AUTH_SESSION',
+        'event=auth_state oldUser=${OnboardingRuntimeTrace.short(previousUserId)} '
+            'newUser=${OnboardingRuntimeTrace.short(nextUser?.id)} '
+            'authEvent=${state.event.name} explicitLogout=false',
+      );
       if (nextUser == null &&
           _currentUser == null &&
           _locallySignedOutUserId != null) {
