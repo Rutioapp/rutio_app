@@ -19,6 +19,7 @@ import 'onboarding_recommendations_step.dart';
 import 'onboarding_habit_step.dart';
 import 'onboarding_reminder_step.dart';
 import 'onboarding_preview_step.dart';
+import 'onboarding_auth_step.dart';
 import '../../../screens/welcome/widgets/welcome_content.dart';
 
 /// V1 coordinator-backed entry point. The seven step presenters are
@@ -248,7 +249,17 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
                                                       .continueFromPreview(),
                                                 ),
                                               )
-                                        : null,
+                                        : step == OnboardingStep.auth ||
+                                                step ==
+                                                    OnboardingStep
+                                                        .emailConfirmation ||
+                                                step ==
+                                                    OnboardingStep
+                                                        .resolvingAccount
+                                            ? OnboardingAuthStep(
+                                                draft: state.draft!,
+                                              )
+                                            : null,
             continueEnabled: !isRecommendations &&
                 (!isGoals || _goalsCanSubmit) &&
                 (!isPace || _paceCanSubmit) &&
@@ -256,7 +267,11 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
                     _reminderCanSubmit ||
                     reminderConfiguration?.schedulingState !=
                         ReminderSchedulingState.notRequested),
-            showContinueButton: !isRecommendations && !isPreview,
+            showContinueButton: !isRecommendations &&
+                !isPreview &&
+                step != OnboardingStep.auth &&
+                step != OnboardingStep.emailConfirmation &&
+                step != OnboardingStep.resolvingAccount,
             errorMessage: _stepErrorMessage(context, state, isRecommendations),
             onBack: () => unawaited(coordinator.goBack()),
             onContinue: state.canAdvance

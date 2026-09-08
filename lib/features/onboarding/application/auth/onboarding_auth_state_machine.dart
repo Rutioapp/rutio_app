@@ -53,9 +53,11 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
         _completion = completion,
         _draftPersistence = draftPersistence,
         _state = OnboardingAuthState(
-          phase: draft.currentStep == OnboardingStep.auth
-              ? OnboardingAuthPhase.ready
-              : OnboardingAuthPhase.idle,
+          phase: draft.currentStep == OnboardingStep.emailConfirmation
+              ? OnboardingAuthPhase.awaitingEmailConfirmation
+              : draft.currentStep == OnboardingStep.auth
+                  ? OnboardingAuthPhase.ready
+                  : OnboardingAuthPhase.idle,
           draft: draft,
         );
 
@@ -71,6 +73,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
   Future<bool> authenticate({
     required OnboardingAuthCommand command,
     required String email,
+    String password = '',
     OnboardingAuthMethod method = OnboardingAuthMethod.emailPassword,
   }) async {
     if (_state.phase == OnboardingAuthPhase.authenticating ||
@@ -84,35 +87,43 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
           : AuthIntent.signIn,
       completionState: OnboardingCompletionState.authPending,
       currentStep: OnboardingStep.auth,
+      authEmail: email.trim(),
     );
-    await _persist(pendingDraft);
     _publish(OnboardingAuthState(
       phase: OnboardingAuthPhase.authenticating,
       draft: pendingDraft,
       pendingAuthRequest: OnboardingAuthRequest(
         command: command,
         method: method,
-        email: email.trim().toLowerCase(),
+        email: email.trim(),
+        password: password,
         operationId: pendingDraft.onboardingOperationId,
       ),
     ));
+    // Publish the in-flight phase before the first await so a second tap in
+    // the same event turn cannot start another network request.
+    await _persist(pendingDraft);
     final result = await _auth.authenticate(OnboardingAuthRequest(
       command: command,
       method: method,
-      email: email.trim().toLowerCase(),
+      email: email.trim(),
       operationId: pendingDraft.onboardingOperationId,
+      password: password,
     ));
     if (result is OnboardingConfirmationRequired) {
       _publish(OnboardingAuthState(
         phase: OnboardingAuthPhase.awaitingEmailConfirmation,
-        draft: pendingDraft,
+        draft: pendingDraft.copyWith(
+            currentStep: OnboardingStep.emailConfirmation),
         pendingAuthRequest: OnboardingAuthRequest(
           command: command,
           method: method,
-          email: email.trim().toLowerCase(),
+          email: email.trim(),
           operationId: pendingDraft.onboardingOperationId,
         ),
       ));
+      await _persist(
+          pendingDraft.copyWith(currentStep: OnboardingStep.emailConfirmation));
       return true;
     }
     if (result is OnboardingAuthenticationFailed) {
@@ -139,9 +150,13 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
       return false;
     }
     _lastSessionUserId = userId;
+    final resolvingDraft = _state.draft.copyWith(
+      currentStep: OnboardingStep.resolvingAccount,
+    );
+    await _persist(resolvingDraft);
     _publish(OnboardingAuthState(
       phase: OnboardingAuthPhase.resolvingAccount,
-      draft: _state.draft,
+      draft: resolvingDraft,
       authenticatedUserId: userId,
     ));
     try {
@@ -159,7 +174,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
         phase: isExisting && _state.draft.habit != null
             ? OnboardingAuthPhase.awaitingPreparedHabitDecision
             : OnboardingAuthPhase.readyToComplete,
-        draft: _state.draft,
+        draft: resolvingDraft.copyWith(currentStep: OnboardingStep.auth),
         authenticatedUserId: userId,
         resolution: resolution,
         preparedHabitDecision: decision,
@@ -172,6 +187,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
         authenticatedUserId: userId,
         error: error,
       ));
+      _lastSessionUserId = null;
       return false;
     }
   }

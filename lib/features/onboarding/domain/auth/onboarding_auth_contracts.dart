@@ -42,12 +42,17 @@ class OnboardingAuthRequest {
     required this.method,
     required this.email,
     required this.operationId,
+    this.password,
   });
 
   final OnboardingAuthCommand command;
   final OnboardingAuthMethod method;
   final String email;
   final String operationId;
+
+  /// Ephemeral submit input. It is deliberately absent from every draft and
+  /// persistence contract and must be discarded as soon as the request ends.
+  final String? password;
 }
 
 @immutable

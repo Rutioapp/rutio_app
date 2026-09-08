@@ -34,6 +34,8 @@ import 'features/notifications/data/local/shared_preferences_notification_schedu
 import 'features/notifications/data/native/flutter_local_notifications_native_gateway.dart';
 import 'features/notifications/data/native/native_notification_schedule_executor.dart';
 import 'features/onboarding/application/onboarding_coordinator.dart';
+import 'features/onboarding/data/onboarding_auth_adapter.dart';
+import 'features/onboarding/domain/auth/onboarding_auth_contracts.dart';
 import 'features/onboarding/application/onboarding_draft_service.dart';
 import 'features/onboarding/presentation/onboarding_v1_screen.dart';
 import 'features/feedback/presentation/screens/feedback_home_screen.dart';
@@ -286,6 +288,16 @@ class MyApp extends StatelessWidget {
         ),
         Provider<AuthRepository>(create: (_) => AuthRepository()),
         Provider<ProfileRepository>(create: (_) => ProfileRepository()),
+        Provider<OnboardingAuthPort>(
+          create: (context) => RepositoryOnboardingAuthAdapter(
+            context.read<AuthRepository>(),
+          ),
+        ),
+        Provider<OnboardingAccountResolver>(
+          create: (context) => RepositoryOnboardingAccountResolver(
+            context.read<ProfileRepository>(),
+          ),
+        ),
         ProxyProvider2<UserStateStorage, AssetJsonLoader, UserStateRepository>(
           update: (_, storage, assets, __) => UserStateRepository(
             storage: storage,

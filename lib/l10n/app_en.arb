@@ -2627,5 +2627,22 @@
   "weeklyReportHabitNeedsAttention13": "This habit showed less continuity across the week.",
   "weeklyReportHabitNeedsAttention14": "This habit had an inconsistent presence this week.",
   "weeklyReportHabitNeedsAttention15": "This habit appeared less consistently.",
-  "weeklyReportHabitNeedsAttention16": "This habit showed lower stability this week."
+  "weeklyReportHabitNeedsAttention16": "This habit showed lower stability this week.",
+  "onboardingAuthCreateTitle": "Create your account",
+  "onboardingAuthLoginTitle": "I already have an account",
+  "onboardingAuthSubtitle": "Save your Rutio to continue.",
+  "onboardingAuthCreateMode": "Create account",
+  "onboardingAuthLoginMode": "Log in",
+  "onboardingAuthCreateCta": "Create account",
+  "onboardingAuthLoginCta": "Log in",
+  "onboardingAuthConfirmationTitle": "Check your email",
+  "onboardingAuthConfirmationBody": "We sent a confirmation link to {email}.",
+  "onboardingAuthConfirmedCta": "I have confirmed it",
+  "onboardingAuthResolving": "Checking your account…",
+  "onboardingAuthReady": "Your Rutio is ready for the next step.",
+  "onboardingAuthEmailExists": "This email already has an account. You can log in.",
+  "onboardingAuthInvalidCredentials": "The email or password is incorrect.",
+  "onboardingAuthWeakPassword": "The password does not meet the current policy.",
+  "onboardingAuthNetwork": "No connection. Try again.",
+  "onboardingAuthGenericError": "Authentication could not be completed."
 }
