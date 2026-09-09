@@ -28,8 +28,10 @@ class AuthCallbackMalformed extends AuthCallbackClassification {
 class AuthCallbackClassifier {
   const AuthCallbackClassifier({
     this.canonicalCallbackUri = RutioSupabaseConfig.authCallbackUri,
+    this.passwordRecoveryPendingProvider,
   });
   final String canonicalCallbackUri;
+  final bool Function()? passwordRecoveryPendingProvider;
 
   AuthCallbackClassification classify(
     Uri uri, {
@@ -81,6 +83,13 @@ class AuthCallbackClassifier {
       fragmentParameters['type'] ?? '',
     ].map((value) => value.toLowerCase().trim());
     if (values.contains('recovery') || values.contains('password_recovery')) {
+      return AuthCallbackType.passwordRecovery;
+    }
+    // PKCE recovery callbacks commonly contain only `code`. GoTrue stores
+    // the flow type with the local verifier, so correlate with the local
+    // recovery marker instead of misclassifying this callback as signup.
+    if (uri.queryParameters.containsKey('code') &&
+        passwordRecoveryPendingProvider?.call() == true) {
       return AuthCallbackType.passwordRecovery;
     }
     if (values.contains('signup') ||

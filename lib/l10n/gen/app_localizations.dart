@@ -1100,6 +1100,126 @@ abstract class AppLocalizations {
   /// **'Regístrate'**
   String get loginSwitchLink;
 
+  /// No description provided for @passwordRecoveryTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recupera tu contraseña'**
+  String get passwordRecoveryTitle;
+
+  /// No description provided for @passwordRecoveryBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce el correo asociado a tu cuenta y te enviaremos un enlace para crear una nueva contraseña.'**
+  String get passwordRecoveryBody;
+
+  /// No description provided for @passwordRecoverySend.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar enlace'**
+  String get passwordRecoverySend;
+
+  /// No description provided for @passwordRecoveryResend.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar otro enlace'**
+  String get passwordRecoveryResend;
+
+  /// No description provided for @passwordRecoverySent.
+  ///
+  /// In es, this message translates to:
+  /// **'Si existe una cuenta con ese correo, recibirás un enlace para restablecerla.'**
+  String get passwordRecoverySent;
+
+  /// No description provided for @passwordRecoveryBackToLogin.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver a iniciar sesión'**
+  String get passwordRecoveryBackToLogin;
+
+  /// No description provided for @passwordRecoveryInvalidEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Introduce un correo válido.'**
+  String get passwordRecoveryInvalidEmail;
+
+  /// No description provided for @passwordRecoveryRateLimited.
+  ///
+  /// In es, this message translates to:
+  /// **'Demasiadas solicitudes. Inténtalo más tarde.'**
+  String get passwordRecoveryRateLimited;
+
+  /// No description provided for @passwordRecoveryTryAgain.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido enviar el enlace. Inténtalo de nuevo.'**
+  String get passwordRecoveryTryAgain;
+
+  /// No description provided for @passwordResetTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva contraseña'**
+  String get passwordResetTitle;
+
+  /// No description provided for @passwordResetBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige una nueva contraseña para tu cuenta de Rutio.'**
+  String get passwordResetBody;
+
+  /// No description provided for @passwordResetNew.
+  ///
+  /// In es, this message translates to:
+  /// **'Nueva contraseña'**
+  String get passwordResetNew;
+
+  /// No description provided for @passwordResetConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar contraseña'**
+  String get passwordResetConfirm;
+
+  /// No description provided for @passwordResetSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar contraseña'**
+  String get passwordResetSave;
+
+  /// No description provided for @passwordResetCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar recuperación'**
+  String get passwordResetCancel;
+
+  /// No description provided for @passwordRecoveryMismatch.
+  ///
+  /// In es, this message translates to:
+  /// **'Las contraseñas no coinciden.'**
+  String get passwordRecoveryMismatch;
+
+  /// No description provided for @passwordRecoveryPasswordTooShort.
+  ///
+  /// In es, this message translates to:
+  /// **'La contraseña debe tener al menos 6 caracteres.'**
+  String get passwordRecoveryPasswordTooShort;
+
+  /// No description provided for @passwordRecoveryUpdateFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido actualizar tu contraseña. Inténtalo de nuevo.'**
+  String get passwordRecoveryUpdateFailed;
+
+  /// No description provided for @passwordRecoveryInvalidLink.
+  ///
+  /// In es, this message translates to:
+  /// **'Este enlace ya no es válido.'**
+  String get passwordRecoveryInvalidLink;
+
+  /// No description provided for @passwordRecoverySendAnother.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar otro enlace'**
+  String get passwordRecoverySendAnother;
+
   /// No description provided for @signupHeaderSubtitle.
   ///
   /// In es, this message translates to:

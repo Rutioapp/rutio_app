@@ -31,6 +31,17 @@ void main() {
     );
   });
 
+  test('classifies a PKCE code callback as recovery when recovery is pending',
+      () {
+    const classifier = AuthCallbackClassifier(
+      passwordRecoveryPendingProvider: _pendingRecovery,
+    );
+    final result = classifier.classify(
+      Uri.parse('https://www.rutioapp.com/auth/callback?code=opaque-code'),
+    );
+    expect(result, isA<AuthCallbackPasswordRecovery>());
+  });
+
   test('classifies a PKCE confirmation code without exposing it', () {
     final result = const AuthCallbackClassifier().classify(
       Uri.parse('$callback?code=confirmation-code'),
@@ -93,6 +104,8 @@ void main() {
     );
   });
 }
+
+bool _pendingRecovery() => true;
 
 class _SessionPort implements AuthCallbackSessionPort {
   _SessionPort(this.calls);

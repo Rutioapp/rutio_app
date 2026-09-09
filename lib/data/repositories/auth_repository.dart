@@ -14,6 +14,10 @@ class AuthRepository {
     })? signInWithEmailPasswordProvider,
     Future<void> Function({required String email})? resendConfirmationProvider,
     Future<AuthResponse> Function()? refreshSessionProvider,
+    Future<void> Function({required String email})?
+        resetPasswordForEmailProvider,
+    Future<UserResponse> Function({required String password})?
+        updatePasswordProvider,
   })  : _client = client ??
             ((authStateChangesProvider != null || currentUserProvider != null)
                 ? null
@@ -23,7 +27,9 @@ class AuthRepository {
         _signOutProvider = signOutProvider,
         _signInWithEmailPasswordProvider = signInWithEmailPasswordProvider,
         _resendConfirmationProvider = resendConfirmationProvider,
-        _refreshSessionProvider = refreshSessionProvider;
+        _refreshSessionProvider = refreshSessionProvider,
+        _resetPasswordForEmailProvider = resetPasswordForEmailProvider,
+        _updatePasswordProvider = updatePasswordProvider;
 
   final SupabaseClient? _client;
   final Stream<AuthState> Function()? _authStateChangesProvider;
@@ -36,6 +42,10 @@ class AuthRepository {
   final Future<void> Function({required String email})?
       _resendConfirmationProvider;
   final Future<AuthResponse> Function()? _refreshSessionProvider;
+  final Future<void> Function({required String email})?
+      _resetPasswordForEmailProvider;
+  final Future<UserResponse> Function({required String password})?
+      _updatePasswordProvider;
 
   Stream<AuthState> get authStateChanges =>
       _authStateChangesProvider?.call() ??
@@ -112,4 +122,19 @@ class AuthRepository {
 
   Future<AuthResponse> refreshSession() =>
       _refreshSessionProvider?.call() ?? _client!.auth.refreshSession();
+
+  Future<void> resetPasswordForEmail({required String email}) async {
+    final provider = _resetPasswordForEmailProvider;
+    if (provider != null) return provider(email: email.trim());
+    await _client!.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: RutioSupabaseConfig.authCallbackUri,
+    );
+  }
+
+  Future<UserResponse> updatePassword({required String password}) {
+    final provider = _updatePasswordProvider;
+    if (provider != null) return provider(password: password);
+    return _client!.auth.updateUser(UserAttributes(password: password));
+  }
 }

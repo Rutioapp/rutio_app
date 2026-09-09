@@ -5,6 +5,7 @@ import '../../application/auth/auth_controller.dart';
 import '../../l10n/l10n.dart';
 import '../../utils/app_theme.dart';
 import 'sign_up_screen.dart';
+import 'password_recovery_request_screen.dart';
 import 'widgets/auth_field.dart';
 import 'widgets/auth_primary_button.dart';
 import 'widgets/auth_switch_link.dart';
@@ -95,6 +96,13 @@ class _SignInScreenState extends State<SignInScreen>
     );
   }
 
+  void _openPasswordRecovery() {
+    context.read<AuthController>().clearError();
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PasswordRecoveryRequestScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -151,6 +159,13 @@ class _SignInScreenState extends State<SignInScreen>
                             hint: l10n.loginPasswordHint,
                             obscure: true,
                             controller: _passwordController,
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: _openPasswordRecovery,
+                              child: Text(l10n.loginForgotPassword),
+                            ),
                           ),
                           _AuthMessage(controller: authController),
                           const SizedBox(height: 18),

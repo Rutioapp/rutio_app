@@ -473,3 +473,45 @@ No existe un gate de `emailConfirmed`, `confirmedAt` o `email_confirmed_at` para
 Home, Bootstrap, login, resolución remota ni completion. La Redirect URL
 `https://www.rutioapp.com/auth/callback` se mantiene configurada para futuros
 Auth flows, junto con la infraestructura de deep links y recovery contracts.
+
+## AUTH-4D implementation notes
+
+AUTH-4D implementa el flujo email/password de recuperación sin modificar DB,
+migrations, RPC, Edge Functions, Google, Apple ni la política V1 de Confirm Email.
+
+- API instalada verificada: `supabase_flutter 2.12.4` / `gotrue 2.20.0`.
+- Request: `auth.resetPasswordForEmail(email, redirectTo: RutioSupabaseConfig.authCallbackUri)`.
+- Update: `auth.updateUser(UserAttributes(password: newPassword))`.
+- Evento de sesión: `AuthChangeEvent.passwordRecovery`.
+- El entry point vive sólo en `SignInScreen`; signup no muestra Forgot Password.
+- `PasswordRecoveryController` posee el state machine, cooldown de 60 s,
+  errores tipados y un marcador booleano local. No persiste email, password,
+  confirmPassword, tokens, OTP ni URI.
+- `AuthDeepLinkReceiver`/`AuthCallbackCoordinator` siguen siendo la única
+  autoridad de callback. Recovery no adquiere `OnboardingAuthOwnership`.
+- `AppStartupGate` da prioridad al reset sobre Home, Welcome y onboarding;
+  después de actualizar la contraseña limpia el marcador y reejecuta Bootstrap.
+- Cold start conserva splash mientras el callback está pendiente; warm y
+  background convergen mediante el mismo stream de auth. El coordinator deduplica
+  initial URI + runtime URI.
+- Fix QA Android: con PKCE, Supabase puede devolver sólo `?code=...` sin
+  `type=recovery`. Si existe el marcador local de recovery, el classifier lo
+  identifica como `passwordRecovery`; el callback original se entrega intacto
+  a `getSessionFromUrl`.
+- El copy de email enviado es genérico para evitar account enumeration.
+- Cancelación/logout limpian recovery y el reset nunca navega directamente a Home.
+
+### Dashboard/email template manual
+
+Mantener `https://www.rutioapp.com/auth/callback` autorizado en Supabase y
+Confirm Email desactivado. Revisar manualmente Authentication → Email Templates
+→ Reset Password para confirmar que el enlace usa el redirect recibido por
+`redirectTo`; no se edita el Dashboard desde código.
+
+### QA AUTH-4D
+
+La cobertura automatizada incluye request one-shot, validación de contraseña y
+regresión de callback/bootstrap. Antes de producción falta ejecutar en Android/iOS
+real: warm/background/cold recovery, enlace expirado, restart tras callback,
+login con la nueva contraseña y verificación de logs seguros
+`[PASSWORD_RECOVERY]`/`[AUTH_CALLBACK]` sin URI ni secretos.
