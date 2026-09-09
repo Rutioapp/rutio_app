@@ -375,4 +375,37 @@ Nuevos archivos previstos: `auth_callback_coordinator.dart`, parser/classifier y
 
 ## 21. Ready para AUTH-4A
 
-**YES como trabajo posterior, NO implementado en esta pasada.** El siguiente paso autorizado es AUTH-4A: contratos/coordinator/parser/ownership tests. No debe comenzar email UI final, configuración nativa, migrations ni dashboard dentro de AUTH-4A sin una decisión separada.
+**Implementado y verificado: YES.** La implementación se limita a contratos,
+classifier/coordinator, ownership y ajustes mínimos de Bootstrap. No incluye
+email UI final, configuración nativa, migrations ni Dashboard.
+
+## AUTH-4A implementation notes
+
+Implementado el contrato de aplicación, sin deep-link platform wiring:
+
+- `lib/features/auth/` contiene `AuthCallbackType`, `AuthCallbackIntent`,
+  fallos tipados, `AuthCallbackClassifier`, `AuthCallbackCoordinator` y el
+  vocabulario independiente de password recovery.
+- El callback canónico queda centralizado en
+  `RutioSupabaseConfig.authCallbackUri` (`https://rutioapp.com/auth/callback`).
+  El classifier acepta únicamente scheme/host/path canónicos y sólo conserva
+  tipo, ubicación segura, timestamp y `isColdStart`; no conserva URI completa,
+  tokens, code, OTP, refresh/access token ni password.
+- Cold start y app abierta convergen en el mismo coordinator. El coordinator
+  mantiene callback pendiente de cold start, evita entregas duplicadas durante
+  una ventana corta y ofrece interfaces para el puente AuthController y el
+  consumer de `OnboardingAuthStateMachine`; nunca navega ni llama RPC.
+- `BootstrapController` expone el ownership AUTH-3 existente como interfaz y
+  los drafts reanudables guest (incluido `emailConfirmation`) vuelven a
+  `BootstrapDestination.onboarding`. El ownership sigue siendo el guard de
+  takeover prematuro; el mismatch de usuario se rechaza fail-closed.
+- Password recovery sólo tiene contratos de estado para AUTH-4D; no se llaman
+  `resetPasswordForEmail` ni `updateUser`, y no se añadió UI.
+- Se añadieron tests de clasificación, allow-list, secretos no retenidos,
+  convergencia cold/open, deduplicación y errores tipados. Los tests AUTH,
+  onboarding y bootstrap focalizados pasan.
+
+Queda para AUTH-4B la UI/resend/comprobación de confirmación; para AUTH-4C el
+listener real, Android/iOS associations y Dashboard redirect configuration; y
+para AUTH-4D el entry point y actualización real de password. No hubo cambios
+de plataforma, Supabase Dashboard, backend, migrations ni RPC.

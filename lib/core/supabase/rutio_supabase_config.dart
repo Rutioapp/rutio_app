@@ -1,5 +1,8 @@
-﻿class RutioSupabaseConfig {
+class RutioSupabaseConfig {
   const RutioSupabaseConfig._();
+
+  /// Canonical contract only. Native/web configuration is AUTH-4C.
+  static const String authCallbackUri = 'https://rutioapp.com/auth/callback';
 
   static const String supabaseUrlEnv = 'SUPABASE_URL';
   static const String supabaseAnonKeyEnv = 'SUPABASE_ANON_KEY';
