@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../data/models/remote/remote_profile.dart';
 import '../../../data/repositories/auth_repository.dart';
+import '../../../core/supabase/rutio_supabase_config.dart';
+import '../../../core/diagnostics/onboarding_runtime_trace.dart';
 import '../../../data/repositories/profile_repository.dart';
 import '../../../data/repositories/repository_result.dart';
 import '../domain/auth/onboarding_auth_contracts.dart';
@@ -32,6 +34,7 @@ class RepositoryOnboardingAuthAdapter
           ? await _repository.signUpWithEmailPassword(
               email: request.email.trim(),
               password: password,
+              emailRedirectTo: RutioSupabaseConfig.authCallbackUri,
             )
           : await _repository.signInWithEmailPassword(
               email: request.email.trim(),
@@ -40,6 +43,10 @@ class RepositoryOnboardingAuthAdapter
       if (response.session == null) {
         if (request.command == OnboardingAuthCommand.signUpWithEmail &&
             (response.user != null || _repository.currentUser != null)) {
+          OnboardingRuntimeTrace.log(
+            'EMAIL_CONFIRMATION',
+            'event=fallback_entered reason=session_missing_after_signup',
+          );
           return const OnboardingConfirmationRequired();
         }
         return const OnboardingAuthenticationFailed(

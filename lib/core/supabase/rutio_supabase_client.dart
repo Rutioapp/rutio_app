@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'rutio_supabase_config.dart';
@@ -35,6 +35,11 @@ class RutioSupabaseClient {
     await Supabase.initialize(
       url: RutioSupabaseConfig.supabaseUrl,
       anonKey: RutioSupabaseConfig.supabaseAnonKey,
+      authOptions: const FlutterAuthClientOptions(
+        // AUTH-4C owns URI validation/classification and invokes the SDK only
+        // after the callback has passed the production host/path allowlist.
+        detectSessionInUri: false,
+      ),
     );
 
     _initialized = true;

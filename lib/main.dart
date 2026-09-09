@@ -83,6 +83,7 @@ import 'core/diagnostics/onboarding_runtime_trace.dart';
 import 'screens/auth/auth_gate.dart';
 import 'screens/auth/sign_in_screen.dart';
 import 'screens/auth/sign_up_screen.dart';
+import 'features/auth/infrastructure/auth_deep_link_receiver.dart';
 
 void _startupLog(String message) {
   if (kDebugMode) debugPrint(message);
@@ -319,6 +320,11 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<ShopCloudRuntimeConfig>.value(value: shopRuntimeConfig),
+        Provider<AuthDeepLinkReceiver>(
+          lazy: false,
+          create: (_) => AuthDeepLinkReceiver()..start(),
+          dispose: (_, receiver) => receiver.dispose(),
+        ),
         Provider<UserStateStorage>(create: (_) => UserStateStorage()),
         Provider<AssetJsonLoader>(create: (_) => AssetJsonLoader()),
         Provider<OnboardingDraftService>(
@@ -496,32 +502,39 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProxyProvider4<AuthController, UserStateStore,
             ProfileRepository, ShopCosmeticsController, BootstrapController>(
-          create: (context) => BootstrapController(
-            authController: context.read<AuthController>(),
-            userStateStore: context.read<UserStateStore>(),
-            hasResumableOnboardingDraft:
-                context.read<OnboardingDraftService>().hasAnonymousDraft,
-            profileRepository: ProfileBootstrapRepository(
-              context.read<ProfileRepository>(),
-            ),
-            essentialCosmeticsPreparer: ShopBootstrapEssentialCosmeticsPreparer(
-              context.read<ShopCosmeticsController>(),
-            ),
-            onHomeReady: (ready) async {
-              final store = context.read<UserStateStore>();
-              final weeklyReportActivation =
-                  context.read<WeeklyReportActivationService>();
-              final notificationOrchestrator =
-                  context.read<PersonalizedNotificationOrchestrator>();
-              await weeklyReportActivation.ensureActivated(
-                userId: ready.userId,
-                scopeEpoch: ready.scopeEpoch,
-                timezoneResolver: store.getLocalIanaTimeZone,
-              );
-              await notificationOrchestrator.reconcileForBootstrapReady();
-            },
-            onExplicitGuestReady: _resetAuthenticatedStackForGuest,
-          ),
+          create: (context) {
+            final controller = BootstrapController(
+              authController: context.read<AuthController>(),
+              userStateStore: context.read<UserStateStore>(),
+              hasResumableOnboardingDraft:
+                  context.read<OnboardingDraftService>().hasAnonymousDraft,
+              profileRepository: ProfileBootstrapRepository(
+                context.read<ProfileRepository>(),
+              ),
+              essentialCosmeticsPreparer:
+                  ShopBootstrapEssentialCosmeticsPreparer(
+                context.read<ShopCosmeticsController>(),
+              ),
+              onHomeReady: (ready) async {
+                final store = context.read<UserStateStore>();
+                final weeklyReportActivation =
+                    context.read<WeeklyReportActivationService>();
+                final notificationOrchestrator =
+                    context.read<PersonalizedNotificationOrchestrator>();
+                await weeklyReportActivation.ensureActivated(
+                  userId: ready.userId,
+                  scopeEpoch: ready.scopeEpoch,
+                  timezoneResolver: store.getLocalIanaTimeZone,
+                );
+                await notificationOrchestrator.reconcileForBootstrapReady();
+              },
+              onExplicitGuestReady: _resetAuthenticatedStackForGuest,
+            );
+            context.read<AuthDeepLinkReceiver>().coordinator.attachOwnership(
+                  controller,
+                );
+            return controller;
+          },
           update: (_, __, ___, ____, _____, controller) => controller!,
         ),
       ],
