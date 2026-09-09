@@ -18,6 +18,7 @@ import '../../features/shop/application/shop_cosmetics_controller.dart';
 import '../../features/shop/domain/models/shop_asset.dart';
 import '../../stores/user_state_store.dart';
 import '../auth/auth_controller.dart';
+import '../../features/auth/application/auth_callback_coordinator.dart';
 
 enum BootstrapRunMode {
   coldStart,
@@ -438,7 +439,8 @@ class BootstrapState {
   );
 }
 
-class BootstrapController extends ChangeNotifier {
+class BootstrapController extends ChangeNotifier
+    implements OnboardingAuthOwnership {
   static const int _onboardingPolicyVersion =
       ProfileRepository.bootstrapOnboardingPolicyVersion;
 
@@ -504,6 +506,11 @@ class BootstrapController extends ChangeNotifier {
 
   BootstrapState get state => _state;
 
+  @override
+  String? get activeOnboardingOperationId =>
+      _onboardingAuthOwnershipOperationId;
+
+  @override
   void acquireOnboardingAuthOwnership(String operationId) {
     _onboardingAuthOwnershipOperationId = operationId;
     OnboardingRuntimeTrace.log(
@@ -513,6 +520,7 @@ class BootstrapController extends ChangeNotifier {
     );
   }
 
+  @override
   void releaseOnboardingAuthOwnership(String operationId) {
     if (_onboardingAuthOwnershipOperationId != operationId) return;
     _onboardingAuthOwnershipOperationId = null;
@@ -1128,11 +1136,13 @@ class BootstrapController extends ChangeNotifier {
     final exitReason = _userStateStore.consumeGuestEntryReason();
     final reason = exitReason ??
         (hasResumableDraft ? 'guest_draft' : 'no_session_no_draft');
-    const destination = BootstrapDestination.welcome;
+    final destination = hasResumableDraft
+        ? BootstrapDestination.onboarding
+        : BootstrapDestination.welcome;
     if (kDebugMode) {
       debugPrint(
         '[BOOTSTRAP_TRACE] event=guest_destination_decision '
-        'reason=$reason destination=welcome',
+        'reason=$reason destination=${destination.name}',
       );
     }
     _setState(
