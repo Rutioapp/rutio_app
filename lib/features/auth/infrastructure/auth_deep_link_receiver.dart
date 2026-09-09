@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/diagnostics/onboarding_runtime_trace.dart';
 import '../application/auth_callback_coordinator.dart';
+import '../application/auth_callback_classifier.dart';
 import '../domain/auth_callback_failure.dart';
 import '../domain/auth_callback_intent.dart';
 
@@ -15,13 +16,20 @@ import '../domain/auth_callback_intent.dart';
 /// launches. This class never navigates and never persists the URI.
 class AuthDeepLinkReceiver {
   AuthDeepLinkReceiver({AppLinks? appLinks})
-      : _appLinks = appLinks ?? AppLinks(),
-        coordinator = AuthCallbackCoordinator(
-          sessionPort: _SupabaseAuthCallbackSessionPort(),
-        );
+      : _appLinks = appLinks ?? AppLinks() {
+    coordinator = AuthCallbackCoordinator(
+      classifier: AuthCallbackClassifier(
+        passwordRecoveryPendingProvider: () =>
+            isPasswordRecoveryPending?.call() == true,
+      ),
+      sessionPort: _SupabaseAuthCallbackSessionPort(),
+    );
+  }
 
   final AppLinks _appLinks;
-  final AuthCallbackCoordinator coordinator;
+  late final AuthCallbackCoordinator coordinator;
+  void Function(AuthCallbackResult result)? onResult;
+  bool Function()? isPasswordRecoveryPending;
   StreamSubscription<Uri>? _subscription;
   bool _started = false;
 
@@ -58,6 +66,7 @@ class AuthDeepLinkReceiver {
       'isColdStart=$isColdStart',
     );
     final result = await coordinator.receive(uri, isColdStart: isColdStart);
+    onResult?.call(result);
     final intent = result.intent;
     _log(
       'event=${_eventName(result.kind)} '

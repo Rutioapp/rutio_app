@@ -555,6 +555,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginSwitchLink => 'Sign up';
 
   @override
+  String get passwordRecoveryTitle => 'Recover your password';
+
+  @override
+  String get passwordRecoveryBody =>
+      'Enter the email associated with your account and we’ll send you a link to create a new password.';
+
+  @override
+  String get passwordRecoverySend => 'Send link';
+
+  @override
+  String get passwordRecoveryResend => 'Send another link';
+
+  @override
+  String get passwordRecoverySent =>
+      'If an account exists with that email, you’ll receive a reset link.';
+
+  @override
+  String get passwordRecoveryBackToLogin => 'Back to log in';
+
+  @override
+  String get passwordRecoveryInvalidEmail => 'Enter a valid email address.';
+
+  @override
+  String get passwordRecoveryRateLimited =>
+      'Too many requests. Please try again later.';
+
+  @override
+  String get passwordRecoveryTryAgain =>
+      'We couldn’t send the link. Please try again.';
+
+  @override
+  String get passwordResetTitle => 'New password';
+
+  @override
+  String get passwordResetBody =>
+      'Choose a new password for your Rutio account.';
+
+  @override
+  String get passwordResetNew => 'New password';
+
+  @override
+  String get passwordResetConfirm => 'Confirm password';
+
+  @override
+  String get passwordResetSave => 'Save password';
+
+  @override
+  String get passwordResetCancel => 'Cancel recovery';
+
+  @override
+  String get passwordRecoveryMismatch => 'Passwords do not match.';
+
+  @override
+  String get passwordRecoveryPasswordTooShort =>
+      'Password must be at least 6 characters.';
+
+  @override
+  String get passwordRecoveryUpdateFailed =>
+      'We couldn’t update your password. Please try again.';
+
+  @override
+  String get passwordRecoveryInvalidLink => 'This link is no longer valid.';
+
+  @override
+  String get passwordRecoverySendAnother => 'Send another link';
+
+  @override
   String get signupHeaderSubtitle => 'Start your path';
 
   @override

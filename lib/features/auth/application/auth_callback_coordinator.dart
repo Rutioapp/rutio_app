@@ -1,5 +1,7 @@
 import '../domain/auth_callback_failure.dart';
 import '../domain/auth_callback_intent.dart';
+import '../domain/auth_callback_type.dart';
+import '../../../core/diagnostics/onboarding_runtime_trace.dart';
 import 'auth_callback_classifier.dart';
 
 abstract interface class AuthCallbackSessionPort {
@@ -101,6 +103,10 @@ class AuthCallbackCoordinator {
     final intent = classification is AuthCallbackEmailConfirmation
         ? classification.intent
         : (classification as AuthCallbackPasswordRecovery).intent;
+    OnboardingRuntimeTrace.log(
+      'AUTH_CALLBACK',
+      'event=classified callbackType=${intent.type.name} result=accepted',
+    );
     if (isColdStart) _pendingColdStart = intent;
     // The full URI is an in-memory dedupe key only; it is never logged or
     // persisted. This prevents two distinct confirmation codes being folded
@@ -143,7 +149,10 @@ class AuthCallbackCoordinator {
           ),
         );
       }
-      final operationId = _ownership?.activeOnboardingOperationId;
+      // Recovery never acquires onboarding ownership or resumes AUTH-3.
+      final operationId = intent.type == AuthCallbackType.emailConfirmation
+          ? _ownership?.activeOnboardingOperationId
+          : null;
       if (session.hasSession &&
           userId != null &&
           userId.isNotEmpty &&

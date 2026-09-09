@@ -558,6 +558,73 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loginSwitchLink => 'Regístrate';
 
   @override
+  String get passwordRecoveryTitle => 'Recupera tu contraseña';
+
+  @override
+  String get passwordRecoveryBody =>
+      'Introduce el correo asociado a tu cuenta y te enviaremos un enlace para crear una nueva contraseña.';
+
+  @override
+  String get passwordRecoverySend => 'Enviar enlace';
+
+  @override
+  String get passwordRecoveryResend => 'Enviar otro enlace';
+
+  @override
+  String get passwordRecoverySent =>
+      'Si existe una cuenta con ese correo, recibirás un enlace para restablecerla.';
+
+  @override
+  String get passwordRecoveryBackToLogin => 'Volver a iniciar sesión';
+
+  @override
+  String get passwordRecoveryInvalidEmail => 'Introduce un correo válido.';
+
+  @override
+  String get passwordRecoveryRateLimited =>
+      'Demasiadas solicitudes. Inténtalo más tarde.';
+
+  @override
+  String get passwordRecoveryTryAgain =>
+      'No hemos podido enviar el enlace. Inténtalo de nuevo.';
+
+  @override
+  String get passwordResetTitle => 'Nueva contraseña';
+
+  @override
+  String get passwordResetBody =>
+      'Elige una nueva contraseña para tu cuenta de Rutio.';
+
+  @override
+  String get passwordResetNew => 'Nueva contraseña';
+
+  @override
+  String get passwordResetConfirm => 'Confirmar contraseña';
+
+  @override
+  String get passwordResetSave => 'Guardar contraseña';
+
+  @override
+  String get passwordResetCancel => 'Cancelar recuperación';
+
+  @override
+  String get passwordRecoveryMismatch => 'Las contraseñas no coinciden.';
+
+  @override
+  String get passwordRecoveryPasswordTooShort =>
+      'La contraseña debe tener al menos 6 caracteres.';
+
+  @override
+  String get passwordRecoveryUpdateFailed =>
+      'No hemos podido actualizar tu contraseña. Inténtalo de nuevo.';
+
+  @override
+  String get passwordRecoveryInvalidLink => 'Este enlace ya no es válido.';
+
+  @override
+  String get passwordRecoverySendAnother => 'Enviar otro enlace';
+
+  @override
   String get signupHeaderSubtitle => 'Empieza tu camino';
 
   @override

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -84,6 +86,7 @@ import 'screens/auth/auth_gate.dart';
 import 'screens/auth/sign_in_screen.dart';
 import 'screens/auth/sign_up_screen.dart';
 import 'features/auth/infrastructure/auth_deep_link_receiver.dart';
+import 'features/auth/application/password_recovery_controller.dart';
 
 void _startupLog(String message) {
   if (kDebugMode) debugPrint(message);
@@ -322,7 +325,7 @@ class MyApp extends StatelessWidget {
         Provider<ShopCloudRuntimeConfig>.value(value: shopRuntimeConfig),
         Provider<AuthDeepLinkReceiver>(
           lazy: false,
-          create: (_) => AuthDeepLinkReceiver()..start(),
+          create: (_) => AuthDeepLinkReceiver(),
           dispose: (_, receiver) => receiver.dispose(),
         ),
         Provider<UserStateStorage>(create: (_) => UserStateStorage()),
@@ -336,6 +339,20 @@ class MyApp extends StatelessWidget {
           ),
         ),
         Provider<AuthRepository>(create: (_) => AuthRepository()),
+        ChangeNotifierProvider<PasswordRecoveryController>(
+          create: (context) {
+            final controller = PasswordRecoveryController(
+              context.read<AuthRepository>(),
+              preferences: weeklyReportPreferences,
+            );
+            final receiver = context.read<AuthDeepLinkReceiver>();
+            receiver.isPasswordRecoveryPending =
+                () => controller.isRecoveryPending;
+            receiver.onResult = controller.handleCallbackResult;
+            unawaited(receiver.start());
+            return controller;
+          },
+        ),
         Provider<ProfileRepository>(create: (_) => ProfileRepository()),
         Provider<OnboardingAuthPort>(
           create: (context) => RepositoryOnboardingAuthAdapter(

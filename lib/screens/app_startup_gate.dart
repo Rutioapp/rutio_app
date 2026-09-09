@@ -16,6 +16,10 @@ import '../features/onboarding/presentation/onboarding_v1_screen.dart';
 import 'root_gate.dart';
 import 'splash_screen.dart';
 import 'welcome_screen.dart';
+import '../features/auth/application/password_recovery_controller.dart';
+import '../features/auth/infrastructure/auth_deep_link_receiver.dart';
+import '../features/auth/domain/auth_callback_type.dart';
+import 'auth/password_reset_screen.dart';
 
 class AppStartupGate extends StatefulWidget {
   const AppStartupGate({
@@ -66,6 +70,30 @@ class _AppStartupGateState extends State<AppStartupGate> {
   Widget build(BuildContext context) {
     return Consumer<BootstrapController>(
       builder: (context, controller, _) {
+        PasswordRecoveryController? recovery;
+        AuthDeepLinkReceiver? receiver;
+        try {
+          recovery = context.watch<PasswordRecoveryController>();
+          receiver = context.read<AuthDeepLinkReceiver>();
+        } on ProviderNotFoundException {
+          // Isolated startup-gate tests may provide only BootstrapController.
+        }
+        final pendingRecovery = receiver?.coordinator.pendingColdStart?.type ==
+            AuthCallbackType.passwordRecovery;
+        if (recovery?.hasActiveRecovery == true ||
+            recovery?.isInvalidLink == true) {
+          if (kDebugMode) {
+            debugPrint(
+                '[STARTUP_GATE] recoveryPriority=true render=passwordRecovery');
+          }
+          return const PasswordResetScreen();
+        }
+        if (pendingRecovery && recovery?.hasActiveRecovery != true) {
+          return const SplashScreen(
+              autoAdvanceDuration: null,
+              enableTapToContinue: false,
+              showTapHint: false);
+        }
         final state = controller.state;
         final isColdStart = state.mode == BootstrapRunMode.coldStart;
         final routeName = ModalRoute.of(context)?.settings.name;
