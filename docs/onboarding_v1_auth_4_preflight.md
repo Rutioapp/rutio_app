@@ -409,3 +409,31 @@ Queda para AUTH-4B la UI/resend/comprobación de confirmación; para AUTH-4C el
 listener real, Android/iOS associations y Dashboard redirect configuration; y
 para AUTH-4D el entry point y actualización real de password. No hubo cambios
 de plataforma, Supabase Dashboard, backend, migrations ni RPC.
+
+## AUTH-4B implementation notes
+
+Implementado el flujo de confirmación sin platform deep links:
+
+- `RepositoryOnboardingAuthAdapter` conserva la bifurcación existente:
+  signup con `user` y `session` continúa por AUTH-3; signup con `user` y sin
+  `session` entra en `awaitingEmailConfirmation` sin crear otra operación.
+- `OnboardingAuthStateMachine` añade resend real mediante la capacidad
+  opcional `OnboardingEmailConfirmationPort` y comprobación manual mediante
+  `refreshSession()`. Ambas operaciones tienen guardas one-shot y consumen la
+  sesión sólo cuando Supabase la entrega; nunca marcan confirmación localmente.
+- La pantalla integrada en `OnboardingAuthStep` muestra “Revisa tu correo”,
+  “Ya lo he confirmado” y “Reenviar correo”, con feedback tipado y cooldown de
+  60 segundos. “Usar otro correo” queda fuera de V1 porque el preflight señala
+  ambigüedad sobre el signup pendiente.
+- La persistencia existente conserva email, `currentStep=emailConfirmation`,
+  `operationId`, habit y reminder. La contraseña sigue siendo efímera y no se
+  añade a ningún draft, log o callback.
+- Si llega una sesión mientras la pantalla está activa, ownership entrega el
+  evento a la misma máquina; la resolución y completion mantienen la
+  idempotencia de AUTH-3. El usuario cruzado continúa rechazándose fail-closed.
+- Resend usa exactamente `auth.resend(type: OtpType.signup, email: email)` de
+  `supabase_flutter` y mapea red, rate limit y email inválido a copy útil.
+
+AUTH-4C sigue siendo necesario para capturar el callback externo y conectar el
+  coordinator con el SDK en cold start/background. AUTH-4B no modifica Android,
+  iOS, `rutioapp.com`, Supabase Dashboard, migraciones, RPC ni backend.

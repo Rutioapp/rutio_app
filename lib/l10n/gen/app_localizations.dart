@@ -10595,6 +10595,36 @@ abstract class AppLocalizations {
   /// **'Ya lo he confirmado'**
   String get onboardingAuthConfirmedCta;
 
+  /// No description provided for @onboardingAuthResendCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Reenviar correo'**
+  String get onboardingAuthResendCta;
+
+  /// No description provided for @onboardingAuthResendCooldown.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo reenviado. Reintenta en {seconds} s'**
+  String onboardingAuthResendCooldown(Object seconds);
+
+  /// No description provided for @onboardingAuthConfirmationNotDetected.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hemos detectado la confirmación.'**
+  String get onboardingAuthConfirmationNotDetected;
+
+  /// No description provided for @onboardingAuthResendRateLimited.
+  ///
+  /// In es, this message translates to:
+  /// **'Demasiados intentos. Espera un poco antes de reenviar.'**
+  String get onboardingAuthResendRateLimited;
+
+  /// No description provided for @onboardingAuthInvalidEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa el correo e inténtalo de nuevo.'**
+  String get onboardingAuthInvalidEmail;
+
   /// No description provided for @onboardingAuthResolving.
   ///
   /// In es, this message translates to:

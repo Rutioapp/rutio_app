@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 
 import '../../../core/diagnostics/onboarding_runtime_trace.dart';
@@ -187,10 +188,11 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     if (waiting) {
       return _ConfirmationView(
         email: _email.text,
-        onLogin: () => setState(() {
-          _isSignUp = false;
-          _password.clear();
-        }),
+        isChecking: _machine.manualCheckInFlight,
+        isResending: _machine.resendInFlight,
+        error: state.error == null ? null : _errorCopy(l10n, state.error!.code),
+        onCheck: _machine.checkEmailConfirmation,
+        onResend: _machine.resendConfirmation,
       );
     }
     if (completionFailure) {
@@ -370,6 +372,12 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
         return l10n.onboardingAuthWeakPassword;
       case OnboardingAuthErrorCode.network:
         return l10n.onboardingAuthNetwork;
+      case OnboardingAuthErrorCode.confirmationNotDetected:
+        return l10n.onboardingAuthConfirmationNotDetected;
+      case OnboardingAuthErrorCode.resendRateLimited:
+        return l10n.onboardingAuthResendRateLimited;
+      case OnboardingAuthErrorCode.invalidEmail:
+        return l10n.onboardingAuthInvalidEmail;
       default:
         return l10n.onboardingAuthGenericError;
     }
@@ -377,13 +385,92 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
 }
 
 class _ConfirmationView extends StatelessWidget {
-  const _ConfirmationView({required this.email, required this.onLogin});
+  const _ConfirmationView({
+    required this.email,
+    required this.isChecking,
+    required this.isResending,
+    required this.onCheck,
+    required this.onResend,
+    this.error,
+  });
 
   final String email;
-  final VoidCallback onLogin;
+  final bool isChecking;
+  final bool isResending;
+  final String? error;
+  final Future<bool> Function() onCheck;
+  final Future<bool> Function() onResend;
 
   @override
   Widget build(BuildContext context) {
+    return _ConfirmationContent(
+      email: email,
+      isChecking: isChecking,
+      isResending: isResending,
+      error: error,
+      onCheck: onCheck,
+      onResend: onResend,
+    );
+  }
+}
+
+class _ConfirmationContent extends StatefulWidget {
+  const _ConfirmationContent({
+    required this.email,
+    required this.isChecking,
+    required this.isResending,
+    required this.onCheck,
+    required this.onResend,
+    this.error,
+  });
+  final String email;
+  final bool isChecking;
+  final bool isResending;
+  final String? error;
+  final Future<bool> Function() onCheck;
+  final Future<bool> Function() onResend;
+
+  @override
+  State<_ConfirmationContent> createState() => _ConfirmationContentState();
+}
+
+class _ConfirmationContentState extends State<_ConfirmationContent> {
+  Timer? _timer;
+  DateTime? _cooldownUntil;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _resend() async {
+    if (widget.isResending || _cooldownRemaining > 0) return;
+    final ok = await widget.onResend();
+    if (!mounted || !ok) return;
+    setState(
+        () => _cooldownUntil = DateTime.now().add(const Duration(seconds: 60)));
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  int get _cooldownRemaining {
+    final until = _cooldownUntil;
+    if (until == null) return 0;
+    final remaining = until.difference(DateTime.now()).inSeconds;
+    if (remaining <= 0) {
+      _timer?.cancel();
+      return 0;
+    }
+    return remaining;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final remaining = _cooldownRemaining;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -394,15 +481,32 @@ class _ConfirmationView extends StatelessWidget {
                 style: AppTextStyles.authTitle, textAlign: TextAlign.center),
             const SizedBox(height: 10),
             Text(
-              context.l10n.onboardingAuthConfirmationBody(email),
+              l10n.onboardingAuthConfirmationBody(widget.email),
               style: AppTextStyles.authSub,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),
             AuthPrimaryButton(
-              label: context.l10n.onboardingAuthConfirmedCta,
-              onTap: onLogin,
+              label: l10n.onboardingAuthConfirmedCta,
+              isLoading: widget.isChecking,
+              onTap: () {
+                widget.onCheck();
+              },
             ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: widget.isResending || remaining > 0 ? null : _resend,
+              child: Text(remaining > 0
+                  ? l10n.onboardingAuthResendCooldown(remaining)
+                  : l10n.onboardingAuthResendCta),
+            ),
+            if (widget.error != null) ...[
+              const SizedBox(height: 8),
+              Text(widget.error!,
+                  textAlign: TextAlign.center,
+                  style:
+                      TextStyle(color: AppColors.rust.withValues(alpha: .94))),
+            ],
           ],
         ),
       ),

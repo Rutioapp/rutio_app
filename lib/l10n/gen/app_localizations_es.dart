@@ -6161,6 +6161,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingAuthConfirmedCta => 'Ya lo he confirmado';
 
   @override
+  String get onboardingAuthResendCta => 'Reenviar correo';
+
+  @override
+  String onboardingAuthResendCooldown(Object seconds) {
+    return 'Correo reenviado. Reintenta en $seconds s';
+  }
+
+  @override
+  String get onboardingAuthConfirmationNotDetected =>
+      'Aún no hemos detectado la confirmación.';
+
+  @override
+  String get onboardingAuthResendRateLimited =>
+      'Demasiados intentos. Espera un poco antes de reenviar.';
+
+  @override
+  String get onboardingAuthInvalidEmail =>
+      'Revisa el correo e inténtalo de nuevo.';
+
+  @override
   String get onboardingAuthResolving => 'Comprobando tu cuenta…';
 
   @override
