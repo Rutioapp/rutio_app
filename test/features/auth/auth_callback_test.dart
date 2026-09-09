@@ -5,7 +5,7 @@ import 'package:rutio/features/auth/domain/auth_callback_failure.dart';
 import 'package:rutio/features/auth/domain/auth_callback_type.dart';
 
 void main() {
-  const callback = 'https://rutioapp.com/auth/callback';
+  const callback = 'https://www.rutioapp.com/auth/callback';
 
   test('classifies confirmation without retaining secrets', () {
     final result = const AuthCallbackClassifier().classify(Uri.parse(
@@ -27,6 +27,34 @@ void main() {
       const AuthCallbackClassifier().classify(
         Uri.parse('https://evil.example/auth/callback?type=recovery'),
       ),
+      isA<AuthCallbackUnsupported>(),
+    );
+  });
+
+  test('classifies a PKCE confirmation code without exposing it', () {
+    final result = const AuthCallbackClassifier().classify(
+      Uri.parse('$callback?code=confirmation-code'),
+    );
+    expect(result, isA<AuthCallbackEmailConfirmation>());
+    expect((result as AuthCallbackEmailConfirmation).intent.safeParameters,
+        {'type': 'confirmation'});
+  });
+
+  test('rejects root host, wrong path and untrusted host', () {
+    const classifier = AuthCallbackClassifier();
+    expect(
+      classifier.classify(
+          Uri.parse('https://rutioapp.com/auth/callback?type=signup')),
+      isA<AuthCallbackUnsupported>(),
+    );
+    expect(
+      classifier
+          .classify(Uri.parse('https://www.rutioapp.com/other?type=signup')),
+      isA<AuthCallbackUnsupported>(),
+    );
+    expect(
+      classifier.classify(
+          Uri.parse('https://evil.example/auth/callback?type=signup')),
       isA<AuthCallbackUnsupported>(),
     );
   });
@@ -71,7 +99,7 @@ class _SessionPort implements AuthCallbackSessionPort {
   final List<bool> calls;
 
   @override
-  Future<AuthCallbackSessionResult> processCallback(intent) async {
+  Future<AuthCallbackSessionResult> processCallback(intent, Uri uri) async {
     calls.add(intent.isColdStart);
     return const AuthCallbackSessionResult(userId: 'user-a', hasSession: true);
   }

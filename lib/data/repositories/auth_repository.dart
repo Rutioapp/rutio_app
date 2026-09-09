@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/supabase/rutio_supabase_config.dart';
+
 class AuthRepository {
   AuthRepository({
     SupabaseClient? client,
@@ -50,11 +52,13 @@ class AuthRepository {
     required String email,
     required String password,
     String? displayName,
+    String? emailRedirectTo,
   }) async {
     final normalizedDisplayName = displayName?.trim();
     final response = await _client!.auth.signUp(
       email: email.trim(),
       password: password,
+      emailRedirectTo: emailRedirectTo ?? RutioSupabaseConfig.authCallbackUri,
       data: normalizedDisplayName != null && normalizedDisplayName.isNotEmpty
           ? <String, dynamic>{'display_name': normalizedDisplayName}
           : null,
@@ -99,7 +103,11 @@ class AuthRepository {
   Future<void> resendConfirmation({required String email}) async {
     final provider = _resendConfirmationProvider;
     if (provider != null) return provider(email: email.trim());
-    await _client!.auth.resend(type: OtpType.signup, email: email.trim());
+    await _client!.auth.resend(
+      type: OtpType.signup,
+      email: email.trim(),
+      emailRedirectTo: RutioSupabaseConfig.authCallbackUri,
+    );
   }
 
   Future<AuthResponse> refreshSession() =>

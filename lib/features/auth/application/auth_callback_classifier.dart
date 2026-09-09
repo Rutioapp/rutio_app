@@ -86,7 +86,9 @@ class AuthCallbackClassifier {
     if (values.contains('signup') ||
         values.contains('email_confirmation') ||
         values.contains('confirmation') ||
-        values.contains('magiclink')) {
+        values.contains('magiclink') ||
+        uri.queryParameters.containsKey('code') ||
+        fragmentParameters.containsKey('access_token')) {
       return AuthCallbackType.emailConfirmation;
     }
     return null;

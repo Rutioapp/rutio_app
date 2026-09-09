@@ -41,6 +41,18 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Production HTTPS App Link for Supabase email confirmation and
+                 the AUTH-4D recovery callback. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="www.rutioapp.com"
+                    android:pathPrefix="/auth/callback" />
+            </intent-filter>
         </activity>
 
         <!-- flutter_local_notifications: required for scheduled notifications -->

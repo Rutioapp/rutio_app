@@ -12,13 +12,13 @@ AUTH-4 está **parcialmente preparado** para email confirmation: existe el estad
 
 Decisiones de esta auditoría:
 
-- Callback canónico de producción recomendado: `https://rutioapp.com/auth/callback`.
+- Callback canónico de producción recomendado: `https://www.rutioapp.com/auth/callback`.
 - La URL externa debe convertirse en estado de Auth; no debe hacer `Navigator.push` directamente.
 - `AppStartupGate`/`BootstrapController` siguen siendo la autoridad global de destino.
 - Un `AuthCallbackCoordinator` debe ser la única autoridad transitoria para parsear, clasificar y entregar callbacks.
 - La máquina de onboarding conserva la autoridad de continuidad de su `operationId` y completion.
 - No hacen falta migrations para AUTH-4 como está definido; sí hace falta configuración posterior de Supabase y cambios nativos para App/Universal Links.
-- No modificar `rutioapp.com` en este preflight; será necesario en la fase de integración HTTPS.
+- No modificar `www.rutioapp.com` en este preflight; será necesario en la fase de integración HTTPS.
 
 ## 2. Estado actual auditado
 
@@ -147,7 +147,7 @@ No hay código que consuma `app_links`, aunque el paquete aparece transitivament
 
 ### Recomendación
 
-Usar una única URL canónica de producción: `https://rutioapp.com/auth/callback`. La misma ruta lógica debe clasificar confirmation y recovery por parámetros/evento de Supabase; no se debe crear una URL distinta por proveedor. Para desarrollo se puede permitir una URL HTTPS de entorno explícitamente registrada, pero no convertir `rutio://` en el contrato productivo.
+Usar una única URL canónica de producción: `https://www.rutioapp.com/auth/callback`. La misma ruta lógica debe clasificar confirmation y recovery por parámetros/evento de Supabase; no se debe crear una URL distinta por proveedor. Para desarrollo se puede permitir una URL HTTPS de entorno explícitamente registrada, pero no convertir `rutio://` en el contrato productivo.
 
 Flujo recomendado:
 
@@ -273,12 +273,12 @@ Si otro dispositivo completa la cuenta mientras A conserva draft local, Bootstra
 Futuro, fuera de esta pasada:
 
 - Authentication → URL Configuration: establecer Site URL por entorno, sin inventar el valor de desarrollo.
-- Añadir exactamente `https://rutioapp.com/auth/callback` a Redirect URLs de producción.
+- Añadir exactamente `https://www.rutioapp.com/auth/callback` a Redirect URLs de producción.
 - Añadir sólo URLs HTTPS de entornos de desarrollo/QA explícitamente controlados.
 - Verificar Email confirmation, email templates, sender/SMTP y límites de signup/resend/recovery.
 - No habilitar Google/Apple en AUTH-4.
 
-Para la estrategia HTTPS será necesario modificar posteriormente `rutioapp.com` con `apple-app-site-association` y `assetlinks.json`; no hace falta un endpoint que redirija arbitrariamente. La web no se modificó.
+Para la estrategia HTTPS será necesario modificar posteriormente `www.rutioapp.com` con `apple-app-site-association` y `assetlinks.json`; no hace falta un endpoint que redirija arbitrariamente. La web no se modificó.
 
 ## 15. Localización prevista
 
@@ -367,7 +367,7 @@ Nuevos archivos previstos: `auth_callback_coordinator.dart`, parser/classifier y
 - Cambios de código: **NO**.
 - Migrations: **NO** para AUTH-4 preflight/implementation plan; AUTH-3 completion/ledger existentes se conservan.
 - Supabase Dashboard futuro: **YES** (Redirect URLs, Site URL por entorno, confirmation/email/SMTP/rate limits); **NO** realizado.
-- Modificación de `rutioapp.com`: **NO** en preflight; **YES futuro** para asociaciones HTTPS.
+- Modificación de `www.rutioapp.com`: **NO** en preflight; **YES futuro** para asociaciones HTTPS.
 - Google/Apple/Premium/AUTH-5: **NO**.
 - `flutter analyze --no-pub`: iniciado, pero no produjo salida final tras más de 80 s y fue interrumpido; no se puede declarar PASS desde este entorno.
 - Tests focalizados Auth/Bootstrap/Onboarding: **PASS — 215 tests**.
@@ -387,7 +387,7 @@ Implementado el contrato de aplicación, sin deep-link platform wiring:
   fallos tipados, `AuthCallbackClassifier`, `AuthCallbackCoordinator` y el
   vocabulario independiente de password recovery.
 - El callback canónico queda centralizado en
-  `RutioSupabaseConfig.authCallbackUri` (`https://rutioapp.com/auth/callback`).
+  `RutioSupabaseConfig.authCallbackUri` (`https://www.rutioapp.com/auth/callback`).
   El classifier acepta únicamente scheme/host/path canónicos y sólo conserva
   tipo, ubicación segura, timestamp y `isColdStart`; no conserva URI completa,
   tokens, code, OTP, refresh/access token ni password.
@@ -432,8 +432,44 @@ Implementado el flujo de confirmación sin platform deep links:
   evento a la misma máquina; la resolución y completion mantienen la
   idempotencia de AUTH-3. El usuario cruzado continúa rechazándose fail-closed.
 - Resend usa exactamente `auth.resend(type: OtpType.signup, email: email)` de
-  `supabase_flutter` y mapea red, rate limit y email inválido a copy útil.
+  `supabase_flutter`, con `emailRedirectTo` canónico, y mapea red, rate limit
+  y email inválido a copy útil.
 
 AUTH-4C sigue siendo necesario para capturar el callback externo y conectar el
-  coordinator con el SDK en cold start/background. AUTH-4B no modifica Android,
-  iOS, `rutioapp.com`, Supabase Dashboard, migraciones, RPC ni backend.
+coordinator con el SDK en cold start/background. AUTH-4B no modifica Android,
+iOS, `www.rutioapp.com`, Supabase Dashboard, migraciones, RPC ni backend.
+
+## AUTH-4C implementation notes
+
+Implementado el puente de producción: `AuthDeepLinkReceiver` usa `app_links`
+7.0.0 declarado directamente, mientras `supabase_flutter` 2.12.4 mantiene
+`AuthFlowType.pkce` por defecto y tiene `detectSessionInUri=false`. Esto evita
+dos autoridades de callback; el receiver valida host/path, el classifier
+decide confirmation/recovery y el coordinator entrega la URI transitoria a
+`auth.getSessionFromUrl(uri)`. Supabase conserva la sesión mediante su storage
+normal; Rutio no persiste tokens ni registra secretos.
+
+Android App Links y iOS Universal Links están preparados en el proyecto. Los
+artefactos públicos de `www.rutioapp.com` ya están desplegados y validados:
+ambos endpoints `.well-known` responden HTTP 200, `application/json` y sin
+redirect. El certificado release/Play SHA-256 y la configuración Dashboard
+siguen siendo pasos manuales descritos en `docs/auth_deep_link_domain_setup.md`.
+No se afirma build iOS en este entorno.
+
+## AUTH V1 LAUNCH POLICY
+
+Email confirmation está implementada como capability, pero **no es requerida
+para el lanzamiento V1**. En Supabase, Authentication → Email provider debe
+mantener `Confirm Email = OFF`. El signup normal debe devolver sesión
+inmediata y continuar `authenticated → resolveAccount → completion → Home`.
+
+Si Supabase devuelve `user != null` y `session == null`, se conserva el fallback
+seguro `awaitingEmailConfirmation` con la pantalla “Revisa tu correo” y resend.
+Ese estado es excepcional/no bloqueante para el flujo principal. El evento
+`[EMAIL_CONFIRMATION] event=fallback_entered reason=session_missing_after_signup`
+no incluye email, password ni tokens.
+
+No existe un gate de `emailConfirmed`, `confirmedAt` o `email_confirmed_at` para
+Home, Bootstrap, login, resolución remota ni completion. La Redirect URL
+`https://www.rutioapp.com/auth/callback` se mantiene configurada para futuros
+Auth flows, junto con la infraestructura de deep links y recovery contracts.

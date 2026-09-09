@@ -1,0 +1,10 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["7LKQG9DY6W.com.rutio.app"],
+        "components": [{"/": "/auth/callback"}]
+      }
+    ]
+  }
+}
