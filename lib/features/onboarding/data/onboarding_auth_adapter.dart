@@ -11,7 +11,8 @@ import '../domain/auth/onboarding_auth_contracts.dart';
 
 /// AUTH-2 adapter. The onboarding flow depends on this boundary instead of
 /// reaching into Supabase or duplicating the app's AuthController.
-class RepositoryOnboardingAuthAdapter implements OnboardingAuthPort {
+class RepositoryOnboardingAuthAdapter
+    implements OnboardingAuthPort, OnboardingEmailConfirmationPort {
   const RepositoryOnboardingAuthAdapter(this._repository);
 
   final AuthRepository _repository;
@@ -67,6 +68,36 @@ class RepositoryOnboardingAuthAdapter implements OnboardingAuthPort {
     }
   }
 
+  @override
+  Future<void> resendConfirmation(String email) async {
+    try {
+      await _repository.resendConfirmation(email: email);
+    } on AuthException catch (error) {
+      throw _mapAuthException(error);
+    } on SocketException catch (error) {
+      throw OnboardingAuthError(OnboardingAuthErrorCode.network, cause: error);
+    } catch (error) {
+      throw OnboardingAuthError(OnboardingAuthErrorCode.network, cause: error);
+    }
+  }
+
+  @override
+  Future<AuthenticatedOnboardingSession?> refreshConfirmedSession() async {
+    try {
+      final response = await _repository.refreshSession();
+      final user = response.session?.user ?? _repository.currentUser;
+      return user == null
+          ? null
+          : AuthenticatedOnboardingSession(userId: user.id);
+    } on AuthException catch (error) {
+      throw _mapAuthException(error);
+    } on SocketException catch (error) {
+      throw OnboardingAuthError(OnboardingAuthErrorCode.network, cause: error);
+    } catch (error) {
+      throw OnboardingAuthError(OnboardingAuthErrorCode.network, cause: error);
+    }
+  }
+
   static OnboardingAuthError _mapAuthException(AuthException error) {
     final message = error.message.toLowerCase();
     if (message.contains('already registered') ||
@@ -76,6 +107,14 @@ class RepositoryOnboardingAuthAdapter implements OnboardingAuthPort {
         OnboardingAuthErrorCode.emailAlreadyRegistered,
         cause: error,
       );
+    }
+    if (message.contains('rate limit') || message.contains('too many')) {
+      return OnboardingAuthError(OnboardingAuthErrorCode.resendRateLimited,
+          cause: error);
+    }
+    if (message.contains('email')) {
+      return OnboardingAuthError(OnboardingAuthErrorCode.invalidEmail,
+          cause: error);
     }
     if (message.contains('weak')) {
       return OnboardingAuthError(

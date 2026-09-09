@@ -89,8 +89,87 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
   })? _onCompletionHandoff;
   OnboardingAuthState _state;
   String? _lastSessionUserId;
+  bool _resendInFlight = false;
+  bool _manualCheckInFlight = false;
 
   OnboardingAuthState get state => _state;
+  bool get resendInFlight => _resendInFlight;
+  bool get manualCheckInFlight => _manualCheckInFlight;
+
+  Future<bool> resendConfirmation() async {
+    if (_resendInFlight ||
+        _state.phase != OnboardingAuthPhase.awaitingEmailConfirmation) {
+      return false;
+    }
+    final port = _auth is OnboardingEmailConfirmationPort
+        ? _auth as OnboardingEmailConfirmationPort
+        : null;
+    if (port == null) return false;
+    _resendInFlight = true;
+    _trace(
+        'event=resend_started op=${_shortId(_state.draft.onboardingOperationId)}');
+    try {
+      await port.resendConfirmation(_state.draft.authEmail ?? '');
+      _trace(
+          'event=resend_succeeded op=${_shortId(_state.draft.onboardingOperationId)}');
+      return true;
+    } on OnboardingAuthError catch (error) {
+      _publish(OnboardingAuthState(
+        phase: OnboardingAuthPhase.awaitingEmailConfirmation,
+        draft: _state.draft,
+        pendingAuthRequest: _state.pendingAuthRequest,
+        failureStage: OnboardingAuthFailureStage.authentication,
+        error: error,
+      ));
+      _trace(
+          'event=resend_failed op=${_shortId(_state.draft.onboardingOperationId)} result=${error.code.name}');
+      return false;
+    } finally {
+      _resendInFlight = false;
+    }
+  }
+
+  Future<bool> checkEmailConfirmation() async {
+    if (_manualCheckInFlight ||
+        _state.phase != OnboardingAuthPhase.awaitingEmailConfirmation) {
+      return false;
+    }
+    final port = _auth is OnboardingEmailConfirmationPort
+        ? _auth as OnboardingEmailConfirmationPort
+        : null;
+    if (port == null) return false;
+    _manualCheckInFlight = true;
+    _trace(
+        'event=manual_check_started op=${_shortId(_state.draft.onboardingOperationId)}');
+    try {
+      final session = await port.refreshConfirmedSession();
+      if (session == null) {
+        _publish(OnboardingAuthState(
+          phase: OnboardingAuthPhase.awaitingEmailConfirmation,
+          draft: _state.draft,
+          pendingAuthRequest: _state.pendingAuthRequest,
+          error: const OnboardingAuthError(
+              OnboardingAuthErrorCode.confirmationNotDetected),
+        ));
+        _trace(
+            'event=still_unconfirmed op=${_shortId(_state.draft.onboardingOperationId)} result=none');
+        return false;
+      }
+      _trace(
+          'event=session_detected op=${_shortId(_state.draft.onboardingOperationId)} hasSession=true');
+      return onAuthenticatedSessionAvailable(session);
+    } on OnboardingAuthError catch (error) {
+      _publish(OnboardingAuthState(
+        phase: OnboardingAuthPhase.awaitingEmailConfirmation,
+        draft: _state.draft,
+        pendingAuthRequest: _state.pendingAuthRequest,
+        error: error,
+      ));
+      return false;
+    } finally {
+      _manualCheckInFlight = false;
+    }
+  }
 
   Future<bool> authenticate({
     required OnboardingAuthCommand command,

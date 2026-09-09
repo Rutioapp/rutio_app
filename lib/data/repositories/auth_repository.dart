@@ -10,6 +10,8 @@ class AuthRepository {
       required String email,
       required String password,
     })? signInWithEmailPasswordProvider,
+    Future<void> Function({required String email})? resendConfirmationProvider,
+    Future<AuthResponse> Function()? refreshSessionProvider,
   })  : _client = client ??
             ((authStateChangesProvider != null || currentUserProvider != null)
                 ? null
@@ -17,7 +19,9 @@ class AuthRepository {
         _authStateChangesProvider = authStateChangesProvider,
         _currentUserProvider = currentUserProvider,
         _signOutProvider = signOutProvider,
-        _signInWithEmailPasswordProvider = signInWithEmailPasswordProvider;
+        _signInWithEmailPasswordProvider = signInWithEmailPasswordProvider,
+        _resendConfirmationProvider = resendConfirmationProvider,
+        _refreshSessionProvider = refreshSessionProvider;
 
   final SupabaseClient? _client;
   final Stream<AuthState> Function()? _authStateChangesProvider;
@@ -27,6 +31,9 @@ class AuthRepository {
     required String email,
     required String password,
   })? _signInWithEmailPasswordProvider;
+  final Future<void> Function({required String email})?
+      _resendConfirmationProvider;
+  final Future<AuthResponse> Function()? _refreshSessionProvider;
 
   Stream<AuthState> get authStateChanges =>
       _authStateChangesProvider?.call() ??
@@ -88,4 +95,13 @@ class AuthRepository {
   }
 
   Future<void> signOut() => _signOutProvider?.call() ?? _client!.auth.signOut();
+
+  Future<void> resendConfirmation({required String email}) async {
+    final provider = _resendConfirmationProvider;
+    if (provider != null) return provider(email: email.trim());
+    await _client!.auth.resend(type: OtpType.signup, email: email.trim());
+  }
+
+  Future<AuthResponse> refreshSession() =>
+      _refreshSessionProvider?.call() ?? _client!.auth.refreshSession();
 }

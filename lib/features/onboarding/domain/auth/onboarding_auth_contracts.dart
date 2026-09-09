@@ -12,6 +12,9 @@ enum OnboardingAuthErrorCode {
   emailAlreadyRegistered,
   weakPassword,
   confirmationRequired,
+  confirmationNotDetected,
+  resendRateLimited,
+  invalidEmail,
   network,
   providerCancelled,
   providerFailure,
@@ -85,6 +88,13 @@ class OnboardingAuthenticationFailed extends OnboardingAuthAttemptResult {
 abstract interface class OnboardingAuthPort {
   Future<OnboardingAuthAttemptResult> authenticate(
       OnboardingAuthRequest request);
+}
+
+/// Optional AUTH-4B capabilities. Keeping these outside the base port keeps
+/// AUTH-3/4A test doubles and non-email providers source-compatible.
+abstract interface class OnboardingEmailConfirmationPort {
+  Future<void> resendConfirmation(String email);
+  Future<AuthenticatedOnboardingSession?> refreshConfirmedSession();
 }
 
 @immutable
