@@ -241,6 +241,10 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
       return true;
     }
     if (result is OnboardingAuthenticationFailed) {
+      if (result.error.code == OnboardingAuthErrorCode.providerCancelled) {
+        _publish(OnboardingAuthState(phase: OnboardingAuthPhase.ready, draft: _state.draft));
+        return true;
+      }
       _publish(OnboardingAuthState(
         phase: OnboardingAuthPhase.failure,
         draft: pendingDraft,

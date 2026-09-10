@@ -774,6 +774,61 @@ void main() {
     expect(resolver.calls, 1);
     expect(completion.calls, 1);
   });
+  test('Google onboarding uses the same operation and completion path', () async {
+    OnboardingAuthRequest? request;
+    final m = machine(
+      auth: _Auth((value) async {
+        request = value;
+        return const OnboardingAuthenticated(
+          AuthenticatedOnboardingSession(userId: 'user-1'),
+        );
+      }),
+      resolver: _Resolver(const RemoteAccountSnapshot(
+        userId: 'user-1',
+        remoteUserStateAvailable: true,
+      )),
+      completion: _Completion(),
+    );
+    await m.authenticate(
+      command: OnboardingAuthCommand.signUpWithEmail,
+      method: OnboardingAuthMethod.google,
+      email: '',
+    );
+    expect(request?.method, OnboardingAuthMethod.google);
+    expect(request?.operationId, 'operation-1');
+    expect(m.state.phase, OnboardingAuthPhase.readyToComplete);
+  });
+
+  test('Google double tap starts only one provider operation', () async {
+    var calls = 0;
+    final m = machine(
+      auth: _Auth((_) async {
+        calls++;
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+        return const OnboardingAuthenticated(
+          AuthenticatedOnboardingSession(userId: 'user-1'),
+        );
+      }),
+      resolver: _Resolver(const RemoteAccountSnapshot(
+        userId: 'user-1',
+        remoteUserStateAvailable: true,
+      )),
+      completion: _Completion(),
+    );
+    await Future.wait(<Future<bool>>[
+      m.authenticate(
+        command: OnboardingAuthCommand.signUpWithEmail,
+        method: OnboardingAuthMethod.google,
+        email: '',
+      ),
+      m.authenticate(
+        command: OnboardingAuthCommand.signUpWithEmail,
+        method: OnboardingAuthMethod.google,
+        email: '',
+      ),
+    ]);
+    expect(calls, 1);
+  });
 }
 
 class _Auth implements OnboardingAuthPort {

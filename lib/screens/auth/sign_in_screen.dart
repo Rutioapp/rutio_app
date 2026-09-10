@@ -10,6 +10,7 @@ import 'widgets/auth_field.dart';
 import 'widgets/auth_primary_button.dart';
 import 'widgets/auth_switch_link.dart';
 import 'widgets/rutio_backdrop.dart';
+import 'widgets/google_auth_button.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -71,6 +72,12 @@ class _SignInScreenState extends State<SignInScreen>
     // Auth screens can be pushed above the startup gate from the welcome flow.
     // After a real Supabase session exists, reset to /root so bootstrap can
     // make the remote onboarding decision.
+    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
+  }
+
+  Future<void> _submitGoogle() async {
+    final response = await context.read<AuthController>().signInWithGoogle();
+    if (!mounted || response?.session?.user == null) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
 
@@ -142,6 +149,14 @@ class _SignInScreenState extends State<SignInScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const _AuthSeparator(),
+                          GoogleAuthButton(
+                            label: l10n.loginGoogleCta,
+                            isLoading: authController.isLoading,
+                            onTap: _submitGoogle,
+                          ),
+                          const SizedBox(height: 18),
+                          _OrSeparator(label: l10n.authOr),
+                          const SizedBox(height: 18),
                           Text(l10n.loginTitle, style: AppTextStyles.authTitle),
                           const SizedBox(height: 3),
                           Text(l10n.loginSubtitle,
@@ -192,6 +207,18 @@ class _SignInScreenState extends State<SignInScreen>
       ),
     );
   }
+}
+
+class _OrSeparator extends StatelessWidget {
+  const _OrSeparator({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Expanded(child: Divider(color: AppColors.ink.withValues(alpha: .12))),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text(label)),
+        Expanded(child: Divider(color: AppColors.ink.withValues(alpha: .12))),
+      ]);
 }
 
 class _AuthSeparator extends StatelessWidget {

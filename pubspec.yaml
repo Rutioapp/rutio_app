@@ -50,6 +50,7 @@ dependencies:
   google_fonts: ^8.0.2
   emoji_picker_flutter: ^4.4.0
   supabase_flutter: ^2.9.1
+  google_sign_in: ^7.2.0
   # Supabase 2.12.4 uses app_links internally; declare it directly so the
   # platform receiver is an intentional, versioned application boundary.
   app_links: ^7.0.0

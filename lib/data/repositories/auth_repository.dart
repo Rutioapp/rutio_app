@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/supabase/rutio_supabase_config.dart';
+import '../../features/auth/infrastructure/google_auth_adapter.dart';
 
 class AuthRepository {
   AuthRepository({
@@ -18,6 +19,8 @@ class AuthRepository {
         resetPasswordForEmailProvider,
     Future<UserResponse> Function({required String password})?
         updatePasswordProvider,
+    GoogleAuthAdapter? googleAuthAdapter,
+    Future<void> Function()? googleSignOutProvider,
   })  : _client = client ??
             ((authStateChangesProvider != null || currentUserProvider != null)
                 ? null
@@ -29,7 +32,9 @@ class AuthRepository {
         _resendConfirmationProvider = resendConfirmationProvider,
         _refreshSessionProvider = refreshSessionProvider,
         _resetPasswordForEmailProvider = resetPasswordForEmailProvider,
-        _updatePasswordProvider = updatePasswordProvider;
+        _updatePasswordProvider = updatePasswordProvider,
+        _googleAuthAdapter = googleAuthAdapter,
+        _googleSignOutProvider = googleSignOutProvider;
 
   final SupabaseClient? _client;
   final Stream<AuthState> Function()? _authStateChangesProvider;
@@ -46,6 +51,8 @@ class AuthRepository {
       _resetPasswordForEmailProvider;
   final Future<UserResponse> Function({required String password})?
       _updatePasswordProvider;
+  final GoogleAuthAdapter? _googleAuthAdapter;
+  final Future<void> Function()? _googleSignOutProvider;
 
   Stream<AuthState> get authStateChanges =>
       _authStateChangesProvider?.call() ??
@@ -108,7 +115,22 @@ class AuthRepository {
     return response;
   }
 
-  Future<void> signOut() => _signOutProvider?.call() ?? _client!.auth.signOut();
+  Future<void> signOut() async {
+    await (_signOutProvider?.call() ?? _client!.auth.signOut());
+    try {
+      await (_googleSignOutProvider?.call() ?? _googleAuthAdapter?.signOut());
+    } catch (_) {
+      // Supabase logout is authoritative; provider cleanup is best effort.
+    }
+  }
+
+  Future<AuthResponse> signInWithGoogle() async {
+    final adapter = _googleAuthAdapter;
+    if (adapter == null) {
+      throw const GoogleAuthException(GoogleAuthErrorCode.configurationError);
+    }
+    return adapter.signIn();
+  }
 
   Future<void> resendConfirmation({required String email}) async {
     final provider = _resendConfirmationProvider;
