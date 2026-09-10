@@ -6,5 +6,9 @@
 	<array>
 		<string>applinks:www.rutioapp.com</string>
 	</array>
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

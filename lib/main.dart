@@ -40,6 +40,7 @@ import 'features/onboarding/data/onboarding_auth_adapter.dart';
 import 'features/onboarding/data/onboarding_completion_adapter.dart';
 import 'features/onboarding/domain/auth/onboarding_auth_contracts.dart';
 import 'features/auth/infrastructure/google_auth_adapter.dart';
+import 'features/auth/infrastructure/apple_auth_adapter.dart';
 import 'features/onboarding/application/onboarding_draft_service.dart';
 import 'features/feedback/presentation/screens/feedback_home_screen.dart';
 import 'features/feedback/presentation/screens/feedback_form_screen.dart';
@@ -344,9 +345,15 @@ class MyApp extends StatelessWidget {
             supabaseClient: RutioSupabaseClient.instance,
           ),
         ),
+        Provider<AppleAuthAdapter>(
+          create: (_) => NativeAppleAuthAdapter(
+            supabaseClient: RutioSupabaseClient.instance,
+          ),
+        ),
         Provider<AuthRepository>(
           create: (context) => AuthRepository(
             googleAuthAdapter: context.read<GoogleAuthAdapter>(),
+            appleAuthAdapter: context.read<AppleAuthAdapter>(),
           ),
         ),
         ChangeNotifierProvider<PasswordRecoveryController>(

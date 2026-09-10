@@ -2671,5 +2671,7 @@
   "onboardingAuthInvalidCredentials": "El email o la contraseña no son correctos.",
   "onboardingAuthWeakPassword": "La contraseña no cumple la política actual.",
   "onboardingAuthNetwork": "No hay conexión. Inténtalo de nuevo.",
-  "onboardingAuthGenericError": "No se ha podido completar la autenticación."
+  "onboardingAuthGenericError": "No se ha podido completar la autenticación.",
+  "loginAppleCta": "Continuar con Apple",
+  "onboardingAuthAppleCta": "Continuar con Apple"
 }

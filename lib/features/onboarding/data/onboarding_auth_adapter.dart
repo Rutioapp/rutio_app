@@ -11,6 +11,7 @@ import '../../../data/repositories/profile_repository.dart';
 import '../../../data/repositories/repository_result.dart';
 import '../domain/auth/onboarding_auth_contracts.dart';
 import '../../auth/infrastructure/google_auth_adapter.dart';
+import '../../auth/infrastructure/apple_auth_adapter.dart';
 
 /// AUTH-2 adapter. The onboarding flow depends on this boundary instead of
 /// reaching into Supabase or duplicating the app's AuthController.
@@ -25,7 +26,8 @@ class RepositoryOnboardingAuthAdapter
     OnboardingAuthRequest request,
   ) async {
     final password = request.password;
-    if (password == null || password.isEmpty) {
+    if (request.method == OnboardingAuthMethod.emailPassword &&
+        (password == null || password.isEmpty)) {
       return const OnboardingAuthenticationFailed(
         OnboardingAuthError(OnboardingAuthErrorCode.weakPassword),
       );
@@ -33,16 +35,18 @@ class RepositoryOnboardingAuthAdapter
     try {
       final response = request.method == OnboardingAuthMethod.google
           ? await _repository.signInWithGoogle()
-          : request.command == OnboardingAuthCommand.signUpWithEmail
-          ? await _repository.signUpWithEmailPassword(
-              email: request.email.trim(),
-              password: password,
-              emailRedirectTo: RutioSupabaseConfig.authCallbackUri,
-            )
-          : await _repository.signInWithEmailPassword(
-              email: request.email.trim(),
-              password: password,
-            );
+          : request.method == OnboardingAuthMethod.apple
+              ? await _repository.signInWithApple(context: 'onboarding')
+              : request.command == OnboardingAuthCommand.signUpWithEmail
+                  ? await _repository.signUpWithEmailPassword(
+                      email: request.email.trim(),
+                      password: password!,
+                      emailRedirectTo: RutioSupabaseConfig.authCallbackUri,
+                    )
+                  : await _repository.signInWithEmailPassword(
+                      email: request.email.trim(),
+                      password: password!,
+                    );
       if (response.session == null) {
         if (request.command == OnboardingAuthCommand.signUpWithEmail &&
             (response.user != null || _repository.currentUser != null)) {
@@ -69,6 +73,8 @@ class RepositoryOnboardingAuthAdapter
       return OnboardingAuthenticationFailed(_mapAuthException(error));
     } on GoogleAuthException catch (error) {
       return OnboardingAuthenticationFailed(_mapGoogleException(error));
+    } on AppleAuthException catch (error) {
+      return OnboardingAuthenticationFailed(_mapAppleException(error));
     } on SocketException catch (error) {
       return OnboardingAuthenticationFailed(
         OnboardingAuthError(OnboardingAuthErrorCode.network, cause: error),
@@ -80,19 +86,34 @@ class RepositoryOnboardingAuthAdapter
     }
   }
 
+  static OnboardingAuthError _mapAppleException(AppleAuthException error) {
+    return OnboardingAuthError(
+      error.code == AppleAuthErrorCode.cancelled
+          ? OnboardingAuthErrorCode.providerCancelled
+          : error.code == AppleAuthErrorCode.network
+              ? OnboardingAuthErrorCode.network
+              : OnboardingAuthErrorCode.providerFailure,
+      cause: error,
+    );
+  }
+
   static OnboardingAuthError _mapGoogleException(GoogleAuthException error) {
     switch (error.code) {
       case GoogleAuthErrorCode.cancelled:
-        return const OnboardingAuthError(OnboardingAuthErrorCode.providerCancelled);
+        return const OnboardingAuthError(
+            OnboardingAuthErrorCode.providerCancelled);
       case GoogleAuthErrorCode.network:
-        return OnboardingAuthError(OnboardingAuthErrorCode.network, cause: error);
+        return OnboardingAuthError(OnboardingAuthErrorCode.network,
+            cause: error);
       case GoogleAuthErrorCode.providerUnavailable:
       case GoogleAuthErrorCode.configurationError:
-        return OnboardingAuthError(OnboardingAuthErrorCode.providerFailure, cause: error);
+        return OnboardingAuthError(OnboardingAuthErrorCode.providerFailure,
+            cause: error);
       case GoogleAuthErrorCode.invalidCredential:
       case GoogleAuthErrorCode.accountConflict:
       case GoogleAuthErrorCode.unexpected:
-        return OnboardingAuthError(OnboardingAuthErrorCode.providerFailure, cause: error);
+        return OnboardingAuthError(OnboardingAuthErrorCode.providerFailure,
+            cause: error);
     }
   }
 

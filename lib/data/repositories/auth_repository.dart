@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/supabase/rutio_supabase_config.dart';
 import '../../features/auth/infrastructure/google_auth_adapter.dart';
+import '../../features/auth/infrastructure/apple_auth_adapter.dart';
 
 class AuthRepository {
   AuthRepository({
@@ -20,6 +21,7 @@ class AuthRepository {
     Future<UserResponse> Function({required String password})?
         updatePasswordProvider,
     GoogleAuthAdapter? googleAuthAdapter,
+    AppleAuthAdapter? appleAuthAdapter,
     Future<void> Function()? googleSignOutProvider,
   })  : _client = client ??
             ((authStateChangesProvider != null || currentUserProvider != null)
@@ -34,6 +36,7 @@ class AuthRepository {
         _resetPasswordForEmailProvider = resetPasswordForEmailProvider,
         _updatePasswordProvider = updatePasswordProvider,
         _googleAuthAdapter = googleAuthAdapter,
+        _appleAuthAdapter = appleAuthAdapter,
         _googleSignOutProvider = googleSignOutProvider;
 
   final SupabaseClient? _client;
@@ -52,6 +55,7 @@ class AuthRepository {
   final Future<UserResponse> Function({required String password})?
       _updatePasswordProvider;
   final GoogleAuthAdapter? _googleAuthAdapter;
+  final AppleAuthAdapter? _appleAuthAdapter;
   final Future<void> Function()? _googleSignOutProvider;
 
   Stream<AuthState> get authStateChanges =>
@@ -130,6 +134,15 @@ class AuthRepository {
       throw const GoogleAuthException(GoogleAuthErrorCode.configurationError);
     }
     return adapter.signIn();
+  }
+
+  Future<AuthResponse> signInWithApple({String context = 'login'}) async {
+    final adapter = _appleAuthAdapter;
+    if (adapter == null) {
+      throw const AppleAuthException(
+          AppleAuthErrorCode.providerConfigurationError);
+    }
+    return adapter.signIn(context: context);
   }
 
   Future<void> resendConfirmation({required String email}) async {
