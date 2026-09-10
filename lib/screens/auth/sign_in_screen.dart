@@ -11,6 +11,8 @@ import 'widgets/auth_primary_button.dart';
 import 'widgets/auth_switch_link.dart';
 import 'widgets/rutio_backdrop.dart';
 import 'widgets/google_auth_button.dart';
+import 'widgets/apple_auth_button.dart';
+import 'dart:io';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -77,6 +79,12 @@ class _SignInScreenState extends State<SignInScreen>
 
   Future<void> _submitGoogle() async {
     final response = await context.read<AuthController>().signInWithGoogle();
+    if (!mounted || response?.session?.user == null) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
+  }
+
+  Future<void> _submitApple() async {
+    final response = await context.read<AuthController>().signInWithApple();
     if (!mounted || response?.session?.user == null) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
@@ -154,6 +162,14 @@ class _SignInScreenState extends State<SignInScreen>
                             isLoading: authController.isLoading,
                             onTap: _submitGoogle,
                           ),
+                          if (Platform.isIOS) ...[
+                            const SizedBox(height: 12),
+                            AppleAuthButton(
+                              label: l10n.loginAppleCta,
+                              isLoading: authController.isLoading,
+                              onTap: _submitApple,
+                            ),
+                          ],
                           const SizedBox(height: 18),
                           _OrSeparator(label: l10n.authOr),
                           const SizedBox(height: 18),
@@ -216,7 +232,9 @@ class _OrSeparator extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(children: [
         Expanded(child: Divider(color: AppColors.ink.withValues(alpha: .12))),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text(label)),
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(label)),
         Expanded(child: Divider(color: AppColors.ink.withValues(alpha: .12))),
       ]);
 }

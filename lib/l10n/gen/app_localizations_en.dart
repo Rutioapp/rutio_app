@@ -6258,4 +6258,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingAuthGenericError =>
       'Authentication could not be completed.';
+
+  @override
+  String get loginAppleCta => 'Continue with Apple';
+
+  @override
+  String get onboardingAuthAppleCta => 'Continue with Apple';
 }

@@ -21,6 +21,8 @@ import '../../../utils/app_theme.dart';
 import '../../../screens/auth/widgets/auth_field.dart';
 import '../../../screens/auth/widgets/auth_primary_button.dart';
 import '../../../screens/auth/widgets/google_auth_button.dart';
+import '../../../screens/auth/widgets/apple_auth_button.dart';
+import 'dart:io';
 
 @visibleForTesting
 bool onboardingAuthRecoveryGateVisible({
@@ -169,6 +171,18 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     );
   }
 
+  Future<void> _submitApple() async {
+    if (_isAuthenticatedFrozenRecovery) return;
+    FocusScope.of(context).unfocus();
+    await _machine.authenticate(
+      command: _isSignUp
+          ? OnboardingAuthCommand.signUpWithEmail
+          : OnboardingAuthCommand.signInWithEmail,
+      method: OnboardingAuthMethod.apple,
+      email: _email.text,
+    );
+  }
+
   void _switchMode(bool signUp) {
     if (_isAuthenticatedFrozenRecovery ||
         _machine.state.phase == OnboardingAuthPhase.authenticating) {
@@ -309,6 +323,14 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
             isLoading: state.phase == OnboardingAuthPhase.authenticating,
             onTap: _submitGoogle,
           ),
+          if (Platform.isIOS) ...[
+            const SizedBox(height: 12),
+            AppleAuthButton(
+              label: l10n.onboardingAuthAppleCta,
+              isLoading: state.phase == OnboardingAuthPhase.authenticating,
+              onTap: _submitApple,
+            ),
+          ],
           const SizedBox(height: 18),
           Center(child: Text(l10n.authOr, style: AppTextStyles.authSub)),
           const SizedBox(height: 18),

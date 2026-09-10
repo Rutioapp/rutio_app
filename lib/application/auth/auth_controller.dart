@@ -10,6 +10,7 @@ import '../../data/models/remote/remote_profile.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../../features/auth/infrastructure/google_auth_adapter.dart';
+import '../../features/auth/infrastructure/apple_auth_adapter.dart';
 import '../../features/notifications/application/personalized_notification_orchestrator.dart';
 import '../../features/global_wallet/application/global_wallet_controller.dart';
 import '../../features/completed_day_phrase/application/phrase_catalog_sync_coordinator.dart';
@@ -369,7 +370,8 @@ class AuthController extends ChangeNotifier {
         bumpSessionGeneration: true,
       );
       notifyListeners();
-      OnboardingRuntimeTrace.log('GOOGLE_AUTH', 'event=completed context=login');
+      OnboardingRuntimeTrace.log(
+          'GOOGLE_AUTH', 'event=completed context=login');
       return response;
     } on GoogleAuthException catch (error) {
       if (error.code != GoogleAuthErrorCode.cancelled) {
@@ -400,12 +402,64 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  Future<AuthResponse?> signInWithApple({String context = 'login'}) async {
+    if (_isLoading) return null;
+    _setLoading(true);
+    _setError(null);
+    _setNotice(null);
+    try {
+      final response = await _authRepository.signInWithApple(context: context);
+      _currentUser = response.session?.user ?? _authRepository.currentUser;
+      final user = _currentUser;
+      if (user == null)
+        throw const AppleAuthException(AppleAuthErrorCode.invalidCredential);
+      _locallySignedOutUserId = null;
+      _resolveSession(user);
+      await _userStateStore.switchLocalScope(userId: user.id);
+      unawaited(_globalWalletController.syncSession(userId: user.id));
+      if (_enableBackgroundProfileSync) _markLastLoginTouchPending(user.id);
+      await _profileRepository?.invalidateBootstrapProfileDecisionMemory(
+        reason: BootstrapProfileDecisionMemoryInvalidationReason.sessionChanged,
+        bumpSessionGeneration: true,
+      );
+      notifyListeners();
+      return response;
+    } on AppleAuthException catch (error) {
+      if (error.code != AppleAuthErrorCode.cancelled)
+        _setError(_appleErrorMessage(error.code));
+      return null;
+    } catch (_) {
+      _setError(_appleErrorMessage(AppleAuthErrorCode.unexpected));
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  static String _appleErrorMessage(AppleAuthErrorCode code) {
+    switch (code) {
+      case AppleAuthErrorCode.cancelled:
+        return '';
+      case AppleAuthErrorCode.notAvailable:
+      case AppleAuthErrorCode.notSupported:
+        return 'Sign in with Apple unavailable';
+      case AppleAuthErrorCode.network:
+        return 'No hay conexión. Inténtalo de nuevo.';
+      default:
+        return 'No se pudo iniciar sesión con Apple';
+    }
+  }
+
   static GoogleAuthErrorCode _googleErrorCode(String message) {
     final value = message.toLowerCase();
-    if (value.contains('network') || value.contains('timeout') || value.contains('connection')) {
+    if (value.contains('network') ||
+        value.contains('timeout') ||
+        value.contains('connection')) {
       return GoogleAuthErrorCode.network;
     }
-    if (value.contains('identity') || value.contains('already') || value.contains('conflict')) {
+    if (value.contains('identity') ||
+        value.contains('already') ||
+        value.contains('conflict')) {
       return GoogleAuthErrorCode.accountConflict;
     }
     if (value.contains('configuration') || value.contains('client')) {

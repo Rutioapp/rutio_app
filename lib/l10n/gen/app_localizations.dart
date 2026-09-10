@@ -10804,6 +10804,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se ha podido completar la autenticación.'**
   String get onboardingAuthGenericError;
+
+  /// No description provided for @loginAppleCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con Apple'**
+  String get loginAppleCta;
+
+  /// No description provided for @onboardingAuthAppleCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con Apple'**
+  String get onboardingAuthAppleCta;
 }
 
 class _AppLocalizationsDelegate
