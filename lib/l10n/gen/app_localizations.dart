@@ -1088,6 +1088,24 @@ abstract class AppLocalizations {
   /// **'Continuar →'**
   String get loginPrimaryCta;
 
+  /// No description provided for @loginGoogleCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con Google'**
+  String get loginGoogleCta;
+
+  /// No description provided for @onboardingAuthGoogleCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con Google'**
+  String get onboardingAuthGoogleCta;
+
+  /// No description provided for @authOr.
+  ///
+  /// In es, this message translates to:
+  /// **'o'**
+  String get authOr;
+
   /// No description provided for @loginSwitchPrefix.
   ///
   /// In es, this message translates to:

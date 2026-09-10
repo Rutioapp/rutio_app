@@ -9,6 +9,7 @@ import '../../devtools/rutio_runtime_profile.dart';
 import '../../data/models/remote/remote_profile.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/profile_repository.dart';
+import '../../features/auth/infrastructure/google_auth_adapter.dart';
 import '../../features/notifications/application/personalized_notification_orchestrator.dart';
 import '../../features/global_wallet/application/global_wallet_controller.dart';
 import '../../features/completed_day_phrase/application/phrase_catalog_sync_coordinator.dart';
@@ -337,6 +338,96 @@ class AuthController extends ChangeNotifier {
       return null;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<AuthResponse?> signInWithGoogle() async {
+    if (_isLoading) return null;
+    _setLoading(true);
+    _setError(null);
+    _setNotice(null);
+    OnboardingRuntimeTrace.log('GOOGLE_AUTH', 'event=start context=login');
+    try {
+      final response = await _authRepository.signInWithGoogle();
+      _currentUser = response.session?.user ?? _authRepository.currentUser;
+      final user = _currentUser;
+      if (user == null) {
+        throw const GoogleAuthException(GoogleAuthErrorCode.invalidCredential);
+      }
+      _locallySignedOutUserId = null;
+      _resolveSession(user);
+      OnboardingRuntimeTrace.log(
+        'GOOGLE_AUTH',
+        'event=supabase_session_ready context=login hasSession=true '
+            'user=${OnboardingRuntimeTrace.short(user.id)}',
+      );
+      await _userStateStore.switchLocalScope(userId: user.id);
+      unawaited(_globalWalletController.syncSession(userId: user.id));
+      if (_enableBackgroundProfileSync) _markLastLoginTouchPending(user.id);
+      await _profileRepository?.invalidateBootstrapProfileDecisionMemory(
+        reason: BootstrapProfileDecisionMemoryInvalidationReason.sessionChanged,
+        bumpSessionGeneration: true,
+      );
+      notifyListeners();
+      OnboardingRuntimeTrace.log('GOOGLE_AUTH', 'event=completed context=login');
+      return response;
+    } on GoogleAuthException catch (error) {
+      if (error.code != GoogleAuthErrorCode.cancelled) {
+        _setError(_googleErrorMessage(error.code));
+      }
+      OnboardingRuntimeTrace.log(
+        'GOOGLE_AUTH',
+        'event=${error.code == GoogleAuthErrorCode.cancelled ? 'cancelled' : 'failed'} '
+            'context=login result=${error.code.name}',
+      );
+      return null;
+    } on AuthException catch (error) {
+      _setError(_googleErrorMessage(_googleErrorCode(error.message)));
+      OnboardingRuntimeTrace.log(
+        'GOOGLE_AUTH',
+        'event=failed context=login result=provider_error',
+      );
+      return null;
+    } catch (error) {
+      _setError(_googleErrorMessage(GoogleAuthErrorCode.unexpected));
+      OnboardingRuntimeTrace.log(
+        'GOOGLE_AUTH',
+        'event=failed context=login result=unexpected',
+      );
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  static GoogleAuthErrorCode _googleErrorCode(String message) {
+    final value = message.toLowerCase();
+    if (value.contains('network') || value.contains('timeout') || value.contains('connection')) {
+      return GoogleAuthErrorCode.network;
+    }
+    if (value.contains('identity') || value.contains('already') || value.contains('conflict')) {
+      return GoogleAuthErrorCode.accountConflict;
+    }
+    if (value.contains('configuration') || value.contains('client')) {
+      return GoogleAuthErrorCode.configurationError;
+    }
+    return GoogleAuthErrorCode.unexpected;
+  }
+
+  static String _googleErrorMessage(GoogleAuthErrorCode code) {
+    switch (code) {
+      case GoogleAuthErrorCode.network:
+        return 'No hay conexión. Inténtalo de nuevo.';
+      case GoogleAuthErrorCode.providerUnavailable:
+      case GoogleAuthErrorCode.configurationError:
+        return 'Google no está disponible en esta versión.';
+      case GoogleAuthErrorCode.invalidCredential:
+      case GoogleAuthErrorCode.accountConflict:
+        return 'No se ha podido iniciar sesión con Google.';
+      case GoogleAuthErrorCode.cancelled:
+        return '';
+      case GoogleAuthErrorCode.unexpected:
+        return 'No se ha podido iniciar sesión con Google.';
     }
   }
 

@@ -20,6 +20,7 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../../../utils/app_theme.dart';
 import '../../../screens/auth/widgets/auth_field.dart';
 import '../../../screens/auth/widgets/auth_primary_button.dart';
+import '../../../screens/auth/widgets/google_auth_button.dart';
 
 @visibleForTesting
 bool onboardingAuthRecoveryGateVisible({
@@ -154,6 +155,18 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       password: _password.text,
     );
     _password.clear();
+  }
+
+  Future<void> _submitGoogle() async {
+    if (_isAuthenticatedFrozenRecovery) return;
+    FocusScope.of(context).unfocus();
+    await _machine.authenticate(
+      command: _isSignUp
+          ? OnboardingAuthCommand.signUpWithEmail
+          : OnboardingAuthCommand.signInWithEmail,
+      method: OnboardingAuthMethod.google,
+      email: _email.text,
+    );
   }
 
   void _switchMode(bool signUp) {
@@ -291,6 +304,14 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
             ],
           ),
           const SizedBox(height: 16),
+          GoogleAuthButton(
+            label: l10n.onboardingAuthGoogleCta,
+            isLoading: state.phase == OnboardingAuthPhase.authenticating,
+            onTap: _submitGoogle,
+          ),
+          const SizedBox(height: 18),
+          Center(child: Text(l10n.authOr, style: AppTextStyles.authSub)),
+          const SizedBox(height: 18),
           AuthField(
             label: l10n.fieldEmailLabel,
             hint: l10n.fieldEmailHint,

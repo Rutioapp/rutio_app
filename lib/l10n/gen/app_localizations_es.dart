@@ -552,6 +552,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loginPrimaryCta => 'Continuar →';
 
   @override
+  String get loginGoogleCta => 'Continuar con Google';
+
+  @override
+  String get onboardingAuthGoogleCta => 'Continuar con Google';
+
+  @override
+  String get authOr => 'o';
+
+  @override
   String get loginSwitchPrefix => '¿No tienes cuenta?  ';
 
   @override
