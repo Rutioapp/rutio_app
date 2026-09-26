@@ -117,7 +117,8 @@ class _AppStartupGateState extends State<AppStartupGate> {
           }
           if (state.destination == BootstrapDestination.onboarding &&
               !_hasOnboardingProfile(state) &&
-              !(state.user != null && state.pendingOnboardingDraft)) {
+              !(state.user != null && state.pendingOnboardingDraft) &&
+              !state.hasAnonymousOnboardingDraft) {
             _traceStartupGate(
               controller,
               state,

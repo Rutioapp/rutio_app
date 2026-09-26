@@ -63,6 +63,48 @@ void main() {
       expect(fixture.bootstrap.state.destination, BootstrapDestination.welcome);
     });
 
+    test('guest with anonymous resumable draft routes to onboarding', () async {
+      final fixture = _Fixture(
+        hasResumableOnboardingDraft: () async => true,
+      );
+      fixture.resolveGuest();
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.ready);
+      expect(
+          fixture.bootstrap.state.destination, BootstrapDestination.onboarding);
+      expect(fixture.bootstrap.state.hasAnonymousOnboardingDraft, isTrue);
+    });
+
+    testWidgets(
+        'guest with anonymous resumable draft renders onboarding, not preparation',
+        (tester) async {
+      final fixture = _Fixture(
+        hasResumableOnboardingDraft: () async => true,
+      );
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<BootstrapController>.value(
+          value: fixture.bootstrap,
+          child: _localizedApp(
+            home: const AppStartupGate(
+              onboardingBuilder: _onboardingBuilder,
+            ),
+          ),
+        ),
+      );
+      fixture.resolveGuest();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 2000));
+
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.ready);
+      expect(
+          fixture.bootstrap.state.destination, BootstrapDestination.onboarding);
+      expect(fixture.bootstrap.state.hasAnonymousOnboardingDraft, isTrue);
+      expect(find.text('Onboarding'), findsOneWidget);
+      expect(find.byType(BootstrapPreparationScreen), findsNothing);
+    });
+
     test('authenticated pending profile routes to onboarding', () async {
       final fixture = _Fixture(profileStatus: OnboardingStatus.pending);
       fixture.resolveUser('user-1');
@@ -1055,6 +1097,8 @@ Widget _personalizedHomeBuilder(BuildContext context) =>
     const Text('Personalized Home');
 
 Widget _shopBuilder(BuildContext context) => const Text('Shop');
+
+Widget _onboardingBuilder(BuildContext context) => const Text('Onboarding');
 
 Widget _authorityApp(
   BootstrapController bootstrap,

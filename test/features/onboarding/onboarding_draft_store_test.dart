@@ -114,6 +114,14 @@ void main() {
       expect(await store.loadAnonymousDraft(), isNotNull);
       expect(await store.hasAnonymousDraft(), isFalse);
     });
+
+    test('incomplete draft remains resumable after two days', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final store = createStore(now: DateTime.utc(2026, 1, 3));
+      await store.saveAnonymousDraft(draft());
+
+      expect(await store.hasAnonymousDraft(), isTrue);
+    });
   });
 
   group('OnboardingDraftService', () {

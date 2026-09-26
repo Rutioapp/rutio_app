@@ -380,6 +380,7 @@ class BootstrapState {
     this.error,
     this.cosmeticsReadyToken,
     this.pendingOnboardingDraft = false,
+    this.hasAnonymousOnboardingDraft = false,
     this.usesOfflinePolicy = false,
   });
 
@@ -392,6 +393,7 @@ class BootstrapState {
   final BootstrapError? error;
   final CosmeticsReadyToken? cosmeticsReadyToken;
   final bool pendingOnboardingDraft;
+  final bool hasAnonymousOnboardingDraft;
   final bool usesOfflinePolicy;
 
   bool get isReady => phase == BootstrapPhase.ready && destination != null;
@@ -411,6 +413,7 @@ class BootstrapState {
     CosmeticsReadyToken? cosmeticsReadyToken,
     bool clearCosmeticsReadyToken = false,
     bool? pendingOnboardingDraft,
+    bool? hasAnonymousOnboardingDraft,
     bool clearError = false,
     bool? usesOfflinePolicy,
   }) {
@@ -428,6 +431,8 @@ class BootstrapState {
           : cosmeticsReadyToken ?? this.cosmeticsReadyToken,
       pendingOnboardingDraft:
           pendingOnboardingDraft ?? this.pendingOnboardingDraft,
+      hasAnonymousOnboardingDraft:
+          hasAnonymousOnboardingDraft ?? this.hasAnonymousOnboardingDraft,
       usesOfflinePolicy: usesOfflinePolicy ?? this.usesOfflinePolicy,
     );
   }
@@ -1151,6 +1156,7 @@ class BootstrapController extends ChangeNotifier
         runId: runId,
         mode: _state.mode,
         destination: destination,
+        hasAnonymousOnboardingDraft: hasResumableDraft,
       ),
     );
     final boundaryReason = exitReason;
