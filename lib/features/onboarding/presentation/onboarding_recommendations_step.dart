@@ -56,24 +56,6 @@ class OnboardingRecommendationsStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          context.l10n.onboardingStepRecommendations,
-          style: AppTextStyles.authSub.copyWith(
-            color: AppColors.ink.withValues(alpha: 0.56),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Semantics(
-          liveRegion: true,
-          child: Text(
-            context.l10n.onboardingRecommendationsUpdated,
-            style: AppTextStyles.welcomeSub.copyWith(
-              color: AppColors.ink.withValues(alpha: 0.68),
-            ),
-          ),
-        ),
-        const SizedBox(height: 18),
         ...items.map(
           (recommendation) => Padding(
             padding: const EdgeInsets.only(bottom: 12),

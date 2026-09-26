@@ -13,6 +13,7 @@ import '../stores/user_state_store.dart';
 import '../utils/app_theme.dart';
 import 'auth/sign_in_screen.dart';
 import '../features/onboarding/presentation/onboarding_v1_screen.dart';
+import '../features/onboarding/presentation/onboarding_preparation_screen.dart';
 import 'root_gate.dart';
 import 'splash_screen.dart';
 import 'welcome_screen.dart';
@@ -146,6 +147,18 @@ class _AppStartupGateState extends State<AppStartupGate> {
           return BootstrapPreparationScreen(
             errorMessage: state.error?.message,
             onRetry: controller.retry,
+          );
+        }
+
+        if (state.origin == BootstrapOrigin.onboardingHandoff) {
+          _traceStartupGate(
+            controller,
+            state,
+            render: 'onboarding_preparation',
+            reason: 'onboarding_handoff_bootstrap_pending',
+          );
+          return OnboardingPreparationScreen(
+            phase: state.onboardingHandoffVisualPhase ?? 1.0,
           );
         }
 

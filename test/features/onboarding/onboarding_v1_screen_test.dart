@@ -125,7 +125,8 @@ void main() {
     await tester.tap(find.text('Continuar'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Objetivos'), findsWidgets);
+    expect(find.text('¿Qué te gustaría mejorar?'), findsOneWidget);
+    expect(find.text('Objetivos'), findsNothing);
   });
 
   testWidgets('Restart requires confirmation and returns to the first step',
@@ -201,7 +202,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Objetivos'), findsWidgets);
+    expect(find.text('¿Qué te gustaría mejorar?'), findsOneWidget);
+    expect(find.text('Objetivos'), findsNothing);
   });
 
   testWidgets('Name field Done action uses the same submit intent',
@@ -216,7 +218,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Objetivos'), findsWidgets);
+    expect(find.text('¿Qué te gustaría mejorar?'), findsOneWidget);
+    expect(find.text('Objetivos'), findsNothing);
   });
 
   testWidgets('Name step preloads confirmed value and Back preserves it',
@@ -353,7 +356,8 @@ void main() {
     await tester.tap(find.text('Continuar'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Ritmo'), findsWidgets);
+    expect(find.text('¿Cómo quieres empezar?'), findsOneWidget);
+    expect(find.text('Ritmo'), findsNothing);
 
     await tester.tap(find.byTooltip('Volver'));
     await tester.pump();
@@ -375,6 +379,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('What would you like to improve?'), findsOneWidget);
+    expect(find.text('Goals'), findsNothing);
     expect(find.text('Take care of my body'), findsOneWidget);
     expect(find.text('Build more discipline'), findsOneWidget);
   });
@@ -429,13 +434,16 @@ void main() {
       findsOneWidget,
     );
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    expect(find.text('¿Qué te gustaría mejorar?'), findsOneWidget);
+    expect(find.text('Objetivos'), findsNothing);
     expect(find.text('Ritmo'), findsNothing);
 
     store.failWrites = false;
     await tester.tap(find.text('Continuar'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Ritmo'), findsWidgets);
+    expect(find.text('¿Cómo quieres empezar?'), findsOneWidget);
+    expect(find.text('Ritmo'), findsNothing);
   });
 
   testWidgets('Pace renders three options and disables CTA initially',
@@ -479,7 +487,8 @@ void main() {
     await tester.tap(find.text('Continuar'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Recomendaciones'), findsWidgets);
+    expect(find.text('Un buen punto de partida'), findsOneWidget);
+    expect(find.text('Recomendaciones'), findsNothing);
 
     await tester.tap(find.byTooltip('Volver'));
     await tester.pump();
@@ -504,13 +513,15 @@ void main() {
       findsOneWidget,
     );
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
-    expect(find.text('Recomendaciones'), findsNothing);
+    expect(find.text('¿Cómo quieres empezar?'), findsOneWidget);
+    expect(find.text('Ritmo'), findsNothing);
 
     store.failWrites = false;
     await tester.tap(find.text('Continuar'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Recomendaciones'), findsWidgets);
+    expect(find.text('Un buen punto de partida'), findsOneWidget);
+    expect(find.text('Recomendaciones'), findsNothing);
   });
 
   testWidgets('Pace exposes English labels and fits small scaled screens',
@@ -523,6 +534,7 @@ void main() {
     );
 
     expect(find.text('How would you like to start?'), findsOneWidget);
+    expect(find.text('Pace'), findsNothing);
     expect(find.text('Little by little'), findsOneWidget);
     expect(find.text('I want to start with something very simple.'),
         findsOneWidget);
@@ -541,6 +553,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Un buen punto de partida'), findsOneWidget);
+    expect(find.text('Recomendaciones'), findsNothing);
+    expect(find.text('Recomendaciones actualizadas'), findsNothing);
     expect(find.text('Hacer ejercicio'), findsOneWidget);
     expect(find.text('Ver otras opciones'), findsOneWidget);
     expect(find.text('Crear un hábito desde cero'), findsOneWidget);
@@ -549,6 +563,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(store.anonymous?.currentStep, OnboardingStep.habit);
+    expect(find.text('Hábito'), findsNothing);
+    expect(find.byKey(const ValueKey('onboardingHabitName')), findsOneWidget);
     expect(
         store.anonymous?.selectedRecommendationId, 'onboarding_v1_move_body');
     expect(store.anonymous?.habit, isNull);
@@ -567,6 +583,24 @@ void main() {
     expect(store.anonymous?.currentStep, OnboardingStep.habit);
     expect(store.anonymous?.selectedRecommendationId, isNull);
     expect(store.anonymous?.habit, isNull);
+  });
+
+  testWidgets('Recommendations keeps the simplified English hierarchy',
+      (tester) async {
+    await pumpPace(tester, locale: const Locale('en'));
+
+    await tester.tap(find.text('With energy'));
+    await tester.pump();
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('A good place to start'), findsOneWidget);
+    expect(find.text('Recommendations'), findsNothing);
+    expect(find.text('Recommendations updated'), findsNothing);
+    expect(find.text('Exercise'), findsOneWidget);
+    expect(find.text('See other options'), findsOneWidget);
+    expect(find.text('Create a habit from scratch'), findsOneWidget);
   });
 }
 

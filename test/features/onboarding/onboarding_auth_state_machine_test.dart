@@ -38,6 +38,7 @@ void main() {
     OnboardingCompletionReconciler? reconciler,
     OnboardingDraft? draftOverride,
     OnboardingAuthDraftPersistence? draftPersistence,
+    bool autoCompleteAfterAccountResolution = false,
     Future<void> Function({
       required String operationId,
       required bool habitPresent,
@@ -50,6 +51,7 @@ void main() {
       completion: completion,
       reconciler: reconciler,
       draftPersistence: draftPersistence,
+      autoCompleteAfterAccountResolution: autoCompleteAfterAccountResolution,
       onCompletionHandoff: onCompletionHandoff,
     );
   }
@@ -72,6 +74,30 @@ void main() {
     expect(m.state.phase, OnboardingAuthPhase.readyToComplete);
     expect(m.state.preparedHabitDecision, PreparedHabitDecision.keep);
     expect(m.state.draft.onboardingOperationId, 'operation-1');
+  });
+
+  test('auth success can complete automatically without a finalization CTA',
+      () async {
+    final completion = _Completion();
+    final m = machine(
+      auth: _Auth((_) async => const OnboardingAuthenticated(
+          AuthenticatedOnboardingSession(userId: 'user-1'))),
+      resolver: _Resolver(const RemoteAccountSnapshot(
+        userId: 'user-1',
+        remoteUserStateAvailable: true,
+      )),
+      completion: completion,
+      autoCompleteAfterAccountResolution: true,
+    );
+
+    await m.authenticate(
+      command: OnboardingAuthCommand.signUpWithEmail,
+      email: 'a@example.com',
+    );
+
+    expect(m.state.phase, OnboardingAuthPhase.completed);
+    expect(completion.calls, 1);
+    expect(completion.operations, ['operation-1']);
   });
 
   test('auto-created pending bootstrap profile resolves as new account',
@@ -593,8 +619,8 @@ void main() {
           isTrue);
       expect(completion.last!.accountResolution,
           OnboardingAccountResolution.newAccount);
-      expect(completion.last!.preparedHabitDecision,
-          PreparedHabitDecision.keep);
+      expect(
+          completion.last!.preparedHabitDecision, PreparedHabitDecision.keep);
     }
   });
 
@@ -774,7 +800,8 @@ void main() {
     expect(resolver.calls, 1);
     expect(completion.calls, 1);
   });
-  test('Google onboarding uses the same operation and completion path', () async {
+  test('Google onboarding uses the same operation and completion path',
+      () async {
     OnboardingAuthRequest? request;
     final m = machine(
       auth: _Auth((value) async {

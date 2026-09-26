@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/diagnostics/onboarding_runtime_trace.dart';
@@ -59,6 +61,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
     required OnboardingCompletionPort completion,
     OnboardingCompletionReconciler? reconciler,
     OnboardingAuthDraftPersistence? draftPersistence,
+    bool autoCompleteAfterAccountResolution = false,
     Future<void> Function({
       required String operationId,
       required bool habitPresent,
@@ -68,6 +71,8 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
         _completion = completion,
         _reconciler = reconciler,
         _draftPersistence = draftPersistence,
+        _autoCompleteAfterAccountResolution =
+            autoCompleteAfterAccountResolution,
         _onCompletionHandoff = onCompletionHandoff,
         _state = OnboardingAuthState(
           phase: draft.currentStep == OnboardingStep.emailConfirmation
@@ -83,6 +88,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
   final OnboardingCompletionPort _completion;
   final OnboardingCompletionReconciler? _reconciler;
   final OnboardingAuthDraftPersistence? _draftPersistence;
+  final bool _autoCompleteAfterAccountResolution;
   final Future<void> Function({
     required String operationId,
     required bool habitPresent,
@@ -242,7 +248,8 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
     }
     if (result is OnboardingAuthenticationFailed) {
       if (result.error.code == OnboardingAuthErrorCode.providerCancelled) {
-        _publish(OnboardingAuthState(phase: OnboardingAuthPhase.ready, draft: _state.draft));
+        _publish(OnboardingAuthState(
+            phase: OnboardingAuthPhase.ready, draft: _state.draft));
         return true;
       }
       _publish(OnboardingAuthState(
@@ -366,8 +373,12 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
       _trace(
         'event=ready_for_completion op=${_shortId(resolvingDraft.onboardingOperationId)} '
         'resolution=${resolution.classification.name} '
-        'completionInvoked=false',
+        'completionInvoked=${isExisting && _state.draft.habit != null ? 'false' : 'true'}',
       );
+      if (_autoCompleteAfterAccountResolution &&
+          !(isExisting && _state.draft.habit != null)) {
+        await complete();
+      }
       return true;
     } on OnboardingAuthError catch (error) {
       _publish(OnboardingAuthState(
@@ -382,7 +393,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
     }
   }
 
-  void choosePreparedHabit(PreparedHabitDecision decision) {
+  Future<void> choosePreparedHabit(PreparedHabitDecision decision) async {
     if (_state.phase != OnboardingAuthPhase.awaitingPreparedHabitDecision ||
         decision == PreparedHabitDecision.undecided) {
       return;
@@ -394,6 +405,9 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
       resolution: _state.resolution,
       preparedHabitDecision: decision,
     ));
+    if (_autoCompleteAfterAccountResolution) {
+      await complete();
+    }
   }
 
   Future<bool> complete() async {

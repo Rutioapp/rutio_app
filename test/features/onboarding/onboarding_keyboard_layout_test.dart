@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/features/habits/domain/metrics/habit_snapshot.dart';
 import 'package:rutio/features/onboarding/onboarding.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
+import 'package:rutio/widgets/backgrounds/rutio_sky_background.dart';
 
 void main() {
   testWidgets('Name keeps the baseline layout without keyboard',
@@ -27,6 +28,7 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
+    expect(find.byType(RutioSkyBackground), findsOneWidget);
     expect(find.text('Continuar'), findsOneWidget);
   });
 
@@ -171,5 +173,7 @@ Future<void> _pumpWithViewport(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  // RutioSkyBackground has an intentional repeating cloud animation, so
+  // pump a stable frame instead of waiting for all animations to settle.
+  await tester.pump(const Duration(milliseconds: 300));
 }

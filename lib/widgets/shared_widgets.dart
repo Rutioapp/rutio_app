@@ -5,22 +5,28 @@ import '../utils/app_theme.dart';
 // Sky gradient background
 // ─────────────────────────────────────────
 class SkyBackground extends StatelessWidget {
-  const SkyBackground({super.key});
+  const SkyBackground({
+    super.key,
+    this.top = AppColors.skyTop,
+    this.mid1 = AppColors.skyMid1,
+    this.mid2 = AppColors.skyMid2,
+    this.bottom = AppColors.skyBottom,
+  });
+
+  final Color top;
+  final Color mid1;
+  final Color mid2;
+  final Color bottom;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           stops: [0.0, 0.36, 0.64, 1.0],
-          colors: [
-            AppColors.skyTop,
-            AppColors.skyMid1,
-            AppColors.skyMid2,
-            AppColors.skyBottom,
-          ],
+          colors: [top, mid1, mid2, bottom],
         ),
       ),
     );

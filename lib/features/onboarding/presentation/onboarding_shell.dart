@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../utils/app_theme.dart';
+import '../../../widgets/backgrounds/rutio_sky_background.dart';
 import '../domain/models/onboarding_types.dart';
 
 /// Common layout for the temporary V1 step presenters.
@@ -20,6 +21,7 @@ class OnboardingShell extends StatelessWidget {
     this.continueEnabled = true,
     this.errorMessage,
     this.showContinueButton = true,
+    this.showBackground = true,
   });
 
   final OnboardingStep step;
@@ -33,6 +35,7 @@ class OnboardingShell extends StatelessWidget {
   final bool continueEnabled;
   final String? errorMessage;
   final bool showContinueButton;
+  final bool showBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -42,145 +45,165 @@ class OnboardingShell extends StatelessWidget {
     final title = _title(l10n, step);
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      backgroundColor: showBackground ? AppColors.cream : Colors.transparent,
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 24, 0),
-              child: Row(
-                children: [
-                  Semantics(
-                    button: true,
-                    label: l10n.onboardingBack,
-                    child: IconButton(
-                      tooltip: l10n.onboardingBack,
-                      onPressed: canGoBack && !isBusy ? onBack : null,
-                      icon: const Icon(CupertinoIcons.chevron_left),
-                    ),
-                  ),
-                  Expanded(
-                    child: Semantics(
-                      container: true,
-                      label: title,
-                      child: ExcludeSemantics(
-                        child: TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: progress),
-                          duration: disableAnimations
-                              ? Duration.zero
-                              : const Duration(milliseconds: 280),
-                          curve: Curves.easeOut,
-                          builder: (context, value, _) => ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: LinearProgressIndicator(
-                              minHeight: 6,
-                              value: value,
-                              backgroundColor:
-                                  AppColors.ink.withValues(alpha: 0.10),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                AppColors.rust.withValues(alpha: 0.86),
+      body: Stack(
+        clipBehavior: Clip.none,
+        fit: StackFit.expand,
+        children: [
+          if (showBackground)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: MediaQuery.sizeOf(context).height,
+              child: RutioSkyBackground(
+                showBottomFade: true,
+                phase: progress,
+              ),
+            ),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 10, 24, 0),
+                  child: Row(
+                    children: [
+                      Semantics(
+                        button: true,
+                        label: l10n.onboardingBack,
+                        child: IconButton(
+                          tooltip: l10n.onboardingBack,
+                          onPressed: canGoBack && !isBusy ? onBack : null,
+                          icon: const Icon(CupertinoIcons.chevron_left),
+                        ),
+                      ),
+                      Expanded(
+                        child: Semantics(
+                          container: true,
+                          label: title,
+                          child: ExcludeSemantics(
+                            child: TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0, end: progress),
+                              duration: disableAnimations
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 280),
+                              curve: Curves.easeOut,
+                              builder: (context, value, _) => ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: LinearProgressIndicator(
+                                  minHeight: 6,
+                                  value: value,
+                                  backgroundColor:
+                                      AppColors.ink.withValues(alpha: 0.10),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.rust.withValues(alpha: 0.86),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(26, 30, 26, 24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (showStepHeader) ...[
-                        Text(
-                          title,
-                          style: AppTextStyles.welcomeTitle.copyWith(
-                            fontSize: 32,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-                      if (content == null)
-                        Text(
-                          l10n.onboardingPlaceholderBody,
-                          style: AppTextStyles.welcomeSub.copyWith(
-                            color: AppColors.ink.withValues(alpha: 0.68),
-                          ),
-                        ),
-                      const SizedBox(height: 28),
-                      content ??
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(22),
-                            decoration: BoxDecoration(
-                              color: AppColors.cream2.withValues(alpha: 0.72),
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: AppColors.ink.withValues(alpha: 0.08),
-                              ),
-                            ),
-                            child: Text(
-                              title,
-                              style: AppTextStyles.authTitle.copyWith(
-                                fontSize: 22,
-                              ),
-                            ),
-                          ),
-                      if (errorMessage != null) ...[
-                        const SizedBox(height: 18),
-                        Text(
-                          errorMessage!,
-                          style: AppTextStyles.authSub.copyWith(
-                            color: AppColors.rust,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
-              ),
-            ),
-            if (showContinueButton)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  26,
-                  10,
-                  26,
-                  18,
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 58,
-                    child: ElevatedButton(
-                      onPressed: isBusy || !continueEnabled ? null : onContinue,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.ink,
-                        foregroundColor: AppColors.cream,
-                        shape: const StadiumBorder(),
-                        textStyle: AppTextStyles.buttonPrimary,
+                Expanded(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(26, 30, 26, 24),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (showStepHeader) ...[
+                            Text(
+                              title,
+                              style: AppTextStyles.welcomeTitle.copyWith(
+                                fontSize: 32,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                          ],
+                          if (content == null)
+                            Text(
+                              l10n.onboardingPlaceholderBody,
+                              style: AppTextStyles.welcomeSub.copyWith(
+                                color: AppColors.ink.withValues(alpha: 0.68),
+                              ),
+                            ),
+                          const SizedBox(height: 28),
+                          content ??
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(22),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppColors.cream2.withValues(alpha: 0.72),
+                                  borderRadius: BorderRadius.circular(22),
+                                  border: Border.all(
+                                    color:
+                                        AppColors.ink.withValues(alpha: 0.08),
+                                  ),
+                                ),
+                                child: Text(
+                                  title,
+                                  style: AppTextStyles.authTitle.copyWith(
+                                    fontSize: 22,
+                                  ),
+                                ),
+                              ),
+                          if (errorMessage != null) ...[
+                            const SizedBox(height: 18),
+                            Text(
+                              errorMessage!,
+                              style: AppTextStyles.authSub.copyWith(
+                                color: AppColors.rust,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      child: isBusy
-                          ? const CupertinoActivityIndicator(
-                              color: AppColors.cream)
-                          : Text(l10n.onboardingContinue),
                     ),
                   ),
                 ),
-              ),
-          ],
-        ),
+                if (showContinueButton)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      26,
+                      10,
+                      26,
+                      18,
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 58,
+                        child: ElevatedButton(
+                          onPressed:
+                              isBusy || !continueEnabled ? null : onContinue,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.ink,
+                            foregroundColor: AppColors.cream,
+                            shape: const StadiumBorder(),
+                            textStyle: AppTextStyles.buttonPrimary,
+                          ),
+                          child: isBusy
+                              ? const CupertinoActivityIndicator(
+                                  color: AppColors.cream)
+                              : Text(l10n.onboardingContinue),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

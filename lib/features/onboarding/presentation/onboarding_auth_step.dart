@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 
-import '../../../core/diagnostics/onboarding_runtime_trace.dart';
-
 import '../application/auth/onboarding_auth_state_machine.dart';
 import '../application/onboarding_draft_service.dart';
 import '../data/onboarding_auth_persistence.dart';
@@ -84,6 +82,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       draftPersistence: DraftOnboardingAuthPersistence(
         context.read<OnboardingDraftService>(),
       ),
+      autoCompleteAfterAccountResolution: true,
       onCompletionHandoff: widget.onCompletionHandoff,
     )..addListener(_onMachineChanged);
     if (kDebugMode) {
@@ -275,13 +274,6 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
                 child: const Text('Conservar hábito preparado'),
               ),
             ],
-            if (state.phase == OnboardingAuthPhase.readyToComplete) ...[
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _completeFromCta,
-                child: const Text('Finalizar onboarding'),
-              ),
-            ],
           ],
         ),
       );
@@ -380,30 +372,6 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
                 _machine.state.authenticatedUserId != null,
         completionState: _machine.state.draft.completionState,
       );
-
-  Future<void> _completeFromCta() async {
-    final state = _machine.state;
-    OnboardingRuntimeTrace.beginHandoff(
-      operationId: state.draft.onboardingOperationId,
-      userId: state.authenticatedUserId,
-      currentStep: state.draft.currentStep.name,
-      draftPresent: true,
-    );
-    if (kDebugMode) {
-      debugPrint(
-        '[ONBOARDING_HANDOFF] event=final_cta_tapped '
-        'operationId=${_shortId(_machine.state.draft.onboardingOperationId)} '
-        'draftPresent=true',
-      );
-    }
-    OnboardingRuntimeTrace.log(
-      'ONBOARDING_HANDOFF',
-      'event=completion_call operationId=${_shortId(state.draft.onboardingOperationId)} '
-          'userId=${OnboardingRuntimeTrace.short(state.authenticatedUserId)} mounted=$mounted '
-          'currentStep=${state.draft.currentStep.name} draftPresent=true',
-    );
-    await _machine.complete();
-  }
 
   String _errorCopy(AppLocalizations l10n, OnboardingAuthErrorCode code) {
     switch (code) {

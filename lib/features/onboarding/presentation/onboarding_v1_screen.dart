@@ -8,7 +8,6 @@ import '../../../application/auth/auth_controller.dart';
 import '../../../application/bootstrap/bootstrap_controller.dart';
 import '../../../core/diagnostics/onboarding_runtime_trace.dart';
 import '../../../l10n/l10n.dart';
-import '../../../utils/app_theme.dart';
 import '../../../widgets/backgrounds/rutio_sky_background.dart';
 import '../application/onboarding_coordinator.dart';
 import '../domain/models/onboarding_types.dart';
@@ -23,6 +22,7 @@ import 'onboarding_habit_step.dart';
 import 'onboarding_reminder_step.dart';
 import 'onboarding_preview_step.dart';
 import 'onboarding_auth_step.dart';
+import 'onboarding_preparation_screen.dart';
 import '../../../screens/welcome/widgets/welcome_content.dart';
 
 /// V1 coordinator-backed entry point. The seven step presenters are
@@ -92,7 +92,7 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
       builder: (context, coordinator, _) {
         final state = coordinator.state;
         if (state.isLoading && state.draft == null) {
-          return _LoadingView();
+          return const OnboardingPreparationScreen();
         }
         if (state.isAtWelcome || state.draft == null) {
           return _buildWelcome(context, coordinator, state);
@@ -122,201 +122,231 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
             : null;
         final previewReminderConfiguration =
             isPreview ? coordinator.reminderConfigurationForDraft() : null;
-        return AnimatedSwitcher(
-          duration: MediaQuery.maybeOf(context)?.disableAnimations == true
-              ? Duration.zero
-              : const Duration(milliseconds: 220),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          transitionBuilder: (child, animation) {
-            final offset = Tween<Offset>(
-              begin: const Offset(0.06, 0),
-              end: Offset.zero,
-            ).animate(animation);
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(position: offset, child: child),
-            );
-          },
-          child: OnboardingShell(
-            key: ValueKey<OnboardingStep>(step),
-            step: step,
-            progress: state.progress,
-            canGoBack: state.canGoBack,
-            isBusy: state.isPersisting,
-            showStepHeader: step != OnboardingStep.name,
-            content: step == OnboardingStep.name
-                ? OnboardingNameStep(
-                    key: _nameStepKey,
-                    initialValue: state.draft?.firstName ?? '',
-                    errorMessage: _nameErrorMessage(context, state),
-                    onSubmit: (value) =>
-                        unawaited(coordinator.submitName(value)),
-                  )
-                : isGoals
-                    ? OnboardingGoalsStep(
-                        key: _goalsStepKey,
-                        initialGoalCodes:
-                            state.draft?.goalCodes ?? const <String>{},
-                        errorMessage: _goalsErrorMessage(context, state),
-                        onSelectionChanged: _onGoalsSelectionChanged,
-                        onSubmit: (values) =>
-                            unawaited(coordinator.submitGoals(values)),
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: MediaQuery.sizeOf(context).height,
+              child: RutioSkyBackground(
+                showBottomFade: true,
+                phase: state.progress,
+              ),
+            ),
+            AnimatedSwitcher(
+              duration: MediaQuery.maybeOf(context)?.disableAnimations == true
+                  ? Duration.zero
+                  : const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                final offset = Tween<Offset>(
+                  begin: const Offset(0.06, 0),
+                  end: Offset.zero,
+                ).animate(animation);
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(position: offset, child: child),
+                );
+              },
+              child: OnboardingShell(
+                key: ValueKey<OnboardingStep>(step),
+                showBackground: false,
+                step: step,
+                progress: state.progress,
+                canGoBack: state.canGoBack,
+                isBusy: state.isPersisting,
+                showStepHeader: step != OnboardingStep.name &&
+                    !isGoals &&
+                    !isPace &&
+                    !isHabit &&
+                    step != OnboardingStep.auth &&
+                    step != OnboardingStep.emailConfirmation &&
+                    step != OnboardingStep.resolvingAccount &&
+                    step != OnboardingStep.finalizing,
+                content: step == OnboardingStep.name
+                    ? OnboardingNameStep(
+                        key: _nameStepKey,
+                        initialValue: state.draft?.firstName ?? '',
+                        errorMessage: _nameErrorMessage(context, state),
+                        onSubmit: (value) =>
+                            unawaited(coordinator.submitName(value)),
                       )
-                    : isPace
-                        ? OnboardingPaceStep(
-                            key: _paceStepKey,
-                            initialPace: state.draft?.pace,
-                            errorMessage: _paceErrorMessage(context, state),
-                            onSelectionChanged: _onPaceSelectionChanged,
-                            onSubmit: (pace) =>
-                                unawaited(coordinator.submitPace(pace)),
+                    : isGoals
+                        ? OnboardingGoalsStep(
+                            key: _goalsStepKey,
+                            initialGoalCodes:
+                                state.draft?.goalCodes ?? const <String>{},
+                            errorMessage: _goalsErrorMessage(context, state),
+                            onSelectionChanged: _onGoalsSelectionChanged,
+                            onSubmit: (values) =>
+                                unawaited(coordinator.submitGoals(values)),
                           )
-                        : isRecommendations
-                            ? OnboardingRecommendationsStep(
-                                recommendations: state.recommendations,
-                                selectedRecommendationId:
-                                    state.draft?.selectedRecommendationId,
-                                isLoading: state.isLoading,
-                                isRefreshing: state.isRefreshing,
-                                onSelect: (id) => unawaited(
-                                  coordinator.selectRecommendation(id),
-                                ),
-                                onRefresh: () => unawaited(
-                                  coordinator.refreshRecommendations(
-                                    locale: Localizations.localeOf(context)
-                                        .toLanguageTag(),
-                                  ),
-                                ),
-                                onCreateFromScratch: () => unawaited(
-                                  coordinator.createHabitFromScratch(),
-                                ),
-                                onRetry: () => unawaited(
-                                  coordinator.loadRecommendations(
-                                    locale: Localizations.localeOf(context)
-                                        .toLanguageTag(),
-                                  ),
-                                ),
+                        : isPace
+                            ? OnboardingPaceStep(
+                                key: _paceStepKey,
+                                initialPace: state.draft?.pace,
+                                errorMessage: _paceErrorMessage(context, state),
+                                onSelectionChanged: _onPaceSelectionChanged,
+                                onSubmit: (pace) =>
+                                    unawaited(coordinator.submitPace(pace)),
                               )
-                            : isHabit
-                                ? habitConfiguration == null
-                                    ? const Center(
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : OnboardingHabitStep(
-                                        key: _habitStepKey,
-                                        initialConfiguration:
-                                            habitConfiguration,
-                                        errorMessage: _habitErrorMessage(
-                                          context,
-                                          state,
-                                        ),
-                                        onSubmit: (configuration) => unawaited(
-                                          coordinator
-                                              .submitHabit(configuration),
-                                        ),
-                                      )
-                                : isReminder
-                                    ? reminderConfiguration == null
+                            : isRecommendations
+                                ? OnboardingRecommendationsStep(
+                                    recommendations: state.recommendations,
+                                    selectedRecommendationId:
+                                        state.draft?.selectedRecommendationId,
+                                    isLoading: state.isLoading,
+                                    isRefreshing: state.isRefreshing,
+                                    onSelect: (id) => unawaited(
+                                      coordinator.selectRecommendation(id),
+                                    ),
+                                    onRefresh: () => unawaited(
+                                      coordinator.refreshRecommendations(
+                                        locale: Localizations.localeOf(context)
+                                            .toLanguageTag(),
+                                      ),
+                                    ),
+                                    onCreateFromScratch: () => unawaited(
+                                      coordinator.createHabitFromScratch(),
+                                    ),
+                                    onRetry: () => unawaited(
+                                      coordinator.loadRecommendations(
+                                        locale: Localizations.localeOf(context)
+                                            .toLanguageTag(),
+                                      ),
+                                    ),
+                                  )
+                                : isHabit
+                                    ? habitConfiguration == null
                                         ? const Center(
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
                                             ),
                                           )
-                                        : OnboardingReminderStep(
-                                            key: _reminderStepKey,
+                                        : OnboardingHabitStep(
+                                            key: _habitStepKey,
                                             initialConfiguration:
-                                                reminderConfiguration,
-                                            errorMessage: _reminderErrorMessage(
+                                                habitConfiguration,
+                                            errorMessage: _habitErrorMessage(
                                               context,
                                               state,
                                             ),
-                                            onDecisionChanged: (value) {
-                                              if (mounted) {
-                                                setState(() =>
-                                                    _reminderCanSubmit = value);
-                                              }
-                                            },
                                             onSubmit: (configuration) =>
                                                 unawaited(
-                                              coordinator.submitReminder(
-                                                configuration,
-                                              ),
+                                              coordinator
+                                                  .submitHabit(configuration),
                                             ),
                                           )
-                                    : isPreview
-                                        ? previewHabitConfiguration == null ||
-                                                previewReminderConfiguration ==
-                                                    null
+                                    : isReminder
+                                        ? reminderConfiguration == null
                                             ? const Center(
                                                 child:
                                                     CircularProgressIndicator(
                                                   strokeWidth: 2,
                                                 ),
                                               )
-                                            : OnboardingPreviewStep(
-                                                goalCodes:
-                                                    state.draft!.goalCodes,
-                                                pace: state.draft!.pace!,
-                                                habit:
-                                                    previewHabitConfiguration,
-                                                reminder:
-                                                    previewReminderConfiguration,
-                                                onEdit: (editStep) => unawaited(
-                                                  coordinator
-                                                      .goToStepForEditing(
-                                                    editStep,
+                                            : OnboardingReminderStep(
+                                                key: _reminderStepKey,
+                                                initialConfiguration:
+                                                    reminderConfiguration,
+                                                errorMessage:
+                                                    _reminderErrorMessage(
+                                                  context,
+                                                  state,
+                                                ),
+                                                onDecisionChanged: (value) {
+                                                  if (mounted) {
+                                                    setState(() =>
+                                                        _reminderCanSubmit =
+                                                            value);
+                                                  }
+                                                },
+                                                onSubmit: (configuration) =>
+                                                    unawaited(
+                                                  coordinator.submitReminder(
+                                                    configuration,
                                                   ),
                                                 ),
-                                                onSave: () => unawaited(
-                                                  coordinator
-                                                      .continueFromPreview(),
-                                                ),
                                               )
-                                        : step == OnboardingStep.auth ||
-                                                step ==
-                                                    OnboardingStep
-                                                        .emailConfirmation ||
-                                                step ==
-                                                    OnboardingStep
-                                                        .resolvingAccount
-                                            ? OnboardingAuthStep(
-                                                draft: state.draft!,
-                                                onCompletionHandoff:
-                                                    _onAuthCompletionHandoff,
-                                              )
-                                            : null,
-            continueEnabled: !isRecommendations &&
-                (!isGoals || _goalsCanSubmit) &&
-                (!isPace || _paceCanSubmit) &&
-                (!isReminder ||
-                    _reminderCanSubmit ||
-                    reminderConfiguration?.schedulingState !=
-                        ReminderSchedulingState.notRequested),
-            showContinueButton: !isRecommendations &&
-                !isPreview &&
-                step != OnboardingStep.auth &&
-                step != OnboardingStep.emailConfirmation &&
-                step != OnboardingStep.resolvingAccount,
-            errorMessage: _stepErrorMessage(context, state, isRecommendations),
-            onBack: () => unawaited(coordinator.goBack()),
-            onContinue: state.canAdvance
-                ? step == OnboardingStep.name
-                    ? () => _nameStepKey.currentState?.submit()
-                    : isGoals
-                        ? () => _goalsStepKey.currentState?.submit()
-                        : isPace
-                            ? () => _paceStepKey.currentState?.submit()
-                            : isHabit
-                                ? () => _habitStepKey.currentState?.submit()
-                                : isReminder
-                                    ? () =>
-                                        _reminderStepKey.currentState?.submit()
-                                    : null
-                : null,
-          ),
+                                        : isPreview
+                                            ? previewHabitConfiguration ==
+                                                        null ||
+                                                    previewReminderConfiguration ==
+                                                        null
+                                                ? const Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  )
+                                                : OnboardingPreviewStep(
+                                                    goalCodes:
+                                                        state.draft!.goalCodes,
+                                                    pace: state.draft!.pace!,
+                                                    habit:
+                                                        previewHabitConfiguration,
+                                                    reminder:
+                                                        previewReminderConfiguration,
+                                                    onEdit: (editStep) =>
+                                                        unawaited(
+                                                      coordinator
+                                                          .goToStepForEditing(
+                                                        editStep,
+                                                      ),
+                                                    ),
+                                                    onSave: () => unawaited(
+                                                      coordinator
+                                                          .continueFromPreview(),
+                                                    ),
+                                                  )
+                                            : step == OnboardingStep.auth ||
+                                                    step ==
+                                                        OnboardingStep
+                                                            .emailConfirmation ||
+                                                    step ==
+                                                        OnboardingStep
+                                                            .resolvingAccount
+                                                ? OnboardingAuthStep(
+                                                    draft: state.draft!,
+                                                    onCompletionHandoff:
+                                                        _onAuthCompletionHandoff,
+                                                  )
+                                                : null,
+                continueEnabled: !isRecommendations &&
+                    (!isGoals || _goalsCanSubmit) &&
+                    (!isPace || _paceCanSubmit) &&
+                    (!isReminder ||
+                        _reminderCanSubmit ||
+                        reminderConfiguration?.schedulingState !=
+                            ReminderSchedulingState.notRequested),
+                showContinueButton: !isRecommendations &&
+                    !isPreview &&
+                    step != OnboardingStep.auth &&
+                    step != OnboardingStep.emailConfirmation &&
+                    step != OnboardingStep.resolvingAccount,
+                errorMessage:
+                    _stepErrorMessage(context, state, isRecommendations),
+                onBack: () => unawaited(coordinator.goBack()),
+                onContinue: state.canAdvance
+                    ? step == OnboardingStep.name
+                        ? () => _nameStepKey.currentState?.submit()
+                        : isGoals
+                            ? () => _goalsStepKey.currentState?.submit()
+                            : isPace
+                                ? () => _paceStepKey.currentState?.submit()
+                                : isHabit
+                                    ? () => _habitStepKey.currentState?.submit()
+                                    : isReminder
+                                        ? () => _reminderStepKey.currentState
+                                            ?.submit()
+                                        : null
+                    : null,
+              ),
+            ),
+          ],
         );
       },
     );
@@ -328,6 +358,9 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
   }) async {
     if (_authHandoffInFlight) return;
     _authHandoffInFlight = true;
+    if (mounted) {
+      setState(() {});
+    }
     OnboardingCoordinator? coordinator;
     BootstrapController? bootstrap;
     try {
@@ -337,6 +370,7 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
       );
       coordinator = context.read<OnboardingCoordinator>();
       bootstrap = context.read<BootstrapController>();
+      final visualPhase = coordinator.state.progress;
       _handoffTrace(
         'completion_callback_received',
         operationId: operationId,
@@ -372,7 +406,9 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
         destination: bootstrap.state.destination?.name,
         draftPresent: coordinator.state.draft != null,
       );
-      await bootstrap.retry();
+      await bootstrap.retryFromOnboardingHandoff(
+        visualPhase: visualPhase,
+      );
       OnboardingRuntimeTrace.log(
         'ONBOARDING_HANDOFF',
         'event=bootstrap_retry_return mounted=$mounted '
@@ -402,6 +438,9 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
         draftPresent: coordinator?.state.draft != null,
       );
       _authHandoffInFlight = false;
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -618,26 +657,5 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
       case OnboardingStep.finalizing:
         return step.code;
     }
-  }
-}
-
-class _LoadingView extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(strokeWidth: 2),
-              const SizedBox(height: 18),
-              Text(context.l10n.onboardingLoading),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

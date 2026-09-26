@@ -25,6 +25,12 @@ enum BootstrapRunMode {
   inAppBootstrap,
 }
 
+/// Identifies the flow that owns the current bootstrap handoff surface.
+enum BootstrapOrigin {
+  normal,
+  onboardingHandoff,
+}
+
 typedef BootstrapDebugLogger = void Function(String message);
 typedef BootstrapHomeReadyCallback = Future<void> Function(
   BootstrapHomeEssentialReady ready,
@@ -374,6 +380,8 @@ class BootstrapState {
     required this.phase,
     required this.runId,
     this.mode = BootstrapRunMode.coldStart,
+    this.origin = BootstrapOrigin.normal,
+    this.onboardingHandoffVisualPhase,
     this.user,
     this.remoteProfile,
     this.destination,
@@ -387,6 +395,8 @@ class BootstrapState {
   final BootstrapPhase phase;
   final int runId;
   final BootstrapRunMode mode;
+  final BootstrapOrigin origin;
+  final double? onboardingHandoffVisualPhase;
   final User? user;
   final RemoteProfile? remoteProfile;
   final BootstrapDestination? destination;
@@ -403,6 +413,8 @@ class BootstrapState {
     BootstrapPhase? phase,
     int? runId,
     BootstrapRunMode? mode,
+    BootstrapOrigin? origin,
+    double? onboardingHandoffVisualPhase,
     User? user,
     bool clearUser = false,
     RemoteProfile? remoteProfile,
@@ -421,6 +433,9 @@ class BootstrapState {
       phase: phase ?? this.phase,
       runId: runId ?? this.runId,
       mode: mode ?? this.mode,
+      origin: origin ?? this.origin,
+      onboardingHandoffVisualPhase:
+          onboardingHandoffVisualPhase ?? this.onboardingHandoffVisualPhase,
       user: clearUser ? null : user ?? this.user,
       remoteProfile:
           clearRemoteProfile ? null : remoteProfile ?? this.remoteProfile,
@@ -544,6 +559,15 @@ class BootstrapController extends ChangeNotifier
 
   Future<void> retry() => _run(
         mode: BootstrapRunMode.inAppBootstrap,
+        origin: _state.origin,
+        onboardingHandoffVisualPhase: _state.onboardingHandoffVisualPhase,
+        trigger: 'post_onboarding_retry',
+      );
+
+  Future<void> retryFromOnboardingHandoff({double? visualPhase}) => _run(
+        mode: BootstrapRunMode.inAppBootstrap,
+        origin: BootstrapOrigin.onboardingHandoff,
+        onboardingHandoffVisualPhase: visualPhase,
         trigger: 'post_onboarding_retry',
       );
 
@@ -702,8 +726,12 @@ class BootstrapController extends ChangeNotifier
     );
   }
 
-  Future<void> _run(
-      {required BootstrapRunMode mode, String trigger = 'unknown'}) async {
+  Future<void> _run({
+    required BootstrapRunMode mode,
+    BootstrapOrigin origin = BootstrapOrigin.normal,
+    double? onboardingHandoffVisualPhase,
+    String trigger = 'unknown',
+  }) async {
     final runId = ++_nextRunId;
     OnboardingRuntimeTrace.log(
       'BOOTSTRAP_TRACE',
@@ -726,6 +754,8 @@ class BootstrapController extends ChangeNotifier
         phase: BootstrapPhase.resolvingSession,
         runId: runId,
         mode: mode,
+        origin: origin,
+        onboardingHandoffVisualPhase: onboardingHandoffVisualPhase,
       ),
     );
     _log(runId,
@@ -777,6 +807,8 @@ class BootstrapController extends ChangeNotifier
           phase: BootstrapPhase.selectingUserScope,
           runId: runId,
           mode: mode,
+          origin: origin,
+          onboardingHandoffVisualPhase: onboardingHandoffVisualPhase,
           user: user,
         ),
       );
@@ -934,7 +966,11 @@ class BootstrapController extends ChangeNotifier
           _recordStaleDiscard(runId, domain: 'authoritative_bootstrap');
           if (_isCurrentRun(runId) &&
               _authController.currentUser?.id == user.id) {
-            unawaited(_run(mode: BootstrapRunMode.inAppBootstrap));
+            unawaited(_run(
+              mode: BootstrapRunMode.inAppBootstrap,
+              origin: origin,
+              onboardingHandoffVisualPhase: onboardingHandoffVisualPhase,
+            ));
           }
           return;
         }
@@ -1051,6 +1087,7 @@ class BootstrapController extends ChangeNotifier
             phase: BootstrapPhase.ready,
             runId: runId,
             mode: mode,
+            origin: BootstrapOrigin.normal,
             user: user,
             remoteProfile: profile,
             destination: destination,
@@ -1083,6 +1120,7 @@ class BootstrapController extends ChangeNotifier
           phase: BootstrapPhase.ready,
           runId: runId,
           mode: mode,
+          origin: BootstrapOrigin.normal,
           user: user,
           remoteProfile: profile,
           destination: destination,
@@ -1116,6 +1154,7 @@ class BootstrapController extends ChangeNotifier
         phase: BootstrapPhase.loadingLocalState,
         runId: runId,
         mode: _state.mode,
+        origin: _state.origin,
       ),
     );
     _log(runId, 'phase=loading_local_state', startedAt: startedAt);

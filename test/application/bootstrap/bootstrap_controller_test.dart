@@ -24,6 +24,8 @@ import 'package:rutio/features/global_wallet/data/cloud/cloud_wallet_snapshot.da
 import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
+import 'package:rutio/features/onboarding/presentation/onboarding_preparation_screen.dart';
+import 'package:rutio/widgets/backgrounds/rutio_sky_background.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/app_startup_gate.dart';
 import 'package:rutio/screens/splash_screen.dart';
@@ -170,6 +172,148 @@ void main() {
       expect(bootstrap.state.pendingOnboardingDraft, isTrue);
       expect(find.byType(BootstrapPreparationScreen), findsNothing);
       expect(find.text('Onboarding Recovery'), findsOneWidget);
+    });
+
+    testWidgets(
+        'onboarding handoff keeps the shared preparation surface during slow bootstrap',
+        (tester) async {
+      final auth = _FakeAuthorityAuthController()
+        .._currentUser = _user('user-1');
+      final bootstrap = _FakeAuthorityBootstrapController(
+        initialDestination: BootstrapDestination.onboarding,
+        initialMode: BootstrapRunMode.inAppBootstrap,
+        initialUser: _user('user-1'),
+        initialRemoteProfile: _profile('user-1', OnboardingStatus.inProgress),
+        initialOrigin: BootstrapOrigin.onboardingHandoff,
+        initialVisualPhase: 0.8,
+        loggedOutDestination: BootstrapDestination.authentication,
+        authController: auth,
+      )
+        ..acquireOnboardingAuthOwnership('operation-1')
+        ..releaseOnboardingAuthOwnership('operation-1');
+      bootstrap.retryCompleter = Completer<void>();
+      addTearDown(() {
+        bootstrap.dispose();
+        auth.dispose();
+      });
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<BootstrapController>.value(
+          value: bootstrap,
+          child: _localizedApp(
+            home: AppStartupGate(
+              onboardingBuilder: (_) => const Text('Onboarding'),
+              authenticatedBuilder: (_) => const Text('Home'),
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Onboarding'), findsOneWidget);
+
+      final retry = bootstrap.retry();
+      await tester.pump();
+      expect(find.byType(OnboardingPreparationScreen), findsOneWidget);
+      expect(find.textContaining('Preparing your Rutio'), findsOneWidget);
+      expect(find.text('Onboarding'), findsNothing);
+
+      bootstrap.retryCompleter!.complete();
+      await retry;
+      await tester.pump();
+
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.byType(OnboardingPreparationScreen), findsNothing);
+    });
+
+    testWidgets(
+        'onboarding handoff origin remains visible through every bootstrap phase',
+        (tester) async {
+      final auth = _FakeAuthorityAuthController()
+        .._currentUser = _user('user-1');
+      final bootstrap = _FakeAuthorityBootstrapController(
+        initialDestination: BootstrapDestination.onboarding,
+        initialMode: BootstrapRunMode.inAppBootstrap,
+        initialOrigin: BootstrapOrigin.onboardingHandoff,
+        initialVisualPhase: 0.8,
+        initialUser: _user('user-1'),
+        initialRemoteProfile: _profile('user-1', OnboardingStatus.inProgress),
+        loggedOutDestination: BootstrapDestination.authentication,
+        authController: auth,
+      );
+      addTearDown(() {
+        bootstrap.dispose();
+        auth.dispose();
+      });
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<BootstrapController>.value(
+          value: bootstrap,
+          child: _localizedApp(
+            home: AppStartupGate(
+              onboardingBuilder: (_) => const Text('Onboarding'),
+              authenticatedBuilder: (_) => const Text('Home'),
+            ),
+          ),
+        ),
+      );
+
+      const pendingPhases = <BootstrapPhase>[
+        BootstrapPhase.resolvingSession,
+        BootstrapPhase.selectingUserScope,
+        BootstrapPhase.loadingLocalState,
+        BootstrapPhase.loadingRemoteProfile,
+        BootstrapPhase.decidingDestination,
+        BootstrapPhase.loadingEssentialHabits,
+        BootstrapPhase.loadingEssentialCosmetics,
+        BootstrapPhase.preloadingEssentialAssets,
+      ];
+      for (final phase in pendingPhases) {
+        bootstrap.emitPhase(phase);
+        for (final elapsed in <Duration>[
+          Duration.zero,
+          Duration(milliseconds: 16),
+          Duration(milliseconds: 16),
+        ]) {
+          await tester.pump(elapsed);
+        }
+        expect(bootstrap.state.origin, BootstrapOrigin.onboardingHandoff);
+        expect(find.byType(OnboardingPreparationScreen), findsOneWidget);
+        final preparation = tester.widget<OnboardingPreparationScreen>(
+          find.byType(OnboardingPreparationScreen),
+        );
+        expect(preparation.phase, 0.8);
+        final background = tester.widget<RutioSkyBackground>(
+          find.byType(RutioSkyBackground),
+        );
+        expect(background.phase, 0.8);
+        expect(background.initialPhase, 0.8);
+        expect(find.byType(BootstrapPreparationScreen), findsNothing);
+      }
+
+      bootstrap.emitPhase(BootstrapPhase.ready,
+          destination: BootstrapDestination.home);
+      await tester.pump();
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.byType(OnboardingPreparationScreen), findsNothing);
+
+      bootstrap.emitPhase(
+        BootstrapPhase.failed,
+        error: const BootstrapError(
+          type: BootstrapErrorType.network,
+          message: 'fallo de prueba',
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(BootstrapPreparationScreen), findsOneWidget);
+      expect(find.byType(OnboardingPreparationScreen), findsNothing);
+
+      bootstrap.emitPhase(
+        BootstrapPhase.loadingRemoteProfile,
+        origin: BootstrapOrigin.normal,
+        mode: BootstrapRunMode.coldStart,
+      );
+      await tester.pump();
+      expect(find.byType(OnboardingPreparationScreen), findsNothing);
+      expect(find.byType(SplashScreen), findsOneWidget);
     });
 
     test('same-user relogin recovers when an authoritative decision goes stale',
@@ -1194,15 +1338,20 @@ class _FakeAuthorityBootstrapController extends BootstrapController {
   _FakeAuthorityBootstrapController({
     required BootstrapDestination initialDestination,
     BootstrapRunMode initialMode = BootstrapRunMode.coldStart,
+    BootstrapOrigin initialOrigin = BootstrapOrigin.normal,
+    double? initialVisualPhase,
+    BootstrapPhase initialPhase = BootstrapPhase.ready,
     User? initialUser,
     RemoteProfile? initialRemoteProfile,
     bool pendingOnboardingDraft = false,
     required this.loggedOutDestination,
     required super.authController,
   })  : _state = BootstrapState(
-          phase: BootstrapPhase.ready,
+          phase: initialPhase,
           runId: 1,
           mode: initialMode,
+          origin: initialOrigin,
+          onboardingHandoffVisualPhase: initialVisualPhase,
           user: initialUser,
           remoteProfile: initialRemoteProfile,
           destination: initialDestination,
@@ -1250,6 +1399,25 @@ class _FakeAuthorityBootstrapController extends BootstrapController {
     _state = _state.copyWith(
       phase: BootstrapPhase.ready,
       destination: BootstrapDestination.home,
+    );
+    notifyListeners();
+  }
+
+  void emitPhase(
+    BootstrapPhase phase, {
+    BootstrapDestination? destination,
+    BootstrapOrigin? origin,
+    BootstrapRunMode? mode,
+    BootstrapError? error,
+  }) {
+    _state = _state.copyWith(
+      phase: phase,
+      origin: origin,
+      mode: mode,
+      destination: destination,
+      clearDestination: destination == null,
+      error: error,
+      clearError: error == null && phase != BootstrapPhase.failed,
     );
     notifyListeners();
   }
