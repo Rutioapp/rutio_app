@@ -134,7 +134,7 @@ class OnboardingShell extends StatelessWidget {
                                 color: AppColors.ink.withValues(alpha: 0.68),
                               ),
                             ),
-                          const SizedBox(height: 28),
+                          SizedBox(height: showStepHeader ? 28 : 0),
                           content ??
                               Container(
                                 width: double.infinity,

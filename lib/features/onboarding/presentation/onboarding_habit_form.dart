@@ -7,6 +7,7 @@ import '../../../screens/habit_detail/widgets/tabs/edit_habit_tab/edit_habit_tab
 import '../../../screens/habit_detail/widgets/tabs/edit_habit_tab/edit_habit_tab_form_data.dart';
 import '../../../screens/habit_detail/widgets/tabs/edit_habit_tab/edit_habit_tab_sections.dart';
 import '../../../utils/family_theme.dart';
+import '../../../utils/app_theme.dart';
 import '../../../widgets/emoji_picker_bottom_sheet.dart';
 import '../domain/models/onboarding_habit_configuration.dart';
 
@@ -65,6 +66,11 @@ class OnboardingHabitFormState extends State<OnboardingHabitForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          l10n.onboardingStepHabit,
+          style: AppTextStyles.welcomeTitle.copyWith(fontSize: 32),
+        ),
+        const SizedBox(height: 14),
         EditHabitIdentitySection(
           titleController: _titleController,
           titleFocusNode: _titleFocusNode,

@@ -599,10 +599,6 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
             context.read<AuthController>().clearError();
             Navigator.of(context).pushNamed('/auth');
           },
-          onSignup: () {
-            context.read<AuthController>().clearError();
-            Navigator.of(context).pushNamed('/auth-signup');
-          },
         ),
       ],
     );

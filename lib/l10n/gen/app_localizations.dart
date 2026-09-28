@@ -527,7 +527,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingStepHabit.
   ///
   /// In es, this message translates to:
-  /// **'Hábito'**
+  /// **'Personaliza tu hábito'**
   String get onboardingStepHabit;
 
   /// No description provided for @onboardingStepReminder.
@@ -1097,7 +1097,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingAuthGoogleCta.
   ///
   /// In es, this message translates to:
-  /// **'Continuar con Google'**
+  /// **'Iniciar sesión con Google'**
   String get onboardingAuthGoogleCta;
 
   /// No description provided for @authOr.
@@ -6050,7 +6050,7 @@ abstract class AppLocalizations {
   /// No description provided for @editHabitHeaderTitle.
   ///
   /// In es, this message translates to:
-  /// **'Editar hábito'**
+  /// **'Personaliza tu hábito'**
   String get editHabitHeaderTitle;
 
   /// No description provided for @editHabitHeaderSubtitle.
@@ -10814,7 +10814,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingAuthAppleCta.
   ///
   /// In es, this message translates to:
-  /// **'Continuar con Apple'**
+  /// **'Iniciar sesión con Apple'**
   String get onboardingAuthAppleCta;
 }
 

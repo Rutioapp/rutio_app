@@ -52,16 +52,16 @@ class OnboardingNameStepState extends State<OnboardingNameStep> {
       children: [
         Text(
           l10n.onboardingNameTitle,
-          style: AppTextStyles.welcomeTitle.copyWith(fontSize: 30),
+          style: AppTextStyles.welcomeTitle.copyWith(fontSize: 32),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Text(
           l10n.onboardingNameSubtitle,
           style: AppTextStyles.welcomeSub.copyWith(
             color: AppColors.ink.withValues(alpha: 0.68),
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
         TextField(
           controller: _controller,
           focusNode: _focusNode,

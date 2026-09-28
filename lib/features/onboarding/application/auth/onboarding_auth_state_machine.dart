@@ -102,6 +102,29 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
   bool get resendInFlight => _resendInFlight;
   bool get manualCheckInFlight => _manualCheckInFlight;
 
+  /// Keeps the editable account name in the same draft that is later used
+  /// to complete onboarding.
+  Future<void> updateName(String value) async {
+    if (_state.phase == OnboardingAuthPhase.authenticating ||
+        _state.phase == OnboardingAuthPhase.completing ||
+        _state.phase == OnboardingAuthPhase.completed) {
+      return;
+    }
+    final draft = _state.draft.copyWith(firstName: value.trim());
+    _publish(OnboardingAuthState(
+      phase: _state.phase,
+      draft: draft,
+      authenticatedUserId: _state.authenticatedUserId,
+      pendingAuthRequest: _state.pendingAuthRequest,
+      resolution: _state.resolution,
+      preparedHabitDecision: _state.preparedHabitDecision,
+      intent: _state.intent,
+      failureStage: _state.failureStage,
+      error: _state.error,
+    ));
+    await _persist(draft);
+  }
+
   Future<bool> resendConfirmation() async {
     if (_resendInFlight ||
         _state.phase != OnboardingAuthPhase.awaitingEmailConfirmation) {

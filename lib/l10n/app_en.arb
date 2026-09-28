@@ -70,7 +70,7 @@
   "onboardingStepGoals": "Goals",
   "onboardingStepPace": "Pace",
   "onboardingStepRecommendations": "Recommendations",
-  "onboardingStepHabit": "Habit",
+  "onboardingStepHabit": "Customize your habit",
   "onboardingStepReminder": "Reminder",
   "onboardingStepPreview": "Preview",
   "onboardingNameTitle": "What should we call you?",
@@ -172,7 +172,7 @@
     "loginForgotPassword":  "Forgot your password?",
     "loginPrimaryCta":  "Continue →",
     "loginGoogleCta": "Continue with Google",
-    "onboardingAuthGoogleCta": "Continue with Google",
+    "onboardingAuthGoogleCta": "Sign in with Google",
     "authOr": "or",
     "loginSwitchPrefix":  "Don\u0027t have an account?  ",
     "loginSwitchLink":  "Sign up",
@@ -1585,7 +1585,7 @@
     "editHabitCounterStepDialogSubtitle": "How much the counter increases each tap.",
     "editHabitTimesPerWeekDialogTitle": "Times per week",
     "editHabitTimesPerWeekDialogSubtitle": "You can go over it during the week.",
-    "editHabitHeaderTitle": "Edit habit",
+    "editHabitHeaderTitle": "Customize your habit",
     "editHabitHeaderSubtitle": "Adjust how you want to keep going.",
     "editHabitSectionIdentity": "Identity",
     "editHabitSectionCategory": "Category",
@@ -2674,5 +2674,5 @@
   "onboardingAuthNetwork": "No connection. Try again.",
   "onboardingAuthGenericError": "Authentication could not be completed.",
   "loginAppleCta": "Continue with Apple",
-  "onboardingAuthAppleCta": "Continue with Apple"
+  "onboardingAuthAppleCta": "Sign in with Apple"
 }

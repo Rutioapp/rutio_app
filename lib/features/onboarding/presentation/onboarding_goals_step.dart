@@ -78,9 +78,9 @@ class OnboardingGoalsStepState extends State<OnboardingGoalsStep> {
       children: [
         Text(
           l10n.onboardingGoalsTitle,
-          style: AppTextStyles.welcomeTitle.copyWith(fontSize: 30),
+          style: AppTextStyles.welcomeTitle.copyWith(fontSize: 32),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Text(
           l10n.onboardingGoalsSubtitle,
           style: AppTextStyles.welcomeSub.copyWith(

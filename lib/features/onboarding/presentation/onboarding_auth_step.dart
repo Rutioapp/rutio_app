@@ -54,13 +54,14 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
   BootstrapController? _bootstrapController;
   final _email = TextEditingController();
   final _password = TextEditingController();
-  bool _isSignUp = true;
+  late final TextEditingController _name;
+  bool _showManualForm = false;
 
   @override
   void initState() {
     super.initState();
+    _name = TextEditingController(text: widget.draft.firstName ?? '');
     _email.text = widget.draft.authEmail ?? '';
-    _isSignUp = widget.draft.authIntent != AuthIntent.signIn;
     _ownershipOperationId = widget.draft.onboardingOperationId;
     try {
       _bootstrapController = context.read<BootstrapController>();
@@ -139,6 +140,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     _machine.dispose();
     _email.dispose();
     _password.dispose();
+    _name.dispose();
     super.dispose();
   }
 
@@ -149,9 +151,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
     if (_isAuthenticatedFrozenRecovery) return;
     FocusScope.of(context).unfocus();
     await _machine.authenticate(
-      command: _isSignUp
-          ? OnboardingAuthCommand.signUpWithEmail
-          : OnboardingAuthCommand.signInWithEmail,
+      command: OnboardingAuthCommand.signUpWithEmail,
       email: _email.text,
       password: _password.text,
     );
@@ -161,10 +161,9 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
   Future<void> _submitGoogle() async {
     if (_isAuthenticatedFrozenRecovery) return;
     FocusScope.of(context).unfocus();
+    await _machine.updateName(_name.text);
     await _machine.authenticate(
-      command: _isSignUp
-          ? OnboardingAuthCommand.signUpWithEmail
-          : OnboardingAuthCommand.signInWithEmail,
+      command: OnboardingAuthCommand.signUpWithEmail,
       method: OnboardingAuthMethod.google,
       email: _email.text,
     );
@@ -173,24 +172,12 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
   Future<void> _submitApple() async {
     if (_isAuthenticatedFrozenRecovery) return;
     FocusScope.of(context).unfocus();
+    await _machine.updateName(_name.text);
     await _machine.authenticate(
-      command: _isSignUp
-          ? OnboardingAuthCommand.signUpWithEmail
-          : OnboardingAuthCommand.signInWithEmail,
+      command: OnboardingAuthCommand.signUpWithEmail,
       method: OnboardingAuthMethod.apple,
       email: _email.text,
     );
-  }
-
-  void _switchMode(bool signUp) {
-    if (_isAuthenticatedFrozenRecovery ||
-        _machine.state.phase == OnboardingAuthPhase.authenticating) {
-      return;
-    }
-    setState(() {
-      _isSignUp = signUp;
-      _password.clear();
-    });
   }
 
   @override
@@ -279,88 +266,53 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       );
     }
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+      padding: const EdgeInsets.fromLTRB(22, 0, 22, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _isSignUp
-                ? l10n.onboardingAuthCreateTitle
-                : l10n.onboardingAuthLoginTitle,
-            style: AppTextStyles.authTitle,
-          ),
-          const SizedBox(height: 6),
-          Text(l10n.onboardingAuthSubtitle, style: AppTextStyles.authSub),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _switchMode(true),
-                  child: Text(l10n.onboardingAuthCreateMode),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _switchMode(false),
-                  child: Text(l10n.onboardingAuthLoginMode),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          GoogleAuthButton(
-            label: l10n.onboardingAuthGoogleCta,
-            isLoading: state.phase == OnboardingAuthPhase.authenticating,
-            onTap: _submitGoogle,
-          ),
-          if (Platform.isIOS) ...[
-            const SizedBox(height: 12),
-            AppleAuthButton(
-              label: l10n.onboardingAuthAppleCta,
-              isLoading: state.phase == OnboardingAuthPhase.authenticating,
-              onTap: _submitApple,
-            ),
-          ],
-          const SizedBox(height: 18),
-          Center(child: Text(l10n.authOr, style: AppTextStyles.authSub)),
-          const SizedBox(height: 18),
-          AuthField(
-            label: l10n.fieldEmailLabel,
-            hint: l10n.fieldEmailHint,
-            keyboardType: TextInputType.emailAddress,
-            controller: _email,
+            l10n.onboardingAuthCreateTitle,
+            style: AppTextStyles.welcomeTitle.copyWith(fontSize: 32),
           ),
           const SizedBox(height: 14),
-          AuthField(
-            label: l10n.fieldPasswordLabel,
-            hint: l10n.signupPasswordHint,
-            obscure: true,
-            controller: _password,
-          ),
-          if (state.error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                _errorCopy(l10n, state.error!.code),
-                style: TextStyle(color: AppColors.rust.withValues(alpha: .94)),
+          Text(l10n.onboardingAuthSubtitle, style: AppTextStyles.authSub),
+          const SizedBox(height: 24),
+          if (_showManualForm)
+            _ManualSignupForm(
+              l10n: l10n,
+              state: state,
+              nameController: _name,
+              emailController: _email,
+              passwordController: _password,
+              onSubmit: () async {
+                await _machine.updateName(_name.text);
+                await _submit();
+              },
+              errorCopy: state.error == null
+                  ? null
+                  : _errorCopy(l10n, state.error!.code),
+            )
+          else ...[
+            AuthPrimaryButton(
+              label: l10n.onboardingAuthCreateCta,
+              isLoading: state.phase == OnboardingAuthPhase.authenticating,
+              onTap: () => setState(() => _showManualForm = true),
+            ),
+            const SizedBox(height: 12),
+            GoogleAuthButton(
+              label: l10n.onboardingAuthGoogleCta,
+              isLoading: state.phase == OnboardingAuthPhase.authenticating,
+              onTap: _submitGoogle,
+            ),
+            if (Platform.isIOS) ...[
+              const SizedBox(height: 12),
+              AppleAuthButton(
+                label: l10n.onboardingAuthAppleCta,
+                isLoading: state.phase == OnboardingAuthPhase.authenticating,
+                onTap: _submitApple,
               ),
-            ),
-          if (state.error?.code ==
-              OnboardingAuthErrorCode.emailAlreadyRegistered)
-            TextButton(
-              onPressed: () => _switchMode(false),
-              child: Text(l10n.onboardingAuthLoginMode),
-            ),
-          const SizedBox(height: 18),
-          AuthPrimaryButton(
-            label: _isSignUp
-                ? l10n.onboardingAuthCreateCta
-                : l10n.onboardingAuthLoginCta,
-            isLoading: state.phase == OnboardingAuthPhase.authenticating,
-            onTap: _submit,
-          ),
+            ],
+          ],
         ],
       ),
     );
@@ -392,6 +344,68 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       default:
         return l10n.onboardingAuthGenericError;
     }
+  }
+}
+
+class _ManualSignupForm extends StatelessWidget {
+  const _ManualSignupForm({
+    required this.l10n,
+    required this.state,
+    required this.nameController,
+    required this.emailController,
+    required this.passwordController,
+    required this.onSubmit,
+    required this.errorCopy,
+  });
+
+  final AppLocalizations l10n;
+  final OnboardingAuthState state;
+  final TextEditingController nameController;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final VoidCallback onSubmit;
+  final String? errorCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AuthField(
+          label: l10n.signupNameLabel,
+          hint: l10n.signupNameHint,
+          controller: nameController,
+        ),
+        const SizedBox(height: 14),
+        AuthField(
+          label: l10n.fieldEmailLabel,
+          hint: l10n.fieldEmailHint,
+          keyboardType: TextInputType.emailAddress,
+          controller: emailController,
+        ),
+        const SizedBox(height: 14),
+        AuthField(
+          label: l10n.fieldPasswordLabel,
+          hint: l10n.signupPasswordHint,
+          obscure: true,
+          controller: passwordController,
+        ),
+        if (errorCopy != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              errorCopy!,
+              style: TextStyle(color: AppColors.rust.withValues(alpha: .94)),
+            ),
+          ),
+        const SizedBox(height: 18),
+        AuthPrimaryButton(
+          label: l10n.onboardingAuthCreateCta,
+          isLoading: state.phase == OnboardingAuthPhase.authenticating,
+          onTap: onSubmit,
+        ),
+      ],
+    );
   }
 }
 

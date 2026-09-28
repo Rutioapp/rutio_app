@@ -71,9 +71,9 @@ class OnboardingPaceStepState extends State<OnboardingPaceStep> {
       children: [
         Text(
           l10n.onboardingPaceTitle,
-          style: AppTextStyles.welcomeTitle.copyWith(fontSize: 30),
+          style: AppTextStyles.welcomeTitle.copyWith(fontSize: 32),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         ...OnboardingPace.values.indexed.expand((entry) {
           final index = entry.$1;
           final pace = entry.$2;

@@ -11,7 +11,7 @@ class WelcomeContent extends StatelessWidget {
     super.key,
     required this.onPrepare,
     required this.onLogin,
-    required this.onSignup,
+    this.onSignup,
     this.onResume,
     this.onRestart,
     this.resumeStep,
@@ -21,7 +21,7 @@ class WelcomeContent extends StatelessWidget {
 
   final VoidCallback onPrepare;
   final VoidCallback onLogin;
-  final VoidCallback onSignup;
+  final VoidCallback? onSignup;
   final VoidCallback? onResume;
   final VoidCallback? onRestart;
   final String? resumeStep;
@@ -134,12 +134,13 @@ class WelcomeContent extends StatelessWidget {
                     child: Text(l10n.onboardingExistingAccount),
                   ),
                 ),
-                Center(
-                  child: TextButton(
-                    onPressed: isBusy ? null : onSignup,
-                    child: Text(l10n.welcomeSignupButton),
+                if (onSignup != null)
+                  Center(
+                    child: TextButton(
+                      onPressed: isBusy ? null : onSignup,
+                      child: Text(l10n.welcomeSignupButton),
+                    ),
                   ),
-                ),
               ],
             ),
           ),

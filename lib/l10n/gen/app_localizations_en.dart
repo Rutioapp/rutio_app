@@ -239,7 +239,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingStepRecommendations => 'Recommendations';
 
   @override
-  String get onboardingStepHabit => 'Habit';
+  String get onboardingStepHabit => 'Customize your habit';
 
   @override
   String get onboardingStepReminder => 'Reminder';
@@ -552,7 +552,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginGoogleCta => 'Continue with Google';
 
   @override
-  String get onboardingAuthGoogleCta => 'Continue with Google';
+  String get onboardingAuthGoogleCta => 'Sign in with Google';
 
   @override
   String get authOr => 'or';
@@ -3406,7 +3406,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can go over it during the week.';
 
   @override
-  String get editHabitHeaderTitle => 'Edit habit';
+  String get editHabitHeaderTitle => 'Customize your habit';
 
   @override
   String get editHabitHeaderSubtitle => 'Adjust how you want to keep going.';
@@ -6263,5 +6263,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginAppleCta => 'Continue with Apple';
 
   @override
-  String get onboardingAuthAppleCta => 'Continue with Apple';
+  String get onboardingAuthAppleCta => 'Sign in with Apple';
 }
