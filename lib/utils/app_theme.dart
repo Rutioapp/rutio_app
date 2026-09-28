@@ -22,6 +22,16 @@ class AppColors {
   static const skyMid2 = Color(0xFFC8DDED);
   static const skyBottom = Color(0xFFD4CAAC);
 
+  // Shared loading journey tokens.
+  static const loadingMorningTop = Color(0xFFDCEBFF);
+  static const loadingMorningMid = Color(0xFFBFD8F5);
+  static const loadingMorningBottom = Color(0xFFE0E8F3);
+  static const loadingDayTop = Color(0xFFBFD8F5);
+  static const loadingDayMid = Color(0xFFAFC4E4);
+  static const loadingLateAfternoon = Color(0xFFD8C2BC);
+  static const loadingSun = Color(0xFFFFD86B);
+  static const loadingSunsetAccent = Color(0xFFE5B39A);
+
   // Ground progression
   static const groundDry = Color(0xFFBAA460);
   static const groundSprout = Color(0xFFB2A260);

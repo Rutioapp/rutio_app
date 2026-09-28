@@ -25,10 +25,9 @@ import 'package:rutio/features/global_wallet/data/cloud/wallet_cache.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/onboarding/presentation/onboarding_preparation_screen.dart';
-import 'package:rutio/widgets/backgrounds/rutio_sky_background.dart';
+import 'package:rutio/widgets/loading/rutio_loading_screen.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/app_startup_gate.dart';
-import 'package:rutio/screens/splash_screen.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -97,7 +96,7 @@ void main() {
       );
       fixture.resolveGuest();
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 2000));
+      await _pumpUntilFound(tester, find.text('Onboarding'));
 
       expect(fixture.bootstrap.state.phase, BootstrapPhase.ready);
       expect(
@@ -213,12 +212,13 @@ void main() {
       final retry = bootstrap.retry();
       await tester.pump();
       expect(find.byType(OnboardingPreparationScreen), findsOneWidget);
-      expect(find.textContaining('Preparing your Rutio'), findsOneWidget);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
       expect(find.text('Onboarding'), findsNothing);
 
       bootstrap.retryCompleter!.complete();
       await retry;
       await tester.pump();
+      await _pumpUntilFound(tester, find.text('Home'));
 
       expect(find.text('Home'), findsOneWidget);
       expect(find.byType(OnboardingPreparationScreen), findsNothing);
@@ -281,17 +281,13 @@ void main() {
           find.byType(OnboardingPreparationScreen),
         );
         expect(preparation.phase, 0.8);
-        final background = tester.widget<RutioSkyBackground>(
-          find.byType(RutioSkyBackground),
-        );
-        expect(background.phase, 0.8);
-        expect(background.initialPhase, 0.8);
         expect(find.byType(BootstrapPreparationScreen), findsNothing);
       }
 
       bootstrap.emitPhase(BootstrapPhase.ready,
           destination: BootstrapDestination.home);
       await tester.pump();
+      await _pumpUntilFound(tester, find.text('Home'));
       expect(find.text('Home'), findsOneWidget);
       expect(find.byType(OnboardingPreparationScreen), findsNothing);
 
@@ -313,7 +309,7 @@ void main() {
       );
       await tester.pump();
       expect(find.byType(OnboardingPreparationScreen), findsNothing);
-      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
     });
 
     test('same-user relogin recovers when an authoritative decision goes stale',
@@ -884,7 +880,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
       expect(find.textContaining('Preparando tu espacio'), findsNothing);
       expect(find.text('Home'), findsNothing);
     });
@@ -914,7 +910,7 @@ void main() {
       fixture.resolveUser('user-1');
       await tester.pump();
 
-      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
       expect(find.textContaining('Preparando tu espacio'), findsNothing);
       expect(find.text('Generic Home'), findsNothing);
       expect(find.text('Personalized Home'), findsNothing);
@@ -923,7 +919,7 @@ void main() {
       await tester.pump();
 
       expect(habits.calls, 1);
-      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
       expect(find.textContaining('Preparando tu espacio'), findsNothing);
       expect(find.text('Generic Home'), findsNothing);
       expect(find.text('Personalized Home'), findsNothing);
@@ -934,18 +930,11 @@ void main() {
 
       expect(find.textContaining('Preparando tu espacio'), findsNothing);
       expect(find.text('Generic Home'), findsNothing);
-      expect(find.byType(SplashScreen), findsOneWidget);
-      expect(find.text('Personalized Home'), findsNothing);
-
-      await tester.pump(const Duration(milliseconds: 1999));
-
-      expect(find.byType(SplashScreen), findsOneWidget);
-      expect(find.text('Personalized Home'), findsNothing);
-
-      await tester.pump(const Duration(milliseconds: 1));
-
-      expect(find.byType(SplashScreen), findsNothing);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
       expect(find.text('Personalized Home'), findsOneWidget);
+
+      await _pumpUntilGone(tester, find.byType(RutioLoadingScreen));
+      expect(find.byType(RutioLoadingScreen), findsNothing);
     });
 
     testWidgets(
@@ -973,13 +962,13 @@ void main() {
         ),
       );
 
-      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
 
       fixture.resolveUser('user-1');
       await tester.pump();
 
       expect(fixture.bootstrap.state.mode, BootstrapRunMode.coldStart);
-      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
 
       habitsCompleter.complete(_habitsReady('user-1'));
       cosmeticsCompleter.complete(_cosmeticsReady('user-1'));
@@ -995,12 +984,11 @@ void main() {
       expect(fixture.bootstrap.state.cosmeticsReadyToken?.appliedRevision, 1);
       expect(find.textContaining('Preparando tu espacio'), findsNothing);
       expect(find.text('Generic Home'), findsNothing);
-      expect(find.byType(SplashScreen), findsOneWidget);
-      expect(find.text('Personalized Home'), findsNothing);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
+      expect(find.text('Personalized Home'), findsOneWidget);
 
-      await tester.pump(const Duration(milliseconds: 2000));
-
-      expect(find.byType(SplashScreen), findsNothing);
+      await _pumpUntilGone(tester, find.byType(RutioLoadingScreen));
+      expect(find.byType(RutioLoadingScreen), findsNothing);
       expect(find.text('Personalized Home'), findsOneWidget);
     });
 
@@ -1034,16 +1022,16 @@ void main() {
       await tester.pump();
 
       expect(fixture.bootstrap.state.mode, BootstrapRunMode.inAppBootstrap);
-      expect(find.byType(SplashScreen), findsNothing);
-      expect(find.textContaining('Preparando tu espacio'), findsOneWidget);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
       expect(find.text('Personalized Home'), findsNothing);
 
       cosmeticsCompleter.complete(_cosmeticsReady('user-1'));
       await tester.pump();
       await tester.pump();
 
-      expect(find.textContaining('Preparando tu espacio'), findsNothing);
       expect(find.text('Personalized Home'), findsOneWidget);
+      await _pumpUntilGone(tester, find.byType(RutioLoadingScreen));
+      expect(find.byType(RutioLoadingScreen), findsNothing);
     });
 
     testWidgets('direct /shop waits for essential bootstrap before content',
@@ -1074,7 +1062,7 @@ void main() {
       fixture.resolveUser('user-1');
       await tester.pump();
 
-      expect(find.byType(SplashScreen), findsOneWidget);
+      expect(find.byType(RutioLoadingScreen), findsOneWidget);
       expect(find.textContaining('Preparando tu espacio'), findsNothing);
       expect(find.text('Shop'), findsNothing);
 
@@ -1241,6 +1229,30 @@ Widget _personalizedHomeBuilder(BuildContext context) =>
     const Text('Personalized Home');
 
 Widget _shopBuilder(BuildContext context) => const Text('Shop');
+
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 3),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (finder.evaluate().isEmpty && DateTime.now().isBefore(deadline)) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+  expect(finder, findsOneWidget);
+}
+
+Future<void> _pumpUntilGone(
+  WidgetTester tester,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 3),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (finder.evaluate().isNotEmpty && DateTime.now().isBefore(deadline)) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+  expect(finder, findsNothing);
+}
 
 Widget _onboardingBuilder(BuildContext context) => const Text('Onboarding');
 

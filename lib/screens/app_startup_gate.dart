@@ -14,6 +14,7 @@ import '../utils/app_theme.dart';
 import 'auth/sign_in_screen.dart';
 import '../features/onboarding/presentation/onboarding_v1_screen.dart';
 import '../features/onboarding/presentation/onboarding_preparation_screen.dart';
+import '../widgets/loading/rutio_loading_screen.dart';
 import 'root_gate.dart';
 import 'splash_screen.dart';
 import 'welcome_screen.dart';
@@ -38,10 +39,11 @@ class AppStartupGate extends StatefulWidget {
 
 class _AppStartupGateState extends State<AppStartupGate> {
   static int _nextGateIdentity = 0;
-  static const Duration _minimumSplashDuration = Duration(milliseconds: 2000);
-
-  Timer? _minimumSplashTimer;
-  bool _minimumSplashElapsed = false;
+  int? _loadingRunId;
+  int? _completedLoadingRunId;
+  int? _finalTransitionRunId;
+  bool _finalTransitionFading = false;
+  Timer? _finalTransitionTimer;
   String? _lastStartupGateSnapshot;
   late final int _gateIdentity;
 
@@ -49,12 +51,6 @@ class _AppStartupGateState extends State<AppStartupGate> {
   void initState() {
     super.initState();
     _gateIdentity = ++_nextGateIdentity;
-    _minimumSplashTimer = Timer(_minimumSplashDuration, () {
-      if (!mounted) return;
-      setState(() {
-        _minimumSplashElapsed = true;
-      });
-    });
   }
 
   @override
@@ -63,7 +59,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
       'STARTUP_GATE',
       'gateIdentity=$_gateIdentity routeName=unknown event=disposed',
     );
-    _minimumSplashTimer?.cancel();
+    _finalTransitionTimer?.cancel();
     super.dispose();
   }
 
@@ -98,22 +94,48 @@ class _AppStartupGateState extends State<AppStartupGate> {
         final state = controller.state;
         final isColdStart = state.mode == BootstrapRunMode.coldStart;
         final routeName = ModalRoute.of(context)?.settings.name;
-        final shouldHoldReadySplash = isColdStart &&
-            !_minimumSplashElapsed &&
-            (routeName == null || routeName == '/' || routeName == '/home');
+        final shouldHoldReadySplash =
+            (isColdStart || _loadingRunId == state.runId) &&
+                _completedLoadingRunId != state.runId &&
+                (routeName == null || routeName == '/' || routeName == '/home');
         if (state.isReady) {
+          if (_finalTransitionRunId == state.runId) {
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                AnimatedOpacity(
+                  opacity: _finalTransitionFading ? 1 : 0,
+                  duration: const Duration(milliseconds: 360),
+                  curve: Curves.easeInOut,
+                  child: _buildDestination(context, state.destination!),
+                ),
+                Positioned.fill(
+                  child: AnimatedOpacity(
+                    opacity: _finalTransitionFading ? 0 : 1,
+                    duration: const Duration(milliseconds: 360),
+                    curve: Curves.easeInOut,
+                    child: const RutioLoadingFinalBackground(),
+                  ),
+                ),
+              ],
+            );
+          }
           if (shouldHoldReadySplash) {
             _traceStartupGate(
               controller,
               state,
               render: 'splash',
-              reason: 'minimum_cold_start_splash',
+              reason: 'loading_completion_transition',
             );
-            controller.logColdStartSplashShown();
-            return const SplashScreen(
-              autoAdvanceDuration: null,
-              enableTapToContinue: false,
-              showTapHint: false,
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildDestination(context, state.destination!),
+                RutioLoadingScreen(
+                  isOperationComplete: true,
+                  onCompleted: () => _markLoadingCompleted(state.runId),
+                ),
+              ],
             );
           }
           if (state.destination == BootstrapDestination.onboarding &&
@@ -151,6 +173,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
         }
 
         if (state.origin == BootstrapOrigin.onboardingHandoff) {
+          _loadingRunId = state.runId;
           _traceStartupGate(
             controller,
             state,
@@ -163,6 +186,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
         }
 
         if (isColdStart) {
+          _loadingRunId = state.runId;
           _traceStartupGate(
             controller,
             state,
@@ -170,10 +194,12 @@ class _AppStartupGateState extends State<AppStartupGate> {
             reason: 'cold_start_pending',
           );
           controller.logColdStartSplashShown();
-          return const SplashScreen(
-            autoAdvanceDuration: null,
-            enableTapToContinue: false,
-            showTapHint: false,
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              const SizedBox.expand(),
+              const RutioLoadingScreen(),
+            ],
           );
         }
 
@@ -184,9 +210,48 @@ class _AppStartupGateState extends State<AppStartupGate> {
           reason: 'bootstrap_not_ready',
         );
         controller.logPreparingScreenShown();
-        return const BootstrapPreparationScreen();
+        _loadingRunId = state.runId;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            const SizedBox.expand(),
+            const RutioLoadingScreen(),
+          ],
+        );
       },
     );
+  }
+
+  void _markLoadingCompleted(int runId) {
+    if (!mounted ||
+        _completedLoadingRunId == runId ||
+        _finalTransitionRunId == runId) {
+      return;
+    }
+    _finalTransitionTimer?.cancel();
+    setState(() {
+      _completedLoadingRunId = runId;
+      _finalTransitionRunId = runId;
+      _finalTransitionFading = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        if (_finalTransitionRunId == runId) {
+          _finalTransitionFading = true;
+        }
+      });
+      _finalTransitionTimer = Timer(const Duration(milliseconds: 360), () {
+        if (!mounted) return;
+        setState(() {
+          if (_finalTransitionRunId == runId) {
+            _finalTransitionRunId = null;
+            _finalTransitionFading = false;
+          }
+        });
+        _finalTransitionTimer = null;
+      });
+    });
   }
 
   void _traceStartupGate(
@@ -281,60 +346,25 @@ class BootstrapPreparationScreen extends StatelessWidget {
     super.key,
     this.errorMessage,
     this.onRetry,
+    this.isOperationComplete = false,
+    this.onFinished,
+    this.startJourney = true,
   });
 
   final String? errorMessage;
   final VoidCallback? onRetry;
+  final bool isOperationComplete;
+  final VoidCallback? onFinished;
+  final bool startJourney;
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.platformBrightnessOf(context);
-    final isDark = brightness == Brightness.dark;
-    final background = isDark ? AppColors.ink : AppColors.cream;
-    final foreground = isDark ? AppColors.cream : AppColors.ink;
-    final muted = foreground.withValues(alpha: 0.68);
-
-    return Scaffold(
-      backgroundColor: background,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CupertinoActivityIndicator(radius: 14),
-                const SizedBox(height: 22),
-                Text(
-                  'Preparando tu espacio…',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.authTitle.copyWith(
-                    color: foreground,
-                    fontSize: 24,
-                  ),
-                ),
-                if (errorMessage != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    errorMessage!,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.authSub.copyWith(
-                      color: muted,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  CupertinoButton.filled(
-                    borderRadius: BorderRadius.circular(8),
-                    onPressed: onRetry,
-                    child: const Text('Reintentar'),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
+    return RutioLoadingScreen(
+      isOperationComplete: isOperationComplete,
+      errorMessage: errorMessage,
+      onRetry: onRetry,
+      startJourney: startJourney,
+      onCompleted: onFinished,
     );
   }
 }
