@@ -1,4 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
+
+import '../../../core/observability/analytics_events.dart';
+import '../../../core/observability/analytics_service.dart';
 
 import '../data/bundled_recommendation_catalog_repository.dart';
 import '../data/onboarding_habit_draft_adapter.dart';
@@ -125,13 +129,15 @@ class OnboardingCoordinator extends ChangeNotifier {
     RecommendationCatalogRepository? catalogRepository,
     OnboardingRecommendationRankingService? rankingService,
     OnboardingReminderPermissionGateway? reminderPermissionGateway,
+    AnalyticsService? analyticsService,
   })  : _draftService = draftService,
         _catalogRepository =
             catalogRepository ?? const BundledRecommendationCatalogRepository(),
         _rankingService =
             rankingService ?? const OnboardingRecommendationRankingService(),
         _reminderPermissionGateway = reminderPermissionGateway ??
-            AppOnboardingReminderPermissionGateway();
+            AppOnboardingReminderPermissionGateway(),
+        _analyticsService = analyticsService;
 
   static const List<OnboardingStep> internalSteps = <OnboardingStep>[
     OnboardingStep.name,
@@ -150,6 +156,7 @@ class OnboardingCoordinator extends ChangeNotifier {
   final RecommendationCatalogRepository _catalogRepository;
   final OnboardingRecommendationRankingService _rankingService;
   final OnboardingReminderPermissionGateway _reminderPermissionGateway;
+  final AnalyticsService? _analyticsService;
   OnboardingRecommendationCatalogSnapshot? _catalogSnapshot;
   OnboardingCoordinatorState _state = const OnboardingCoordinatorState(
     status: OnboardingCoordinatorStatus.loading,
@@ -158,6 +165,8 @@ class OnboardingCoordinator extends ChangeNotifier {
   int? _scopeEpoch;
   bool _reminderSubmitInFlight = false;
   bool _returnToPreviewAfterEdit = false;
+  String? _analyticsDraftId;
+  String? _analyticsStep;
   _PendingReminderSubmission? _pendingReminderSubmission;
 
   OnboardingCoordinatorState get state => _state;
@@ -244,6 +253,8 @@ class OnboardingCoordinator extends ChangeNotifier {
         effectiveStep: OnboardingStep.name,
         isAtWelcome: false,
       ));
+      _trackOnboardingStarted(created);
+      _trackOnboardingStepViewed(OnboardingStep.name);
     } catch (error) {
       if (!_isCurrent(epoch)) return;
       _publish(OnboardingCoordinatorState(
@@ -270,6 +281,8 @@ class OnboardingCoordinator extends ChangeNotifier {
       error: null,
       validation: null,
     ));
+    _trackOnboardingStarted(current);
+    _trackOnboardingStepViewed(effectiveStepFor(current));
   }
 
   /// Refreshes coordinator state after AUTH-3 has completed and cleared the
@@ -294,6 +307,8 @@ class OnboardingCoordinator extends ChangeNotifier {
         effectiveStep: OnboardingStep.name,
         isAtWelcome: false,
       ));
+      _trackOnboardingStarted(created);
+      _trackOnboardingStepViewed(OnboardingStep.name);
     } catch (error) {
       if (!_isCurrent(epoch)) return;
       _publish(OnboardingCoordinatorState(
@@ -879,6 +894,7 @@ class OnboardingCoordinator extends ChangeNotifier {
     int epoch, {
     bool validate = true,
   }) async {
+    final previousStep = _state.effectiveStep;
     if (validate) {
       final validation = _validateCandidate(candidate, _state.effectiveStep!);
       if (!validation.isValid) {
@@ -908,6 +924,10 @@ class OnboardingCoordinator extends ChangeNotifier {
         isAtWelcome: false,
         recommendations: _state.recommendations,
       ));
+      if (previousStep != null) {
+        _trackOnboardingStepCompleted(previousStep);
+      }
+      _trackOnboardingStepViewed(step);
       return true;
     } catch (error) {
       if (!_isCurrent(epoch)) return false;
@@ -920,6 +940,30 @@ class OnboardingCoordinator extends ChangeNotifier {
       ));
       return false;
     }
+  }
+
+  void _trackOnboardingStarted(OnboardingDraft draft) {
+    if (_analyticsDraftId == draft.draftId) return;
+    _analyticsDraftId = draft.draftId;
+    unawaited(
+        _analyticsService?.track(ProductAnalyticsEvents.onboardingStarted));
+  }
+
+  void _trackOnboardingStepViewed(OnboardingStep step) {
+    final value = analyticsOnboardingStep(step);
+    if (_analyticsStep == value) return;
+    _analyticsStep = value;
+    unawaited(_analyticsService?.track(
+      ProductAnalyticsEvents.onboardingStepViewed,
+      properties: <String, Object?>{'step': value},
+    ));
+  }
+
+  void _trackOnboardingStepCompleted(OnboardingStep step) {
+    unawaited(_analyticsService?.track(
+      ProductAnalyticsEvents.onboardingStepCompleted,
+      properties: <String, Object?>{'step': analyticsOnboardingStep(step)},
+    ));
   }
 
   OnboardingValidationResult _validateCandidate(

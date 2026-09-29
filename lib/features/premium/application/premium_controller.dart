@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../application/auth/auth_controller.dart';
+import '../../../core/observability/crash_reporting_keys.dart';
+import '../../../core/observability/crash_reporting_service.dart';
 import '../data/premium_repository.dart';
 import '../domain/premium_access.dart';
 import '../domain/premium_purchase.dart';
@@ -9,14 +13,17 @@ class PremiumController extends ChangeNotifier {
   PremiumController({
     required PremiumRepository repository,
     required AuthController authController,
+    CrashReportingService? crashReportingService,
   })  : _repository = repository,
-        _authController = authController {
+        _authController = authController,
+        _crashReportingService = crashReportingService {
     _repository.addListener(_onRepositoryChanged);
     _authController.addListener(_onAuthChanged);
   }
 
   final PremiumRepository _repository;
   final AuthController _authController;
+  final CrashReportingService? _crashReportingService;
   PremiumPlanKind _selectedPlan = PremiumPlanKind.annual;
   bool _purchaseInProgress = false;
   bool _restoringPurchases = false;
@@ -140,6 +147,10 @@ class PremiumController extends ChangeNotifier {
       _error = null;
     }
     _ensureAvailableSelection();
+    unawaited(_crashReportingService?.setKey(
+      CrashReportingKeys.premiumStatus,
+      _repository.accessState.status.name,
+    ));
     notifyListeners();
   }
 

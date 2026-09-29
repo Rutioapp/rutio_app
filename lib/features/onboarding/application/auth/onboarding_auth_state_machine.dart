@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/diagnostics/onboarding_runtime_trace.dart';
+import '../../../../core/observability/analytics_events.dart';
+import '../../../../core/observability/analytics_service.dart';
 
 import '../../domain/auth/onboarding_auth_contracts.dart';
 import '../../domain/models/onboarding_draft.dart';
@@ -66,6 +68,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
       required String operationId,
       required bool habitPresent,
     })? onCompletionHandoff,
+    AnalyticsService? analyticsService,
   })  : _auth = auth,
         _accountResolution = accountResolution,
         _completion = completion,
@@ -74,6 +77,7 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
         _autoCompleteAfterAccountResolution =
             autoCompleteAfterAccountResolution,
         _onCompletionHandoff = onCompletionHandoff,
+        _analyticsService = analyticsService,
         _state = OnboardingAuthState(
           phase: draft.currentStep == OnboardingStep.emailConfirmation
               ? OnboardingAuthPhase.awaitingEmailConfirmation
@@ -93,6 +97,8 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
     required String operationId,
     required bool habitPresent,
   })? _onCompletionHandoff;
+  final AnalyticsService? _analyticsService;
+  bool _completionAnalyticsEmitted = false;
   OnboardingAuthState _state;
   String? _lastSessionUserId;
   bool _resendInFlight = false;
@@ -574,6 +580,16 @@ class OnboardingAuthStateMachine extends ChangeNotifier {
         error: failure,
       ));
       return false;
+    }
+    if (!_completionAnalyticsEmitted) {
+      _completionAnalyticsEmitted = true;
+      unawaited(_analyticsService?.track(
+        ProductAnalyticsEvents.onboardingCompleted,
+        properties: <String, Object?>{
+          'prepared_habit':
+              _state.preparedHabitDecision == PreparedHabitDecision.keep,
+        },
+      ));
     }
     OnboardingRuntimeTrace.log(
       'ONBOARDING_HANDOFF',

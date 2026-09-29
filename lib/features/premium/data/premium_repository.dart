@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 
 import '../domain/premium_access.dart';
 import '../domain/premium_mappers.dart';
 import '../domain/premium_purchase.dart';
 import 'revenuecat/revenuecat_client.dart';
 import 'revenuecat/revenuecat_configuration.dart';
+import '../../../core/observability/crash_reporting_keys.dart';
+import '../../../core/observability/crash_reporting_service.dart';
 
 typedef PremiumRepositoryLogger = void Function(String message);
 
@@ -14,15 +17,18 @@ class PremiumRepository extends ChangeNotifier {
     required RevenueCatConfiguration configuration,
     PremiumRepositoryLogger? logger,
     Duration operationTimeout = const Duration(seconds: 15),
+    CrashReportingService? crashReportingService,
   })  : _client = client,
         _configuration = configuration,
         _logger = logger ?? _defaultLogger,
-        _operationTimeout = operationTimeout;
+        _operationTimeout = operationTimeout,
+        _crashReportingService = crashReportingService;
 
   final RevenueCatClient _client;
   final RevenueCatConfiguration _configuration;
   final PremiumRepositoryLogger _logger;
   final Duration _operationTimeout;
+  final CrashReportingService? _crashReportingService;
 
   PremiumAccessState _accessState = const PremiumAccessState.unknown();
   PremiumOffering? _currentOffering;
@@ -91,6 +97,11 @@ class PremiumRepository extends ChangeNotifier {
       await _logDebugDiagnostics();
     } catch (error) {
       _debugLog('RevenueCat initialization failure: ${_safeError(error)}');
+      _reportNonFatal(
+        error,
+        StackTrace.current,
+        CrashReportingReasons.revenueCatInitializationFailure,
+      );
     }
   }
 
@@ -288,6 +299,11 @@ class PremiumRepository extends ChangeNotifier {
       _sdkIdentityIsIdentified = false;
       _boundUserId = null;
       _debugLog('RevenueCat identity login unavailable: ${_safeError(error)}');
+      _reportNonFatal(
+        error,
+        StackTrace.current,
+        CrashReportingReasons.revenueCatIdentityFailure,
+      );
     }
   }
 
@@ -382,6 +398,14 @@ class PremiumRepository extends ChangeNotifier {
 
   void _notifyListeners() {
     if (!_disposed) notifyListeners();
+  }
+
+  void _reportNonFatal(Object error, StackTrace stackTrace, String reason) {
+    unawaited(_crashReportingService?.recordNonFatal(
+      error,
+      stackTrace,
+      reason: reason,
+    ));
   }
 
   Future<void> _logDebugDiagnostics() async {

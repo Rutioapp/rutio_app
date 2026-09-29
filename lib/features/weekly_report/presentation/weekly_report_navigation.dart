@@ -11,7 +11,7 @@ Future<void> openWeeklyReport(
   bool openedFromHistory = false,
 }) async {
   if (!canAccessPremiumFeature(context, PremiumFeature.weeklyReport)) {
-    logPremiumGateBlocked(PremiumFeature.weeklyReport);
+    logPremiumGateBlocked(context, PremiumFeature.weeklyReport);
     await openPremiumPaywall(
       context,
       source: PremiumUpgradeSource.weeklyReport,
@@ -32,7 +32,7 @@ Future<void> openWeeklyReport(
 
 Future<void> openWeeklyReportHistory(BuildContext context) async {
   if (!canAccessPremiumFeature(context, PremiumFeature.weeklyReport)) {
-    logPremiumGateBlocked(PremiumFeature.weeklyReport);
+    logPremiumGateBlocked(context, PremiumFeature.weeklyReport);
     await openPremiumPaywall(
       context,
       source: PremiumUpgradeSource.weeklyReport,
