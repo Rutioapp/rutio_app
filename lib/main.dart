@@ -25,6 +25,7 @@ import 'features/notifications/application/notification_context_builder.dart';
 import 'features/notifications/application/notification_interaction_router.dart';
 import 'features/notifications/application/notification_os_reconciliation_coordinator.dart';
 import 'features/notifications/application/personalized_notification_orchestrator.dart';
+import 'features/premium/application/premium_controller.dart';
 import 'features/notifications/application/personalized_notification_plan_builder.dart';
 import 'features/notifications/application/personalized_notification_settings_controller.dart';
 import 'features/notifications/data/local/local_notification_template_catalog.dart';
@@ -52,6 +53,9 @@ import 'features/feedback/domain/feedback_category.dart';
 import 'features/feedback/domain/feedback_report.dart';
 import 'features/feedback/domain/feedback_status.dart';
 import 'features/shop/application/shop_cosmetics_controller.dart';
+import 'features/premium/data/premium_repository.dart';
+import 'features/premium/data/revenuecat/revenuecat_client.dart';
+import 'features/premium/data/revenuecat/revenuecat_configuration.dart';
 import 'features/shop/data/cloud/shop_cloud_runtime_config.dart';
 import 'features/global_wallet/application/global_wallet_controller.dart';
 import 'features/achievements/presentation/screens/achievements_screen.dart';
@@ -325,6 +329,17 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<ShopCloudRuntimeConfig>.value(value: shopRuntimeConfig),
+        ChangeNotifierProvider<PremiumRepository>(
+          lazy: false,
+          create: (_) {
+            final repository = PremiumRepository(
+              client: PurchasesRevenueCatClient(),
+              configuration: RevenueCatConfiguration.fromEnvironment(),
+            );
+            unawaited(repository.initialize());
+            return repository;
+          },
+        ),
         Provider<AuthDeepLinkReceiver>(
           lazy: false,
           create: (_) => AuthDeepLinkReceiver(),
@@ -514,6 +529,7 @@ class MyApp extends StatelessWidget {
             return AuthController(
               context.read<AuthRepository>(),
               userStateStore: store,
+              premiumRepository: context.read<PremiumRepository>(),
               profileRepository: context.read<ProfileRepository>(),
               globalWalletController: context.read<GlobalWalletController>(),
               personalizedNotificationOrchestrator:
@@ -533,6 +549,12 @@ class MyApp extends StatelessWidget {
               ),
             );
           },
+        ),
+        ChangeNotifierProvider<PremiumController>(
+          create: (context) => PremiumController(
+            repository: context.read<PremiumRepository>(),
+            authController: context.read<AuthController>(),
+          ),
         ),
         ChangeNotifierProxyProvider4<AuthController, UserStateStore,
             ProfileRepository, ShopCosmeticsController, BootstrapController>(

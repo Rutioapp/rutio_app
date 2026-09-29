@@ -2,6 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rutio/features/habits/domain/metrics/flexible_weekly_quota.dart';
+import 'package:rutio/features/premium/application/premium_controller.dart';
+import 'package:rutio/features/premium/domain/premium_access.dart';
+import 'package:rutio/features/premium/domain/premium_access_policy.dart';
+import 'package:rutio/features/premium/presentation/premium_navigation.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_global_insight_resolver.dart';
 import 'package:rutio/features/habits/domain/models/habit_reward_transaction.dart';
@@ -22,6 +26,7 @@ import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_weekly_improvement_chip.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_summary_card.dart';
 import 'package:rutio/features/statistics/presentation/v3/widgets/statistics_v3_yearly_consistency_shell.dart';
+import 'package:rutio/features/weekly_report/presentation/weekly_report_navigation.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_screen.dart';
@@ -55,7 +60,7 @@ class StatisticsV3Screen extends StatefulWidget {
 }
 
 class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
-  StatisticsV3Period _period = StatisticsV3Period.week;
+  StatisticsV3Period _period = StatisticsV3Period.day;
   bool _showHabitView = false;
   UserStateStore? _rewardTransactionsStore;
   int? _rewardTransactionsScopeEpoch;
@@ -116,17 +121,33 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final listBottomPadding = (bottomInset + 32).clamp(48.0, 88.0).toDouble();
     final store = context.watch<UserStateStore>();
+    // The production app always provides PremiumController from main.dart.
+    // Keep isolated widget fixtures usable when they intentionally omit the
+    // application provider graph.
+    final premiumState = context.watch<PremiumController?>()?.accessState ??
+        const PremiumAccessState(
+          status: PremiumAccessStatus.premium,
+          isPremium: true,
+        );
+    final canUsePerHabit = PremiumAccessPolicy.canAccess(
+      PremiumFeature.perHabitStatistics,
+      premiumState,
+    );
+    final periodFeature = _featureForPeriod(_period);
+    final periodForData = periodFeature == null ||
+            PremiumAccessPolicy.canAccess(periodFeature, premiumState)
+        ? _period
+        : StatisticsV3Period.day;
     _ensureHabitRewardTransactionsLoaded(store);
     final viewData = buildStatisticsV3ViewData(
       store: store,
-      period: _period,
+      period: periodForData,
       l10n: l10n,
       habitRewardTransactions: _habitRewardTransactions,
     );
-    final habitListItems = buildStatisticsV3HabitListData(
-      store: store,
-      l10n: l10n,
-    );
+    final habitListItems = canUsePerHabit
+        ? buildStatisticsV3HabitListData(store: store, l10n: l10n)
+        : const <StatisticsV3HabitListItem>[];
     final globalInsight = resolveStatisticsV3GlobalInsight(viewData);
     final currentStreakDays = _currentStreakDaysFor(store);
     final highlightedHabitStreakDays =
@@ -148,6 +169,11 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
             onGoArchived: () =>
                 _navReplace(context, const ArchivedHabitsScreen()),
             onGoStats: () {},
+            onGoWeeklyReport: () => openWeeklyReport(context),
+            weeklyReportLocked: !PremiumAccessPolicy.canAccess(
+              PremiumFeature.weeklyReport,
+              premiumState,
+            ),
             onGoShop: () => Navigator.pushNamed(context, '/shop'),
             onGoProfile: () => _navReplace(context, const ProfileScreen()),
           ),
@@ -161,8 +187,14 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                     title: l10n.habitStatsTitle,
                     subtitle: l10n.statisticsV3Subtitle,
                     isHabitView: _showHabitView,
-                    onToggleView: () =>
-                        setState(() => _showHabitView = !_showHabitView),
+                    isHabitViewLocked: !canUsePerHabit,
+                    onToggleView: () {
+                      if (!canUsePerHabit && !_showHabitView) {
+                        _openLockedFeature(PremiumFeature.perHabitStatistics);
+                        return;
+                      }
+                      setState(() => _showHabitView = !_showHabitView);
+                    },
                     onMenuTap: () => Scaffold.of(ctx).openDrawer(),
                   ),
                 ),
@@ -184,6 +216,10 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                         );
                     },
                     onHabitTap: (item) {
+                      if (!canUsePerHabit) {
+                        _openLockedFeature(PremiumFeature.perHabitStatistics);
+                        return;
+                      }
                       Navigator.of(context).push(
                         CupertinoPageRoute(
                           builder: (_) => HabitDetailScreen(
@@ -199,6 +235,15 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                   StatisticsV3PeriodSelector(
                     value: _period,
                     onChanged: (next) => setState(() => _period = next),
+                    isLocked: (period) {
+                      final feature = _featureForPeriod(period);
+                      return feature != null &&
+                          !PremiumAccessPolicy.canAccess(feature, premiumState);
+                    },
+                    onLockedTap: (period) {
+                      final feature = _featureForPeriod(period);
+                      if (feature != null) _openLockedFeature(feature);
+                    },
                   ),
                   const SizedBox(height: 12),
                   StatisticsV3SummaryCard(
@@ -299,6 +344,41 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
           ),
         ),
       ],
+    );
+  }
+
+  PremiumFeature? _featureForPeriod(StatisticsV3Period period) {
+    switch (period) {
+      case StatisticsV3Period.day:
+        return null;
+      case StatisticsV3Period.week:
+        return PremiumFeature.weeklyStatistics;
+      case StatisticsV3Period.month:
+        return PremiumFeature.monthlyStatistics;
+      case StatisticsV3Period.year:
+        return PremiumFeature.annualStatistics;
+    }
+  }
+
+  void _openLockedFeature(PremiumFeature feature) {
+    if (feature == PremiumFeature.weeklyReport) {
+      openWeeklyReport(context);
+      return;
+    }
+    logPremiumGateBlocked(feature);
+    openPremiumPaywall(
+      context,
+      source: switch (feature) {
+        PremiumFeature.weeklyStatistics =>
+          PremiumUpgradeSource.weeklyStatistics,
+        PremiumFeature.monthlyStatistics =>
+          PremiumUpgradeSource.monthlyStatistics,
+        PremiumFeature.annualStatistics =>
+          PremiumUpgradeSource.annualStatistics,
+        PremiumFeature.perHabitStatistics =>
+          PremiumUpgradeSource.perHabitStatistics,
+        PremiumFeature.weeklyReport => PremiumUpgradeSource.weeklyReport,
+      },
     );
   }
 

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../l10n/l10n.dart';
+import '../../../../features/premium/application/premium_controller.dart';
+import '../../../../features/premium/domain/premium_access.dart';
+import '../../../../features/premium/domain/premium_access_policy.dart';
+import '../../../../features/premium/presentation/premium_gate.dart';
 import 'habit_stats/habit_stats_header.dart';
 import 'habit_stats/habit_stats_helpers.dart';
 import 'habit_stats/habit_stats_hero_card.dart';
@@ -48,6 +53,19 @@ class _HabitStatsTabState extends State<HabitStatsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final premiumState = context.watch<PremiumController?>()?.accessState ??
+        const PremiumAccessState(
+          status: PremiumAccessStatus.premium,
+          isPremium: true,
+        );
+    if (!PremiumAccessPolicy.canAccess(
+      PremiumFeature.perHabitStatistics,
+      premiumState,
+    )) {
+      return const PremiumLockedFeatureView(
+        feature: PremiumFeature.perHabitStatistics,
+      );
+    }
     final shellData = buildHabitStatsShellData(
       context,
       widget.habit,

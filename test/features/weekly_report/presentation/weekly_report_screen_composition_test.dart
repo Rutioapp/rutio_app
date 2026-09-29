@@ -30,6 +30,8 @@ void main() {
     expect(source, contains('Icons.history_rounded'));
     expect(source, contains('tooltip: context.l10n.weeklyReportHistory'));
     expect(source, contains('WeeklyReportHistoryScreen.route'));
+    expect(source, contains('openWeeklyReportHistory(context)'));
+    expect(source, isNot(contains('pushNamed(WeeklyReportHistoryScreen.route')));
     expect(source, contains('openedFromHistory'));
     expect(source, contains('widget.openedFromHistory'));
   });

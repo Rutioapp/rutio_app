@@ -9,6 +9,7 @@ class StatisticsV3Header extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.isHabitView,
+    this.isHabitViewLocked = false,
     required this.onToggleView,
     required this.onMenuTap,
   });
@@ -16,6 +17,7 @@ class StatisticsV3Header extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool isHabitView;
+  final bool isHabitViewLocked;
   final VoidCallback onToggleView;
   final VoidCallback onMenuTap;
 
@@ -65,31 +67,38 @@ class StatisticsV3Header extends StatelessWidget {
                 width: 104,
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: InkWell(
-                    onTap: onToggleView,
-                    borderRadius: BorderRadius.circular(18),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOutCubic,
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: isHabitView
-                            ? actionColor.withValues(alpha: 0.13)
-                            : Colors.white.withValues(alpha: 0.82),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
+                  child: Semantics(
+                    label: isHabitViewLocked
+                        ? '${context.l10n.premiumLockLabel}: ${context.l10n.premiumFeaturePerHabitStatistics}'
+                        : null,
+                    child: InkWell(
+                      onTap: onToggleView,
+                      borderRadius: BorderRadius.circular(18),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
                           color: isHabitView
-                              ? actionColor.withValues(alpha: 0.36)
-                              : const Color(0xFFE8E2D8),
+                              ? actionColor.withValues(alpha: 0.13)
+                              : Colors.white.withValues(alpha: 0.82),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isHabitView
+                                ? actionColor.withValues(alpha: 0.36)
+                                : const Color(0xFFE8E2D8),
+                          ),
                         ),
-                      ),
-                      child: Icon(
-                        Icons.bar_chart_rounded,
-                        size: 18,
-                        color: isHabitView
-                            ? actionColor
-                            : const Color(0xFF6A5A47),
+                        child: Icon(
+                          isHabitViewLocked
+                              ? Icons.lock_outline_rounded
+                              : Icons.bar_chart_rounded,
+                          size: 18,
+                          color: isHabitView
+                              ? actionColor
+                              : const Color(0xFF6A5A47),
+                        ),
                       ),
                     ),
                   ),

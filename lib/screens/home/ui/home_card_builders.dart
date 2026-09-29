@@ -255,6 +255,20 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       required HabitDetailScreenMode mode,
       int initialTab = 0,
     }) {
+      if (mode == HabitDetailScreenMode.statsOnly &&
+          !canAccessPremiumFeature(
+            context,
+            PremiumFeature.perHabitStatistics,
+          )) {
+        logPremiumGateBlocked(PremiumFeature.perHabitStatistics);
+        unawaited(
+          openPremiumPaywall(
+            context,
+            source: PremiumUpgradeSource.perHabitStatistics,
+          ),
+        );
+        return;
+      }
       Navigator.push(
         context,
         CupertinoPageRoute(

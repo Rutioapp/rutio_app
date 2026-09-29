@@ -6260,6 +6260,87 @@ class AppLocalizationsEn extends AppLocalizations {
       'Authentication could not be completed.';
 
   @override
+  String get premiumSectionTitle => 'Premium';
+
+  @override
+  String get premiumTitle => 'Rutio Premium';
+
+  @override
+  String get premiumSettingsSubtitle => 'Advanced statistics and reports';
+
+  @override
+  String get premiumSubtitle =>
+      'See your progress with more context and continuity.';
+
+  @override
+  String get premiumBenefitWeekly => 'Weekly statistics';
+
+  @override
+  String get premiumBenefitMonthly => 'Monthly statistics';
+
+  @override
+  String get premiumBenefitAnnual => 'Annual statistics';
+
+  @override
+  String get premiumBenefitByHabit => 'Statistics by habit';
+
+  @override
+  String get premiumBenefitReport => 'Weekly Report';
+
+  @override
+  String get premiumRetry => 'Retry';
+
+  @override
+  String get premiumActive => 'Premium active';
+
+  @override
+  String get premiumActiveSubtitle =>
+      'Your Premium access is active on this account.';
+
+  @override
+  String get premiumSignInRequired => 'Sign in to purchase or restore Premium.';
+
+  @override
+  String get premiumUnavailable =>
+      'Plans are unavailable right now. Try again.';
+
+  @override
+  String get premiumGenericError =>
+      'The operation could not be completed. Try again.';
+
+  @override
+  String get premiumBadge => 'PREMIUM';
+
+  @override
+  String get premiumLockLabel => 'Premium feature locked';
+
+  @override
+  String get premiumGateTitle => 'This feature is part of Rutio Premium';
+
+  @override
+  String get premiumViewAction => 'View Premium';
+
+  @override
+  String get premiumFeatureWeeklyStatistics =>
+      'Unlock weekly statistics with Premium.';
+
+  @override
+  String get premiumFeatureMonthlyStatistics =>
+      'Unlock monthly statistics with Premium.';
+
+  @override
+  String get premiumFeatureAnnualStatistics =>
+      'Unlock annual statistics with Premium.';
+
+  @override
+  String get premiumFeaturePerHabitStatistics =>
+      'Unlock statistics by habit with Premium.';
+
+  @override
+  String get premiumFeatureWeeklyReport =>
+      'Unlock the Weekly Report with Premium.';
+
+  @override
   String get loginAppleCta => 'Continue with Apple';
 
   @override
