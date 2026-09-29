@@ -159,6 +159,77 @@ void main() {
     repository.dispose();
   });
 
+  test('restore with an active entitlement publishes Premium', () async {
+    const premiumInfo = RevenueCatCustomerInfoSnapshot(
+      activeEntitlements: {
+        'premium': RevenueCatEntitlementSnapshot(
+          isActive: true,
+          isTrial: false,
+          productIdentifier: 'rutio_test_premium_monthly',
+          willRenew: true,
+        ),
+      },
+      allEntitlements: {},
+    );
+    final client = _FakeRevenueCatClient(customerInfo: premiumInfo);
+    final repository = PremiumRepository(
+      client: client,
+      configuration: const RevenueCatConfiguration(testApiKey: 'test_key'),
+    );
+
+    await repository.syncIdentity('user-a');
+    final result = await repository.restorePurchases();
+
+    expect(result.isSuccess, isTrue);
+    expect(repository.accessState.isPremium, isTrue);
+    expect(client.restoreCalls, 1);
+    repository.dispose();
+  });
+
+  test('restore without an entitlement leaves the account non-Premium',
+      () async {
+    final repository = PremiumRepository(
+      client: _FakeRevenueCatClient(),
+      configuration: const RevenueCatConfiguration(testApiKey: 'test_key'),
+    );
+
+    await repository.syncIdentity('user-a');
+    final result = await repository.restorePurchases();
+
+    expect(result.error?.kind, PremiumPurchaseErrorKind.premiumNotActive);
+    expect(repository.accessState.isPremium, isFalse);
+    expect(repository.accessState.status, PremiumAccessStatus.free);
+    repository.dispose();
+  });
+
+  test('restore errors preserve an already valid Premium state', () async {
+    const premiumInfo = RevenueCatCustomerInfoSnapshot(
+      activeEntitlements: {
+        'premium': RevenueCatEntitlementSnapshot(
+          isActive: true,
+          isTrial: false,
+          productIdentifier: 'rutio_test_premium_monthly',
+          willRenew: true,
+        ),
+      },
+      allEntitlements: {},
+    );
+    final client = _FakeRevenueCatClient(customerInfo: premiumInfo)
+      ..throwsOnRestore = true;
+    final repository = PremiumRepository(
+      client: client,
+      configuration: const RevenueCatConfiguration(testApiKey: 'test_key'),
+    );
+
+    await repository.syncIdentity('user-a');
+    expect(repository.accessState.isPremium, isTrue);
+    final result = await repository.restorePurchases();
+
+    expect(result.kind, PremiumPurchaseResultKind.failed);
+    expect(repository.accessState.isPremium, isTrue);
+    repository.dispose();
+  });
+
   test('duplicate purchase calls share one in-flight operation', () async {
     final client = _FakeRevenueCatClient(
       customerInfo: const RevenueCatCustomerInfoSnapshot(
@@ -366,6 +437,8 @@ class _FakeRevenueCatClient implements RevenueCatClient {
   int logOutCalls = 0;
   int addListenerCalls = 0;
   int removeListenerCalls = 0;
+  int restoreCalls = 0;
+  bool throwsOnRestore = false;
   RevenueCatCustomerInfoListener? _listener;
   final List<RevenueCatCustomerInfoListener> listeners = [];
 
@@ -433,6 +506,9 @@ class _FakeRevenueCatClient implements RevenueCatClient {
   }
 
   @override
-  Future<RevenueCatCustomerInfoSnapshot> restorePurchases() async =>
-      customerInfo;
+  Future<RevenueCatCustomerInfoSnapshot> restorePurchases() async {
+    restoreCalls++;
+    if (throwsOnRestore) throw StateError('restore unavailable');
+    return customerInfo;
+  }
 }

@@ -130,6 +130,9 @@ Future<void> _presentPremiumPaywall(
     }
     switch (result) {
       case PaywallResult.purchased:
+        // Hosted Paywall owns the transaction. Refresh once after it closes so
+        // the app state does not depend solely on listener delivery timing.
+        await controller.refresh();
         if (analytics != null)
           unawaited(analytics.track(
             ProductAnalyticsEvents.purchaseCompleted,
@@ -153,6 +156,7 @@ Future<void> _presentPremiumPaywall(
             },
           ));
       case PaywallResult.restored:
+        await controller.refresh();
         if (analytics != null)
           unawaited(analytics.track(
             ProductAnalyticsEvents.restoreCompleted,
