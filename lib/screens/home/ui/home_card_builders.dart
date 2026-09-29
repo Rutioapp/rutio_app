@@ -251,25 +251,23 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
       }
     }
 
-    void openHabitDetails({
+    Future<void> openHabitDetails({
       required HabitDetailScreenMode mode,
       int initialTab = 0,
-    }) {
+    }) async {
       if (mode == HabitDetailScreenMode.statsOnly &&
           !canAccessPremiumFeature(
             context,
             PremiumFeature.perHabitStatistics,
           )) {
         logPremiumGateBlocked(context, PremiumFeature.perHabitStatistics);
-        unawaited(
-          openPremiumPaywall(
-            context,
-            source: PremiumUpgradeSource.perHabitStatistics,
-          ),
+        final unlocked = await openPremiumPaywall(
+          context,
+          source: PremiumUpgradeSource.perHabitStatistics,
         );
-        return;
+        if (!context.mounted || !unlocked) return;
       }
-      Navigator.push(
+      await Navigator.push(
         context,
         CupertinoPageRoute(
           builder: (_) => HabitDetailScreen(

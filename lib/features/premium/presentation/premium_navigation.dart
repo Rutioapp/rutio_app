@@ -71,17 +71,16 @@ class RevenueCatPaywallPresenter {
   }
 }
 
-Future<void>? _paywallPresentationInFlight;
+Future<bool>? _paywallPresentationInFlight;
 
-Future<void> openPremiumPaywall(
+Future<bool> openPremiumPaywall(
   BuildContext context, {
   required PremiumUpgradeSource source,
   PremiumPaywallPresenter? presenter,
 }) async {
   final existingPresentation = _paywallPresentationInFlight;
   if (existingPresentation != null) {
-    await existingPresentation;
-    return;
+    return existingPresentation;
   }
 
   final future = _presentPremiumPaywall(
@@ -91,7 +90,7 @@ Future<void> openPremiumPaywall(
   );
   _paywallPresentationInFlight = future;
   try {
-    await future;
+    return await future;
   } finally {
     if (identical(_paywallPresentationInFlight, future)) {
       _paywallPresentationInFlight = null;
@@ -99,7 +98,7 @@ Future<void> openPremiumPaywall(
   }
 }
 
-Future<void> _presentPremiumPaywall(
+Future<bool> _presentPremiumPaywall(
   BuildContext context, {
   required PremiumUpgradeSource source,
   required PremiumPaywallPresenter presenter,
@@ -108,17 +107,19 @@ Future<void> _presentPremiumPaywall(
 
   if (!controller.isAuthenticated || !controller.identityReady) {
     await _pushStatusScreen(context);
-    return;
+    return false;
   }
 
   if (controller.accessState.isPremium) {
-    await _pushStatusScreen(context);
-    return;
+    return true;
   }
 
   try {
-    final result = await presenter();
     final analytics = context.read<AnalyticsService?>();
+    final result = await presenter();
+    _debugPaywallFailure(
+      'Paywall source=${source.name} result=${result.name}',
+    );
     if (result != PaywallResult.error && result != PaywallResult.notPresented) {
       if (analytics != null)
         unawaited(analytics.track(
@@ -133,6 +134,8 @@ Future<void> _presentPremiumPaywall(
         // Hosted Paywall owns the transaction. Refresh once after it closes so
         // the app state does not depend solely on listener delivery timing.
         await controller.refresh();
+        final unlocked = controller.accessState.isPremium;
+        _debugPaywallFailure('Paywall continuation unlocked=$unlocked');
         if (analytics != null)
           unawaited(analytics.track(
             ProductAnalyticsEvents.purchaseCompleted,
@@ -140,6 +143,7 @@ Future<void> _presentPremiumPaywall(
               'upgrade_source': analyticsUpgradeSource(source),
             },
           ));
+        if (unlocked) return true;
       case PaywallResult.cancelled:
         if (analytics != null)
           unawaited(analytics.track(
@@ -155,8 +159,11 @@ Future<void> _presentPremiumPaywall(
               'upgrade_source': analyticsUpgradeSource(source),
             },
           ));
+        return false;
       case PaywallResult.restored:
         await controller.refresh();
+        final unlocked = controller.accessState.isPremium;
+        _debugPaywallFailure('Paywall continuation unlocked=$unlocked');
         if (analytics != null)
           unawaited(analytics.track(
             ProductAnalyticsEvents.restoreCompleted,
@@ -164,24 +171,18 @@ Future<void> _presentPremiumPaywall(
               'upgrade_source': analyticsUpgradeSource(source),
             },
           ));
+        if (unlocked) return true;
       case PaywallResult.error:
       case PaywallResult.notPresented:
-        break;
+        return false;
     }
-    if (context.mounted &&
-        (result == PaywallResult.error ||
-            result == PaywallResult.notPresented)) {
-      _debugPaywallFailure('RevenueCatUI returned $result');
-      await _pushFallbackScreen(context, source: source);
-    }
+    return false;
   } catch (error, stackTrace) {
     _debugPaywallFailure(
       'RevenueCatUI presentation threw an exception: $error',
       stackTrace,
     );
-    if (context.mounted) {
-      await _pushFallbackScreen(context, source: source);
-    }
+    return false;
   }
 }
 
@@ -194,22 +195,5 @@ void _debugPaywallFailure(String message, [StackTrace? stackTrace]) {
 Future<void> _pushStatusScreen(BuildContext context) {
   return Navigator.of(context).push<void>(
     CupertinoPageRoute<void>(builder: (_) => const PremiumScreen()),
-  );
-}
-
-Future<void> _pushFallbackScreen(
-  BuildContext context, {
-  required PremiumUpgradeSource source,
-}) {
-  return Navigator.of(context).push<void>(
-    CupertinoPageRoute<void>(
-      builder: (_) => PremiumScreen(
-        fallback: true,
-        onRetry: () async {
-          Navigator.of(context).pop();
-          await openPremiumPaywall(context, source: source);
-        },
-      ),
-    ),
   );
 }
