@@ -213,7 +213,9 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                     isHabitViewLocked: !canUsePerHabit,
                     onToggleView: () {
                       if (!canUsePerHabit && !_showHabitView) {
-                        _openLockedFeature(PremiumFeature.perHabitStatistics);
+                        unawaited(
+                          _openLockedFeature(PremiumFeature.perHabitStatistics),
+                        );
                         return;
                       }
                       setState(() => _showHabitView = !_showHabitView);
@@ -238,12 +240,14 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                           ),
                         );
                     },
-                    onHabitTap: (item) {
+                    onHabitTap: (item) async {
                       if (!canUsePerHabit) {
-                        _openLockedFeature(PremiumFeature.perHabitStatistics);
-                        return;
+                        final unlocked = await _openLockedFeature(
+                          PremiumFeature.perHabitStatistics,
+                        );
+                        if (!context.mounted || !unlocked) return;
                       }
-                      Navigator.of(context).push(
+                      await Navigator.of(context).push(
                         CupertinoPageRoute(
                           builder: (_) => HabitDetailScreen(
                             habit: item.habit,
@@ -265,7 +269,11 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
                     },
                     onLockedTap: (period) {
                       final feature = _featureForPeriod(period);
-                      if (feature != null) _openLockedFeature(feature);
+                      if (feature != null) {
+                        unawaited(
+                          _openLockedFeature(feature, requestedPeriod: period),
+                        );
+                      }
                     },
                   ),
                   const SizedBox(height: 12),
@@ -383,13 +391,16 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
     }
   }
 
-  void _openLockedFeature(PremiumFeature feature) {
+  Future<bool> _openLockedFeature(
+    PremiumFeature feature, {
+    StatisticsV3Period? requestedPeriod,
+  }) async {
     if (feature == PremiumFeature.weeklyReport) {
-      openWeeklyReport(context);
-      return;
+      await openWeeklyReport(context);
+      return false;
     }
     logPremiumGateBlocked(context, feature);
-    openPremiumPaywall(
+    final unlocked = await openPremiumPaywall(
       context,
       source: switch (feature) {
         PremiumFeature.weeklyStatistics =>
@@ -403,6 +414,13 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
         PremiumFeature.weeklyReport => PremiumUpgradeSource.weeklyReport,
       },
     );
+    if (!mounted || !unlocked) return false;
+    if (requestedPeriod != null) {
+      setState(() => _period = requestedPeriod);
+    } else if (feature == PremiumFeature.perHabitStatistics) {
+      setState(() => _showHabitView = true);
+    }
+    return true;
   }
 
   int _currentStreakDaysFor(UserStateStore store) {
