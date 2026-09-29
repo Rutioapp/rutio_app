@@ -7,6 +7,7 @@ import 'package:rutio/utils/app_theme.dart';
 import '../../application/auth/auth_controller.dart';
 import '../../core/diagnostics/onboarding_runtime_trace.dart';
 import '../../features/feedback/presentation/screens/feedback_home_screen.dart';
+import '../../features/premium/presentation/premium_navigation.dart';
 import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
 import '../edit_profile/edit_profile_screen.dart';
@@ -80,6 +81,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.edit_outlined,
               title: context.l10n.editProfileTitle,
               onTap: () => _openEditProfile(context),
+            ),
+          ),
+          const SizedBox(height: 18),
+          _SettingsSectionLabel(context.l10n.premiumSectionTitle),
+          const SizedBox(height: 10),
+          SectionCard(
+            child: ProfileOptionTile(
+              icon: Icons.auto_awesome_outlined,
+              title: context.l10n.premiumTitle,
+              subtitle: context.l10n.premiumSettingsSubtitle,
+              iconColor: AppColors.sage,
+              onTap: () => openPremiumPaywall(
+                context,
+                source: PremiumUpgradeSource.settings,
+              ),
             ),
           ),
           const SizedBox(height: 18),

@@ -3,6 +3,24 @@ import '../features/achievements/domain/models/achievement.dart';
 import '../core/notifications/notification_permission_service.dart';
 import '../core/permissions/app_permission.dart';
 import 'gen/app_localizations.dart';
+import '../features/premium/domain/premium_access_policy.dart';
+
+extension AppLocalizationsPremiumGateX on AppLocalizations {
+  String premiumFeatureMessage(PremiumFeature feature) {
+    switch (feature) {
+      case PremiumFeature.weeklyStatistics:
+        return premiumFeatureWeeklyStatistics;
+      case PremiumFeature.monthlyStatistics:
+        return premiumFeatureMonthlyStatistics;
+      case PremiumFeature.annualStatistics:
+        return premiumFeatureAnnualStatistics;
+      case PremiumFeature.perHabitStatistics:
+        return premiumFeaturePerHabitStatistics;
+      case PremiumFeature.weeklyReport:
+        return premiumFeatureWeeklyReport;
+    }
+  }
+}
 
 extension WeeklyReportRecommendationL10n on AppLocalizations {
   bool get _weeklyRecommendationEs => localeName.toLowerCase().startsWith('es');

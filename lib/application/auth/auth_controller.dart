@@ -14,6 +14,7 @@ import '../../features/auth/infrastructure/apple_auth_adapter.dart';
 import '../../features/notifications/application/personalized_notification_orchestrator.dart';
 import '../../features/global_wallet/application/global_wallet_controller.dart';
 import '../../features/completed_day_phrase/application/phrase_catalog_sync_coordinator.dart';
+import '../../features/premium/data/premium_repository.dart';
 import '../../stores/user_state_store.dart';
 
 typedef AuthDebugLogger = void Function(String message);
@@ -77,6 +78,7 @@ class AuthController extends ChangeNotifier {
     PostHomeBootstrapTaskRunner? postHomeBootstrapTaskRunner,
     PhraseCatalogSyncCoordinator? phraseCatalogSyncCoordinator,
     PersonalizedNotificationOrchestrator? personalizedNotificationOrchestrator,
+    PremiumRepository? premiumRepository,
     Future<void> Function(String userId)? onExplicitSessionExit,
     AuthDebugLogger? debugLogger,
   })  : _userStateStore = userStateStore,
@@ -87,6 +89,7 @@ class AuthController extends ChangeNotifier {
         _phraseCatalogSyncCoordinator = phraseCatalogSyncCoordinator,
         _personalizedNotificationOrchestrator =
             personalizedNotificationOrchestrator,
+        _premiumRepository = premiumRepository,
         _onExplicitSessionExit = onExplicitSessionExit,
         _debugLogger = debugLogger ?? debugPrint {
     if (RutioRuntimeProfile.isDemo) {
@@ -140,6 +143,7 @@ class AuthController extends ChangeNotifier {
   final PhraseCatalogSyncCoordinator? _phraseCatalogSyncCoordinator;
   final PersonalizedNotificationOrchestrator?
       _personalizedNotificationOrchestrator;
+  final PremiumRepository? _premiumRepository;
   final AuthDebugLogger _debugLogger;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -804,6 +808,13 @@ class AuthController extends ChangeNotifier {
     if (changed) {
       notifyListeners();
     }
+    _syncPremiumIdentity(user?.id);
+  }
+
+  void _syncPremiumIdentity(String? userId) {
+    final premiumRepository = _premiumRepository;
+    if (premiumRepository == null) return;
+    unawaited(premiumRepository.syncIdentity(userId));
   }
 
   void _setLoading(bool value) {

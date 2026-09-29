@@ -28,6 +28,10 @@ extension _HomeScreenNavigation on _HomeScreenState {
   }
 
   Widget _buildViewDrawer(BuildContext context) {
+    final weeklyReportLocked = !canAccessPremiumFeature(
+      context,
+      PremiumFeature.weeklyReport,
+    );
     return AppViewDrawer(
       onGoDaily: () {
         // Home diaria.
@@ -53,6 +57,8 @@ extension _HomeScreenNavigation on _HomeScreenState {
         );
       },
       onGoStats: () => _openStatsOverview(context),
+      onGoWeeklyReport: () => openWeeklyReport(context),
+      weeklyReportLocked: weeklyReportLocked,
       onGoShop: () => Navigator.pushNamed(context, '/shop'),
       onGoProfile: () => _openProfileFromHome(context),
     );

@@ -6283,6 +6283,88 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se ha podido completar la autenticación.';
 
   @override
+  String get premiumSectionTitle => 'Premium';
+
+  @override
+  String get premiumTitle => 'Rutio Premium';
+
+  @override
+  String get premiumSettingsSubtitle => 'Estadísticas y reportes avanzados';
+
+  @override
+  String get premiumSubtitle =>
+      'Observa tu progreso con más contexto y continuidad.';
+
+  @override
+  String get premiumBenefitWeekly => 'Estadísticas semanales';
+
+  @override
+  String get premiumBenefitMonthly => 'Estadísticas mensuales';
+
+  @override
+  String get premiumBenefitAnnual => 'Estadísticas anuales';
+
+  @override
+  String get premiumBenefitByHabit => 'Estadísticas por hábito';
+
+  @override
+  String get premiumBenefitReport => 'Reporte semanal';
+
+  @override
+  String get premiumRetry => 'Reintentar';
+
+  @override
+  String get premiumActive => 'Premium activo';
+
+  @override
+  String get premiumActiveSubtitle =>
+      'Tu acceso Premium está activo en esta cuenta.';
+
+  @override
+  String get premiumSignInRequired =>
+      'Inicia sesión para comprar o restaurar Premium.';
+
+  @override
+  String get premiumUnavailable =>
+      'Los planes no están disponibles ahora. Inténtalo de nuevo.';
+
+  @override
+  String get premiumGenericError =>
+      'No se ha podido completar la operación. Inténtalo de nuevo.';
+
+  @override
+  String get premiumBadge => 'PREMIUM';
+
+  @override
+  String get premiumLockLabel => 'Función Premium bloqueada';
+
+  @override
+  String get premiumGateTitle => 'Esta función está incluida en Rutio Premium';
+
+  @override
+  String get premiumViewAction => 'Ver Premium';
+
+  @override
+  String get premiumFeatureWeeklyStatistics =>
+      'Desbloquea las estadísticas semanales con Premium.';
+
+  @override
+  String get premiumFeatureMonthlyStatistics =>
+      'Desbloquea las estadísticas mensuales con Premium.';
+
+  @override
+  String get premiumFeatureAnnualStatistics =>
+      'Desbloquea las estadísticas anuales con Premium.';
+
+  @override
+  String get premiumFeaturePerHabitStatistics =>
+      'Desbloquea las estadísticas por hábito con Premium.';
+
+  @override
+  String get premiumFeatureWeeklyReport =>
+      'Desbloquea el Reporte Semanal con Premium.';
+
+  @override
   String get loginAppleCta => 'Continuar con Apple';
 
   @override

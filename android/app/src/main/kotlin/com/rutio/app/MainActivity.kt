@@ -1,12 +1,12 @@
 package com.rutio.app
 
 import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.plugin.common.MethodChannel
 import android.content.Context
 import java.util.TimeZone
 
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     companion object {
         private const val NOTIFICATION_CHANNEL = "rutio/notification_permission"
         private const val SCHEDULED_NOTIFICATIONS_PREFS = "scheduled_notifications"

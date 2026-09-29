@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/features/weekly_report/presentation/weekly_report_navigation.dart';
 
 import '../l10n/l10n.dart';
 import '../utils/app_theme.dart';
@@ -20,6 +21,7 @@ class AppViewDrawer extends StatelessWidget {
     required this.onGoArchived,
     required this.onGoStats,
     this.onGoWeeklyReport,
+    this.weeklyReportLocked = false,
     this.onGoShop,
     required this.onGoProfile,
     this.selected,
@@ -33,6 +35,7 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoArchived;
   final VoidCallback onGoStats;
   final VoidCallback? onGoWeeklyReport;
+  final bool weeklyReportLocked;
   final VoidCallback? onGoShop;
   final VoidCallback onGoProfile;
 
@@ -122,12 +125,13 @@ class AppViewDrawer extends StatelessWidget {
                     _DrawerTile(
                       icon: Icons.insights_outlined,
                       label: context.l10n.weeklyReportSectionTitle,
+                      trailing: weeklyReportLocked
+                          ? const Icon(Icons.lock_outline_rounded, size: 16)
+                          : null,
                       isSelected: selected == 'weekly-report',
                       onTap: () => _go(
                         context,
-                        onGoWeeklyReport ??
-                            () => Navigator.of(context)
-                                .pushNamed('/weekly-report'),
+                        onGoWeeklyReport ?? () => openWeeklyReport(context),
                       ),
                     ),
                     const _DrawerDivider(),
@@ -250,12 +254,14 @@ class _DrawerTile extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isSelected = false,
+    this.trailing,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool isSelected;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -292,6 +298,7 @@ class _DrawerTile extends StatelessWidget {
                         : AppTextStyles.drawerItem,
                   ),
                 ),
+                if (trailing != null) trailing!,
               ],
             ),
           ),

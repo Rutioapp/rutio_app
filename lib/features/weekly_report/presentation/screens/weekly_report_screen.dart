@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../l10n/l10n.dart';
+import '../../../premium/application/premium_controller.dart';
+import '../../../premium/domain/premium_access.dart';
+import '../../../premium/domain/premium_access_policy.dart';
+import '../../../premium/presentation/premium_gate.dart';
 import '../../application/weekly_report_controller.dart';
 import '../../domain/weekly_report.dart';
 import '../widgets/weekly_report_habits_section.dart';
@@ -11,7 +15,7 @@ import '../weekly_report_metric_display.dart';
 import '../widgets/weekly_report_recommendation.dart';
 import '../widgets/weekly_report_reflection.dart';
 import '../weekly_report_visuals.dart';
-import 'weekly_report_history_screen.dart';
+import '../weekly_report_navigation.dart';
 import '../../../../stores/user_state_store.dart';
 import '../../../../screens/habit_detail/habit_detail_screen.dart';
 import '../../../../utils/family_theme.dart';
@@ -23,6 +27,7 @@ class WeeklyReportScreen extends StatelessWidget {
     this.openedFromHistory = false,
   });
   static const route = '/weekly-report';
+  // WeeklyReportHistoryScreen.route is handled by openWeeklyReportHistory.
   static const historyRoute = '/weekly-report/history';
   static const reportRoutePrefix = '/weekly-report/';
   final String? reportId;
@@ -30,6 +35,17 @@ class WeeklyReportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final premiumState = context.watch<PremiumController?>()?.accessState ??
+        const PremiumAccessState.unknown();
+    if (!PremiumAccessPolicy.canAccess(
+      PremiumFeature.weeklyReport,
+      premiumState,
+    )) {
+      return const PremiumLockedFeatureView(
+        feature: PremiumFeature.weeklyReport,
+        showBackButton: true,
+      );
+    }
     return ChangeNotifierProvider(
       create: (_) {
         final store = context.read<UserStateStore>();
@@ -78,9 +94,7 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
                   key: const Key('weeklyReportHistoryAction'),
                   tooltip: context.l10n.weeklyReportHistory,
                   icon: const Icon(Icons.history_rounded, size: 22),
-                  onPressed: () => Navigator.of(context).pushNamed(
-                    WeeklyReportHistoryScreen.route,
-                  ),
+                  onPressed: () => openWeeklyReportHistory(context),
                 ),
               ],
       ),

@@ -1,12 +1,16 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../l10n/l10n.dart';
+import '../../../premium/application/premium_controller.dart';
+import '../../../premium/domain/premium_access.dart';
+import '../../../premium/domain/premium_access_policy.dart';
+import '../../../premium/presentation/premium_gate.dart';
 import '../../domain/weekly_report.dart';
 import '../weekly_report_metric_display.dart';
 import 'weekly_report_screen.dart';
+import '../weekly_report_navigation.dart';
 
 class WeeklyReportHistoryScreen extends StatefulWidget {
   const WeeklyReportHistoryScreen({super.key});
@@ -24,11 +28,26 @@ class _WeeklyReportHistoryScreenState extends State<WeeklyReportHistoryScreen> {
   Object? _error;
   bool _loading = true;
   bool _loadingMore = false;
+  bool _hasStartedLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadFirstPage();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final premiumState = context.watch<PremiumController?>()?.accessState ??
+        const PremiumAccessState.unknown();
+    if (!_hasStartedLoading &&
+        PremiumAccessPolicy.canAccess(
+          PremiumFeature.weeklyReport,
+          premiumState,
+        )) {
+      _hasStartedLoading = true;
+      _loadFirstPage();
+    }
   }
 
   Future<void> _loadFirstPage() async {
@@ -89,6 +108,17 @@ class _WeeklyReportHistoryScreenState extends State<WeeklyReportHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final premiumState = context.watch<PremiumController?>()?.accessState ??
+        const PremiumAccessState.unknown();
+    if (!PremiumAccessPolicy.canAccess(
+      PremiumFeature.weeklyReport,
+      premiumState,
+    )) {
+      return const PremiumLockedFeatureView(
+        feature: PremiumFeature.weeklyReport,
+        showBackButton: true,
+      );
+    }
     final latestId = _latest?.report.id;
     final previous = _items.where((item) =>
         item.status == WeeklyReportStatus.finalized &&
@@ -194,12 +224,11 @@ class _ReportRow extends StatelessWidget {
           '${_formatRange(context, week.weekStartDate, week.weekEndDate)}. $rateText. ${context.l10n.weeklyReportViewReport}',
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.of(context).push(CupertinoPageRoute(
-          builder: (_) => WeeklyReportScreen(
-            reportId: id,
-            openedFromHistory: true,
-          ),
-        )),
+        onTap: () => openWeeklyReport(
+          context,
+          reportId: id,
+          openedFromHistory: true,
+        ),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(

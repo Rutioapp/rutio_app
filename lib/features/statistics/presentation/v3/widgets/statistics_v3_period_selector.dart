@@ -8,10 +8,14 @@ class StatisticsV3PeriodSelector extends StatelessWidget {
     super.key,
     required this.value,
     required this.onChanged,
+    this.isLocked,
+    this.onLockedTap,
   });
 
   final StatisticsV3Period value;
   final ValueChanged<StatisticsV3Period> onChanged;
+  final bool Function(StatisticsV3Period period)? isLocked;
+  final ValueChanged<StatisticsV3Period>? onLockedTap;
 
   @override
   Widget build(BuildContext context) {
@@ -34,24 +38,43 @@ class StatisticsV3PeriodSelector extends StatelessWidget {
             groupValue: value,
             children: {
               for (final period in StatisticsV3Period.values)
-                period: Center(
-                  child: Text(
-                    period.label(l10n),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight:
-                          period == value ? FontWeight.w700 : FontWeight.w500,
-                      color: period == value
-                          ? Colors.white
-                          : const Color(0xFF5B5146),
+                period: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(
+                        right: isLocked?.call(period) == true ? 15 : 0,
+                      ),
+                      child: Text(
+                        period.label(l10n),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: period == value
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: period == value
+                              ? Colors.white
+                              : const Color(0xFF5B5146),
+                        ),
+                      ),
                     ),
-                  ),
+                    if (isLocked?.call(period) == true)
+                      const Positioned(
+                        right: 1,
+                        child: Icon(Icons.lock_outline, size: 12),
+                      ),
+                  ],
                 ),
             },
             onValueChanged: (next) {
-              if (next != null) onChanged(next);
+              if (next == null) return;
+              if (isLocked?.call(next) == true) {
+                onLockedTap?.call(next);
+                return;
+              }
+              onChanged(next);
             },
           ),
         ),

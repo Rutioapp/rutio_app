@@ -10805,6 +10805,150 @@ abstract class AppLocalizations {
   /// **'No se ha podido completar la autenticación.'**
   String get onboardingAuthGenericError;
 
+  /// No description provided for @premiumSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Premium'**
+  String get premiumSectionTitle;
+
+  /// No description provided for @premiumTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Rutio Premium'**
+  String get premiumTitle;
+
+  /// No description provided for @premiumSettingsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas y reportes avanzados'**
+  String get premiumSettingsSubtitle;
+
+  /// No description provided for @premiumSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Observa tu progreso con más contexto y continuidad.'**
+  String get premiumSubtitle;
+
+  /// No description provided for @premiumBenefitWeekly.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas semanales'**
+  String get premiumBenefitWeekly;
+
+  /// No description provided for @premiumBenefitMonthly.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas mensuales'**
+  String get premiumBenefitMonthly;
+
+  /// No description provided for @premiumBenefitAnnual.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas anuales'**
+  String get premiumBenefitAnnual;
+
+  /// No description provided for @premiumBenefitByHabit.
+  ///
+  /// In es, this message translates to:
+  /// **'Estadísticas por hábito'**
+  String get premiumBenefitByHabit;
+
+  /// No description provided for @premiumBenefitReport.
+  ///
+  /// In es, this message translates to:
+  /// **'Reporte semanal'**
+  String get premiumBenefitReport;
+
+  /// No description provided for @premiumRetry.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get premiumRetry;
+
+  /// No description provided for @premiumActive.
+  ///
+  /// In es, this message translates to:
+  /// **'Premium activo'**
+  String get premiumActive;
+
+  /// No description provided for @premiumActiveSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu acceso Premium está activo en esta cuenta.'**
+  String get premiumActiveSubtitle;
+
+  /// No description provided for @premiumSignInRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicia sesión para comprar o restaurar Premium.'**
+  String get premiumSignInRequired;
+
+  /// No description provided for @premiumUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Los planes no están disponibles ahora. Inténtalo de nuevo.'**
+  String get premiumUnavailable;
+
+  /// No description provided for @premiumGenericError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido completar la operación. Inténtalo de nuevo.'**
+  String get premiumGenericError;
+
+  /// No description provided for @premiumBadge.
+  ///
+  /// In es, this message translates to:
+  /// **'PREMIUM'**
+  String get premiumBadge;
+
+  /// No description provided for @premiumLockLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Función Premium bloqueada'**
+  String get premiumLockLabel;
+
+  /// No description provided for @premiumGateTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta función está incluida en Rutio Premium'**
+  String get premiumGateTitle;
+
+  /// No description provided for @premiumViewAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver Premium'**
+  String get premiumViewAction;
+
+  /// No description provided for @premiumFeatureWeeklyStatistics.
+  ///
+  /// In es, this message translates to:
+  /// **'Desbloquea las estadísticas semanales con Premium.'**
+  String get premiumFeatureWeeklyStatistics;
+
+  /// No description provided for @premiumFeatureMonthlyStatistics.
+  ///
+  /// In es, this message translates to:
+  /// **'Desbloquea las estadísticas mensuales con Premium.'**
+  String get premiumFeatureMonthlyStatistics;
+
+  /// No description provided for @premiumFeatureAnnualStatistics.
+  ///
+  /// In es, this message translates to:
+  /// **'Desbloquea las estadísticas anuales con Premium.'**
+  String get premiumFeatureAnnualStatistics;
+
+  /// No description provided for @premiumFeaturePerHabitStatistics.
+  ///
+  /// In es, this message translates to:
+  /// **'Desbloquea las estadísticas por hábito con Premium.'**
+  String get premiumFeaturePerHabitStatistics;
+
+  /// No description provided for @premiumFeatureWeeklyReport.
+  ///
+  /// In es, this message translates to:
+  /// **'Desbloquea el Reporte Semanal con Premium.'**
+  String get premiumFeatureWeeklyReport;
+
   /// No description provided for @loginAppleCta.
   ///
   /// In es, this message translates to:
