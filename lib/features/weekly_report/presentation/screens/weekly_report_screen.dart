@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +20,8 @@ import '../weekly_report_navigation.dart';
 import '../../../../stores/user_state_store.dart';
 import '../../../../screens/habit_detail/habit_detail_screen.dart';
 import '../../../../utils/family_theme.dart';
+import '../../../../core/observability/analytics_events.dart';
+import '../../../../core/observability/analytics_service.dart';
 
 class WeeklyReportScreen extends StatelessWidget {
   const WeeklyReportScreen({
@@ -69,10 +72,24 @@ class _WeeklyReportView extends StatefulWidget {
 }
 
 class _WeeklyReportViewState extends State<_WeeklyReportView> {
+  bool _tracked = false;
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<WeeklyReportController>().state;
     final controller = context.read<WeeklyReportController>();
+    if (state is WeeklyReportDataState && !_tracked) {
+      _tracked = true;
+      final analytics = context.read<AnalyticsService?>();
+      if (analytics != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            unawaited(
+                analytics.track(ProductAnalyticsEvents.weeklyReportViewed));
+          }
+        });
+      }
+    }
     return Scaffold(
       backgroundColor: WeeklyReportVisuals.background,
       appBar: AppBar(

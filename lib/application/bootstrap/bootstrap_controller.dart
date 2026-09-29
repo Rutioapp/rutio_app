@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import '../../core/diagnostics/onboarding_runtime_trace.dart';
+import '../../core/observability/crash_reporting_keys.dart';
+import '../../core/observability/crash_reporting_service.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -477,6 +479,7 @@ class BootstrapController extends ChangeNotifier
     void Function(String reason)? onExplicitGuestReady,
     HasResumableOnboardingDraft? hasResumableOnboardingDraft,
     BootstrapDebugLogger? debugLogger,
+    CrashReportingService? crashReportingService,
   })  : _authController = authController,
         _userStateStore = userStateStore,
         _profileRepository = profileRepository,
@@ -496,7 +499,8 @@ class BootstrapController extends ChangeNotifier
         _onHomeReady = onHomeReady,
         _onExplicitGuestReady = onExplicitGuestReady,
         _hasResumableOnboardingDraft = hasResumableOnboardingDraft,
-        _debugLogger = debugLogger ?? debugPrint {
+        _debugLogger = debugLogger ?? debugPrint,
+        _crashReportingService = crashReportingService {
     _trace(0, 'controller_created');
     _authController.addListener(_handleAuthChanged);
     unawaited(start());
@@ -514,6 +518,7 @@ class BootstrapController extends ChangeNotifier
   final void Function(String reason)? _onExplicitGuestReady;
   final HasResumableOnboardingDraft? _hasResumableOnboardingDraft;
   final BootstrapDebugLogger _debugLogger;
+  final CrashReportingService? _crashReportingService;
 
   BootstrapState _state = BootstrapState.initial;
   int _nextRunId = 0;
@@ -1765,6 +1770,14 @@ class BootstrapController extends ChangeNotifier
       ),
     );
     _log(runId, 'failed type=${error.type.name}');
+    final cause = error.cause;
+    if (cause != null) {
+      unawaited(_crashReportingService?.recordNonFatal(
+        cause,
+        StackTrace.current,
+        reason: CrashReportingReasons.bootstrapFailure,
+      ));
+    }
     _finishRun(runId);
   }
 

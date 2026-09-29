@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,8 @@ import '../../domain/weekly_report.dart';
 import '../weekly_report_metric_display.dart';
 import 'weekly_report_screen.dart';
 import '../weekly_report_navigation.dart';
+import '../../../../core/observability/analytics_events.dart';
+import '../../../../core/observability/analytics_service.dart';
 
 class WeeklyReportHistoryScreen extends StatefulWidget {
   const WeeklyReportHistoryScreen({super.key});
@@ -29,6 +32,7 @@ class _WeeklyReportHistoryScreenState extends State<WeeklyReportHistoryScreen> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _hasStartedLoading = false;
+  bool _trackedHistory = false;
 
   @override
   void initState() {
@@ -124,6 +128,19 @@ class _WeeklyReportHistoryScreenState extends State<WeeklyReportHistoryScreen> {
         item.status == WeeklyReportStatus.finalized &&
         item.reportId != latestId);
     final l10n = context.l10n;
+    if (!_trackedHistory && (_latest != null || _items.isNotEmpty)) {
+      _trackedHistory = true;
+      final analytics = context.read<AnalyticsService?>();
+      if (analytics != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            unawaited(analytics.track(
+              ProductAnalyticsEvents.weeklyReportHistoryViewed,
+            ));
+          }
+        });
+      }
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF7F1E8),
       appBar: AppBar(

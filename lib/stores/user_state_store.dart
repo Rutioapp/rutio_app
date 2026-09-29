@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/services/account_deletion_service.dart';
+import '../core/observability/analytics_events.dart';
+import '../core/observability/analytics_service.dart';
 import '../constants/reward_constants.dart';
 import '../data/services/achievement_sync_service.dart';
 import '../data/services/habit_log_sync_service.dart';
@@ -269,6 +271,7 @@ class UserStateStore extends ChangeNotifier {
   final DateTime Function() _nowProvider;
   UserStateNotificationMutationObserver _notificationMutationObserver;
   final Future<void> Function(String userId)? _onboardingRecoveryCleanup;
+  final AnalyticsService? _analyticsService;
 
   UserStateStore(
     this._repo, {
@@ -298,6 +301,7 @@ class UserStateStore extends ChangeNotifier {
     DateTime Function()? nowProvider,
     UserStateNotificationMutationObserver? notificationMutationObserver,
     Future<void> Function(String userId)? onboardingRecoveryCleanup,
+    AnalyticsService? analyticsService,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
         _habitSyncService = habitSyncService ?? HabitSyncService(),
@@ -363,7 +367,8 @@ class UserStateStore extends ChangeNotifier {
         _nowProvider = nowProvider ?? DateTime.now,
         _notificationMutationObserver = notificationMutationObserver ??
             const NoopUserStateNotificationMutationObserver(),
-        _onboardingRecoveryCleanup = onboardingRecoveryCleanup;
+        _onboardingRecoveryCleanup = onboardingRecoveryCleanup,
+        _analyticsService = analyticsService;
 
   Map<String, dynamic>? _state;
   bool _loading = false;
@@ -410,6 +415,16 @@ class UserStateStore extends ChangeNotifier {
   bool _debugStreakRecoverSeedAttempted = false;
 
   Map<String, dynamic>? get state => _state;
+
+  void _trackProductEvent(
+    String event, {
+    Map<String, Object?> properties = const <String, Object?>{},
+  }) {
+    final analytics = _analyticsService;
+    if (analytics == null) return;
+    unawaited(analytics.track(event, properties: properties));
+  }
+
   bool get isLoading => _loading;
   Object? get error => _error;
   bool get isDeletingAccount => _isDeletingAccount;

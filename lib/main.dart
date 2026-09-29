@@ -9,6 +9,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'application/auth/auth_controller.dart';
 import 'application/bootstrap/bootstrap_controller.dart';
 import 'core/supabase/rutio_supabase_client.dart';
+import 'core/observability/analytics_config.dart';
+import 'core/observability/analytics_service.dart';
+import 'core/observability/posthog_analytics_service.dart';
+import 'core/observability/crash_error_handlers.dart';
+import 'core/observability/crash_reporting_keys.dart';
+import 'core/observability/crash_reporting_service.dart';
+import 'core/observability/crashlytics_config.dart';
+import 'core/observability/firebase_crash_reporting_service.dart';
 import 'services/notification_runtime.dart';
 import 'services/notification_service.dart';
 import 'services/phase1_notification_timing_registry.dart';
@@ -105,6 +113,29 @@ Future<void> main() async {
   _startupLog('[STARTUP] 01 main() entered');
   _startupLog('[STARTUP] 02 before WidgetsFlutterBinding.ensureInitialized()');
   WidgetsFlutterBinding.ensureInitialized();
+  final crashReportingService = FirebaseCrashReportingService(
+    config: CrashlyticsConfig.fromEnvironment(),
+  );
+  try {
+    await crashReportingService.initialize();
+  } catch (error, stackTrace) {
+    debugPrint('[crashlytics] initialization skipped: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+  installGlobalCrashErrorHandlers(crashReportingService);
+  await crashReportingService.setKey(
+    CrashReportingKeys.platform,
+    defaultTargetPlatform.name,
+  );
+  final analyticsService = PostHogAnalyticsService(
+    config: AnalyticsConfig.fromEnvironment(),
+  );
+  await analyticsService.initialize();
+  await AnalyticsAppStartTracker(analyticsService).emitOnce(
+    properties: <String, Object?>{
+      'platform': defaultTargetPlatform.name,
+    },
+  );
   NotificationService.instance.setNotificationInteractionHandler(
     _notificationInteractionRouter.receiveRawPayload,
   );
@@ -125,7 +156,16 @@ Future<void> main() async {
   );
   shopCloudConfig.validateForStartup(isRelease: kReleaseMode);
   _startupLog('[STARTUP] 04 before RutioSupabaseClient.initialize()');
-  await RutioSupabaseClient.initialize();
+  try {
+    await RutioSupabaseClient.initialize();
+  } catch (error, stackTrace) {
+    unawaited(crashReportingService.recordNonFatal(
+      error,
+      stackTrace,
+      reason: CrashReportingReasons.supabaseInitializationFailure,
+    ));
+    rethrow;
+  }
   final weeklyReportPreferences = await SharedPreferences.getInstance();
   _startupLog('[STARTUP] 05 after RutioSupabaseClient.initialize()');
 
@@ -160,6 +200,8 @@ Future<void> main() async {
   runApp(MyApp(
     shopRuntimeConfig: shopCloudConfig,
     weeklyReportPreferences: weeklyReportPreferences,
+    analyticsService: analyticsService,
+    crashReportingService: crashReportingService,
   ));
   _startupLog('[STARTUP] 11 after runApp()');
 }
@@ -195,10 +237,14 @@ class MyApp extends StatelessWidget {
     super.key,
     required this.shopRuntimeConfig,
     required this.weeklyReportPreferences,
+    required this.analyticsService,
+    required this.crashReportingService,
   });
 
   final ShopCloudRuntimeConfig shopRuntimeConfig;
   final SharedPreferences weeklyReportPreferences;
+  final AnalyticsService analyticsService;
+  final CrashReportingService crashReportingService;
 
   static final GlobalKey<NavigatorState> _navigatorKey =
       GlobalKey<NavigatorState>();
@@ -328,6 +374,8 @@ class MyApp extends StatelessWidget {
     _startupLog('[STARTUP] 14 NotificationRuntime wrapper composed');
     return MultiProvider(
       providers: [
+        Provider<AnalyticsService>.value(value: analyticsService),
+        Provider<CrashReportingService>.value(value: crashReportingService),
         Provider<ShopCloudRuntimeConfig>.value(value: shopRuntimeConfig),
         ChangeNotifierProvider<PremiumRepository>(
           lazy: false,
@@ -353,6 +401,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<OnboardingCoordinator>(
           create: (context) => OnboardingCoordinator(
             draftService: context.read<OnboardingDraftService>(),
+            analyticsService: context.read<AnalyticsService>(),
           ),
         ),
         Provider<GoogleAuthAdapter>(
@@ -418,6 +467,7 @@ class MyApp extends StatelessWidget {
 
             return UserStateStore(
               userStateRepository,
+              analyticsService: context.read<AnalyticsService>(),
               globalWalletController: context.read<GlobalWalletController>(),
               profileRepository: context.read<ProfileRepository>(),
               onboardingRecoveryCleanup: (userId) => context
@@ -529,6 +579,7 @@ class MyApp extends StatelessWidget {
             return AuthController(
               context.read<AuthRepository>(),
               userStateStore: store,
+              analyticsService: context.read<AnalyticsService>(),
               premiumRepository: context.read<PremiumRepository>(),
               profileRepository: context.read<ProfileRepository>(),
               globalWalletController: context.read<GlobalWalletController>(),
@@ -554,6 +605,7 @@ class MyApp extends StatelessWidget {
           create: (context) => PremiumController(
             repository: context.read<PremiumRepository>(),
             authController: context.read<AuthController>(),
+            crashReportingService: context.read<CrashReportingService>(),
           ),
         ),
         ChangeNotifierProxyProvider4<AuthController, UserStateStore,
@@ -564,6 +616,7 @@ class MyApp extends StatelessWidget {
               userStateStore: context.read<UserStateStore>(),
               hasResumableOnboardingDraft:
                   context.read<OnboardingDraftService>().hasAnonymousDraft,
+              crashReportingService: context.read<CrashReportingService>(),
               profileRepository: ProfileBootstrapRepository(
                 context.read<ProfileRepository>(),
               ),

@@ -3,6 +3,11 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import '../../core/diagnostics/onboarding_runtime_trace.dart';
+import '../../core/observability/analytics_identity_lifecycle.dart';
+import '../../core/observability/analytics_service.dart';
+import '../../core/observability/analytics_events.dart';
+import '../../core/observability/crash_reporting_keys.dart';
+import '../../core/observability/crash_reporting_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../devtools/rutio_runtime_profile.dart';
@@ -79,6 +84,8 @@ class AuthController extends ChangeNotifier {
     PhraseCatalogSyncCoordinator? phraseCatalogSyncCoordinator,
     PersonalizedNotificationOrchestrator? personalizedNotificationOrchestrator,
     PremiumRepository? premiumRepository,
+    AnalyticsService? analyticsService,
+    CrashReportingService? crashReportingService,
     Future<void> Function(String userId)? onExplicitSessionExit,
     AuthDebugLogger? debugLogger,
   })  : _userStateStore = userStateStore,
@@ -90,6 +97,11 @@ class AuthController extends ChangeNotifier {
         _personalizedNotificationOrchestrator =
             personalizedNotificationOrchestrator,
         _premiumRepository = premiumRepository,
+        _analyticsService = analyticsService,
+        _crashReportingService = crashReportingService,
+        _analyticsIdentityLifecycle = analyticsService == null
+            ? null
+            : AnalyticsIdentityLifecycle(analyticsService),
         _onExplicitSessionExit = onExplicitSessionExit,
         _debugLogger = debugLogger ?? debugPrint {
     if (RutioRuntimeProfile.isDemo) {
@@ -104,6 +116,7 @@ class AuthController extends ChangeNotifier {
     }
 
     _currentUser = _authRepository.currentUser;
+    unawaited(_analyticsIdentityLifecycle?.resolveUser(_currentUser?.id));
     if (kDebugMode) {
       debugPrint(
         '[auth] initial auth state: ${_currentUser != null ? 'signedIn' : 'signedOut'}',
@@ -144,6 +157,9 @@ class AuthController extends ChangeNotifier {
   final PersonalizedNotificationOrchestrator?
       _personalizedNotificationOrchestrator;
   final PremiumRepository? _premiumRepository;
+  final AnalyticsService? _analyticsService;
+  final CrashReportingService? _crashReportingService;
+  final AnalyticsIdentityLifecycle? _analyticsIdentityLifecycle;
   final AuthDebugLogger _debugLogger;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -225,6 +241,7 @@ class AuthController extends ChangeNotifier {
         debugPrint('[auth] currentUser after sign in: yes');
       }
       _resolveSession(_currentUser);
+      _trackAuth(ProductAnalyticsEvents.loginCompleted, 'email');
       _userStateStore.restoreGamificationOverlaysAfterLogout();
       await _userStateStore.switchLocalScope(userId: _currentUser!.id);
       unawaited(
@@ -285,6 +302,9 @@ class AuthController extends ChangeNotifier {
         displayName: displayName,
       );
       _currentUser = response.session?.user ?? _authRepository.currentUser;
+      if (response.user != null) {
+        _trackAuth(ProductAnalyticsEvents.signupCompleted, 'email');
+      }
       if (_currentUser != null) {
         _locallySignedOutUserId = null;
       }
@@ -361,6 +381,7 @@ class AuthController extends ChangeNotifier {
       }
       _locallySignedOutUserId = null;
       _resolveSession(user);
+      _trackAuth(ProductAnalyticsEvents.loginCompleted, 'google');
       OnboardingRuntimeTrace.log(
         'GOOGLE_AUTH',
         'event=supabase_session_ready context=login hasSession=true '
@@ -419,6 +440,7 @@ class AuthController extends ChangeNotifier {
         throw const AppleAuthException(AppleAuthErrorCode.invalidCredential);
       _locallySignedOutUserId = null;
       _resolveSession(user);
+      _trackAuth(ProductAnalyticsEvents.loginCompleted, 'apple');
       await _userStateStore.switchLocalScope(userId: user.id);
       unawaited(_globalWalletController.syncSession(userId: user.id));
       if (_enableBackgroundProfileSync) _markLastLoginTouchPending(user.id);
@@ -544,6 +566,7 @@ class AuthController extends ChangeNotifier {
 
     try {
       await _authRepository.signOut();
+      _trackAuth(ProductAnalyticsEvents.logoutCompleted);
       _userStateStore.markGuestEntryReason('explicit_logout');
       if (kDebugMode) {
         debugPrint('[AUTH_SESSION] event=explicit_logout');
@@ -584,6 +607,17 @@ class AuthController extends ChangeNotifier {
         debugPrint('[auth] cleanup error: $error');
       }
     }
+  }
+
+  void _trackAuth(String event, [String? method]) {
+    final analytics = _analyticsService;
+    if (analytics == null) return;
+    unawaited(analytics.track(
+      event,
+      properties: <String, Object?>{
+        if (method != null) 'method': method,
+      },
+    ));
   }
 
   Future<void> _ensureCurrentUserProfileForBootstrap({
@@ -809,6 +843,13 @@ class AuthController extends ChangeNotifier {
       notifyListeners();
     }
     _syncPremiumIdentity(user?.id);
+    unawaited(_crashReportingService?.setKey(
+      CrashReportingKeys.authState,
+      user == null
+          ? CrashReportingValues.anonymous
+          : CrashReportingValues.authenticated,
+    ));
+    unawaited(_analyticsIdentityLifecycle?.resolveUser(user?.id));
   }
 
   void _syncPremiumIdentity(String? userId) {

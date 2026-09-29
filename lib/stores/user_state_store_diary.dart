@@ -184,6 +184,13 @@ Future<void> _addDiaryEntry(UserStateStore store, DiaryEntry entry) async {
   store._state = root;
 
   await store._repo.save(root);
+  final entryType = entry.entryType?.name;
+  store._trackProductEvent(
+    ProductAnalyticsEvents.journalEntryCreated,
+    properties: <String, Object?>{
+      if (entryType != null && entryType.isNotEmpty) 'entry_type': entryType,
+    },
+  );
   if (rewardResult.granted) {
     _queueBestEffortProgressAndRewardSync(
       store,

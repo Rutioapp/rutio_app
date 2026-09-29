@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,8 @@ import 'package:rutio/features/premium/application/premium_controller.dart';
 import 'package:rutio/features/premium/domain/premium_access.dart';
 import 'package:rutio/features/premium/domain/premium_access_policy.dart';
 import 'package:rutio/features/premium/presentation/premium_navigation.dart';
+import 'package:rutio/core/observability/analytics_events.dart';
+import 'package:rutio/core/observability/analytics_service.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_data_adapter.dart';
 import 'package:rutio/features/statistics/presentation/v3/application/statistics_v3_global_insight_resolver.dart';
 import 'package:rutio/features/habits/domain/models/habit_reward_transaction.dart';
@@ -66,6 +70,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
   int? _rewardTransactionsScopeEpoch;
   List<HabitRewardTransaction> _habitRewardTransactions =
       const <HabitRewardTransaction>[];
+  String? _lastTrackedStatisticsView;
 
   @override
   void didChangeDependencies() {
@@ -152,6 +157,24 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
     final currentStreakDays = _currentStreakDaysFor(store);
     final highlightedHabitStreakDays =
         _highlightedHabitStreak(store, viewData.highlightedHabits);
+    final analytics = context.read<AnalyticsService?>();
+    final analyticsKey =
+        _showHabitView ? 'habit' : analyticsStatisticsPeriod(periodForData);
+    if (analytics != null && _lastTrackedStatisticsView != analyticsKey) {
+      _lastTrackedStatisticsView = analyticsKey;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(analytics.track(
+          _showHabitView
+              ? ProductAnalyticsEvents.perHabitStatisticsViewed
+              : ProductAnalyticsEvents.statisticsViewed,
+          properties: <String, Object?>{
+            if (!_showHabitView)
+              'period': analyticsStatisticsPeriod(periodForData),
+          },
+        ));
+      });
+    }
 
     return Stack(
       children: [
@@ -365,7 +388,7 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
       openWeeklyReport(context);
       return;
     }
-    logPremiumGateBlocked(feature);
+    logPremiumGateBlocked(context, feature);
     openPremiumPaywall(
       context,
       source: switch (feature) {

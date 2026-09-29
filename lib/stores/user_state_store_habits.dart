@@ -2315,6 +2315,13 @@ Future<void> _addHabitFromCatalog(
   await store.save(root);
 
   final createdHabit = Map<String, dynamic>.from(activeHabits.last);
+  store._trackProductEvent(
+    ProductAnalyticsEvents.habitCreated,
+    properties: <String, Object?>{
+      'habit_type': analyticsHabitType(createdHabit['type']),
+      'target_period': analyticsTargetPeriod(createdHabit['schedule']),
+    },
+  );
   store.notificationMutationObserver.onHabitCreated(id);
   unawaited(
     store._habitSyncService.syncHabitCreated(
@@ -2412,6 +2419,13 @@ Future<void> _addCustomHabit(
   await store.save(root);
 
   final createdHabit = Map<String, dynamic>.from(activeHabits.last);
+  store._trackProductEvent(
+    ProductAnalyticsEvents.habitCreated,
+    properties: <String, Object?>{
+      'habit_type': analyticsHabitType(createdHabit['type']),
+      'target_period': analyticsTargetPeriod(createdHabit['schedule']),
+    },
+  );
   store.notificationMutationObserver.onHabitCreated(id);
   unawaited(
     store._habitSyncService.syncHabitCreated(
@@ -2526,6 +2540,13 @@ Future<void> _updateHabitPlan(
   activeHabits[index] = habit;
   userState['activeHabits'] = activeHabits;
   await store.save(root);
+  store._trackProductEvent(
+    ProductAnalyticsEvents.habitEdited,
+    properties: <String, Object?>{
+      'habit_type': analyticsHabitType(habit['type']),
+      'target_period': analyticsTargetPeriod(habit['schedule']),
+    },
+  );
   store.notificationMutationObserver.onHabitUpdated(habitId);
   unawaited(
     store._habitSyncService.syncHabitUpdated(
@@ -2745,6 +2766,15 @@ Future<void> _updateHabitDetailsFromEdit(
 
   final nowArchived =
       current['archived'] == true || current['isArchived'] == true;
+  store._trackProductEvent(
+    nowArchived && !wasArchived
+        ? ProductAnalyticsEvents.habitArchived
+        : ProductAnalyticsEvents.habitEdited,
+    properties: <String, Object?>{
+      'habit_type': analyticsHabitType(current['type']),
+      'target_period': analyticsTargetPeriod(current['schedule']),
+    },
+  );
   final syncedHabit = Map<String, dynamic>.from(current);
   final reminderChanged = patch.containsKey('reminderEnabled') ||
       patch.containsKey('remindersEnabled') ||
@@ -2943,10 +2973,14 @@ Future<void> _setCountHabitValue(
     habitId: habitId,
     date: now,
   );
-  if (habit['doneToday'] == true) {
+  if (habit['doneToday'] == true && !wasCompletedBeforeChange) {
     store.notificationMutationObserver.onHabitCompleted(habitId);
+    store._trackProductEvent(ProductAnalyticsEvents.habitCompleted);
   } else if (wasCompletedBeforeChange) {
     store.notificationMutationObserver.onHabitUncompleted(habitId);
+    if (habit['doneToday'] != true) {
+      store._trackProductEvent(ProductAnalyticsEvents.habitCompletionUndone);
+    }
   }
 }
 
@@ -3172,6 +3206,9 @@ Future<HabitMutationOutcome> _completeHabit(
   );
   if (habit['doneToday'] == true) {
     store.notificationMutationObserver.onHabitCompleted(habitId);
+    if (!beforeCompleted) {
+      store._trackProductEvent(ProductAnalyticsEvents.habitCompleted);
+    }
   }
   _logHomeMutationOutcome(
     habitId: habitId,
@@ -3227,6 +3264,11 @@ Future<void> _toggleHabitDoneForDate(
   );
 
   await store.save(root);
+  store._trackProductEvent(
+    !currentlyDone
+        ? ProductAnalyticsEvents.habitCompleted
+        : ProductAnalyticsEvents.habitCompletionUndone,
+  );
   _queueBestEffortHabitLogSyncForDate(
     store,
     userState: userState,
@@ -3333,8 +3375,10 @@ Future<HabitMutationOutcome> _setHabitCompletionForKey(
   }
   if (done) {
     store.notificationMutationObserver.onHabitCompleted(habitId);
+    store._trackProductEvent(ProductAnalyticsEvents.habitCompleted);
   } else {
     store.notificationMutationObserver.onHabitUncompleted(habitId);
+    store._trackProductEvent(ProductAnalyticsEvents.habitCompletionUndone);
   }
   _logHomeMutationOutcome(
     habitId: habitId,
@@ -3490,8 +3534,10 @@ Future<void> _setCountHabitValueForDate(
 
   final target = _habitTarget(habit);
   final safeValue = _safeDouble(value, fallback: 0).clamp(0, double.infinity);
-
   final dayKey = _dateKey(date);
+  final history = _ensureHistoryRoot(userState);
+  final wasCompletedBeforeChange =
+      _map(_map(history['habitCompletions'])[dayKey])[habitId] == true;
   _setHabitCountValueForDay(
     userState,
     dateKey: dayKey,
@@ -3523,8 +3569,14 @@ Future<void> _setCountHabitValueForDate(
   );
   if (safeValue >= target) {
     store.notificationMutationObserver.onHabitCompleted(habitId);
+    if (!wasCompletedBeforeChange) {
+      store._trackProductEvent(ProductAnalyticsEvents.habitCompleted);
+    }
   } else {
     store.notificationMutationObserver.onHabitUpdated(habitId);
+    if (wasCompletedBeforeChange) {
+      store._trackProductEvent(ProductAnalyticsEvents.habitCompletionUndone);
+    }
   }
 }
 

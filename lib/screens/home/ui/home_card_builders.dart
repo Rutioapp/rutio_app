@@ -260,7 +260,7 @@ extension _HomeScreenCardBuilders on _HomeScreenState {
             context,
             PremiumFeature.perHabitStatistics,
           )) {
-        logPremiumGateBlocked(PremiumFeature.perHabitStatistics);
+        logPremiumGateBlocked(context, PremiumFeature.perHabitStatistics);
         unawaited(
           openPremiumPaywall(
             context,

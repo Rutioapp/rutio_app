@@ -11,6 +11,7 @@ import '../domain/auth/onboarding_auth_contracts.dart';
 import '../domain/models/onboarding_draft.dart';
 import '../domain/models/onboarding_types.dart';
 import '../../../application/auth/auth_controller.dart';
+import '../../../core/observability/analytics_service.dart';
 import '../../../application/bootstrap/bootstrap_controller.dart';
 import '../../../stores/user_state_store.dart';
 import '../../../l10n/l10n.dart';
@@ -85,6 +86,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       ),
       autoCompleteAfterAccountResolution: true,
       onCompletionHandoff: widget.onCompletionHandoff,
+      analyticsService: context.read<AnalyticsService?>(),
     )..addListener(_onMachineChanged);
     if (kDebugMode) {
       debugPrint(

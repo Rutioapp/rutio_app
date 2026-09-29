@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/observability/analytics_events.dart';
+import '../../../core/observability/analytics_service.dart';
 import '../application/premium_controller.dart';
 import '../domain/premium_access.dart';
 import '../domain/premium_access_policy.dart';
@@ -31,11 +35,33 @@ bool canAccessPremiumFeature(
   return PremiumAccessPolicy.canAccess(feature, premiumAccessStateOf(context));
 }
 
-void logPremiumGateBlocked(PremiumFeature feature) {
+void logPremiumGateBlocked(BuildContext context, PremiumFeature feature) {
+  final access = premiumAccessStateOf(context);
+  if (access.status != PremiumAccessStatus.unknown && !access.isPremium) {
+    final analytics = context.read<AnalyticsService?>();
+    if (analytics != null)
+      unawaited(analytics.track(
+        ProductAnalyticsEvents.premiumFeatureBlocked,
+        properties: <String, Object?>{
+          'premium_feature': analyticsPremiumFeature(feature),
+          'upgrade_source': analyticsUpgradeSource(_sourceFor(feature)),
+        },
+      ));
+  }
   if (kDebugMode) {
     debugPrint('[premium_gate] blocked feature=${feature.name}');
   }
 }
+
+PremiumUpgradeSource _sourceFor(PremiumFeature feature) => switch (feature) {
+      PremiumFeature.weeklyStatistics => PremiumUpgradeSource.weeklyStatistics,
+      PremiumFeature.monthlyStatistics =>
+        PremiumUpgradeSource.monthlyStatistics,
+      PremiumFeature.annualStatistics => PremiumUpgradeSource.annualStatistics,
+      PremiumFeature.perHabitStatistics =>
+        PremiumUpgradeSource.perHabitStatistics,
+      PremiumFeature.weeklyReport => PremiumUpgradeSource.weeklyReport,
+    };
 
 class RevenueCatPaywallPresenter {
   const RevenueCatPaywallPresenter();
@@ -92,6 +118,52 @@ Future<void> _presentPremiumPaywall(
 
   try {
     final result = await presenter();
+    final analytics = context.read<AnalyticsService?>();
+    if (result != PaywallResult.error && result != PaywallResult.notPresented) {
+      if (analytics != null)
+        unawaited(analytics.track(
+          ProductAnalyticsEvents.paywallViewed,
+          properties: <String, Object?>{
+            'upgrade_source': analyticsUpgradeSource(source),
+          },
+        ));
+    }
+    switch (result) {
+      case PaywallResult.purchased:
+        if (analytics != null)
+          unawaited(analytics.track(
+            ProductAnalyticsEvents.purchaseCompleted,
+            properties: <String, Object?>{
+              'upgrade_source': analyticsUpgradeSource(source),
+            },
+          ));
+      case PaywallResult.cancelled:
+        if (analytics != null)
+          unawaited(analytics.track(
+            ProductAnalyticsEvents.paywallDismissed,
+            properties: <String, Object?>{
+              'upgrade_source': analyticsUpgradeSource(source),
+            },
+          ));
+        if (analytics != null)
+          unawaited(analytics.track(
+            ProductAnalyticsEvents.purchaseCancelled,
+            properties: <String, Object?>{
+              'upgrade_source': analyticsUpgradeSource(source),
+            },
+          ));
+      case PaywallResult.restored:
+        if (analytics != null)
+          unawaited(analytics.track(
+            ProductAnalyticsEvents.restoreCompleted,
+            properties: <String, Object?>{
+              'upgrade_source': analyticsUpgradeSource(source),
+            },
+          ));
+      case PaywallResult.error:
+      case PaywallResult.notPresented:
+        break;
+    }
     if (context.mounted &&
         (result == PaywallResult.error ||
             result == PaywallResult.notPresented)) {
