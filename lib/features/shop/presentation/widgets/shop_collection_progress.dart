@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 
 class ShopCollectionProgress extends StatelessWidget {
   const ShopCollectionProgress({
@@ -26,7 +28,7 @@ class ShopCollectionProgress extends StatelessWidget {
               style: ShopUiTextStyles.label,
             ),
             Text(
-              _statusLabel(),
+              _statusLabel(context.l10n),
               style: ShopUiTextStyles.labelSmall.copyWith(
                 color: _statusColor(),
               ),
@@ -47,17 +49,17 @@ class ShopCollectionProgress extends StatelessWidget {
     );
   }
 
-  String _statusLabel() {
+  String _statusLabel(AppLocalizations l10n) {
     if (total <= 0) {
-      return 'Sin items';
+      return l10n.shopCollectionStatusBlocked;
     }
     if (current <= 0) {
-      return 'Nueva';
+      return l10n.shopCollectionStatusNew;
     }
     if (current >= total) {
-      return 'Completada';
+      return l10n.shopCollectionStatusCompleted;
     }
-    return 'Empezada';
+    return l10n.shopCollectionStatusStarted;
   }
 
   Color _statusColor() {

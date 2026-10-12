@@ -17,6 +17,8 @@ import 'package:rutio/features/shop/presentation/widgets/shop_empty_state.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_filter_chip.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_header.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_page_shell.dart';
+import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 
 enum ShopCosmeticsFilter {
   all,
@@ -127,7 +129,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
     return ShopPageShell(
       scrollable: false,
       header: ShopHeader(
-        title: 'Cosméticos',
+        title: context.l10n.shopCosmeticsTitle,
         titleStyle: ShopUiTextStyles.sectionTitle.copyWith(
           fontSize: 25,
           height: 1.04,
@@ -150,9 +152,9 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
 
     final state = _state;
     if (state == null) {
-      return const ShopEmptyState(
-        title: 'Cosméticos no disponibles',
-        message: 'No hemos podido cargar la tienda de cosméticos ahora mismo.',
+      return ShopEmptyState(
+        title: context.l10n.shopDetailUnavailableTitle,
+        message: context.l10n.shopCosmeticsLoadError,
       );
     }
 
@@ -162,17 +164,17 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
         resolvedCatalog.bundles.isEmpty &&
         widget.controller.cloudState.status !=
             ShopCosmeticsCloudStatus.loading) {
-      return const ShopEmptyState(
-        title: 'CosmÃ©ticos no disponibles',
-        message: 'No hemos podido cargar la tienda de cosmÃ©ticos ahora mismo.',
+      return ShopEmptyState(
+        title: context.l10n.shopDetailUnavailableTitle,
+        message: context.l10n.shopCosmeticsLoadError,
       );
     }
 
     final entries = _visibleEntries(state);
     if (entries.isEmpty) {
-      return const ShopEmptyState(
-        title: 'Nada por mostrar',
-        message: 'No encontramos cosméticos en esta sección.',
+      return ShopEmptyState(
+        title: context.l10n.shopEmptyUtilitiesTitle,
+        message: context.l10n.shopCosmeticsEmpty,
       );
     }
 
@@ -382,7 +384,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
       _busyIds.remove(asset.id);
     });
 
-    _showFeedback(_assetFeedback(result, ownershipState));
+    _showFeedback(_assetFeedback(context.l10n, result, ownershipState));
   }
 
   Future<void> _onAssetPrimaryActionPressed(
@@ -411,7 +413,7 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
       _busyIds.remove(bundle.id);
     });
 
-    _showFeedback(_bundleFeedback(result));
+    _showFeedback(_bundleFeedback(context.l10n, result));
   }
 
   Future<void> _onBundlePrimaryActionPressed(
@@ -555,52 +557,56 @@ class _ShopCosmeticsScreenState extends State<ShopCosmeticsScreen> {
   }
 
   String _assetFeedback(
+    AppLocalizations l10n,
     ShopCosmeticsOperationResult result,
     ShopAssetOwnershipState previousState,
   ) {
     switch (result.status) {
       case ShopCosmeticsOperationStatus.success:
         return previousState == ShopAssetOwnershipState.locked
-            ? 'Cosmetico comprado'
-            : 'Cosmetico equipado';
+            ? l10n.shopStatusPurchased
+            : l10n.shopEquipped;
       case ShopCosmeticsOperationStatus.insufficientCoins:
-        return 'No tienes ambar suficiente';
+        return l10n.shopOperationInsufficientAmber;
       case ShopCosmeticsOperationStatus.alreadyOwned:
-        return 'Ya lo tienes en tu coleccion';
+        return l10n.shopOperationAlreadyOwned;
       case ShopCosmeticsOperationStatus.assetNotOwned:
-        return 'Necesitas comprarlo antes de equiparlo';
+        return l10n.shopOperationNeedsPurchase;
       case ShopCosmeticsOperationStatus.awaitingResolution:
         return previousState == ShopAssetOwnershipState.locked
-            ? 'Estamos verificando la compra. Se actualizara automaticamente al recuperar la conexion.'
-            : 'Estamos verificando que diseno ha quedado equipado.';
+            ? l10n.shopOperationVerifyingPurchase
+            : l10n.shopOperationVerifyingEquip;
       case ShopCosmeticsOperationStatus.remoteStateApplied:
-        return 'Se ha actualizado el diseno equipado desde la nube.';
+        return l10n.shopOperationUpdatedEquip;
       case ShopCosmeticsOperationStatus.assetNotFound:
       case ShopCosmeticsOperationStatus.bundleNotFound:
       case ShopCosmeticsOperationStatus.bundleContainsOwnedAssets:
-        return 'No hemos encontrado este cosmetico';
+        return l10n.shopOperationCosmeticNotFound;
     }
   }
 
-  String _bundleFeedback(ShopCosmeticsOperationResult result) {
+  String _bundleFeedback(
+    AppLocalizations l10n,
+    ShopCosmeticsOperationResult result,
+  ) {
     switch (result.status) {
       case ShopCosmeticsOperationStatus.success:
-        return 'Pack comprado';
+        return l10n.shopOperationBundlePurchased;
       case ShopCosmeticsOperationStatus.insufficientCoins:
-        return 'No tienes ambar suficiente';
+        return l10n.shopOperationInsufficientAmber;
       case ShopCosmeticsOperationStatus.alreadyOwned:
-        return 'Ese pack ya esta comprado';
+        return l10n.shopOperationBundleAlreadyOwned;
       case ShopCosmeticsOperationStatus.bundleContainsOwnedAssets:
-        return 'Completar pack';
+        return l10n.shopOperationCompleteBundle;
       case ShopCosmeticsOperationStatus.assetNotFound:
       case ShopCosmeticsOperationStatus.bundleNotFound:
-        return 'No hemos encontrado este pack';
+        return l10n.shopOperationBundleNotFound;
       case ShopCosmeticsOperationStatus.assetNotOwned:
-        return 'Operacion no disponible';
+        return l10n.shopOperationUnavailable;
       case ShopCosmeticsOperationStatus.awaitingResolution:
-        return 'Estamos verificando la compra. Se actualizara automaticamente al recuperar la conexion.';
+        return l10n.shopOperationVerifyingPurchase;
       case ShopCosmeticsOperationStatus.remoteStateApplied:
-        return 'Se ha actualizado el diseno equipado desde la nube.';
+        return l10n.shopOperationUpdatedEquip;
     }
   }
 }
@@ -622,25 +628,25 @@ class _FilterRow extends StatelessWidget {
         children: <Widget>[
           _buildChip(
             key: 'shopCosmeticsFilter-all',
-            label: 'Todo',
+            label: context.l10n.shopFilterAll,
             filter: ShopCosmeticsFilter.all,
           ),
           const SizedBox(width: 10),
           _buildChip(
             key: 'shopCosmeticsFilter-wallpapers',
-            label: 'Fondos',
+            label: context.l10n.shopFilterWallpapers,
             filter: ShopCosmeticsFilter.wallpapers,
           ),
           const SizedBox(width: 10),
           _buildChip(
             key: 'shopCosmeticsFilter-cards',
-            label: 'Tarjetas',
+            label: context.l10n.shopFilterCards,
             filter: ShopCosmeticsFilter.cards,
           ),
           const SizedBox(width: 10),
           _buildChip(
             key: 'shopCosmeticsFilter-packs',
-            label: 'Packs',
+            label: context.l10n.shopFilterPacks,
             filter: ShopCosmeticsFilter.packs,
           ),
         ],

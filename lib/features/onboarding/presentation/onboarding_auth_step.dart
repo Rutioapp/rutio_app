@@ -133,12 +133,12 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Google no ha podido iniciar sesión'),
+        title: Text(context.l10n.onboardingAuthGoogleErrorTitle),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cerrar'),
+            child: Text(context.l10n.onboardingAuthClose),
           ),
         ],
       ),
@@ -251,7 +251,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'No se pudo finalizar el onboarding. Tu sesión y tus datos siguen guardados.',
+              l10n.onboardingAuthCompletionFailure,
               textAlign: TextAlign.center,
               style: AppTextStyles.authSub,
             ),
@@ -259,7 +259,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _machine.complete,
-                child: const Text('Reintentar finalización'),
+                child: Text(l10n.onboardingAuthRetryCompletion),
               ),
             ],
           ],
@@ -288,14 +288,14 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
                 onPressed: () => _machine.choosePreparedHabit(
                   PreparedHabitDecision.discard,
                 ),
-                child: const Text('Descartar hábito preparado'),
+                child: Text(l10n.onboardingAuthDiscardPreparedHabit),
               ),
               const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: () => _machine.choosePreparedHabit(
                   PreparedHabitDecision.keep,
                 ),
-                child: const Text('Conservar hábito preparado'),
+                child: Text(l10n.onboardingAuthKeepPreparedHabit),
               ),
             ],
           ],

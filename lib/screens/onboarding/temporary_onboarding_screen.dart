@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../application/bootstrap/bootstrap_controller.dart';
 import '../../utils/app_theme.dart';
+import '../../l10n/l10n.dart';
 
 /// Legacy fallback retained for compatibility; V1 uses OnboardingV1Screen.
 @Deprecated('Use OnboardingV1Screen for the onboarding flow.')
@@ -95,7 +96,7 @@ class _TemporaryOnboardingScreenState extends State<TemporaryOnboardingScreen> {
                       onPressed: _isCompleting ? null : _continue,
                       child: _isCompleting
                           ? const CupertinoActivityIndicator()
-                          : const Text('Continuar'),
+                          : Text(context.l10n.commonContinue),
                     ),
                   ),
                 ],

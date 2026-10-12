@@ -814,6 +814,7 @@
   "feedbackDeleteConfirmDelete": "Eliminar",
   "feedbackResponseTitle": "Respuesta del equipo",
   "feedbackResponseEmpty": "Nuestro equipo todavía no ha añadido una respuesta.",
+  "feedbackSuccessReturnAction": "Volver al feedback",
   "feedbackExitConfirmTitle": "¿Quieres salir?",
   "feedbackExitConfirmMessage": "Perderás el feedback que todavía no has enviado.",
   "feedbackExitConfirmStay": "Seguir editando",
@@ -2697,5 +2698,72 @@
   "premiumFeaturePerHabitStatistics": "Desbloquea las estadísticas por hábito con Premium.",
   "premiumFeatureWeeklyReport": "Desbloquea el Reporte Semanal con Premium.",
   "loginAppleCta": "Continuar con Apple",
-  "onboardingAuthAppleCta": "Iniciar sesión con Apple"
+  "onboardingAuthAppleCta": "Iniciar sesión con Apple",
+  "commonRetry": "Reintentar",
+  "commonContinue": "Continuar",
+  "achievementViewAchievements": "Ver mis logros",
+  "achievementContinue": "Continuar",
+  "diaryV2HideSuggestion": "Ocultar sugerencia",
+  "onboardingAuthGoogleErrorTitle": "Google no ha podido iniciar sesión",
+  "onboardingAuthClose": "Cerrar",
+  "onboardingAuthCompletionFailure": "No se pudo finalizar el onboarding. Tu sesión y tus datos siguen guardados.",
+  "onboardingAuthRetryCompletion": "Reintentar finalización",
+  "onboardingAuthDiscardPreparedHabit": "Descartar hábito preparado",
+  "onboardingAuthKeepPreparedHabit": "Conservar hábito preparado",
+  "shopDetailPurchaseUnavailableMessage": "Todavía no se realiza la compra real desde esta pantalla.",
+  "shopDetailPartialBundleMessage": "Ya tienes parte de este pack. Completa los elementos que faltan o revisa tu inventario.",
+  "shopDetailInsufficientAmberMessage": "No tienes ámbar suficiente para completar este pack.",
+  "shopDetailNoActionMessage": "Este cosmético ya no requiere una acción adicional.",
+  "shopBundleOwnedCount": "Tienes {count} de 3",
+  "@shopBundleOwnedCount": { "placeholders": { "count": { "type": "int" } } },
+  "shopBundleEquipping": "Equipando...",
+  "shopBundleEquipped": "Pack equipado",
+  "shopBundleEquip": "Equipar pack",
+  "shopBundleCompleted": "Pack completado"
+  ,"shopStatusUnavailable": "No disponible"
+  ,"shopCompletionPriceLabel": "Precio para completar"
+  ,"shopMissingItemsLabel": "Te faltan"
+  ,"shopCompletePackAction": "Completar pack"
+  ,"shopWallpaperDescription": "Un fondo calmado para refrescar la vista principal de Rutio."
+  ,"shopHabitCardDescription": "Una tarjeta de hábitos con tono suave para elevar la lectura diaria."
+  ,"shopUserCardDescription": "Una tarjeta de usuario premium y minimalista para tu identidad dentro de Rutio."
+  ,"shopCustomizationEmptyCategoryTitle": "Todavía no tienes elementos aquí"
+  ,"shopCustomizationEmptyCategoryMessage": "Cuando consigas cosméticos de esta categoría aparecerán en esta sección."
+  ,"shopCustomizationEmptyBundleTitle": "Todavía no tienes packs"
+  ,"shopCustomizationEmptyBundleMessage": "Los packs que compres aparecerán aquí y podrás equipar todos sus cosméticos a la vez."
+  ,"shopGoToCosmetics": "Ir a Cosméticos"
+  ,"shopCurrentWallpaper": "Fondo actual"
+  ,"shopCurrentHabitCard": "Tarjeta de hábitos actual"
+  ,"shopCurrentUserCard": "Tarjeta de usuario actual"
+  ,"shopNoEquippedItem": "Todavía no hay un objeto equipado."
+  ,"shopPreview": "Vista previa"
+  ,"homeChangeHabitFilter": "Cambiar filtro de hábitos"
+  ,"achievementBadgeSemanticLabel": "Insignia del logro {name}"
+  ,"achievementRewardsSemanticLabel": "Recompensas del logro"
+  ,"shopCosmeticsLoadError": "No hemos podido cargar la tienda de cosméticos ahora mismo."
+  ,"shopCosmeticsEmpty": "No encontramos cosméticos en esta sección."
+  ,"shopOperationInsufficientAmber": "No tienes ámbar suficiente."
+  ,"shopOperationAlreadyOwned": "Ya lo tienes en tu colección."
+  ,"shopOperationNeedsPurchase": "Necesitas comprarlo antes de equiparlo."
+  ,"shopOperationVerifyingPurchase": "Estamos verificando la compra. Se actualizará automáticamente al recuperar la conexión."
+  ,"shopOperationVerifyingEquip": "Estamos verificando qué diseño ha quedado equipado."
+  ,"shopOperationUpdatedEquip": "Se ha actualizado el diseño equipado desde la nube."
+  ,"shopOperationCosmeticNotFound": "No hemos encontrado este cosmético."
+  ,"shopOperationBundlePurchased": "Pack comprado."
+  ,"shopOperationBundleAlreadyOwned": "Ese pack ya está comprado."
+  ,"shopOperationCompleteBundle": "Completar pack"
+  ,"shopOperationBundleNotFound": "No hemos encontrado este pack."
+  ,"shopOperationUnavailable": "Operación no disponible."
+  ,"shopCollectionEmptyMessage": "Vuelve pronto para descubrir nuevos universos editoriales."
+  ,"shopDetailBackRetry": "Vuelve atrás e inténtalo de nuevo."
+  ,"shopOpenItemError": "No pudimos abrir este item."
+  ,"shopPurchasePending": "La compra ha quedado pendiente de confirmación"
+  ,"shopPurchaseFailed": "No se ha podido completar la compra"
+  ,"shopEquipped": "Cosmético equipado"
+  ,"shopEquipFailed": "No se ha podido equipar el item"
+  ,"shopItemLoadError": "No hemos podido cargar este item de la tienda."
+  ,"shopAddedToCollection": "Añadido a tu colección"
+  ,"shopAddedToBackpack": "Añadido a la mochila"
+  ,"shopPriceCoinsShort": "{value} monedas"
+  ,"@shopPriceCoinsShort": { "placeholders": { "value": { "type": "int" } } }
 }

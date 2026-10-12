@@ -5,11 +5,14 @@ import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/domain/models/shop_cosmetics_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_product_card.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_rarity_badge.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_header.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopCosmeticsDetailSheet extends StatelessWidget {
   const ShopCosmeticsDetailSheet.asset({
@@ -53,13 +56,14 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final title = _isBundle
-        ? completionQuote?.bundle.nameEs ?? bundle!.nameEs
-        : asset!.nameEs;
+        ? l10n.shopBundleName(completionQuote?.bundle ?? bundle!)
+        : l10n.shopAssetName(asset!);
     final rarity = _isBundle
         ? completionQuote?.bundle.rarity ?? bundle!.rarity
         : asset!.rarity;
-    final action = _resolveAction(_hasEnoughCoins);
+    final action = _resolveAction(l10n, _hasEnoughCoins);
     final mediaHeight = MediaQuery.sizeOf(context).height;
 
     return SafeArea(
@@ -87,9 +91,11 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
                 ),
               ),
               ShopHeader(
-                title: 'Detalle',
+                title: l10n.shopDetailTitle,
                 subtitle:
-                    _isBundle ? 'Pack' : _assetCategoryLabel(asset!.category),
+                    _isBundle
+                        ? l10n.shopCategoryPack
+                        : l10n.shopAssetCategoryLabel(asset!.category),
                 leadingIcon: Icons.arrow_back_ios_new_rounded,
                 onLeadingPressed: () => Navigator.of(context).pop(),
                 walletCoins: walletCoins,
@@ -133,32 +139,35 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        _description(),
+                        _description(l10n),
                         style: ShopUiTextStyles.subtitle,
                       ),
                       const SizedBox(height: 18),
-                      _DetailRow(label: 'Categoria', value: _categoryLabel()),
+                      _DetailRow(
+                        label: l10n.shopCategoryLabel,
+                        value: _categoryLabel(l10n),
+                      ),
                       const SizedBox(height: 12),
-                      if (_isBundle) ..._bundleInfoRows(),
-                      _DetailRow(label: 'Estado', value: action.statusLabel),
+                      if (_isBundle) ..._bundleInfoRows(l10n),
+                      _DetailRow(label: l10n.shopStatusLabel, value: action.statusLabel),
                       if (_isBundle) ...<Widget>[
                         const SizedBox(height: 16),
-                        Text('Incluye', style: ShopUiTextStyles.label),
+                        Text(l10n.shopIncludesLabel, style: ShopUiTextStyles.label),
                         const SizedBox(height: 8),
                         ...bundleAssets.map(
                           (ShopAsset asset) => Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: _DetailRow(
-                              label: _assetCategoryLabel(asset.category),
-                              value: asset.nameEs,
+                              label: l10n.shopAssetCategoryLabel(asset.category),
+                              value: l10n.shopAssetName(asset),
                             ),
                           ),
                         ),
                         if (completionQuote?.isPartiallyOwned ?? false) ...<Widget>[
                           const SizedBox(height: 8),
                           _DetailRow(
-                            label: 'Te faltan',
-                            value: _missingAssetsLabel(),
+                            label: l10n.shopMissingItemsLabel,
+                            value: _missingAssetsLabel(l10n),
                           ),
                         ],
                       ],
@@ -175,13 +184,7 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
                     children: <Widget>[
                       if (action.showPrimaryButton && !action.enabled) ...<Widget>[
                         Text(
-                          action.label == 'Comprar pack'
-                              ? 'Todavia no se realiza la compra real desde esta pantalla.'
-                              : action.label == 'Completar pack'
-                                  ? 'Ya tienes parte de este pack. Completa los elementos que faltan o revisa tu inventario.'
-                                  : action.label == 'Saldo insuficiente'
-                                      ? 'No tienes ambar suficiente para completar este pack.'
-                                      : 'Este cosmético ya no requiere una accion adicional.',
+                          action.message ?? l10n.shopDetailNoActionMessage,
                           style: ShopUiTextStyles.bodySmall,
                         ),
                         const SizedBox(height: 12),
@@ -193,7 +196,7 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
                                 ? 'shopCosmeticsDetailAction-${bundle!.id}'
                                 : 'shopCosmeticsDetailAction-${asset!.id}',
                           ),
-                          label: busy ? 'Procesando...' : action.label,
+                          label: busy ? l10n.shopProcessingLabel : action.label,
                           onPressed: busy || !action.enabled
                               ? null
                               : onPrimaryActionPressed,
@@ -210,7 +213,7 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
     );
   }
 
-  List<Widget> _bundleInfoRows() {
+  List<Widget> _bundleInfoRows(AppLocalizations l10n) {
     final quote = completionQuote;
     if (quote == null) {
       return const <Widget>[];
@@ -222,139 +225,141 @@ class ShopCosmeticsDetailSheet extends StatelessWidget {
 
     return <Widget>[
       _DetailRow(
-        label: quote.isPartiallyOwned ? 'Precio para completar' : 'Precio',
-        value: '$_price ambar',
+        label: quote.isPartiallyOwned
+            ? l10n.shopCompletionPriceLabel
+            : l10n.shopPriceLabel,
+        value: l10n.shopPriceAmber(_price),
       ),
       if (quote.isPartiallyOwned) ...<Widget>[
         const SizedBox(height: 12),
         _DetailRow(
-          label: 'Te faltan',
-          value: _missingAssetsLabel(),
+          label: l10n.shopMissingItemsLabel,
+          value: _missingAssetsLabel(l10n),
         ),
         const SizedBox(height: 12),
       ],
     ];
   }
 
-  _SheetAction _resolveAction(bool canBuy) {
+  _SheetAction _resolveAction(AppLocalizations l10n, bool canBuy) {
     if (_isBundle) {
       final quote = completionQuote;
       if (quote == null) {
-        return const _SheetAction(
-          label: 'Bloqueado',
-          statusLabel: 'No disponible',
+        return _SheetAction(
+          label: l10n.shopStatusBlocked,
+          statusLabel: l10n.shopStatusUnavailable,
           icon: Icons.lock_outline_rounded,
           enabled: false,
           showPrimaryButton: false,
+          message: null,
         );
       }
       if (quote.isExplicitlyOwned) {
-        return const _SheetAction(
-          label: 'Comprado',
-          statusLabel: 'Comprado',
+        return _SheetAction(
+          label: l10n.shopStatusPurchased,
+          statusLabel: l10n.shopStatusPurchased,
           icon: Icons.check_circle_outline_rounded,
           enabled: false,
           showPrimaryButton: false,
+          message: null,
         );
       }
       if (quote.isCompleteFromItems) {
-        return const _SheetAction(
-          label: 'Pack completado',
-          statusLabel: 'Pack completado',
+        return _SheetAction(
+          label: l10n.shopBundleCompleted,
+          statusLabel: l10n.shopBundleCompleted,
           icon: Icons.check_circle_outline_rounded,
           enabled: false,
           showPrimaryButton: false,
+          message: null,
         );
       }
       if (quote.isPartiallyOwned) {
         return _SheetAction(
-          label: canBuy ? 'Completar pack' : 'Saldo insuficiente',
-          statusLabel: 'Tienes ${quote.ownedItemCount} de 3',
+          label: canBuy ? l10n.shopCompletePackAction : l10n.shopStatusInsufficientCoins,
+          statusLabel: l10n.shopBundleOwnedCount(quote.ownedItemCount),
           icon: Icons.auto_fix_high_rounded,
           enabled: canBuy,
           showPrimaryButton: true,
+          message: canBuy
+              ? l10n.shopDetailPartialBundleMessage
+              : l10n.shopDetailInsufficientAmberMessage,
         );
       }
       return _SheetAction(
-        label: canBuy ? 'Comprar pack' : 'Saldo insuficiente',
-        statusLabel: canBuy ? 'Disponible' : 'Bloqueado',
+        label: canBuy ? l10n.shopActionBuyPack : l10n.shopStatusInsufficientCoins,
+        statusLabel: canBuy ? l10n.shopActionAvailable : l10n.shopStatusBlocked,
         icon: canBuy ? Icons.shopping_bag_outlined : Icons.lock_outline_rounded,
         enabled: canBuy,
         showPrimaryButton: true,
+        message: canBuy ? null : l10n.shopDetailInsufficientAmberMessage,
       );
     }
 
     switch (ownershipState) {
       case ShopAssetOwnershipState.locked:
         return _SheetAction(
-          label: canBuy ? 'Comprar' : 'Saldo insuficiente',
-          statusLabel: 'Bloqueado',
+          label: canBuy ? l10n.shopActionBuy : l10n.shopStatusInsufficientCoins,
+          statusLabel: l10n.shopStatusBlocked,
           icon: canBuy
               ? Icons.monetization_on_outlined
               : Icons.lock_outline_rounded,
           enabled: canBuy,
           showPrimaryButton: true,
+          message: canBuy ? null : l10n.shopDetailInsufficientAmberMessage,
         );
       case ShopAssetOwnershipState.owned:
-        return const _SheetAction(
-          label: 'Equipar',
-          statusLabel: 'Comprado',
+        return _SheetAction(
+          label: l10n.shopActionEquip,
+          statusLabel: l10n.shopStatusPurchased,
           icon: Icons.auto_fix_high_rounded,
           enabled: true,
           showPrimaryButton: true,
+          message: null,
         );
       case ShopAssetOwnershipState.equipped:
-        return const _SheetAction(
-          label: 'Equipado',
-          statusLabel: 'Equipado',
+        return _SheetAction(
+          label: l10n.shopActionEquipped,
+          statusLabel: l10n.shopActionEquipped,
           icon: Icons.check_circle_outline_rounded,
           enabled: false,
           showPrimaryButton: true,
+          message: null,
         );
       case ShopAssetOwnershipState.includedInOwnedBundle:
-        return const _SheetAction(
-          label: 'Equipar',
-          statusLabel: 'Incluido en pack',
+        return _SheetAction(
+          label: l10n.shopActionEquip,
+          statusLabel: l10n.shopStatusIncludedInPack,
           icon: Icons.auto_fix_high_rounded,
           enabled: true,
           showPrimaryButton: true,
+          message: null,
         );
     }
   }
 
-  String _description() {
+  String _description(AppLocalizations l10n) {
     if (_isBundle) {
-      return 'Un pack sereno con fondo y cards coordinadas para mantener una estetica Rutio consistente.';
+      return l10n.shopBundleDescription(completionQuote?.bundle ?? bundle!);
     }
     return switch (asset!.category) {
       ShopAssetCategory.wallpaper =>
-        'Un fondo calmado para refrescar la vista principal de Rutio.',
+        l10n.shopWallpaperDescription,
       ShopAssetCategory.habitCard =>
-        'Una habit card con tono suave para elevar la lectura diaria.',
+        l10n.shopHabitCardDescription,
       ShopAssetCategory.userCard =>
-        'Una user card premium y minimal para tu identidad dentro de Rutio.',
+        l10n.shopUserCardDescription,
     };
   }
 
-  String _categoryLabel() {
-    if (_isBundle) return 'Pack';
-    return _assetCategoryLabel(asset!.category);
+  String _categoryLabel(AppLocalizations l10n) {
+    if (_isBundle) return l10n.shopCategoryPack;
+    return l10n.shopAssetCategoryLabel(asset!.category);
   }
 
-  String _assetCategoryLabel(ShopAssetCategory category) {
-    switch (category) {
-      case ShopAssetCategory.wallpaper:
-        return 'Fondo';
-      case ShopAssetCategory.habitCard:
-        return 'Habit card';
-      case ShopAssetCategory.userCard:
-        return 'User card';
-    }
-  }
-
-  String _missingAssetsLabel() {
+  String _missingAssetsLabel(AppLocalizations l10n) {
     final missing = completionQuote?.missingAssets ?? const <ShopAsset>[];
-    return missing.map((ShopAsset asset) => asset.nameEs).join(', ');
+    return missing.map(l10n.shopAssetName).join(', ');
   }
 }
 
@@ -365,6 +370,7 @@ class _SheetAction {
     required this.icon,
     required this.enabled,
     required this.showPrimaryButton,
+    this.message,
   });
 
   final String label;
@@ -372,6 +378,7 @@ class _SheetAction {
   final IconData icon;
   final bool enabled;
   final bool showPrimaryButton;
+  final String? message;
 }
 
 class _DetailRow extends StatelessWidget {

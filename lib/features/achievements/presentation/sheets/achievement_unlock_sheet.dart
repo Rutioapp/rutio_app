@@ -205,7 +205,7 @@ class _AchievementBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       image: true,
-      label: 'Insignia del logro ${achievement.name}',
+      label: context.l10n.achievementBadgeSemanticLabel(achievement.name),
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0.96, end: 1),
         duration: const Duration(milliseconds: 420),
@@ -291,7 +291,7 @@ class _RewardPillsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       container: true,
-      label: 'Recompensas del logro',
+      label: context.l10n.achievementRewardsSemanticLabel,
       child: Wrap(
         alignment: WrapAlignment.center,
         spacing: 10,
@@ -581,6 +581,7 @@ class _AchievementActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final secondaryShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(999),
     );
@@ -589,7 +590,7 @@ class _AchievementActions extends StatelessWidget {
       children: [
         Semantics(
           button: true,
-          label: 'Ver mis logros',
+          label: l10n.achievementViewAchievements,
           child: SizedBox(
             width: double.infinity,
             child: TextButton(
@@ -606,14 +607,14 @@ class _AchievementActions extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              child: const Text('Ver mis logros'),
+              child: Text(l10n.achievementViewAchievements),
             ),
           ),
         ),
         const SizedBox(height: 8),
         Semantics(
           button: true,
-          label: 'Continuar',
+          label: l10n.achievementContinue,
           child: SizedBox(
             width: double.infinity,
             child: TextButton(
@@ -628,7 +629,7 @@ class _AchievementActions extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              child: const Text('Continuar'),
+              child: Text(l10n.achievementContinue),
             ),
           ),
         ),

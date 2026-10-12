@@ -377,7 +377,7 @@ class _ReflectionPromptCard extends StatelessWidget {
             onPressed: onDismiss,
             icon: const Icon(CupertinoIcons.xmark, size: 16),
             color: DiaryV2Styles.mutedText,
-            tooltip: 'Ocultar sugerencia',
+            tooltip: context.l10n.diaryV2HideSuggestion,
             visualDensity: VisualDensity.compact,
           ),
         ],

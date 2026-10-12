@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
+import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 
 class ShopItemCard extends StatelessWidget {
   const ShopItemCard({
@@ -46,8 +48,8 @@ class ShopItemCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: ShopUiTokens.radiusMdShape,
                 child: preview ??
-                    const ShopPreviewPlaceholder(
-                      label: 'Preview',
+                    ShopPreviewPlaceholder(
+                      label: context.l10n.shopPreview,
                     ),
               ),
             ),
@@ -88,7 +90,7 @@ class ShopItemCard extends StatelessWidget {
               runSpacing: 8,
               children: <Widget>[
                 _MetaPill(
-                  label: _rarityLabel(rarity),
+                  label: context.l10n.shopRarityLabelByShopItem(rarity),
                   backgroundColor: _rarityBackground(rarity),
                   textColor: _rarityForeground(rarity),
                 ),
@@ -119,20 +121,6 @@ class ShopItemCard extends StatelessWidget {
     );
   }
 
-  String _rarityLabel(ShopItemRarity rarity) {
-    switch (rarity) {
-      case ShopItemRarity.uncommon:
-        return 'Uncommon';
-      case ShopItemRarity.rare:
-        return 'Rare';
-      case ShopItemRarity.epic:
-        return 'Epic';
-      case ShopItemRarity.legendary:
-        return 'Legendary';
-      case ShopItemRarity.common:
-        return 'Common';
-    }
-  }
 
   Color _rarityBackground(ShopItemRarity rarity) {
     switch (rarity) {

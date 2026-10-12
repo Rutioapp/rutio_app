@@ -3621,6 +3621,12 @@ abstract class AppLocalizations {
   /// **'Nuestro equipo todavía no ha añadido una respuesta.'**
   String get feedbackResponseEmpty;
 
+  /// No description provided for @feedbackSuccessReturnAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver al feedback'**
+  String get feedbackSuccessReturnAction;
+
   /// No description provided for @feedbackExitConfirmTitle.
   ///
   /// In es, this message translates to:
@@ -10960,6 +10966,396 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Iniciar sesión con Apple'**
   String get onboardingAuthAppleCta;
+
+  /// No description provided for @commonRetry.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get commonRetry;
+
+  /// No description provided for @commonContinue.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get commonContinue;
+
+  /// No description provided for @achievementViewAchievements.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver mis logros'**
+  String get achievementViewAchievements;
+
+  /// No description provided for @achievementContinue.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get achievementContinue;
+
+  /// No description provided for @diaryV2HideSuggestion.
+  ///
+  /// In es, this message translates to:
+  /// **'Ocultar sugerencia'**
+  String get diaryV2HideSuggestion;
+
+  /// No description provided for @onboardingAuthGoogleErrorTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Google no ha podido iniciar sesión'**
+  String get onboardingAuthGoogleErrorTitle;
+
+  /// No description provided for @onboardingAuthClose.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar'**
+  String get onboardingAuthClose;
+
+  /// No description provided for @onboardingAuthCompletionFailure.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo finalizar el onboarding. Tu sesión y tus datos siguen guardados.'**
+  String get onboardingAuthCompletionFailure;
+
+  /// No description provided for @onboardingAuthRetryCompletion.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar finalización'**
+  String get onboardingAuthRetryCompletion;
+
+  /// No description provided for @onboardingAuthDiscardPreparedHabit.
+  ///
+  /// In es, this message translates to:
+  /// **'Descartar hábito preparado'**
+  String get onboardingAuthDiscardPreparedHabit;
+
+  /// No description provided for @onboardingAuthKeepPreparedHabit.
+  ///
+  /// In es, this message translates to:
+  /// **'Conservar hábito preparado'**
+  String get onboardingAuthKeepPreparedHabit;
+
+  /// No description provided for @shopDetailPurchaseUnavailableMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no se realiza la compra real desde esta pantalla.'**
+  String get shopDetailPurchaseUnavailableMessage;
+
+  /// No description provided for @shopDetailPartialBundleMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tienes parte de este pack. Completa los elementos que faltan o revisa tu inventario.'**
+  String get shopDetailPartialBundleMessage;
+
+  /// No description provided for @shopDetailInsufficientAmberMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes ámbar suficiente para completar este pack.'**
+  String get shopDetailInsufficientAmberMessage;
+
+  /// No description provided for @shopDetailNoActionMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Este cosmético ya no requiere una acción adicional.'**
+  String get shopDetailNoActionMessage;
+
+  /// No description provided for @shopBundleOwnedCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Tienes {count} de 3'**
+  String shopBundleOwnedCount(int count);
+
+  /// No description provided for @shopBundleEquipping.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipando...'**
+  String get shopBundleEquipping;
+
+  /// No description provided for @shopBundleEquipped.
+  ///
+  /// In es, this message translates to:
+  /// **'Pack equipado'**
+  String get shopBundleEquipped;
+
+  /// No description provided for @shopBundleEquip.
+  ///
+  /// In es, this message translates to:
+  /// **'Equipar pack'**
+  String get shopBundleEquip;
+
+  /// No description provided for @shopBundleCompleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Pack completado'**
+  String get shopBundleCompleted;
+
+  /// No description provided for @shopStatusUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'No disponible'**
+  String get shopStatusUnavailable;
+
+  /// No description provided for @shopCompletionPriceLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Precio para completar'**
+  String get shopCompletionPriceLabel;
+
+  /// No description provided for @shopMissingItemsLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Te faltan'**
+  String get shopMissingItemsLabel;
+
+  /// No description provided for @shopCompletePackAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Completar pack'**
+  String get shopCompletePackAction;
+
+  /// No description provided for @shopWallpaperDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Un fondo calmado para refrescar la vista principal de Rutio.'**
+  String get shopWallpaperDescription;
+
+  /// No description provided for @shopHabitCardDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Una tarjeta de hábitos con tono suave para elevar la lectura diaria.'**
+  String get shopHabitCardDescription;
+
+  /// No description provided for @shopUserCardDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Una tarjeta de usuario premium y minimalista para tu identidad dentro de Rutio.'**
+  String get shopUserCardDescription;
+
+  /// No description provided for @shopCustomizationEmptyCategoryTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no tienes elementos aquí'**
+  String get shopCustomizationEmptyCategoryTitle;
+
+  /// No description provided for @shopCustomizationEmptyCategoryMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuando consigas cosméticos de esta categoría aparecerán en esta sección.'**
+  String get shopCustomizationEmptyCategoryMessage;
+
+  /// No description provided for @shopCustomizationEmptyBundleTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no tienes packs'**
+  String get shopCustomizationEmptyBundleTitle;
+
+  /// No description provided for @shopCustomizationEmptyBundleMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Los packs que compres aparecerán aquí y podrás equipar todos sus cosméticos a la vez.'**
+  String get shopCustomizationEmptyBundleMessage;
+
+  /// No description provided for @shopGoToCosmetics.
+  ///
+  /// In es, this message translates to:
+  /// **'Ir a Cosméticos'**
+  String get shopGoToCosmetics;
+
+  /// No description provided for @shopCurrentWallpaper.
+  ///
+  /// In es, this message translates to:
+  /// **'Fondo actual'**
+  String get shopCurrentWallpaper;
+
+  /// No description provided for @shopCurrentHabitCard.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjeta de hábitos actual'**
+  String get shopCurrentHabitCard;
+
+  /// No description provided for @shopCurrentUserCard.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjeta de usuario actual'**
+  String get shopCurrentUserCard;
+
+  /// No description provided for @shopNoEquippedItem.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay un objeto equipado.'**
+  String get shopNoEquippedItem;
+
+  /// No description provided for @shopPreview.
+  ///
+  /// In es, this message translates to:
+  /// **'Vista previa'**
+  String get shopPreview;
+
+  /// No description provided for @homeChangeHabitFilter.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambiar filtro de hábitos'**
+  String get homeChangeHabitFilter;
+
+  /// No description provided for @achievementBadgeSemanticLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Insignia del logro {name}'**
+  String achievementBadgeSemanticLabel(Object name);
+
+  /// No description provided for @achievementRewardsSemanticLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Recompensas del logro'**
+  String get achievementRewardsSemanticLabel;
+
+  /// No description provided for @shopCosmeticsLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido cargar la tienda de cosméticos ahora mismo.'**
+  String get shopCosmeticsLoadError;
+
+  /// No description provided for @shopCosmeticsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No encontramos cosméticos en esta sección.'**
+  String get shopCosmeticsEmpty;
+
+  /// No description provided for @shopOperationInsufficientAmber.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes ámbar suficiente.'**
+  String get shopOperationInsufficientAmber;
+
+  /// No description provided for @shopOperationAlreadyOwned.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya lo tienes en tu colección.'**
+  String get shopOperationAlreadyOwned;
+
+  /// No description provided for @shopOperationNeedsPurchase.
+  ///
+  /// In es, this message translates to:
+  /// **'Necesitas comprarlo antes de equiparlo.'**
+  String get shopOperationNeedsPurchase;
+
+  /// No description provided for @shopOperationVerifyingPurchase.
+  ///
+  /// In es, this message translates to:
+  /// **'Estamos verificando la compra. Se actualizará automáticamente al recuperar la conexión.'**
+  String get shopOperationVerifyingPurchase;
+
+  /// No description provided for @shopOperationVerifyingEquip.
+  ///
+  /// In es, this message translates to:
+  /// **'Estamos verificando qué diseño ha quedado equipado.'**
+  String get shopOperationVerifyingEquip;
+
+  /// No description provided for @shopOperationUpdatedEquip.
+  ///
+  /// In es, this message translates to:
+  /// **'Se ha actualizado el diseño equipado desde la nube.'**
+  String get shopOperationUpdatedEquip;
+
+  /// No description provided for @shopOperationCosmeticNotFound.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos encontrado este cosmético.'**
+  String get shopOperationCosmeticNotFound;
+
+  /// No description provided for @shopOperationBundlePurchased.
+  ///
+  /// In es, this message translates to:
+  /// **'Pack comprado.'**
+  String get shopOperationBundlePurchased;
+
+  /// No description provided for @shopOperationBundleAlreadyOwned.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese pack ya está comprado.'**
+  String get shopOperationBundleAlreadyOwned;
+
+  /// No description provided for @shopOperationCompleteBundle.
+  ///
+  /// In es, this message translates to:
+  /// **'Completar pack'**
+  String get shopOperationCompleteBundle;
+
+  /// No description provided for @shopOperationBundleNotFound.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos encontrado este pack.'**
+  String get shopOperationBundleNotFound;
+
+  /// No description provided for @shopOperationUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Operación no disponible.'**
+  String get shopOperationUnavailable;
+
+  /// No description provided for @shopCollectionEmptyMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Vuelve pronto para descubrir nuevos universos editoriales.'**
+  String get shopCollectionEmptyMessage;
+
+  /// No description provided for @shopDetailBackRetry.
+  ///
+  /// In es, this message translates to:
+  /// **'Vuelve atrás e inténtalo de nuevo.'**
+  String get shopDetailBackRetry;
+
+  /// No description provided for @shopOpenItemError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos abrir este item.'**
+  String get shopOpenItemError;
+
+  /// No description provided for @shopPurchasePending.
+  ///
+  /// In es, this message translates to:
+  /// **'La compra ha quedado pendiente de confirmación'**
+  String get shopPurchasePending;
+
+  /// No description provided for @shopPurchaseFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido completar la compra'**
+  String get shopPurchaseFailed;
+
+  /// No description provided for @shopEquipped.
+  ///
+  /// In es, this message translates to:
+  /// **'Cosmético equipado'**
+  String get shopEquipped;
+
+  /// No description provided for @shopEquipFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se ha podido equipar el item'**
+  String get shopEquipFailed;
+
+  /// No description provided for @shopItemLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No hemos podido cargar este item de la tienda.'**
+  String get shopItemLoadError;
+
+  /// No description provided for @shopAddedToCollection.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadido a tu colección'**
+  String get shopAddedToCollection;
+
+  /// No description provided for @shopAddedToBackpack.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadido a la mochila'**
+  String get shopAddedToBackpack;
+
+  /// No description provided for @shopPriceCoinsShort.
+  ///
+  /// In es, this message translates to:
+  /// **'{value} monedas'**
+  String shopPriceCoinsShort(int value);
 }
 
 class _AppLocalizationsDelegate

@@ -2698,5 +2698,72 @@
   "premiumFeaturePerHabitStatistics": "Unlock statistics by habit with Premium.",
   "premiumFeatureWeeklyReport": "Unlock the Weekly Report with Premium.",
   "loginAppleCta": "Continue with Apple",
-  "onboardingAuthAppleCta": "Sign in with Apple"
+  "onboardingAuthAppleCta": "Sign in with Apple",
+  "commonRetry": "Retry",
+  "commonContinue": "Continue",
+  "achievementViewAchievements": "View my achievements",
+  "achievementContinue": "Continue",
+  "diaryV2HideSuggestion": "Hide suggestion",
+  "onboardingAuthGoogleErrorTitle": "Google could not sign you in",
+  "onboardingAuthClose": "Close",
+  "onboardingAuthCompletionFailure": "Onboarding could not be completed. Your session and data are still saved.",
+  "onboardingAuthRetryCompletion": "Retry completion",
+  "onboardingAuthDiscardPreparedHabit": "Discard prepared habit",
+  "onboardingAuthKeepPreparedHabit": "Keep prepared habit",
+  "shopDetailPurchaseUnavailableMessage": "Real purchases are not made from this screen yet.",
+  "shopDetailPartialBundleMessage": "You already own part of this pack. Complete the missing items or review your inventory.",
+  "shopDetailInsufficientAmberMessage": "You do not have enough amber to complete this pack.",
+  "shopDetailNoActionMessage": "This cosmetic does not require any further action.",
+  "shopBundleOwnedCount": "You own {count} of 3",
+  "@shopBundleOwnedCount": { "placeholders": { "count": { "type": "int" } } },
+  "shopBundleEquipping": "Equipping...",
+  "shopBundleEquipped": "Pack equipped",
+  "shopBundleEquip": "Equip pack",
+  "shopBundleCompleted": "Pack completed"
+  ,"shopStatusUnavailable": "Unavailable"
+  ,"shopCompletionPriceLabel": "Price to complete"
+  ,"shopMissingItemsLabel": "Missing"
+  ,"shopCompletePackAction": "Complete pack"
+  ,"shopWallpaperDescription": "A calm background to refresh Rutio's main view."
+  ,"shopHabitCardDescription": "A soft-toned habit card to elevate your daily reading."
+  ,"shopUserCardDescription": "A premium, minimal user card for your identity in Rutio."
+  ,"shopCustomizationEmptyCategoryTitle": "You do not have items here yet"
+  ,"shopCustomizationEmptyCategoryMessage": "When you get cosmetics from this category, they will appear here."
+  ,"shopCustomizationEmptyBundleTitle": "You do not have packs yet"
+  ,"shopCustomizationEmptyBundleMessage": "Purchased packs will appear here and you will be able to equip all their cosmetics at once."
+  ,"shopGoToCosmetics": "Go to Cosmetics"
+  ,"shopCurrentWallpaper": "Current wallpaper"
+  ,"shopCurrentHabitCard": "Current habit card"
+  ,"shopCurrentUserCard": "Current user card"
+  ,"shopNoEquippedItem": "No item is equipped yet."
+  ,"shopPreview": "Preview"
+  ,"homeChangeHabitFilter": "Change habit filter"
+  ,"achievementBadgeSemanticLabel": "Achievement badge for {name}"
+  ,"achievementRewardsSemanticLabel": "Achievement rewards"
+  ,"shopCosmeticsLoadError": "We could not load the cosmetics shop right now."
+  ,"shopCosmeticsEmpty": "No cosmetics were found in this section."
+  ,"shopOperationInsufficientAmber": "You do not have enough amber."
+  ,"shopOperationAlreadyOwned": "You already own this."
+  ,"shopOperationNeedsPurchase": "You need to buy it before equipping it."
+  ,"shopOperationVerifyingPurchase": "We are verifying the purchase. It will update automatically when the connection returns."
+  ,"shopOperationVerifyingEquip": "We are verifying which design is equipped."
+  ,"shopOperationUpdatedEquip": "The equipped design was updated from the cloud."
+  ,"shopOperationCosmeticNotFound": "We could not find this cosmetic."
+  ,"shopOperationBundlePurchased": "Pack purchased."
+  ,"shopOperationBundleAlreadyOwned": "That pack is already purchased."
+  ,"shopOperationCompleteBundle": "Complete pack"
+  ,"shopOperationBundleNotFound": "We could not find this pack."
+  ,"shopOperationUnavailable": "Operation unavailable."
+  ,"shopCollectionEmptyMessage": "Come back soon to discover new editorial universes."
+  ,"shopDetailBackRetry": "Go back and try again."
+  ,"shopOpenItemError": "We could not open this item."
+  ,"shopPurchasePending": "The purchase is pending confirmation"
+  ,"shopPurchaseFailed": "The purchase could not be completed"
+  ,"shopEquipped": "Cosmetic equipped"
+  ,"shopEquipFailed": "The item could not be equipped"
+  ,"shopItemLoadError": "We could not load this shop item."
+  ,"shopAddedToCollection": "Added to your collection"
+  ,"shopAddedToBackpack": "Added to your backpack"
+  ,"shopPriceCoinsShort": "{value} coins"
+  ,"@shopPriceCoinsShort": { "placeholders": { "value": { "type": "int" } } }
 }

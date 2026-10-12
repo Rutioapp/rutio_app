@@ -20,6 +20,8 @@ import 'package:rutio/features/shop/presentation/widgets/shop_owned_item_card.da
 import 'package:rutio/features/shop/presentation/widgets/shop_page_shell.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_section_header.dart';
+import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 
 enum PersonalizationCosmeticFilter {
   packs,
@@ -29,16 +31,16 @@ enum PersonalizationCosmeticFilter {
 }
 
 extension PersonalizationCosmeticFilterX on PersonalizationCosmeticFilter {
-  String get label {
+  String label(AppLocalizations l10n) {
     switch (this) {
       case PersonalizationCosmeticFilter.packs:
-        return 'Packs';
+        return l10n.shopFilterPacks;
       case PersonalizationCosmeticFilter.backgrounds:
-        return 'Fondos';
+        return l10n.shopFilterWallpapers;
       case PersonalizationCosmeticFilter.habitCards:
-        return 'Habit Cards';
+        return l10n.shopFilterCards;
       case PersonalizationCosmeticFilter.userCards:
-        return 'User Cards';
+        return l10n.shopCategoryUserCard;
     }
   }
 
@@ -253,7 +255,7 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
           else
             _OwnedSection(
               key: Key('shopCustomizationCategory-${_selectedFilter.name}'),
-              title: _selectedFilter.label,
+              title: _selectedFilter.label(context.l10n),
               items: filteredItems,
               equippedCosmetics: equippedCosmetics,
               busyEquipItemId: _busyEquipItemId,
@@ -266,17 +268,17 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
   }
 
   Widget _categoryEmptyState(PersonalizationCosmeticFilter filter) {
+    final l10n = context.l10n;
     return ShopEmptyState(
       key: Key('shopCustomizationCategoryEmptyState-${filter.name}'),
       icon: Icons.auto_awesome_rounded,
-      title: 'Todav\u00eda no tienes elementos aqu\u00ed',
-      message:
-          'Cuando consigas cosm\u00e9ticos de esta categor\u00eda aparecer\u00e1n en esta secci\u00f3n.',
+      title: l10n.shopCustomizationEmptyCategoryTitle,
+      message: l10n.shopCustomizationEmptyCategoryMessage,
       action: widget.onOpenCosmetics == null
           ? null
           : ShopPrimaryButton(
               key: const Key('shopCustomizationOpenCosmetics'),
-              label: 'Ir a Cosm\u00e9ticos',
+              label: l10n.shopGoToCosmetics,
               icon: Icons.palette_outlined,
               onPressed: widget.onOpenCosmetics,
               expanded: false,
@@ -285,17 +287,17 @@ class _ShopCustomizationScreenState extends State<ShopCustomizationScreen> {
   }
 
   Widget _bundleEmptyState() {
+    final l10n = context.l10n;
     return ShopEmptyState(
       key: const Key('shopCustomizationBundleEmptyState'),
       icon: Icons.auto_awesome_rounded,
-      title: 'Todav\u00eda no tienes packs',
-      message:
-          'Los packs que compres aparecer\u00e1n aqu\u00ed y podr\u00e1s equipar todos sus cosm\u00e9ticos a la vez.',
+      title: l10n.shopCustomizationEmptyBundleTitle,
+      message: l10n.shopCustomizationEmptyBundleMessage,
       action: widget.onOpenCosmetics == null
           ? null
           : ShopPrimaryButton(
               key: const Key('shopCustomizationOpenCosmetics'),
-              label: 'Ir a Cosm\u00e9ticos',
+              label: l10n.shopGoToCosmetics,
               icon: Icons.palette_outlined,
               onPressed: widget.onOpenCosmetics,
               expanded: false,
@@ -706,22 +708,25 @@ class _PersonalizationCosmeticFilterChips extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
         children: <Widget>[
-          _buildChip(PersonalizationCosmeticFilter.packs),
+          _buildChip(context.l10n, PersonalizationCosmeticFilter.packs),
           const SizedBox(width: 10),
-          _buildChip(PersonalizationCosmeticFilter.backgrounds),
+          _buildChip(context.l10n, PersonalizationCosmeticFilter.backgrounds),
           const SizedBox(width: 10),
-          _buildChip(PersonalizationCosmeticFilter.habitCards),
+          _buildChip(context.l10n, PersonalizationCosmeticFilter.habitCards),
           const SizedBox(width: 10),
-          _buildChip(PersonalizationCosmeticFilter.userCards),
+          _buildChip(context.l10n, PersonalizationCosmeticFilter.userCards),
         ],
       ),
     );
   }
 
-  Widget _buildChip(PersonalizationCosmeticFilter filter) {
+  Widget _buildChip(
+    AppLocalizations l10n,
+    PersonalizationCosmeticFilter filter,
+  ) {
     return ShopFilterChip(
       key: Key('shopCustomizationFilter-${filter.name}'),
-      label: filter.label,
+      label: filter.label(l10n),
       selected: selectedFilter == filter,
       onTap: () => onChanged(filter),
     );

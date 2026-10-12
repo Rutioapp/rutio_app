@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 import 'package:rutio/features/shop/data/shop_catalog.dart';
@@ -99,14 +100,14 @@ class _ShopCosmeticDetailContainerState
   Widget _fallback() {
     return ShopPageShell(
       header: ShopHeader(
-        title: 'Detalle',
-        subtitle: 'Cosmético',
+        title: context.l10n.shopDetailTitle,
+        subtitle: context.l10n.shopCategoryPack,
         leadingIcon: Icons.arrow_back_ios_new_rounded,
         onLeadingPressed: widget.onBackPressed,
       ),
-      child: const ShopEmptyState(
-        title: 'No hemos podido cargar este cosmético.',
-        message: 'Vuelve atrás e inténtalo de nuevo.',
+      child: ShopEmptyState(
+        title: context.l10n.shopDetailUnavailableTitle,
+        message: context.l10n.shopDetailBackRetry,
       ),
     );
   }

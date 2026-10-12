@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
-import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
+import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_product_card.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 
@@ -28,19 +29,21 @@ class ShopOwnedBundleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool highlighted = isEquipped;
-    final bool isCompleteFromItems = completionQuote?.isCompleteFromItems ?? false;
+    final bool isCompleteFromItems =
+        completionQuote?.isCompleteFromItems ?? false;
+    final l10n = context.l10n;
     final String buttonLabel = busy
-        ? 'Equipando...'
+        ? l10n.shopBundleEquipping
         : isEquipped
-            ? 'Pack equipado'
-            : 'Equipar pack';
+            ? l10n.shopBundleEquipped
+            : l10n.shopBundleEquip;
     final String statusLabel = busy
-        ? 'Equipando...'
+        ? l10n.shopBundleEquipping
         : isEquipped
-            ? 'Pack equipado'
+            ? l10n.shopBundleEquipped
             : isCompleteFromItems
-                ? 'Pack completado'
-            : 'Disponible';
+                ? l10n.shopBundleCompleted
+                : l10n.shopActionAvailable;
 
     return Material(
       color: Colors.transparent,
@@ -69,7 +72,7 @@ class ShopOwnedBundleCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                bundle.nameEs,
+                l10n.shopBundleName(bundle),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: ShopUiTextStyles.cardTitle.copyWith(fontSize: 18),
@@ -79,7 +82,7 @@ class ShopOwnedBundleCard extends StatelessWidget {
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      _rarityLabel(bundle.rarity),
+                      l10n.shopAssetRarityLabel(bundle.rarity),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: ShopUiTextStyles.labelSmall.copyWith(
@@ -110,27 +113,13 @@ class ShopOwnedBundleCard extends StatelessWidget {
                 icon: isEquipped
                     ? Icons.check_rounded
                     : Icons.playlist_add_rounded,
-                onPressed: busy || isEquipped
-                    ? null
-                    : () => onEquipPressed(bundle.id),
+                onPressed:
+                    busy || isEquipped ? null : () => onEquipPressed(bundle.id),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  String _rarityLabel(ShopAssetRarity rarity) {
-    switch (rarity) {
-      case ShopAssetRarity.common:
-        return 'Common';
-      case ShopAssetRarity.rare:
-        return 'Rare';
-      case ShopAssetRarity.epic:
-        return 'Epic';
-      case ShopAssetRarity.legendary:
-        return 'Legendary';
-    }
   }
 }

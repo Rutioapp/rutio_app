@@ -193,10 +193,10 @@ class HomeHabitStatusFilterButton extends StatelessWidget {
     return Semantics(
       button: true,
       excludeSemantics: true,
-      label: 'Cambiar filtro de hábitos',
+      label: context.l10n.homeChangeHabitFilter,
       onTap: () => onOpenFilter(context),
       child: Tooltip(
-        message: 'Cambiar filtro de hábitos',
+        message: context.l10n.homeChangeHabitFilter,
         child: CupertinoButton(
           key: const Key('homeHabitStatusFilterButton'),
           minimumSize: const Size.square(44),
@@ -267,10 +267,10 @@ class HomeHabitStatusFilterHeader extends StatelessWidget {
           Semantics(
             button: true,
             excludeSemantics: true,
-            label: 'Cambiar filtro de hábitos',
+            label: context.l10n.homeChangeHabitFilter,
             onTap: onOpenFilter,
             child: Tooltip(
-              message: 'Cambiar filtro de hábitos',
+              message: context.l10n.homeChangeHabitFilter,
               child: CupertinoButton(
                 key: const Key('obsoleteHomeHabitStatusFilterHeaderButton'),
                 minimumSize: const Size.square(44),

@@ -1987,6 +1987,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Nuestro equipo todavía no ha añadido una respuesta.';
 
   @override
+  String get feedbackSuccessReturnAction => 'Volver al feedback';
+
+  @override
   String get feedbackExitConfirmTitle => '¿Quieres salir?';
 
   @override
@@ -6369,4 +6372,226 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingAuthAppleCta => 'Iniciar sesión con Apple';
+
+  @override
+  String get commonRetry => 'Reintentar';
+
+  @override
+  String get commonContinue => 'Continuar';
+
+  @override
+  String get achievementViewAchievements => 'Ver mis logros';
+
+  @override
+  String get achievementContinue => 'Continuar';
+
+  @override
+  String get diaryV2HideSuggestion => 'Ocultar sugerencia';
+
+  @override
+  String get onboardingAuthGoogleErrorTitle =>
+      'Google no ha podido iniciar sesión';
+
+  @override
+  String get onboardingAuthClose => 'Cerrar';
+
+  @override
+  String get onboardingAuthCompletionFailure =>
+      'No se pudo finalizar el onboarding. Tu sesión y tus datos siguen guardados.';
+
+  @override
+  String get onboardingAuthRetryCompletion => 'Reintentar finalización';
+
+  @override
+  String get onboardingAuthDiscardPreparedHabit => 'Descartar hábito preparado';
+
+  @override
+  String get onboardingAuthKeepPreparedHabit => 'Conservar hábito preparado';
+
+  @override
+  String get shopDetailPurchaseUnavailableMessage =>
+      'Todavía no se realiza la compra real desde esta pantalla.';
+
+  @override
+  String get shopDetailPartialBundleMessage =>
+      'Ya tienes parte de este pack. Completa los elementos que faltan o revisa tu inventario.';
+
+  @override
+  String get shopDetailInsufficientAmberMessage =>
+      'No tienes ámbar suficiente para completar este pack.';
+
+  @override
+  String get shopDetailNoActionMessage =>
+      'Este cosmético ya no requiere una acción adicional.';
+
+  @override
+  String shopBundleOwnedCount(int count) {
+    return 'Tienes $count de 3';
+  }
+
+  @override
+  String get shopBundleEquipping => 'Equipando...';
+
+  @override
+  String get shopBundleEquipped => 'Pack equipado';
+
+  @override
+  String get shopBundleEquip => 'Equipar pack';
+
+  @override
+  String get shopBundleCompleted => 'Pack completado';
+
+  @override
+  String get shopStatusUnavailable => 'No disponible';
+
+  @override
+  String get shopCompletionPriceLabel => 'Precio para completar';
+
+  @override
+  String get shopMissingItemsLabel => 'Te faltan';
+
+  @override
+  String get shopCompletePackAction => 'Completar pack';
+
+  @override
+  String get shopWallpaperDescription =>
+      'Un fondo calmado para refrescar la vista principal de Rutio.';
+
+  @override
+  String get shopHabitCardDescription =>
+      'Una tarjeta de hábitos con tono suave para elevar la lectura diaria.';
+
+  @override
+  String get shopUserCardDescription =>
+      'Una tarjeta de usuario premium y minimalista para tu identidad dentro de Rutio.';
+
+  @override
+  String get shopCustomizationEmptyCategoryTitle =>
+      'Todavía no tienes elementos aquí';
+
+  @override
+  String get shopCustomizationEmptyCategoryMessage =>
+      'Cuando consigas cosméticos de esta categoría aparecerán en esta sección.';
+
+  @override
+  String get shopCustomizationEmptyBundleTitle => 'Todavía no tienes packs';
+
+  @override
+  String get shopCustomizationEmptyBundleMessage =>
+      'Los packs que compres aparecerán aquí y podrás equipar todos sus cosméticos a la vez.';
+
+  @override
+  String get shopGoToCosmetics => 'Ir a Cosméticos';
+
+  @override
+  String get shopCurrentWallpaper => 'Fondo actual';
+
+  @override
+  String get shopCurrentHabitCard => 'Tarjeta de hábitos actual';
+
+  @override
+  String get shopCurrentUserCard => 'Tarjeta de usuario actual';
+
+  @override
+  String get shopNoEquippedItem => 'Todavía no hay un objeto equipado.';
+
+  @override
+  String get shopPreview => 'Vista previa';
+
+  @override
+  String get homeChangeHabitFilter => 'Cambiar filtro de hábitos';
+
+  @override
+  String achievementBadgeSemanticLabel(Object name) {
+    return 'Insignia del logro $name';
+  }
+
+  @override
+  String get achievementRewardsSemanticLabel => 'Recompensas del logro';
+
+  @override
+  String get shopCosmeticsLoadError =>
+      'No hemos podido cargar la tienda de cosméticos ahora mismo.';
+
+  @override
+  String get shopCosmeticsEmpty => 'No encontramos cosméticos en esta sección.';
+
+  @override
+  String get shopOperationInsufficientAmber => 'No tienes ámbar suficiente.';
+
+  @override
+  String get shopOperationAlreadyOwned => 'Ya lo tienes en tu colección.';
+
+  @override
+  String get shopOperationNeedsPurchase =>
+      'Necesitas comprarlo antes de equiparlo.';
+
+  @override
+  String get shopOperationVerifyingPurchase =>
+      'Estamos verificando la compra. Se actualizará automáticamente al recuperar la conexión.';
+
+  @override
+  String get shopOperationVerifyingEquip =>
+      'Estamos verificando qué diseño ha quedado equipado.';
+
+  @override
+  String get shopOperationUpdatedEquip =>
+      'Se ha actualizado el diseño equipado desde la nube.';
+
+  @override
+  String get shopOperationCosmeticNotFound =>
+      'No hemos encontrado este cosmético.';
+
+  @override
+  String get shopOperationBundlePurchased => 'Pack comprado.';
+
+  @override
+  String get shopOperationBundleAlreadyOwned => 'Ese pack ya está comprado.';
+
+  @override
+  String get shopOperationCompleteBundle => 'Completar pack';
+
+  @override
+  String get shopOperationBundleNotFound => 'No hemos encontrado este pack.';
+
+  @override
+  String get shopOperationUnavailable => 'Operación no disponible.';
+
+  @override
+  String get shopCollectionEmptyMessage =>
+      'Vuelve pronto para descubrir nuevos universos editoriales.';
+
+  @override
+  String get shopDetailBackRetry => 'Vuelve atrás e inténtalo de nuevo.';
+
+  @override
+  String get shopOpenItemError => 'No pudimos abrir este item.';
+
+  @override
+  String get shopPurchasePending =>
+      'La compra ha quedado pendiente de confirmación';
+
+  @override
+  String get shopPurchaseFailed => 'No se ha podido completar la compra';
+
+  @override
+  String get shopEquipped => 'Cosmético equipado';
+
+  @override
+  String get shopEquipFailed => 'No se ha podido equipar el item';
+
+  @override
+  String get shopItemLoadError =>
+      'No hemos podido cargar este item de la tienda.';
+
+  @override
+  String get shopAddedToCollection => 'Añadido a tu colección';
+
+  @override
+  String get shopAddedToBackpack => 'Añadido a la mochila';
+
+  @override
+  String shopPriceCoinsShort(int value) {
+    return '$value monedas';
+  }
 }

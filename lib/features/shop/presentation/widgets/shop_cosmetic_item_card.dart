@@ -4,6 +4,9 @@ import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
+import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 
 class ShopCosmeticItemCard extends StatelessWidget {
   const ShopCosmeticItemCard({
@@ -75,7 +78,7 @@ class ShopCosmeticItemCard extends StatelessWidget {
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      _subtitleForType(item.type),
+                      _subtitleForType(context.l10n, item.type),
                       style: ShopUiTextStyles.bodySmall,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -126,21 +129,8 @@ class ShopCosmeticItemCard extends StatelessWidget {
     }
   }
 
-  String _subtitleForType(ShopItemType type) {
-    switch (type) {
-      case ShopItemType.background:
-        return 'Fondo';
-      case ShopItemType.habitCard:
-        return 'Card de hábitos';
-      case ShopItemType.userCard:
-        return 'Card de usuario';
-      case ShopItemType.xpBoost:
-      case ShopItemType.coinBoost:
-      case ShopItemType.streakRecover:
-      case ShopItemType.streakShield:
-      case ShopItemType.mysteryBox:
-        return 'Utilidad';
-    }
+  String _subtitleForType(AppLocalizations l10n, ShopItemType type) {
+    return l10n.shopItemTypeLabel(type);
   }
 }
 

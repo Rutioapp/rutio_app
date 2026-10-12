@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_asset.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'package:rutio/features/shop/domain/models/shop_bundle_completion_quote.dart';
-import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
+import 'package:rutio/features/shop/presentation/shop_localizations.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_cosmetics_rarity_badge.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
 import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 
 class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
   const ShopCosmeticsPurchaseConfirmationSheet.asset({
@@ -54,7 +55,7 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final bundleActionLabel = _bundleActionLabel();
+    final bundleActionLabel = _bundleActionLabel(l10n);
 
     return SafeArea(
       top: false,
@@ -101,9 +102,10 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   _isBundle
-                                      ? completionQuote?.bundle.nameEs ??
-                                          bundle!.nameEs
-                                      : asset!.nameEs,
+                                      ? l10n.shopBundleName(
+                                          completionQuote?.bundle ?? bundle!,
+                                        )
+                                      : l10n.shopAssetName(asset!),
                                   style: ShopUiTextStyles.label.copyWith(
                                     fontSize: 15,
                                   ),
@@ -131,14 +133,14 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                           ],
                           if (_isBundle) ...<Widget>[
                             _InfoRow(
-                              label: _bundlePriceLabel(),
+                              label: _bundlePriceLabel(l10n),
                               value: l10n.shopPriceAmber(_price),
                             ),
                             const SizedBox(height: 10),
                             if (completionQuote?.isPartiallyOwned ?? false) ...<Widget>[
                               _InfoRow(
-                                label: 'Te faltan',
-                                value: _missingAssetsLabel(),
+                                label: l10n.shopMissingItemsLabel,
+                                value: _missingAssetsLabel(l10n),
                               ),
                               const SizedBox(height: 10),
                             ],
@@ -159,7 +161,7 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
                                   label: l10n.shopAssetCategoryLabel(
                                     includedAsset.category,
                                   ),
-                                  value: includedAsset.nameEs,
+                                  value: l10n.shopAssetName(includedAsset),
                                 ),
                               ),
                             ),
@@ -238,31 +240,31 @@ class ShopCosmeticsPurchaseConfirmationSheet extends StatelessWidget {
     );
   }
 
-  String _bundleActionLabel() {
+  String _bundleActionLabel(AppLocalizations l10n) {
     final quote = completionQuote;
     if (quote?.isExplicitlyOwned == true) {
-      return 'Comprado';
+      return l10n.shopStatusPurchased;
     }
     if (quote?.isCompleteFromItems == true) {
-      return 'Pack completado';
+      return l10n.shopBundleCompleted;
     }
     if (quote?.isPartiallyOwned ?? false) {
-      return 'Completar pack';
+      return l10n.shopCompletePackAction;
     }
-    return 'Comprar pack';
+    return l10n.shopActionBuyPack;
   }
 
-  String _bundlePriceLabel() {
+  String _bundlePriceLabel(AppLocalizations l10n) {
     final quote = completionQuote;
     if (quote?.isPartiallyOwned ?? false) {
-      return 'Precio para completar';
+      return l10n.shopCompletionPriceLabel;
     }
-    return 'Precio';
+    return l10n.shopPriceLabel;
   }
 
-  String _missingAssetsLabel() {
+  String _missingAssetsLabel(AppLocalizations l10n) {
     final missing = completionQuote?.missingAssets ?? const <ShopAsset>[];
-    return missing.map((ShopAsset asset) => asset.nameEs).join(', ');
+    return missing.map(l10n.shopAssetName).join(', ');
   }
 }
 

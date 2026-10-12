@@ -1,9 +1,20 @@
 import 'package:rutio/features/shop/domain/models/shop_asset_enums.dart';
+import 'package:rutio/features/shop/domain/models/shop_asset.dart';
+import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/domain/models/shop_item_enums.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 
 extension ShopL10nX on AppLocalizations {
+  String shopAssetName(ShopAsset asset) =>
+      localeName.startsWith('es') ? asset.nameEs : asset.nameEn;
+
+  String shopBundleName(ShopBundle bundle) =>
+      localeName.startsWith('es') ? bundle.nameEs : bundle.nameEn;
+
+  String shopBundleDescription(ShopBundle bundle) =>
+      localeName.startsWith('es') ? bundle.descriptionEs : bundle.descriptionEn;
+
   String shopUtilityTitle(String id, {String? fallback}) {
     switch (id) {
       case 'utility_xp_boost_1d':

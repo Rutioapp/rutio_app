@@ -1979,6 +1979,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedbackResponseEmpty => 'Our team has not added a response yet.';
 
   @override
+  String get feedbackSuccessReturnAction => 'Back to Feedback';
+
+  @override
   String get feedbackExitConfirmTitle => 'Do you want to leave?';
 
   @override
@@ -6345,4 +6348,224 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingAuthAppleCta => 'Sign in with Apple';
+
+  @override
+  String get commonRetry => 'Retry';
+
+  @override
+  String get commonContinue => 'Continue';
+
+  @override
+  String get achievementViewAchievements => 'View my achievements';
+
+  @override
+  String get achievementContinue => 'Continue';
+
+  @override
+  String get diaryV2HideSuggestion => 'Hide suggestion';
+
+  @override
+  String get onboardingAuthGoogleErrorTitle => 'Google could not sign you in';
+
+  @override
+  String get onboardingAuthClose => 'Close';
+
+  @override
+  String get onboardingAuthCompletionFailure =>
+      'Onboarding could not be completed. Your session and data are still saved.';
+
+  @override
+  String get onboardingAuthRetryCompletion => 'Retry completion';
+
+  @override
+  String get onboardingAuthDiscardPreparedHabit => 'Discard prepared habit';
+
+  @override
+  String get onboardingAuthKeepPreparedHabit => 'Keep prepared habit';
+
+  @override
+  String get shopDetailPurchaseUnavailableMessage =>
+      'Real purchases are not made from this screen yet.';
+
+  @override
+  String get shopDetailPartialBundleMessage =>
+      'You already own part of this pack. Complete the missing items or review your inventory.';
+
+  @override
+  String get shopDetailInsufficientAmberMessage =>
+      'You do not have enough amber to complete this pack.';
+
+  @override
+  String get shopDetailNoActionMessage =>
+      'This cosmetic does not require any further action.';
+
+  @override
+  String shopBundleOwnedCount(int count) {
+    return 'You own $count of 3';
+  }
+
+  @override
+  String get shopBundleEquipping => 'Equipping...';
+
+  @override
+  String get shopBundleEquipped => 'Pack equipped';
+
+  @override
+  String get shopBundleEquip => 'Equip pack';
+
+  @override
+  String get shopBundleCompleted => 'Pack completed';
+
+  @override
+  String get shopStatusUnavailable => 'Unavailable';
+
+  @override
+  String get shopCompletionPriceLabel => 'Price to complete';
+
+  @override
+  String get shopMissingItemsLabel => 'Missing';
+
+  @override
+  String get shopCompletePackAction => 'Complete pack';
+
+  @override
+  String get shopWallpaperDescription =>
+      'A calm background to refresh Rutio\'s main view.';
+
+  @override
+  String get shopHabitCardDescription =>
+      'A soft-toned habit card to elevate your daily reading.';
+
+  @override
+  String get shopUserCardDescription =>
+      'A premium, minimal user card for your identity in Rutio.';
+
+  @override
+  String get shopCustomizationEmptyCategoryTitle =>
+      'You do not have items here yet';
+
+  @override
+  String get shopCustomizationEmptyCategoryMessage =>
+      'When you get cosmetics from this category, they will appear here.';
+
+  @override
+  String get shopCustomizationEmptyBundleTitle => 'You do not have packs yet';
+
+  @override
+  String get shopCustomizationEmptyBundleMessage =>
+      'Purchased packs will appear here and you will be able to equip all their cosmetics at once.';
+
+  @override
+  String get shopGoToCosmetics => 'Go to Cosmetics';
+
+  @override
+  String get shopCurrentWallpaper => 'Current wallpaper';
+
+  @override
+  String get shopCurrentHabitCard => 'Current habit card';
+
+  @override
+  String get shopCurrentUserCard => 'Current user card';
+
+  @override
+  String get shopNoEquippedItem => 'No item is equipped yet.';
+
+  @override
+  String get shopPreview => 'Preview';
+
+  @override
+  String get homeChangeHabitFilter => 'Change habit filter';
+
+  @override
+  String achievementBadgeSemanticLabel(Object name) {
+    return 'Achievement badge for $name';
+  }
+
+  @override
+  String get achievementRewardsSemanticLabel => 'Achievement rewards';
+
+  @override
+  String get shopCosmeticsLoadError =>
+      'We could not load the cosmetics shop right now.';
+
+  @override
+  String get shopCosmeticsEmpty => 'No cosmetics were found in this section.';
+
+  @override
+  String get shopOperationInsufficientAmber => 'You do not have enough amber.';
+
+  @override
+  String get shopOperationAlreadyOwned => 'You already own this.';
+
+  @override
+  String get shopOperationNeedsPurchase =>
+      'You need to buy it before equipping it.';
+
+  @override
+  String get shopOperationVerifyingPurchase =>
+      'We are verifying the purchase. It will update automatically when the connection returns.';
+
+  @override
+  String get shopOperationVerifyingEquip =>
+      'We are verifying which design is equipped.';
+
+  @override
+  String get shopOperationUpdatedEquip =>
+      'The equipped design was updated from the cloud.';
+
+  @override
+  String get shopOperationCosmeticNotFound =>
+      'We could not find this cosmetic.';
+
+  @override
+  String get shopOperationBundlePurchased => 'Pack purchased.';
+
+  @override
+  String get shopOperationBundleAlreadyOwned =>
+      'That pack is already purchased.';
+
+  @override
+  String get shopOperationCompleteBundle => 'Complete pack';
+
+  @override
+  String get shopOperationBundleNotFound => 'We could not find this pack.';
+
+  @override
+  String get shopOperationUnavailable => 'Operation unavailable.';
+
+  @override
+  String get shopCollectionEmptyMessage =>
+      'Come back soon to discover new editorial universes.';
+
+  @override
+  String get shopDetailBackRetry => 'Go back and try again.';
+
+  @override
+  String get shopOpenItemError => 'We could not open this item.';
+
+  @override
+  String get shopPurchasePending => 'The purchase is pending confirmation';
+
+  @override
+  String get shopPurchaseFailed => 'The purchase could not be completed';
+
+  @override
+  String get shopEquipped => 'Cosmetic equipped';
+
+  @override
+  String get shopEquipFailed => 'The item could not be equipped';
+
+  @override
+  String get shopItemLoadError => 'We could not load this shop item.';
+
+  @override
+  String get shopAddedToCollection => 'Added to your collection';
+
+  @override
+  String get shopAddedToBackpack => 'Added to your backpack';
+
+  @override
+  String shopPriceCoinsShort(int value) {
+    return '$value coins';
+  }
 }

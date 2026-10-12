@@ -23,6 +23,8 @@ import 'package:rutio/features/shop/presentation/screens/shop_cosmetic_detail_co
 import 'package:rutio/features/shop/presentation/screens/shop_backpack_screen.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_collections_screen.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_cosmetics_screen.dart';
+import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_customization_screen.dart';
 import 'package:rutio/features/shop/presentation/screens/mystery_box_opening_screen.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_home_screen.dart';
@@ -730,11 +732,15 @@ class _ShopFlowScreenState extends State<ShopFlowScreen>
           _popPage();
         }
       },
-      child: _buildCurrentPage(snapshot, walletCoins),
+      child: _buildCurrentPage(snapshot, walletCoins, context.l10n),
     );
   }
 
-  Widget _buildCurrentPage(ShopFlowSnapshot snapshot, int walletCoins) {
+  Widget _buildCurrentPage(
+    ShopFlowSnapshot snapshot,
+    int walletCoins,
+    AppLocalizations l10n,
+  ) {
     final _ShopFlowPage page = _stack.last;
 
     switch (page) {
@@ -809,11 +815,11 @@ class _ShopFlowScreenState extends State<ShopFlowScreen>
       case _ShopFlowPage.detail:
         final String? itemId = _selectedItemId;
         if (itemId == null) {
-          return const Scaffold(
+          return Scaffold(
             body: Center(
               child: ShopEmptyState(
-                title: 'Detalle no disponible',
-                message: 'No pudimos abrir este item.',
+                title: l10n.shopDetailUnavailableTitle,
+                message: l10n.shopDetailUnavailableMessage,
               ),
             ),
           );
@@ -821,11 +827,11 @@ class _ShopFlowScreenState extends State<ShopFlowScreen>
 
         final ShopItem? item = _itemForDetail(snapshot, itemId);
         if (item == null) {
-          return const Scaffold(
+          return Scaffold(
             body: Center(
               child: ShopEmptyState(
-                title: 'Detalle no disponible',
-                message: 'No pudimos abrir este item.',
+                title: l10n.shopDetailUnavailableTitle,
+                message: l10n.shopDetailUnavailableMessage,
               ),
             ),
           );
@@ -980,7 +986,7 @@ class _StreakSelectionSheet extends StatelessWidget {
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: onCancel,
-                    child: const Text('Cancelar'),
+                    child: Text(context.l10n.shopCancel),
                   ),
                 ],
               ),

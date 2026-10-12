@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rutio/features/shop/domain/models/shop_item.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopCustomizationPreview extends StatelessWidget {
   const ShopCustomizationPreview({
@@ -21,21 +22,21 @@ class ShopCustomizationPreview extends StatelessWidget {
       key: const Key('shopCustomizationPreview'),
       children: <Widget>[
         _PreviewSlot(
-          label: 'Fondo actual',
+          label: context.l10n.shopCurrentWallpaper,
           item: backgroundItem,
           tone: ShopPreviewPlaceholderTone.camel,
           icon: Icons.wallpaper_rounded,
         ),
         const SizedBox(height: 12),
         _PreviewSlot(
-          label: 'Habit Card actual',
+          label: context.l10n.shopCurrentHabitCard,
           item: habitCardItem,
           tone: ShopPreviewPlaceholderTone.sand,
           icon: Icons.view_agenda_outlined,
         ),
         const SizedBox(height: 12),
         _PreviewSlot(
-          label: 'User Card actual',
+          label: context.l10n.shopCurrentUserCard,
           item: userCardItem,
           tone: ShopPreviewPlaceholderTone.ice,
           icon: Icons.badge_outlined,
@@ -93,7 +94,7 @@ class _PreviewSlot extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    item?.title ?? 'Todavia no hay un objeto equipado.',
+                    item?.title ?? context.l10n.shopNoEquippedItem,
                     style: ShopUiTextStyles.subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

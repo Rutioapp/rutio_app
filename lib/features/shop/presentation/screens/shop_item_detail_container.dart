@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/l10n/l10n.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
 import 'package:rutio/features/shop/presentation/screens/shop_item_detail_screen.dart';
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
@@ -136,7 +138,7 @@ class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
       _busy = false;
     });
 
-    _showFeedback(_purchaseFeedbackMessage(result));
+    _showFeedback(_purchaseFeedbackMessage(context.l10n, result));
   }
 
   Future<void> _handleEquipRequested(String itemId) async {
@@ -157,7 +159,7 @@ class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
       _busy = false;
     });
 
-    _showFeedback(_equipFeedbackMessage(result));
+    _showFeedback(_equipFeedbackMessage(context.l10n, result));
   }
 
   void _showFeedback(String message) {
@@ -170,22 +172,24 @@ class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
     );
   }
 
-  String _purchaseFeedbackMessage(ShopControllerResult result) {
+  String _purchaseFeedbackMessage(
+      AppLocalizations l10n, ShopControllerResult result) {
     if (result.status == ShopControllerStatus.success) {
       final bool isCosmetic = result.item?.cosmeticSlot != null;
-      return isCosmetic ? 'Añadido a tu colección' : 'Añadido a la mochila';
+      return isCosmetic ? l10n.shopAddedToCollection : l10n.shopAddedToBackpack;
     }
     if (result.status == ShopControllerStatus.cloudPurchasePending) {
-      return 'La compra ha quedado pendiente de confirmación';
+      return l10n.shopPurchasePending;
     }
-    return 'No se ha podido completar la compra';
+    return l10n.shopPurchaseFailed;
   }
 
-  String _equipFeedbackMessage(ShopControllerResult result) {
+  String _equipFeedbackMessage(
+      AppLocalizations l10n, ShopControllerResult result) {
     if (result.status == ShopControllerStatus.success) {
-      return 'Cosmético equipado';
+      return l10n.shopEquipped;
     }
-    return 'No se ha podido equipar el item';
+    return l10n.shopEquipFailed;
   }
 
   @override
@@ -200,13 +204,13 @@ class _ShopItemDetailContainerState extends State<ShopItemDetailContainer> {
     if (state == null) {
       return ShopPageShell(
         header: ShopHeader(
-          title: 'Detalle',
+          title: context.l10n.shopDetailTitle,
           leadingIcon: Icons.arrow_back_ios_new_rounded,
           onLeadingPressed: widget.onBackPressed,
         ),
-        child: const ShopEmptyState(
-          title: 'Item no disponible',
-          message: 'No hemos podido cargar este item de la tienda.',
+        child: ShopEmptyState(
+          title: context.l10n.shopDetailUnavailableTitle,
+          message: context.l10n.shopDetailUnavailableMessage,
         ),
       );
     }

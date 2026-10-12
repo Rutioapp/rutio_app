@@ -5,6 +5,7 @@ import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_item_asset_preview.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_preview_placeholder.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_primary_button.dart';
+import 'package:rutio/l10n/l10n.dart';
 
 class ShopFeaturedCollectionCard extends StatelessWidget {
   const ShopFeaturedCollectionCard({
@@ -77,7 +78,7 @@ class ShopFeaturedCollectionCard extends StatelessWidget {
                       ],
                       const SizedBox(height: 18),
                       ShopPrimaryButton(
-                        label: 'Ver coleccion',
+                        label: context.l10n.shopCollectionViewCollection,
                         onPressed: onTap,
                         icon: Icons.arrow_forward_rounded,
                       ),
@@ -117,7 +118,7 @@ class _FeaturedMetaRow extends StatelessWidget {
       runSpacing: 8,
       children: <Widget>[
         _MetaPill(label: item.title),
-        _MetaPill(label: '${item.priceCoins} coins'),
+        _MetaPill(label: context.l10n.shopPriceCoinsShort(item.priceCoins)),
       ],
     );
   }

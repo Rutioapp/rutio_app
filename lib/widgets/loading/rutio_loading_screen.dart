@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../utils/app_theme.dart';
 import '../shared_widgets.dart';
+import '../../l10n/l10n.dart';
 
 /// Visual phase of the shared Rutio loading journey.
 /// The real bootstrap operation remains the source of truth outside this UI.
@@ -411,7 +412,7 @@ class _RutioLoadingScreenState extends State<RutioLoadingScreen>
                                 const SizedBox(height: 22),
                                 FilledButton(
                                   onPressed: widget.onRetry,
-                                  child: const Text('Reintentar'),
+                                  child: Text(context.l10n.commonRetry),
                                 ),
                               ],
                               const SizedBox(height: 120),

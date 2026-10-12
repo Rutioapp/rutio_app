@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_empty_state.dart';
 
 class ShopCollectionEmptyState extends StatelessWidget {
@@ -6,10 +7,10 @@ class ShopCollectionEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ShopEmptyState(
+    return ShopEmptyState(
       icon: Icons.photo_library_outlined,
       title: 'No hay colecciones disponibles.',
-      message: 'Vuelve pronto para descubrir nuevos universos editoriales.',
+      message: context.l10n.shopCollectionEmptyMessage,
     );
   }
 }
