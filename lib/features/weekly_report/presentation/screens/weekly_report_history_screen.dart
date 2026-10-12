@@ -14,6 +14,7 @@ import 'weekly_report_screen.dart';
 import '../weekly_report_navigation.dart';
 import '../../../../core/observability/analytics_events.dart';
 import '../../../../core/observability/analytics_service.dart';
+import '../../../../widgets/backgrounds/home_landscape_background.dart';
 
 class WeeklyReportHistoryScreen extends StatefulWidget {
   const WeeklyReportHistoryScreen({super.key});
@@ -142,59 +143,64 @@ class _WeeklyReportHistoryScreenState extends State<WeeklyReportHistoryScreen> {
       }
     }
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F1E8),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(l10n.weeklyReportHistory),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadFirstPage,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null && _items.isEmpty && _latest == null
-                ? _Message(
-                    text: l10n.weeklyReportHistoryError,
-                    onRetry: _loadFirstPage)
-                : ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
-                    children: [
-                      if (_latest != null) ...[
-                        _SectionTitle(l10n.weeklyReportThisWeek),
-                        _ReportRow(report: _latest!.report, current: true),
-                        const SizedBox(height: 16),
-                      ],
-                      _SectionTitle(l10n.weeklyReportPreviousWeeks),
-                      if (previous.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Text(l10n.weeklyReportNoPreviousWeeks,
-                              textAlign: TextAlign.center),
-                        )
-                      else
-                        ...previous.map((item) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: _ReportRow(item: item),
-                            )),
-                      if (_error != null &&
-                          (_items.isNotEmpty || _latest != null))
-                        TextButton(
-                            onPressed: _loadFirstPage,
-                            child: Text(l10n.weeklyReportRetry)),
-                      if (_cursor != null)
-                        OutlinedButton(
-                          onPressed: _loadingMore ? null : _loadMore,
-                          child: _loadingMore
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2))
-                              : Text(l10n.weeklyReportLoadMore),
-                        ),
-                    ],
-                  ),
+      body: Stack(
+        children: [
+          const HomeBackground(),
+          RefreshIndicator(
+            onRefresh: _loadFirstPage,
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null && _items.isEmpty && _latest == null
+                    ? _Message(
+                        text: l10n.weeklyReportHistoryError,
+                        onRetry: _loadFirstPage)
+                    : ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+                        children: [
+                          if (_latest != null) ...[
+                            _SectionTitle(l10n.weeklyReportThisWeek),
+                            _ReportRow(report: _latest!.report, current: true),
+                            const SizedBox(height: 16),
+                          ],
+                          _SectionTitle(l10n.weeklyReportPreviousWeeks),
+                          if (previous.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Text(l10n.weeklyReportNoPreviousWeeks,
+                                  textAlign: TextAlign.center),
+                            )
+                          else
+                            ...previous.map((item) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: _ReportRow(item: item),
+                                )),
+                          if (_error != null &&
+                              (_items.isNotEmpty || _latest != null))
+                            TextButton(
+                                onPressed: _loadFirstPage,
+                                child: Text(l10n.weeklyReportRetry)),
+                          if (_cursor != null)
+                            OutlinedButton(
+                              onPressed: _loadingMore ? null : _loadMore,
+                              child: _loadingMore
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2))
+                                  : Text(l10n.weeklyReportLoadMore),
+                            ),
+                        ],
+                      ),
+          ),
+        ],
       ),
     );
   }

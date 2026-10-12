@@ -15,7 +15,6 @@ Future<T?> showAchievementUnlockSheet<T>(
   BuildContext context, {
   required Achievement achievement,
   required VoidCallback onViewAchievements,
-  VoidCallback? onShare,
   VoidCallback? onContinue,
 }) {
   return showModalBottomSheet<T>(
@@ -32,7 +31,6 @@ Future<T?> showAchievementUnlockSheet<T>(
     builder: (_) => AchievementUnlockSheet(
       achievement: achievement,
       onViewAchievements: onViewAchievements,
-      onShare: onShare,
       onContinue: onContinue,
     ),
   );
@@ -43,13 +41,11 @@ class AchievementUnlockSheet extends StatelessWidget {
     super.key,
     required this.achievement,
     required this.onViewAchievements,
-    this.onShare,
     this.onContinue,
   });
 
   final Achievement achievement;
   final VoidCallback onViewAchievements;
-  final VoidCallback? onShare;
   final VoidCallback? onContinue;
 
   @override
@@ -90,7 +86,6 @@ class AchievementUnlockSheet extends StatelessWidget {
                       onViewAchievements();
                     });
                   },
-                  onShare: onShare,
                   onContinue: () {
                     Navigator.of(context).pop();
                     if (onContinue != null) {
@@ -548,7 +543,8 @@ class _CollectionDotsRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isUnlocked
-                      ? familyColor.withValues(alpha: isLatestUnlocked ? 1 : 0.75)
+                      ? familyColor.withValues(
+                          alpha: isLatestUnlocked ? 1 : 0.75)
                       : _darkBrown.withValues(alpha: 0.07),
                   border: isUnlocked
                       ? null
@@ -578,16 +574,13 @@ class _AchievementActions extends StatelessWidget {
   const _AchievementActions({
     required this.onViewAchievements,
     required this.onContinue,
-    this.onShare,
   });
 
   final VoidCallback onViewAchievements;
   final VoidCallback onContinue;
-  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
-    final isShareEnabled = onShare != null;
     final secondaryShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(999),
     );
@@ -618,63 +611,26 @@ class _AchievementActions extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: Opacity(
-                opacity: isShareEnabled ? 1 : 0.6,
-                child: Semantics(
-                  button: true,
-                  label: 'Compartir logro',
-                  child: OutlinedButton(
-                    // TODO: Connect this action to the future achievements
-                    // social share flow (internal feed / Instagram stories).
-                    onPressed: onShare,
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                      foregroundColor: _camel,
-                      disabledForegroundColor: _camel.withValues(alpha: 0.58),
-                      backgroundColor: _darkBrown.withValues(alpha: 0.025),
-                      disabledBackgroundColor: _darkBrown.withValues(alpha: 0.025),
-                      side: BorderSide(
-                        color: _camel.withValues(
-                          alpha: isShareEnabled ? 0.35 : 0.2,
-                        ),
-                        width: 0.7,
-                      ),
-                      shape: secondaryShape,
-                      textStyle: GoogleFonts.dmSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    child: const Text('Compartir'),
-                  ),
+        Semantics(
+          button: true,
+          label: 'Continuar',
+          child: SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: onContinue,
+              style: TextButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                backgroundColor: _darkBrown.withValues(alpha: 0.05),
+                foregroundColor: _darkBrown.withValues(alpha: 0.72),
+                shape: secondaryShape,
+                textStyle: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
+              child: const Text('Continuar'),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Semantics(
-                button: true,
-                label: 'Continuar',
-                child: TextButton(
-                  onPressed: onContinue,
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                    backgroundColor: _darkBrown.withValues(alpha: 0.05),
-                    foregroundColor: _darkBrown.withValues(alpha: 0.72),
-                    shape: secondaryShape,
-                    textStyle: GoogleFonts.dmSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  child: const Text('Continuar'),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );

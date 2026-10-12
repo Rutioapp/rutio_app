@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:rutio/features/weekly_report/presentation/weekly_report_navigation.dart';
+import 'package:rutio/stores/user_state_store.dart';
+import 'package:rutio/widgets/avatar/avatar_core.dart';
+import 'package:rutio/widgets/avatar/avatar_ring_palette.dart';
 
 import '../l10n/l10n.dart';
 import '../utils/app_theme.dart';
@@ -319,6 +323,17 @@ class _DrawerProfileFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String? avatarUrl;
+    try {
+      avatarUrl = context.select<UserStateStore, String?>((store) {
+        final profile = (store.state?['userState'] as Map?)?['profile'];
+        return profile is Map ? profile['avatarUrl']?.toString() : null;
+      });
+    } catch (_) {
+      // The drawer is also used by lightweight routes/tests without the
+      // application store. Keep the original fallback avatar in that case.
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -327,18 +342,11 @@ class _DrawerProfileFooter extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
           child: Row(
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0x26A68B62),
-                ),
-                child: const Icon(
-                  Icons.person_outline_rounded,
-                  size: 18,
-                  color: AppViewDrawer._icon,
-                ),
+              AvatarCore(
+                avatarUrl: avatarUrl,
+                fallbackLabel: context.l10n.drawerProfile,
+                size: 32,
+                palette: AvatarRingPalette.resolve(context),
               ),
               const SizedBox(width: 12),
               Expanded(

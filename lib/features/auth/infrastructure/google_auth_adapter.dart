@@ -13,7 +13,8 @@ abstract interface class GoogleAuthAdapter {
 }
 
 class NativeGoogleAuthAdapter implements GoogleAuthAdapter {
-  NativeGoogleAuthAdapter({GoogleSignIn? client, SupabaseClient? supabaseClient})
+  NativeGoogleAuthAdapter(
+      {GoogleSignIn? client, SupabaseClient? supabaseClient})
       : _client = client,
         _supabaseClient = supabaseClient ?? Supabase.instance.client;
 
@@ -39,13 +40,16 @@ class NativeGoogleAuthAdapter implements GoogleAuthAdapter {
 
   @override
   Future<AuthResponse> signIn() async {
+    var accountSelected = false;
     try {
       await _ensureInitialized();
       final client = _initializedClient ?? _googleSignIn;
       if (!client.supportsAuthenticate()) {
-        throw const GoogleAuthException(GoogleAuthErrorCode.providerUnavailable);
+        throw const GoogleAuthException(
+            GoogleAuthErrorCode.providerUnavailable);
       }
       final account = await client.authenticate();
+      accountSelected = true;
       _logEvent('native_account_received');
       final idToken = account.authentication.idToken;
       _logEvent('id_token_checked', present: idToken != null);
@@ -53,10 +57,12 @@ class NativeGoogleAuthAdapter implements GoogleAuthAdapter {
         throw const GoogleAuthException(GoogleAuthErrorCode.invalidCredential);
       }
       _logEvent('authorization_started');
-      final authorization = await account.authorizationClient.authorizeScopes(
-        const <String>['openid', 'email', 'profile'],
-      );
-      _logEvent('access_token_checked', present: authorization.accessToken.isNotEmpty);
+      const scopes = <String>['openid', 'email', 'profile'];
+      final authorization =
+          await account.authorizationClient.authorizationForScopes(scopes) ??
+              await account.authorizationClient.authorizeScopes(scopes);
+      _logEvent('access_token_checked',
+          present: authorization.accessToken.isNotEmpty);
       _logEvent('supabase_exchange_started');
       try {
         final response = await _supabaseClient.auth.signInWithIdToken(
@@ -78,7 +84,9 @@ class NativeGoogleAuthAdapter implements GoogleAuthAdapter {
     } on GoogleSignInException catch (error) {
       _logNativeException(error);
       final code = error.code == GoogleSignInExceptionCode.canceled
-          ? GoogleAuthErrorCode.cancelled
+          ? accountSelected
+              ? GoogleAuthErrorCode.configurationError
+              : GoogleAuthErrorCode.cancelled
           : error.code == GoogleSignInExceptionCode.clientConfigurationError
               ? GoogleAuthErrorCode.configurationError
               : GoogleAuthErrorCode.unexpected;
@@ -125,7 +133,8 @@ class NativeGoogleAuthAdapter implements GoogleAuthAdapter {
     if (value == null || value.trim().isEmpty) return null;
     return value
         .replaceAll(
-          RegExp(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}', caseSensitive: false),
+          RegExp(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}',
+              caseSensitive: false),
           '<redacted-email>',
         )
         .replaceAll(

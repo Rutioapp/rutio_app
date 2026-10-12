@@ -10,6 +10,7 @@ import '../../../premium/domain/premium_access_policy.dart';
 import '../../../premium/presentation/premium_gate.dart';
 import '../../application/weekly_report_controller.dart';
 import '../../domain/weekly_report.dart';
+import '../../../habits/domain/metrics/habit_snapshot.dart';
 import '../widgets/weekly_report_habits_section.dart';
 import '../weekly_report_copy_resolver.dart';
 import '../weekly_report_metric_display.dart';
@@ -20,6 +21,7 @@ import '../weekly_report_navigation.dart';
 import '../../../../stores/user_state_store.dart';
 import '../../../../screens/habit_detail/habit_detail_screen.dart';
 import '../../../../utils/family_theme.dart';
+import '../../../../widgets/backgrounds/home_landscape_background.dart';
 import '../../../../core/observability/analytics_events.dart';
 import '../../../../core/observability/analytics_service.dart';
 
@@ -91,7 +93,7 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
       }
     }
     return Scaffold(
-      backgroundColor: WeeklyReportVisuals.background,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -115,20 +117,25 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
                 ),
               ],
       ),
-      body: SafeArea(
-        top: false,
-        child: switch (state) {
-          WeeklyReportLoading() => const _LoadingView(),
-          WeeklyReportEmpty() => _EmptyView(
-              onRetry: controller.load,
-            ),
-          WeeklyReportFailure() => _ErrorView(
-              onRetry: controller.load,
-            ),
-          WeeklyReportDataState() => _ReportContent(
-              snapshot: state.snapshot,
-            ),
-        },
+      body: Stack(
+        children: [
+          const HomeBackground(),
+          SafeArea(
+            top: false,
+            child: switch (state) {
+              WeeklyReportLoading() => const _LoadingView(),
+              WeeklyReportEmpty() => _EmptyView(
+                  onRetry: controller.load,
+                ),
+              WeeklyReportFailure() => _ErrorView(
+                  onRetry: controller.load,
+                ),
+              WeeklyReportDataState() => _ReportContent(
+                  snapshot: state.snapshot,
+                ),
+            },
+          ),
+        ],
       ),
     );
   }
@@ -144,6 +151,7 @@ class _ReportContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final report = snapshot.report;
     final l10n = context.l10n;
+    final recommendation = _displayRecommendation(report);
     return RefreshIndicator(
       onRefresh: context.read<WeeklyReportController>().refresh,
       child: ListView(
@@ -162,13 +170,15 @@ class _ReportContent extends StatelessWidget {
             const SizedBox(height: 10),
             WeeklyReportHabitsSection(habits: report.habits),
           ],
-          if (report.isFinal && report.recommendations.isNotEmpty) ...[
+          // The server-backed path remains report.isFinal && report.recommendations.isNotEmpty;
+          // recommendation also covers older reports with an actionable local fallback.
+          if (report.isFinal && recommendation != null) ...[
             const SizedBox(height: 8),
             WeeklyReportRecommendationCard(
-              recommendation: report.recommendations.first,
-              habit: _habitFor(report, report.recommendations.first.habitId),
+              recommendation: recommendation,
+              habit: _habitFor(report, recommendation.habitId),
               onReview: () =>
-                  _openRecommendation(context, report.recommendations.first),
+                  _openRecommendation(context, report, recommendation),
             ),
           ],
           if (report.isFinal) ...[
@@ -197,12 +207,70 @@ class _ReportContent extends StatelessWidget {
     return null;
   }
 
-  void _openRecommendation(
-      BuildContext context, WeeklyReportRecommendation recommendation) {
+  WeeklyReportRecommendation? _displayRecommendation(WeeklyReport report) {
+    for (final recommendation in report.recommendations) {
+      final current = recommendation.currentConfig['schedule'];
+      final proposed = recommendation.proposedPatch['proposed'];
+      final proposedSchedule = proposed is Map ? proposed['schedule'] : null;
+      if (recommendation.type ==
+              WeeklyReportRecommendationType.reduceFrequency &&
+          current is Map &&
+          proposedSchedule is Map &&
+          current['timesPerWeek'] is num &&
+          proposedSchedule['timesPerWeek'] is num) {
+        return recommendation;
+      }
+    }
+
+    // Older/finalized reports can have no server recommendation (or one that
+    // the current editor cannot apply). Keep the feature useful locally when
+    // there is a times-per-week habit that can be safely reduced.
+    for (final habit in report.habits) {
+      final current = habit.schedule.timesPerWeek;
+      if (!habit.schedule.isTimesPerWeek || current == null || current <= 1) {
+        continue;
+      }
+      final proposed = current - 1;
+      return WeeklyReportRecommendation(
+        type: WeeklyReportRecommendationType.reduceFrequency,
+        reason: 'local_fallback',
+        habitId: habit.habitId,
+        habitName: habit.name,
+        emoji: habit.emoji,
+        currentConfig: <String, dynamic>{
+          'schedule': <String, dynamic>{
+            'type': 'timesPerWeek',
+            'timesPerWeek': current,
+          },
+        },
+        proposedPatch: <String, dynamic>{
+          'type': 'reduceFrequency',
+          'version': 1,
+          'current': <String, dynamic>{
+            'schedule': <String, dynamic>{
+              'type': 'timesPerWeek',
+              'timesPerWeek': current,
+            },
+          },
+          'proposed': <String, dynamic>{
+            'schedule': <String, dynamic>{
+              'type': 'timesPerWeek',
+              'timesPerWeek': proposed,
+            },
+          },
+        },
+      );
+    }
+    return null;
+  }
+
+  void _openRecommendation(BuildContext context, WeeklyReport report,
+      WeeklyReportRecommendation recommendation) {
     final id = recommendation.habitId;
     if (id == null) return;
     final store = context.read<UserStateStore>();
-    final live = store.getActiveHabitById(id);
+    final live = store.getActiveHabitById(id) ??
+        _editableHabitFromReport(_habitFor(report, id));
     if (live == null) return;
     Navigator.of(context).push(MaterialPageRoute<void>(
         builder: (_) => HabitDetailScreen(
@@ -211,6 +279,27 @@ class _ReportContent extends StatelessWidget {
               mode: HabitDetailScreenMode.editOnly,
               proposedPatch: recommendation.proposedPatch,
             )));
+  }
+
+  Map<String, dynamic>? _editableHabitFromReport(WeeklyReportHabit? habit) {
+    if (habit == null) return null;
+    final schedule = <String, dynamic>{'type': habit.schedule.type.key};
+    if (habit.schedule.isTimesPerWeek) {
+      schedule['timesPerWeek'] = habit.schedule.timesPerWeek ?? 1;
+    }
+    if (habit.schedule.type.key == 'weekly') {
+      schedule['weekdays'] = habit.schedule.weekdays;
+    }
+    return <String, dynamic>{
+      'id': habit.habitId,
+      'title': habit.name,
+      'name': habit.name,
+      'emoji': habit.emoji,
+      'familyId': habit.familyId,
+      'trackingType': habit.type.key,
+      'target': habit.target,
+      'schedule': schedule,
+    };
   }
 }
 

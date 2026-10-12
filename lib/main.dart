@@ -113,6 +113,7 @@ Future<void> main() async {
   _startupLog('[STARTUP] 01 main() entered');
   _startupLog('[STARTUP] 02 before WidgetsFlutterBinding.ensureInitialized()');
   WidgetsFlutterBinding.ensureInitialized();
+  final revenueCatConfiguration = RevenueCatConfiguration.fromEnvironment();
   final crashReportingService = FirebaseCrashReportingService(
     config: CrashlyticsConfig.fromEnvironment(),
   );
@@ -202,6 +203,7 @@ Future<void> main() async {
     weeklyReportPreferences: weeklyReportPreferences,
     analyticsService: analyticsService,
     crashReportingService: crashReportingService,
+    revenueCatConfiguration: revenueCatConfiguration,
   ));
   _startupLog('[STARTUP] 11 after runApp()');
 }
@@ -239,12 +241,14 @@ class MyApp extends StatelessWidget {
     required this.weeklyReportPreferences,
     required this.analyticsService,
     required this.crashReportingService,
+    required this.revenueCatConfiguration,
   });
 
   final ShopCloudRuntimeConfig shopRuntimeConfig;
   final SharedPreferences weeklyReportPreferences;
   final AnalyticsService analyticsService;
   final CrashReportingService crashReportingService;
+  final RevenueCatConfiguration revenueCatConfiguration;
 
   static final GlobalKey<NavigatorState> _navigatorKey =
       GlobalKey<NavigatorState>();
@@ -382,7 +386,7 @@ class MyApp extends StatelessWidget {
           create: (_) {
             final repository = PremiumRepository(
               client: PurchasesRevenueCatClient(),
-              configuration: RevenueCatConfiguration.fromEnvironment(),
+              configuration: revenueCatConfiguration,
             );
             unawaited(repository.initialize());
             return repository;

@@ -49,6 +49,7 @@ class RepositoryOnboardingAuthAdapter
                     );
       if (response.session == null) {
         if (request.command == OnboardingAuthCommand.signUpWithEmail &&
+            request.method == OnboardingAuthMethod.emailPassword &&
             (response.user != null || _repository.currentUser != null)) {
           OnboardingRuntimeTrace.log(
             'EMAIL_CONFIRMATION',
@@ -56,6 +57,18 @@ class RepositoryOnboardingAuthAdapter
           );
           return const OnboardingConfirmationRequired();
         }
+
+        // Native provider sign-in may have committed the session to the
+        // Supabase client even when AuthResponse does not carry it inline.
+        // The repository's current user is authoritative for this case.
+        if (request.method != OnboardingAuthMethod.emailPassword &&
+            (response.user != null || _repository.currentUser != null)) {
+          final user = response.user ?? _repository.currentUser!;
+          return OnboardingAuthenticated(
+            AuthenticatedOnboardingSession(userId: user.id),
+          );
+        }
+
         return const OnboardingAuthenticationFailed(
           OnboardingAuthError(OnboardingAuthErrorCode.sessionExpired),
         );
