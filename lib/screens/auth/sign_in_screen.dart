@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../application/auth/auth_controller.dart';
 import '../../l10n/l10n.dart';
@@ -78,8 +80,30 @@ class _SignInScreenState extends State<SignInScreen>
   }
 
   Future<void> _submitGoogle() async {
-    final response = await context.read<AuthController>().signInWithGoogle();
-    if (!mounted || response?.session?.user == null) return;
+    final authController = context.read<AuthController>();
+    AuthResponse? response;
+    var timedOut = false;
+    try {
+      response = await authController
+          .signInWithGoogle()
+          .timeout(const Duration(seconds: 30));
+    } on TimeoutException {
+      timedOut = true;
+    }
+    // Native Google sign-in can update Supabase's current session while the
+    // returned AuthResponse has no embedded session. Use the authoritative
+    // controller state, as the email flow already does.
+    final hasAuthenticatedUser =
+        authController.isAuthenticated || response?.session?.user != null;
+    if (!mounted) return;
+    if (!hasAuthenticatedUser) {
+      if (timedOut) {
+        authController.setErrorMessage(
+          'No se ha podido iniciar sesión con Google. Inténtalo de nuevo.',
+        );
+      }
+      return;
+    }
     Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
 

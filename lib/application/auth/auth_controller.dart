@@ -9,6 +9,7 @@ import '../../core/observability/analytics_events.dart';
 import '../../core/observability/crash_reporting_keys.dart';
 import '../../core/observability/crash_reporting_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../devtools/rutio_runtime_profile.dart';
 import '../../data/models/remote/remote_profile.dart';
@@ -202,6 +203,10 @@ class AuthController extends ChangeNotifier {
     _noticeMessage = null;
     notifyListeners();
   }
+
+  /// Sets a user-facing error from a screen-level flow that timed out before
+  /// the auth repository could provide a more specific error.
+  void setErrorMessage(String message) => _setError(message);
 
   Future<AuthResponse?> signInWithEmailPassword({
     required String email,
@@ -399,8 +404,17 @@ class AuthController extends ChangeNotifier {
           'GOOGLE_AUTH', 'event=completed context=login');
       return response;
     } on GoogleAuthException catch (error) {
+      // Keep native details in debug builds only. Production users should see
+      // a normal auth error, while debug builds retain the native code for
+      // troubleshooting provider configuration.
+      final nativeCode = error.cause is GoogleSignInException
+          ? (error.cause as GoogleSignInException).code.name
+          : null;
+      final diagnostic = !kDebugMode || nativeCode == null
+          ? ''
+          : ' [GOOGLE_NATIVE_${nativeCode.toUpperCase()}]';
       if (error.code != GoogleAuthErrorCode.cancelled) {
-        _setError(_googleErrorMessage(error.code));
+        _setError('${_googleErrorMessage(error.code)}$diagnostic');
       }
       OnboardingRuntimeTrace.log(
         'GOOGLE_AUTH',
@@ -499,13 +513,15 @@ class AuthController extends ChangeNotifier {
       case GoogleAuthErrorCode.network:
         return 'No hay conexión. Inténtalo de nuevo.';
       case GoogleAuthErrorCode.providerUnavailable:
-      case GoogleAuthErrorCode.configurationError:
         return 'Google no está disponible en esta versión.';
+      case GoogleAuthErrorCode.configurationError:
+        return 'La configuración de Google no coincide con esta versión de la app.';
       case GoogleAuthErrorCode.invalidCredential:
+        return 'Google no ha entregado las credenciales necesarias.';
       case GoogleAuthErrorCode.accountConflict:
-        return 'No se ha podido iniciar sesión con Google.';
+        return 'La cuenta de Google ya está vinculada de otra forma.';
       case GoogleAuthErrorCode.cancelled:
-        return '';
+        return 'Google cerró el flujo sin devolver credenciales.';
       case GoogleAuthErrorCode.unexpected:
         return 'No se ha podido iniciar sesión con Google.';
     }

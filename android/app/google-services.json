@@ -12,7 +12,28 @@
           "package_name": "com.rutio.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "514142796292-3vro4p6178gg6bg0kl5v5cpsse6o3djv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rutio.app",
+            "certificate_hash": "88c3c7c33e7470baa9f50e579b0e68bea3953775"
+          }
+        },
+        {
+          "client_id": "514142796292-jp1ugf5o8bs4dvbs6s4lgfl153282g42.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rutio.app",
+            "certificate_hash": "26196cbe236598220cd246be48550c2c70badb66"
+          }
+        },
+        {
+          "client_id": "514142796292-g23ihqok3tv4uead2t7fvj29dpcit3jb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB8xinQk8dczqlqbiPwYlnJsUqzqs3ICP8"
@@ -20,7 +41,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "514142796292-g23ihqok3tv4uead2t7fvj29dpcit3jb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "514142796292-j9ofjcm90uje6vj2eu9hnsf11bufbrqh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rutio.app"
+              }
+            }
+          ]
         }
       }
     }

@@ -21,6 +21,8 @@ import '../../../screens/auth/widgets/auth_field.dart';
 import '../../../screens/auth/widgets/auth_primary_button.dart';
 import '../../../screens/auth/widgets/google_auth_button.dart';
 import '../../../screens/auth/widgets/apple_auth_button.dart';
+import '../../auth/infrastructure/google_auth_adapter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:io';
 
 @visibleForTesting
@@ -57,6 +59,8 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
   final _password = TextEditingController();
   late final TextEditingController _name;
   bool _showManualForm = false;
+  bool _googleDiagnosticAttempt = false;
+  OnboardingAuthPhase? _lastMachinePhase;
 
   @override
   void initState() {
@@ -88,6 +92,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
       onCompletionHandoff: widget.onCompletionHandoff,
       analyticsService: context.read<AnalyticsService?>(),
     )..addListener(_onMachineChanged);
+    _lastMachinePhase = _machine.state.phase;
     if (kDebugMode) {
       debugPrint(
         '[ONBOARDING_AUTH] event=machine_created '
@@ -108,7 +113,36 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
   }
 
   void _onMachineChanged() {
+    final nextState = _machine.state;
+    final enteredFailure = nextState.phase == OnboardingAuthPhase.failure &&
+        _lastMachinePhase != OnboardingAuthPhase.failure;
+    _lastMachinePhase = nextState.phase;
     if (mounted) setState(() {});
+    if (enteredFailure && _googleDiagnosticAttempt && nextState.error != null) {
+      _googleDiagnosticAttempt = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showGoogleDiagnosticDialog(nextState.error!);
+      });
+    }
+  }
+
+  Future<void> _showGoogleDiagnosticDialog(OnboardingAuthError error) async {
+    final message = _errorCopy(context.l10n, error.code);
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Google no ha podido iniciar sesión'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _onAuthControllerChanged() {
@@ -163,6 +197,7 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
   Future<void> _submitGoogle() async {
     if (_isAuthenticatedFrozenRecovery) return;
     FocusScope.of(context).unfocus();
+    _googleDiagnosticAttempt = true;
     await _machine.updateName(_name.text);
     await _machine.authenticate(
       command: OnboardingAuthCommand.signUpWithEmail,
@@ -314,6 +349,19 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
                 onTap: _submitApple,
               ),
             ],
+            if (state.error != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                _errorCopy(l10n, state.error!.code),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.rust.withValues(alpha: 0.94),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+            ],
           ],
         ],
       ),
@@ -343,9 +391,28 @@ class _OnboardingAuthStepState extends State<OnboardingAuthStep> {
         return l10n.onboardingAuthResendRateLimited;
       case OnboardingAuthErrorCode.invalidEmail:
         return l10n.onboardingAuthInvalidEmail;
+      case OnboardingAuthErrorCode.providerFailure:
+        return _providerFailureCopy(l10n, _machine.state.error);
       default:
         return l10n.onboardingAuthGenericError;
     }
+  }
+
+  String _providerFailureCopy(
+    AppLocalizations l10n,
+    OnboardingAuthError? error,
+  ) {
+    final cause = error?.cause;
+    if (cause is GoogleAuthException) {
+      final nativeCause = cause.cause;
+      final nativeCode = nativeCause is GoogleSignInException
+          ? ': ${nativeCause.code.name}'
+          : '';
+      return 'Google no ha podido completar el acceso.\n'
+          'Código de diagnóstico: GOOGLE_${cause.code.name.toUpperCase()}$nativeCode';
+    }
+    return '${l10n.onboardingAuthGenericError}\n'
+        'Código de diagnóstico: AUTH_PROVIDER_FAILURE';
   }
 }
 

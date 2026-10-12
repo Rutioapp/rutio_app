@@ -1006,9 +1006,10 @@ class BootstrapController extends ChangeNotifier
         ),
       );
       var destination = _destinationForAuthoritativeDecision(authoritative);
-      // A pending anonymous Phase 6 draft owns the handoff until AUTH-3
-      // completes it. This prevents the session listener/authoritative home
-      // decision from racing the onboarding auth screen.
+      // A pending anonymous Phase 6 draft owns the handoff only while the
+      // onboarding auth surface (or its explicit handoff retry) owns the
+      // session transition. A normal login must not reopen a stale anonymous
+      // draft and send an already completed account back to onboarding.
       _startupTrace(
         runId,
         stage: 'onboarding_draft_decision',
@@ -1034,7 +1035,12 @@ class BootstrapController extends ChangeNotifier
         );
         rethrow;
       }
-      if (hasPendingOnboarding && destination == BootstrapDestination.home) {
+      final ownsOnboardingHandoff =
+          origin == BootstrapOrigin.onboardingHandoff ||
+              _onboardingAuthOwnershipOperationId != null;
+      if (hasPendingOnboarding &&
+          destination == BootstrapDestination.home &&
+          ownsOnboardingHandoff) {
         destination = BootstrapDestination.onboarding;
       }
       final bootstrapProfile = authoritative.toBootstrapProfileDecision();
