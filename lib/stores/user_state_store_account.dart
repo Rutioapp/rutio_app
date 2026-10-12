@@ -166,7 +166,11 @@ Future<void> _applySupabaseIdentity(
   }
 
   final normalizedAvatarUrl = (avatarUrl ?? '').trim();
-  if (normalizedAvatarUrl.isNotEmpty) {
+  final existingAvatarUrl = (profile['avatarUrl'] ?? '').toString().trim();
+  // A picked avatar is stored as a device-local file. Preserve it when the
+  // auth/profile bootstrap has no authoritative replacement; otherwise a
+  // login could replace it with an empty or provider avatar value.
+  if (existingAvatarUrl.isEmpty && normalizedAvatarUrl.isNotEmpty) {
     profile['avatarUrl'] = normalizedAvatarUrl;
   }
 

@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "514142796292-bi2eq4enkgd7e99arhjf2299gevc3v5o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rutio.app",
+            "certificate_hash": "b11f2d3a2d898be7d76ad877c29b8aa691c81f7d"
+          }
+        },
+        {
           "client_id": "514142796292-jp1ugf5o8bs4dvbs6s4lgfl153282g42.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

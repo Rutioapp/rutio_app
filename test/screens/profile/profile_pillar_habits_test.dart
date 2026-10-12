@@ -198,6 +198,22 @@ void main() {
 
     expect(store.pillarHabitIds, <String>['habit-3', 'habit-2']);
   });
+
+  test('applySupabaseIdentity preserves a locally picked avatar', () async {
+    final store = await _createStore(
+      activeHabits: _habitList(),
+      profileRepository: _RecordingProfileRepository(),
+      avatarUrl: '/documents/avatars/rutio/avatar.jpg',
+    );
+    addTearDown(store.dispose);
+
+    await store.applySupabaseIdentity(
+      userId: 'profile-pillars-user',
+      avatarUrl: 'https://example.com/provider-avatar.jpg',
+    );
+
+    expect(store.avatarUrl, '/documents/avatars/rutio/avatar.jpg');
+  });
 }
 
 Widget _materialApp({
@@ -232,6 +248,7 @@ Future<UserStateStore> _createStore({
   required List<Map<String, dynamic>> activeHabits,
   required ProfileRepository profileRepository,
   List<String> pillarHabitIds = const <String>[],
+  String? avatarUrl,
 }) async {
   final repository = UserStateRepository(storage: UserStateStorage())
     ..setActiveUserScope('profile-pillars-user');
@@ -247,6 +264,7 @@ Future<UserStateStore> _createStore({
       'profile': <String, dynamic>{
         'displayName': 'Alex',
         'pillarHabitIds': pillarHabitIds,
+        if (avatarUrl != null) 'avatarUrl': avatarUrl,
       },
       'progression': <String, dynamic>{'xp': 0},
       'activeHabits': activeHabits,

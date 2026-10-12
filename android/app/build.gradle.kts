@@ -6,6 +6,12 @@ if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
+val debugKeystoreProperties = Properties()
+val debugKeystorePropertiesFile = rootProject.file("debug-key.properties")
+if (debugKeystorePropertiesFile.exists()) {
+    debugKeystorePropertiesFile.inputStream().use { debugKeystoreProperties.load(it) }
+}
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -44,6 +50,14 @@ android {
     }
 
     signingConfigs {
+        if (debugKeystorePropertiesFile.exists()) {
+            create("rutioDebug") {
+                keyAlias = debugKeystoreProperties.getProperty("keyAlias")
+                keyPassword = debugKeystoreProperties.getProperty("keyPassword")
+                storeFile = debugKeystoreProperties.getProperty("storeFile")?.let { file(it) }
+                storePassword = debugKeystoreProperties.getProperty("storePassword")
+            }
+        }
         create("release") {
             keyAlias = keystoreProperties.getProperty("keyAlias")
             keyPassword = keystoreProperties.getProperty("keyPassword")
@@ -53,6 +67,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            if (debugKeystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("rutioDebug")
+            }
+        }
         release {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false

@@ -94,6 +94,7 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
     }
     return Scaffold(
       backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -122,18 +123,23 @@ class _WeeklyReportViewState extends State<_WeeklyReportView> {
           const HomeBackground(),
           SafeArea(
             top: false,
-            child: switch (state) {
-              WeeklyReportLoading() => const _LoadingView(),
-              WeeklyReportEmpty() => _EmptyView(
-                  onRetry: controller.load,
-                ),
-              WeeklyReportFailure() => _ErrorView(
-                  onRetry: controller.load,
-                ),
-              WeeklyReportDataState() => _ReportContent(
-                  snapshot: state.snapshot,
-                ),
-            },
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.paddingOf(context).top + kToolbarHeight,
+              ),
+              child: switch (state) {
+                WeeklyReportLoading() => const _LoadingView(),
+                WeeklyReportEmpty() => _EmptyView(
+                    onRetry: controller.load,
+                  ),
+                WeeklyReportFailure() => _ErrorView(
+                    onRetry: controller.load,
+                  ),
+                WeeklyReportDataState() => _ReportContent(
+                    snapshot: state.snapshot,
+                  ),
+              },
+            ),
           ),
         ],
       ),
@@ -151,7 +157,7 @@ class _ReportContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final report = snapshot.report;
     final l10n = context.l10n;
-    final recommendation = _displayRecommendation(report);
+    final recommendation = selectWeeklyReportRecommendation(report);
     return RefreshIndicator(
       onRefresh: context.read<WeeklyReportController>().refresh,
       child: ListView(
@@ -207,63 +213,6 @@ class _ReportContent extends StatelessWidget {
     return null;
   }
 
-  WeeklyReportRecommendation? _displayRecommendation(WeeklyReport report) {
-    for (final recommendation in report.recommendations) {
-      final current = recommendation.currentConfig['schedule'];
-      final proposed = recommendation.proposedPatch['proposed'];
-      final proposedSchedule = proposed is Map ? proposed['schedule'] : null;
-      if (recommendation.type ==
-              WeeklyReportRecommendationType.reduceFrequency &&
-          current is Map &&
-          proposedSchedule is Map &&
-          current['timesPerWeek'] is num &&
-          proposedSchedule['timesPerWeek'] is num) {
-        return recommendation;
-      }
-    }
-
-    // Older/finalized reports can have no server recommendation (or one that
-    // the current editor cannot apply). Keep the feature useful locally when
-    // there is a times-per-week habit that can be safely reduced.
-    for (final habit in report.habits) {
-      final current = habit.schedule.timesPerWeek;
-      if (!habit.schedule.isTimesPerWeek || current == null || current <= 1) {
-        continue;
-      }
-      final proposed = current - 1;
-      return WeeklyReportRecommendation(
-        type: WeeklyReportRecommendationType.reduceFrequency,
-        reason: 'local_fallback',
-        habitId: habit.habitId,
-        habitName: habit.name,
-        emoji: habit.emoji,
-        currentConfig: <String, dynamic>{
-          'schedule': <String, dynamic>{
-            'type': 'timesPerWeek',
-            'timesPerWeek': current,
-          },
-        },
-        proposedPatch: <String, dynamic>{
-          'type': 'reduceFrequency',
-          'version': 1,
-          'current': <String, dynamic>{
-            'schedule': <String, dynamic>{
-              'type': 'timesPerWeek',
-              'timesPerWeek': current,
-            },
-          },
-          'proposed': <String, dynamic>{
-            'schedule': <String, dynamic>{
-              'type': 'timesPerWeek',
-              'timesPerWeek': proposed,
-            },
-          },
-        },
-      );
-    }
-    return null;
-  }
-
   void _openRecommendation(BuildContext context, WeeklyReport report,
       WeeklyReportRecommendation recommendation) {
     final id = recommendation.habitId;
@@ -301,6 +250,81 @@ class _ReportContent extends StatelessWidget {
       'schedule': schedule,
     };
   }
+}
+
+/// Selects a stable-but-rotating recommendation for the report's week.
+///
+/// The same report renders the same habit, while different weekly reports use
+/// a different compatible habit when several are available.
+WeeklyReportRecommendation? selectWeeklyReportRecommendation(
+  WeeklyReport report,
+) {
+  final compatible = report.recommendations.where((recommendation) {
+    final current = recommendation.currentConfig['schedule'];
+    final proposed = recommendation.proposedPatch['proposed'];
+    final proposedSchedule = proposed is Map ? proposed['schedule'] : null;
+    return recommendation.type ==
+            WeeklyReportRecommendationType.reduceFrequency &&
+        current is Map &&
+        proposedSchedule is Map &&
+        current['timesPerWeek'] is num &&
+        proposedSchedule['timesPerWeek'] is num;
+  }).toList(growable: false);
+
+  if (compatible.isNotEmpty) {
+    return compatible[_stableRecommendationIndex(report, compatible.length)];
+  }
+
+  final eligibleHabits = report.habits.where((habit) {
+    final current = habit.schedule.timesPerWeek;
+    return habit.schedule.isTimesPerWeek && current != null && current > 1;
+  }).toList(growable: false);
+
+  if (eligibleHabits.isEmpty) return null;
+
+  final habit =
+      eligibleHabits[_stableRecommendationIndex(report, eligibleHabits.length)];
+  final current = habit.schedule.timesPerWeek!;
+  final proposed = current - 1;
+  return WeeklyReportRecommendation(
+    type: WeeklyReportRecommendationType.reduceFrequency,
+    reason: 'local_fallback',
+    habitId: habit.habitId,
+    habitName: habit.name,
+    emoji: habit.emoji,
+    currentConfig: <String, dynamic>{
+      'schedule': <String, dynamic>{
+        'type': 'timesPerWeek',
+        'timesPerWeek': current,
+      },
+    },
+    proposedPatch: <String, dynamic>{
+      'type': 'reduceFrequency',
+      'version': 1,
+      'current': <String, dynamic>{
+        'schedule': <String, dynamic>{
+          'type': 'timesPerWeek',
+          'timesPerWeek': current,
+        },
+      },
+      'proposed': <String, dynamic>{
+        'schedule': <String, dynamic>{
+          'type': 'timesPerWeek',
+          'timesPerWeek': proposed,
+        },
+      },
+    },
+  );
+}
+
+int _stableRecommendationIndex(WeeklyReport report, int length) {
+  var hash = 17;
+  final seed =
+      '${report.userId}:${report.week.weekStartDate.toIso8601String()}';
+  for (final codeUnit in seed.codeUnits) {
+    hash = (hash * 31 + codeUnit) & 0x7fffffff;
+  }
+  return hash % length;
 }
 
 class _WeekRange extends StatelessWidget {
