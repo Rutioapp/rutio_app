@@ -23,8 +23,6 @@ void main() {
   });
 
   test('identity attribution is restricted to Supabase UUID app user IDs', () {
-    final source = File('supabase/functions/revenuecat-webhook/index.ts')
-        .readAsStringSync();
     final logic = File('supabase/functions/revenuecat-webhook/logic.ts')
         .readAsStringSync();
     expect(logic, contains('^[0-9a-f]{8}-'));
