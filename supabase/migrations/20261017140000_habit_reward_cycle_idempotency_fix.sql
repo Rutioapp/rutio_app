@@ -1035,3 +1035,4 @@ grant execute on function public.reverse_habit_completion_reward(
 ) to service_role;
 
 commit;
+
