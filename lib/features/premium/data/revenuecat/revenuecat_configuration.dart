@@ -12,30 +12,64 @@ class RevenueCatConfigurationException implements Exception {
 class RevenueCatConfiguration {
   // Retained for the existing PremiumRepository API; its value is selected
   // from the appropriate environment-specific dart-define.
-  const RevenueCatConfiguration({required this.testApiKey});
+  const RevenueCatConfiguration({
+    required this.testApiKey,
+    this.billingTarget = productionBillingTarget,
+  });
 
   static const testApiKeyEnvironmentKey = 'REVENUECAT_TEST_API_KEY';
   static const androidApiKeyEnvironmentKey = 'REVENUECAT_ANDROID_API_KEY';
+  static const androidSandboxApiKeyEnvironmentKey =
+      'REVENUECAT_ANDROID_SANDBOX_API_KEY';
   static const iosApiKeyEnvironmentKey = 'REVENUECAT_IOS_API_KEY';
+  static const billingTargetEnvironmentKey = 'REVENUECAT_BILLING_TARGET';
+
+  static const testStoreBillingTarget = 'test_store';
+  static const googlePlaySandboxBillingTarget = 'google_play_sandbox';
+  static const productionBillingTarget = 'production';
 
   static const _placeholderApiKey = 'PASTE_REVENUECAT_TEST_KEY_HERE';
 
   factory RevenueCatConfiguration.fromEnvironment({
     String? environmentApiKey,
     String? androidApiKey,
+    String? androidSandboxApiKey,
     String? iosApiKey,
+    String? billingTarget,
     bool? isRelease,
     TargetPlatform? platform,
   }) {
     final release = isRelease ?? kReleaseMode;
     final targetPlatform = platform ?? defaultTargetPlatform;
+    final configuredTarget = (billingTarget ??
+            const String.fromEnvironment(billingTargetEnvironmentKey))
+        .trim();
+    final target = configuredTarget.isEmpty
+        ? (release ? productionBillingTarget : testStoreBillingTarget)
+        : configuredTarget;
 
     if (!release) {
-      final key = (environmentApiKey ??
-              const String.fromEnvironment(testApiKeyEnvironmentKey))
-          .trim();
-      _validateDebugKey(key);
-      return RevenueCatConfiguration(testApiKey: key);
+      return switch (target) {
+        testStoreBillingTarget => RevenueCatConfiguration(
+            testApiKey: (environmentApiKey ??
+                    const String.fromEnvironment(testApiKeyEnvironmentKey))
+                .trim(),
+            billingTarget: target,
+          ).._validateDebugTestStoreKey(),
+        googlePlaySandboxBillingTarget => _googlePlaySandboxConfiguration(
+            targetPlatform,
+            androidSandboxApiKey,
+          ),
+        _ => throw RevenueCatConfigurationException(
+            'Unsupported RevenueCat billing target for debug build.',
+          ),
+      };
+    }
+
+    if (target != productionBillingTarget) {
+      throw const RevenueCatConfigurationException(
+        'Non-production RevenueCat billing targets are not allowed in release builds.',
+      );
     }
 
     final key = switch (targetPlatform) {
@@ -73,27 +107,62 @@ class RevenueCatConfiguration {
       );
     }
 
-    return RevenueCatConfiguration(testApiKey: key);
+    return RevenueCatConfiguration(
+      testApiKey: key,
+      billingTarget: productionBillingTarget,
+    );
   }
 
   final String testApiKey;
+  final String billingTarget;
 
   bool get isConfigured {
     final key = testApiKey.trim();
     return key.isNotEmpty && key != _placeholderApiKey;
   }
 
-  static void _validateDebugKey(String key) {
+  RevenueCatConfiguration _validateDebugTestStoreKey() {
+    _validateDebugKey(testApiKey, 'Test Store');
+    return this;
+  }
+
+  static RevenueCatConfiguration _googlePlaySandboxConfiguration(
+    TargetPlatform platform,
+    String? override,
+  ) {
+    if (platform != TargetPlatform.android) {
+      throw const RevenueCatConfigurationException(
+        'Google Play Sandbox billing target requires Android.',
+      );
+    }
+    final key = (override ??
+            const String.fromEnvironment(androidSandboxApiKeyEnvironmentKey))
+        .trim();
     if (key.isEmpty) {
       throw const RevenueCatConfigurationException(
-        'Missing RevenueCat Test Store API key for debug/dev. Configure '
-        'REVENUECAT_TEST_API_KEY in the dart-define file.',
+        'Missing RevenueCat Android Sandbox API key for debug build.',
+      );
+    }
+    if (!key.startsWith('goog_')) {
+      throw const RevenueCatConfigurationException(
+        'Invalid RevenueCat Android Sandbox API key: expected a public goog_ key.',
+      );
+    }
+    return RevenueCatConfiguration(
+      testApiKey: key,
+      billingTarget: googlePlaySandboxBillingTarget,
+    );
+  }
+
+  static void _validateDebugKey(String key, String label) {
+    if (key.isEmpty) {
+      throw RevenueCatConfigurationException(
+        'Missing RevenueCat $label API key for debug/dev.',
       );
     }
     if (!key.startsWith('test_')) {
-      throw const RevenueCatConfigurationException(
-        'Invalid RevenueCat debug API key: expected a Test Store key with '
-        'the test_ prefix.',
+      throw RevenueCatConfigurationException(
+        'Invalid RevenueCat $label API key: expected a public test_ key.',
       );
     }
   }
