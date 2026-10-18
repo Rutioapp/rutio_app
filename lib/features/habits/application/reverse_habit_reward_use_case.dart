@@ -13,12 +13,14 @@ class ReverseHabitRewardUseCase {
     required String logicalDateKey,
     String? completionEventId,
     String? requestId,
+    int value = 0,
   }) {
     return _coordinator.reverseHabitReward(
       habitId: habitId,
       logicalDateKey: logicalDateKey,
       completionEventId: completionEventId,
       requestId: requestId,
+      value: value,
     );
   }
 }

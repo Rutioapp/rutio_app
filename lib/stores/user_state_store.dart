@@ -773,6 +773,9 @@ class UserStateStore extends ChangeNotifier {
       syncSupabaseUserProgressBootstrapBestEffort({bool force = false}) =>
           _syncSupabaseUserProgressBootstrapBestEffort(this, force: force);
 
+  Future<int> resolvePendingHabitCloudRewardsBestEffort() =>
+      _resolvePendingHabitCloudRewardsBestEffort(this);
+
   Future<JournalEntryBackfillSummary> syncExistingLocalJournalEntriesOnce({
     bool force = false,
   }) =>

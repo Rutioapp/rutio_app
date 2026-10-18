@@ -23,6 +23,7 @@ class PendingCurrencyOperation {
     required this.lastAttemptAtMillis,
     required this.attemptCount,
     required this.status,
+    this.value = 0,
   });
 
   final String userId;
@@ -35,6 +36,7 @@ class PendingCurrencyOperation {
   final int lastAttemptAtMillis;
   final int attemptCount;
   final PendingCurrencyOperationStatus status;
+  final int value;
 
   DateTime get createdAt =>
       DateTime.fromMillisecondsSinceEpoch(createdAtMillis, isUtc: true);
@@ -58,6 +60,7 @@ class PendingCurrencyOperation {
     int? lastAttemptAtMillis,
     int? attemptCount,
     PendingCurrencyOperationStatus? status,
+    int? value,
   }) {
     return PendingCurrencyOperation(
       userId: userId ?? this.userId,
@@ -70,6 +73,7 @@ class PendingCurrencyOperation {
       lastAttemptAtMillis: lastAttemptAtMillis ?? this.lastAttemptAtMillis,
       attemptCount: attemptCount ?? this.attemptCount,
       status: status ?? this.status,
+      value: value ?? this.value,
     );
   }
 
@@ -89,6 +93,7 @@ class PendingCurrencyOperation {
         _int(json['lastAttemptAtMillis'] ?? json['last_attempt_at_millis']);
     final attemptCount = _int(json['attemptCount'] ?? json['attempt_count']);
     final status = _status(json['status']);
+    final value = _int(json['value']);
 
     if (userId == null ||
         requestId == null ||
@@ -115,6 +120,7 @@ class PendingCurrencyOperation {
       lastAttemptAtMillis: lastAttemptAtMillis,
       attemptCount: attemptCount,
       status: status,
+      value: value ?? 0,
     );
   }
 
@@ -130,6 +136,7 @@ class PendingCurrencyOperation {
       'lastAttemptAtMillis': lastAttemptAtMillis,
       'attemptCount': attemptCount,
       'status': status.name,
+      'value': value,
     };
   }
 }

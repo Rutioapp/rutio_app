@@ -11,23 +11,35 @@ import 'habit_currency_reward_result.dart';
 String buildHabitRewardCompletionEventId({
   required String remoteHabitId,
   required String logicalDateKey,
+  int cycle = 1,
 }) {
-  return 'habit_cloud_reward|${remoteHabitId.trim().toLowerCase()}|${logicalDateKey.trim()}';
+  return 'habit_cloud_reward|${remoteHabitId.trim().toLowerCase()}|${logicalDateKey.trim()}${_cycleSuffix(cycle)}';
 }
 
 String buildHabitRewardApplyRequestId({
   required String remoteHabitId,
   required String logicalDateKey,
+  int cycle = 1,
 }) {
-  return 'habit_cloud_reward_apply|${remoteHabitId.trim().toLowerCase()}|${logicalDateKey.trim()}';
+  return 'habit_cloud_reward_apply|${remoteHabitId.trim().toLowerCase()}|${logicalDateKey.trim()}${_cycleSuffix(cycle)}';
 }
 
 String buildHabitRewardReverseRequestId({
   required String remoteHabitId,
   required String logicalDateKey,
+  int cycle = 1,
 }) {
-  return 'habit_cloud_reward_reverse|${remoteHabitId.trim().toLowerCase()}|${logicalDateKey.trim()}';
+  return 'habit_cloud_reward_reverse|${remoteHabitId.trim().toLowerCase()}|${logicalDateKey.trim()}${_cycleSuffix(cycle)}';
 }
+
+int habitRewardCycleForTransaction(HabitRewardTransaction? transaction) {
+  final requestId = transaction?.applyRequestId?.trim() ?? '';
+  final match = RegExp(r'\|cycle-(\d+)$').firstMatch(requestId);
+  final parsed = int.tryParse(match?.group(1) ?? '');
+  return parsed != null && parsed > 0 ? parsed : 1;
+}
+
+String _cycleSuffix(int cycle) => cycle > 1 ? '|cycle-$cycle' : '';
 
 class HabitCurrencyRewardCoordinator {
   HabitCurrencyRewardCoordinator({
@@ -60,6 +72,7 @@ class HabitCurrencyRewardCoordinator {
     required String logicalDateKey,
     String? completionEventId,
     String? requestId,
+    int value = 0,
   }) async {
     return _execute(
       operationType: HabitRewardOperationType.apply,
@@ -68,6 +81,7 @@ class HabitCurrencyRewardCoordinator {
       logicalDateKey: logicalDateKey,
       completionEventId: completionEventId,
       requestId: requestId,
+      value: value,
     );
   }
 
@@ -77,6 +91,7 @@ class HabitCurrencyRewardCoordinator {
     required String logicalDateKey,
     String? completionEventId,
     String? requestId,
+    int value = 0,
   }) async {
     return _execute(
       operationType: HabitRewardOperationType.reverse,
@@ -85,12 +100,14 @@ class HabitCurrencyRewardCoordinator {
       logicalDateKey: logicalDateKey,
       completionEventId: completionEventId,
       requestId: requestId,
+      value: value,
     );
   }
 
   Future<List<HabitCurrencyRewardOperationResult>>
       resolvePendingForCurrentUser({
     int maxOperations = 3,
+    String? Function(String habitId)? remoteHabitIdResolver,
   }) async {
     if (!_enabled) return const <HabitCurrencyRewardOperationResult>[];
     final userId = _currentUserId();
@@ -100,8 +117,17 @@ class HabitCurrencyRewardCoordinator {
     if (pending.isEmpty) return const <HabitCurrencyRewardOperationResult>[];
 
     final results = <HabitCurrencyRewardOperationResult>[];
-    for (final operation in pending.take(maxOperations)) {
-      final remoteHabitId = _normalizeRemoteHabitId(operation.habitId);
+    for (var operation in pending.take(maxOperations)) {
+      var remoteHabitId = _normalizeRemoteHabitId(operation.habitId);
+      if (remoteHabitId == null && remoteHabitIdResolver != null) {
+        remoteHabitId = _normalizeRemoteHabitId(
+          remoteHabitIdResolver(operation.habitId),
+        );
+        if (remoteHabitId != null && operation.habitId != remoteHabitId) {
+          operation = operation.copyWith(habitId: remoteHabitId);
+          await _upsertPendingOperation(operation);
+        }
+      }
       if (remoteHabitId == null) {
         results.add(
           HabitCurrencyRewardOperationResult(
@@ -123,6 +149,7 @@ class HabitCurrencyRewardCoordinator {
         logicalDateKey: operation.logicalDateKey,
         completionEventId: operation.completionEventId,
         requestId: operation.requestId,
+        value: operation.value,
       );
       results.add(result);
       if (result.isPending) break;
@@ -137,6 +164,7 @@ class HabitCurrencyRewardCoordinator {
     required String logicalDateKey,
     String? completionEventId,
     String? requestId,
+    int value = 0,
   }) async {
     if (!_enabled) {
       return HabitCurrencyRewardOperationResult(
@@ -304,6 +332,7 @@ class HabitCurrencyRewardCoordinator {
             lastAttemptAtMillis: _nowProvider().toUtc().millisecondsSinceEpoch,
             attemptCount: 0,
             status: PendingCurrencyOperationStatus.pending,
+            value: value,
           );
 
     if (!hasExistingPending) {
@@ -325,6 +354,7 @@ class HabitCurrencyRewardCoordinator {
       final response = await _callRemote(
         operationType: operationType,
         requestId: activeRequestId,
+        value: value,
         habitId: activeRemoteHabitId,
         logicalDateKey: normalizedDateKey,
         completionEventId: activeCompletionEventId,
@@ -373,6 +403,19 @@ class HabitCurrencyRewardCoordinator {
         continue;
       }
 
+      if (lastFailure.code ==
+          HabitCurrencyRewardFailureCode.clientVersionRejected) {
+        await _savePendingAsAwaiting(attemptOperation);
+        return HabitCurrencyRewardOperationResult(
+          state: HabitCurrencyRewardState.pending,
+          failure: lastFailure,
+          pendingOperation: attemptOperation.copyWith(
+            status: PendingCurrencyOperationStatus.awaitingResolution,
+          ),
+          transaction: transaction,
+        );
+      }
+
       if (lastFailure.definitive) {
         await _removePendingOperation(userId, activeRequestId);
         return HabitCurrencyRewardOperationResult(
@@ -414,8 +457,19 @@ class HabitCurrencyRewardCoordinator {
     required String habitId,
     required String logicalDateKey,
     required String completionEventId,
+    required int value,
   }) {
     if (operationType == HabitRewardOperationType.reverse) {
+      if (_rewardRepository is SupabaseHabitCurrencyRewardRepository) {
+        return (_rewardRepository as SupabaseHabitCurrencyRewardRepository)
+            .reverseHabitCompletionRewardWithValue(
+          requestId: requestId,
+          habitId: habitId,
+          logicalDateKey: logicalDateKey,
+          completionEventId: completionEventId,
+          value: value,
+        );
+      }
       return _rewardRepository.reverseHabitCompletionReward(
         requestId: requestId,
         habitId: habitId,
@@ -424,6 +478,16 @@ class HabitCurrencyRewardCoordinator {
       );
     }
 
+    if (_rewardRepository is SupabaseHabitCurrencyRewardRepository) {
+      return (_rewardRepository as SupabaseHabitCurrencyRewardRepository)
+          .applyHabitCompletionRewardWithValue(
+        requestId: requestId,
+        habitId: habitId,
+        logicalDateKey: logicalDateKey,
+        completionEventId: completionEventId,
+        value: value,
+      );
+    }
     return _rewardRepository.applyHabitCompletionReward(
       requestId: requestId,
       habitId: habitId,
@@ -474,10 +538,21 @@ class HabitCurrencyRewardCoordinator {
     required HabitRewardTransaction? transaction,
   }) {
     final baseCoins =
-        ledger.coinDelta < 0 ? -ledger.coinDelta : ledger.coinDelta;
-    final baseXp = ledger.baseXp;
-    final bonusXp = ledger.bonusXp;
-    final bonusCoins = ledger.bonusCoins;
+        operationType == HabitRewardOperationType.reverse && transaction != null
+            ? transaction.baseCoins
+            : (ledger.coinDelta < 0 ? -ledger.coinDelta : ledger.coinDelta);
+    final baseXp =
+        operationType == HabitRewardOperationType.reverse && transaction != null
+            ? transaction.baseXp
+            : ledger.baseXp;
+    final bonusXp =
+        operationType == HabitRewardOperationType.reverse && transaction != null
+            ? transaction.bonusXp
+            : ledger.bonusXp;
+    final bonusCoins =
+        operationType == HabitRewardOperationType.reverse && transaction != null
+            ? transaction.bonusCoins
+            : ledger.bonusCoins;
     final appliedEffectIds = ledger.appliedEffectIds.isEmpty
         ? transaction?.appliedEffectIds ?? const <String>[]
         : ledger.appliedEffectIds;

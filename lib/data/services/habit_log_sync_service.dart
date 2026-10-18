@@ -76,6 +76,11 @@ class HabitLogSyncService {
     String? expectedLocalUserId,
     String? note,
   }) async {
+    // Habit completion and reversal are authoritative economy transitions.
+    // They must go through complete_habit_economy_v1, never a direct log DML.
+    _debugWarn('direct habit log write skipped; use authoritative economy RPC');
+    return;
+    /*
     try {
       final authenticatedUserId = _currentAuthenticatedUserId();
       if (authenticatedUserId == null) {
@@ -129,6 +134,7 @@ class HabitLogSyncService {
     } catch (error) {
       _debugWarn('habit log sync unexpected error: $error');
     }
+    */
   }
 
   Future<HabitLogBackfillSummary> backfillHistoricalHabitLogs({

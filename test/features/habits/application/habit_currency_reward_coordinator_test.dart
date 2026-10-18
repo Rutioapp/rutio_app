@@ -88,6 +88,80 @@ void main() {
       expect(result.transaction?.cloudOperationType, 'apply');
     });
 
+    test('client version rejection preserves the original pending request',
+        () async {
+      final repo = _FakeHabitCurrencyRewardRepository(
+        applyHandler: (_) => HabitCurrencyRewardResult.failure(
+          failure: const HabitCurrencyRewardFailure(
+            code: HabitCurrencyRewardFailureCode.clientVersionRejected,
+            message: 'client version is required',
+            definitive: true,
+          ),
+        ),
+      );
+      final coordinator = _createCoordinator(repo: repo, maxAutoRetries: 0);
+
+      final result = await coordinator.applyHabitReward(
+        habitId: 'habit-check',
+        remoteHabitId: _remoteHabitUuid,
+        logicalDateKey: '2026-10-18',
+        completionEventId: 'event-version-1',
+        requestId: 'request-version-1',
+      );
+
+      expect(result.isPending, isTrue);
+      final pending = await _pendingStore.loadPendingOperations('user-1');
+      expect(pending, hasLength(1));
+      expect(pending.single.requestId, 'request-version-1');
+      expect(pending.single.status,
+          PendingCurrencyOperationStatus.awaitingResolution);
+    });
+
+    test('legacy local-id pending resolves through the remote habit mapping',
+        () async {
+      final pendingStore = _MemoryPendingCurrencyOperationStore();
+      await pendingStore
+          .savePendingOperations('user-1', <PendingCurrencyOperation>[
+        PendingCurrencyOperation(
+          userId: 'user-1',
+          requestId: 'legacy-request-1',
+          habitId: 'local-habit-1',
+          logicalDateKey: '2026-10-18',
+          completionEventId: 'legacy-event-1',
+          operationType: HabitRewardOperationType.apply,
+          createdAtMillis: 1,
+          lastAttemptAtMillis: 1,
+          attemptCount: 1,
+          status: PendingCurrencyOperationStatus.awaitingResolution,
+        ),
+      ]);
+      final repo = _FakeHabitCurrencyRewardRepository(
+        applyHandler: (request) => HabitCurrencyRewardResult.success(
+          data: _ledgerFor(
+            request: request,
+            userId: 'user-1',
+            coinDelta: 5,
+            balanceAfter: 5,
+          ),
+        ),
+      );
+      final coordinator = _createCoordinator(
+        repo: repo,
+        pendingStore: pendingStore,
+        maxAutoRetries: 0,
+      );
+
+      final results = await coordinator.resolvePendingForCurrentUser(
+        remoteHabitIdResolver: (localHabitId) =>
+            localHabitId == 'local-habit-1' ? _remoteHabitUuid : null,
+      );
+
+      expect(results.single.isSuccess, isTrue);
+      expect(repo.applyRequests.single.habitId, _remoteHabitUuid);
+      expect(repo.applyRequests.single.requestId, 'legacy-request-1');
+      expect(await pendingStore.loadPendingOperations('user-1'), isEmpty);
+    });
+
     test('double complete does not duplicate the reward', () async {
       final repo = _FakeHabitCurrencyRewardRepository(applyCoinDelta: 5);
       final coordinator = _createCoordinator(repo: repo);

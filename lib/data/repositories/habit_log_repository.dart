@@ -211,14 +211,15 @@ updated_at
           .toList(growable: false);
 
       return RepositoryResult<List<RemoteHabitLog>>.success(data: logs);
-    } on PostgrestException catch (error) {
+    } on PostgrestException catch (error, stackTrace) {
       return RepositoryResult<List<RemoteHabitLog>>.failure(
         _mapPostgrestError(
           error,
+          stackTrace: stackTrace,
           fallbackMessage: 'Could not fetch habit logs for habits.',
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
       if (kDebugMode) {
         debugPrint(
             '[habit_log_repository] unexpected fetch-habits error: $error');
@@ -228,6 +229,7 @@ updated_at
           code: RepositoryErrorCode.unknown,
           message: 'Could not fetch habit logs for habits.',
           cause: error,
+          causeStackTrace: stackTrace,
         ),
       );
     }
@@ -236,6 +238,13 @@ updated_at
   Future<RepositoryResult<RemoteHabitLog>> upsertDailyLog(
     RemoteHabitLog log,
   ) async {
+    return RepositoryResult<RemoteHabitLog>.failure(
+      const RepositoryError(
+        code: RepositoryErrorCode.permissionDenied,
+        message: 'Habit log writes are owned by complete_habit_economy_v1.',
+      ),
+    );
+    /*
     final userId = _currentUserId();
     if (userId == null) {
       return RepositoryResult<RemoteHabitLog>.failure(_notAuthenticated());
@@ -294,6 +303,7 @@ updated_at
         ),
       );
     }
+    */
   }
 
   Future<RepositoryResult<void>> deleteDailyLog({
@@ -365,6 +375,7 @@ updated_at
 
   RepositoryError _mapPostgrestError(
     PostgrestException error, {
+    StackTrace? stackTrace,
     required String fallbackMessage,
   }) {
     if (kDebugMode) {
@@ -380,6 +391,7 @@ updated_at
         code: RepositoryErrorCode.notFound,
         message: 'Habit log row was not found.',
         cause: error,
+        causeStackTrace: stackTrace,
       );
     }
     if (code == '42501') {
@@ -387,6 +399,7 @@ updated_at
         code: RepositoryErrorCode.permissionDenied,
         message: 'Permission denied for habit log operation.',
         cause: error,
+        causeStackTrace: stackTrace,
       );
     }
 
@@ -399,6 +412,7 @@ updated_at
         code: RepositoryErrorCode.network,
         message: 'Network error while accessing habit logs.',
         cause: error,
+        causeStackTrace: stackTrace,
       );
     }
 
@@ -406,6 +420,7 @@ updated_at
       code: RepositoryErrorCode.unknown,
       message: fallbackMessage,
       cause: error,
+      causeStackTrace: stackTrace,
     );
   }
 

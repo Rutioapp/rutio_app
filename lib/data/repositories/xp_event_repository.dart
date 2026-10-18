@@ -7,102 +7,11 @@ import 'repository_result.dart';
 
 class XpEventRepository {
   XpEventRepository({SupabaseClient? client})
-      : _client = client ?? RutioSupabaseClient.instance;
+    : _client = client ?? RutioSupabaseClient.instance;
 
   final SupabaseClient _client;
 
   static const String _xpEventsTable = 'xp_events';
-
-  Future<RepositoryResult<RemoteXpEvent>> insertXpEvent(
-    RemoteXpEvent event,
-  ) async {
-    final userId = _currentUserId();
-    if (userId == null) {
-      return RepositoryResult<RemoteXpEvent>.failure(_notAuthenticated());
-    }
-
-    final initialPayload = Map<String, dynamic>.from(event.toInsertMap())
-      ..['user_id'] = userId;
-    final baselinePayload = <String, dynamic>{
-      'user_id': userId,
-      'amount': event.amount,
-      'source': event.source,
-    };
-
-    if (kDebugMode) {
-      debugPrint(
-        '[xp_event_repository] insert payload: ${_debugSafePayload(initialPayload)}',
-      );
-    }
-
-    try {
-      await _client.from(_xpEventsTable).insert(initialPayload);
-      if (kDebugMode) {
-        debugPrint('[xp_event_repository] insert success');
-      }
-      return RepositoryResult<RemoteXpEvent>.success(
-        data: RemoteXpEvent(
-          userId: userId,
-          amount: event.amount,
-          source: event.source,
-          sourceId: event.sourceId,
-          description: event.description,
-          raw: initialPayload,
-        ),
-      );
-    } on PostgrestException catch (error) {
-      if (kDebugMode) {
-        debugPrint(
-          '[xp_event_repository] insert failed (${error.code}): ${error.message}',
-        );
-        debugPrint(
-          '[xp_event_repository] retry baseline payload: '
-          '${_debugSafePayload(baselinePayload)}',
-        );
-      }
-
-      try {
-        await _client.from(_xpEventsTable).insert(baselinePayload);
-        if (kDebugMode) {
-          debugPrint('[xp_event_repository] baseline insert success');
-        }
-        return RepositoryResult<RemoteXpEvent>.success(
-          data: RemoteXpEvent(
-            userId: userId,
-            amount: event.amount,
-            source: event.source,
-            raw: baselinePayload,
-          ),
-        );
-      } on PostgrestException catch (fallbackError) {
-        return RepositoryResult<RemoteXpEvent>.failure(
-          _mapPostgrestError(
-            fallbackError,
-            fallbackMessage: 'Could not insert XP event.',
-          ),
-        );
-      } catch (fallbackError) {
-        return RepositoryResult<RemoteXpEvent>.failure(
-          RepositoryError(
-            code: RepositoryErrorCode.unknown,
-            message: 'Could not insert XP event.',
-            cause: fallbackError,
-          ),
-        );
-      }
-    } catch (error) {
-      if (kDebugMode) {
-        debugPrint('[xp_event_repository] unexpected insert error: $error');
-      }
-      return RepositoryResult<RemoteXpEvent>.failure(
-        RepositoryError(
-          code: RepositoryErrorCode.unknown,
-          message: 'Could not insert XP event.',
-          cause: error,
-        ),
-      );
-    }
-  }
 
   Future<RepositoryResult<List<RemoteXpEvent>>> fetchRecentXpEvents({
     int limit = 30,
@@ -164,12 +73,6 @@ class XpEventRepository {
       code: RepositoryErrorCode.notAuthenticated,
       message: 'No authenticated user session is available.',
     );
-  }
-
-  Map<String, dynamic> _debugSafePayload(Map<String, dynamic> payload) {
-    final redacted = Map<String, dynamic>.from(payload);
-    redacted.remove('user_id');
-    return redacted;
   }
 
   RepositoryError _mapPostgrestError(

@@ -12,12 +12,14 @@ class ApplyHabitRewardUseCase {
     required String logicalDateKey,
     String? completionEventId,
     String? requestId,
+    int value = 0,
   }) {
     return _coordinator.applyHabitReward(
       habitId: habitId,
       logicalDateKey: logicalDateKey,
       completionEventId: completionEventId,
       requestId: requestId,
+      value: value,
     );
   }
 }
