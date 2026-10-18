@@ -1,0 +1,155 @@
+begin;
+
+-- Corrective migration after 20261012153000.
+--
+-- RevenueCat API v2 subscription pages have no authoritative global snapshot
+-- version.  A server receive/completion timestamp is therefore deliberately
+-- not usable for precedence.  Unversioned observations may trigger
+-- reconciliation, but they never replace an existing entitlement and never
+-- revoke it merely because the observation is ambiguous.
+alter table public.revenuecat_entitlement_state
+  add column if not exists last_snapshot_kind text not null default 'unknown';
+
+alter table public.revenuecat_entitlement_state
+  drop constraint if exists revenuecat_snapshot_kind_check;
+
+alter table public.revenuecat_entitlement_state
+  add constraint revenuecat_snapshot_kind_check
+  check (last_snapshot_kind in ('unknown', 'observed_v1', 'unversioned'));
+
+create or replace function public.apply_revenuecat_entitlement_v2(
+  p_user_id uuid, p_revenuecat_app_user_id text, p_is_active boolean,
+  p_starts_at timestamptz, p_expires_at timestamptz, p_product_id text, p_store text,
+  p_environment text, p_event_at timestamptz, p_event_id text,
+  p_synced_at timestamptz, p_app_id text, p_source text,
+  p_observed_at timestamptz, p_observed_reliable boolean
+)
+returns boolean language plpgsql security definer set search_path = ''
+as $$
+declare
+  v_existing public.revenuecat_entitlement_state%rowtype;
+  v_snapshot_kind text;
+  v_conflict_code text := null;
+begin
+  if p_user_id is null or p_revenuecat_app_user_id is null
+     or btrim(p_revenuecat_app_user_id) = '' then
+    raise exception 'invalid RevenueCat identity';
+  end if;
+  if p_app_id is null or btrim(p_app_id) = '' then
+    raise exception 'invalid RevenueCat app';
+  end if;
+  if p_source not in ('webhook', 'backfill', 'reconciliation') then
+    raise exception 'invalid RevenueCat source';
+  end if;
+
+  -- v1 request_date is a provider response-observation marker, not a proven
+  -- remote mutation version. It is kept as a separate, weaker recovery clock
+  -- and is never compared with API v2 or webhook event time.
+  v_snapshot_kind := case
+    when p_source in ('backfill', 'reconciliation')
+         and coalesce(p_observed_reliable, false)
+         and p_observed_at is not null then 'observed_v1'
+    else 'unversioned'
+  end;
+
+  select * into v_existing
+    from public.revenuecat_entitlement_state
+   where user_id = p_user_id
+   for update;
+
+  if found and v_existing.revenuecat_app_user_id <> p_revenuecat_app_user_id then
+    raise exception 'RevenueCat identity is already bound to another app user';
+  end if;
+
+  if found then
+    if p_event_id is not null and p_event_id = v_existing.last_event_id then
+      return false;
+    elsif v_snapshot_kind = 'observed_v1'
+          and v_existing.reconciliation_required
+          and (v_existing.last_snapshot_kind <> 'observed_v1'
+               or p_observed_at > v_existing.last_observed_at) then
+      -- A complete v1 reconciliation is the explicit operational recovery
+      -- path for an earlier ambiguous/unversioned observation. It is not
+      -- proof that the remote mutation order has been reconstructed.
+      null;
+    elsif v_existing.last_snapshot_kind = 'unknown' then
+      -- Legacy rows have no trustworthy clock.  A real v1 observation may
+      -- seed the metadata, but an unversioned v2 read cannot replace it.
+      if v_snapshot_kind = 'unversioned' then
+        v_conflict_code := 'UNVERSIONED_SNAPSHOT';
+      end if;
+    elsif v_snapshot_kind <> v_existing.last_snapshot_kind then
+      -- Event time, API observation time and local completion time are
+      -- different clocks.  Never compare them across source/version classes.
+      v_conflict_code := 'SNAPSHOT_CLOCK_MISMATCH';
+    elsif v_snapshot_kind = 'unversioned' then
+      v_conflict_code := 'UNVERSIONED_SNAPSHOT';
+    elsif v_snapshot_kind = 'observed_v1' and v_existing.last_observed_at is null then
+      v_conflict_code := 'MISSING_SNAPSHOT_TIME';
+    elsif p_observed_at < v_existing.last_observed_at then
+      return false;
+    elsif p_observed_at = v_existing.last_observed_at then
+      v_conflict_code := 'SNAPSHOT_VERSION_TIE';
+    end if;
+  end if;
+
+  if v_conflict_code is not null then
+    -- Ambiguity is not evidence of expiration.  Preserve the last known
+    -- entitlement and require a fresh authoritative reconciliation instead.
+    update public.revenuecat_entitlement_state
+       set reconciliation_required = true,
+           last_conflict_code = v_conflict_code,
+           updated_at = now()
+     where user_id = p_user_id;
+    if found then return false; end if;
+    p_is_active := false;
+  end if;
+
+  insert into public.revenuecat_entitlement_state
+    (user_id, revenuecat_app_user_id, is_active, starts_at, expires_at,
+     product_id, store, environment, last_event_at, last_event_id,
+     last_synced_at, updated_at, last_source, last_observed_at,
+     last_observed_reliable, last_snapshot_kind, reconciliation_required,
+     last_conflict_code)
+  values
+    (p_user_id, p_revenuecat_app_user_id,
+     case when v_conflict_code is null then p_is_active else false end,
+     p_starts_at, p_expires_at, p_product_id, p_store, p_environment,
+     case when p_source = 'webhook' then p_event_at else null end,
+     p_event_id, coalesce(p_synced_at, now()), now(), p_source,
+     case when v_snapshot_kind = 'observed_v1' then p_observed_at else null end,
+     v_snapshot_kind = 'observed_v1', v_snapshot_kind,
+     v_conflict_code is not null, v_conflict_code)
+  on conflict (user_id) do update set
+    is_active = excluded.is_active,
+    starts_at = excluded.starts_at,
+    expires_at = excluded.expires_at,
+    product_id = excluded.product_id,
+    store = excluded.store,
+    environment = excluded.environment,
+    last_event_at = excluded.last_event_at,
+    last_event_id = excluded.last_event_id,
+    last_synced_at = excluded.last_synced_at,
+    updated_at = now(),
+    last_source = excluded.last_source,
+    last_observed_at = excluded.last_observed_at,
+    last_observed_reliable = excluded.last_observed_reliable,
+    last_snapshot_kind = excluded.last_snapshot_kind,
+    reconciliation_required = excluded.reconciliation_required,
+    last_conflict_code = excluded.last_conflict_code;
+  return v_conflict_code is null;
+end;
+$$;
+
+revoke all on function public.apply_revenuecat_entitlement_v2(
+  uuid,text,boolean,timestamptz,timestamptz,text,text,text,timestamptz,text,
+  timestamptz,text,text,timestamptz,boolean)
+  from public, anon, authenticated;
+grant execute on function public.apply_revenuecat_entitlement_v2(
+  uuid,text,boolean,timestamptz,timestamptz,text,text,text,timestamptz,text,
+  timestamptz,text,text,timestamptz,boolean) to service_role;
+
+comment on column public.revenuecat_entitlement_state.last_snapshot_kind is
+  'Precedence class: observed_v1 is a bounded recovery observation, not proof of remote order; unversioned API v2 observations never order or replace state.';
+
+commit;
