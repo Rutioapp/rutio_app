@@ -287,7 +287,7 @@ DateTime _resolveUpdatedAt(ShopCloudSnapshot snapshot) {
   values.addAll(snapshot.equippedCosmetics.map((row) => row.equippedAt));
   values.addAll(snapshot.ownedBundles.map((row) => row.updatedAt));
   values.sort();
-  return values.last.toUtc();
+  return (values.isEmpty ? snapshot.fetchedAt : values.last).toUtc();
 }
 
 List<String> _resolveOwnedAssetIds(List<RemoteInventoryItemDto> inventory) {

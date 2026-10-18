@@ -6,6 +6,26 @@ import 'package:rutio/features/shop/data/cloud/shop_cloud_snapshot.dart';
 import 'package:rutio/features/shop/data/shop_assets_catalog.dart';
 
 void main() {
+  test('empty cloud cosmetics snapshot uses fetchedAt as updatedAt', () {
+    final fetchedAt = DateTime.utc(2026, 7, 20, 12);
+    final snapshot = ShopCloudSnapshot(
+      authenticatedUserId: 'cloud-user',
+      catalogItems: const <RemoteShopItemDto>[],
+      catalogBundles: const <RemoteShopBundleDto>[],
+      wallet: null,
+      inventory: const <RemoteInventoryItemDto>[],
+      equippedCosmetics: const <RemoteEquippedCosmeticDto>[],
+      ownedBundles: const <RemoteOwnedBundleDto>[],
+      fetchedAt: fetchedAt,
+      catalogVersion: null,
+      warnings: const <ShopCloudWarning>[],
+    );
+
+    final cloudSnapshot = CloudCosmeticsSnapshot.fromShopSnapshot(snapshot);
+
+    expect(cloudSnapshot.updatedAt, fetchedAt);
+  });
+
   test('cloud cosmetics snapshot updatedAt follows remote row timestamps only',
       () {
     final fetchedAt = DateTime.utc(2026, 7, 20, 12);
