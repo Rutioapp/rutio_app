@@ -233,11 +233,27 @@ effective_timezone_name
     }
 
     try {
-      await _client
+      final rows = await _client
           .from(_habitsTable)
-          .delete()
+          .update(<String, dynamic>{'is_archived': true})
           .eq('user_id', userId)
-          .eq('id', normalizedHabitId);
+          .eq('id', normalizedHabitId)
+          .select('id,user_id,is_archived');
+
+      if (rows.isNotEmpty) {
+        final row = Map<String, dynamic>.from(
+          (rows.first as Map).cast<String, dynamic>(),
+        );
+        if (row['user_id'] != userId || row['is_archived'] != true) {
+          return RepositoryResult<void>.failure(
+            const RepositoryError(
+              code: RepositoryErrorCode.invalidResponse,
+              message: 'Archived habit response did not match current user.',
+            ),
+          );
+        }
+      }
+
       return RepositoryResult<void>.success();
     } on PostgrestException catch (error) {
       return RepositoryResult<void>.failure(

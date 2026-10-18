@@ -2181,31 +2181,6 @@ Map<String, dynamic> _habitSchedule({
   return HabitScheduleNormalizer.normalize({'type': 'daily'});
 }
 
-void _removeHabitFromHistory(
-  Map<String, dynamic> userState, {
-  required String habitId,
-}) {
-  final history = _ensureHistoryRoot(userState);
-
-  for (final key in [
-    'habitCompletions',
-    'habitCountValues',
-    'habitSkips',
-    'habitCompletionTimes',
-  ]) {
-    final bucket = _map(history[key]);
-    for (final dayKey in bucket.keys.toList()) {
-      final dayMap = _map(bucket[dayKey]);
-      if (!dayMap.containsKey(habitId)) continue;
-      dayMap.remove(habitId);
-      bucket[dayKey] = dayMap;
-    }
-    history[key] = bucket;
-  }
-
-  userState['history'] = history;
-}
-
 Future<void> _deleteHabitById(
   UserStateStore store,
   String id, {
@@ -2225,13 +2200,20 @@ Future<void> _deleteHabitById(
   if (index == -1) return;
 
   final removedHabit = Map<String, dynamic>.from(activeHabits[index]);
-  activeHabits.removeAt(index);
+  // Keep the row in the local collection so the archived-habits screen can
+  // restore it without waiting for a remote refresh. Active routine queries
+  // already exclude archived habits.
+  removedHabit['archived'] = true;
+  removedHabit['isArchived'] = true;
+  removedHabit['is_archived'] = true;
+  activeHabits[index] = removedHabit;
 
   userState['activeHabits'] = activeHabits;
 
-  if (purgeHistory) {
-    _removeHabitFromHistory(userState, habitId: normalizedId);
-  }
+  // The parameter is retained for source compatibility with older callers.
+  // Logical deletion must never purge local activity or reward history.
+  // ignore: unused_local_variable
+  final _ = purgeHistory;
 
   await store.save(root);
   store.notificationMutationObserver.onHabitDeleted(normalizedId);

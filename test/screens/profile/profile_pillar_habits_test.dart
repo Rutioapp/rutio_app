@@ -154,7 +154,8 @@ void main() {
         profile['pillarHabitIds'], <String>['habit-3', 'habit-2', 'habit-1']);
   });
 
-  test('deleteHabitById removes deleted pillar habit references', () async {
+  test('deleteHabitById archives and removes deleted pillar references',
+      () async {
     final repo = _RecordingProfileRepository();
     final store = await _createStore(
       activeHabits: _habitList(),
@@ -168,6 +169,8 @@ void main() {
 
     expect(store.pillarHabitIds, <String>['habit-1', 'habit-3']);
     expect(repo.lastUpdatedIds, <String>['habit-1', 'habit-3']);
+    final archived = store.activeHabits.firstWhere((h) => h['id'] == 'habit-2');
+    expect(archived['isArchived'], isTrue);
   });
 
   test('applySupabaseIdentity hydrates pillar habits from remote profile',
