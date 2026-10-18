@@ -25,6 +25,10 @@ class SignInScreen extends StatefulWidget {
   State<SignInScreen> createState() => _SignInScreenState();
 }
 
+@visibleForTesting
+bool signInShouldReturnToOnboarding(Object? arguments) =>
+    arguments is Map && arguments['returnToOnboarding'] == true;
+
 class _SignInScreenState extends State<SignInScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
@@ -33,6 +37,16 @@ class _SignInScreenState extends State<SignInScreen>
   late final AnimationController _animationController;
   late final Animation<double> _slideY;
   late final Animation<double> _opacity;
+  bool _returnToOnboarding = false;
+  bool _navigationCompleted = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _returnToOnboarding = signInShouldReturnToOnboarding(
+      ModalRoute.of(context)?.settings.arguments,
+    );
+  }
 
   @override
   void initState() {
@@ -73,10 +87,7 @@ class _SignInScreenState extends State<SignInScreen>
         authController.isAuthenticated || response?.session?.user != null;
     if (!hasAuthenticatedUser) return;
 
-    // Auth screens can be pushed above the startup gate from the welcome flow.
-    // After a real Supabase session exists, reset to /root so bootstrap can
-    // make the remote onboarding decision.
-    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
+    _finishAuthentication();
   }
 
   Future<void> _submitGoogle() async {
@@ -104,12 +115,25 @@ class _SignInScreenState extends State<SignInScreen>
       }
       return;
     }
-    Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
+    _finishAuthentication();
   }
 
   Future<void> _submitApple() async {
     final response = await context.read<AuthController>().signInWithApple();
     if (!mounted || response?.session?.user == null) return;
+    _finishAuthentication();
+  }
+
+  void _finishAuthentication() {
+    if (!mounted || _navigationCompleted) return;
+    _navigationCompleted = true;
+    if (_returnToOnboarding) {
+      Navigator.of(context).pop();
+      return;
+    }
+    // Auth screens can be pushed above the startup gate from the welcome flow.
+    // For ordinary login, reset to /root so bootstrap can make the remote
+    // onboarding decision.
     Navigator.of(context).pushNamedAndRemoveUntil('/root', (_) => false);
   }
 

@@ -597,7 +597,18 @@ class _OnboardingV1ScreenState extends State<OnboardingV1Screen> {
           isBusy: state.isPersisting || state.isLoading,
           onLogin: () {
             context.read<AuthController>().clearError();
-            Navigator.of(context).pushNamed('/auth');
+            if (hasResume) {
+              // Keep the draft's auth step underneath the login route. Once
+              // authentication succeeds, SignInScreen can return here and
+              // OnboardingAuthStep will resume the existing state machine.
+              coordinator.continueDraft();
+            }
+            Navigator.of(context).pushNamed(
+              '/auth',
+              arguments: hasResume
+                  ? const <String, Object>{'returnToOnboarding': true}
+                  : null,
+            );
           },
         ),
       ],
