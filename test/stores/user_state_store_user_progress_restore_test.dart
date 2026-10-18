@@ -452,7 +452,7 @@ class _RecordingUserProgressSyncService extends UserProgressSyncService {
   }
 
   @override
-  Future<bool> recordXpEvent({
+  Future<LegacyEventSyncOutcome> recordXpEvent({
     required int amount,
     String? source,
     String? sourceId,
@@ -460,11 +460,11 @@ class _RecordingUserProgressSyncService extends UserProgressSyncService {
     String? expectedLocalUserId,
   }) async {
     xpEventCallCount += 1;
-    return true;
+    return LegacyEventSyncOutcome.skippedLegacyEventWrite;
   }
 
   @override
-  Future<bool> recordCurrencyEvent({
+  Future<LegacyEventSyncOutcome> recordCurrencyEvent({
     required int amount,
     String currency = 'ambar',
     String? source,
@@ -473,6 +473,6 @@ class _RecordingUserProgressSyncService extends UserProgressSyncService {
     String? expectedLocalUserId,
   }) async {
     currencyEventCallCount += 1;
-    return true;
+    return LegacyEventSyncOutcome.skippedLegacyEventWrite;
   }
 }
