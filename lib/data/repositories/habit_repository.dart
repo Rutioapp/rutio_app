@@ -66,14 +66,15 @@ effective_timezone_name
           .toList(growable: false);
 
       return RepositoryResult<List<RemoteHabit>>.success(data: habits);
-    } on PostgrestException catch (error) {
+    } on PostgrestException catch (error, stackTrace) {
       return RepositoryResult<List<RemoteHabit>>.failure(
         _mapPostgrestError(
           error,
+          stackTrace: stackTrace,
           fallbackMessage: 'Could not fetch habits.',
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
       if (kDebugMode) {
         debugPrint('[habit_repository] unexpected fetch error: $error');
       }
@@ -82,6 +83,7 @@ effective_timezone_name
           code: RepositoryErrorCode.unknown,
           message: 'Could not fetch habits.',
           cause: error,
+          causeStackTrace: stackTrace,
         ),
       );
     }
@@ -279,6 +281,7 @@ effective_timezone_name
 
   RepositoryError _mapPostgrestError(
     PostgrestException error, {
+    StackTrace? stackTrace,
     required String fallbackMessage,
   }) {
     if (kDebugMode) {
@@ -294,6 +297,7 @@ effective_timezone_name
         code: RepositoryErrorCode.notFound,
         message: 'Habit row was not found.',
         cause: error,
+        causeStackTrace: stackTrace,
       );
     }
     if (code == '42501') {
@@ -301,6 +305,7 @@ effective_timezone_name
         code: RepositoryErrorCode.permissionDenied,
         message: 'Permission denied for habits operation.',
         cause: error,
+        causeStackTrace: stackTrace,
       );
     }
 
@@ -313,6 +318,7 @@ effective_timezone_name
         code: RepositoryErrorCode.network,
         message: 'Network error while accessing habits.',
         cause: error,
+        causeStackTrace: stackTrace,
       );
     }
 
@@ -320,6 +326,7 @@ effective_timezone_name
       code: RepositoryErrorCode.unknown,
       message: fallbackMessage,
       cause: error,
+      causeStackTrace: stackTrace,
     );
   }
 }
