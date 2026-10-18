@@ -255,6 +255,40 @@ void main() {
       });
     });
 
+    test('deleteHabitForCurrentUser archives instead of deleting', () async {
+      const remoteHabitId = '550e8400-e29b-41d4-a716-446655440000';
+      final client = _QueueingHttpClient()
+        ..enqueueJson(
+          statusCode: 200,
+          body: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': remoteHabitId,
+              'user_id': 'user-123',
+              'is_archived': true,
+            },
+          ],
+        );
+      final repository = HabitRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.deleteHabitForCurrentUser(
+        habitId: remoteHabitId,
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(client.lastMethod, 'PATCH');
+      expect(client.lastUri?.path, '/rest/v1/habits');
+      expect(client.lastUri?.queryParameters['user_id'], 'eq.user-123');
+      expect(client.lastUri?.queryParameters['id'], 'eq.$remoteHabitId');
+      expect(jsonDecode(client.lastBody!)['is_archived'], isTrue);
+    });
+
     test('fetchHabitsForCurrentUser maps permission errors consistently',
         () async {
       final client = _QueueingHttpClient()
@@ -280,6 +314,37 @@ void main() {
 
       expect(result.isSuccess, isFalse);
       expect(result.error?.code, RepositoryErrorCode.permissionDenied);
+    });
+
+    test('fetchHabitsForCurrentUser preserves schema error diagnostics',
+        () async {
+      final client = _QueueingHttpClient()
+        ..enqueueRaw(
+          statusCode: 400,
+          body: jsonEncode(<String, dynamic>{
+            'code': '42703',
+            'message': 'column habits.effective_from does not exist',
+          }),
+        );
+      final repository = HabitRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.fetchHabitsForCurrentUser();
+
+      expect(result.isSuccess, isFalse);
+      expect(result.error?.cause, isA<PostgrestException>());
+      expect(result.error?.diagnosticDescription(), contains('42703'));
+      expect(
+        result.error?.diagnosticDescription(),
+        contains('effective_from does not exist'),
+      );
+      expect(result.error?.causeStackTrace, isNotNull);
     });
   });
 

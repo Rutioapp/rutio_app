@@ -40,6 +40,31 @@ void main() {
       expect(await store.loadPendingOperations('user-2'), isEmpty);
     });
 
+    test('persists COUNT value across app restart', () async {
+      final pending = PendingCurrencyOperation(
+        userId: 'user-1',
+        requestId: 'req-count',
+        habitId: 'habit-count',
+        logicalDateKey: '2026-07-18',
+        completionEventId: 'event-count',
+        operationType: HabitRewardOperationType.apply,
+        createdAtMillis: 10,
+        lastAttemptAtMillis: 11,
+        attemptCount: 1,
+        status: PendingCurrencyOperationStatus.awaitingResolution,
+        value: 3,
+      );
+
+      await store.savePendingOperations('user-1', <PendingCurrencyOperation>[
+        pending,
+      ]);
+      store = SharedPreferencesPendingCurrencyOperationStore();
+
+      final loaded = await store.loadPendingOperations('user-1');
+      expect(loaded.single.value, 3);
+      expect(loaded.single.requestId, 'req-count');
+    });
+
     test('does not mix users and persists after recreation', () async {
       final first = PendingCurrencyOperation(
         userId: 'user-1',

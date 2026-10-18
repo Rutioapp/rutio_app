@@ -90,8 +90,8 @@ void main() {
       expect(fixture.transactions.single.applyRequestId, isNotEmpty);
       expect(
           fixture.transactions.single.appliedEffectIds, contains('xp-boost'));
-      expect(_xp(fixture.store), 0);
-      expect(_coins(fixture.store), 0);
+      expect(_xp(fixture.store), 15);
+      expect(_coins(fixture.store), 18);
       expect((await fixture.effects()).single.remainingUses, 9);
     });
 
@@ -762,8 +762,7 @@ void main() {
       expect(fixture.transactions.single.isReversed, isFalse);
     });
 
-    test('complete, undo, and re-complete emits one cloud award and no refund',
-        () async {
+    test('complete, undo, and re-complete emits one award per cycle', () async {
       final walletController = GlobalWalletController(
         repository: _NeverWalletRepository(),
         cache: _MemoryWalletCache(),
@@ -800,6 +799,16 @@ void main() {
             ),
           );
         },
+        reverseHandler: (request, effects) {
+          return HabitCurrencyRewardResult.success(
+            data: _ledgerFor(
+              request: request,
+              userId: 'cloud-habit-cycle-user',
+              coinDelta: -10,
+              balanceAfter: 50,
+            ),
+          );
+        },
       );
 
       await fixture.store.completeHabit(habitId: 'habit-cycle');
@@ -810,14 +819,23 @@ void main() {
         date: DateTime.utc(2026, 7, 18, 12),
         done: false,
       );
-      expect(walletController.state.coins, 60);
+      expect(walletController.state.coins, 50);
 
       await fixture.store.completeHabit(habitId: 'habit-cycle');
       expect(walletController.state.coins, 60);
-      expect(fixture.rewardRepository.applyCalls, 1);
-      expect(fixture.rewardRepository.reverseCalls, 0);
+      expect(fixture.rewardRepository.applyCalls, 2);
+      expect(fixture.rewardRepository.reverseCalls, 1);
       expect(fixture.transactions, hasLength(1));
       expect(fixture.transactions.single.isReversed, isFalse);
+      expect(fixture.rewardRepository.applyRequests, hasLength(2));
+      expect(
+        fixture.rewardRepository.applyRequests[0].requestId,
+        isNot(fixture.rewardRepository.applyRequests[1].requestId),
+      );
+      expect(
+        fixture.rewardRepository.applyRequests[0].completionEventId,
+        isNot(fixture.rewardRepository.applyRequests[1].completionEventId),
+      );
     });
 
     test('local mode remains intact', () async {
@@ -959,6 +977,14 @@ HabitCurrencyRewardLedgerEntry _ledgerFor({
     bonusCoins: bonusCoins,
     appliedEffectIds: appliedEffectIds,
     relatedLedgerId: null,
+    authoritativeProgress: <String, dynamic>{
+      'user_id': userId,
+      'level': 1,
+      'total_xp': baseXp + bonusXp,
+      'current_level_xp': baseXp + bonusXp,
+      'next_level_xp': 100,
+      'ambar_balance': balanceAfter,
+    },
   );
 }
 

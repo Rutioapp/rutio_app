@@ -112,24 +112,29 @@ class HabitSyncService {
         return;
       }
 
-      final result = await _repository.deleteHabitForCurrentUser(
-        habitId: remoteHabitId,
-      );
-      if (!result.isSuccess) {
-        _debugWarn(
-          'habit sync delete failed for local "$localHabitId" remote "$remoteHabitId": '
-          '${_errorMessage(result.error)}',
-        );
-        return;
-      }
+      final archivedSnapshot = <String, dynamic>{
+        ...?localHabitSnapshot,
+        'id': remoteHabitId,
+        'remoteId': remoteHabitId,
+        'isArchived': true,
+        'archived': true,
+        'is_archived': true,
+      };
 
-      final normalizedLocalId = localHabitId.trim();
-      if (normalizedLocalId.isNotEmpty) {
-        _sessionRemoteIdByLocalId.remove(normalizedLocalId);
-      }
+      await syncHabitArchived(
+        localHabit: archivedSnapshot,
+        sortOrder: _safeSortOrder(localHabitSnapshot),
+        expectedLocalUserId: expectedLocalUserId,
+      );
     } catch (error) {
       _debugWarn('habit sync delete unexpected error: $error');
     }
+  }
+
+  int _safeSortOrder(Map<String, dynamic>? snapshot) {
+    final value = snapshot?['sortOrder'] ?? snapshot?['sort_order'];
+    if (value is int) return value;
+    return int.tryParse('$value') ?? 0;
   }
 
   /// Phase 3B candidate helper; intentionally not auto-triggered.

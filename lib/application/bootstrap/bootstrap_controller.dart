@@ -1142,10 +1142,16 @@ class BootstrapController extends ChangeNotifier
           '[STARTUP] 54 BootstrapController published non-home ready state');
       _finishRun(runId);
       _log(runId, 'destination=${destination.name}', startedAt: startedAt);
-    } catch (error) {
+    } catch (error, stackTrace) {
       if (!_isCurrentRun(runId)) {
         _recordStaleDiscard(runId, domain: 'exception');
         return;
+      }
+      if (kDebugMode) {
+        _debugLogger(
+          '[BootstrapException] run=$runId '
+          'errorType=${error.runtimeType} error=$error\n$stackTrace',
+        );
       }
       _fail(
         runId,
@@ -1777,6 +1783,13 @@ class BootstrapController extends ChangeNotifier
     );
     _log(runId, 'failed type=${error.type.name}');
     final cause = error.cause;
+    if (kDebugMode && cause != null) {
+      _debugLogger(
+        '[BootstrapFailure] run=$runId type=${error.type.name} '
+        'causeType=${cause.runtimeType} cause=$cause',
+      );
+      _debugLogger(StackTrace.current.toString());
+    }
     if (cause != null) {
       unawaited(_crashReportingService?.recordNonFatal(
         cause,

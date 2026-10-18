@@ -61,6 +61,7 @@ class SupabaseHabitCurrencyRewardRepository
       habitId: habitId,
       logicalDateKey: logicalDateKey,
       completionEventId: completionEventId,
+      value: 1,
     );
   }
 
@@ -78,6 +79,43 @@ class SupabaseHabitCurrencyRewardRepository
       habitId: habitId,
       logicalDateKey: logicalDateKey,
       completionEventId: completionEventId,
+      value: 0,
+    );
+  }
+
+  Future<HabitCurrencyRewardResult<HabitCurrencyRewardLedgerEntry>>
+      applyHabitCompletionRewardWithValue({
+    required String requestId,
+    required String habitId,
+    required String logicalDateKey,
+    required String completionEventId,
+    required int value,
+  }) {
+    return _execute(
+      operationType: 'apply',
+      requestId: requestId,
+      habitId: habitId,
+      logicalDateKey: logicalDateKey,
+      completionEventId: completionEventId,
+      value: value,
+    );
+  }
+
+  Future<HabitCurrencyRewardResult<HabitCurrencyRewardLedgerEntry>>
+      reverseHabitCompletionRewardWithValue({
+    required String requestId,
+    required String habitId,
+    required String logicalDateKey,
+    required String completionEventId,
+    required int value,
+  }) {
+    return _execute(
+      operationType: 'reverse',
+      requestId: requestId,
+      habitId: habitId,
+      logicalDateKey: logicalDateKey,
+      completionEventId: completionEventId,
+      value: value,
     );
   }
 
@@ -87,6 +125,7 @@ class SupabaseHabitCurrencyRewardRepository
     required String habitId,
     required String logicalDateKey,
     required String completionEventId,
+    required int value,
   }) async {
     if (!_enabled) {
       return const HabitCurrencyRewardResult<
@@ -118,6 +157,7 @@ class SupabaseHabitCurrencyRewardRepository
         habitId: habitId,
         logicalDateKey: logicalDateKey,
         completionEventId: completionEventId,
+        value: value,
       ).timeout(_timeout);
 
       final entry = _decodeLedgerEntry(
@@ -206,6 +246,7 @@ class SupabaseHabitCurrencyRewardRepository
     required String habitId,
     required String logicalDateKey,
     required String completionEventId,
+    required int value,
   }) {
     if (kDebugMode) {
       debugPrint(
@@ -223,6 +264,7 @@ class SupabaseHabitCurrencyRewardRepository
         habitId: habitId,
         logicalDateKey: logicalDateKey,
         completionEventId: completionEventId,
+        value: value,
       );
     }
 
@@ -231,6 +273,7 @@ class SupabaseHabitCurrencyRewardRepository
       habitId: habitId,
       logicalDateKey: logicalDateKey,
       completionEventId: completionEventId,
+      value: value,
     );
   }
 
@@ -245,10 +288,27 @@ class SupabaseHabitCurrencyRewardRepository
       throw const FormatException('Unexpected habit reward RPC response.');
     }
 
-    final entry =
-        HabitCurrencyRewardLedgerEntry.fromMap(Map<String, dynamic>.from(
-      response.cast<String, dynamic>(),
-    ));
+    final raw = Map<String, dynamic>.from(response.cast<String, dynamic>());
+    final progress = raw['progress'] is Map
+        ? Map<String, dynamic>.from(
+            (raw['progress'] as Map).cast<String, dynamic>(),
+          )
+        : const <String, dynamic>{};
+    final entry = HabitCurrencyRewardLedgerEntry.fromMap(<String, dynamic>{
+      'id': '$expectedRequestId:economy',
+      'user_id': _currentUserId() ?? '',
+      'request_id': raw['request_id'] ?? expectedRequestId,
+      'operation_type': expectedOperationType,
+      'source_type': 'habit_completion',
+      'source_id': raw['transition_no']?.toString() ?? expectedHabitId,
+      'habit_id': expectedHabitId,
+      'logical_date_key': expectedLogicalDateKey,
+      'coin_delta': 0,
+      'balance_after': progress['ambar_balance'] ?? 0,
+      'created_at': DateTime.now().toUtc().toIso8601String(),
+      'is_idempotent': raw['idempotent'] == true,
+      'authoritative_progress': progress,
+    });
 
     if (entry.requestId != expectedRequestId ||
         entry.habitId != expectedHabitId ||
@@ -317,6 +377,15 @@ class SupabaseHabitCurrencyRewardRepository
       return const HabitCurrencyRewardFailure(
         code: HabitCurrencyRewardFailureCode.walletMissing,
         message: 'Wallet row is missing for the authenticated user.',
+        definitive: true,
+      );
+    }
+    if (normalizedMessage.contains('client version is required') ||
+        normalizedMessage.contains('client version is not supported')) {
+      return HabitCurrencyRewardFailure(
+        code: HabitCurrencyRewardFailureCode.clientVersionRejected,
+        message: error.message,
+        cause: error,
         definitive: true,
       );
     }

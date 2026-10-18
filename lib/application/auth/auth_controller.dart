@@ -1186,6 +1186,14 @@ class AuthController extends ChangeNotifier {
       );
     }
 
+    final pendingHabitRewards =
+        await _userStateStore.resolvePendingHabitCloudRewardsBestEffort();
+    if (kDebugMode && pendingHabitRewards > 0) {
+      _debugLogger(
+        '[auth] pending habit rewards resolved: $pendingHabitRewards',
+      );
+    }
+
     final habitSummary = await _userStateStore.syncExistingLocalHabitsOnce();
     if (!_isCurrentPostHomeContext(context)) {
       _recordPostHomeStaleDiscard(context, stage: 'habit_backfill');

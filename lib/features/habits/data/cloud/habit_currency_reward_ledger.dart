@@ -20,6 +20,7 @@ class HabitCurrencyRewardLedgerEntry {
     this.bonusCoins = 0,
     this.appliedEffectIds = const <String>[],
     this.relatedLedgerId,
+    this.authoritativeProgress = const <String, dynamic>{},
   });
 
   final String id;
@@ -39,6 +40,7 @@ class HabitCurrencyRewardLedgerEntry {
   final int bonusCoins;
   final List<String> appliedEffectIds;
   final String? relatedLedgerId;
+  final Map<String, dynamic> authoritativeProgress;
 
   factory HabitCurrencyRewardLedgerEntry.fromMap(Map<String, dynamic> map) {
     return HabitCurrencyRewardLedgerEntry(
@@ -60,6 +62,13 @@ class HabitCurrencyRewardLedgerEntry {
       bonusCoins: _safeInt(map['bonus_coins']),
       appliedEffectIds: _stringList(map['applied_effect_ids']),
       relatedLedgerId: _nullableTrim(map['related_ledger_id']),
+      authoritativeProgress: map['authoritative_progress'] is Map
+          ? Map<String, dynamic>.unmodifiable(
+              Map<String, dynamic>.from(
+                (map['authoritative_progress'] as Map).cast<String, dynamic>(),
+              ),
+            )
+          : const <String, dynamic>{},
     );
   }
 

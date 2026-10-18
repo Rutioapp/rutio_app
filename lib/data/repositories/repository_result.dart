@@ -15,11 +15,22 @@ class RepositoryError {
     required this.code,
     required this.message,
     this.cause,
+    this.causeStackTrace,
   });
 
   final RepositoryErrorCode code;
   final String message;
   final Object? cause;
+  final StackTrace? causeStackTrace;
+
+  String diagnosticDescription() {
+    final causeDescription =
+        cause == null ? '' : ' causeType=${cause.runtimeType} cause=$cause';
+    return 'code=${code.name} message=$message$causeDescription';
+  }
+
+  @override
+  String toString() => 'RepositoryError(${diagnosticDescription()})';
 }
 
 @immutable
