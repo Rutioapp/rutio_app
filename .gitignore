@@ -67,4 +67,7 @@ upload-keystore.jks
 !.env/dev.example.json
 
 dart_defines/dev.json
+dart_defines/dev.local.json
+dart_defines/staging.local.json
 dart_defines/release.json
+dart_defines/google_play_sandbox.local.json
