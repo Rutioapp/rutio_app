@@ -172,7 +172,7 @@
     "loginForgotPassword":  "Forgot your password?",
     "loginPrimaryCta":  "Continue →",
     "loginGoogleCta": "Continue with Google",
-    "onboardingAuthGoogleCta": "Sign in with Google",
+    "onboardingAuthGoogleCta": "Create account with Google",
     "authOr": "or",
     "loginSwitchPrefix":  "Don\u0027t have an account?  ",
     "loginSwitchLink":  "Sign up",
