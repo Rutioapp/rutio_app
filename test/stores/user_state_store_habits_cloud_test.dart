@@ -312,7 +312,10 @@ void main() {
         },
       );
 
-      await fixture.store.completeHabit(habitId: 'habit-check');
+      await expectLater(
+        fixture.store.completeHabit(habitId: 'habit-check'),
+        throwsA(isA<StateError>()),
+      );
 
       expect(walletController.state.coins, 5000);
       expect(fixture.rewardRepository.applyCalls, greaterThanOrEqualTo(1));
@@ -686,7 +689,10 @@ void main() {
         ],
       );
 
-      await fixture.store.completeHabit(habitId: 'habit-check');
+      await expectLater(
+        fixture.store.completeHabit(habitId: 'habit-check'),
+        throwsA(isA<StateError>()),
+      );
 
       expect(fixture.rewardRepository.applyCalls, 0);
       expect(fixture.transactions, isEmpty);

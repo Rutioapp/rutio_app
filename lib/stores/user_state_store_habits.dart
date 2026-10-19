@@ -2876,6 +2876,19 @@ Future<void> _setCountHabitValue(
       baseXp: progressResult.xpGain,
       baseCoins: progressResult.coinsGain,
     );
+    if (cloudHabitRewardsEnabled && !completionOutcome.granted) {
+      store._state = originalRoot;
+      store._emitChanged();
+      _logHomeMutationOutcome(
+        habitId: habitId,
+        dateKey: dayKey,
+        outcome: HabitMutationOutcome.failed,
+        canonicalCompleted: wasCompletedBeforeChange,
+        canonicalSkipped: false,
+        reason: 'authoritative habit reward was not confirmed',
+      );
+        return;
+    }
     if (completionOutcome.granted) {
       _setDailyRewardGrant(userState, habitId: habitId, granted: true);
     }
@@ -3083,6 +3096,19 @@ Future<HabitMutationOutcome> _completeHabit(
         canonicalCompleted: beforeCompleted,
         canonicalSkipped: false,
         reason: error.toString(),
+      );
+      return HabitMutationOutcome.failed;
+    }
+    if (cloudHabitRewardsEnabled && !completionOutcome.granted) {
+      store._state = originalRoot;
+      store._emitChanged();
+      _logHomeMutationOutcome(
+        habitId: habitId,
+        dateKey: dayKey,
+        outcome: HabitMutationOutcome.failed,
+        canonicalCompleted: beforeCompleted,
+        canonicalSkipped: false,
+        reason: 'authoritative habit reward was not confirmed',
       );
       return HabitMutationOutcome.failed;
     }
@@ -3897,6 +3923,10 @@ Future<int> _resolvePendingHabitCloudRewardsBestEffort(
     if (!result.isSuccess || result.ledger == null) continue;
     final root = Map<String, dynamic>.from(store._state!);
     final userState = _ensureUserStateRoot(root);
+    _applyConfirmedPendingHabitState(
+      userState,
+      transaction: result.transaction,
+    );
     _applyConfirmedHabitRewardProgress(
       store,
       userState: userState,
@@ -3912,6 +3942,32 @@ Future<int> _resolvePendingHabitCloudRewardsBestEffort(
     _logHabitCloudReward('pending operations resolved count=$resolved');
   }
   return resolved;
+}
+
+void _applyConfirmedPendingHabitState(
+  Map<String, dynamic> userState, {
+  required HabitRewardTransaction? transaction,
+}) {
+  if (transaction == null || transaction.cloudOperationType == null) return;
+  final operationType = transaction.cloudOperationType!.trim().toLowerCase();
+  if (operationType != 'apply' && operationType != 'reverse') return;
+
+  final activeHabits = _mutableActiveHabits(userState);
+  final index = _activeHabitIndex(activeHabits, transaction.habitId);
+  if (index == -1) return;
+
+  final habit = Map<String, dynamic>.from(activeHabits[index]);
+  final completed = operationType == 'apply';
+  habit['doneToday'] = completed;
+  if (!completed) habit['progress'] = 0;
+  activeHabits[index] = habit;
+  userState['activeHabits'] = activeHabits;
+  _syncHabitHistoryFromState(
+    userState,
+    dateKey: transaction.localDateKey,
+    habitId: transaction.habitId,
+    habit: habit,
+  );
 }
 
 String? _remoteHabitIdForPendingOperation(
