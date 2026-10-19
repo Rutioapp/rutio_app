@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/home/home_screen.dart';
 
 void main() {
@@ -12,8 +13,8 @@ void main() {
         final semantics = tester.ensureSemantics();
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
+          _homeTestApp(
+            child: Scaffold(
               body: Center(
                 child: HomeDayProgressFilterRow(
                   label: '30 jul 2026',
@@ -64,8 +65,8 @@ void main() {
       final semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
+        _homeTestApp(
+          child: Scaffold(
             body: Builder(
               builder: (context) {
                 return Align(
@@ -338,6 +339,19 @@ void main() {
       );
     });
   });
+}
+
+Widget _homeTestApp({required Widget child}) {
+  return MaterialApp(
+    locale: const Locale('es'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: SizedBox(
+      width: 430,
+      height: 932,
+      child: child,
+    ),
+  );
 }
 
 class _IdentityProbe extends StatefulWidget {

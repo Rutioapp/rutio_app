@@ -555,6 +555,11 @@ Set<String> _currentHabitIds(UserStateStore store) {
   final activeHabits = _list(userState['activeHabits']).whereType<Map>();
   final ids = <String>{};
   for (final habit in activeHabits) {
+    if (habit['archived'] == true ||
+        habit['isArchived'] == true ||
+        habit['is_archived'] == true) {
+      continue;
+    }
     final id = (habit['id'] ?? '').toString().trim();
     if (id.isNotEmpty) ids.add(id);
   }
