@@ -68,74 +68,7 @@ class UserProgressRepository {
   Future<RepositoryResult<RemoteUserProgress>> upsertCurrentProgress(
     RemoteUserProgress progress,
   ) async {
-    final userId = _currentUserId();
-    if (userId == null) {
-      return RepositoryResult<RemoteUserProgress>.failure(_notAuthenticated());
-    }
-
-    final payload = Map<String, dynamic>.from(progress.toUpsertMap())
-      ..['user_id'] = userId;
-
-    if (kDebugMode) {
-      debugPrint(
-        '[user_progress_repository] upsert payload: ${_debugSafePayload(payload)}',
-      );
-    }
-
-    try {
-      await _client
-          .from(_userProgressTable)
-          .upsert(payload, onConflict: 'user_id');
-
-      if (kDebugMode) {
-        debugPrint('[user_progress_repository] upsert success');
-      }
-
-      final fetched = await fetchCurrentProgress();
-      if (fetched.isSuccess && fetched.data != null) {
-        return RepositoryResult<RemoteUserProgress>.success(
-            data: fetched.data!);
-      }
-
-      return RepositoryResult<RemoteUserProgress>.success(
-        data: RemoteUserProgress(
-          userId: userId,
-          level: _safeInt(payload['level'], fallback: 1),
-          totalXp: _safeInt(payload['total_xp'], fallback: 0),
-          currentLevelXp: _safeInt(payload['current_level_xp'], fallback: 0),
-          nextLevelXp: _safeInt(payload['next_level_xp'], fallback: 100),
-          ambarBalance: _safeInt(payload['ambar_balance'], fallback: 0),
-          totalAmbarEarned:
-              _safeInt(payload['total_ambar_earned'], fallback: 0),
-          totalAmbarSpent: _safeInt(payload['total_ambar_spent'], fallback: 0),
-          raw: payload,
-        ),
-      );
-    } on PostgrestException catch (error) {
-      if (kDebugMode) {
-        debugPrint(
-          '[user_progress_repository] upsert failure: ${error.code} ${error.message}',
-        );
-      }
-      return RepositoryResult<RemoteUserProgress>.failure(
-        _mapPostgrestError(
-          error,
-          fallbackMessage: 'Could not upsert user progress.',
-        ),
-      );
-    } catch (error) {
-      if (kDebugMode) {
-        debugPrint(
-            '[user_progress_repository] unexpected upsert error: $error');
-      }
-      return RepositoryResult<RemoteUserProgress>.failure(
-        RepositoryError(
-          code: RepositoryErrorCode.unknown,
-          message: 'Could not upsert user progress.',
-          cause: error,
-        ),
-      );
-    }
+    return _clientWriteDisabled();
   }
 
   Future<RepositoryResult<RemoteUserProgress>> touchProgressFromLocalState({
@@ -147,46 +80,20 @@ class UserProgressRepository {
     int ambarEarnedDelta = 0,
     int ambarSpentDelta = 0,
   }) async {
-    final userId = _currentUserId();
-    if (userId == null) {
-      return RepositoryResult<RemoteUserProgress>.failure(_notAuthenticated());
-    }
+    return _clientWriteDisabled();
+  }
 
-    final safeLevel = level < 1 ? 1 : level;
-    final safeTotalXp = totalXp < 0 ? 0 : totalXp;
-    final safeCurrentLevelXp = currentLevelXp < 0 ? 0 : currentLevelXp;
-    final safeNextLevelXp = nextLevelXp < 1 ? 1 : nextLevelXp;
-    final safeAmbarBalance = ambarBalance < 0 ? 0 : ambarBalance;
-    final safeEarnedDelta = ambarEarnedDelta < 0 ? 0 : ambarEarnedDelta;
-    final safeSpentDelta = ambarSpentDelta < 0 ? 0 : ambarSpentDelta;
-
-    var nextTotalAmbarEarned = safeEarnedDelta;
-    var nextTotalAmbarSpent = safeSpentDelta;
-
-    final existing = await fetchCurrentProgress();
-    if (existing.isSuccess && existing.data != null) {
-      final currentEarned = existing.data!.totalAmbarEarned;
-      final currentSpent = existing.data!.totalAmbarSpent;
-      nextTotalAmbarEarned =
-          (currentEarned < 0 ? 0 : currentEarned) + safeEarnedDelta;
-      nextTotalAmbarSpent =
-          (currentSpent < 0 ? 0 : currentSpent) + safeSpentDelta;
-    } else if (!existing.isSuccess && kDebugMode) {
+  RepositoryResult<RemoteUserProgress> _clientWriteDisabled() {
+    if (kDebugMode) {
       debugPrint(
-        '[user_progress_repository] existing progress unavailable; using safe deltas',
+        '[user_progress_repository] client progress writes are disabled; '
+        'authoritative RPCs refresh the projection',
       );
     }
-
-    return upsertCurrentProgress(
-      RemoteUserProgress(
-        userId: userId,
-        level: safeLevel,
-        totalXp: safeTotalXp,
-        currentLevelXp: safeCurrentLevelXp,
-        nextLevelXp: safeNextLevelXp,
-        ambarBalance: safeAmbarBalance,
-        totalAmbarEarned: nextTotalAmbarEarned,
-        totalAmbarSpent: nextTotalAmbarSpent,
+    return const RepositoryResult<RemoteUserProgress>.failure(
+      RepositoryError(
+        code: RepositoryErrorCode.permissionDenied,
+        message: 'User progress is server-owned and read-only for clients.',
       ),
     );
   }
@@ -208,18 +115,6 @@ class UserProgressRepository {
       code: RepositoryErrorCode.notAuthenticated,
       message: 'No authenticated user session is available.',
     );
-  }
-
-  Map<String, dynamic> _debugSafePayload(Map<String, dynamic> payload) {
-    final redacted = Map<String, dynamic>.from(payload);
-    redacted.remove('user_id');
-    return redacted;
-  }
-
-  int _safeInt(dynamic value, {required int fallback}) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    return int.tryParse((value ?? '').toString().trim()) ?? fallback;
   }
 
   RepositoryError _mapPostgrestError(

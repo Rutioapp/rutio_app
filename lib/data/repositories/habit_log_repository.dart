@@ -310,48 +310,12 @@ updated_at
     required String habitId,
     required DateTime logDate,
   }) async {
-    final userId = _currentUserId();
-    if (userId == null) {
-      return RepositoryResult<void>.failure(_notAuthenticated());
-    }
-
-    final normalizedHabitId = habitId.trim();
-    if (normalizedHabitId.isEmpty) {
-      return RepositoryResult<void>.failure(
-        const RepositoryError(
-          code: RepositoryErrorCode.invalidResponse,
-          message: 'Habit id is required to delete a daily log.',
-        ),
-      );
-    }
-
-    try {
-      await _client
-          .from(_habitLogsTable)
-          .delete()
-          .eq('user_id', userId)
-          .eq('habit_id', normalizedHabitId)
-          .eq('log_date', _dateOnlyIso(logDate));
-      return const RepositoryResult<void>.success();
-    } on PostgrestException catch (error) {
-      return RepositoryResult<void>.failure(
-        _mapPostgrestError(
-          error,
-          fallbackMessage: 'Could not delete habit log.',
-        ),
-      );
-    } catch (error) {
-      if (kDebugMode) {
-        debugPrint('[habit_log_repository] unexpected delete error: $error');
-      }
-      return RepositoryResult<void>.failure(
-        RepositoryError(
-          code: RepositoryErrorCode.unknown,
-          message: 'Could not delete habit log.',
-          cause: error,
-        ),
-      );
-    }
+    return const RepositoryResult<void>.failure(
+      RepositoryError(
+        code: RepositoryErrorCode.permissionDenied,
+        message: 'Habit log writes are owned by complete_habit_economy_v1.',
+      ),
+    );
   }
 
   String? _currentUserId() {
@@ -364,13 +328,6 @@ updated_at
     final userId = _client.auth.currentUser?.id.trim();
     if (userId == null || userId.isEmpty) return null;
     return userId;
-  }
-
-  RepositoryError _notAuthenticated() {
-    return const RepositoryError(
-      code: RepositoryErrorCode.notAuthenticated,
-      message: 'No authenticated user session is available.',
-    );
   }
 
   RepositoryError _mapPostgrestError(
