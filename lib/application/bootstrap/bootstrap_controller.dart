@@ -963,8 +963,28 @@ class BootstrapController extends ChangeNotifier
         );
         return;
       }
-      final authoritative = authoritativeDecisionResult.decision;
+      var authoritative = authoritativeDecisionResult.decision;
       final authoritativeError = authoritativeDecisionResult.error;
+      var usesOfflinePolicy = false;
+      if (authoritative == null &&
+          authoritativeError?.code ==
+              AuthoritativeBootstrapDecisionFailureCode.rpcUnavailable) {
+        // The RPC remains the only authority whenever it is reachable. During
+        // a network outage, a validated, same-user cache entry is sufficient
+        // to restore the previously known navigation surface. It must never
+        // be used to settle XP, coins, or pending economy operations.
+        final cached = await cacheReadFuture;
+        if (cached.isHit && cached.entry != null) {
+          authoritative = cached.entry!.toAuthoritativeDecision();
+          usesOfflinePolicy = true;
+          _log(
+            runId,
+            'authoritative_bootstrap_offline_fallback '
+            'cache_status=${cached.status.name}',
+            startedAt: startedAt,
+          );
+        }
+      }
       if (authoritative == null) {
         if (authoritativeError?.code ==
             AuthoritativeBootstrapDecisionFailureCode.staleResult) {
@@ -992,19 +1012,21 @@ class BootstrapController extends ChangeNotifier
         );
         return;
       }
-      unawaited(
-        _runAuthoritativeBootstrapCacheShadow(
-          runId: runId,
-          userId: user.id,
-          scopeUserId: scopeUserId,
-          scopeEpoch: scopeEpoch,
-          scopeKey: scopeKey,
-          startedAt: startedAt,
-          cacheReadStartedAt: cacheReadStartedAt,
-          cacheReadFuture: cacheReadFuture,
-          authoritativeDecision: authoritative,
-        ),
-      );
+      if (!usesOfflinePolicy) {
+        unawaited(
+          _runAuthoritativeBootstrapCacheShadow(
+            runId: runId,
+            userId: user.id,
+            scopeUserId: scopeUserId,
+            scopeEpoch: scopeEpoch,
+            scopeKey: scopeKey,
+            startedAt: startedAt,
+            cacheReadStartedAt: cacheReadStartedAt,
+            cacheReadFuture: cacheReadFuture,
+            authoritativeDecision: authoritative,
+          ),
+        );
+      }
       var destination = _destinationForAuthoritativeDecision(authoritative);
       // A pending anonymous Phase 6 draft owns the handoff only while the
       // onboarding auth surface (or its explicit handoff retry) owns the
@@ -1104,6 +1126,7 @@ class BootstrapController extends ChangeNotifier
             destination: destination,
             cosmeticsReadyToken: essentials.cosmeticsReadyToken,
             pendingOnboardingDraft: hasPendingOnboarding,
+            usesOfflinePolicy: usesOfflinePolicy,
           ),
         );
         _metric(
@@ -1136,6 +1159,7 @@ class BootstrapController extends ChangeNotifier
           remoteProfile: profile,
           destination: destination,
           pendingOnboardingDraft: hasPendingOnboarding,
+          usesOfflinePolicy: usesOfflinePolicy,
         ),
       );
       _startupLog(
