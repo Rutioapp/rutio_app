@@ -11,7 +11,7 @@ void main() {
   late String replayBody;
 
   setUpAll(() {
-    sql = File(migrationPath).readAsStringSync();
+    sql = File(migrationPath).readAsStringSync().replaceAll('\r\n', '\n');
     final start = sql.indexOf(
       'create or replace function public.complete_onboarding_v1(',
     );

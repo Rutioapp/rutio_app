@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final sql = File(
           'supabase/migrations/20260902120000_weekly_report_recommendation_v1.sql')
-      .readAsStringSync();
+      .readAsStringSync().replaceAll('\r\n', '\n');
 
   test('recommendation V1 is snapshot-only, final-only and deterministic', () {
     expect(sql, contains('recommendation_policy_version'));

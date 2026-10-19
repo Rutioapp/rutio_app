@@ -8,7 +8,7 @@ void main() {
     () {
       final migration = File(
         'supabase/migrations/20260908140000_onboarding_v1_completion_sql_expression_fix.sql',
-      ).readAsStringSync();
+      ).readAsStringSync().replaceAll('\r\n', '\n');
       final functionStart = migration.indexOf(
         'create or replace function public.complete_onboarding_v1(',
       );

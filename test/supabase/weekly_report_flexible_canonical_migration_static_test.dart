@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final migration = File(
     'supabase/migrations/20260907100000_weekly_report_flexible_canonical_backend_v1.sql',
-  ).readAsStringSync();
+  ).readAsStringSync().replaceAll('\r\n', '\n');
 
   test('stores raw and capped metrics additively at metrics policy v2', () {
     expect(migration, contains('completed_count_raw'));

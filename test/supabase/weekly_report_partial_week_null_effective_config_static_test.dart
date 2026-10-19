@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final source = File(
     'supabase/migrations/20260907110000_weekly_report_partial_week_null_effective_config_fix.sql',
-  ).readAsStringSync();
+  ).readAsStringSync().replaceAll('\r\n', '\n');
 
   test('guards NULL effective configs before quota-segment insertion', () {
     expect(source, contains('or v_cfg.id is null'));
