@@ -1097,7 +1097,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingAuthGoogleCta.
   ///
   /// In es, this message translates to:
-  /// **'Iniciar sesión con Google'**
+  /// **'Crear cuenta con Google'**
   String get onboardingAuthGoogleCta;
 
   /// No description provided for @authOr.

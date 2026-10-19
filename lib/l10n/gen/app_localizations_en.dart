@@ -552,7 +552,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginGoogleCta => 'Continue with Google';
 
   @override
-  String get onboardingAuthGoogleCta => 'Sign in with Google';
+  String get onboardingAuthGoogleCta => 'Create account with Google';
 
   @override
   String get authOr => 'or';

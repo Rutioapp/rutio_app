@@ -555,7 +555,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loginGoogleCta => 'Continuar con Google';
 
   @override
-  String get onboardingAuthGoogleCta => 'Iniciar sesión con Google';
+  String get onboardingAuthGoogleCta => 'Crear cuenta con Google';
 
   @override
   String get authOr => 'o';
