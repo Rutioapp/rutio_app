@@ -1062,6 +1062,34 @@ void main() {
       );
     });
   });
+
+  group('ProfileRepository authoritative bootstrap timeout', () {
+    test('maps a non-responding RPC to offline-eligible unavailability',
+        () async {
+      final client = _BlockingHttpClient();
+      final repository = ProfileRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-1',
+        authoritativeBootstrapRpcTimeout: const Duration(milliseconds: 20),
+      );
+
+      final result = await repository.loadAuthoritativeBootstrapDecision(
+        scopeUserId: 'user-1',
+        scopeEpoch: 1,
+      );
+
+      expect(client.callCount, 1);
+      expect(result.decision, isNull);
+      expect(
+        result.error?.code,
+        AuthoritativeBootstrapDecisionFailureCode.rpcUnavailable,
+      );
+    });
+  });
 }
 
 ProfileRepository _repository(

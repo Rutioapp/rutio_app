@@ -8,6 +8,7 @@ import '../../core/observability/analytics_service.dart';
 import '../../core/observability/analytics_events.dart';
 import '../../core/observability/crash_reporting_keys.dart';
 import '../../core/observability/crash_reporting_service.dart';
+import '../../core/supabase/rutio_supabase_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -22,6 +23,7 @@ import '../../features/global_wallet/application/global_wallet_controller.dart';
 import '../../features/completed_day_phrase/application/phrase_catalog_sync_coordinator.dart';
 import '../../features/premium/data/premium_repository.dart';
 import '../../stores/user_state_store.dart';
+import '../sync/pending_operations_reconnect_coordinator.dart';
 
 typedef AuthDebugLogger = void Function(String message);
 
@@ -88,6 +90,8 @@ class AuthController extends ChangeNotifier {
     AnalyticsService? analyticsService,
     CrashReportingService? crashReportingService,
     Future<void> Function(String userId)? onExplicitSessionExit,
+    PendingOperationsReconnectCoordinator?
+        pendingOperationsReconnectCoordinator,
     AuthDebugLogger? debugLogger,
   })  : _userStateStore = userStateStore,
         _globalWalletController = globalWalletController,
@@ -105,6 +109,14 @@ class AuthController extends ChangeNotifier {
             : AnalyticsIdentityLifecycle(analyticsService),
         _onExplicitSessionExit = onExplicitSessionExit,
         _debugLogger = debugLogger ?? debugPrint {
+    _pendingOperationsReconnectCoordinator =
+        pendingOperationsReconnectCoordinator ??
+            PendingOperationsReconnectCoordinator(
+              syncPendingOperations:
+                  _userStateStore.resolvePendingHabitCloudRewardsBestEffort,
+              currentUserIdProvider: () => _currentUser?.id,
+              backendAvailabilityCheck: _isBackendAvailable,
+            );
     if (RutioRuntimeProfile.isDemo) {
       // Demo profile is intentionally local-only: avoid binding to any live
       // Supabase session so real accounts are never mutated during demos.
@@ -132,6 +144,7 @@ class AuthController extends ChangeNotifier {
       _handleAuthState,
       onError: _handleAuthStateError,
     );
+    _pendingOperationsReconnectCoordinator.start();
     if (_currentUser != null) {
       final initialUserId = _currentUser!.id;
       _fireAndForget(() async {
@@ -162,6 +175,8 @@ class AuthController extends ChangeNotifier {
   final CrashReportingService? _crashReportingService;
   final AnalyticsIdentityLifecycle? _analyticsIdentityLifecycle;
   final AuthDebugLogger _debugLogger;
+  late final PendingOperationsReconnectCoordinator
+      _pendingOperationsReconnectCoordinator;
   StreamSubscription<AuthState>? _authSubscription;
 
   User? _currentUser;
@@ -1186,8 +1201,8 @@ class AuthController extends ChangeNotifier {
       );
     }
 
-    final pendingHabitRewards =
-        await _userStateStore.resolvePendingHabitCloudRewardsBestEffort();
+    final pendingHabitRewards = await _pendingOperationsReconnectCoordinator
+        .syncNow(reason: 'post_home_bootstrap');
     if (kDebugMode && pendingHabitRewards > 0) {
       _debugLogger(
         '[auth] pending habit rewards resolved: $pendingHabitRewards',
@@ -1347,10 +1362,27 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  Future<bool> _isBackendAvailable() async {
+    final userId = _currentUser?.id.trim();
+    if (userId == null ||
+        userId.isEmpty ||
+        !RutioSupabaseClient.isInitialized) {
+      return false;
+    }
+    try {
+      final response = await RutioSupabaseClient.instance.auth.getUser();
+      final backendUserId = response.user?.id.trim();
+      return backendUserId == userId;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _authSubscription?.cancel();
     _authSubscription = null;
+    unawaited(_pendingOperationsReconnectCoordinator.dispose());
     _phraseCatalogSyncCoordinator?.dispose();
     super.dispose();
   }

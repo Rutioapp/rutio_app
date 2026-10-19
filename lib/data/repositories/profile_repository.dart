@@ -293,18 +293,21 @@ class ProfileRepository {
     CurrentProfileUserIdProvider? currentUserIdProvider,
     BootstrapProfileDecisionCache? bootstrapProfileDecisionCache,
     DateTime Function()? nowProvider,
+    Duration authoritativeBootstrapRpcTimeout = const Duration(seconds: 8),
   })  : _client = client ?? RutioSupabaseClient.instance,
         _currentUserIdProvider = currentUserIdProvider,
         _bootstrapProfileDecisionCache = bootstrapProfileDecisionCache ??
             SharedPreferencesBootstrapProfileDecisionCache(
               environmentNamespace: RutioSupabaseConfig.supabaseUrl,
             ),
-        _nowProvider = nowProvider ?? DateTime.now;
+        _nowProvider = nowProvider ?? DateTime.now,
+        _authoritativeBootstrapRpcTimeout = authoritativeBootstrapRpcTimeout;
 
   final SupabaseClient _client;
   final CurrentProfileUserIdProvider? _currentUserIdProvider;
   final BootstrapProfileDecisionCache _bootstrapProfileDecisionCache;
   final DateTime Function() _nowProvider;
+  final Duration _authoritativeBootstrapRpcTimeout;
   final Set<String> _unsupportedColumns = <String>{};
   final Map<String, Future<RepositoryResult<RemoteProfile?>>>
       _inFlightProfiles = <String, Future<RepositoryResult<RemoteProfile?>>>{};
@@ -903,9 +906,9 @@ class ProfileRepository {
     final mapStopwatch = Stopwatch();
     try {
       queryStopwatch.start();
-      final response = await _client.rpc(
-        'get_current_user_bootstrap_decision',
-      );
+      final response = await _client
+          .rpc('get_current_user_bootstrap_decision')
+          .timeout(_authoritativeBootstrapRpcTimeout);
       queryStopwatch.stop();
       final row = _authoritativeDecisionRowFromResponse(response);
       if (row == null) {

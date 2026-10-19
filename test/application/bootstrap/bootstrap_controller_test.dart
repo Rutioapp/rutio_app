@@ -545,6 +545,32 @@ void main() {
       expect(fixture.bootstrap.state.error?.canRetry, isTrue);
     });
 
+    test('network error uses a validated bootstrap cache for offline Home',
+        () async {
+      final cache = InMemoryAuthoritativeBootstrapCacheV2();
+      final decision = _authoritativeHomeResult('user-1').decision!;
+      await cache.write(
+        AuthoritativeBootstrapCacheEntryV2.fromAuthoritativeDecision(
+          decision: decision,
+          environmentId: 'test-supabase-url',
+          scopeKey: 'user-1|user-1|0',
+          cachedAt: DateTime.now(),
+        ),
+      );
+      final fixture = _Fixture(
+        profileResult: _ProfileResult.network,
+        authoritativeBootstrapCache: cache,
+      );
+
+      fixture.resolveUser('user-1');
+      await fixture.pump();
+
+      expect(fixture.bootstrap.state.phase, BootstrapPhase.ready);
+      expect(fixture.bootstrap.state.destination, BootstrapDestination.home);
+      expect(fixture.bootstrap.state.usesOfflinePolicy, isTrue);
+      expect(fixture.bootstrap.state.remoteProfile?.id, 'user-1');
+    });
+
     test('retry starts only a new current run', () async {
       final fixture = _Fixture(profileResult: _ProfileResult.network);
       fixture.resolveUser('user-1');
@@ -1620,6 +1646,7 @@ class _Fixture {
     _FakeEssentialAssetPreloader? assetPreloader,
     bool enableBackgroundProfileSync = false,
     PostHomeBootstrapTaskRunner? postHomeBootstrapTaskRunner,
+    InMemoryAuthoritativeBootstrapCacheV2? authoritativeBootstrapCache,
     Completer<void>? signOutCompleter,
     Future<bool> Function()? hasResumableOnboardingDraft,
     void Function(String reason)? onExplicitGuestReady,
@@ -1657,7 +1684,8 @@ class _Fixture {
       authController: auth,
       userStateStore: userStore,
       profileRepository: profile,
-      authoritativeBootstrapCache: InMemoryAuthoritativeBootstrapCacheV2(),
+      authoritativeBootstrapCache: authoritativeBootstrapCache ??
+          InMemoryAuthoritativeBootstrapCacheV2(),
       authoritativeBootstrapEnvironmentId: 'test-supabase-url',
       essentialHabitsPreparer: habitsPreparer ?? _FakeEssentialHabitsPreparer(),
       essentialCosmeticsPreparer:

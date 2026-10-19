@@ -97,6 +97,27 @@ class AuthoritativeBootstrapCacheEntryV2 {
     return scopeKey == expectedScopeKey.trim();
   }
 
+  /// Rehydrates the last server decision for offline navigation only.
+  ///
+  /// Callers must still treat server responses as authoritative for account
+  /// state and economy. This value is intentionally only available from a
+  /// validated cache entry (same user, environment and scope).
+  AuthoritativeBootstrapDecision toAuthoritativeDecision() {
+    return AuthoritativeBootstrapDecision(
+      userId: userId,
+      decision: destination,
+      accountStatus: accountStatus,
+      profileState: profileState,
+      onboardingStatus: onboardingStatus,
+      completedOnboardingVersion: completedOnboardingVersion,
+      requiredOnboardingVersion: requiredOnboardingVersion,
+      onboardingEnforcement: onboardingEnforcement,
+      onboardingCompletedAt: onboardingCompletedAt,
+      profileRevision: profileRevision,
+      policyRevision: policyRevision,
+    );
+  }
+
   bool isExpiredAt(DateTime now) {
     return !now.toUtc().isBefore(expiresAt.toUtc());
   }
