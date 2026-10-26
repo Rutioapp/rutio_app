@@ -2839,6 +2839,81 @@ Future<void> _setCountHabitValue(
     value: value,
     rewardAlreadyGranted: rewardAlreadyGranted,
   );
+
+  if (wasCompletedBeforeChange &&
+      habit['doneToday'] != true &&
+      cloudHabitRewardsEnabled) {
+    final remoteHabitId = _cloudRewardHabitId(habit);
+    if (remoteHabitId == null) {
+      store._state = originalRoot;
+      store._emitChanged();
+      _logHomeMutationOutcome(
+        habitId: habitId,
+        dateKey: dayKey,
+        outcome: HabitMutationOutcome.failed,
+        canonicalCompleted: wasCompletedBeforeChange,
+        canonicalSkipped: false,
+        reason: 'missing remote habit id for authoritative count reversal',
+      );
+      return;
+    }
+
+    final cycle = habitRewardCycleForTransaction(existingTransaction);
+    final reverseResult =
+        await store._habitCurrencyRewardCoordinator.reverseHabitReward(
+      habitId: habitId,
+      remoteHabitId: remoteHabitId,
+      logicalDateKey: dayKey,
+      completionEventId: buildHabitRewardCompletionEventId(
+        remoteHabitId: remoteHabitId,
+        logicalDateKey: dayKey,
+        cycle: cycle,
+      ),
+      requestId: buildHabitRewardReverseRequestId(
+        remoteHabitId: remoteHabitId,
+        logicalDateKey: dayKey,
+        cycle: cycle,
+      ),
+      value: value.toInt(),
+    );
+
+    if (reverseResult.isSuccess) {
+      final reversedTransaction = reverseResult.transaction;
+      if (reversedTransaction != null) {
+        await _saveHabitRewardTransactionForStore(
+          store,
+          reversedTransaction,
+        );
+      }
+      _logHabitCloudReward(
+        'reverse count result habit=$habitId date=$dayKey '
+        'isIdempotent=${reverseResult.ledger?.isIdempotent}',
+      );
+      _applyConfirmedHabitRewardProgress(
+        store,
+        userState: userState,
+        result: reverseResult,
+      );
+      await _applyConfirmedHabitRewardWalletBalance(
+        store,
+        result: reverseResult,
+      );
+    } else if (reverseResult.failure?.definitive == true) {
+      store._state = originalRoot;
+      store._emitChanged();
+      _logHomeMutationOutcome(
+        habitId: habitId,
+        dateKey: dayKey,
+        outcome: HabitMutationOutcome.failed,
+        canonicalCompleted: wasCompletedBeforeChange,
+        canonicalSkipped: false,
+        reason: reverseResult.failure?.message ??
+            'authoritative count reversal was rejected',
+      );
+      return;
+    }
+  }
+
   _logHabitCloudReward(
     'complete habit=$habitId cloud=$cloudHabitRewardsEnabled '
     'existing=${existingTransaction != null} '
@@ -2887,7 +2962,7 @@ Future<void> _setCountHabitValue(
         canonicalSkipped: false,
         reason: 'authoritative habit reward was not confirmed',
       );
-        return;
+      return;
     }
     if (completionOutcome.granted) {
       _setDailyRewardGrant(userState, habitId: habitId, granted: true);

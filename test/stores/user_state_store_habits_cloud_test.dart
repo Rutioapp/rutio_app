@@ -844,6 +844,55 @@ void main() {
       );
     });
 
+    test('count crossing below target reverses before a new completion cycle',
+        () async {
+      final fixture = await _seedFixture(
+        scopeUserId: 'cloud-count-cycle-user',
+        cloudHabitRewardsEnabled: true,
+        habits: <Map<String, dynamic>>[
+          _habit(
+            id: 'habit-count-cycle',
+            type: 'count',
+            target: 5,
+            remoteHabitId: _remoteHabitUuid2,
+          ),
+        ],
+        activeEffects: const <ActiveUtilityEffect>[],
+        rewardHandler: (request, effects) {
+          return HabitCurrencyRewardResult.success(
+            data: _ledgerFor(
+              request: request,
+              userId: 'cloud-count-cycle-user',
+              coinDelta: 10,
+              balanceAfter: 10,
+            ),
+          );
+        },
+        reverseHandler: (request, effects) {
+          return HabitCurrencyRewardResult.success(
+            data: _ledgerFor(
+              request: request,
+              userId: 'cloud-count-cycle-user',
+              coinDelta: -10,
+              balanceAfter: 0,
+            ),
+          );
+        },
+      );
+
+      await fixture.store
+          .setCountHabitValue(habitId: 'habit-count-cycle', value: 5);
+      await fixture.store
+          .setCountHabitValue(habitId: 'habit-count-cycle', value: 4);
+      await fixture.store
+          .setCountHabitValue(habitId: 'habit-count-cycle', value: 5);
+
+      expect(fixture.rewardRepository.applyCalls, 2);
+      expect(fixture.rewardRepository.reverseCalls, 1);
+      expect(fixture.transactions, hasLength(1));
+      expect(fixture.transactions.single.isReversed, isFalse);
+    });
+
     test('local mode remains intact', () async {
       final fixture = await _seedFixture(
         scopeUserId: 'local-habit-user-1',
