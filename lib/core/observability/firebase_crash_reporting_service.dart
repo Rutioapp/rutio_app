@@ -12,12 +12,20 @@ class FirebaseCrashReportingService implements CrashReportingService {
   final CrashlyticsConfig config;
   Future<void>? _initialization;
   FirebaseCrashlytics? _crashlytics;
+  String? _initializationDiagnostic;
+
+  /// Safe diagnostic intended for local logs and tests. It never contains the
+  /// original Firebase exception or its message.
+  String? get initializationDiagnostic => _initializationDiagnostic;
 
   @override
   Future<void> initialize() => _initialization ??= _initialize();
 
   Future<void> _initialize() async {
-    if (!config.enabled) return;
+    if (!config.enabled) {
+      _initializationDiagnostic = 'disabled_by_build_configuration';
+      return;
+    }
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
@@ -27,8 +35,9 @@ class FirebaseCrashReportingService implements CrashReportingService {
         config.collectionEnabled,
       );
       _crashlytics = crashlytics;
-    } catch (_) {
-      // Firebase configuration is optional until platform files are installed.
+    } catch (error) {
+      _initializationDiagnostic = 'initialization_failed:${error.runtimeType}';
+      // Crashlytics must never prevent the application from starting.
       _crashlytics = null;
     }
   }
@@ -39,14 +48,20 @@ class FirebaseCrashReportingService implements CrashReportingService {
   Future<void> setUserId(String? userId) async {
     await initialize();
     // V1 intentionally keeps the Crashlytics identifier empty.
-    await _client?.setUserIdentifier('');
+    await _runSafely(
+      'set_user_identifier',
+      () => _client?.setUserIdentifier('') ?? Future<void>.value(),
+    );
   }
 
   @override
   Future<void> setKey(String key, Object value) async {
     if (!_allowedKeys.contains(key) || !_safeValue(value)) return;
     await initialize();
-    await _client?.setCustomKey(key, value);
+    await _runSafely(
+      'set_custom_key',
+      () => _client?.setCustomKey(key, value) ?? Future<void>.value(),
+    );
   }
 
   @override
@@ -56,7 +71,16 @@ class FirebaseCrashReportingService implements CrashReportingService {
     String? reason,
   }) async {
     await initialize();
-    await _client?.recordError(error, stackTrace, fatal: true, reason: reason);
+    await _runSafely(
+      'record_fatal',
+      () => _client?.recordError(
+            _safeErrorForReport(error),
+            stackTrace,
+            fatal: true,
+            reason: reason,
+          ) ??
+          Future<void>.value(),
+    );
   }
 
   @override
@@ -66,8 +90,32 @@ class FirebaseCrashReportingService implements CrashReportingService {
     String? reason,
   }) async {
     await initialize();
-    await _client?.recordError(error, stackTrace, fatal: false, reason: reason);
+    await _runSafely(
+      'record_non_fatal',
+      () => _client?.recordError(
+            _safeErrorForReport(error),
+            stackTrace,
+            fatal: false,
+            reason: reason,
+          ) ??
+          Future<void>.value(),
+    );
   }
+
+  Future<void> _runSafely(
+    String operation,
+    Future<void> Function() action,
+  ) async {
+    try {
+      await action();
+    } catch (error) {
+      _initializationDiagnostic ??=
+          'operation_failed:$operation:${error.runtimeType}';
+    }
+  }
+
+  static Object _safeErrorForReport(Object error) =>
+      StateError('reported_error_type:${error.runtimeType}');
 
   static const _allowedKeys = <String>{
     CrashReportingKeys.authState,

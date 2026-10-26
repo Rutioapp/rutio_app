@@ -17,6 +17,7 @@ import 'core/observability/crash_reporting_keys.dart';
 import 'core/observability/crash_reporting_service.dart';
 import 'core/observability/crashlytics_config.dart';
 import 'core/observability/firebase_crash_reporting_service.dart';
+import 'core/observability/crash_validation_hooks.dart';
 import 'services/notification_runtime.dart';
 import 'services/notification_service.dart';
 import 'services/phase1_notification_timing_registry.dart';
@@ -119,8 +120,14 @@ Future<void> main() async {
   try {
     await crashReportingService.initialize();
   } catch (error, stackTrace) {
-    debugPrint('[crashlytics] initialization skipped: $error');
-    debugPrintStack(stackTrace: stackTrace);
+    debugPrint(
+      '[crashlytics] initialization unavailable type=${error.runtimeType}',
+    );
+    if (kDebugMode) debugPrintStack(stackTrace: stackTrace);
+  }
+  final crashDiagnostic = crashReportingService.initializationDiagnostic;
+  if (crashDiagnostic != null) {
+    debugPrint('[crashlytics] diagnostic=$crashDiagnostic');
   }
   installGlobalCrashErrorHandlers(crashReportingService);
   await crashReportingService.setKey(
@@ -204,6 +211,7 @@ Future<void> main() async {
     crashReportingService: crashReportingService,
     revenueCatConfiguration: revenueCatConfiguration,
   ));
+  scheduleReleaseTestCrashIfEnabled();
   _startupLog('[STARTUP] 11 after runApp()');
 }
 

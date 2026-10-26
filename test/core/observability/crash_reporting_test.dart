@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rutio/core/observability/crash_reporting_keys.dart';
 import 'package:rutio/core/observability/crash_reporting_service.dart';
 import 'package:rutio/core/observability/crashlytics_config.dart';
+import 'package:rutio/core/observability/firebase_crash_reporting_service.dart';
 
 void main() {
   test('Crashlytics is disabled by default outside explicit release config',
@@ -43,6 +44,26 @@ void main() {
 
     expect(config.enabled, isTrue);
     expect(config.collectionEnabled, isTrue);
+  });
+
+  test('disabled Crashlytics exposes only a safe initialization diagnostic',
+      () async {
+    final service = FirebaseCrashReportingService(
+      config: CrashlyticsConfig.fromValues(
+        enabled: 'false',
+        collectionEnabled: 'false',
+        isDebug: false,
+        isProfile: false,
+        isRelease: true,
+      ),
+    );
+
+    await service.initialize();
+
+    expect(
+      service.initializationDiagnostic,
+      'disabled_by_build_configuration',
+    );
   });
 
   test('noop never throws and fake records fatal/non-fatal deterministically',
