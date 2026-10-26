@@ -49,6 +49,14 @@ class RevenueCatConfiguration {
         : configuredTarget;
 
     if (!release) {
+      if (target == productionBillingTarget) {
+        return _productionConfiguration(
+          targetPlatform,
+          androidApiKey: androidApiKey,
+          iosApiKey: iosApiKey,
+          modeLabel: 'debug',
+        );
+      }
       return switch (target) {
         testStoreBillingTarget => RevenueCatConfiguration(
             testApiKey: (environmentApiKey ??
@@ -72,6 +80,20 @@ class RevenueCatConfiguration {
       );
     }
 
+    return _productionConfiguration(
+      targetPlatform,
+      androidApiKey: androidApiKey,
+      iosApiKey: iosApiKey,
+      modeLabel: 'release',
+    );
+  }
+
+  static RevenueCatConfiguration _productionConfiguration(
+    TargetPlatform targetPlatform, {
+    String? androidApiKey,
+    String? iosApiKey,
+    required String modeLabel,
+  }) {
     final key = switch (targetPlatform) {
       TargetPlatform.android => (androidApiKey ??
               const String.fromEnvironment(androidApiKeyEnvironmentKey))
@@ -81,19 +103,19 @@ class RevenueCatConfiguration {
             .trim(),
       _ => throw const RevenueCatConfigurationException(
           'RevenueCat production configuration is only supported for Android '
-          'and iOS release builds.',
+          'and iOS builds.',
         ),
     };
 
     if (key.isEmpty) {
       throw RevenueCatConfigurationException(
         'Missing RevenueCat production API key for ${targetPlatform.name} '
-        'release build. Configure the platform-specific dart-define.',
+        '$modeLabel build. Configure the platform-specific dart-define.',
       );
     }
     if (key.startsWith('test_')) {
       throw RevenueCatConfigurationException(
-        'A RevenueCat Test Store key cannot be used in a release build. '
+        'A RevenueCat Test Store key cannot be used for a production target. '
         'Configure the public production key for ${targetPlatform.name}.',
       );
     }
@@ -102,7 +124,7 @@ class RevenueCatConfiguration {
         targetPlatform == TargetPlatform.android ? 'goog_' : 'appl_';
     if (!key.startsWith(expectedPrefix)) {
       throw RevenueCatConfigurationException(
-        'Invalid RevenueCat API key for ${targetPlatform.name} release build: '
+        'Invalid RevenueCat API key for ${targetPlatform.name} $modeLabel build: '
         'expected a public $expectedPrefix key.',
       );
     }

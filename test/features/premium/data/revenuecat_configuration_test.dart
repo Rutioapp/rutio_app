@@ -39,6 +39,19 @@ void main() {
         RevenueCatConfiguration.googlePlaySandboxBillingTarget);
   });
 
+  test('debug production target uses the Android production key', () {
+    final configuration = RevenueCatConfiguration.fromEnvironment(
+      androidApiKey: 'goog_android_production_key',
+      billingTarget: RevenueCatConfiguration.productionBillingTarget,
+      isRelease: false,
+      platform: TargetPlatform.android,
+    );
+
+    expect(configuration.testApiKey, 'goog_android_production_key');
+    expect(configuration.billingTarget,
+        RevenueCatConfiguration.productionBillingTarget);
+  });
+
   test('debug google_play_sandbox rejects a Test Store key', () {
     expect(
       () => RevenueCatConfiguration.fromEnvironment(
