@@ -20,7 +20,6 @@ import '../../stores/user_state_store.dart';
 import '../../utils/family_theme.dart';
 import '../diary_v2/diary_v2_screen.dart';
 import '../edit_profile/edit_profile_screen.dart';
-import '../habit_archived_screen.dart';
 import '../habit_monthly_screen.dart';
 import '../habit_weekly_screen.dart';
 import '../home/home_screen.dart';
@@ -220,7 +219,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
         onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
         onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
-        onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
         onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
         onGoShop: () => Navigator.pushNamed(context, '/shop'),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),

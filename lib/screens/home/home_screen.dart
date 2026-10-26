@@ -28,7 +28,6 @@ import 'package:rutio/core/assets/app_assets.dart';
 import 'package:rutio/constants/color_palette.dart';
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_screen.dart';
-import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/habit_detail/habit_detail_screen.dart';
 import 'package:rutio/screens/habit_detail/widgets/editor/habit_editor_utils.dart';
 import 'package:rutio/screens/habit_monthly_overview_screen.dart';

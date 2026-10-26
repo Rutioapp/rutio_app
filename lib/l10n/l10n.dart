@@ -695,34 +695,6 @@ extension AppLocalizationsEditProfileX on AppLocalizations {
       : 'Add profile photo';
 }
 
-extension AppLocalizationsArchivedHabitsX on AppLocalizations {
-  bool get _isSpanishArchivedHabits =>
-      localeName.toLowerCase().startsWith('es');
-
-  String get archivedHabitsTitle =>
-      _isSpanishArchivedHabits ? 'H\u00e1bitos archivados' : 'Archived habits';
-
-  String get archivedHabitsEmpty => _isSpanishArchivedHabits
-      ? 'No tienes h\u00e1bitos archivados.'
-      : "You don't have any archived habits.";
-
-  String archivedHabitsFamilyLabel(String family) =>
-      _isSpanishArchivedHabits ? 'Familia: $family' : 'Family: $family';
-
-  String get archivedHabitsRestoreTooltip =>
-      _isSpanishArchivedHabits ? 'Restaurar' : 'Restore';
-
-  String get archivedHabitsDeleteTooltip =>
-      _isSpanishArchivedHabits ? 'Eliminar' : 'Delete';
-
-  String get archivedHabitsDeleteTitle =>
-      _isSpanishArchivedHabits ? 'Eliminar h\u00e1bito' : 'Delete habit';
-
-  String get archivedHabitsDeleteBody => _isSpanishArchivedHabits
-      ? '\u00bfSeguro que quieres eliminar este h\u00e1bito?\n\nSe eliminar\u00e1 tambi\u00e9n su historial.'
-      : 'Are you sure you want to delete this habit?\n\nIts history will also be deleted.';
-}
-
 extension AppLocalizationsHabitDetailX on AppLocalizations {
   bool get _isSpanishHabitDetail => localeName.toLowerCase().startsWith('es');
 
@@ -739,9 +711,6 @@ extension AppLocalizationsHabitDetailX on AppLocalizations {
       ? 'Se borrar\u00e1 el h\u00e1bito y su historial. Esta acci\u00f3n no se puede deshacer.'
       : 'The habit and its history will be deleted. This action cannot be undone.';
 
-  String get habitDetailArchiveAction =>
-      _isSpanishHabitDetail ? 'Archivar h\u00e1bito' : 'Archive habit';
-
   String get habitDetailDeleteAction =>
       _isSpanishHabitDetail ? 'Eliminar h\u00e1bito' : 'Delete habit';
 
@@ -752,32 +721,6 @@ extension AppLocalizationsHabitDetailX on AppLocalizations {
 
   String get habitDetailStatsTab =>
       _isSpanishHabitDetail ? 'Estad\u00edsticas' : 'Statistics';
-}
-
-extension AppLocalizationsArchiveHabitTileX on AppLocalizations {
-  bool get _isSpanishArchiveHabitTile =>
-      localeName.toLowerCase().startsWith('es');
-
-  String get archiveHabitTileTitle =>
-      _isSpanishArchiveHabitTile ? 'Archivar h\u00e1bito' : 'Archive habit';
-
-  String get archiveHabitTileArchivedSubtitle => _isSpanishArchiveHabitTile
-      ? 'Este h\u00e1bito est\u00e1 archivado (no aparecer\u00e1 en la lista principal).'
-      : 'This habit is archived (it will not appear in the main list).';
-
-  String get archiveHabitTileActiveSubtitle => _isSpanishArchiveHabitTile
-      ? 'Oculta este h\u00e1bito de la lista principal sin borrarlo.'
-      : 'Hide this habit from the main list without deleting it.';
-
-  String get archiveHabitTileConfirmTitle =>
-      _isSpanishArchiveHabitTile ? 'Archivar h\u00e1bito' : 'Archive habit';
-
-  String get archiveHabitTileConfirmBody => _isSpanishArchiveHabitTile
-      ? '\u00bfQuieres archivar este h\u00e1bito? Podr\u00e1s recuperarlo m\u00e1s adelante.'
-      : 'Do you want to archive this habit? You can recover it later.';
-
-  String get archiveHabitTileConfirmAction =>
-      _isSpanishArchiveHabitTile ? 'Archivar' : 'Archive';
 }
 
 extension AppLocalizationsEditHabitX on AppLocalizations {

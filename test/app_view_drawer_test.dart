@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -34,7 +33,6 @@ void main() {
           onGoMonthly: () {},
           onGoDiary: () {},
           onGoDiaryV2: () {},
-          onGoArchived: () {},
           onGoStats: () {},
           onGoProfile: () {},
           onGoWeeklyReport: () => Navigator.of(scaffoldKey.currentContext!)
@@ -79,7 +77,6 @@ void main() {
             onGoMonthly: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
-            onGoArchived: () {},
             onGoStats: () {},
             onGoProfile: () {},
           ),
@@ -127,7 +124,6 @@ void main() {
             onGoMonthly: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
-            onGoArchived: () {},
             onGoStats: () {},
             onGoProfile: () {},
           ),
@@ -172,7 +168,6 @@ void main() {
             onGoMonthly: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
-            onGoArchived: () {},
             onGoStats: () => statsTapCount++,
             onGoProfile: () {},
           ),
@@ -224,7 +219,6 @@ void main() {
             onGoMonthly: () {},
             onGoDiary: () => diaryTapCount++,
             onGoDiaryV2: () {},
-            onGoArchived: () {},
             onGoStats: () {},
             onGoProfile: () {},
           ),
@@ -278,7 +272,6 @@ void main() {
             onGoMonthly: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
-            onGoArchived: () {},
             onGoStats: () =>
                 Navigator.of(scaffoldKey.currentContext!).pushNamed('/stats'),
             onGoProfile: () {},
@@ -326,7 +319,6 @@ void main() {
             onGoMonthly: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
-            onGoArchived: () {},
             onGoStats: () {},
             onGoShop: () => shopTapCount++,
             onGoProfile: () {},
@@ -372,7 +364,6 @@ void main() {
             onGoMonthly: () {},
             onGoDiary: () {},
             onGoDiaryV2: () {},
-            onGoArchived: () {},
             onGoStats: () {},
             onGoShop: () {},
             onGoProfile: () {},

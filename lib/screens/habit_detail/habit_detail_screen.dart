@@ -6,13 +6,11 @@ import '../../l10n/l10n.dart';
 import '../../stores/user_state_store.dart';
 import 'widgets/tabs/edit_habit_tab.dart';
 import 'widgets/tabs/habit_stats_tab.dart';
-import 'widgets/editor/habit_editor_utils.dart';
 import '../../utils/family_theme.dart';
 import '../../widgets/common/top_toast.dart';
 
 enum _HabitDetailMenuAction {
   delete,
-  archive,
 }
 
 enum HabitDetailScreenMode {
@@ -379,14 +377,6 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
     }
   }
 
-  Future<void> _archiveHabit() async {
-    final dynamic updatedHabit =
-        (_habit is Map) ? Map<String, dynamic>.from(_habit as Map) : _habit;
-
-    setHabitValue(updatedHabit, ['archived', 'isArchived'], true);
-    await _handleSaved(updatedHabit);
-  }
-
   Future<void> _showHabitActionsSheet(BuildContext context) async {
     final currentContext = this.context;
     final l10n = currentContext.l10n;
@@ -394,13 +384,6 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
       context: context,
       builder: (sheetContext) => CupertinoActionSheet(
         actions: [
-          CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(
-              sheetContext,
-              _HabitDetailMenuAction.archive,
-            ),
-            child: Text(l10n.habitDetailArchiveAction),
-          ),
           CupertinoActionSheetAction(
             isDestructiveAction: true,
             onPressed: () => Navigator.pop(
@@ -420,9 +403,6 @@ class _HabitDetailScreenState extends State<HabitDetailScreen>
     if (!mounted || action == null) return;
 
     switch (action) {
-      case _HabitDetailMenuAction.archive:
-        await _archiveHabit();
-        break;
       case _HabitDetailMenuAction.delete:
         await _confirmAndDelete(this.context);
         break;

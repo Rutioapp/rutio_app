@@ -17,7 +17,6 @@ import 'package:rutio/screens/home/ui/header/home_stats_header.dart';
 import 'package:rutio/screens/home/home_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_screen.dart';
-import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/profile/profile_screen.dart';
 import 'package:rutio/features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 
@@ -170,8 +169,6 @@ class _HabitMonthlyScreenState extends State<HabitMonthlyScreen> {
             onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
             onGoDiaryV2: () =>
                 Navigator.of(context).pushReplacementNamed('/diary'),
-            onGoArchived: () =>
-                _navReplace(context, const ArchivedHabitsScreen()),
             onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
             onGoShop: () => Navigator.pushNamed(context, '/shop'),
             onGoProfile: () => _navReplace(context, const ProfileScreen()),

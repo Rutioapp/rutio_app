@@ -181,7 +181,6 @@ class OnboardingHabitFormState extends State<OnboardingHabitForm> {
           : <int>{1, 2, 3, 4, 5, 6, 7},
       remindersEnabled: false,
       reminderTime: DateTime(2000, 1, 1, 8),
-      archived: false,
       timesPerWeekTarget: schedule.timesPerWeek ?? 1,
       counterStep: 1,
     );

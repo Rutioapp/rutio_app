@@ -15,7 +15,6 @@ class EditHabitTabFormData {
     required Set<int> selectedDays,
     required this.remindersEnabled,
     required this.reminderTime,
-    required this.archived,
     required this.timesPerWeekTarget,
     required this.counterStep,
   }) : selectedDays = Set<int>.from(selectedDays);
@@ -75,7 +74,6 @@ class EditHabitTabFormData {
         timeOfDay?.hour ?? now.hour,
         timeOfDay?.minute ?? now.minute,
       ),
-      archived: getHabitBool(habit, ['archived', 'isArchived']) ?? false,
       timesPerWeekTarget: rawTarget < 1 ? 1 : rawTarget,
       counterStep: getHabitInt(habit, ['counterStep', 'step']) ?? 1,
     );
@@ -102,7 +100,6 @@ class EditHabitTabFormData {
   final Set<int> selectedDays;
   bool remindersEnabled;
   DateTime reminderTime;
-  bool archived;
   int timesPerWeekTarget;
   int counterStep;
 
@@ -112,10 +109,6 @@ class EditHabitTabFormData {
 
   bool get showsWeeklyCheckTargetSection =>
       trackingType == 'check' && frequencyMode == 'timesPerWeek';
-
-  void updateArchivedFromHabit(dynamic habit) {
-    archived = getHabitBool(habit, ['archived', 'isArchived']) ?? archived;
-  }
 
   void selectFamily(String nextFamilyId) {
     familyId = nextFamilyId;
@@ -238,7 +231,6 @@ class EditHabitTabFormData {
         TimeOfDay(hour: reminderTime.hour, minute: reminderTime.minute),
       ),
     );
-    setHabitValue(updatedHabit, ['archived', 'isArchived'], archived);
     setHabitValue(updatedHabit, ['frequencyMode'], frequencyMode);
     setHabitValue(
       updatedHabit,

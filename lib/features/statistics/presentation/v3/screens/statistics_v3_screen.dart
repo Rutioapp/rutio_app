@@ -34,7 +34,6 @@ import 'package:rutio/features/weekly_report/presentation/weekly_report_navigati
 import 'package:rutio/l10n/l10n.dart';
 import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_screen.dart';
-import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/habit_detail/habit_detail_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
@@ -189,8 +188,6 @@ class _StatisticsV3ScreenState extends State<StatisticsV3Screen> {
             onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
             onGoDiaryV2: () =>
                 Navigator.of(context).pushReplacementNamed('/diary'),
-            onGoArchived: () =>
-                _navReplace(context, const ArchivedHabitsScreen()),
             onGoStats: () {},
             onGoWeeklyReport: () => openWeeklyReport(context),
             weeklyReportLocked: !PremiumAccessPolicy.canAccess(

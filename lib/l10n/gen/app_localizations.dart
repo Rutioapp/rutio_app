@@ -3831,48 +3831,6 @@ abstract class AppLocalizations {
   /// **'Añadir foto de perfil'**
   String get editProfileAddPhoto;
 
-  /// No description provided for @archivedHabitsTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Hábitos archivados'**
-  String get archivedHabitsTitle;
-
-  /// No description provided for @archivedHabitsEmpty.
-  ///
-  /// In es, this message translates to:
-  /// **'No tienes hábitos archivados.'**
-  String get archivedHabitsEmpty;
-
-  /// No description provided for @archivedHabitsFamilyLabel.
-  ///
-  /// In es, this message translates to:
-  /// **'Familia: {family}'**
-  String archivedHabitsFamilyLabel(String family);
-
-  /// No description provided for @archivedHabitsRestoreTooltip.
-  ///
-  /// In es, this message translates to:
-  /// **'Restaurar'**
-  String get archivedHabitsRestoreTooltip;
-
-  /// No description provided for @archivedHabitsDeleteTooltip.
-  ///
-  /// In es, this message translates to:
-  /// **'Eliminar'**
-  String get archivedHabitsDeleteTooltip;
-
-  /// No description provided for @archivedHabitsDeleteTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Eliminar hábito'**
-  String get archivedHabitsDeleteTitle;
-
-  /// No description provided for @archivedHabitsDeleteBody.
-  ///
-  /// In es, this message translates to:
-  /// **'¿Seguro que quieres eliminar este hábito?\n\nSe eliminará también su historial.'**
-  String get archivedHabitsDeleteBody;
-
   /// No description provided for @habitDetailFallbackTitle.
   ///
   /// In es, this message translates to:
@@ -3897,12 +3855,6 @@ abstract class AppLocalizations {
   /// **'Se borrará el hábito y su historial. Esta acción no se puede deshacer.'**
   String get habitDetailDeleteBody;
 
-  /// No description provided for @habitDetailArchiveAction.
-  ///
-  /// In es, this message translates to:
-  /// **'Archivar hábito'**
-  String get habitDetailArchiveAction;
-
   /// No description provided for @habitDetailDeleteAction.
   ///
   /// In es, this message translates to:
@@ -3926,42 +3878,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Estadísticas'**
   String get habitDetailStatsTab;
-
-  /// No description provided for @archiveHabitTileTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Archivar hábito'**
-  String get archiveHabitTileTitle;
-
-  /// No description provided for @archiveHabitTileArchivedSubtitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Este hábito está archivado (no aparecerá en la lista principal).'**
-  String get archiveHabitTileArchivedSubtitle;
-
-  /// No description provided for @archiveHabitTileActiveSubtitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Oculta este hábito de la lista principal sin borrarlo.'**
-  String get archiveHabitTileActiveSubtitle;
-
-  /// No description provided for @archiveHabitTileConfirmTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Archivar hábito'**
-  String get archiveHabitTileConfirmTitle;
-
-  /// No description provided for @archiveHabitTileConfirmBody.
-  ///
-  /// In es, this message translates to:
-  /// **'¿Quieres archivar este hábito? Podrás recuperarlo más adelante.'**
-  String get archiveHabitTileConfirmBody;
-
-  /// No description provided for @archiveHabitTileConfirmAction.
-  ///
-  /// In es, this message translates to:
-  /// **'Archivar'**
-  String get archiveHabitTileConfirmAction;
 
   /// No description provided for @habitStatsTitle.
   ///
@@ -6340,18 +6256,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Diario (Journal)'**
   String get drawerDiary;
-
-  /// No description provided for @drawerSectionArchive.
-  ///
-  /// In es, this message translates to:
-  /// **'ARCHIVO'**
-  String get drawerSectionArchive;
-
-  /// No description provided for @drawerArchived.
-  ///
-  /// In es, this message translates to:
-  /// **'Archivados'**
-  String get drawerArchived;
 
   /// No description provided for @drawerSectionAccount.
   ///

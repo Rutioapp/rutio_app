@@ -89,11 +89,6 @@ class _EditHabitTabState extends State<EditHabitTab> {
   @override
   void didUpdateWidget(covariant EditHabitTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final previousArchived = _formData.archived;
-    _formData.updateArchivedFromHabit(widget.habit);
-    if (_formData.archived != previousArchived) {
-      setState(() {});
-    }
   }
 
   @override

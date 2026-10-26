@@ -2091,30 +2091,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editProfileAddPhoto => 'Add profile photo';
 
   @override
-  String get archivedHabitsTitle => 'Archived habits';
-
-  @override
-  String get archivedHabitsEmpty => 'You don\'t have any archived habits.';
-
-  @override
-  String archivedHabitsFamilyLabel(String family) {
-    return 'Family: $family';
-  }
-
-  @override
-  String get archivedHabitsRestoreTooltip => 'Restore';
-
-  @override
-  String get archivedHabitsDeleteTooltip => 'Delete';
-
-  @override
-  String get archivedHabitsDeleteTitle => 'Delete habit';
-
-  @override
-  String get archivedHabitsDeleteBody =>
-      'Are you sure you want to delete this habit?\n\nIts history will also be deleted.';
-
-  @override
   String get habitDetailFallbackTitle => 'Habit';
 
   @override
@@ -2128,9 +2104,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The habit and its history will be deleted. This action cannot be undone.';
 
   @override
-  String get habitDetailArchiveAction => 'Archive habit';
-
-  @override
   String get habitDetailDeleteAction => 'Delete habit';
 
   @override
@@ -2141,27 +2114,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitDetailStatsTab => 'Statistics';
-
-  @override
-  String get archiveHabitTileTitle => 'Archive habit';
-
-  @override
-  String get archiveHabitTileArchivedSubtitle =>
-      'This habit is archived (it will not appear in the main list).';
-
-  @override
-  String get archiveHabitTileActiveSubtitle =>
-      'Hide this habit from the main list without deleting it.';
-
-  @override
-  String get archiveHabitTileConfirmTitle => 'Archive habit';
-
-  @override
-  String get archiveHabitTileConfirmBody =>
-      'Do you want to archive this habit? You can recover it later.';
-
-  @override
-  String get archiveHabitTileConfirmAction => 'Archive';
 
   @override
   String get habitStatsTitle => 'Statistics';
@@ -3554,12 +3506,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get drawerDiary => 'Diary (Journal)';
-
-  @override
-  String get drawerSectionArchive => 'ARCHIVE';
-
-  @override
-  String get drawerArchived => 'Archived';
 
   @override
   String get drawerSectionAccount => 'ACCOUNT';

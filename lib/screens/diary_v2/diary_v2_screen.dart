@@ -9,7 +9,6 @@ import 'package:rutio/models/daily_mood.dart';
 import 'package:rutio/models/diary_entry.dart';
 import 'package:rutio/screens/diary/models/diary_types.dart';
 import 'package:rutio/screens/diary/widgets/diary_screen_background.dart';
-import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/home/home_screen.dart';
@@ -189,7 +188,6 @@ class _DiaryV2ScreenState extends State<DiaryV2Screen>
         onGoMonthly: () => _navReplace(context, const HabitMonthlyScreen()),
         onGoDiary: () {},
         onGoDiaryV2: () => Navigator.of(context).pushReplacementNamed('/diary'),
-        onGoArchived: () => _navReplace(context, const ArchivedHabitsScreen()),
         onGoStats: () => Navigator.pushNamed(context, '/stats'),
         onGoShop: () => Navigator.pushNamed(context, '/shop'),
         onGoProfile: () => _navReplace(context, const ProfileScreen()),

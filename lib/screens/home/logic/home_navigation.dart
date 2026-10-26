@@ -50,12 +50,6 @@ extension _HomeScreenNavigation on _HomeScreenState {
         );
       },
       onGoDiaryV2: () => Navigator.pushNamed(context, '/diary'),
-      onGoArchived: () {
-        Navigator.push(
-          context,
-          CupertinoPageRoute(builder: (_) => const ArchivedHabitsScreen()),
-        );
-      },
       onGoStats: () => _openStatsOverview(context),
       onGoWeeklyReport: () => openWeeklyReport(context),
       weeklyReportLocked: weeklyReportLocked,

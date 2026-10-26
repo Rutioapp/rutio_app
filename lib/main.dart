@@ -81,7 +81,6 @@ import 'screens/shop_screen.dart';
 
 import 'screens/diary/diary_screen.dart';
 import 'screens/diary_v2/diary_v2_screen.dart';
-import 'screens/habit_archived_screen.dart';
 import 'screens/todo/todo_screen.dart';
 import 'features/statistics/presentation/v3/screens/statistics_v3_screen.dart';
 import 'features/weekly_report/data/weekly_report_repository.dart';
@@ -320,7 +319,6 @@ class MyApp extends StatelessWidget {
             '/diary': (_) => const DiaryV2Screen(),
             '/diary-legacy': (_) => const DiaryScreen(),
             DiaryV2Screen.route: (_) => const DiaryV2Screen(),
-            '/archived': (_) => ArchivedHabitsScreen(),
             '/stats': (_) => const StatisticsV3Screen(),
             StatisticsV3Screen.route: (_) => const StatisticsV3Screen(),
             WeeklyReportScreen.route: (_) => const WeeklyReportScreen(),

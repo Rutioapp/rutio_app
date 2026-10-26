@@ -2099,30 +2099,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editProfileAddPhoto => 'Añadir foto de perfil';
 
   @override
-  String get archivedHabitsTitle => 'Hábitos archivados';
-
-  @override
-  String get archivedHabitsEmpty => 'No tienes hábitos archivados.';
-
-  @override
-  String archivedHabitsFamilyLabel(String family) {
-    return 'Familia: $family';
-  }
-
-  @override
-  String get archivedHabitsRestoreTooltip => 'Restaurar';
-
-  @override
-  String get archivedHabitsDeleteTooltip => 'Eliminar';
-
-  @override
-  String get archivedHabitsDeleteTitle => 'Eliminar hábito';
-
-  @override
-  String get archivedHabitsDeleteBody =>
-      '¿Seguro que quieres eliminar este hábito?\n\nSe eliminará también su historial.';
-
-  @override
   String get habitDetailFallbackTitle => 'Hábito';
 
   @override
@@ -2136,9 +2112,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se borrará el hábito y su historial. Esta acción no se puede deshacer.';
 
   @override
-  String get habitDetailArchiveAction => 'Archivar hábito';
-
-  @override
   String get habitDetailDeleteAction => 'Eliminar hábito';
 
   @override
@@ -2149,27 +2122,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get habitDetailStatsTab => 'Estadísticas';
-
-  @override
-  String get archiveHabitTileTitle => 'Archivar hábito';
-
-  @override
-  String get archiveHabitTileArchivedSubtitle =>
-      'Este hábito está archivado (no aparecerá en la lista principal).';
-
-  @override
-  String get archiveHabitTileActiveSubtitle =>
-      'Oculta este hábito de la lista principal sin borrarlo.';
-
-  @override
-  String get archiveHabitTileConfirmTitle => 'Archivar hábito';
-
-  @override
-  String get archiveHabitTileConfirmBody =>
-      '¿Quieres archivar este hábito? Podrás recuperarlo más adelante.';
-
-  @override
-  String get archiveHabitTileConfirmAction => 'Archivar';
 
   @override
   String get habitStatsTitle => 'Estadísticas';
@@ -3572,12 +3524,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get drawerDiary => 'Diario (Journal)';
-
-  @override
-  String get drawerSectionArchive => 'ARCHIVO';
-
-  @override
-  String get drawerArchived => 'Archivados';
 
   @override
   String get drawerSectionAccount => 'CUENTA';

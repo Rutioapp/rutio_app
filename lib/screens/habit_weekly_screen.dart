@@ -220,7 +220,6 @@ class _HabitWeeklyScreenState extends State<HabitWeeklyScreen>
             ),
             onGoDiary: () => _replaceNamedAny(const ['/diary']),
             onGoDiaryV2: () => _replaceNamed('/diary'),
-            onGoArchived: () => _replaceNamedAny(const ['/archived']),
             onGoStats: () => _replaceWith(const StatisticsV3Screen()),
             onGoShop: () => Navigator.pushNamed(context, '/shop'),
             onGoProfile: () => _replaceNamed('/profile'),

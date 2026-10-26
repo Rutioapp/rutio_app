@@ -22,7 +22,6 @@ class AppViewDrawer extends StatelessWidget {
     required this.onGoMonthly,
     required this.onGoDiary,
     required this.onGoDiaryV2,
-    required this.onGoArchived,
     required this.onGoStats,
     this.onGoWeeklyReport,
     this.weeklyReportLocked = false,
@@ -36,7 +35,6 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoMonthly;
   final VoidCallback onGoDiary;
   final VoidCallback onGoDiaryV2;
-  final VoidCallback onGoArchived;
   final VoidCallback onGoStats;
   final VoidCallback? onGoWeeklyReport;
   final bool weeklyReportLocked;
@@ -44,7 +42,7 @@ class AppViewDrawer extends StatelessWidget {
   final VoidCallback onGoProfile;
 
   /// Valores sugeridos:
-  /// 'daily'|'weekly'|'monthly'|'weekly-report'|'diary'|'archived'|'stats'|'shop'|'profile'
+  /// 'daily'|'weekly'|'monthly'|'weekly-report'|'diary'|'stats'|'shop'|'profile'
   final String? selected;
 
   static const Color _skyTop = Color(0xFFEAF3FB);
@@ -153,15 +151,6 @@ class AppViewDrawer extends StatelessWidget {
                       label: context.l10n.diaryTitle,
                       isSelected: selected == 'diary',
                       onTap: () => _go(context, onGoDiary),
-                    ),
-                    const SizedBox(height: 18),
-                    _DrawerSectionLabel(context.l10n.drawerSectionArchive),
-                    const SizedBox(height: 8),
-                    _DrawerTile(
-                      icon: Icons.inventory_2_outlined,
-                      label: context.l10n.drawerArchived,
-                      isSelected: selected == 'archived',
-                      onTap: () => _go(context, onGoArchived),
                     ),
                     SizedBox(height: 18 + bottomInset),
                   ],

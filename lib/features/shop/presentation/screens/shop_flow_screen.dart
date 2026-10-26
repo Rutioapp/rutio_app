@@ -33,7 +33,6 @@ import 'package:rutio/features/shop/presentation/screens/shop_utilities_screen.d
 import 'package:rutio/features/shop/presentation/shop_ui_tokens.dart';
 import 'package:rutio/features/shop/presentation/widgets/shop_empty_state.dart';
 import 'package:rutio/screens/diary_v2/diary_v2_screen.dart';
-import 'package:rutio/screens/habit_archived_screen.dart';
 import 'package:rutio/screens/habit_monthly_screen.dart';
 import 'package:rutio/screens/habit_weekly_screen.dart';
 import 'package:rutio/screens/home/home_screen.dart';
@@ -759,8 +758,6 @@ class _ShopFlowScreenState extends State<ShopFlowScreen>
             onGoDiary: () => _navReplace(context, const DiaryV2Screen()),
             onGoDiaryV2: () =>
                 Navigator.of(context).pushReplacementNamed('/diary'),
-            onGoArchived: () =>
-                _navReplace(context, const ArchivedHabitsScreen()),
             onGoStats: () => _navReplace(context, const StatisticsV3Screen()),
             onGoShop: () {},
             onGoProfile: () => _navReplace(context, const ProfileScreen()),
