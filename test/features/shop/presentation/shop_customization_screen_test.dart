@@ -100,7 +100,7 @@ void main() {
         find.byKey(const Key('shopCustomizationCategory-userCards')),
         findsNothing,
       );
-      expect(find.text('Habit Cards'), findsWidgets);
+      expect(find.text('Tarjetas'), findsWidgets);
     });
 
     testWidgets('packs filter shows explicit and completed bundles',
@@ -798,7 +798,10 @@ Future<ShopCosmeticsController> _createCosmeticsController({
     },
   );
 
-  return ShopCosmeticsController(userStateStore: store);
+  return ShopCosmeticsController(
+    userStateStore: store,
+    cloudEnabled: false,
+  );
 }
 
 Future<ShopCosmeticsRepository> _shopRepository() async {

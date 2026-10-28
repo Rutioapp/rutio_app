@@ -2,11 +2,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/l10n/gen/app_localizations.dart';
 import 'package:rutio/widgets/loading/rutio_loading_screen.dart';
 import 'package:rutio/widgets/shared_widgets.dart';
 
 Widget _host(Widget child) {
-  return MaterialApp(home: child);
+  return MaterialApp(
+    locale: const Locale('es'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: child,
+  );
 }
 
 Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {

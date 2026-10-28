@@ -27,6 +27,7 @@ void main() {
           value: store,
           child: MaterialApp(
             navigatorKey: navigatorKey,
+            locale: const Locale('es'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: AchievementUnlockOverlayHost(
@@ -89,7 +90,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(FilledButton), findsNothing);
-      expect(store.callLog.where((entry) => entry.startsWith('markLevel')), isEmpty);
+      expect(store.callLog.where((entry) => entry.startsWith('markLevel')),
+          isEmpty);
       expect(
         store.callLog.where((entry) => entry == 'consumeAchievement'),
         isEmpty,
@@ -127,7 +129,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(store.callLog.where((entry) => entry == 'consumeLevel').length, 1);
-      expect(store.callLog.where((entry) => entry.startsWith('markLevel')), isEmpty);
+      expect(store.callLog.where((entry) => entry.startsWith('markLevel')),
+          isEmpty);
       expect(store.pendingLevelCelebrationCount, 0);
       expect(find.text('Ver mis logros'), findsNothing);
     },

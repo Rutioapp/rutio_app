@@ -136,7 +136,13 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Send feedback'));
+    final feedback = find.text('Send feedback');
+    await tester.scrollUntilVisible(
+      feedback,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(feedback);
     await tester.pumpAndSettle();
 
     expect(find.text('Feedback destination'), findsOneWidget);

@@ -73,7 +73,11 @@ class FlexibleWeeklyQuotaPeriodAggregator {
       if (result.eligibleDays > 0 || result.scheduledQuota > 0) {
         results.add(result);
       }
-      weekStart = week.weekEndDate.add(const Duration(days: 1));
+      weekStart = DateTime(
+        week.weekEndDate.year,
+        week.weekEndDate.month,
+        week.weekEndDate.day + 1,
+      );
     }
 
     var completed = 0;
@@ -100,7 +104,7 @@ WeeklyReportWeek _weekForDate(DateTime date, int weekStartsOn) {
   final start = _weekStartForDate(date, weekStartsOn);
   return WeeklyReportWeek(
     weekStartDate: start,
-    weekEndDate: start.add(const Duration(days: 6)),
+    weekEndDate: DateTime(start.year, start.month, start.day + 6),
   );
 }
 
@@ -108,7 +112,7 @@ DateTime _weekStartForDate(DateTime date, int weekStartsOn) {
   final normalized = dateOnly(date);
   final delta = (normalized.weekday - weekStartsOn + DateTime.daysPerWeek) %
       DateTime.daysPerWeek;
-  return normalized.subtract(Duration(days: delta));
+  return DateTime(normalized.year, normalized.month, normalized.day - delta);
 }
 
 FlexibleWeeklyDataQuality _mergeQuality(

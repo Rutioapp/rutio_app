@@ -16,7 +16,7 @@ void main() {
       'supabase/seeds/completed_day_phrase_es_es_v1.sql',
     ).readAsStringSync();
     final block = RegExp(
-      r'insert into _completed_day_phrase_expected \([\s\S]*?\) values\n'
+      r'insert into _completed_day_phrase_expected \([\s\S]*?\) values\s*\n'
       r'([\s\S]*?)\n;',
       caseSensitive: false,
     ).firstMatch(sql);

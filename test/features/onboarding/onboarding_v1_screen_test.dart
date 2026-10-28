@@ -252,6 +252,8 @@ void main() {
       size: const Size(280, 420),
       textScaleFactor: 1.6,
     );
+    final welcomeException = tester.takeException();
+    if (welcomeException != null) debugPrint(welcomeException.toString());
     await tester.scrollUntilVisible(
       find.text('Continuar donde lo dejé'),
       180,

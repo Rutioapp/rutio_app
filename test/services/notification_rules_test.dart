@@ -5,11 +5,11 @@ import 'package:rutio/services/notification_rules.dart';
 void main() {
   final now = DateTime(2026, 8, 31, 10);
 
-  test('only configured streak milestones from 7 days produce candidates', () {
-    for (final streak in <int>[1, 3, 6]) {
+  test('only configured streak milestones produce candidates', () {
+    for (final streak in <int>[2, 4, 6]) {
       expect(_detect(now: now, streak: streak), isEmpty);
     }
-    for (final streak in <int>[7, 14, 30]) {
+    for (final streak in <int>[1, 3, 7, 14, 30]) {
       expect(_detect(now: now, streak: streak), hasLength(1));
     }
   });
@@ -62,7 +62,9 @@ List<NotificationCelebrationEvent> _detect({
   }
 
   final history = <String, dynamic>{
-    'habitCompletions': <String, dynamic>{},
+    'habitCompletions': <String, dynamic>{
+      nowKey(now): {for (final habitId in habitIds) habitId: true},
+    },
     'habitCompletionTimes': <String, dynamic>{nowKey(now): completions},
   };
   for (var index = 1; index < streak; index++) {

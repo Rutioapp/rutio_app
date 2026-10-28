@@ -369,54 +369,61 @@ class _RutioLoadingScreenState extends State<RutioLoadingScreen>
                     ),
                   ),
                   SafeArea(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 28),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 440),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(height: 120),
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 220),
-                                transitionBuilder: (child, animation) =>
-                                    FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                ),
-                                child: Text(
-                                  _phase == RutioLoadingPhase.completed
-                                      ? 'Todo listo'
-                                      : widget.title,
-                                  key: ValueKey<bool>(
-                                    _phase == RutioLoadingPhase.completed,
+                    child: SingleChildScrollView(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 28),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 440),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(height: 120),
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 220),
+                                    transitionBuilder: (child, animation) =>
+                                        FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    ),
+                                    child: Text(
+                                      _phase == RutioLoadingPhase.completed
+                                          ? 'Todo listo'
+                                          : widget.title,
+                                      key: ValueKey<bool>(
+                                        _phase == RutioLoadingPhase.completed,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      style:
+                                          AppTextStyles.welcomeTitle.copyWith(
+                                        color: AppColors.ink,
+                                        fontSize: 28,
+                                      ),
+                                    ),
                                   ),
-                                  textAlign: TextAlign.center,
-                                  style: AppTextStyles.welcomeTitle.copyWith(
-                                    color: AppColors.ink,
-                                    fontSize: 28,
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    error ?? widget.subtitle,
+                                    textAlign: TextAlign.center,
+                                    style: AppTextStyles.welcomeSub.copyWith(
+                                      color: AppColors.inkSoft,
+                                      fontSize: 14,
+                                    ),
                                   ),
-                                ),
+                                  if (error != null &&
+                                      widget.onRetry != null) ...[
+                                    const SizedBox(height: 22),
+                                    FilledButton(
+                                      onPressed: widget.onRetry,
+                                      child: Text(context.l10n.commonRetry),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 120),
+                                ],
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                error ?? widget.subtitle,
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.welcomeSub.copyWith(
-                                  color: AppColors.inkSoft,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              if (error != null && widget.onRetry != null) ...[
-                                const SizedBox(height: 22),
-                                FilledButton(
-                                  onPressed: widget.onRetry,
-                                  child: Text(context.l10n.commonRetry),
-                                ),
-                              ],
-                              const SizedBox(height: 120),
-                            ],
+                            ),
                           ),
                         ),
                       ),

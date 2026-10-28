@@ -627,11 +627,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final l10n = _l10n(tester);
       await tester.tap(find.text(l10n.habitStatsPeriodMonth));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(
         find.text(

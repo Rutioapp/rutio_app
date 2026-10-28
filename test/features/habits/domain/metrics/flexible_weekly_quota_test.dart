@@ -168,6 +168,51 @@ void main() {
     expect(result.completedCount, 2);
   });
 
+  test('a range crossing the autumn clock change advances weekly buckets', () {
+    final result = aggregator.aggregate(
+      habit: _habit(target: 4),
+      history: _history(),
+      startDate: DateTime(2026, 10, 1),
+      endDate: DateTime(2026, 10, 28),
+    );
+
+    expect(result.weeklyResults, hasLength(5));
+    expect(result.scheduledCount, 17);
+  });
+
+  test('a range crossing the spring clock change advances strictly by week',
+      () {
+    final result = aggregator.aggregate(
+      habit: _habit(target: 4),
+      history: _history(),
+      startDate: DateTime(2026, 3, 1),
+      endDate: DateTime(2026, 3, 31),
+    );
+    final starts =
+        result.weeklyResults.map((value) => value.weekStart).toList();
+
+    expect(starts, hasLength(6));
+    expect(starts.toSet(), hasLength(starts.length));
+    for (var index = 1; index < starts.length; index += 1) {
+      expect(starts[index].isAfter(starts[index - 1]), isTrue);
+    }
+    expect(result.scheduledCount, 19);
+  });
+
+  test('a leap February preserves the quota across its 29 calendar days', () {
+    final result = aggregator.aggregate(
+      habit: _habit(target: 4),
+      history: _history(),
+      startDate: DateTime(2028, 2, 1),
+      endDate: DateTime(2028, 2, 29),
+    );
+
+    expect(result.weeklyResults, hasLength(5));
+    expect(result.weeklyResults.first.weekStart, DateTime(2028, 1, 31));
+    expect(result.weeklyResults.last.weekEnd, DateTime(2028, 3, 5));
+    expect(result.scheduledCount, 18);
+  });
+
   test('range crossing two weeks never creates seven flexible obligations', () {
     final result = aggregator.aggregate(
       habit: _habit(target: 3),

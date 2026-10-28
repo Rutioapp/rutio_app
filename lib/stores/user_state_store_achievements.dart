@@ -396,7 +396,7 @@ HabitStreakSnapshot _habitStreakSnapshotForHabitId(
   return _habitStreakSnapshotForHabit(
     userState,
     habit: habit,
-    today: today ?? DateTime.now(),
+    today: today ?? store._nowProvider(),
   );
 }
 
@@ -411,7 +411,11 @@ Map<String, HabitStreakSnapshot> _habitStreakSnapshots(UserStateStore store) {
   for (final habit in activeHabits) {
     final habitId = _habitIdValue(habit);
     if (habitId == null || habitId.isEmpty) continue;
-    output[habitId] = _habitStreakSnapshotForHabit(userState, habit: habit);
+    output[habitId] = _habitStreakSnapshotForHabit(
+      userState,
+      habit: habit,
+      today: store._nowProvider(),
+    );
   }
 
   return output;
@@ -1198,6 +1202,13 @@ int _computeComebackAfterGapCount(Map<DateTime, int> countsByDay) {
 int _computeCurrentStreak(Map<DateTime, int> countsByDay, DateTime today) {
   var streak = 0;
   var cursor = DateTime(today.year, today.month, today.day);
+
+  // A day without a recorded occurrence is still pending. In that case the
+  // streak ends at the most recent closed day instead of being reset before
+  // the user has had an opportunity to complete today's habit.
+  if (!countsByDay.containsKey(cursor)) {
+    cursor = cursor.subtract(const Duration(days: 1));
+  }
 
   while ((countsByDay[cursor] ?? 0) > 0) {
     streak += 1;

@@ -8,8 +8,8 @@ import 'package:rutio/features/shop/data/cloud/shop_cloud_remote_data_sources.da
 
 void main() {
   group('ShopCloudConfig', () {
-    test('is disabled by default', () {
-      expect(ShopCloudConfig.isReadEnabled, isFalse);
+    test('follows the compiled cloud runtime profile', () {
+      expect(ShopCloudConfig.isReadEnabled, isTrue);
     });
   });
 

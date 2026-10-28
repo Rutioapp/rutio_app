@@ -290,6 +290,7 @@ Future<_Env> _createEnv({
       shopRepository: shopRepository,
       mysteryBoxOpeningRepository: failingTransactionRepository,
       randomSource: FixedRandomSource(randomValues),
+      cloudEnabled: false,
       nowProvider: () => DateTime(2026, 7, 13, 12),
     ),
     shopRepository: shopRepository,

@@ -172,7 +172,32 @@ class NotificationRules {
       );
     }
 
+    final completionTimes = mapCast(
+      mapCast(mapCast(_userState(currentState)['history'])[
+          'habitCompletionTimes'])[_dateKey(now)],
+    );
+    final originalOrder = <String, int>{};
+    for (var index = 0; index < events.length; index += 1) {
+      originalOrder[events[index].habitId] = index;
+    }
+    events.sort((left, right) {
+      final leftTime = _completionTimestamp(completionTimes[left.habitId]);
+      final rightTime = _completionTimestamp(completionTimes[right.habitId]);
+      if (leftTime != null && rightTime != null && leftTime != rightTime) {
+        return leftTime.compareTo(rightTime);
+      }
+      if (leftTime != null && rightTime == null) return -1;
+      if (leftTime == null && rightTime != null) return 1;
+      return originalOrder[left.habitId]!
+          .compareTo(originalOrder[right.habitId]!);
+    });
+
     return events;
+  }
+
+  static int? _completionTimestamp(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
   }
 
   static List<JsonMap> _pendingHabitsToday(JsonMap root, DateTime now) {
