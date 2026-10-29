@@ -6,7 +6,9 @@ import '../../domain/models/pending_currency_operation.dart';
 import '../../domain/pending_currency_operation_store.dart';
 
 class SharedPreferencesPendingCurrencyOperationStore
-    implements PendingCurrencyOperationStore {
+    implements
+        PendingCurrencyOperationStore,
+        PendingCurrencyOperationStoreWithStatus {
   SharedPreferencesPendingCurrencyOperationStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     PendingQueueDiagnosticSink? diagnosticSink,
@@ -32,6 +34,7 @@ class SharedPreferencesPendingCurrencyOperationStore
     return result.values;
   }
 
+  @override
   Future<PendingQueueReadResult<PendingCurrencyOperation>>
       loadPendingOperationsWithStatus(String userId) {
     return _storage.read<PendingCurrencyOperation>(
@@ -46,6 +49,20 @@ class SharedPreferencesPendingCurrencyOperationStore
     List<PendingCurrencyOperation> operations,
   ) async {
     await _storage.write<PendingCurrencyOperation>(
+      key: _storageKey(userId),
+      values: operations,
+      decode: _decode,
+      encode: (values) =>
+          values.map((operation) => operation.toJson()).toList(growable: false),
+    );
+  }
+
+  @override
+  Future<bool> savePendingOperationsConfirmed(
+    String userId,
+    List<PendingCurrencyOperation> operations,
+  ) {
+    return _storage.write<PendingCurrencyOperation>(
       key: _storageKey(userId),
       values: operations,
       decode: _decode,

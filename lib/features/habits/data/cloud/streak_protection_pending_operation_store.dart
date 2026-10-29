@@ -145,8 +145,88 @@ abstract class StreakProtectionPendingOperationStore {
   Future<void> clearRecoverOperation(String userId, String operationId);
 }
 
+abstract interface class StreakProtectionPendingOperationStoreWithStatus {
+  Future<PendingQueueReadResult<PendingStreakShieldOperation>>
+      loadShieldOperationsWithStatus(String userId);
+  Future<bool> saveShieldOperationConfirmed(
+    PendingStreakShieldOperation operation,
+  );
+  Future<PendingQueueReadResult<PendingStreakRecoverOperation>>
+      loadRecoverOperationsWithStatus(String userId);
+  Future<bool> saveRecoverOperationConfirmed(
+    PendingStreakRecoverOperation operation,
+  );
+}
+
+extension StreakProtectionPendingOperationStoreStatusAccess
+    on StreakProtectionPendingOperationStore {
+  Future<PendingQueueReadResult<PendingStreakShieldOperation>>
+      loadShieldOperationsWithStatus(String userId) {
+    final store = this;
+    if (store is StreakProtectionPendingOperationStoreWithStatus) {
+      return (store as StreakProtectionPendingOperationStoreWithStatus)
+          .loadShieldOperationsWithStatus(userId);
+    }
+    return loadShieldOperation(userId, '').then(
+      (value) => PendingQueueReadResult<PendingStreakShieldOperation>(
+        status: value == null
+            ? PendingQueueReadStatus.empty
+            : PendingQueueReadStatus.valid,
+        values:
+            value == null ? const [] : <PendingStreakShieldOperation>[value],
+      ),
+    );
+  }
+
+  Future<bool> saveShieldOperationConfirmed(
+    PendingStreakShieldOperation operation,
+  ) {
+    final store = this;
+    if (store is StreakProtectionPendingOperationStoreWithStatus) {
+      return (store as StreakProtectionPendingOperationStoreWithStatus)
+          .saveShieldOperationConfirmed(operation);
+    }
+    return saveShieldOperation(operation)
+        .then((_) => true)
+        .catchError((_) => false);
+  }
+
+  Future<PendingQueueReadResult<PendingStreakRecoverOperation>>
+      loadRecoverOperationsWithStatus(String userId) {
+    final store = this;
+    if (store is StreakProtectionPendingOperationStoreWithStatus) {
+      return (store as StreakProtectionPendingOperationStoreWithStatus)
+          .loadRecoverOperationsWithStatus(userId);
+    }
+    return loadRecoverOperation(userId, '').then(
+      (value) => PendingQueueReadResult<PendingStreakRecoverOperation>(
+        status: value == null
+            ? PendingQueueReadStatus.empty
+            : PendingQueueReadStatus.valid,
+        values:
+            value == null ? const [] : <PendingStreakRecoverOperation>[value],
+      ),
+    );
+  }
+
+  Future<bool> saveRecoverOperationConfirmed(
+    PendingStreakRecoverOperation operation,
+  ) {
+    final store = this;
+    if (store is StreakProtectionPendingOperationStoreWithStatus) {
+      return (store as StreakProtectionPendingOperationStoreWithStatus)
+          .saveRecoverOperationConfirmed(operation);
+    }
+    return saveRecoverOperation(operation)
+        .then((_) => true)
+        .catchError((_) => false);
+  }
+}
+
 class SharedPreferencesStreakProtectionPendingOperationStore
-    implements StreakProtectionPendingOperationStore {
+    implements
+        StreakProtectionPendingOperationStore,
+        StreakProtectionPendingOperationStoreWithStatus {
   SharedPreferencesStreakProtectionPendingOperationStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     PendingQueueDiagnosticSink? diagnosticSink,
@@ -177,6 +257,12 @@ class SharedPreferencesStreakProtectionPendingOperationStore
   }
 
   @override
+  Future<PendingQueueReadResult<PendingStreakShieldOperation>>
+      loadShieldOperationsWithStatus(String userId) {
+    return _loadShieldOperationsWithStatus(userId);
+  }
+
+  @override
   Future<void> saveShieldOperation(
       PendingStreakShieldOperation operation) async {
     final result = await _loadShieldOperationsWithStatus(operation.userId);
@@ -192,6 +278,26 @@ class SharedPreferencesStreakProtectionPendingOperationStore
       encode: (values) =>
           values.map((entry) => entry.toJson()).toList(growable: false),
     );
+  }
+
+  @override
+  Future<bool> saveShieldOperationConfirmed(
+    PendingStreakShieldOperation operation,
+  ) {
+    final result = _loadShieldOperationsWithStatus(operation.userId);
+    return result.then((current) async {
+      if (!current.isUsable) return false;
+      final operations = List<PendingStreakShieldOperation>.from(current.values)
+        ..removeWhere((entry) => entry.operationId == operation.operationId)
+        ..add(operation);
+      return _storage.write<PendingStreakShieldOperation>(
+        key: _shieldKey(operation.userId),
+        values: operations,
+        decode: _decodeShield,
+        encode: (values) =>
+            values.map((entry) => entry.toJson()).toList(growable: false),
+      );
+    });
   }
 
   @override
@@ -222,6 +328,12 @@ class SharedPreferencesStreakProtectionPendingOperationStore
   }
 
   @override
+  Future<PendingQueueReadResult<PendingStreakRecoverOperation>>
+      loadRecoverOperationsWithStatus(String userId) {
+    return _loadRecoverOperationsWithStatus(userId);
+  }
+
+  @override
   Future<void> saveRecoverOperation(
     PendingStreakRecoverOperation operation,
   ) async {
@@ -238,6 +350,27 @@ class SharedPreferencesStreakProtectionPendingOperationStore
       encode: (values) =>
           values.map((entry) => entry.toJson()).toList(growable: false),
     );
+  }
+
+  @override
+  Future<bool> saveRecoverOperationConfirmed(
+    PendingStreakRecoverOperation operation,
+  ) {
+    final result = _loadRecoverOperationsWithStatus(operation.userId);
+    return result.then((current) async {
+      if (!current.isUsable) return false;
+      final operations =
+          List<PendingStreakRecoverOperation>.from(current.values)
+            ..removeWhere((entry) => entry.operationId == operation.operationId)
+            ..add(operation);
+      return _storage.write<PendingStreakRecoverOperation>(
+        key: _recoverKey(operation.userId),
+        values: operations,
+        decode: _decodeRecover,
+        encode: (values) =>
+            values.map((entry) => entry.toJson()).toList(growable: false),
+      );
+    });
   }
 
   @override

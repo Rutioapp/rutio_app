@@ -6,7 +6,7 @@ import '../domain/models/pending_shop_purchase.dart';
 import '../domain/pending_shop_operation_store.dart';
 
 class SharedPreferencesPendingShopOperationStore
-    implements PendingShopOperationStore {
+    implements PendingShopOperationStore, PendingShopOperationStoreWithStatus {
   SharedPreferencesPendingShopOperationStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     PendingQueueDiagnosticSink? diagnosticSink,
@@ -28,6 +28,7 @@ class SharedPreferencesPendingShopOperationStore
     return (await loadPendingPurchasesWithStatus(userId)).values;
   }
 
+  @override
   Future<PendingQueueReadResult<PendingShopPurchase>>
       loadPendingPurchasesWithStatus(String userId) {
     return _storage.read<PendingShopPurchase>(
@@ -42,6 +43,20 @@ class SharedPreferencesPendingShopOperationStore
     List<PendingShopPurchase> purchases,
   ) async {
     await _storage.write<PendingShopPurchase>(
+      key: _storageKey(userId),
+      values: purchases,
+      decode: _decode,
+      encode: (values) =>
+          values.map((purchase) => purchase.toJson()).toList(growable: false),
+    );
+  }
+
+  @override
+  Future<bool> savePendingPurchasesConfirmed(
+    String userId,
+    List<PendingShopPurchase> purchases,
+  ) {
+    return _storage.write<PendingShopPurchase>(
       key: _storageKey(userId),
       values: purchases,
       decode: _decode,

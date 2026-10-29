@@ -6,7 +6,9 @@ import '../../domain/models/pending_cloud_cosmetics_purchase.dart';
 import '../../domain/pending_cloud_cosmetics_purchase_store.dart';
 
 class SharedPreferencesPendingCloudCosmeticsPurchaseStore
-    implements PendingCloudCosmeticsPurchaseStore {
+    implements
+        PendingCloudCosmeticsPurchaseStore,
+        PendingCloudCosmeticsPurchaseStoreWithStatus {
   SharedPreferencesPendingCloudCosmeticsPurchaseStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     PendingQueueDiagnosticSink? diagnosticSink,
@@ -36,6 +38,7 @@ class SharedPreferencesPendingCloudCosmeticsPurchaseStore
     return (await loadPendingPurchasesWithStatus(normalizedUserId)).values;
   }
 
+  @override
   Future<PendingQueueReadResult<PendingCloudCosmeticsPurchase>>
       loadPendingPurchasesWithStatus(String userId) {
     final normalizedUserId = userId.trim();
@@ -72,6 +75,34 @@ class SharedPreferencesPendingCloudCosmeticsPurchaseStore
       });
 
     await _storage.write<PendingCloudCosmeticsPurchase>(
+      key: _storageKey(normalizedUserId),
+      values: normalized,
+      decode: (rows) => _decode(rows, normalizedUserId),
+      encode: (values) =>
+          values.map((purchase) => purchase.toJson()).toList(growable: false),
+    );
+  }
+
+  @override
+  Future<bool> savePendingPurchasesConfirmed(
+    String userId,
+    List<PendingCloudCosmeticsPurchase> purchases,
+  ) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) return Future<bool>.value(false);
+
+    final byKey = <String, PendingCloudCosmeticsPurchase>{};
+    for (final purchase in purchases) {
+      if (purchase.userId != normalizedUserId) continue;
+      byKey[purchase.logicalKey] = purchase;
+    }
+    final normalized = byKey.values.toList(growable: false)
+      ..sort((a, b) {
+        final byCreated = a.createdAtMillis.compareTo(b.createdAtMillis);
+        if (byCreated != 0) return byCreated;
+        return a.logicalKey.compareTo(b.logicalKey);
+      });
+    return _storage.write<PendingCloudCosmeticsPurchase>(
       key: _storageKey(normalizedUserId),
       values: normalized,
       decode: (rows) => _decode(rows, normalizedUserId),

@@ -4995,6 +4995,12 @@ Future<StreakShieldOperationResult> _activateStreakShield(
       protectedOccurrenceDate: _dateKey(now),
       utilityId: normalizedUtilityId,
     );
+    if (pending == null) {
+      return const StreakShieldOperationResult(
+        status: StreakShieldOperationStatus.persistenceFailure,
+        errorMessage: 'Pending shield operation could not be persisted.',
+      );
+    }
     _logStreakShieldCloud(
       'start habitId=$normalizedHabitId remoteHabitId=$cloudRewardHabitId '
       'operationId=$normalizedOperationId requestId=${pending.requestId}',
@@ -5237,6 +5243,12 @@ Future<StreakRecoverOperationResult> _recoverStreakBreak(
       operationId: normalizedOperationId,
       utilityId: 'utility_streak_recover_1',
     );
+    if (pending == null) {
+      return const StreakRecoverOperationResult(
+        status: StreakRecoverOperationStatus.persistenceFailure,
+        errorMessage: 'Pending recover operation could not be persisted.',
+      );
+    }
     _logStreakRecoverCloud(
       'start breakId=$remoteBreakId operationId=$normalizedOperationId requestId=${pending.requestId}',
     );

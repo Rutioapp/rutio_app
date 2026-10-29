@@ -216,8 +216,15 @@ class OpenMysteryBoxUseCase {
       );
     }
 
-    final pendingOperations =
-        await _pendingMysteryBoxOperationStore.loadPendingOperations(scope);
+    final pendingResult = await _pendingMysteryBoxOperationStore
+        .loadPendingOperationsWithStatus(scope);
+    if (!pendingResult.isUsable) {
+      return const MysteryBoxOperationResult(
+        status: MysteryBoxOperationStatus.persistenceError,
+        errorMessage: 'Mystery Box pending storage is unavailable.',
+      );
+    }
+    final pendingOperations = pendingResult.values;
     final existingPending =
         pendingOperations.isNotEmpty ? pendingOperations.first : null;
 
@@ -267,7 +274,12 @@ class OpenMysteryBoxUseCase {
       attemptCount: (existingPending?.attemptCount ?? 0) + 1,
     );
 
-    await _upsertPendingCloudMysteryBoxOperation(pendingOperation);
+    if (!await _upsertPendingCloudMysteryBoxOperation(pendingOperation)) {
+      return const MysteryBoxOperationResult(
+        status: MysteryBoxOperationStatus.persistenceError,
+        errorMessage: 'Mystery Box pending operation could not be persisted.',
+      );
+    }
 
     try {
       final remoteResult = await _cloudMysteryBoxOpeningRepository
@@ -283,7 +295,16 @@ class OpenMysteryBoxUseCase {
           scope,
           nextTransactions,
         );
-        await _pendingMysteryBoxOperationStore.clearPendingOperations(scope);
+        final cleared = await _pendingMysteryBoxOperationStore
+            .clearPendingOperationsConfirmed(scope);
+        if (!cleared) {
+          return MysteryBoxOperationResult(
+            status: MysteryBoxOperationStatus.persistenceError,
+            transaction: transaction,
+            walletCoins: remoteResult.balanceAfter,
+            errorMessage: 'Mystery Box pending operation could not be cleared.',
+          );
+        }
       } catch (error) {
         return MysteryBoxOperationResult(
           status: MysteryBoxOperationStatus.persistenceError,
@@ -319,7 +340,6 @@ class OpenMysteryBoxUseCase {
         errorMessage: error.message,
       );
     } catch (error) {
-      await _pendingMysteryBoxOperationStore.clearPendingOperations(scope);
       return MysteryBoxOperationResult(
         status: MysteryBoxOperationStatus.persistenceError,
         errorMessage: error.toString(),
@@ -495,8 +515,9 @@ class OpenMysteryBoxUseCase {
 
   Map<String, dynamic> _map(dynamic value) {
     if (value is Map<String, dynamic>) return Map<String, dynamic>.from(value);
-    if (value is Map)
+    if (value is Map) {
       return Map<String, dynamic>.from(value.cast<String, dynamic>());
+    }
     return <String, dynamic>{};
   }
 
@@ -524,14 +545,16 @@ class OpenMysteryBoxUseCase {
     }
   }
 
-  Future<void> _upsertPendingCloudMysteryBoxOperation(
+  Future<bool> _upsertPendingCloudMysteryBoxOperation(
     PendingMysteryBoxOpening operation,
   ) async {
     final userId = operation.userId.trim();
-    if (userId.isEmpty) return;
+    if (userId.isEmpty) return false;
 
-    final current =
-        await _pendingMysteryBoxOperationStore.loadPendingOperations(userId);
+    final currentResult = await _pendingMysteryBoxOperationStore
+        .loadPendingOperationsWithStatus(userId);
+    if (!currentResult.isUsable) return false;
+    final current = currentResult.values;
     final next = <PendingMysteryBoxOpening>[
       for (final existing in current)
         if (existing.requestId != operation.requestId) existing,
@@ -542,7 +565,8 @@ class OpenMysteryBoxUseCase {
         return a.requestId.compareTo(b.requestId);
       });
 
-    await _pendingMysteryBoxOperationStore.savePendingOperations(userId, next);
+    return _pendingMysteryBoxOperationStore.savePendingOperationsConfirmed(
+        userId, next);
   }
 
   String _generateMysteryBoxTransactionId() {

@@ -113,7 +113,12 @@ class HabitCurrencyRewardCoordinator {
     final userId = _currentUserId();
     if (userId == null) return const <HabitCurrencyRewardOperationResult>[];
 
-    final pending = await _pendingOperationStore.loadPendingOperations(userId);
+    final pendingResult =
+        await _pendingOperationStore.loadPendingOperationsWithStatus(userId);
+    if (!pendingResult.isUsable) {
+      return const <HabitCurrencyRewardOperationResult>[];
+    }
+    final pending = pendingResult.values;
     if (pending.isEmpty) return const <HabitCurrencyRewardOperationResult>[];
 
     final results = <HabitCurrencyRewardOperationResult>[];
@@ -125,7 +130,10 @@ class HabitCurrencyRewardCoordinator {
         );
         if (remoteHabitId != null && operation.habitId != remoteHabitId) {
           operation = operation.copyWith(habitId: remoteHabitId);
-          await _upsertPendingOperation(operation);
+          if (!await _upsertPendingOperation(operation)) {
+            results.add(_persistenceFailureResult(operation));
+            continue;
+          }
         }
       }
       if (remoteHabitId == null) {
@@ -209,8 +217,27 @@ class HabitCurrencyRewardCoordinator {
       habitId: normalizedHabitId,
       localDateKey: normalizedDateKey,
     );
-    final pendingOperations =
-        await _pendingOperationStore.loadPendingOperations(userId);
+    final pendingResult =
+        await _pendingOperationStore.loadPendingOperationsWithStatus(userId);
+    if (!pendingResult.isUsable) {
+      return _persistenceFailureResult(
+        PendingCurrencyOperation(
+          userId: userId,
+          requestId: requestId?.trim() ?? '',
+          habitId: pendingHabitId,
+          logicalDateKey: normalizedDateKey,
+          completionEventId: completionEventId ?? '',
+          operationType: operationType,
+          createdAtMillis: _nowProvider().millisecondsSinceEpoch,
+          lastAttemptAtMillis: _nowProvider().millisecondsSinceEpoch,
+          attemptCount: 0,
+          status: PendingCurrencyOperationStatus.awaitingResolution,
+          value: value,
+        ),
+        transaction: transaction,
+      );
+    }
+    final pendingOperations = pendingResult.values;
     final pendingOperationForSource = pendingOperations.where((operation) {
       return _pendingHabitMatches(
             operation.habitId,
@@ -336,7 +363,12 @@ class HabitCurrencyRewardCoordinator {
           );
 
     if (!hasExistingPending) {
-      await _upsertPendingOperation(pendingOperation);
+      if (!await _upsertPendingOperation(pendingOperation)) {
+        return _persistenceFailureResult(
+          pendingOperation,
+          transaction: transaction,
+        );
+      }
     }
 
     final maxAttempts = 1 + _maxAutoRetries;
@@ -349,7 +381,12 @@ class HabitCurrencyRewardCoordinator {
             ? PendingCurrencyOperationStatus.pending
             : PendingCurrencyOperationStatus.awaitingResolution,
       );
-      await _upsertPendingOperation(attemptOperation);
+      if (!await _upsertPendingOperation(attemptOperation)) {
+        return _persistenceFailureResult(
+          attemptOperation,
+          transaction: transaction,
+        );
+      }
 
       final response = await _callRemote(
         operationType: operationType,
@@ -496,11 +533,14 @@ class HabitCurrencyRewardCoordinator {
     );
   }
 
-  Future<void> _upsertPendingOperation(
+  Future<bool> _upsertPendingOperation(
       PendingCurrencyOperation operation) async {
     final userId = operation.userId.trim();
-    if (userId.isEmpty) return;
-    final current = await _pendingOperationStore.loadPendingOperations(userId);
+    if (userId.isEmpty) return false;
+    final currentResult =
+        await _pendingOperationStore.loadPendingOperationsWithStatus(userId);
+    if (!currentResult.isUsable) return false;
+    final current = currentResult.values;
     final next = <PendingCurrencyOperation>[
       for (final existing in current)
         if (existing.requestId != operation.requestId) existing,
@@ -510,15 +550,36 @@ class HabitCurrencyRewardCoordinator {
         if (byCreated != 0) return byCreated;
         return a.requestId.compareTo(b.requestId);
       });
-    await _pendingOperationStore.savePendingOperations(userId, next);
+    return _pendingOperationStore.savePendingOperationsConfirmed(userId, next);
   }
 
-  Future<void> _removePendingOperation(String userId, String requestId) async {
-    final current = await _pendingOperationStore.loadPendingOperations(userId);
+  HabitCurrencyRewardOperationResult _persistenceFailureResult(
+    PendingCurrencyOperation operation, {
+    HabitRewardTransaction? transaction,
+  }) {
+    return HabitCurrencyRewardOperationResult(
+      state: HabitCurrencyRewardState.pending,
+      pendingOperation: operation.copyWith(
+        status: PendingCurrencyOperationStatus.awaitingResolution,
+      ),
+      transaction: transaction,
+      failure: const HabitCurrencyRewardFailure(
+        code: HabitCurrencyRewardFailureCode.persistenceUnavailable,
+        message: 'Pending operation could not be persisted.',
+        retryable: true,
+      ),
+    );
+  }
+
+  Future<bool> _removePendingOperation(String userId, String requestId) async {
+    final currentResult =
+        await _pendingOperationStore.loadPendingOperationsWithStatus(userId);
+    if (!currentResult.isUsable) return false;
+    final current = currentResult.values;
     final next = current
         .where((operation) => operation.requestId != requestId)
         .toList(growable: false);
-    await _pendingOperationStore.savePendingOperations(userId, next);
+    return _pendingOperationStore.savePendingOperationsConfirmed(userId, next);
   }
 
   Future<void> _savePendingAsAwaiting(

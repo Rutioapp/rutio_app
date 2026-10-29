@@ -16,7 +16,8 @@ class AchievementLevelRewardCoordinator {
   })  : _rewardRepository = rewardRepository,
         _pendingClaimStore = pendingClaimStore,
         _currentUserIdProvider = currentUserIdProvider,
-        _enabled = AchievementLevelRewardConfig.resolveEnabled(override: enabled),
+        _enabled =
+            AchievementLevelRewardConfig.resolveEnabled(override: enabled),
         _nowProvider = nowProvider ?? DateTime.now,
         _maxAutoRetries = maxAutoRetries;
 
@@ -58,17 +59,26 @@ class AchievementLevelRewardCoordinator {
     int maxOperations = 5,
   }) async {
     if (!_enabled) {
-      return const <AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>[];
+      return const <AchievementLevelRewardResult<
+          AchievementLevelRewardLedgerEntry>>[];
     }
 
     final userId = _currentUserId();
     if (userId == null) {
-      return const <AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>[];
+      return const <AchievementLevelRewardResult<
+          AchievementLevelRewardLedgerEntry>>[];
     }
 
-    final pending = await _pendingClaimStore.loadPendingClaims(userId);
+    final pendingResult =
+        await _pendingClaimStore.loadPendingClaimsWithStatus(userId);
+    if (!pendingResult.isUsable) {
+      return const <AchievementLevelRewardResult<
+          AchievementLevelRewardLedgerEntry>>[];
+    }
+    final pending = pendingResult.values;
     if (pending.isEmpty) {
-      return const <AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>[];
+      return const <AchievementLevelRewardResult<
+          AchievementLevelRewardLedgerEntry>>[];
     }
 
     final results =
@@ -84,7 +94,9 @@ class AchievementLevelRewardCoordinator {
         break;
       }
     }
-    return List<AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>.unmodifiable(results);
+    return List<
+        AchievementLevelRewardResult<
+            AchievementLevelRewardLedgerEntry>>.unmodifiable(results);
   }
 
   Future<AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>
@@ -134,11 +146,16 @@ class AchievementLevelRewardCoordinator {
       claimType: claimType,
       sourceId: normalizedSourceId,
     );
-    final existing = await _pendingClaimStore.loadPendingClaims(userId);
-    final existingByRequest = existing.where((claim) => claim.requestId == activeRequestId);
+    final existingResult =
+        await _pendingClaimStore.loadPendingClaimsWithStatus(userId);
+    if (!existingResult.isUsable) return _persistenceFailureResult();
+    final existing = existingResult.values;
+    final existingByRequest =
+        existing.where((claim) => claim.requestId == activeRequestId);
     if (existingByRequest.isNotEmpty) {
       final current = existingByRequest.first;
-      if (current.claimType != claimType || current.sourceId != normalizedSourceId) {
+      if (current.claimType != claimType ||
+          current.sourceId != normalizedSourceId) {
         return AchievementLevelRewardResult<
             AchievementLevelRewardLedgerEntry>.failure(
           failure: AchievementLevelRewardFailure(
@@ -160,7 +177,9 @@ class AchievementLevelRewardCoordinator {
       attemptCount: 0,
       status: PendingRewardClaimStatus.pending,
     );
-    await _upsertPendingClaim(pendingOperation);
+    if (!await _upsertPendingClaim(pendingOperation)) {
+      return _persistenceFailureResult();
+    }
 
     final maxAttempts = 1 + (_maxAutoRetries < 0 ? 0 : _maxAutoRetries);
     AchievementLevelRewardFailure? lastFailure;
@@ -172,7 +191,9 @@ class AchievementLevelRewardCoordinator {
             ? PendingRewardClaimStatus.pending
             : PendingRewardClaimStatus.awaitingResolution,
       );
-      await _upsertPendingClaim(attemptClaim);
+      if (!await _upsertPendingClaim(attemptClaim)) {
+        return _persistenceFailureResult();
+      }
 
       final response = claimType == RewardClaimType.achievement
           ? await _rewardRepository.claimAchievementReward(
@@ -245,11 +266,14 @@ class AchievementLevelRewardCoordinator {
     );
   }
 
-  Future<void> _upsertPendingClaim(PendingRewardClaim claim) async {
+  Future<bool> _upsertPendingClaim(PendingRewardClaim claim) async {
     final userId = claim.userId.trim();
-    if (userId.isEmpty) return;
+    if (userId.isEmpty) return false;
 
-    final current = await _pendingClaimStore.loadPendingClaims(userId);
+    final currentResult =
+        await _pendingClaimStore.loadPendingClaimsWithStatus(userId);
+    if (!currentResult.isUsable) return false;
+    final current = currentResult.values;
     final next = <PendingRewardClaim>[
       ...current.where((entry) => entry.requestId != claim.requestId),
       claim,
@@ -258,7 +282,19 @@ class AchievementLevelRewardCoordinator {
         if (byCreated != 0) return byCreated;
         return a.requestId.compareTo(b.requestId);
       });
-    await _pendingClaimStore.savePendingClaims(userId, next);
+    return _pendingClaimStore.savePendingClaimsConfirmed(userId, next);
+  }
+
+  AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>
+      _persistenceFailureResult() {
+    return const AchievementLevelRewardResult<
+        AchievementLevelRewardLedgerEntry>.failure(
+      failure: AchievementLevelRewardFailure(
+        code: AchievementLevelRewardFailureCode.persistenceUnavailable,
+        message: 'Pending reward claim could not be persisted.',
+        retryable: true,
+      ),
+    );
   }
 
   Future<void> _savePendingAsAwaiting(PendingRewardClaim claim) async {
@@ -267,13 +303,16 @@ class AchievementLevelRewardCoordinator {
     );
   }
 
-  Future<void> _removePendingClaim(String userId, String requestId) async {
-    final current = await _pendingClaimStore.loadPendingClaims(userId);
+  Future<bool> _removePendingClaim(String userId, String requestId) async {
+    final currentResult =
+        await _pendingClaimStore.loadPendingClaimsWithStatus(userId);
+    if (!currentResult.isUsable) return false;
+    final current = currentResult.values;
     final next = current.where((claim) => claim.requestId != requestId).toList(
           growable: false,
         );
-    if (next.length == current.length) return;
-    await _pendingClaimStore.savePendingClaims(userId, next);
+    if (next.length == current.length) return true;
+    return _pendingClaimStore.savePendingClaimsConfirmed(userId, next);
   }
 
   String _normalizeRequestId({

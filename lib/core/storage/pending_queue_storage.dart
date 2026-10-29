@@ -148,8 +148,16 @@ class PendingQueueStorage {
       if (!saved) {
         _report(PendingQueueReadStatus.storageError, 'write_rejected',
             encoded.length);
+        return false;
       }
-      return saved;
+      final verification = await read<T>(key: key, decode: decode);
+      if (!verification.isUsable ||
+          verification.values.length != values.length) {
+        _report(PendingQueueReadStatus.storageError, 'write_not_verified',
+            encoded.length);
+        return false;
+      }
+      return true;
     } catch (_) {
       _report(PendingQueueReadStatus.storageError, 'write_failed', 0);
       return false;

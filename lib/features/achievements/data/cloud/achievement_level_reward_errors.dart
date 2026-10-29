@@ -12,6 +12,7 @@ enum AchievementLevelRewardFailureCode {
   timeout,
   networkUnavailable,
   negativeBalance,
+  persistenceUnavailable,
   unknown,
 }
 

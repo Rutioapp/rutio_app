@@ -1211,6 +1211,14 @@ class ShopCosmeticsController extends ChangeNotifier {
       resourceId: assetId,
       existing: existingPending,
     );
+    if (pendingPurchase == null) {
+      return ShopCosmeticsOperationResult(
+        status: ShopCosmeticsOperationStatus.awaitingResolution,
+        state: state,
+        walletCoins: await _walletCoins(),
+        assetId: assetId,
+      );
+    }
     final requestId = pendingPurchase.requestId;
     try {
       _traceCloudCosmetics(
@@ -1401,6 +1409,14 @@ class ShopCosmeticsController extends ChangeNotifier {
       resourceId: bundleId,
       existing: existingPending,
     );
+    if (pendingPurchase == null) {
+      return ShopCosmeticsOperationResult(
+        status: ShopCosmeticsOperationStatus.awaitingResolution,
+        state: state,
+        walletCoins: await _walletCoins(),
+        bundleId: bundleId,
+      );
+    }
     final requestId = pendingPurchase.requestId;
     try {
       _traceCloudCosmetics(
@@ -1952,7 +1968,12 @@ class ShopCosmeticsController extends ChangeNotifier {
     final userId = _currentScope();
     if (userId == null) return const <ShopCosmeticsOperationResult>[];
 
-    final pending = await _pendingPurchaseStore.loadPendingPurchases(userId);
+    final pendingResult =
+        await _pendingPurchaseStore.loadPendingPurchasesWithStatus(userId);
+    if (!pendingResult.isUsable) {
+      return const <ShopCosmeticsOperationResult>[];
+    }
+    final pending = pendingResult.values;
     if (pending.isEmpty) return const <ShopCosmeticsOperationResult>[];
 
     final results = <ShopCosmeticsOperationResult>[];
@@ -1986,14 +2007,17 @@ class ShopCosmeticsController extends ChangeNotifier {
       operationType: operationType,
       resourceId: resourceId,
     );
-    final pending = await _pendingPurchaseStore.loadPendingPurchases(userId);
+    final pendingResult =
+        await _pendingPurchaseStore.loadPendingPurchasesWithStatus(userId);
+    if (!pendingResult.isUsable) return null;
+    final pending = pendingResult.values;
     for (final purchase in pending) {
       if (purchase.logicalKey == logicalKey) return purchase;
     }
     return null;
   }
 
-  Future<PendingCloudCosmeticsPurchase> _ensurePendingPurchase({
+  Future<PendingCloudCosmeticsPurchase?> _ensurePendingPurchase({
     required String userId,
     required PendingCloudCosmeticsPurchaseType operationType,
     required String resourceId,
@@ -2015,8 +2039,7 @@ class ShopCosmeticsController extends ChangeNotifier {
           status: PendingCloudCosmeticsPurchaseStatus.pending,
         );
     _awaitingResolutionPurchaseKeys.remove(pending.logicalKey);
-    await _upsertPendingPurchase(pending);
-    return pending;
+    return await _upsertPendingPurchase(pending) ? pending : null;
   }
 
   Future<void> _markPendingPurchaseAwaiting(
@@ -2036,32 +2059,40 @@ class ShopCosmeticsController extends ChangeNotifier {
     );
   }
 
-  Future<void> _upsertPendingPurchase(
+  Future<bool> _upsertPendingPurchase(
     PendingCloudCosmeticsPurchase purchase,
   ) async {
     final userId = purchase.userId.trim();
-    if (userId.isEmpty) return;
-    final current = await _pendingPurchaseStore.loadPendingPurchases(userId);
+    if (userId.isEmpty) return false;
+    final currentResult =
+        await _pendingPurchaseStore.loadPendingPurchasesWithStatus(userId);
+    if (!currentResult.isUsable) return false;
+    final current = currentResult.values;
     final next = <PendingCloudCosmeticsPurchase>[
       for (final existing in current)
         if (existing.logicalKey != purchase.logicalKey) existing,
       purchase,
     ];
-    await _pendingPurchaseStore.savePendingPurchases(userId, next);
+    return _pendingPurchaseStore.savePendingPurchasesConfirmed(userId, next);
   }
 
-  Future<void> _removePendingPurchase(
+  Future<bool> _removePendingPurchase(
     String userId,
     String logicalKey,
   ) async {
-    final current = await _pendingPurchaseStore.loadPendingPurchases(userId);
+    final currentResult =
+        await _pendingPurchaseStore.loadPendingPurchasesWithStatus(userId);
+    if (!currentResult.isUsable) return false;
+    final current = currentResult.values;
     final next = current
         .where((purchase) => purchase.logicalKey != logicalKey)
         .toList(growable: false);
-    await _pendingPurchaseStore.savePendingPurchases(userId, next);
+    final saved =
+        await _pendingPurchaseStore.savePendingPurchasesConfirmed(userId, next);
     if (_awaitingResolutionPurchaseKeys.remove(logicalKey) && !_isDisposed) {
       notifyListeners();
     }
+    return saved;
   }
 
   bool _shouldKeepPendingAfterPurchaseError(ShopCloudPurchaseException error) {

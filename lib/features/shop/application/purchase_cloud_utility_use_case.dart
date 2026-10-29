@@ -137,6 +137,20 @@ class PurchaseCloudUtilityUseCase {
       );
     }
 
+    final pendingResult = await _pendingOperationStore
+        .loadPendingPurchasesWithStatus(initialUserId);
+    if (!pendingResult.isUsable) {
+      return ShopPurchaseResult.failure(
+        itemId: normalizedItemId,
+        requestId: normalizedRequestId ?? '',
+        failure: const ShopPurchaseFailure(
+          code: ShopPurchaseFailureCode.persistenceUnavailable,
+          message: 'Pending purchase storage is unavailable.',
+          retryable: true,
+        ),
+      );
+    }
+
     final walletResult = await _cloudReadRepository.fetchWallet();
     if (!walletResult.isSuccess) {
       final failure = _mapReadError(walletResult.error);
@@ -187,8 +201,7 @@ class PurchaseCloudUtilityUseCase {
       );
     }
 
-    final pendingPurchases =
-        await _pendingOperationStore.loadPendingPurchases(initialUserId);
+    final pendingPurchases = pendingResult.values;
     final matchingByItem = pendingPurchases
         .where((purchase) => purchase.itemId == normalizedItemId)
         .toList(growable: false);
@@ -274,7 +287,18 @@ class PurchaseCloudUtilityUseCase {
           attemptCount: 0,
           status: PendingShopPurchaseStatus.pending,
         );
-    await _upsertPending(purchase);
+    if (!await _upsertPending(purchase)) {
+      return ShopPurchaseResult.pendingResolution(
+        itemId: normalizedItemId,
+        requestId: effectiveRequestId,
+        failure: const ShopPurchaseFailure(
+          code: ShopPurchaseFailureCode.persistenceUnavailable,
+          message: 'Pending purchase could not be persisted.',
+          retryable: true,
+        ),
+        pendingOperation: purchase,
+      );
+    }
 
     final maxAttempts = 1 + _maxAutoRetries;
     ShopCloudPurchaseException? lastFailure;
@@ -286,7 +310,18 @@ class PurchaseCloudUtilityUseCase {
             ? PendingShopPurchaseStatus.pending
             : PendingShopPurchaseStatus.awaitingResolution,
       );
-      await _upsertPending(attemptPurchase);
+      if (!await _upsertPending(attemptPurchase)) {
+        return ShopPurchaseResult.pendingResolution(
+          itemId: normalizedItemId,
+          requestId: effectiveRequestId,
+          failure: const ShopPurchaseFailure(
+            code: ShopPurchaseFailureCode.persistenceUnavailable,
+            message: 'Pending purchase could not be updated.',
+            retryable: true,
+          ),
+          pendingOperation: attemptPurchase,
+        );
+      }
 
       try {
         final remoteResult = await _purchaseRepository.purchaseShopItem(
@@ -373,11 +408,13 @@ class PurchaseCloudUtilityUseCase {
     return null;
   }
 
-  Future<void> _upsertPending(PendingShopPurchase purchase) async {
+  Future<bool> _upsertPending(PendingShopPurchase purchase) async {
     final userId = purchase.userId.trim();
-    if (userId.isEmpty) return;
-    final pendingPurchases =
-        await _pendingOperationStore.loadPendingPurchases(userId);
+    if (userId.isEmpty) return false;
+    final pendingResult =
+        await _pendingOperationStore.loadPendingPurchasesWithStatus(userId);
+    if (!pendingResult.isUsable) return false;
+    final pendingPurchases = pendingResult.values;
     final next = <PendingShopPurchase>[
       for (final existing in pendingPurchases)
         if (existing.requestId != purchase.requestId) existing,
@@ -387,16 +424,18 @@ class PurchaseCloudUtilityUseCase {
         if (byCreated != 0) return byCreated;
         return a.requestId.compareTo(b.requestId);
       });
-    await _pendingOperationStore.savePendingPurchases(userId, next);
+    return _pendingOperationStore.savePendingPurchasesConfirmed(userId, next);
   }
 
-  Future<void> _removePending(String userId, String requestId) async {
-    final pendingPurchases =
-        await _pendingOperationStore.loadPendingPurchases(userId);
+  Future<bool> _removePending(String userId, String requestId) async {
+    final pendingResult =
+        await _pendingOperationStore.loadPendingPurchasesWithStatus(userId);
+    if (!pendingResult.isUsable) return false;
+    final pendingPurchases = pendingResult.values;
     final next = pendingPurchases
         .where((purchase) => purchase.requestId != requestId)
         .toList(growable: false);
-    await _pendingOperationStore.savePendingPurchases(userId, next);
+    return _pendingOperationStore.savePendingPurchasesConfirmed(userId, next);
   }
 
   String? _currentUserId() {

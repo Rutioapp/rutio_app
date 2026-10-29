@@ -6,7 +6,7 @@ import '../../domain/models/pending_reward_claim.dart';
 import '../../domain/pending_reward_claim_store.dart';
 
 class SharedPreferencesPendingRewardClaimStore
-    implements PendingRewardClaimStore {
+    implements PendingRewardClaimStore, PendingRewardClaimStoreWithStatus {
   SharedPreferencesPendingRewardClaimStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     PendingQueueDiagnosticSink? diagnosticSink,
@@ -28,6 +28,7 @@ class SharedPreferencesPendingRewardClaimStore
     return (await loadPendingClaimsWithStatus(userId)).values;
   }
 
+  @override
   Future<PendingQueueReadResult<PendingRewardClaim>>
       loadPendingClaimsWithStatus(String userId) {
     return _storage.read<PendingRewardClaim>(
@@ -42,6 +43,20 @@ class SharedPreferencesPendingRewardClaimStore
     List<PendingRewardClaim> claims,
   ) async {
     await _storage.write<PendingRewardClaim>(
+      key: _storageKey(userId),
+      values: claims,
+      decode: _decode,
+      encode: (values) =>
+          values.map((claim) => claim.toJson()).toList(growable: false),
+    );
+  }
+
+  @override
+  Future<bool> savePendingClaimsConfirmed(
+    String userId,
+    List<PendingRewardClaim> claims,
+  ) {
+    return _storage.write<PendingRewardClaim>(
       key: _storageKey(userId),
       values: claims,
       decode: _decode,

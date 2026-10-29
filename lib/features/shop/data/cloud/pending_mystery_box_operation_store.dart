@@ -82,8 +82,63 @@ abstract interface class PendingMysteryBoxOperationStore {
   Future<void> clearPendingOperations(String userId);
 }
 
+abstract interface class PendingMysteryBoxOperationStoreWithStatus {
+  Future<PendingQueueReadResult<PendingMysteryBoxOpening>>
+      loadPendingOperationsWithStatus(String userId);
+  Future<bool> savePendingOperationsConfirmed(
+    String userId,
+    List<PendingMysteryBoxOpening> operations,
+  );
+  Future<bool> clearPendingOperationsConfirmed(String userId);
+}
+
+extension PendingMysteryBoxOperationStoreStatusAccess
+    on PendingMysteryBoxOperationStore {
+  Future<PendingQueueReadResult<PendingMysteryBoxOpening>>
+      loadPendingOperationsWithStatus(String userId) {
+    final store = this;
+    if (store is PendingMysteryBoxOperationStoreWithStatus) {
+      return (store as PendingMysteryBoxOperationStoreWithStatus)
+          .loadPendingOperationsWithStatus(userId);
+    }
+    return loadPendingOperations(userId).then(
+      (values) => PendingQueueReadResult<PendingMysteryBoxOpening>(
+        status: PendingQueueReadStatus.valid,
+        values: values,
+      ),
+    );
+  }
+
+  Future<bool> savePendingOperationsConfirmed(
+    String userId,
+    List<PendingMysteryBoxOpening> operations,
+  ) {
+    final store = this;
+    if (store is PendingMysteryBoxOperationStoreWithStatus) {
+      return (store as PendingMysteryBoxOperationStoreWithStatus)
+          .savePendingOperationsConfirmed(userId, operations);
+    }
+    return savePendingOperations(userId, operations)
+        .then((_) => true)
+        .catchError((_) => false);
+  }
+
+  Future<bool> clearPendingOperationsConfirmed(String userId) {
+    final store = this;
+    if (store is PendingMysteryBoxOperationStoreWithStatus) {
+      return (store as PendingMysteryBoxOperationStoreWithStatus)
+          .clearPendingOperationsConfirmed(userId);
+    }
+    return clearPendingOperations(userId)
+        .then((_) => true)
+        .catchError((_) => false);
+  }
+}
+
 class SharedPreferencesPendingMysteryBoxOperationStore
-    implements PendingMysteryBoxOperationStore {
+    implements
+        PendingMysteryBoxOperationStore,
+        PendingMysteryBoxOperationStoreWithStatus {
   SharedPreferencesPendingMysteryBoxOperationStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
     PendingQueueDiagnosticSink? diagnosticSink,
@@ -107,6 +162,7 @@ class SharedPreferencesPendingMysteryBoxOperationStore
     return (await loadPendingOperationsWithStatus(userId)).values;
   }
 
+  @override
   Future<PendingQueueReadResult<PendingMysteryBoxOpening>>
       loadPendingOperationsWithStatus(String userId) {
     return _storage.read<PendingMysteryBoxOpening>(
@@ -130,8 +186,30 @@ class SharedPreferencesPendingMysteryBoxOperationStore
   }
 
   @override
+  Future<bool> savePendingOperationsConfirmed(
+    String userId,
+    List<PendingMysteryBoxOpening> operations,
+  ) {
+    return _storage.write<PendingMysteryBoxOpening>(
+      key: _storageKey(userId),
+      values: operations,
+      decode: _decode,
+      encode: (values) =>
+          values.map((operation) => operation.toJson()).toList(growable: false),
+    );
+  }
+
+  @override
   Future<void> clearPendingOperations(String userId) async {
     await _storage.clear<PendingMysteryBoxOpening>(
+      key: _storageKey(userId),
+      decode: _decode,
+    );
+  }
+
+  @override
+  Future<bool> clearPendingOperationsConfirmed(String userId) {
+    return _storage.clear<PendingMysteryBoxOpening>(
       key: _storageKey(userId),
       decode: _decode,
     );

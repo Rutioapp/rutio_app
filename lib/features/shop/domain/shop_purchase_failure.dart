@@ -25,6 +25,7 @@ enum ShopPurchaseFailureCode {
   databaseQueryFailed,
   sessionChanged,
   operationPending,
+  persistenceUnavailable,
   unknown,
 }
 

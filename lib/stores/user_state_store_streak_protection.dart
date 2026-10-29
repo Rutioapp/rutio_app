@@ -484,7 +484,7 @@ Future<void> _syncHabitTimeZoneForMutationBestEffort(
   );
 }
 
-Future<PendingStreakShieldOperation> _pendingStreakShieldOperationForMutation(
+Future<PendingStreakShieldOperation?> _pendingStreakShieldOperationForMutation(
   UserStateStore store, {
   required String remoteHabitId,
   required String operationId,
@@ -493,7 +493,12 @@ Future<PendingStreakShieldOperation> _pendingStreakShieldOperationForMutation(
 }) async {
   final pendingStore = _streakProtectionPendingOperationStoreForStore(store);
   final userId = (store.activeLocalScopeUserId ?? store.userId ?? '').trim();
-  final existing = await pendingStore.loadShieldOperation(userId, operationId);
+  final status = await pendingStore.loadShieldOperationsWithStatus(userId);
+  if (!status.isUsable) return null;
+  final matches = status.values
+      .where((entry) => entry.operationId == operationId)
+      .toList(growable: false);
+  final existing = matches.isEmpty ? null : matches.first;
   if (existing != null) return existing;
 
   final now = store._nowProvider().toUtc();
@@ -507,11 +512,12 @@ Future<PendingStreakShieldOperation> _pendingStreakShieldOperationForMutation(
     utilityId: utilityId,
     createdAtMillis: now.millisecondsSinceEpoch,
   );
-  await pendingStore.saveShieldOperation(pending);
-  return pending;
+  final saved = await pendingStore.saveShieldOperationConfirmed(pending);
+  return saved ? pending : null;
 }
 
-Future<PendingStreakRecoverOperation> _pendingStreakRecoverOperationForMutation(
+Future<PendingStreakRecoverOperation?>
+    _pendingStreakRecoverOperationForMutation(
   UserStateStore store, {
   required String breakId,
   required String operationId,
@@ -519,7 +525,12 @@ Future<PendingStreakRecoverOperation> _pendingStreakRecoverOperationForMutation(
 }) async {
   final pendingStore = _streakProtectionPendingOperationStoreForStore(store);
   final userId = (store.activeLocalScopeUserId ?? store.userId ?? '').trim();
-  final existing = await pendingStore.loadRecoverOperation(userId, operationId);
+  final status = await pendingStore.loadRecoverOperationsWithStatus(userId);
+  if (!status.isUsable) return null;
+  final matches = status.values
+      .where((entry) => entry.operationId == operationId)
+      .toList(growable: false);
+  final existing = matches.isEmpty ? null : matches.first;
   if (existing != null) return existing;
 
   final now = store._nowProvider().toUtc();
@@ -532,8 +543,8 @@ Future<PendingStreakRecoverOperation> _pendingStreakRecoverOperationForMutation(
     utilityId: utilityId,
     createdAtMillis: now.millisecondsSinceEpoch,
   );
-  await pendingStore.saveRecoverOperation(pending);
-  return pending;
+  final saved = await pendingStore.saveRecoverOperationConfirmed(pending);
+  return saved ? pending : null;
 }
 
 Future<bool> _confirmStreakProtectionSnapshotAfterMutation(

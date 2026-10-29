@@ -12,6 +12,7 @@ enum HabitCurrencyRewardFailureCode {
   networkUnavailable,
   negativeBalance,
   clientVersionRejected,
+  persistenceUnavailable,
   unknown,
 }
 
