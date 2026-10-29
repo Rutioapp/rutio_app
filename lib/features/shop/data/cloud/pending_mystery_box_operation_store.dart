@@ -1,6 +1,7 @@
-import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../../core/observability/crash_reporting_service.dart';
+import '../../../../core/storage/pending_queue_storage.dart';
 
 class PendingMysteryBoxOpening {
   const PendingMysteryBoxOpening({
@@ -85,50 +86,33 @@ class SharedPreferencesPendingMysteryBoxOperationStore
     implements PendingMysteryBoxOperationStore {
   SharedPreferencesPendingMysteryBoxOperationStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
-  }) : _sharedPreferencesProvider =
-            sharedPreferencesProvider ?? SharedPreferences.getInstance;
+    PendingQueueDiagnosticSink? diagnosticSink,
+    CrashReportingService? crashReportingService,
+  }) : _storage = PendingQueueStorage(
+          queueName: 'mystery_box_opening',
+          sharedPreferencesProvider:
+              sharedPreferencesProvider ?? SharedPreferences.getInstance,
+          diagnosticSink: diagnosticSink,
+          crashReportingService: crashReportingService,
+        );
 
   static const String storagePrefix = 'rutio_mystery_box_pending_opening_v1';
 
-  final Future<SharedPreferences> Function() _sharedPreferencesProvider;
+  final PendingQueueStorage _storage;
 
   @override
   Future<List<PendingMysteryBoxOpening>> loadPendingOperations(
     String userId,
   ) async {
-    final prefs = await _sharedPreferencesProvider();
-    final raw = prefs.getString(_storageKey(userId));
-    if (raw == null || raw.trim().isEmpty) {
-      return const <PendingMysteryBoxOpening>[];
-    }
+    return (await loadPendingOperationsWithStatus(userId)).values;
+  }
 
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) {
-        return const <PendingMysteryBoxOpening>[];
-      }
-
-      final pending = <PendingMysteryBoxOpening>[];
-      for (final value in decoded) {
-        if (value is! Map) continue;
-        try {
-          pending.add(
-            PendingMysteryBoxOpening.fromJson(
-              Map<String, dynamic>.from(value.cast<String, dynamic>()),
-            ),
-          );
-        } catch (_) {}
-      }
-
-      pending.sort((a, b) {
-        final byCreated = a.createdAtMillis.compareTo(b.createdAtMillis);
-        if (byCreated != 0) return byCreated;
-        return a.requestId.compareTo(b.requestId);
-      });
-      return pending;
-    } catch (_) {
-      return const <PendingMysteryBoxOpening>[];
-    }
+  Future<PendingQueueReadResult<PendingMysteryBoxOpening>>
+      loadPendingOperationsWithStatus(String userId) {
+    return _storage.read<PendingMysteryBoxOpening>(
+      key: _storageKey(userId),
+      decode: _decode,
+    );
   }
 
   @override
@@ -136,17 +120,39 @@ class SharedPreferencesPendingMysteryBoxOperationStore
     String userId,
     List<PendingMysteryBoxOpening> operations,
   ) async {
-    final prefs = await _sharedPreferencesProvider();
-    final encoded = jsonEncode(
-      operations.map((operation) => operation.toJson()).toList(growable: false),
+    await _storage.write<PendingMysteryBoxOpening>(
+      key: _storageKey(userId),
+      values: operations,
+      decode: _decode,
+      encode: (values) =>
+          values.map((operation) => operation.toJson()).toList(growable: false),
     );
-    await prefs.setString(_storageKey(userId), encoded);
   }
 
   @override
   Future<void> clearPendingOperations(String userId) async {
-    final prefs = await _sharedPreferencesProvider();
-    await prefs.remove(_storageKey(userId));
+    await _storage.clear<PendingMysteryBoxOpening>(
+      key: _storageKey(userId),
+      decode: _decode,
+    );
+  }
+
+  List<PendingMysteryBoxOpening> _decode(List<dynamic> rows) {
+    final pending = <PendingMysteryBoxOpening>[];
+    for (final value in rows) {
+      if (value is! Map) throw const FormatException('Invalid queue row.');
+      pending.add(
+        PendingMysteryBoxOpening.fromJson(
+          Map<String, dynamic>.from(value.cast<String, dynamic>()),
+        ),
+      );
+    }
+    pending.sort((a, b) {
+      final byCreated = a.createdAtMillis.compareTo(b.createdAtMillis);
+      if (byCreated != 0) return byCreated;
+      return a.requestId.compareTo(b.requestId);
+    });
+    return pending;
   }
 
   String _storageKey(String userId) {

@@ -1,7 +1,7 @@
-import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/observability/crash_reporting_service.dart';
+import '../../../../core/storage/pending_queue_storage.dart';
 import '../../domain/models/pending_reward_claim.dart';
 import '../../domain/pending_reward_claim_store.dart';
 
@@ -9,47 +9,31 @@ class SharedPreferencesPendingRewardClaimStore
     implements PendingRewardClaimStore {
   SharedPreferencesPendingRewardClaimStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
-  }) : _sharedPreferencesProvider =
-            sharedPreferencesProvider ?? SharedPreferences.getInstance;
+    PendingQueueDiagnosticSink? diagnosticSink,
+    CrashReportingService? crashReportingService,
+  }) : _storage = PendingQueueStorage(
+          queueName: 'achievement_reward_claim',
+          sharedPreferencesProvider:
+              sharedPreferencesProvider ?? SharedPreferences.getInstance,
+          diagnosticSink: diagnosticSink,
+          crashReportingService: crashReportingService,
+        );
 
-  static const String storagePrefix =
-      'rutio_pending_reward_claim_v1';
+  static const String storagePrefix = 'rutio_pending_reward_claim_v1';
 
-  final Future<SharedPreferences> Function() _sharedPreferencesProvider;
+  final PendingQueueStorage _storage;
 
   @override
   Future<List<PendingRewardClaim>> loadPendingClaims(String userId) async {
-    final prefs = await _sharedPreferencesProvider();
-    final raw = prefs.getString(_storageKey(userId));
-    if (raw == null || raw.trim().isEmpty) {
-      return const <PendingRewardClaim>[];
-    }
+    return (await loadPendingClaimsWithStatus(userId)).values;
+  }
 
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) return const <PendingRewardClaim>[];
-
-      final claims = <PendingRewardClaim>[];
-      for (final value in decoded) {
-        if (value is! Map) continue;
-        try {
-          claims.add(
-            PendingRewardClaim.fromJson(
-              Map<String, dynamic>.from(value.cast<String, dynamic>()),
-            ),
-          );
-        } catch (_) {}
-      }
-
-      claims.sort((a, b) {
-        final byCreated = a.createdAtMillis.compareTo(b.createdAtMillis);
-        if (byCreated != 0) return byCreated;
-        return a.requestId.compareTo(b.requestId);
-      });
-      return claims;
-    } catch (_) {
-      return const <PendingRewardClaim>[];
-    }
+  Future<PendingQueueReadResult<PendingRewardClaim>>
+      loadPendingClaimsWithStatus(String userId) {
+    return _storage.read<PendingRewardClaim>(
+      key: _storageKey(userId),
+      decode: _decode,
+    );
   }
 
   @override
@@ -57,17 +41,39 @@ class SharedPreferencesPendingRewardClaimStore
     String userId,
     List<PendingRewardClaim> claims,
   ) async {
-    final prefs = await _sharedPreferencesProvider();
-    final encoded = jsonEncode(
-      claims.map((claim) => claim.toJson()).toList(growable: false),
+    await _storage.write<PendingRewardClaim>(
+      key: _storageKey(userId),
+      values: claims,
+      decode: _decode,
+      encode: (values) =>
+          values.map((claim) => claim.toJson()).toList(growable: false),
     );
-    await prefs.setString(_storageKey(userId), encoded);
   }
 
   @override
   Future<void> clearPendingClaims(String userId) async {
-    final prefs = await _sharedPreferencesProvider();
-    await prefs.remove(_storageKey(userId));
+    await _storage.clear<PendingRewardClaim>(
+      key: _storageKey(userId),
+      decode: _decode,
+    );
+  }
+
+  List<PendingRewardClaim> _decode(List<dynamic> rows) {
+    final claims = <PendingRewardClaim>[];
+    for (final value in rows) {
+      if (value is! Map) throw const FormatException('Invalid queue row.');
+      claims.add(
+        PendingRewardClaim.fromJson(
+          Map<String, dynamic>.from(value.cast<String, dynamic>()),
+        ),
+      );
+    }
+    claims.sort((a, b) {
+      final byCreated = a.createdAtMillis.compareTo(b.createdAtMillis);
+      if (byCreated != 0) return byCreated;
+      return a.requestId.compareTo(b.requestId);
+    });
+    return claims;
   }
 
   String _storageKey(String userId) {

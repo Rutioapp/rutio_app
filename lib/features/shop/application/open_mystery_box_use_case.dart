@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:rutio/core/observability/crash_reporting_service.dart';
 import 'package:rutio/features/gamification/domain/level_progression.dart';
 import 'package:rutio/features/shop/application/mystery_box_operation_result.dart';
 import 'package:rutio/features/shop/application/shop_service.dart';
@@ -29,6 +30,7 @@ class OpenMysteryBoxUseCase {
     PendingMysteryBoxOperationStore? pendingMysteryBoxOperationStore,
     bool? cloudEnabled,
     DateTime Function()? nowProvider,
+    CrashReportingService? crashReportingService,
   })  : _userStateStore = userStateStore,
         _shopRepository = shopRepository,
         _mysteryBoxOpeningRepository = mysteryBoxOpeningRepository,
@@ -36,7 +38,9 @@ class OpenMysteryBoxUseCase {
         _cloudMysteryBoxOpeningRepository = cloudMysteryBoxOpeningRepository ??
             SupabaseCloudMysteryBoxOpeningRepository(enabled: cloudEnabled),
         _pendingMysteryBoxOperationStore = pendingMysteryBoxOperationStore ??
-            SharedPreferencesPendingMysteryBoxOperationStore(),
+            SharedPreferencesPendingMysteryBoxOperationStore(
+              crashReportingService: crashReportingService,
+            ),
         _cloudEnabled =
             MysteryBoxCloudConfig.resolveEnabled(override: cloudEnabled),
         _nowProvider = nowProvider ?? DateTime.now;
@@ -171,13 +175,15 @@ class OpenMysteryBoxUseCase {
       status: MysteryBoxOpeningStatus.granted,
     );
     final nextTransactions = <MysteryBoxOpeningTransaction>[
-      ...pendingTransactions.where((entry) => entry.id != normalizedTransactionId),
+      ...pendingTransactions
+          .where((entry) => entry.id != normalizedTransactionId),
       transaction,
     ];
 
     try {
       await _shopRepository.save(nextShopState);
-      await _mysteryBoxOpeningRepository.saveTransactions(scope, nextTransactions);
+      await _mysteryBoxOpeningRepository.saveTransactions(
+          scope, nextTransactions);
       await _userStateStore.save(nextRoot);
     } catch (error) {
       try {
@@ -215,11 +221,12 @@ class OpenMysteryBoxUseCase {
     final existingPending =
         pendingOperations.isNotEmpty ? pendingOperations.first : null;
 
-    final effectiveRequestId = existingPending?.requestId.trim().isNotEmpty == true
-        ? existingPending!.requestId.trim()
-        : transactionId.trim().isNotEmpty
-            ? transactionId.trim()
-            : _generateMysteryBoxTransactionId();
+    final effectiveRequestId =
+        existingPending?.requestId.trim().isNotEmpty == true
+            ? existingPending!.requestId.trim()
+            : transactionId.trim().isNotEmpty
+                ? transactionId.trim()
+                : _generateMysteryBoxTransactionId();
 
     final currentTransactions =
         await _mysteryBoxOpeningRepository.loadTransactions(scope);
@@ -247,13 +254,15 @@ class OpenMysteryBoxUseCase {
     }
 
     final nowMillis = _nowProvider().toUtc().millisecondsSinceEpoch;
-    final pendingOperation = (existingPending ?? PendingMysteryBoxOpening(
-      userId: scope,
-      requestId: effectiveRequestId,
-      createdAtMillis: nowMillis,
-      lastAttemptAtMillis: nowMillis,
-      attemptCount: 0,
-    )).copyWith(
+    final pendingOperation = (existingPending ??
+            PendingMysteryBoxOpening(
+              userId: scope,
+              requestId: effectiveRequestId,
+              createdAtMillis: nowMillis,
+              lastAttemptAtMillis: nowMillis,
+              attemptCount: 0,
+            ))
+        .copyWith(
       lastAttemptAtMillis: nowMillis,
       attemptCount: (existingPending?.attemptCount ?? 0) + 1,
     );
@@ -321,7 +330,8 @@ class OpenMysteryBoxUseCase {
   Future<List<MysteryBoxOpeningTransaction>> loadPendingOpenings() async {
     final scope = _currentScopeUserId();
     if (scope == null) return const <MysteryBoxOpeningTransaction>[];
-    final transactions = await _mysteryBoxOpeningRepository.loadTransactions(scope);
+    final transactions =
+        await _mysteryBoxOpeningRepository.loadTransactions(scope);
     return transactions
         .where((transaction) => transaction.isPendingPresentation)
         .toList(growable: false);
@@ -342,8 +352,10 @@ class OpenMysteryBoxUseCase {
       );
     }
 
-    final transactions = await _mysteryBoxOpeningRepository.loadTransactions(scope);
-    final index = transactions.indexWhere((tx) => tx.id == normalizedTransactionId);
+    final transactions =
+        await _mysteryBoxOpeningRepository.loadTransactions(scope);
+    final index =
+        transactions.indexWhere((tx) => tx.id == normalizedTransactionId);
     if (index == -1) {
       return const MysteryBoxOperationResult(
         status: MysteryBoxOperationStatus.transactionNotFound,
@@ -359,11 +371,12 @@ class OpenMysteryBoxUseCase {
     }
 
     final next = current.copyWith(status: MysteryBoxOpeningStatus.presented);
-    final nextTransactions = List<MysteryBoxOpeningTransaction>.from(transactions)
-      ..[index] = next;
+    final nextTransactions =
+        List<MysteryBoxOpeningTransaction>.from(transactions)..[index] = next;
 
     try {
-      await _mysteryBoxOpeningRepository.saveTransactions(scope, nextTransactions);
+      await _mysteryBoxOpeningRepository.saveTransactions(
+          scope, nextTransactions);
     } catch (error) {
       return MysteryBoxOperationResult(
         status: MysteryBoxOperationStatus.persistenceError,
@@ -388,10 +401,9 @@ class OpenMysteryBoxUseCase {
   }
 
   String? _currentScopeUserId() {
-    final scope = (_userStateStore.activeLocalScopeUserId ??
-            _userStateStore.userId ??
-            '')
-        .trim();
+    final scope =
+        (_userStateStore.activeLocalScopeUserId ?? _userStateStore.userId ?? '')
+            .trim();
     return scope.isEmpty ? null : scope;
   }
 
@@ -475,15 +487,16 @@ class OpenMysteryBoxUseCase {
   }
 
   Map<String, dynamic> _ensureUserStateRoot(Map<String, dynamic> root) {
-    final userState =
-        Map<String, dynamic>.from(root['userState'] as Map? ?? <String, dynamic>{});
+    final userState = Map<String, dynamic>.from(
+        root['userState'] as Map? ?? <String, dynamic>{});
     root['userState'] = userState;
     return userState;
   }
 
   Map<String, dynamic> _map(dynamic value) {
     if (value is Map<String, dynamic>) return Map<String, dynamic>.from(value);
-    if (value is Map) return Map<String, dynamic>.from(value.cast<String, dynamic>());
+    if (value is Map)
+      return Map<String, dynamic>.from(value.cast<String, dynamic>());
     return <String, dynamic>{};
   }
 

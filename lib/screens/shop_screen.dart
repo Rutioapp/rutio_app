@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rutio/core/observability/crash_reporting_service.dart';
 import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_controller.dart';
 import 'package:rutio/features/shop/application/shop_controller.dart';
@@ -32,6 +33,7 @@ class _ShopScreenState extends State<ShopScreen> {
     final runtimeConfig = _shopRuntimeConfigOf(context);
     _shopController = ShopController(
       userStateStore: userStateStore,
+      crashReportingService: _crashReportingServiceOf(context),
       globalWalletController: globalWalletController,
       shopRepository: _shopRepository,
       cloudReadEnabled: runtimeConfig.shopReadEnabled,
@@ -64,5 +66,13 @@ ShopCloudRuntimeConfig _shopRuntimeConfigOf(BuildContext context) {
     return context.read<ShopCloudRuntimeConfig>();
   } on ProviderNotFoundException {
     return ShopCloudRuntimeConfig.compiled();
+  }
+}
+
+CrashReportingService? _crashReportingServiceOf(BuildContext context) {
+  try {
+    return context.read<CrashReportingService>();
+  } on ProviderNotFoundException {
+    return null;
   }
 }

@@ -1,7 +1,7 @@
-import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/observability/crash_reporting_service.dart';
+import '../../../core/storage/pending_queue_storage.dart';
 import '../domain/models/pending_shop_purchase.dart';
 import '../domain/pending_shop_operation_store.dart';
 
@@ -9,48 +9,31 @@ class SharedPreferencesPendingShopOperationStore
     implements PendingShopOperationStore {
   SharedPreferencesPendingShopOperationStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
-  }) : _sharedPreferencesProvider =
-            sharedPreferencesProvider ?? SharedPreferences.getInstance;
+    PendingQueueDiagnosticSink? diagnosticSink,
+    CrashReportingService? crashReportingService,
+  }) : _storage = PendingQueueStorage(
+          queueName: 'shop_purchase',
+          sharedPreferencesProvider:
+              sharedPreferencesProvider ?? SharedPreferences.getInstance,
+          diagnosticSink: diagnosticSink,
+          crashReportingService: crashReportingService,
+        );
 
   static const String storagePrefix = 'rutio_shop_pending_purchase_v1';
 
-  final Future<SharedPreferences> Function() _sharedPreferencesProvider;
+  final PendingQueueStorage _storage;
 
   @override
   Future<List<PendingShopPurchase>> loadPendingPurchases(String userId) async {
-    final prefs = await _sharedPreferencesProvider();
-    final raw = prefs.getString(_storageKey(userId));
-    if (raw == null || raw.trim().isEmpty) {
-      return const <PendingShopPurchase>[];
-    }
+    return (await loadPendingPurchasesWithStatus(userId)).values;
+  }
 
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) {
-        return const <PendingShopPurchase>[];
-      }
-
-      final pending = <PendingShopPurchase>[];
-      for (final value in decoded) {
-        if (value is! Map) continue;
-        try {
-          pending.add(
-            PendingShopPurchase.fromJson(
-              Map<String, dynamic>.from(value.cast<String, dynamic>()),
-            ),
-          );
-        } catch (_) {}
-      }
-
-      pending.sort((a, b) {
-        final byCreated = a.createdAtMillis.compareTo(b.createdAtMillis);
-        if (byCreated != 0) return byCreated;
-        return a.requestId.compareTo(b.requestId);
-      });
-      return pending;
-    } catch (_) {
-      return const <PendingShopPurchase>[];
-    }
+  Future<PendingQueueReadResult<PendingShopPurchase>>
+      loadPendingPurchasesWithStatus(String userId) {
+    return _storage.read<PendingShopPurchase>(
+      key: _storageKey(userId),
+      decode: _decode,
+    );
   }
 
   @override
@@ -58,17 +41,39 @@ class SharedPreferencesPendingShopOperationStore
     String userId,
     List<PendingShopPurchase> purchases,
   ) async {
-    final prefs = await _sharedPreferencesProvider();
-    final encoded = jsonEncode(
-      purchases.map((purchase) => purchase.toJson()).toList(growable: false),
+    await _storage.write<PendingShopPurchase>(
+      key: _storageKey(userId),
+      values: purchases,
+      decode: _decode,
+      encode: (values) =>
+          values.map((purchase) => purchase.toJson()).toList(growable: false),
     );
-    await prefs.setString(_storageKey(userId), encoded);
   }
 
   @override
   Future<void> clearPendingPurchases(String userId) async {
-    final prefs = await _sharedPreferencesProvider();
-    await prefs.remove(_storageKey(userId));
+    await _storage.clear<PendingShopPurchase>(
+      key: _storageKey(userId),
+      decode: _decode,
+    );
+  }
+
+  List<PendingShopPurchase> _decode(List<dynamic> rows) {
+    final pending = <PendingShopPurchase>[];
+    for (final value in rows) {
+      if (value is! Map) throw const FormatException('Invalid queue row.');
+      pending.add(
+        PendingShopPurchase.fromJson(
+          Map<String, dynamic>.from(value.cast<String, dynamic>()),
+        ),
+      );
+    }
+    pending.sort((a, b) {
+      final byCreated = a.createdAtMillis.compareTo(b.createdAtMillis);
+      if (byCreated != 0) return byCreated;
+      return a.requestId.compareTo(b.requestId);
+    });
+    return pending;
   }
 
   String _storageKey(String userId) {

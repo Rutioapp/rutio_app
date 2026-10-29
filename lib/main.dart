@@ -478,6 +478,7 @@ class MyApp extends StatelessWidget {
             return UserStateStore(
               userStateRepository,
               analyticsService: context.read<AnalyticsService>(),
+              crashReportingService: context.read<CrashReportingService>(),
               globalWalletController: context.read<GlobalWalletController>(),
               profileRepository: context.read<ProfileRepository>(),
               onboardingRecoveryCleanup: (userId) => context
@@ -574,6 +575,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<ShopCosmeticsController>(
           create: (context) => ShopCosmeticsController(
             userStateStore: context.read<UserStateStore>(),
+            crashReportingService: context.read<CrashReportingService>(),
             globalWalletController: context.read<GlobalWalletController>(),
             cloudEnabled:
                 context.read<ShopCloudRuntimeConfig>().cloudCosmeticsEnabled,

@@ -2,6 +2,7 @@ import 'package:rutio/features/shop/domain/models/shop_bundle.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:rutio/core/observability/crash_reporting_service.dart';
 import 'package:rutio/features/global_wallet/application/global_wallet_controller.dart';
 import 'package:rutio/features/shop/application/shop_cosmetics_service.dart';
 import 'package:rutio/features/shop/data/cloud/cloud_cosmetics_cache.dart';
@@ -317,6 +318,7 @@ class ShopCosmeticsController extends ChangeNotifier {
     String Function()? requestIdGenerator,
     DateTime Function()? nowProvider,
     bool? cloudEnabled,
+    CrashReportingService? crashReportingService,
   })  : _userStateStore = userStateStore,
         _globalWalletController = globalWalletController,
         _repository = repository ??
@@ -329,7 +331,9 @@ class ShopCosmeticsController extends ChangeNotifier {
             cloudRepository ?? SupabaseCloudCosmeticsRepository(),
         _cloudCache = cloudCache ?? SharedPreferencesCloudCosmeticsCache(),
         _pendingPurchaseStore = pendingPurchaseStore ??
-            SharedPreferencesPendingCloudCosmeticsPurchaseStore(),
+            SharedPreferencesPendingCloudCosmeticsPurchaseStore(
+              crashReportingService: crashReportingService,
+            ),
         _requestIdGenerator =
             requestIdGenerator ?? CloudCosmeticsRequestId.generateV4,
         _nowProvider = nowProvider ?? DateTime.now,

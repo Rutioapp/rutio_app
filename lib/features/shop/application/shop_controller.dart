@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:rutio/core/observability/crash_reporting_service.dart';
 import 'package:rutio/features/shop/application/shop_operation_result.dart';
 import 'package:rutio/features/shop/application/shop_service.dart';
 import 'package:rutio/features/shop/application/purchase_cloud_utility_use_case.dart';
@@ -141,7 +142,9 @@ class ShopController extends ChangeNotifier {
     bool? cloudPurchaseEnabled,
     bool? mysteryBoxCloudEnabled,
     bool? utilityConsumptionEnabled,
+    CrashReportingService? crashReportingService,
   })  : _userStateStore = userStateStore,
+        _crashReportingService = crashReportingService,
         _globalWalletController = globalWalletController,
         _currentSupabaseUserIdProvider =
             currentSupabaseUserIdProvider ?? _defaultCurrentSupabaseUserId,
@@ -210,7 +213,9 @@ class ShopController extends ChangeNotifier {
               purchaseRepository:
                   shopCloudPurchaseRepository ?? ShopCloudPurchaseRepository(),
               pendingOperationStore: pendingShopOperationStore ??
-                  SharedPreferencesPendingShopOperationStore(),
+                  SharedPreferencesPendingShopOperationStore(
+                    crashReportingService: crashReportingService,
+                  ),
               cloudReadRepository: shopCloudReadRepository ??
                   ShopCloudReadRepository(
                     readEnabled: ShopCloudConfig.resolveReadEnabled(
@@ -231,6 +236,7 @@ class ShopController extends ChangeNotifier {
   }
 
   final UserStateStore _userStateStore;
+  final CrashReportingService? _crashReportingService;
   final GlobalWalletController? _globalWalletController;
   final ShopLocalRepository _shopRepository;
   final ActiveUtilityEffectsRepository _activeUtilityEffectsRepository;
@@ -992,6 +998,7 @@ class ShopController extends ChangeNotifier {
         randomSource: _randomSource,
         cloudEnabled: _mysteryBoxCloudEnabled,
         nowProvider: _nowProvider,
+        crashReportingService: _crashReportingService,
       ).open(transactionId: effectiveTransactionId);
 
       if (result.isSuccess && _mysteryBoxCloudEnabled) {
@@ -1022,6 +1029,7 @@ class ShopController extends ChangeNotifier {
         shopRepository: _shopRepository,
         mysteryBoxOpeningRepository: _mysteryBoxOpeningRepository,
         randomSource: _randomSource,
+        crashReportingService: _crashReportingService,
         nowProvider: _nowProvider,
       ),
     ).present(transactionId: transactionId);

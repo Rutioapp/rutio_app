@@ -1,7 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../../core/observability/crash_reporting_service.dart';
+import '../../../../core/storage/pending_queue_storage.dart';
 
 @immutable
 class PendingStreakShieldOperation {
@@ -148,13 +149,20 @@ class SharedPreferencesStreakProtectionPendingOperationStore
     implements StreakProtectionPendingOperationStore {
   SharedPreferencesStreakProtectionPendingOperationStore({
     Future<SharedPreferences> Function()? sharedPreferencesProvider,
-  }) : _sharedPreferencesProvider =
-            sharedPreferencesProvider ?? SharedPreferences.getInstance;
+    PendingQueueDiagnosticSink? diagnosticSink,
+    CrashReportingService? crashReportingService,
+  }) : _storage = PendingQueueStorage(
+          queueName: 'streak_protection',
+          sharedPreferencesProvider:
+              sharedPreferencesProvider ?? SharedPreferences.getInstance,
+          diagnosticSink: diagnosticSink,
+          crashReportingService: crashReportingService,
+        );
 
   static const String _shieldPrefix = 'rutio_streak_shield_pending_v1';
   static const String _recoverPrefix = 'rutio_streak_recover_pending_v1';
 
-  final Future<SharedPreferences> Function() _sharedPreferencesProvider;
+  final PendingQueueStorage _storage;
 
   @override
   Future<PendingStreakShieldOperation?> loadShieldOperation(
@@ -171,23 +179,33 @@ class SharedPreferencesStreakProtectionPendingOperationStore
   @override
   Future<void> saveShieldOperation(
       PendingStreakShieldOperation operation) async {
-    final operations = await _loadShieldOperations(operation.userId);
+    final result = await _loadShieldOperationsWithStatus(operation.userId);
+    if (!result.isUsable) return;
+    final operations = List<PendingStreakShieldOperation>.from(result.values);
     operations
         .removeWhere((entry) => entry.operationId == operation.operationId);
     operations.add(operation);
-    await _saveList(
-      _shieldKey(operation.userId),
-      operations.map((entry) => entry.toJson()).toList(growable: false),
+    await _storage.write<PendingStreakShieldOperation>(
+      key: _shieldKey(operation.userId),
+      values: operations,
+      decode: _decodeShield,
+      encode: (values) =>
+          values.map((entry) => entry.toJson()).toList(growable: false),
     );
   }
 
   @override
   Future<void> clearShieldOperation(String userId, String operationId) async {
-    final operations = await _loadShieldOperations(userId);
+    final result = await _loadShieldOperationsWithStatus(userId);
+    if (!result.isUsable) return;
+    final operations = List<PendingStreakShieldOperation>.from(result.values);
     operations.removeWhere((entry) => entry.operationId == operationId.trim());
-    await _saveList(
-      _shieldKey(userId),
-      operations.map((entry) => entry.toJson()).toList(growable: false),
+    await _storage.write<PendingStreakShieldOperation>(
+      key: _shieldKey(userId),
+      values: operations,
+      decode: _decodeShield,
+      encode: (values) =>
+          values.map((entry) => entry.toJson()).toList(growable: false),
     );
   }
 
@@ -207,40 +225,57 @@ class SharedPreferencesStreakProtectionPendingOperationStore
   Future<void> saveRecoverOperation(
     PendingStreakRecoverOperation operation,
   ) async {
-    final operations = await _loadRecoverOperations(operation.userId);
+    final result = await _loadRecoverOperationsWithStatus(operation.userId);
+    if (!result.isUsable) return;
+    final operations = List<PendingStreakRecoverOperation>.from(result.values);
     operations
         .removeWhere((entry) => entry.operationId == operation.operationId);
     operations.add(operation);
-    await _saveList(
-      _recoverKey(operation.userId),
-      operations.map((entry) => entry.toJson()).toList(growable: false),
+    await _storage.write<PendingStreakRecoverOperation>(
+      key: _recoverKey(operation.userId),
+      values: operations,
+      decode: _decodeRecover,
+      encode: (values) =>
+          values.map((entry) => entry.toJson()).toList(growable: false),
     );
   }
 
   @override
   Future<void> clearRecoverOperation(String userId, String operationId) async {
-    final operations = await _loadRecoverOperations(userId);
+    final result = await _loadRecoverOperationsWithStatus(userId);
+    if (!result.isUsable) return;
+    final operations = List<PendingStreakRecoverOperation>.from(result.values);
     operations.removeWhere((entry) => entry.operationId == operationId.trim());
-    await _saveList(
-      _recoverKey(userId),
-      operations.map((entry) => entry.toJson()).toList(growable: false),
+    await _storage.write<PendingStreakRecoverOperation>(
+      key: _recoverKey(userId),
+      values: operations,
+      decode: _decodeRecover,
+      encode: (values) =>
+          values.map((entry) => entry.toJson()).toList(growable: false),
     );
   }
 
   Future<List<PendingStreakShieldOperation>> _loadShieldOperations(
     String userId,
   ) async {
-    final raw = await _loadList(_shieldKey(userId));
+    return (await _loadShieldOperationsWithStatus(userId)).values;
+  }
+
+  Future<PendingQueueReadResult<PendingStreakShieldOperation>>
+      _loadShieldOperationsWithStatus(String userId) {
+    return _storage.read<PendingStreakShieldOperation>(
+      key: _shieldKey(userId),
+      decode: _decodeShield,
+    );
+  }
+
+  List<PendingStreakShieldOperation> _decodeShield(List<dynamic> rows) {
     final operations = <PendingStreakShieldOperation>[];
-    for (final value in raw) {
-      if (value is! Map) continue;
-      try {
-        operations.add(
-          PendingStreakShieldOperation.fromJson(
-            Map<String, dynamic>.from(value.cast<String, dynamic>()),
-          ),
-        );
-      } catch (_) {}
+    for (final value in rows) {
+      if (value is! Map) throw const FormatException('Invalid queue row.');
+      operations.add(PendingStreakShieldOperation.fromJson(
+        Map<String, dynamic>.from(value.cast<String, dynamic>()),
+      ));
     }
     return operations;
   }
@@ -248,35 +283,26 @@ class SharedPreferencesStreakProtectionPendingOperationStore
   Future<List<PendingStreakRecoverOperation>> _loadRecoverOperations(
     String userId,
   ) async {
-    final raw = await _loadList(_recoverKey(userId));
+    return (await _loadRecoverOperationsWithStatus(userId)).values;
+  }
+
+  Future<PendingQueueReadResult<PendingStreakRecoverOperation>>
+      _loadRecoverOperationsWithStatus(String userId) {
+    return _storage.read<PendingStreakRecoverOperation>(
+      key: _recoverKey(userId),
+      decode: _decodeRecover,
+    );
+  }
+
+  List<PendingStreakRecoverOperation> _decodeRecover(List<dynamic> rows) {
     final operations = <PendingStreakRecoverOperation>[];
-    for (final value in raw) {
-      if (value is! Map) continue;
-      try {
-        operations.add(
-          PendingStreakRecoverOperation.fromJson(
-            Map<String, dynamic>.from(value.cast<String, dynamic>()),
-          ),
-        );
-      } catch (_) {}
+    for (final value in rows) {
+      if (value is! Map) throw const FormatException('Invalid queue row.');
+      operations.add(PendingStreakRecoverOperation.fromJson(
+        Map<String, dynamic>.from(value.cast<String, dynamic>()),
+      ));
     }
     return operations;
-  }
-
-  Future<List<dynamic>> _loadList(String key) async {
-    final prefs = await _sharedPreferencesProvider();
-    final raw = prefs.getString(key);
-    if (raw == null || raw.trim().isEmpty) return const <dynamic>[];
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is List) return decoded;
-    } catch (_) {}
-    return const <dynamic>[];
-  }
-
-  Future<void> _saveList(String key, List<dynamic> value) async {
-    final prefs = await _sharedPreferencesProvider();
-    await prefs.setString(key, jsonEncode(value));
   }
 
   String _shieldKey(String userId) => '${_shieldPrefix}_${userId.trim()}';

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/services/account_deletion_service.dart';
+import '../core/observability/crash_reporting_service.dart';
 import '../core/observability/analytics_events.dart';
 import '../core/observability/analytics_service.dart';
 import '../constants/reward_constants.dart';
@@ -302,6 +303,7 @@ class UserStateStore extends ChangeNotifier {
     UserStateNotificationMutationObserver? notificationMutationObserver,
     Future<void> Function(String userId)? onboardingRecoveryCleanup,
     AnalyticsService? analyticsService,
+    CrashReportingService? crashReportingService,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
         _habitSyncService = habitSyncService ?? HabitSyncService(),
@@ -316,7 +318,9 @@ class UserStateStore extends ChangeNotifier {
             HabitCurrencyRewardCoordinator(
               rewardRepository: SupabaseHabitCurrencyRewardRepository(),
               pendingOperationStore:
-                  SharedPreferencesPendingCurrencyOperationStore(),
+                  SharedPreferencesPendingCurrencyOperationStore(
+                crashReportingService: crashReportingService,
+              ),
               transactionRepository: habitRewardTransactionRepository ??
                   LocalHabitRewardTransactionRepository(),
               currentUserIdProvider:
@@ -327,7 +331,9 @@ class UserStateStore extends ChangeNotifier {
             achievementLevelRewardCoordinator ??
                 AchievementLevelRewardCoordinator(
                   rewardRepository: SupabaseAchievementLevelRewardRepository(),
-                  pendingClaimStore: SharedPreferencesPendingRewardClaimStore(),
+                  pendingClaimStore: SharedPreferencesPendingRewardClaimStore(
+                    crashReportingService: crashReportingService,
+                  ),
                   currentUserIdProvider: currentSupabaseUserIdProvider ??
                       _authenticatedSupabaseUserId,
                   enabled: AchievementLevelRewardConfig.resolveEnabled(),
@@ -357,7 +363,9 @@ class UserStateStore extends ChangeNotifier {
         _streakProtectionRepository = streakProtectionRepository,
         _streakProtectionPendingOperationStore =
             streakProtectionPendingOperationStore ??
-                SharedPreferencesStreakProtectionPendingOperationStore(),
+                SharedPreferencesStreakProtectionPendingOperationStore(
+                  crashReportingService: crashReportingService,
+                ),
         _deviceTimeZoneProvider =
             deviceTimeZoneProvider ?? const FlutterDeviceTimeZoneProvider(),
         _globalWalletController = globalWalletController,
