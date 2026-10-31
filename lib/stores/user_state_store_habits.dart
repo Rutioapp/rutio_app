@@ -3978,6 +3978,7 @@ Future<void> _applyConfirmedHabitRewardWalletBalance(
 Future<int> _resolvePendingHabitCloudRewardsBestEffort(
   UserStateStore store,
 ) async {
+  final userId = store._currentSupabaseUserIdProvider()?.trim();
   if (!HabitCurrencyRewardsConfig.resolveEnabled(
     override: store._cloudHabitRewardsEnabledOverride,
   )) {
@@ -3995,6 +3996,12 @@ Future<int> _resolvePendingHabitCloudRewardsBestEffort(
   );
   var resolved = 0;
   for (final result in results) {
+    if (userId != null &&
+        userId.isNotEmpty &&
+        (store._currentSupabaseUserIdProvider()?.trim() != userId ||
+            store.activeLocalScopeUserId != userId)) {
+      break;
+    }
     if (!result.isSuccess || result.ledger == null) continue;
     final root = Map<String, dynamic>.from(store._state!);
     final userState = _ensureUserStateRoot(root);
@@ -4008,6 +4015,12 @@ Future<int> _resolvePendingHabitCloudRewardsBestEffort(
       result: result,
     );
     await _applyConfirmedHabitRewardWalletBalance(store, result: result);
+    if (userId != null &&
+        userId.isNotEmpty &&
+        (store._currentSupabaseUserIdProvider()?.trim() != userId ||
+            store.activeLocalScopeUserId != userId)) {
+      break;
+    }
     root['userState'] = userState;
     store._state = root;
     await store.save(root);
@@ -4017,6 +4030,45 @@ Future<int> _resolvePendingHabitCloudRewardsBestEffort(
     _logHabitCloudReward('pending operations resolved count=$resolved');
   }
   return resolved;
+}
+
+Future<int> _resolvePendingCloudRewardsBestEffort(
+  UserStateStore store,
+) async {
+  final userId = store._currentSupabaseUserIdProvider()?.trim();
+  if (userId == null || userId.isEmpty) return 0;
+
+  if (store.activeLocalScopeUserId != userId) {
+    await store.switchLocalScope(userId: userId);
+  }
+  if (store._currentSupabaseUserIdProvider()?.trim() != userId ||
+      store.activeLocalScopeUserId != userId) {
+    return 0;
+  }
+
+  if (store._state == null) {
+    if (!store._loading) await store.load();
+    if (store._state == null ||
+        store._currentSupabaseUserIdProvider()?.trim() != userId ||
+        store.activeLocalScopeUserId != userId) {
+      return 0;
+    }
+  }
+
+  final habitsResolved = await _resolvePendingHabitCloudRewardsBestEffort(
+    store,
+  );
+  if (store._currentSupabaseUserIdProvider()?.trim() != userId ||
+      store.activeLocalScopeUserId != userId) {
+    return habitsResolved;
+  }
+
+  final achievementLevelResolved =
+      await _claimCloudAchievementAndLevelRewardsBestEffort(
+    store,
+    resolvePendingFirst: true,
+  );
+  return habitsResolved + achievementLevelResolved;
 }
 
 void _applyConfirmedPendingHabitState(

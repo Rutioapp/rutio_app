@@ -784,6 +784,9 @@ class UserStateStore extends ChangeNotifier {
   Future<int> resolvePendingHabitCloudRewardsBestEffort() =>
       _resolvePendingHabitCloudRewardsBestEffort(this);
 
+  Future<int> resolvePendingCloudRewardsBestEffort() =>
+      _resolvePendingCloudRewardsBestEffort(this);
+
   Future<JournalEntryBackfillSummary> syncExistingLocalJournalEntriesOnce({
     bool force = false,
   }) =>

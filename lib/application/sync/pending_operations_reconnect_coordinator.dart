@@ -92,6 +92,9 @@ class PendingOperationsReconnectCoordinator with WidgetsBindingObserver {
         return 0;
       }
       final resolved = await _syncPendingOperations();
+      if (_normalizedUserId(_currentUserIdProvider()) != userId) {
+        return 0;
+      }
       // The existing best-effort sync intentionally does not expose whether
       // a transient RPC failed. Cool down every completed attempt so a noisy
       // connectivity stream cannot spin requests while the backend is down.

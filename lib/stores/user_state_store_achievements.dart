@@ -212,17 +212,17 @@ Future<void> _setFeaturedAchievementIds(
   await store.save(root);
 }
 
-Future<void> _claimCloudAchievementAndLevelRewardsBestEffort(
+Future<int> _claimCloudAchievementAndLevelRewardsBestEffort(
   UserStateStore store, {
   Iterable<UnlockedAchievementRecord> achievementRecords =
       const <UnlockedAchievementRecord>[],
   Iterable<int> levelRewards = const <int>[],
   bool resolvePendingFirst = false,
 }) async {
-  if (!store._achievementLevelRewardCoordinator.isEnabled) return;
+  if (!store._achievementLevelRewardCoordinator.isEnabled) return 0;
 
   final root = store._state;
-  if (root == null) return;
+  if (root == null) return 0;
 
   final userState = _ensureUserStateRoot(root);
   _ensureAchievementsRoot(userState);
@@ -238,13 +238,24 @@ Future<void> _claimCloudAchievementAndLevelRewardsBestEffort(
       .toSet();
   final rewardAppliedIds = _rewardAppliedAchievementIdsSet(achievements);
   var changed = false;
+  var resolvedPending = 0;
 
   if (resolvePendingFirst) {
+    final replayUserId = store._currentSupabaseUserIdProvider()?.trim();
     final pendingResults = await store._achievementLevelRewardCoordinator
         .resolvePendingForCurrentUser();
+    if (replayUserId == null || replayUserId.isEmpty) {
+      // Existing local flows can invoke this helper before auth has exposed
+      // an identity. They retain their established behavior; the aggregate
+      // replay entry point requires an authenticated identity before calling.
+    } else if (store._currentSupabaseUserIdProvider()?.trim() != replayUserId ||
+        store.activeLocalScopeUserId != replayUserId) {
+      return 0;
+    }
     for (final result in pendingResults) {
       final ledger = result.data;
       if (!result.isSuccess || ledger == null) continue;
+      resolvedPending += 1;
       if (ledger.isAchievementClaim) {
         if (confirmedAchievementIds.add(ledger.sourceId)) {
           rewardAppliedIds.add(ledger.sourceId);
@@ -297,7 +308,7 @@ Future<void> _claimCloudAchievementAndLevelRewardsBestEffort(
     }
   }
 
-  if (!changed) return;
+  if (!changed) return resolvedPending;
 
   claims['milestonesClaimed'] = confirmedLevelIds.toList(growable: false);
   claims['achievementRewardsClaimed'] =
@@ -311,6 +322,7 @@ Future<void> _claimCloudAchievementAndLevelRewardsBestEffort(
   await store.save(root);
 
   unawaited(store._globalWalletController?.refresh(force: true));
+  return resolvedPending;
 }
 
 class _AchievementHistoryStats {

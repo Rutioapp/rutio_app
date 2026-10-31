@@ -63,6 +63,55 @@ void main() {
       expect(_walletCoins(store), 0);
     });
 
+    test('combined pending recovery applies an already persisted claim',
+        () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final fakeCoordinator = _FakeAchievementLevelRewardCoordinator();
+      final fakeWallet = _FakeGlobalWalletController();
+      final store = await _buildStore(
+        achievementLevelRewardCoordinator: fakeCoordinator,
+        globalWalletController: fakeWallet,
+        provideCurrentUser: true,
+      );
+      await store.save(
+        _baseState(
+          userId: 'user-1',
+          habits: <Map<String, dynamic>>[],
+        ),
+      );
+      await store.load();
+      await store.switchLocalScope(userId: 'user-1');
+      fakeCoordinator.resolvePendingCallCount = 0;
+
+      fakeCoordinator.pendingResults =
+          <AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>[
+        AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>.success(
+          data: AchievementLevelRewardLedgerEntry(
+            id: 'pending-level-5',
+            userId: 'user-1',
+            requestId: 'reward:user-1:level:5',
+            operationType: 'claim',
+            sourceType: 'level_reward',
+            sourceId: '5',
+            coinDelta: 50,
+            balanceAfter: 50,
+            createdAt: DateTime(2026, 7, 19),
+            isIdempotent: true,
+          ),
+        ),
+      ];
+
+      final resolved = await store.resolvePendingCloudRewardsBestEffort();
+
+      expect(fakeCoordinator.resolvePendingCallCount, 1);
+      expect(resolved, 1);
+      final state = store.state!['userState'] as Map<String, dynamic>;
+      final claims = state['claims'] as Map<String, dynamic>;
+      expect(claims['milestonesClaimed'], contains('5'));
+      expect(fakeCoordinator.levelRequests, isEmpty);
+    });
+
     test('level reward claims once and closing the modal does not duplicate',
         () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -141,6 +190,7 @@ Future<UserStateStore> _buildStore({
   AchievementLevelRewardCoordinator? achievementLevelRewardCoordinator,
   GlobalWalletController? globalWalletController,
   UserProgressSyncService? userProgressSyncService,
+  bool provideCurrentUser = false,
 }) async {
   final repo = UserStateRepository(storage: UserStateStorage())
     ..setActiveUserScope('user-1');
@@ -151,6 +201,7 @@ Future<UserStateStore> _buildStore({
     globalWalletController: globalWalletController,
     userProgressSyncService:
         userProgressSyncService ?? _RecordingUserProgressSyncService(),
+    currentSupabaseUserIdProvider: provideCurrentUser ? () => 'user-1' : null,
   );
   return store;
 }
@@ -282,7 +333,11 @@ class _FakeAchievementLevelRewardCoordinator
 
   int achievementCallCount = 0;
   int levelChargeCount = 0;
+  int resolvePendingCallCount = 0;
   final List<int> levelRequests = <int>[];
+  List<AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>
+      pendingResults =
+      const <AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>[];
 
   @override
   Future<AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>
@@ -340,8 +395,11 @@ class _FakeAchievementLevelRewardCoordinator
       resolvePendingForCurrentUser({
     int maxOperations = 5,
   }) async {
-    return const <AchievementLevelRewardResult<
+    resolvePendingCallCount += 1;
+    final results = pendingResults;
+    pendingResults = const <AchievementLevelRewardResult<
         AchievementLevelRewardLedgerEntry>>[];
+    return results;
   }
 }
 

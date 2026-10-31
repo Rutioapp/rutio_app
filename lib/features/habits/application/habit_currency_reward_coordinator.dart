@@ -65,6 +65,7 @@ class HabitCurrencyRewardCoordinator {
   final bool _enabled;
   final DateTime Function() _nowProvider;
   final int _maxAutoRetries;
+  Future<void> _executionQueue = Future<void>.value();
 
   Future<HabitCurrencyRewardOperationResult> applyHabitReward({
     required String habitId,
@@ -166,6 +167,30 @@ class HabitCurrencyRewardCoordinator {
   }
 
   Future<HabitCurrencyRewardOperationResult> _execute({
+    required HabitRewardOperationType operationType,
+    required String habitId,
+    String? remoteHabitId,
+    required String logicalDateKey,
+    String? completionEventId,
+    String? requestId,
+    int value = 0,
+  }) {
+    final next = _executionQueue.then(
+      (_) => _executeSerialized(
+        operationType: operationType,
+        habitId: habitId,
+        remoteHabitId: remoteHabitId,
+        logicalDateKey: logicalDateKey,
+        completionEventId: completionEventId,
+        requestId: requestId,
+        value: value,
+      ),
+    );
+    _executionQueue = next.then<void>((_) {}, onError: (_, __) {});
+    return next;
+  }
+
+  Future<HabitCurrencyRewardOperationResult> _executeSerialized({
     required HabitRewardOperationType operationType,
     required String habitId,
     String? remoteHabitId,

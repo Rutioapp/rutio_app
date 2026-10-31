@@ -27,6 +27,7 @@ class AchievementLevelRewardCoordinator {
   final bool _enabled;
   final DateTime Function() _nowProvider;
   final int _maxAutoRetries;
+  Future<void> _executionQueue = Future<void>.value();
 
   bool get isEnabled => _enabled;
 
@@ -101,6 +102,23 @@ class AchievementLevelRewardCoordinator {
 
   Future<AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>
       _execute({
+    required RewardClaimType claimType,
+    required String sourceId,
+    String? requestId,
+  }) {
+    final next = _executionQueue.then(
+      (_) => _executeSerialized(
+        claimType: claimType,
+        sourceId: sourceId,
+        requestId: requestId,
+      ),
+    );
+    _executionQueue = next.then<void>((_) {}, onError: (_, __) {});
+    return next;
+  }
+
+  Future<AchievementLevelRewardResult<AchievementLevelRewardLedgerEntry>>
+      _executeSerialized({
     required RewardClaimType claimType,
     required String sourceId,
     String? requestId,

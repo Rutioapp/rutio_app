@@ -113,7 +113,7 @@ class AuthController extends ChangeNotifier {
         pendingOperationsReconnectCoordinator ??
             PendingOperationsReconnectCoordinator(
               syncPendingOperations:
-                  _userStateStore.resolvePendingHabitCloudRewardsBestEffort,
+                  _userStateStore.resolvePendingCloudRewardsBestEffort,
               currentUserIdProvider: () => _currentUser?.id,
               backendAvailabilityCheck: _isBackendAvailable,
             );
