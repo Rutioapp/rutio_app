@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rutio/data/mappers/habit_remote_mapper.dart';
 import 'package:rutio/data/local/user_state_storage.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
@@ -26,12 +27,47 @@ void main() {
 
       final habit = _activeHabitById(store, 'check-habit');
       expect(habit, isNotNull);
-      expect(habit!['type'], 'check');
-      expect(habit['schedule'], {'type': 'daily'});
+      final createdHabit = habit!;
+      expect(HabitRemoteMapper.isUuid(createdHabit['remoteId'].toString()),
+          isTrue);
+      expect(createdHabit['type'], 'check');
+      expect(createdHabit['schedule'], {'type': 'daily'});
 
       final home = _homeViewForToday(store);
       expect(
           home.viewHabits.map((habit) => habit['id']), contains('check-habit'));
+    });
+
+    test('persists the creation UUID across a store restart', () async {
+      final store = await _seedStore();
+
+      await store.addHabitFromCatalog(
+        habitDef: <String, dynamic>{
+          'id': 'restart-habit',
+          'name': 'Restart safe',
+          'type': 'check',
+        },
+        familyId: 'mind',
+      );
+
+      final first = _activeHabitById(store, 'restart-habit');
+      final firstRemoteId = first?['remoteId']?.toString();
+      expect(firstRemoteId, isNotNull);
+      expect(HabitRemoteMapper.isUuid(firstRemoteId!), isTrue);
+
+      final restartedRepository = UserStateRepository(
+        storage: UserStateStorage(),
+      )..setActiveUserScope('user_123');
+      final restartedStore = UserStateStore(
+        restartedRepository,
+        journalEntrySyncService: JournalEntrySyncService(),
+      );
+      await restartedStore.load();
+
+      expect(
+        _activeHabitById(restartedStore, 'restart-habit')?['remoteId'],
+        firstRemoteId,
+      );
     });
 
     test('creates count habit with defaults and it appears in Home', () async {

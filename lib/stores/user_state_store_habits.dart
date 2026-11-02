@@ -2285,7 +2285,10 @@ Future<void> _addHabitFromCatalog(
 
   final normalizedRoutine =
       routine == null || routine.trim().isEmpty ? null : routine.trim();
-  final initialRemoteId = _habitRemoteIdValue(habitDef);
+  final initialRemoteId = _stableCreationRemoteId(
+    localHabitId: id,
+    suppliedRemoteId: _habitRemoteIdValue(habitDef),
+  );
 
   activeHabits.add(<String, dynamic>{
     'id': id,
@@ -2303,7 +2306,7 @@ Future<void> _addHabitFromCatalog(
     'skippedToday': false,
     'schedule': resolvedSchedule,
     'routine': normalizedRoutine,
-    if (initialRemoteId != null) 'remoteId': initialRemoteId,
+    'remoteId': initialRemoteId,
   });
 
   await _stampWeeklyReportConfigMutation(store, activeHabits.last);
@@ -2379,7 +2382,10 @@ Future<void> _addCustomHabit(
       (habit['emoji'] ?? habit['habitEmoji'] ?? '').toString().trim();
   final resolvedEmoji =
       rawEmoji.isNotEmpty ? rawEmoji : FamilyTheme.emojiOf(resolvedFamilyId);
-  final initialRemoteId = _habitRemoteIdValue(habit);
+  final initialRemoteId = _stableCreationRemoteId(
+    localHabitId: id,
+    suppliedRemoteId: _habitRemoteIdValue(habit),
+  );
   final rawUnit = (habit['unit'] ?? habit['unitLabel'] ?? '').toString().trim();
   final resolvedUnit = type == 'count' && rawUnit.isNotEmpty ? rawUnit : null;
   final resolvedTarget =
@@ -2407,7 +2413,7 @@ Future<void> _addCustomHabit(
     'reminderEnabled':
         habit['reminderEnabled'] == true || habit['remindersEnabled'] == true,
     'reminderTime': habit['reminderTime'],
-    if (initialRemoteId != null) 'remoteId': initialRemoteId,
+    'remoteId': initialRemoteId,
   });
 
   await _stampWeeklyReportConfigMutation(store, activeHabits.last);
@@ -2439,6 +2445,23 @@ Future<void> _addCustomHabit(
       ),
     ),
   );
+}
+
+String _stableCreationRemoteId({
+  required String localHabitId,
+  required String? suppliedRemoteId,
+}) {
+  final normalizedSupplied = (suppliedRemoteId ?? '').trim().toLowerCase();
+  if (HabitRemoteMapper.isUuid(normalizedSupplied)) {
+    return normalizedSupplied;
+  }
+
+  final normalizedLocalId = localHabitId.trim().toLowerCase();
+  if (HabitRemoteMapper.isUuid(normalizedLocalId)) {
+    return normalizedLocalId;
+  }
+
+  return const Uuid().v4();
 }
 
 Future<void> _reorderVisibleHabits(

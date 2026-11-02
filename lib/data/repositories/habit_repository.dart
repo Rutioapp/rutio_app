@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -135,6 +137,104 @@ effective_timezone_name
     }
   }
 
+  /// Creates a habit with a client-owned UUID and resolves an ambiguous
+  /// insert by reading only that user's row.
+  ///
+  /// The method never updates an existing row. A row found after an insert
+  /// error is accepted only when its writable fields still match the create
+  /// request; otherwise the result is kept unresolved.
+  Future<RepositoryResult<RemoteHabit>> createHabitIdempotentlyForCurrentUser(
+    RemoteHabit habit,
+  ) async {
+    final userId = _currentUserId();
+    if (userId == null) {
+      return RepositoryResult<RemoteHabit>.failure(_notAuthenticated());
+    }
+
+    final remoteHabitId = (habit.id ?? '').trim().toLowerCase();
+    if (remoteHabitId.isEmpty || !_isUuid(remoteHabitId)) {
+      return RepositoryResult<RemoteHabit>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'A valid client habit UUID is required for creation.',
+        ),
+      );
+    }
+
+    final payload = Map<String, dynamic>.from(habit.toUpsertMap())
+      ..['user_id'] = userId
+      ..['id'] = remoteHabitId;
+
+    try {
+      final row = await _client
+          .from(_habitsTable)
+          .insert(payload)
+          .select(_habitColumns)
+          .single();
+      return _validateScopedHabit(
+        remoteHabit: RemoteHabit.fromMap(Map<String, dynamic>.from(row)),
+        userId: userId,
+        expectedHabitId: remoteHabitId,
+        expectedCreate: habit,
+      );
+    } catch (error, stackTrace) {
+      final verification = await _verifyCreatedHabit(
+        habit: habit,
+        userId: userId,
+        remoteHabitId: remoteHabitId,
+      );
+      if (verification != null) return verification;
+
+      if (error is PostgrestException) {
+        return RepositoryResult<RemoteHabit>.failure(
+          _mapPostgrestError(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Could not create habit.',
+          ),
+        );
+      }
+      return RepositoryResult<RemoteHabit>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.network,
+          message: 'Could not confirm habit creation.',
+          cause: error,
+          causeStackTrace: stackTrace,
+        ),
+      );
+    }
+  }
+
+  Future<RepositoryResult<RemoteHabit>?> _verifyCreatedHabit({
+    required RemoteHabit habit,
+    required String userId,
+    required String remoteHabitId,
+  }) async {
+    try {
+      final row = await _client
+          .from(_habitsTable)
+          .select(_habitColumns)
+          .eq('user_id', userId)
+          .eq('id', remoteHabitId)
+          .maybeSingle();
+      if (row == null) return null;
+
+      final remoteHabit = RemoteHabit.fromMap(
+        Map<String, dynamic>.from((row as Map).cast<String, dynamic>()),
+      );
+      return _validateScopedHabit(
+        remoteHabit: remoteHabit,
+        userId: userId,
+        expectedHabitId: remoteHabitId,
+        expectedCreate: habit,
+      );
+    } catch (_) {
+      // An unavailable verification leaves the operation unresolved. The
+      // caller retains the same UUID and may safely try again later.
+      return null;
+    }
+  }
+
   Future<RepositoryResult<RemoteHabit>> _insertHabitForCurrentUser({
     required Map<String, dynamic> payload,
     required String userId,
@@ -196,6 +296,7 @@ effective_timezone_name
     required RemoteHabit remoteHabit,
     required String userId,
     required String? expectedHabitId,
+    RemoteHabit? expectedCreate,
   }) {
     final actualHabitId = (remoteHabit.id ?? '').trim();
     final expectedId = (expectedHabitId ?? '').trim();
@@ -211,7 +312,30 @@ effective_timezone_name
       );
     }
 
+    if (expectedCreate != null &&
+        !_matchesCreateRequest(remoteHabit, expectedCreate)) {
+      return RepositoryResult<RemoteHabit>.failure(
+        const RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'Remote habit does not match the create request.',
+        ),
+      );
+    }
+
     return RepositoryResult<RemoteHabit>.success(data: remoteHabit);
+  }
+
+  bool _matchesCreateRequest(RemoteHabit actual, RemoteHabit expected) {
+    final actualPayload = actual.toUpsertMap()..remove('id');
+    final expectedPayload = expected.toUpsertMap()..remove('id');
+    return jsonEncode(actualPayload) == jsonEncode(expectedPayload);
+  }
+
+  bool _isUuid(String value) {
+    return RegExp(
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+      caseSensitive: false,
+    ).hasMatch(value);
   }
 
   Future<RepositoryResult<void>> deleteHabitForCurrentUser({

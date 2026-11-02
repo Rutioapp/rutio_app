@@ -2217,8 +2217,9 @@ void main() {
 
     group('highlighted habits', () {
       test('returns the top 3 habits in descending completion order', () async {
+        final monthNow = DateTime(2026, 5, 20);
         final result = await _buildMonthViewData(
-          now: now,
+          now: monthNow,
           activeHabits: [
             _habit(id: 'habit-alpha', title: 'Alpha', emoji: 'A'),
             _habit(id: 'habit-beta', title: 'Beta', emoji: 'B'),
@@ -2226,7 +2227,7 @@ void main() {
             _habit(id: 'habit-delta', title: 'Delta', emoji: 'D'),
           ],
           history: _historyForMonth(
-            now,
+            monthNow,
             completionsByHabit: {
               'habit-alpha': _days([1, 2, 3, 4]),
               'habit-beta': _days([1, 2, 3, 4]),
@@ -2250,15 +2251,16 @@ void main() {
       test(
           'returns only the available habits when fewer than 3 have completions',
           () async {
+        final monthNow = DateTime(2026, 5, 20);
         final result = await _buildMonthViewData(
-          now: now,
+          now: monthNow,
           activeHabits: [
             _habit(id: 'habit-one', title: 'One', emoji: '1'),
             _habit(id: 'habit-two', title: 'Two', emoji: '2'),
             _habit(id: 'habit-three', title: 'Three', emoji: '3'),
           ],
           history: _historyForMonth(
-            now,
+            monthNow,
             completionsByHabit: {
               'habit-one': _days([1, 2, 3]),
               'habit-two': _days([1]),
@@ -2282,8 +2284,9 @@ void main() {
     group('families', () {
       test('aggregates completions by family and returns up to 4 entries',
           () async {
+        final monthNow = DateTime(2026, 5, 20);
         final result = await _buildMonthViewData(
-          now: now,
+          now: monthNow,
           activeHabits: [
             _habit(
               id: 'mind-1',
@@ -2311,7 +2314,7 @@ void main() {
             ),
           ],
           history: _historyForMonth(
-            now,
+            monthNow,
             completionsByHabit: {
               'mind-1': _days([1, 2, 3]),
               'mind-2': _days([1, 2]),

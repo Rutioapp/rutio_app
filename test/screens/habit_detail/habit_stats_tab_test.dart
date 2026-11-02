@@ -589,7 +589,7 @@ void main() {
         _rootState(
           habit: habit,
           completions: {
-            _dateKey(now.subtract(const Duration(days: 2))): true,
+            _dateKey(now): true,
             _dateKey(now.subtract(const Duration(days: 1))): true,
           },
         ),
@@ -601,9 +601,9 @@ void main() {
         now: now,
         countsByDay: {
           DateTime(
-              now.subtract(const Duration(days: 2)).year,
-              now.subtract(const Duration(days: 2)).month,
-              now.subtract(const Duration(days: 2)).day): 1,
+              now.year,
+              now.month,
+              now.day): 1,
           DateTime(
               now.subtract(const Duration(days: 1)).year,
               now.subtract(const Duration(days: 1)).month,

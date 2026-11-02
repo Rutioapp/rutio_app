@@ -197,6 +197,157 @@ void main() {
       });
     });
 
+    test('create resolves a lost insert response without inserting again',
+        () async {
+      const habitId = '550e8400-e29b-41d4-a716-446655440010';
+      final client = _QueueingHttpClient()
+        ..enqueueRaw(
+          statusCode: 409,
+          body: jsonEncode(<String, dynamic>{
+            'code': '23505',
+            'message': 'duplicate key value violates unique constraint',
+          }),
+        )
+        ..enqueueJson(
+          statusCode: 200,
+          body: <String, dynamic>{
+            'id': habitId,
+            'user_id': 'user-123',
+            'name': 'Read',
+            'habit_type': 'check',
+            'reminder_enabled': false,
+            'schedule': <String, dynamic>{'type': 'daily'},
+            'is_archived': false,
+            'sort_order': 0,
+          },
+        );
+      final repository = HabitRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.createHabitIdempotentlyForCurrentUser(
+        const RemoteHabit(
+          id: habitId,
+          userId: 'user-123',
+          name: 'Read',
+          habitType: 'check',
+          reminderEnabled: false,
+          schedule: <String, dynamic>{'type': 'daily'},
+          isArchived: false,
+          sortOrder: 0,
+        ),
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(result.data?.id, habitId);
+      expect(client.callCount, 2);
+      expect(client.lastMethod, 'GET');
+      expect(client.lastUri?.queryParameters['user_id'], 'eq.user-123');
+      expect(client.lastUri?.queryParameters['id'], 'eq.$habitId');
+    });
+
+    test('create rejects a remote row with same id but different payload',
+        () async {
+      const habitId = '550e8400-e29b-41d4-a716-446655440011';
+      final client = _QueueingHttpClient()
+        ..enqueueRaw(
+          statusCode: 409,
+          body: jsonEncode(<String, dynamic>{
+            'code': '23505',
+            'message': 'duplicate key value violates unique constraint',
+          }),
+        )
+        ..enqueueJson(
+          statusCode: 200,
+          body: <String, dynamic>{
+            'id': habitId,
+            'user_id': 'user-123',
+            'name': 'Different habit',
+            'habit_type': 'check',
+            'reminder_enabled': false,
+            'schedule': <String, dynamic>{'type': 'daily'},
+            'is_archived': false,
+            'sort_order': 0,
+          },
+        );
+      final repository = HabitRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.createHabitIdempotentlyForCurrentUser(
+        const RemoteHabit(
+          id: habitId,
+          userId: 'user-123',
+          name: 'Read',
+          habitType: 'check',
+          reminderEnabled: false,
+          schedule: <String, dynamic>{'type': 'daily'},
+          isArchived: false,
+          sortOrder: 0,
+        ),
+      );
+
+      expect(result.isSuccess, isFalse);
+      expect(result.error?.code, RepositoryErrorCode.invalidResponse);
+      expect(client.callCount, 2);
+    });
+
+    test('create keeps the same UUID when verification is unavailable',
+        () async {
+      const habitId = '550e8400-e29b-41d4-a716-446655440012';
+      final client = _QueueingHttpClient()
+        ..enqueueRaw(
+          statusCode: 408,
+          body: jsonEncode(<String, dynamic>{
+            'code': 'PGRST000',
+            'message': 'timeout while inserting',
+          }),
+        )
+        ..enqueueRaw(
+          statusCode: 503,
+          body: jsonEncode(<String, dynamic>{
+            'code': 'PGRST000',
+            'message': 'network unavailable',
+          }),
+        );
+      final repository = HabitRepository(
+        client: SupabaseClient(
+          'https://example.com',
+          'anon-key',
+          httpClient: client,
+        ),
+        currentUserIdProvider: () => 'user-123',
+      );
+
+      final result = await repository.createHabitIdempotentlyForCurrentUser(
+        const RemoteHabit(
+          id: habitId,
+          userId: 'user-123',
+          name: 'Read',
+          habitType: 'check',
+          reminderEnabled: false,
+          schedule: <String, dynamic>{'type': 'daily'},
+          isArchived: false,
+          sortOrder: 0,
+        ),
+      );
+
+      expect(result.isSuccess, isFalse);
+      expect(result.error?.code, RepositoryErrorCode.network);
+      expect(client.callCount, greaterThanOrEqualTo(2));
+      expect(client.lastMethod, isNot('POST'));
+    });
+
     test(
         'upsertHabitForCurrentUser backfills schedule when editing existing habit',
         () async {

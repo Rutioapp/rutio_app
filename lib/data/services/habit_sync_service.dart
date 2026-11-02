@@ -258,57 +258,15 @@ class HabitSyncService {
           continue;
         }
 
-        final result = await _repository.upsertHabitForCurrentUser(
-          mappedLocalHabit,
+        // Legacy local ids are not safe creation keys. Do not create a new
+        // remote row from an ambiguous fingerprint; a later explicit
+        // resolution can associate the existing row without duplication.
+        skippedCount += 1;
+        _debugWarn(
+          'habit backfill kept legacy local habit unresolved: '
+          'no unambiguous remote match',
         );
-        if (!result.isSuccess || result.data == null) {
-          failedCount += 1;
-          _debugWarn(
-            'habit backfill upload failed for local "${candidate.localHabitId}": '
-            '${_errorMessage(result.error)}',
-          );
-          continue;
-        }
-
-        final syncedHabit = result.data!;
-        if (syncedHabit.userId != userId) {
-          failedCount += 1;
-          _debugWarn(
-            'habit backfill ignored response for local "${candidate.localHabitId}": '
-            'user scope mismatch',
-          );
-          continue;
-        }
-
-        final syncedRemoteHabitId = (syncedHabit.id ?? '').trim();
-        if (syncedRemoteHabitId.isEmpty) {
-          failedCount += 1;
-          _debugWarn(
-            'habit backfill ignored response for local "${candidate.localHabitId}": '
-            'missing remote UUID in payload',
-          );
-          continue;
-        }
-
-        final persisted = await _persistRemoteIdAssignment(
-          localHabitId: candidate.localHabitId,
-          remoteHabitId: syncedRemoteHabitId,
-          onRemoteIdAssigned: onRemoteIdAssigned,
-          operation: 'backfill_upload',
-        );
-        if (!persisted) {
-          failedCount += 1;
-          continue;
-        }
-
-        uploadedCount += 1;
-
-        final syncedFingerprint = _habitFingerprint(syncedHabit);
-        _indexRemoteIdForFingerprint(
-          existingByFingerprint,
-          fingerprint: syncedFingerprint,
-          remoteHabitId: syncedRemoteHabitId,
-        );
+        continue;
       }
     } catch (error) {
       _debugWarn('habit backfill unexpected error: $error');
@@ -369,7 +327,9 @@ class HabitSyncService {
         remoteHabitIdOverride: existingRemoteId,
       );
 
-      final result = await _repository.upsertHabitForCurrentUser(remoteHabit);
+      final result = operation == 'create'
+          ? await _repository.createHabitIdempotentlyForCurrentUser(remoteHabit)
+          : await _repository.upsertHabitForCurrentUser(remoteHabit);
       if (!result.isSuccess || result.data == null) {
         _debugWarn(
           'habit sync $operation failed for local "${localId ?? 'unknown'}": '
@@ -382,6 +342,15 @@ class HabitSyncService {
       if (syncedHabit.userId != userId) {
         _debugWarn(
           'habit sync $operation ignored response: user scope mismatch',
+        );
+        return;
+      }
+
+      final userIdAfterRequest = _currentAuthenticatedUserId();
+      if (userIdAfterRequest != userId ||
+          !_isExpectedUser(userIdAfterRequest ?? '', expectedLocalUserId)) {
+        _debugWarn(
+          'habit sync $operation ignored response: auth scope changed',
         );
         return;
       }
