@@ -137,6 +137,73 @@ effective_timezone_name
     }
   }
 
+  /// Updates an existing habit without creating a replacement row when the
+  /// remote identity is missing. Durable mutation replay uses this method for
+  /// update operations so an old or ambiguous update cannot create a habit.
+  Future<RepositoryResult<RemoteHabit>> updateHabitForCurrentUser(
+    RemoteHabit habit,
+  ) async {
+    final userId = _currentUserId();
+    if (userId == null) {
+      return RepositoryResult<RemoteHabit>.failure(_notAuthenticated());
+    }
+
+    final remoteHabitId = (habit.id ?? '').trim();
+    if (remoteHabitId.isEmpty) {
+      return const RepositoryResult<RemoteHabit>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.invalidResponse,
+          message: 'A remote habit id is required for update.',
+        ),
+      );
+    }
+
+    final payload = Map<String, dynamic>.from(habit.toUpsertMap())
+      ..remove('id')
+      ..['user_id'] = userId;
+    try {
+      final rows = await _client
+          .from(_habitsTable)
+          .update(payload)
+          .eq('user_id', userId)
+          .eq('id', remoteHabitId)
+          .select(_habitColumns);
+      if (rows.isEmpty) {
+        return const RepositoryResult<RemoteHabit>.failure(
+          RepositoryError(
+            code: RepositoryErrorCode.notFound,
+            message: 'Remote habit was not found for update.',
+          ),
+        );
+      }
+      return _validateScopedHabit(
+        remoteHabit: RemoteHabit.fromMap(
+          Map<String, dynamic>.from(
+              (rows.first as Map).cast<String, dynamic>()),
+        ),
+        userId: userId,
+        expectedHabitId: remoteHabitId,
+      );
+    } on PostgrestException catch (error, stackTrace) {
+      return RepositoryResult<RemoteHabit>.failure(
+        _mapPostgrestError(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Could not update habit.',
+        ),
+      );
+    } catch (error, stackTrace) {
+      return RepositoryResult<RemoteHabit>.failure(
+        RepositoryError(
+          code: RepositoryErrorCode.unknown,
+          message: 'Could not update habit.',
+          cause: error,
+          causeStackTrace: stackTrace,
+        ),
+      );
+    }
+  }
+
   /// Creates a habit with a client-owned UUID and resolves an ambiguous
   /// insert by reading only that user's row.
   ///

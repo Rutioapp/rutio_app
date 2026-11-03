@@ -9,10 +9,13 @@ import 'package:rutio/data/repositories/habit_log_repository.dart';
 import 'package:rutio/data/repositories/habit_repository.dart';
 import 'package:rutio/data/repositories/repository_result.dart';
 import 'package:rutio/data/repositories/user_state_repository.dart';
+import 'package:rutio/data/services/habit_sync_service.dart';
 import 'package:rutio/data/services/journal_entry_sync_service.dart';
 import 'package:rutio/devtools/demo_seed/demo_seed_models.dart';
 import 'package:rutio/features/habits/data/cloud/streak_protection_remote_models.dart';
 import 'package:rutio/features/habits/data/cloud/streak_protection_repository.dart';
+import 'package:rutio/features/habits/data/pending_habit_mutation.dart';
+import 'package:rutio/features/habits/data/pending_habit_mutation_store.dart';
 import 'package:rutio/stores/user_state_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -151,6 +154,57 @@ void main() {
         'type': 'weekly',
         'weekdays': <int>[1, 3, 5],
       });
+    });
+
+    test('pending local update is not overwritten by an older pull', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final habitRepository = _FakeHabitRepository(
+        fetchedHabits: <RemoteHabit>[
+          _remoteCheckHabit(
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Remote Older',
+            updatedAt: DateTime.utc(2026, 6, 22, 10),
+          ),
+        ],
+      );
+      final pendingStore = PendingHabitMutationStore();
+      await pendingStore.enqueue(
+        userId: 'user-1',
+        localHabitId: 'habit-1',
+        remoteHabitId: '550e8400-e29b-41d4-a716-446655440000',
+        type: PendingHabitMutationType.update,
+        snapshot: <String, dynamic>{
+          'id': 'habit-1',
+          'remoteId': '550e8400-e29b-41d4-a716-446655440000',
+          'name': 'Local Newer',
+          'type': 'check',
+          'target': 1,
+          'schedule': <String, dynamic>{'type': 'daily'},
+        },
+      );
+      final store = await _buildStore(
+        authenticatedUserId: 'user-1',
+        habitRepository: habitRepository,
+        habitSyncService: HabitSyncService(
+          habitRepository: habitRepository,
+          currentUserIdProvider: () => 'user-1',
+          pendingMutationStore: pendingStore,
+        ),
+        activeHabits: <Map<String, dynamic>>[
+          _localCheckHabit(
+            id: 'habit-1',
+            remoteId: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Local Newer',
+            updatedAt: '2026-06-23T09:00:00.000Z',
+          ),
+        ],
+      );
+
+      await store.syncHabitsFromRemoteBestEffort();
+
+      expect(store.activeHabits.single['name'], 'Local Newer');
+      expect((await pendingStore.read('user-1')).values, hasLength(1));
     });
 
     test(
@@ -1294,6 +1348,7 @@ Future<UserStateStore> _buildStore({
   required String? authenticatedUserId,
   String userId = 'user-1',
   HabitRepository? habitRepository,
+  HabitSyncService? habitSyncService,
   HabitLogRepository? habitLogRepository,
   DateTime Function()? nowProvider,
   List<Map<String, dynamic>> activeHabits = const <Map<String, dynamic>>[],
@@ -1307,6 +1362,7 @@ Future<UserStateStore> _buildStore({
     repo,
     diaryV2SupabaseRepository: _FakeDiaryV2SupabaseRepository(),
     habitRepository: habitRepository ?? _FakeHabitRepository(),
+    habitSyncService: habitSyncService,
     habitLogRepository: habitLogRepository ?? _FakeHabitLogRepository(),
     journalEntrySyncService: JournalEntrySyncService(),
     streakProtectionRepository: _FakeStreakProtectionRepository(),

@@ -51,6 +51,7 @@ import '../features/habits/data/cloud/streak_protection_pending_operation_store.
 import '../features/habits/data/cloud/shared_preferences_pending_currency_operation_store.dart';
 import '../features/habits/data/cloud/streak_protection_remote_models.dart';
 import '../features/habits/data/cloud/streak_protection_repository.dart';
+import '../features/habits/data/pending_habit_mutation.dart';
 import '../models/daily_mood.dart';
 import '../features/global_wallet/application/global_wallet_controller.dart';
 import '../features/shop/application/shop_service.dart';
@@ -306,7 +307,11 @@ class UserStateStore extends ChangeNotifier {
     CrashReportingService? crashReportingService,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
-        _habitSyncService = habitSyncService ?? HabitSyncService(),
+        _habitSyncService = habitSyncService ??
+            HabitSyncService(
+              currentUserIdProvider: currentSupabaseUserIdProvider,
+              crashReportingService: crashReportingService,
+            ),
         _habitLogSyncService = habitLogSyncService ?? HabitLogSyncService(),
         _userProgressSyncService =
             userProgressSyncService ?? UserProgressSyncService(),
@@ -544,7 +549,9 @@ class UserStateStore extends ChangeNotifier {
       _setActiveViewDate(this, date);
 
   Future<void> deleteHabitById(String id, {bool purgeHistory = true}) =>
-      _deleteHabitById(this, id, purgeHistory: purgeHistory);
+      _enqueueHabitMutation(
+        () => _deleteHabitById(this, id, purgeHistory: purgeHistory),
+      );
 
   Future<void> deleteHabit(String id) => deleteHabitById(id);
   Future<void> removeHabit(String id) => deleteHabitById(id);
@@ -734,19 +741,21 @@ class UserStateStore extends ChangeNotifier {
     List<int>? weekdays,
     String? routine,
   }) =>
-      _addHabitFromCatalog(
-        this,
-        habitDef: habitDef,
-        familyId: familyId,
-        target: target,
-        scheduleType: scheduleType,
-        scheduledDate: scheduledDate,
-        weekdays: weekdays,
-        routine: routine,
+      _enqueueHabitMutation(
+        () => _addHabitFromCatalog(
+          this,
+          habitDef: habitDef,
+          familyId: familyId,
+          target: target,
+          scheduleType: scheduleType,
+          scheduledDate: scheduledDate,
+          weekdays: weekdays,
+          routine: routine,
+        ),
       );
 
   Future<void> addCustomHabit(Map<String, dynamic> habit) =>
-      _addCustomHabit(this, habit);
+      _enqueueHabitMutation(() => _addCustomHabit(this, habit));
 
   Future<void> addHabitCustom(Map<String, dynamic> habit) =>
       addCustomHabit(habit);
@@ -834,17 +843,21 @@ class UserStateStore extends ChangeNotifier {
     List<int>? weekdays,
     String? routine,
   }) =>
-      _updateHabitPlan(
-        this,
-        habitId: habitId,
-        scheduleType: scheduleType,
-        scheduledDate: scheduledDate,
-        weekdays: weekdays,
-        routine: routine,
+      _enqueueHabitMutation(
+        () => _updateHabitPlan(
+          this,
+          habitId: habitId,
+          scheduleType: scheduleType,
+          scheduledDate: scheduledDate,
+          weekdays: weekdays,
+          routine: routine,
+        ),
       );
 
   Future<void> updateHabitDetailsFromEdit(dynamic updatedHabit) =>
-      _updateHabitDetailsFromEdit(this, updatedHabit);
+      _enqueueHabitMutation(
+        () => _updateHabitDetailsFromEdit(this, updatedHabit),
+      );
 
   Future<void> setCountHabitValue({
     required String habitId,

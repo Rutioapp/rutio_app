@@ -1,15 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../core/supabase/rutio_supabase_client.dart';
+import '../../core/storage/pending_queue_storage.dart';
+import '../../core/observability/crash_reporting_service.dart';
 import '../mappers/habit_remote_mapper.dart';
 import '../models/remote/remote_habit.dart';
 import '../repositories/habit_repository.dart';
 import '../repositories/repository_result.dart';
+import '../../features/habits/data/pending_habit_mutation.dart';
+import '../../features/habits/data/pending_habit_mutation_store.dart';
 
 typedef HabitRemoteIdAssignedCallback = Future<void> Function({
   required String localHabitId,
   required String remoteHabitId,
 });
+
+typedef HabitSyncCurrentUserIdProvider = String? Function();
 
 @immutable
 class HabitBackfillSummary {
@@ -30,11 +38,23 @@ class HabitBackfillSummary {
 ///
 /// This service must never throw into UI/store mutation flows.
 class HabitSyncService {
-  HabitSyncService({HabitRepository? habitRepository})
-      : _habitRepository = habitRepository;
+  HabitSyncService({
+    HabitRepository? habitRepository,
+    PendingHabitMutationStore? pendingMutationStore,
+    HabitSyncCurrentUserIdProvider? currentUserIdProvider,
+    CrashReportingService? crashReportingService,
+  })  : _habitRepository = habitRepository,
+        _currentUserIdProvider = currentUserIdProvider,
+        _pendingMutationStore = pendingMutationStore ??
+            PendingHabitMutationStore(
+              crashReportingService: crashReportingService,
+            );
 
   HabitRepository? _habitRepository;
+  final HabitSyncCurrentUserIdProvider? _currentUserIdProvider;
+  final PendingHabitMutationStore _pendingMutationStore;
   final Map<String, String> _sessionRemoteIdByLocalId = <String, String>{};
+  Future<void> _mutationChain = Future<void>.value();
 
   Future<void> syncHabitCreated({
     required Map<String, dynamic> localHabit,
@@ -42,12 +62,11 @@ class HabitSyncService {
     String? expectedLocalUserId,
     HabitRemoteIdAssignedCallback? onRemoteIdAssigned,
   }) async {
-    await _syncUpsert(
-      operation: 'create',
+    await _enqueueAndReplay(
+      type: PendingHabitMutationType.create,
       localHabit: localHabit,
       sortOrder: sortOrder,
       expectedLocalUserId: expectedLocalUserId,
-      allowInsertWithoutRemoteId: true,
       onRemoteIdAssigned: onRemoteIdAssigned,
     );
   }
@@ -57,12 +76,11 @@ class HabitSyncService {
     required int sortOrder,
     String? expectedLocalUserId,
   }) async {
-    await _syncUpsert(
-      operation: 'update',
+    await _enqueueAndReplay(
+      type: PendingHabitMutationType.update,
       localHabit: localHabit,
       sortOrder: sortOrder,
       expectedLocalUserId: expectedLocalUserId,
-      allowInsertWithoutRemoteId: false,
     );
   }
 
@@ -71,12 +89,11 @@ class HabitSyncService {
     required int sortOrder,
     String? expectedLocalUserId,
   }) async {
-    await _syncUpsert(
-      operation: 'archive',
+    await _enqueueAndReplay(
+      type: PendingHabitMutationType.archive,
       localHabit: localHabit,
       sortOrder: sortOrder,
       expectedLocalUserId: expectedLocalUserId,
-      allowInsertWithoutRemoteId: false,
     );
   }
 
@@ -114,7 +131,7 @@ class HabitSyncService {
 
       final archivedSnapshot = <String, dynamic>{
         ...?localHabitSnapshot,
-        'id': remoteHabitId,
+        'id': localHabitId,
         'remoteId': remoteHabitId,
         'isArchived': true,
         'archived': true,
@@ -129,6 +146,213 @@ class HabitSyncService {
     } catch (error) {
       _debugWarn('habit sync delete unexpected error: $error');
     }
+  }
+
+  Future<int> syncPendingHabitMutationsForCurrentUser({
+    String? expectedLocalUserId,
+  }) {
+    return _serialize(() => _replayPendingMutations(
+          expectedLocalUserId: expectedLocalUserId,
+        ));
+  }
+
+  Future<PendingQueueReadResult<PendingHabitMutation>>
+      readPendingHabitMutationsForUser(
+    String userId,
+  ) =>
+          _pendingMutationStore.read(userId);
+
+  Future<void> _enqueueAndReplay({
+    required PendingHabitMutationType type,
+    required Map<String, dynamic> localHabit,
+    required int sortOrder,
+    required String? expectedLocalUserId,
+    HabitRemoteIdAssignedCallback? onRemoteIdAssigned,
+  }) {
+    return _serialize(() async {
+      final userId = _currentAuthenticatedUserId();
+      if (userId == null || !_isExpectedUser(userId, expectedLocalUserId)) {
+        _debugWarn(
+          'habit sync ${pendingHabitMutationTypeName(type)} skipped: '
+          'session scope unavailable',
+        );
+        return;
+      }
+
+      final localId = HabitRemoteMapper.extractLocalHabitId(localHabit);
+      final remoteId = _resolveRemoteHabitId(
+        localHabitSnapshot: localHabit,
+        explicitLocalHabitId: localId,
+      );
+      if (localId == null ||
+          (type != PendingHabitMutationType.create && remoteId == null)) {
+        _debugWarn(
+          'habit sync ${pendingHabitMutationTypeName(type)} skipped: '
+          'stable remote identity missing',
+        );
+        return;
+      }
+
+      final snapshot = Map<String, dynamic>.from(localHabit)
+        ..['sortOrder'] = sortOrder;
+      final saved = await _pendingMutationStore.enqueue(
+        userId: userId,
+        localHabitId: localId,
+        remoteHabitId: remoteId,
+        type: type,
+        snapshot: snapshot,
+      );
+      if (!saved) {
+        _debugWarn(
+          'habit sync ${pendingHabitMutationTypeName(type)} kept local: '
+          'pending storage unavailable',
+        );
+        return;
+      }
+
+      await _replayPendingMutations(
+        expectedLocalUserId: expectedLocalUserId,
+        onRemoteIdAssigned: onRemoteIdAssigned,
+      );
+    });
+  }
+
+  Future<int> _replayPendingMutations({
+    required String? expectedLocalUserId,
+    HabitRemoteIdAssignedCallback? onRemoteIdAssigned,
+  }) async {
+    final userId = _currentAuthenticatedUserId();
+    if (userId == null || !_isExpectedUser(userId, expectedLocalUserId)) {
+      return 0;
+    }
+
+    final result = await _pendingMutationStore.read(userId);
+    if (!result.isUsable) return 0;
+
+    var resolved = 0;
+    final batch = result.values.take(PendingHabitMutationStore.maxReplayBatch);
+    for (final entry in batch) {
+      if (_currentAuthenticatedUserId() != userId ||
+          !_isExpectedUser(userId, expectedLocalUserId)) {
+        break;
+      }
+
+      final attempted = await _markAttempt(userId, entry);
+      if (attempted == null) continue;
+
+      var success = false;
+      if (attempted.type == PendingHabitMutationType.archive &&
+          attempted.createSnapshot != null) {
+        final created = await _syncUpsert(
+          operation: 'create',
+          localHabit: attempted.createSnapshot!,
+          sortOrder: _safeSortOrder(attempted.createSnapshot),
+          expectedLocalUserId: userId,
+          allowInsertWithoutRemoteId: true,
+        );
+        if (created) {
+          success = await _syncArchive(
+            localHabit: attempted.snapshot,
+            expectedLocalUserId: userId,
+          );
+        }
+      } else if (attempted.type == PendingHabitMutationType.archive) {
+        success = await _syncArchive(
+          localHabit: attempted.snapshot,
+          expectedLocalUserId: userId,
+        );
+      } else {
+        success = await _syncUpsert(
+          operation: pendingHabitMutationTypeName(attempted.type),
+          localHabit: attempted.snapshot,
+          sortOrder: _safeSortOrder(attempted.snapshot),
+          expectedLocalUserId: userId,
+          allowInsertWithoutRemoteId:
+              attempted.type == PendingHabitMutationType.create,
+          onRemoteIdAssigned: onRemoteIdAssigned,
+        );
+      }
+
+      if (success) {
+        final removed = await _pendingMutationStore.removeIfUnchanged(
+          userId: userId,
+          operationId: attempted.operationId,
+          revision: attempted.revision,
+        );
+        if (removed) resolved += 1;
+      } else {
+        await _recordFailure(userId, attempted);
+      }
+    }
+    return resolved;
+  }
+
+  Future<PendingHabitMutation?> _markAttempt(
+    String userId,
+    PendingHabitMutation entry,
+  ) async {
+    final current = await _pendingMutationStore.read(userId);
+    if (!current.isUsable) return null;
+    final index = current.values.indexWhere(
+      (value) =>
+          value.operationId == entry.operationId &&
+          value.revision == entry.revision,
+    );
+    if (index == -1) return null;
+    final updated = current.values[index].copyWith(
+      attempts: current.values[index].attempts + 1,
+      lastAttemptAt: DateTime.now().toUtc(),
+      lastError: null,
+      uncertain: true,
+    );
+    final values = [...current.values]..[index] = updated;
+    return await _pendingMutationStore.replace(userId, values) ? updated : null;
+  }
+
+  Future<void> _recordFailure(
+    String userId,
+    PendingHabitMutation entry,
+  ) async {
+    final current = await _pendingMutationStore.read(userId);
+    if (!current.isUsable) return;
+    final index = current.values.indexWhere(
+      (value) =>
+          value.operationId == entry.operationId &&
+          value.revision == entry.revision,
+    );
+    if (index == -1) return;
+    final values = [...current.values];
+    values[index] = values[index].copyWith(
+      lastError: 'remote_unconfirmed',
+      uncertain: true,
+    );
+    await _pendingMutationStore.replace(userId, values);
+  }
+
+  Future<bool> _syncArchive({
+    required Map<String, dynamic> localHabit,
+    required String? expectedLocalUserId,
+  }) async {
+    final userId = _currentAuthenticatedUserId();
+    if (userId == null || !_isExpectedUser(userId, expectedLocalUserId)) {
+      return false;
+    }
+    final localId = HabitRemoteMapper.extractLocalHabitId(localHabit);
+    final remoteId = _resolveRemoteHabitId(
+      localHabitSnapshot: localHabit,
+      explicitLocalHabitId: localId,
+    );
+    if (remoteId == null) return false;
+    final result = await _repository.deleteHabitForCurrentUser(
+      habitId: remoteId,
+    );
+    return result.isSuccess && _currentAuthenticatedUserId() == userId;
+  }
+
+  Future<T> _serialize<T>(Future<T> Function() action) {
+    final next = _mutationChain.then((_) => action());
+    _mutationChain = next.then<void>((_) {}, onError: (_, __) {});
+    return next;
   }
 
   int _safeSortOrder(Map<String, dynamic>? snapshot) {
@@ -284,7 +508,7 @@ class HabitSyncService {
     );
   }
 
-  Future<void> _syncUpsert({
+  Future<bool> _syncUpsert({
     required String operation,
     required Map<String, dynamic> localHabit,
     required int sortOrder,
@@ -296,14 +520,14 @@ class HabitSyncService {
       final userId = _currentAuthenticatedUserId();
       if (userId == null) {
         _debugWarn('habit sync $operation skipped: no authenticated session');
-        return;
+        return false;
       }
 
       if (!_isExpectedUser(userId, expectedLocalUserId)) {
         _debugWarn(
           'habit sync $operation skipped: local user does not match active auth user',
         );
-        return;
+        return false;
       }
 
       final localId = HabitRemoteMapper.extractLocalHabitId(localHabit);
@@ -317,7 +541,7 @@ class HabitSyncService {
           'habit sync $operation skipped for local habit "${localId ?? 'unknown'}": '
           'missing remote UUID mapping',
         );
-        return;
+        return false;
       }
 
       final remoteHabit = HabitRemoteMapper.toRemoteHabit(
@@ -329,13 +553,13 @@ class HabitSyncService {
 
       final result = operation == 'create'
           ? await _repository.createHabitIdempotentlyForCurrentUser(remoteHabit)
-          : await _repository.upsertHabitForCurrentUser(remoteHabit);
+          : await _repository.updateHabitForCurrentUser(remoteHabit);
       if (!result.isSuccess || result.data == null) {
         _debugWarn(
           'habit sync $operation failed for local "${localId ?? 'unknown'}": '
           '${_errorMessage(result.error)}',
         );
-        return;
+        return false;
       }
 
       final syncedHabit = result.data!;
@@ -343,7 +567,7 @@ class HabitSyncService {
         _debugWarn(
           'habit sync $operation ignored response: user scope mismatch',
         );
-        return;
+        return false;
       }
 
       final userIdAfterRequest = _currentAuthenticatedUserId();
@@ -352,7 +576,7 @@ class HabitSyncService {
         _debugWarn(
           'habit sync $operation ignored response: auth scope changed',
         );
-        return;
+        return false;
       }
 
       final syncedRemoteHabitId = (syncedHabit.id ?? '').trim();
@@ -360,19 +584,22 @@ class HabitSyncService {
         _debugWarn(
           'habit sync $operation ignored response: missing remote UUID in payload',
         );
-        return;
+        return false;
       }
 
       if (localId != null && localId.isNotEmpty) {
-        await _persistRemoteIdAssignment(
+        final persisted = await _persistRemoteIdAssignment(
           localHabitId: localId,
           remoteHabitId: syncedRemoteHabitId,
           onRemoteIdAssigned: onRemoteIdAssigned,
           operation: operation,
         );
+        if (!persisted) return false;
       }
+      return true;
     } catch (error) {
       _debugWarn('habit sync $operation unexpected error: $error');
+      return false;
     }
   }
 
@@ -511,6 +738,11 @@ class HabitSyncService {
   }
 
   String? _currentAuthenticatedUserId() {
+    final providedUserId = _currentUserIdProvider?.call();
+    if (providedUserId != null) {
+      final normalized = providedUserId.trim();
+      return normalized.isEmpty ? null : normalized;
+    }
     if (!RutioSupabaseClient.isInitialized) return null;
 
     try {

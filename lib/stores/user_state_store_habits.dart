@@ -375,6 +375,54 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
       await store.load();
     }
 
+    final pendingMutationsResult = await store._habitSyncService
+        .readPendingHabitMutationsForUser(authenticatedUserId);
+    if (!pendingMutationsResult.isUsable) {
+      _debugHabitPull(
+        '$source pull skipped: pending habit mutation queue is not readable',
+      );
+      return _habitBootstrapResult(
+        store,
+        status: EssentialHabitsBootstrapStatus.failed,
+        source: 'pending_habit_mutations_unreadable',
+        userId: authenticatedUserId,
+        requestId: effectiveRequestId,
+        startedAt: startedAt,
+        error: StateError('Pending habit mutation queue is not readable.'),
+      );
+    }
+
+    await store._habitSyncService.syncPendingHabitMutationsForCurrentUser(
+      expectedLocalUserId: authenticatedUserId,
+    );
+    if (!_shouldSyncHabitsForCurrentScope(
+      store,
+      authenticatedUserId: _currentHabitPullAuthenticatedUserId(store),
+    )) {
+      return _habitBootstrapResult(
+        store,
+        status: EssentialHabitsBootstrapStatus.failed,
+        source: 'scope_changed',
+        userId: authenticatedUserId,
+        requestId: effectiveRequestId,
+        startedAt: startedAt,
+        error: StateError('Scope changed during pending habit replay.'),
+      );
+    }
+    final pendingAfterReplay = await store._habitSyncService
+        .readPendingHabitMutationsForUser(authenticatedUserId);
+    if (!pendingAfterReplay.isUsable) {
+      return _habitBootstrapResult(
+        store,
+        status: EssentialHabitsBootstrapStatus.failed,
+        source: 'pending_habit_mutations_unreadable',
+        userId: authenticatedUserId,
+        requestId: effectiveRequestId,
+        startedAt: startedAt,
+        error: StateError('Pending habit mutation queue is not readable.'),
+      );
+    }
+
     final habitsFetchStopwatch = Stopwatch()..start();
     final habitsResult =
         await _habitRepositoryForStore(store).fetchHabitsForCurrentUser();
@@ -541,6 +589,7 @@ Future<EssentialHabitsBootstrapResult> _runHabitsRemotePull(
       localHabits: _mutableActiveHabits(userState),
       remoteHabits: remoteHabits,
       authenticatedUserId: authenticatedUserId,
+      pendingMutations: pendingAfterReplay.values,
     );
     final mergedLogs = _mergeRemoteHabitLogsIntoLocalState(
       userState: userState,
@@ -805,6 +854,7 @@ _HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
   required List<Map<String, dynamic>> localHabits,
   required List<RemoteHabit> remoteHabits,
   required String authenticatedUserId,
+  List<PendingHabitMutation> pendingMutations = const <PendingHabitMutation>[],
 }) {
   if (authenticatedUserId.trim().isEmpty) {
     return _HabitRemoteMergeResult(
@@ -830,6 +880,9 @@ _HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
   }
 
   var changed = prunedLocalHabits.changed;
+  final pendingByHabitId = <String, PendingHabitMutation>{
+    for (final mutation in pendingMutations) mutation.localHabitId: mutation,
+  };
 
   for (final remoteHabit in remoteHabits) {
     if (!_isRemoteHabitScopedToUser(
@@ -849,6 +902,14 @@ _HabitRemoteMergeResult _mergeRemoteHabitsIntoLocalState({
     final existingIndex = localIndexesByRemoteId[remoteHabitId];
     if (existingIndex != null) {
       final localHabit = mergedHabits[existingIndex];
+      final localHabitId = _habitIdValue(localHabit);
+      final pending =
+          pendingByHabitId[localHabitId] ?? pendingByHabitId[remoteHabitId];
+      if (pending != null) {
+        // The local snapshot is newer than this pull. Keep it visible and
+        // let the durable mutation replay establish the remote state.
+        continue;
+      }
       if (!_areHabitTypesCompatible(localHabit, remoteHabit)) {
         continue;
       }
@@ -4078,12 +4139,21 @@ Future<int> _resolvePendingCloudRewardsBestEffort(
     }
   }
 
+  final habitMutationsResolved =
+      await store._habitSyncService.syncPendingHabitMutationsForCurrentUser(
+    expectedLocalUserId: userId,
+  );
+  if (store._currentSupabaseUserIdProvider()?.trim() != userId ||
+      store.activeLocalScopeUserId != userId) {
+    return habitMutationsResolved;
+  }
+
   final habitsResolved = await _resolvePendingHabitCloudRewardsBestEffort(
     store,
   );
   if (store._currentSupabaseUserIdProvider()?.trim() != userId ||
       store.activeLocalScopeUserId != userId) {
-    return habitsResolved;
+    return habitMutationsResolved + habitsResolved;
   }
 
   final achievementLevelResolved =
@@ -4091,7 +4161,7 @@ Future<int> _resolvePendingCloudRewardsBestEffort(
     store,
     resolvePendingFirst: true,
   );
-  return habitsResolved + achievementLevelResolved;
+  return habitMutationsResolved + habitsResolved + achievementLevelResolved;
 }
 
 void _applyConfirmedPendingHabitState(
