@@ -6299,6 +6299,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRetry => 'Retry';
 
   @override
+  String get syncStatusPending => 'Pending sync';
+
+  @override
+  String get syncStatusNeedsAttention => 'Sync needs attention';
+
+  @override
   String get commonContinue => 'Continue';
 
   @override

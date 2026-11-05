@@ -25,6 +25,7 @@ extension _HomeScreenHeaderBuilders on _HomeScreenState {
     required double xpProgress,
     required int coins,
     required String? avatarUrl,
+    required SyncStatusSnapshot syncStatus,
   }) {
     final double xpValue = xpProgress.clamp(0.0, 1.0).toDouble();
     final double width = MediaQuery.of(context).size.width;
@@ -40,24 +41,29 @@ extension _HomeScreenHeaderBuilders on _HomeScreenState {
       center: const SizedBox.shrink(),
       right: SizedBox(
         width: compact ? 222 : 248,
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: UserIdentityRow(
-            username: username,
-            level: level,
-            coins: coins,
-            xpProgress: xpValue,
-            avatarUrl: avatarUrl,
-            onTap: () async {
-              await IosFeedback.lightImpact();
-              if (!context.mounted) return;
-              _openProfileFromHome(
-                context,
-                openEditProfileOnLoad: true,
-                useCupertinoRoute: true,
-              );
-            },
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            HomeSyncStatusIndicator(status: syncStatus),
+            Flexible(
+              child: UserIdentityRow(
+                username: username,
+                level: level,
+                coins: coins,
+                xpProgress: xpValue,
+                avatarUrl: avatarUrl,
+                onTap: () async {
+                  await IosFeedback.lightImpact();
+                  if (!context.mounted) return;
+                  _openProfileFromHome(
+                    context,
+                    openEditProfileOnLoad: true,
+                    useCupertinoRoute: true,
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

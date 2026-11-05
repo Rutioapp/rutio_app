@@ -2677,6 +2677,8 @@
   "loginAppleCta": "Continuar con Apple",
   "onboardingAuthAppleCta": "Iniciar sesión con Apple",
   "commonRetry": "Reintentar",
+  "syncStatusPending": "Pendiente de sincronizar",
+  "syncStatusNeedsAttention": "Sincronización pendiente de revisión",
   "commonContinue": "Continuar",
   "achievementViewAchievements": "Ver mis logros",
   "achievementContinue": "Continuar",

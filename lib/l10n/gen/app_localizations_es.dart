@@ -6323,6 +6323,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonRetry => 'Reintentar';
 
   @override
+  String get syncStatusPending => 'Pendiente de sincronizar';
+
+  @override
+  String get syncStatusNeedsAttention => 'Sincronización pendiente de revisión';
+
+  @override
   String get commonContinue => 'Continuar';
 
   @override

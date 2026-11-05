@@ -10877,6 +10877,18 @@ abstract class AppLocalizations {
   /// **'Reintentar'**
   String get commonRetry;
 
+  /// No description provided for @syncStatusPending.
+  ///
+  /// In es, this message translates to:
+  /// **'Pendiente de sincronizar'**
+  String get syncStatusPending;
+
+  /// No description provided for @syncStatusNeedsAttention.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronización pendiente de revisión'**
+  String get syncStatusNeedsAttention;
+
   /// No description provided for @commonContinue.
   ///
   /// In es, this message translates to:

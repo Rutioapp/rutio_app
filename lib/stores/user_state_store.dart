@@ -29,6 +29,7 @@ import '../data/services/user_progress_sync_service.dart';
 import '../data/repositories/journal_entry_repository.dart';
 import '../data/repositories/profile_repository.dart';
 import '../data/repositories/user_state_repository.dart';
+import '../application/sync/pending_sync_status.dart';
 import '../devtools/demo_seed/demo_seed_models.dart';
 import '../devtools/rutio_runtime_profile.dart';
 import '../features/achievements/application/achievement_catalog.dart';
@@ -270,6 +271,7 @@ class UserStateStore extends ChangeNotifier {
   final GlobalWalletController? _globalWalletController;
   final LevelUpCelebrationController _levelUpCelebrationController;
   final CurrentUserIdProvider _currentSupabaseUserIdProvider;
+  final PendingSyncStatusReader _syncStatusReader;
   final DateTime Function() _nowProvider;
   UserStateNotificationMutationObserver _notificationMutationObserver;
   final Future<void> Function(String userId)? _onboardingRecoveryCleanup;
@@ -305,6 +307,7 @@ class UserStateStore extends ChangeNotifier {
     Future<void> Function(String userId)? onboardingRecoveryCleanup,
     AnalyticsService? analyticsService,
     CrashReportingService? crashReportingService,
+    PendingSyncStatusReader? pendingSyncStatusReader,
   })  : _achievementSyncService =
             achievementSyncService ?? AchievementSyncService(),
         _habitSyncService = habitSyncService ??
@@ -377,6 +380,11 @@ class UserStateStore extends ChangeNotifier {
         _levelUpCelebrationController = const LevelUpCelebrationController(),
         _currentSupabaseUserIdProvider =
             currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId,
+        _syncStatusReader = pendingSyncStatusReader ??
+            PendingSyncStatusReader(
+              currentUserIdProvider:
+                  currentSupabaseUserIdProvider ?? _authenticatedSupabaseUserId,
+            ),
         _nowProvider = nowProvider ?? DateTime.now,
         _notificationMutationObserver = notificationMutationObserver ??
             const NoopUserStateNotificationMutationObserver(),
@@ -421,6 +429,8 @@ class UserStateStore extends ChangeNotifier {
   final List<UnlockedAchievementRecord> _pendingAchievementUnlocks =
       <UnlockedAchievementRecord>[];
   final List<LevelEvent> _pendingLevelCelebrations = <LevelEvent>[];
+  SyncStatusSnapshot _syncStatus = const SyncStatusSnapshot.signedOut();
+  bool _syncStatusRefreshScheduled = false;
   final bool _debugStreakRecoverSeedEnabled = const bool.fromEnvironment(
     'RUTIO_DEBUG_STREAK_RECOVER_SEED',
     defaultValue: false,
@@ -493,6 +503,7 @@ class UserStateStore extends ChangeNotifier {
   Object? get accountDeletionError => _accountDeletionError;
   UserStateNotificationMutationObserver get notificationMutationObserver =>
       _notificationMutationObserver;
+  SyncStatusSnapshot get syncStatus => _syncStatus;
 
   void setNotificationMutationObserver(
     UserStateNotificationMutationObserver observer,
@@ -500,7 +511,24 @@ class UserStateStore extends ChangeNotifier {
     _notificationMutationObserver = observer;
   }
 
-  void _emitChanged() => notifyListeners();
+  void _emitChanged() {
+    notifyListeners();
+    _scheduleSyncStatusRefresh();
+  }
+
+  void _scheduleSyncStatusRefresh() {
+    if (_syncStatusRefreshScheduled) return;
+    _syncStatusRefreshScheduled = true;
+    scheduleMicrotask(() async {
+      _syncStatusRefreshScheduled = false;
+      final userId = _currentSupabaseUserIdProvider();
+      final next = await _syncStatusReader.readCurrent();
+      if (_currentSupabaseUserIdProvider() != userId) return;
+      if (next == _syncStatus) return;
+      _syncStatus = next;
+      notifyListeners();
+    });
+  }
 
   /// Serialize read/modify/save habit mutations so quick actions cannot
   /// overwrite the store with stale snapshots of other habits.
@@ -516,6 +544,7 @@ class UserStateStore extends ChangeNotifier {
       try {
         return await mutation();
       } finally {
+        _scheduleSyncStatusRefresh();
         if (kDebugMode) {
           debugPrint('[HOME_MUTATION] queue finish sequence=$sequence');
         }

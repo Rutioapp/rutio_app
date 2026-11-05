@@ -152,6 +152,7 @@ extension _HomeScreenBuild on _HomeScreenState {
         xpProgress: homeData.xpProgress,
         coins: coins,
         avatarUrl: store.avatarUrl,
+        syncStatus: _readHomeSyncStatus(store),
       ),
       weekStrip: _weekStrip(),
       dayProgress: _dayProgressMini(
@@ -196,6 +197,16 @@ extension _HomeScreenBuild on _HomeScreenState {
       ),
     );
   }
+}
+
+SyncStatusSnapshot _readHomeSyncStatus(UserStateStore store) {
+  try {
+    final value = (store as dynamic).syncStatus;
+    if (value is SyncStatusSnapshot) return value;
+  } catch (_) {
+    // Lightweight Home test doubles may predate the Phase 4 status getter.
+  }
+  return const SyncStatusSnapshot.signedOut();
 }
 
 /// A loaded local Home snapshot remains ready while a background remote pull

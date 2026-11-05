@@ -4113,6 +4113,7 @@ Future<int> _resolvePendingHabitCloudRewardsBestEffort(
   if (resolved > 0) {
     _logHabitCloudReward('pending operations resolved count=$resolved');
   }
+  store._scheduleSyncStatusRefresh();
   return resolved;
 }
 
@@ -4161,6 +4162,7 @@ Future<int> _resolvePendingCloudRewardsBestEffort(
     store,
     resolvePendingFirst: true,
   );
+  store._scheduleSyncStatusRefresh();
   return habitMutationsResolved + habitsResolved + achievementLevelResolved;
 }
 
